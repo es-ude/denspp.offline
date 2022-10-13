@@ -1,0 +1,22 @@
+name: SpAike
+channels:
+  - defaults
+  - pytorch
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - pytorch
+  - numpy
+  - SciPy
+  - scikit-learn
+  #- scikit-learn-intelex
+  - torchvision
+  - torchaudio
+  #- cudatoolkit
+  - matplotlib
+  - seaborn
+  - pip:
+      - elasticai.creator
+      - pytorch-lightning
+      - mat73
