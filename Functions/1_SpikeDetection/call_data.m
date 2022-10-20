@@ -24,7 +24,11 @@ function [Uin, Fs, Labeling, DataPath, FileName] = call_data(Type, desiredFs, TR
         disp('... calling data sets');
         [FileName, DataPath] = uigetfile(LinkFileType, 'Select a neural dataset', LinkDataPath, 'MultiSelect', 'on');
         % --- Auswahl der Datenquelle
-        FileString = split(DataPath(1:end-1), '\');
+        if ismac
+            FileString = split(DataPath(1:end-1), '/');
+        else
+            FileString = split(DataPath(1:end-1), '\');
+        end
         DataType = 1 + hex2dec(FileString{end}(1:2)); 
         save('config_data.mat', 'DataPath', 'FileName', 'DataType', 'datum');
     else

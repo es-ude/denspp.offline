@@ -9,6 +9,7 @@ warning('off');
     %Version:       1v1
     %Project:       Modell zum Entwurf eines Spike Sorters
     %Commments:     Only for designing analogue front-end
+    %Necesary toolboxes:    Signal processing Toolbox, Machine Learning Toolbox, Parallel Computing Toolbox                  
     
 disp('---- MATLAB-Environment for Spike Sorting ----');
 

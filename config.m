@@ -2,7 +2,7 @@
 % Realtime-Mode (0: offline, 1: online)
 Settings.RealtimeMode = 0;
 % Auswahl des zu verwendenen Datenquelle (0: Datensatz laden, 1: Alte Konfig.)
-Settings.DataType = 1;
+Settings.DataType = 0;
 % Auswahl der Elektroden (= 0, ruft alle Daten auf)
 Settings.CHsel = 0;
 % Neuabtastungs-Rate der Eingangsdaten
