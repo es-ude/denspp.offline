@@ -1,5 +1,3 @@
 #ignore configs to not overrite the global config
-/config.m
-/config_data.mat
 .idea/
 *.asv
