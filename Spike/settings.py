@@ -28,7 +28,7 @@ class Settings(BaseModel):
 
     gain_pre = 25
     n_filt_ana = 2
-    f_filt_ana = np.array([200, 5e3])
+    f_filt_ana = np.array([[200, 5e3]])
     # --- PropertiesofADC
     oversampling = 1
     n_bit_adc = 12
@@ -36,9 +36,9 @@ class Settings(BaseModel):
     sample_rate = 30e3
     # --- Digital filtering for ADC output and CIC
     n_filt_dig = 2
-    f_filt_dig = np.array([200, 5e3])
+    f_filt_dig = np.array([[200, 5e3]])
     # --- Properties of spike detection
-    d_xsda = np.array([2, 4, 6])
+    d_xsda = np.array([[2, 4, 6]])
     thres_Mode = 7
 
     # (only for mode = 1)
