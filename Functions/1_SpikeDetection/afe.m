@@ -289,7 +289,7 @@ classdef afe < handle
                     end
                     Xsda = max(Xmteo);
                 end            
-                if(0)
+                if(1)
                     figure;
                     plot(Xmteo')
                     hold on;

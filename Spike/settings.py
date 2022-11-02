@@ -16,7 +16,7 @@ class Settings(BaseModel):
     # Neuabtastungs - Rate der Eingangsdaten
     desired_fs = 100e3
     # Angabe des zu betrachteten Zeit fensters [StartEnde] in sec.
-    t_range = np.array([10, 40])
+    t_range = np.array([[10, 40]])
     # Using ParallelComputing for MultiChannel - Auslese(0: disable, 1: enable)
     enable_parallel_computing = 0
     # Setting Analog Front End
@@ -51,3 +51,8 @@ class Settings(BaseModel):
     x_window_length = round(2e-3 * sample_rate)
     # --- Properties for Labeling data
     no_cluster = 19
+
+    class Config:
+        validate_all = False
+        validate_assignment = False
+        arbitrary_types_allowed = True

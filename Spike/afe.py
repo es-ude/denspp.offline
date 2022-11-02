@@ -1,11 +1,12 @@
 from settings import Settings
 
 import scipy
-from scipy.signal import butter, filtfilt, resample
+from scipy.signal import butter, filtfilt, resample, savgol_filter, find_peaks
 
 import os
 import numpy as np
 import sympy
+import matplotlib.pyplot as plt
 
 
 class AFE:
@@ -171,8 +172,38 @@ class AFE:
     def dif_filt(self, xin, do_filt):
         ...
 
-    def Thres(self, xin, mode):
-        ...
+    # ---Thershold determination of neural input
+    def thres(self, xin, mode) -> np.ndarray:
+        if mode == 1:  # constant value
+            x_out = 0 * xin + self.thr_min
+        elif mode == 2:  # standard derivation of background activity
+            x_out = 0 * xin + 8 * np.mean(np.abs(xin / 0.6745))
+        elif mode == 3:  # Automated calculation of threshold (use by BlackRock)
+            x_out = 0 * xin + 4.5 * np.sqrt(np.sum(xin**2 / len(xin)))
+        elif mode == 4:  # Mean value
+            x_out = 8 * self.movmean(np.array([[self.x_window_length + self.input_delay, 0]]), np.abs(xin))
+        elif mode == 5:  # Lossy Peak detection
+            x_out = self.hl_envelopes_idx(np.abs(xin), 21, 21)
+        elif mode == 6:  # Window Mean method for Max-detection
+            x_out = 0 * xin
+            window_length = 20
+            for i in range(1, np.floor(len(xin) / window_length)):
+                x0 = np.array([[1, window_length]]) + (i - 1) * window_length
+                x_out[x0[0, 0] : x0[0, 1]] = np.max(xin[x0[0, 0] : x0[0, 1]])
+            x_out = 10 * self.movmean(np.array([[200, 0]]), x_out)  # Mean (Xhi,100)
+        elif mode == 7:
+            if xin.dtype == np.ushort:
+                x0 = xin.astype(np.double)
+            else:
+                x0 = xin
+            x_out = savgol_filter(x0, 3, 31)
+
+        if xin.dtype == np.ushort:
+            x_out = x_out.astype(np.ushort)
+        else:
+            x_out = x_out.astype(np.double)
+
+        return x_out
 
     def spike_detection(self, xin, mode, do_sda):
         # Simple variant for direct application
@@ -207,7 +238,7 @@ class AFE:
             if not self.mode_sda:
                 # normal execution
 
-                x_sda = xin[k + 1 : -k] ** 2 - xin[1 : (-2 * k)] * xin[2 * k + 1 :]
+                x_sda = xin[k + 1 : -k] ** 2 - xin[0 : (-2 * k)] * xin[2 * k + 1 :]
                 if xin.dtype == np.ushort:
                     mat = np.ones(shape=(1, k), dtype=np.ushort)
                 else:
@@ -234,14 +265,106 @@ class AFE:
                 x_sda = np.max(x_mteo)
                 if 0:
                     print("a plot should be drown")
+                    plt.plot(x_mteo.T, label="k=1")
+                    plt.plot(x_sda, label="k=3")
+                    plt.legend()
 
+            # Thershold determination
+            x_thr = self.thres(x_sda, mode)
+
+            # Trigger generation
+            # xtrg = logical (x_sda >= x_thr)
+            if mode == 7:
+                x_thr = x_thr.astype(np.float)
+                x = find_peaks(
+                    x_thr,
+                    "Min_Peak_Width",
+                    11,
+                    "Min_Peak_Distance",
+                    self.x_window_length,
+                    "Min_Peak_Height",
+                    np.mean(x_thr + np.std(x_thr)),
+                )
+                x_thr = np.zeros(x_thr.shape)
+                x_thr[0, x] = 1
+            else:
+                result = x_sda >= x_thr
+                x_thr = result.astype("float32")
         return x_trg, x_sda, x_thr
 
-    def frame_generation(self, xin, x_trg):
-        ...
+    def frame_generation(self, xin: np.ndarray, x_trg):
+        # check if no results are available
+        if np.sum(x_trg) == 0:
+            frame = np.array([[]])
+            x_pos = np.array([[]])
+        # Extract x- position from the trigger signal
+        # x_pos = 1+ find(diff(x_trg) == 1)
+        x_pos0 = find_peaks(x_trg, "Min_Peak_Distance", self.x_window_length, "Min_Peak_Height", 0.7)
+        # Extract frame
+        if xin.dtype == np.ushort:
+            frame = np.zeros(shape=(len(x_pos0), self.x_window_length + self.x_offset), dtype=np.ushort)
+        else:
+            frame = np.zeros(shape=(len(x_pos0), self.x_window_length + self.x_offset))
+        # x_pos = np.array([[]])
+        idx = 1
+        for idx in range(1, len(x_pos0)):
+            dx_neg = x_pos0[idx]
+            dx_pos = x_pos0[idx] + self.x_window_length + self.x_offset - 1
+            if dx_neg >= 1 and dx_pos <= len(x_trg):
+                frame[idx, :] = xin[dx_neg:dx_pos]
+                # x_pos[idx] = x_pos0[idx]
 
-    def frame_aligning(self, frame_in, align_mode):
-        ...
+        return frame, x_pos0
+
+    def frame_aligning(self, frame_in: np.ndarray, align_mode: int) -> np.ndarray | None:
+        if frame_in.dtype == np.ushort:
+            frame_out = np.array([]).astype(np.ushort)
+        else:
+            frame_out = np.array([])
+
+        # ---Check if no results are available
+        if frame_in.size == 0:
+            return None
+
+        for row in frame_in:
+            frame0 = row
+            frame = self.movmean(frame0, 2)
+
+            if align_mode == 1:  # Maximum aligning
+                max_pos = np.unravel_index(np.argmax(frame, axis=None), frame.shape)
+            elif align_mode == 2:  # aligned to positive turning point
+                max_pos = np.unravel_index(np.argmax(np.diff(frame), axis=None), np.diff(frame).shape)
+            elif align_mode == 3:  # aligne to negative turning point
+                max_pos = np.unravel_index(np.argmin(np.diff(frame), axis=None), np.diff(frame).shape)
+                max_pos = max_pos + 1
+            x = None
+            x_pos0 = None
+            x_pos0[x, :] = max_pos = np.array([[-self.x_delta_neg, 0, +self.x_delta_pos]])
+            x_pos = x_pos0[x, :]
+            if x_pos[0, 2] > len(frame0):
+                state = 1
+            elif x_pos[0, 0] <= 0:
+                state = 2
+            else:
+                state = 0
+
+            if state == 0:
+                frame_out[x, :] = frame_out[x_pos[0, 0] : x_pos[0, 2] - 1]
+            elif state == 1:
+                if frame_in.dtype == np.ushort:
+                    mat = np.ones(shape=(1, np.abs(x_pos[0, 2] - len(frame0)) - 1), dtype=np.ushort)
+                else:
+                    mat = np.ones(shape=(1, np.abs(x_pos[0, 2] - len(frame0)) - 1))
+                frame_out[x, :] = np.array([[frame0[x_pos[0, 0] : -1], frame0[0, -1] * mat]])
+            elif state == 2:
+                if frame_in.dtype == np.ushort:
+                    mat = np.ones(shape=(1, np.abs(x_pos[0, 0])), dtype=np.ushort)
+                else:
+                    mat = np.ones(shape=(1, np.abs(x_pos[0, 0])))
+
+                frame_out[x, :] = np.array([[frame0[0, 0] * mat, frame0[0 : x_pos[0, 2]]]])
+
+        return frame_out
 
     def fe_normal(self, frame_in):
         ...
@@ -278,3 +401,42 @@ class AFE:
             x_out = self.x_old_adc
             u_out = self.u_old_adc
         return x_out, u_out
+
+    def movmean(self, arr: np.ndarray, n: int):
+        result = []
+        for idx, num in enumerate(arr[0]):
+            sub = arr[0][max(idx - n, 0) : idx + 1]
+            print(idx, sub)
+            avg = np.mean(sub)
+            result.append(avg)
+        return np.array([result])
+
+    def hl_envelopes_idx(self, signal: np.ndarray, dmin=1, dmax=1, split=False):
+        """
+        Input :
+        s: 1d-array, data signal from which to extract high and low envelopes
+        dmin, dmax: int, optional, size of chunks, use this if the size of the input signal is too big
+        split: bool, optional, if True, split the signal in half along its mean, might help to generate the envelope in some cases
+        Output :
+        lmin,lmax : high/low envelope idx of input signal s
+        """
+
+        # locals min
+        lmin = (np.diff(np.sign(np.diff(signal))) > 0).nonzero()[0] + 1
+        # locals max
+        lmax = (np.diff(np.sign(np.diff(signal))) < 0).nonzero()[0] + 1
+
+        if split:
+            # s_mid is zero if s centered around x-axis or more generally mean of signal
+            s_mid = np.mean(signal)
+            # pre-sorting of locals min based on relative position with respect to s_mid
+            lmin = lmin[signal[lmin] < s_mid]
+            # pre-sorting of local max based on relative position with respect to s_mid
+            lmax = lmax[signal[lmax] > s_mid]
+
+        # global max of dmax-chunks of locals max
+        lmin = lmin[[i + np.argmin(signal[lmin[i : i + dmin]]) for i in range(0, len(lmin), dmin)]]
+        # global min of dmin-chunks of locals min
+        lmax = lmax[[i + np.argmax(signal[lmax[i : i + dmax]]) for i in range(0, len(lmax), dmax)]]
+
+        return lmin, lmax
