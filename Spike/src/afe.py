@@ -1,6 +1,4 @@
 from settings import Settings
-
-import scipy
 from scipy.signal import butter, filtfilt, resample, savgol_filter, find_peaks
 
 import os
@@ -10,22 +8,14 @@ import matplotlib.pyplot as plt
 
 
 class AFE:
-    def __init__(self, setting: Settings, fs, realtime_mode):
+    def __init__(self, setting: Settings):
+        self.realtime_mode = setting.realtime_mode
+        self.udd = setting.udd
+        self.uss = setting.uss
+        self.ucm = (self.udd - self.uss)/2
+        # TODO: Obere Liste entrümpeln
 
-        self.realtime_mode = 0
-        #  --- Power Supply
-        # if settings.Udd != None:
-        #     self.UDD = settings.Udd
-        # else:
-        self.udd = 1.2
-        self.ucm = 0.6
-        self.uss = 0
         #  --- Variables for pre-amplification
-        self.v_pri = 40
-        self.n_filt_ana = 2
-        self.f_range_ana = np.array([[1, 5e3]])
-        # self.a_iir_ana = None
-        # self.b_iir_ana = None
         self.a_iir_lpf = None
         self.b_iir_lpf = None
         self.mem_iir_ana = None
@@ -66,52 +56,47 @@ class AFE:
         # --- Properties for Labeling datasets
         self.no_cluster = 5
 
-        self.ucm = (self.udd + self.uss) / 2
-        self.v_pri = Settings.gain_pre
-        self.n_filt_ana = Settings.n_filt_ana
-        self.f_filt_ana = Settings.f_filt_ana
-        iir_ana_result = butter(self.n_filt_ana, 2 * self.f_range_ana / fs, "bandpass")
-        self.b_iir_ana, self.a_iir_ana = iir_ana_result[0], iir_ana_result[1]
+        self.v_pri = setting.gain_pre
+        self.n_filt_ana = setting.n_filt_ana
+        self.f_filt_ana = setting.f_filt_ana
+        iir_ana_result = butter(self.n_filt_ana, 2 * self.f_filt_ana[0,:] / setting.desired_fs, "bandpass")
+        (self.b_iir_ana, self.a_iir_ana) = iir_ana_result[0], iir_ana_result[1]
         self.mem_iir_ana = self.ucm + np.zeros((1, len(self.b_iir_ana) - 1))
-        self.input_delay = Settings.input_delay
+        self.input_delay = setting.input_delay
 
-        self.u_range = self.ucm + np.array([-1, 1]) * Settings.d_uref
-        self.n_bit_adc = Settings.n_bit_adc
-        self.lsb = np.diff(self.u_range) / 2 ^ self.n_bit_adc
+        self.u_range = self.ucm + np.array([-1, 1]) * setting.d_uref
+        self.n_bit_adc = setting.n_bit_adc
+        self.lsb = np.diff(self.u_range) / np.power(2, self.n_bit_adc)
         self.partition_adc = np.arange(self.u_range[0] + self.lsb / 2, self.u_range[1] + self.lsb / 2, self.lsb)
-        self.oversampling_ratio = Settings.oversampling
+        self.oversampling_ratio = setting.oversampling
         self.oversampling_cnt = 1
-        self.sample_rate_adc = Settings.sample_rate
-        self.sample_rate_ana = fs
-        self.p_ratio, self.q_ratio = sympy.nsimplify(
-            self.sample_rate_adc * self.oversampling_ratio / self.sample_rate_ana
-        )
-        self.n_filt_dig = Settings.n_filt_dig
-        self.f_range_dig = Settings.f_filt_dig
-        iir_dig_result = butter(self.n_filt_dig, 2 * self.f_range_dig / self.sample_rate_adc, "bandpass")
-        self.b_iir_dig, self.a_iir_dig = iir_dig_result[0], iir_dig_result[1]
-        iir_lpf_result = butter(
-            self.n_filt_dig, 2 * np.array([[1e-2, self.f_range_dig[0, 0]]]) / self.sample_rate_adc, "bandpass"
-        )
+        self.sample_rate_adc = setting.sample_rate
+        self.sample_rate_ana = setting.desired_fs
+        #TODO: Funktion funktioniert nicht
+        (self.p_ratio, self.q_ratio) = [0, 0] #sympy.simplify(self.sample_rate_adc * self.oversampling_ratio / self.sample_rate_ana))
+        self.n_filt_dig = setting.n_filt_dig
+        self.f_filt_dig = setting.f_filt_dig
+        iir_dig_result = butter(self.n_filt_dig, 2 * self.f_filt_dig[0,:] / self.sample_rate_adc, "bandpass")
+        (self.b_iir_dig, self.a_iir_dig) = iir_dig_result[0], iir_dig_result[1]
+        iir_lpf_result = butter(self.n_filt_dig, 2 * np.array([1e-2, self.f_filt_dig[0, 0]]) / self.sample_rate_adc, "bandpass")
         self.b_iir_lpf, self.a_iir_lpf = iir_lpf_result[0], iir_lpf_result[1]
-        self.mem_iir_dig = 2 ^ (self.n_bit_adc - 1) + np.zeros((1, len(self.b_iir_dig) - 1))
-        self.dx_sda = Settings.d_xsda
-        self.thr_min = Settings.sda_thr_min
-        if len(Settings.d_xsda) is 1:
+        self.mem_iir_dig = np.zeros((1, len(self.b_iir_dig) - 1)) + np.power(2, self.n_bit_adc - 1)
+        self.dx_sda = setting.d_xsda
+        self.thr_min = setting.sda_thr_min
+        if len(setting.d_xsda) == 1:
             self.mode_sda = 0
         else:
             self.mode_sda = 1
-
-        self.mem_sda = np.zeros((1, 2 * self.dx_sda[-1] + 1))
+        self.mem_sda = np.zeros((1, 2* self.dx_sda[0, -1] + 1))
         self.mem_thres = np.zeros((1, 100))
 
         self.en_frame = 0
-        self.x_delta_neg = Settings.x_delta_neg
-        self.x_window_length = Settings.x_window_length
+        self.x_delta_neg = setting.x_delta_neg
+        self.x_window_length = setting.x_window_length
         self.x_delta_pos = self.x_window_length - self.x_delta_neg
-        self.x_offset = Settings.x_offset
+        self.x_offset = setting.x_offset
         self.mem_frame = np.zeros((1, self.x_window_length))
-        self.no_cluster = Settings.no_cluster
+        self.no_cluster = setting.no_cluster
 
     def update_iir_ana(self, fs):
         iir_ana_result = butter(self.n_filt_ana, 2 * self.f_range_ana / fs, "bandpass")
@@ -145,7 +130,6 @@ class AFE:
 
     def adc_nyquist(self, uin: np.ndarray, EN):
         # clamping through supply voltage
-
         uin_adc = uin
         uin_adc[uin >= self.u_range[1]] = self.u_range[1]
         uin_adc[uin <= self.u_range[0]] = self.u_range[0]
