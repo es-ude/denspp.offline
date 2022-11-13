@@ -1,16 +1,18 @@
 from settings import Settings
-from src.call_data import callData
+from src.call_data import call_data
 from src.afe import AFE
 
 import matplotlib.pyplot as plt
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("Running frameworking for spike-sorting (MERCUR-project Sp:AI:ke, 2022-2024)")
 
     Settings = Settings()
     # ----- Preparation : Module calling -----
-    (neuron, labeling) = callData(Settings.Path2Data, Settings.LoadDataSet, Settings.LoadDataPoint, Settings.desired_fs, Settings.t_range)
+    (neuron, labeling) = call_data(
+        Settings.Path2Data, Settings.LoadDataSet, Settings.LoadDataPoint, Settings.desired_fs, Settings.t_range
+    )
     print("... dataset is loaded")
     afe = AFE(Settings)
 
@@ -31,7 +33,7 @@ if __name__ == '__main__':
     # ----- Figures -----
     print("... plotting results")
     plt.figure(1)
-    plt.plot(neuron.time, 1e6* neuron.data)
+    plt.plot(neuron.time, 1e6 * neuron.data)
     plt.xlabel("Time t / s")
     plt.ylabel("Input voltage $U_{in}$ / µV")
     plt.show()

@@ -1,22 +1,24 @@
 from pydantic import BaseModel
 import numpy as np
 
+
 class Settings(BaseModel):
     # SETTINGS ABOUT FRAMEWORK
-    Path2Data = "C:/HomeOffice/Austausch/Daten"
-    LoadDataSet = 2
+    # Path2Data = "C:/HomeOffice/Austausch/Daten"
+    Path2Data = "dataset"
+    LoadDataSet = 1
     LoadDataPoint = 1
 
-    realtime_mode = 0               #  Realtime - Mode(0: offline, 1: online)
-    ch_sel = 0                      # Auswahl der Elektroden(= 0, ruft alle Daten auf)
-    desired_fs = 100e3              # Neuabtastungs - Rate der Eingangsdaten
+    realtime_mode = 0  #  Realtime - Mode(0: offline, 1: online)
+    ch_sel = 0  # Auswahl der Elektroden(= 0, ruft alle Daten auf)
+    desired_fs = 100e3  # Neuabtastungs - Rate der Eingangsdaten
     t_range = np.array([[10, 40]])  # Angabe des zu betrachteten Zeit fensters [StartEnde] in sec.
 
     # SETTINGS ABOUT FRAMEWORK
-    udd = 0.6                       # Supply Voltage
+    udd = 0.6  # Supply Voltage
     uss = -0.6
 
-    gain_pre = 25                   # midband gain of preamplifier
+    gain_pre = 25  # midband gain of preamplifier
     n_filt_ana = 2
     f_filt_ana = np.array([[200, 5e3]])
 
@@ -33,7 +35,7 @@ class Settings(BaseModel):
     # --- Properties of spike detection
     d_xsda = np.array([[2, 4, 6]])
     thres_Mode = 7
-    sda_thr_min = 1.5e-9                # (only for mode = 1)
+    sda_thr_min = 1.5e-9  # (only for mode = 1)
 
     # --- Properties of Framing and Aligning of spike frames
     x_offset = round(0.5e-3 * sample_rate)
