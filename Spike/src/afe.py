@@ -82,16 +82,10 @@ class AFE:
         )
         self.n_filt_dig = setting.n_filt_dig
         self.f_filt_dig = setting.f_filt_dig
-        iir_dig_result = butter(
-            self.n_filt_dig,
-            2 * self.f_filt_dig[0, :] / self.sample_rate_adc,
-            "bandpass",
-        )
+        iir_dig_result = butter(self.n_filt_dig, 2 * self.f_filt_dig[0, :] / self.sample_rate_adc, "bandpass")
         (self.b_iir_dig, self.a_iir_dig) = iir_dig_result[0], iir_dig_result[1]
         iir_lpf_result = butter(
-            self.n_filt_dig,
-            2 * np.array([1e-2, self.f_filt_dig[0, 0]]) / self.sample_rate_adc,
-            "bandpass",
+            self.n_filt_dig, 2 * np.array([1e-2, self.f_filt_dig[0, 0]]) / self.sample_rate_adc, "bandpass"
         )
         self.b_iir_lpf, self.a_iir_lpf = iir_lpf_result[0], iir_lpf_result[1]
         self.mem_iir_dig = np.zeros((1, len(self.b_iir_dig) - 1)) + np.power(2, self.n_bit_adc - 1)
@@ -138,7 +132,7 @@ class AFE:
             mat = np.ones(shape=(1, self.input_delay), dtype=np.ushort)
         else:
             mat = np.ones(shape=(1, self.input_delay))
-        temp = uin[0, 0] * mat
+        temp = uin[0, 0] * mat[[0], :]
         u_out = np.concatenate((temp, uin[[0], : -self.input_delay]), axis=1)
         return u_out
 
@@ -149,31 +143,16 @@ class AFE:
         uin_adc[uin <= self.u_range[0]] = self.u_range[0]
 
         uin0 = uin_adc[0, 0] + resample_poly(uin_adc[0] - uin_adc[0, 0], self.p_ratio, self.q_ratio)
-        idx = 0
-        x0 = 1
-        x1 = self.oversampling_ratio
-        x_out = np.zeros(shape=(1, int(uin0.size / self.oversampling_ratio)))
-        u_out = np.zeros(shape=(1, int(uin0.size / self.oversampling_ratio)))
 
-        # max_index = (
-        #     np.floor(uin0.size / self.oversampling_ratio) * self.oversampling_ratio
-        # )
-        # sub_sampled = np.mean(
-        #     uin0[:max_index].reshape(-1, self.oversampling_ratio), axis=1
-        # )
+        # find max index that is divisable to the sampleing rate
+        max_index = int(np.floor(uin0.size / self.oversampling_ratio) * self.oversampling_ratio)
+        # mean of every sub-sample window
+        sub_sampled = np.mean(uin0[:max_index].reshape(-1, self.oversampling_ratio), axis=1)
+        if max_index < uin0.size:
+            sub_sampled = np.append(sub_sampled, np.mean(uin0[max_index:]))
 
-        while x0 <= len(uin0):
-            if self.oversampling_ratio == 1:
-                x_out[0, idx], u_out[0, idx] = self.ad_conv(uin0[idx], 1)
-            else:
-                if x1 > len(uin0):
-                    x1 = len(uin0)
-                x_out[idx], u_out[idx] = self.ad_conv(np.mean(uin0[x0:x1]), 1)
-            x0 = x0 + self.oversampling_ratio
-            x1 = x1 + self.oversampling_ratio
-            idx = idx + 1
-
-        return x_out, u_out
+        x_out, u_out = self.ad_conv_simple(sub_sampled)
+        return x_out.reshape((1, -1)), u_out.reshape((1, -1))
 
     def dif_filt(self, xin, do_filt):
         ...
@@ -264,7 +243,7 @@ class AFE:
                     mat = np.ones(shape=(1, ksda))
                     if xin.dtype == np.ushort:
                         mat = mat.astype(np.ushort)
-                    x0 = np.abs(xin[ksda + 1 : -ksda] ** 2 - xin[: -2 * ksda] * xin[2 * ksda + 1 :])
+                    x0 = np.abs(xin[[0], ksda:-ksda] ** 2 - xin[[0], : -2 * ksda] * xin[[0], 2 * ksda :])
                     result_mat_x0 = mat * x0[0, 0]
                     result_mat1_x0 = mat * x0[-1, -1]
                     x_mteo[idx, :] = np.array([[*result_mat1_x0, *x0, *result_mat1_x0]])
@@ -401,10 +380,11 @@ class AFE:
         if en:
             # ADC output + quantization
             noise_quant = (np.random.randint(1, 4, 1) - 2)[0]
+
             diff = uin - self.partition_adc
             negatives_idx = np.argwhere(diff <= 0)
             if negatives_idx.size > 0:
-                prep = negatives_idx[0, 0]
+                prep = negatives_idx[0][0]
                 x_out = prep - 2 ** (self.n_bit_adc - 1) - 1 + noise_quant
                 u_out = self.partition_adc[prep] + (noise_quant - 1) * self.lsb / 2
                 self.x_old_adc = x_out
@@ -412,6 +392,14 @@ class AFE:
         else:
             x_out = self.x_old_adc
             u_out = self.u_old_adc
+        return x_out, u_out
+
+    def ad_conv_simple(self, uin: np.ndarray):
+        noise_quant = np.random.randint(1, 4, size=uin.size) - 2
+        rng = self.partition_adc[-1] - self.partition_adc[0]
+        x_out = np.rint((2**self.n_bit_adc - 1) * uin / rng)  # Digital value
+        u_out = (x_out * rng / (2**self.n_bit_adc - 1)) + (noise_quant - 1) * self.lsb / 2
+        x_out = (x_out + noise_quant).astype(np.int16)
         return x_out, u_out
 
     def movmean(self, arr: np.ndarray, n: int):
