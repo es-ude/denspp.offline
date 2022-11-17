@@ -111,8 +111,10 @@ LineColor = {'k'; 'r'; 'b'; 'g'; 'y'; 'c'; 'm'; 'k'; 'r'; 'b'; 'g'; 'y'; 'c'; 'm
 close all;
 disp('... Plotting results');
 
-plotResults_Transient(AFE_Signals, [Fs AFE_SET.SampleRate], AFE.LSB, GroundTruth, SelCH, 0, LineColor, LineWidth);
-plotResults_FeatureMap(AFE_Signals, Quality_Param, SelCH, LineColor, LineWidth);
+%plotResults_Threshold(AFE_Signals, [Fs AFE_SET.SampleRate], AFE.LSB, LineColor, LineWidth);
+plotResults_PDAC(AFE_Signals, Quality_Param, SelCH, LineColor, LineWidth);
+%plotResults_Transient(AFE_Signals, [Fs AFE_SET.SampleRate], AFE.LSB, GroundTruth, SelCH, 0, LineColor, LineWidth);
+%plotResults_FeatureMap(AFE_Signals, Quality_Param, SelCH, LineColor, LineWidth);
 %plotResults_Histo(GroundTruth, AFE_Signals.ClusterID{SelCH});
 
 clear SelCH LineWidth LineColor;
