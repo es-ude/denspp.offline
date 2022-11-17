@@ -5,14 +5,15 @@ import numpy as np
 class Settings(BaseModel):
     # SETTINGS ABOUT FRAMEWORK
     # Path2Data = "C:/HomeOffice/Austausch/Daten"
-    Path2Data = "dataset"
-    LoadDataSet = 1
-    LoadDataPoint = 1
+    path2data = "dataset"
+    load_data_set = 1
+    load_data_point = 1
 
     realtime_mode = 0  #  Realtime - Mode(0: offline, 1: online)
     ch_sel = 0  # Auswahl der Elektroden(= 0, ruft alle Daten auf)
     desired_fs = 100e3  # Neuabtastungs - Rate der Eingangsdaten
     t_range = np.array([[10, 40]])  # Angabe des zu betrachteten Zeit fensters [StartEnde] in sec.
+    ch_to_no = 0
 
     # SETTINGS ABOUT FRAMEWORK
     udd = 0.6  # Supply Voltage
