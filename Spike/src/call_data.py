@@ -7,15 +7,17 @@ from scipy.io import loadmat
 from scipy.signal import resample_poly
 import mat73
 
-
 # ----- Read Settings -----
 class Labeling:
     exist = 0
+    # From original data (comparing with rawdata)
     orig_cluster_id = None
     orig_cluster_no = None
     orig_spike_xpos = None
-    orig_spike_no = None
-
+    # Apply for output data
+    cluster_id = None
+    cluster_no = None
+    spike_xpos = None
 
 class NeuroInput:
     type = None
@@ -23,24 +25,27 @@ class NeuroInput:
     orig_fs = None
     channel = None
     fs = None
-    time = None
     rawdata = None
     data = None
 
-
-def call_data(path2data: str, data_type: int, data_set: int, desired_fs: int, t_range: np.array):
+# TODO: Anpassungen auf mehrere Elektroden-Känale (bisher nur ein Kanal)
+def call_data(path2data: str, data_type: int, data_set: int, desired_fs: int, t_range: np.array) -> [np.array, np.array]:
     labeling = Labeling()
     neuron = NeuroInput()
 
     # ----- Read data input -----
     if data_type == 1:
         (data_in, label_in) = load_01_SimDaten_Martinez2009(path2data, data_set)
+        PrintOut = "Martinez2009"
     elif data_type == 2:
         (data_in, label_in) = load_02_SimDaten_Pedreira2012(path2data, data_set)
+        PrintOut = "Pedreira2012"
     elif data_type == 3:
-        print("C")
+        (data_in, label_in) = [None]
+        PrintOut = None
     elif data_type == 4:
-        print("D")
+        (data_in, label_in) = [None]
+        PrintOut = None
 
     # --- Processing of raw data
     neuron.type = data_in["type"]
@@ -48,7 +53,6 @@ def call_data(path2data: str, data_type: int, data_set: int, desired_fs: int, t_
     neuron.orig_fs = data_in["sampling_rate"]
     neuron.gain_pre = data_in["gain"]
     neuron.rawdata = data_in["raw_data"] / neuron.gain_pre
-    t0 = np.arange(0, neuron.rawdata.size, 1).reshape((1, -1)) / neuron.orig_fs
 
     # --- Processing of labeling informations
     spike_class = label_in["spike_cluster"]
@@ -56,47 +60,64 @@ def call_data(path2data: str, data_type: int, data_set: int, desired_fs: int, t_
 
     labeling.exist = 1
     labeling.orig_spike_xpos = spike_times
-    labeling.orig_spike_no = spike_times.size
     labeling.orig_cluster_id = spike_class
     labeling.orig_cluster_no = np.unique(spike_class).size
 
-    # --- Cutting the values out of array
+    # --- Cutting specific time range out of raw data
+    t0 = np.arange(0, neuron.rawdata.size, 1).reshape((1, -1)) / neuron.orig_fs
     if t_range.size == 2:
-        idx0 = np.argwhere(t_range[0, 0] <= t0)
+        idx0 = np.argwhere(t_range[0] <= t0)
         idx0 = int(idx0[0, 1])
-        idx1 = np.argwhere(t_range[0, 1] <= t0)
+        idx1 = np.argwhere(t_range[1] <= t0)
         idx1 = int(idx1[0, 1])
 
         t0 = t0[[0], idx0:idx1]
-        neuron.rawdata = neuron.rawdata[[0], idx0:idx1]
+        data0 = neuron.rawdata[0, idx0:idx1]
     else:
-        neuron.time = t0
-        neuron.rawdata = neuron.rawdata
+        t0 = t0
+        data0 = neuron.rawdata
 
-    # TODO: Neuabtastung einfügen
-    len_data_cut = t0.size
+    # --- Resampling the input
     if desired_fs != neuron.orig_fs and desired_fs != 0:
-        t = np.zeros(shape=t0.shape)
         u_safe = 5e-6
-        if np.abs(np.sum((np.mean(neuron.rawdata[0]) - np.array([-1, 1]) * u_safe) < 0) - 1) == 1:
-            du = np.mean(neuron.rawdata[0])
+        if np.abs(np.sum((np.mean(data0[0]) - np.array([-1, 1]) * u_safe) < 0) - 1) == 1:
+            du = np.mean(data0[0])
         else:
             du = 0
 
         p, q = get_resample_ratio(t0, desired_fs)
-
-        neuron.data = resample_poly(neuron.rawdata[0] - du, p, q)
-        neuron.data = (neuron.data + du).reshape((1, -1))
-        neuron.time = resample_poly(t0[0], p, q).reshape((1, -1))
+        data1 = resample_poly(data0 - du, p, q)
+        neuron.data = (data1 + du).reshape((1, -1))
         neuron.fs = desired_fs
-
     else:
-        neuron.data = neuron.rawdata
-        neuron.time = t0
+        neuron.data = data0
         neuron.fs = neuron.orig_fs
 
-    return (neuron, labeling)
+    # --- "Resampling" the labeled informations
+    if labeling.exist:
+        TextLabel = "includes labels"
+        # Find values from x-positions
+        idx2 = np.argwhere(labeling.orig_spike_xpos <= idx0)
+        idx2 = 1+int(idx2[-1])
+        idx3 = np.argwhere(labeling.orig_spike_xpos <= idx1)
+        idx3 = int(idx3[-1])
 
+        # Applying
+        labeling.cluster_id = spike_class[idx2:idx3]
+        labeling.cluster_no = np.unique(labeling.orig_cluster_id).size
+        labeling.spike_xpos = spike_times[idx2:idx3]
+    else:
+        TextLabel = "excludes labels"
+
+    # ---- Output of meta informations
+    length_orig = neuron.rawdata.size
+    length_new = neuron.data.size* neuron.orig_fs/neuron.fs
+
+    print("... original sampling rate of", int(1e-3 * neuron.orig_fs), "kHz", "(resampling to", int(1e-3*neuron.fs), "kHz)")
+    print("... using", round(length_new / length_orig *100 , 2), "% of the data (time length of", round(neuron.rawdata.size/neuron.orig_fs, 2), "s)")
+    print("... data includes", neuron.channel, "number of electrode (" + neuron.type + ") and", TextLabel)
+
+    return (neuron, labeling)
 
 def get_resample_ratio(t, fs) -> Tuple[int, int]:
     # average sampling interval
@@ -105,7 +126,6 @@ def get_resample_ratio(t, fs) -> Tuple[int, int]:
     p, q = Fraction(calced_fs).limit_denominator(100).as_integer_ratio()
 
     return p, q
-
 
 def load_01_SimDaten_Martinez2009(path2data: str, indices: list = [1, 2, 3, 4, 5]):
     folder = "01_SimDaten_Martinez2009"
@@ -151,7 +171,6 @@ def load_02_SimDaten_Pedreira2012(
     label["spike_cluster"] = ground_truth["spike_classes"][0][indices - 1][0]
 
     return (data, label)
-
 
 # TODO: Andere Quellen noch anpassen
 def load_03_SimDaten_Quiroga2020(path2data: str, indices: list = np.arange(1, 26)):

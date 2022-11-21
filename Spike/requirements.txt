@@ -1,0 +1,10 @@
+numpy
+matplotlib
+
+# Libs for GUI
+pyqt5
+
+# Libs for NN
+scipy
+scikit-learn
+torch
