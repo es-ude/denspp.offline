@@ -89,7 +89,6 @@ class AFE:
             uout = np.concatenate((mat, uin[0:uin.size-self.input_delay_ana]), axis=None)
         return uout
 
-
     def adc_nyquist(self, uin: np.ndarray, EN: bool) -> np.ndarray:
         # TODO: ADC-Funktion mit Oversampling noch einfügen
         # clamping through supply voltage

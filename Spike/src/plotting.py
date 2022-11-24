@@ -38,16 +38,36 @@ def resultsAFE(fs_ana: int, fs_adc: int, signals: sorting_signals):
     plt.show()
 
 def resultsFEC(signals: sorting_signals):
-    framesIn = np.rot90(signals.frames_orig, k=3)
-    framesOut = np.rot90(signals.frames_align, k=3)
+    color = ['k', 'r', 'b', 'g']
+
+    framesIn = signals.frames_orig
+    framesOut = signals.frames_align
+
+    feat = signals.features
+    cluster = signals.cluster_id
+    mean_frames = np.zeros(shape=(signals.cluster_no, framesOut.shape[1]))
+    mean_cluster = np.zeros(shape=(signals.cluster_no, feat.shape[0]))
+    mean_value = np.zeros(shape=(signals.cluster_no, 1))
+
+    idx = 0
+    for wave in framesOut:
+        mean_frames[cluster[idx], :] += wave
+        mean_value[cluster[idx]] += 1
+        idx += 1
+    mean_frames = mean_frames / mean_value
 
     ax1 = plt.subplot(2, 2, 1)
-    ax1.plot(framesIn)
+    ax1.plot(np.transpose(framesIn))
 
     ax2 = plt.subplot(2, 2, 2)
-    ax2.plot(framesOut)
+    ax2.plot(np.transpose(framesOut))
 
     ax3 = plt.subplot(2, 2, 3)
-    ax3.plot(signals.features[0,:], signals.features[1,:])
+    for idx in range(0, cluster.shape[0]):
+        ax3.plot(feat[idx,0], feat[idx,1], color=color[cluster[idx]], marker='.')
+
+    ax4 = plt.subplot(2, 2, 4)
+    for idx in range(0, mean_frames.shape[0]):
+        ax4.plot(np.transpose(mean_frames[idx,:]), color=color[idx])
 
     plt.show()

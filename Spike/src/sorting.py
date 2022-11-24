@@ -16,37 +16,41 @@ class FEC:
 
     def fe_pda(self, frame_in: np.ndarray):
         # TODO: Methode PDA einfügen
-        ...
+        if self.realtime_mode:
+            ...
+        else:
+            ...
 
     def fe_pca(self, frame_in: np.ndarray):
         if self.realtime_mode:
             ...
         else:
-            frame_pca = np.rot90(frame_in, k=1)
-            pca = PCA(n_components=10, svd_solver="full")
+            frame_pca = np.transpose(frame_in)
+            pca = PCA(n_components=2, svd_solver="full")
             pca.fit(frame_pca)
-            features = pca.components_
+            feat0 = pca.components_
             precision = pca.get_precision()
             score = pca.score(frame_pca)
             print("... mean value of precision:", np.mean(precision))
             print("... score of feature extraction:", score)
 
+            features = np.transpose(feat0)
+
         return features
 
     def clustering(self, features: np.ndarray):
         #for runs in range(0, 9):
-        feat_in = np.rot90(features, k=1)
-
         cluster = KMeans(
             init="random",
             n_clusters=3,
             n_init=1, max_iter=100
         )
-        cluster.fit(feat_in, sample_weight=None)
+        cluster.fit(features, sample_weight=None)
         results = cluster.labels_
         sse = cluster.inertia_
+        number = cluster.n_clusters
 
-        return results, sse
+        return results, number, sse
 
     def calc_spiketicks(self, uin, xpos, cluster):
         no_cluster = np.unique(cluster)

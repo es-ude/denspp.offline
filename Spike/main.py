@@ -17,6 +17,7 @@ class sorting_signals:
     frames_align = None
     features = None
     cluster_id = None
+    cluster_no = None
     spike_ticks = None
 
 if __name__ == "__main__":
@@ -70,7 +71,7 @@ if __name__ == "__main__":
 
         # ----- Feature Extraction and Classification Module -----
         features = dfe.fe_pca(frames_align)
-        (cluster, sse) = dfe.clustering(features)
+        (cluster, cluster_no, sse) = dfe.clustering(features)
         spike_ticks = dfe.calc_spiketicks(x_adc, x_pos, cluster)
 
         # ---- Neural decoder
@@ -87,6 +88,7 @@ if __name__ == "__main__":
         afe_signals.frames_align = frames_align
         afe_signals.features = features
         afe_signals.cluster_id = cluster
+        afe_signals.cluster_no = cluster_no
         afe_signals.spike_ticks = spike_ticks
 
         # ----- Determination of quality of Parameters -----
@@ -101,7 +103,7 @@ if __name__ == "__main__":
 
     # ----- Figures -----
     print("... plotting results")
-    pltSpAIke.resultsAFE(afe.sample_rate_ana, afe.sample_rate_adc, afe_signals)
+    #pltSpAIke.resultsAFE(afe.sample_rate_ana, afe.sample_rate_adc, afe_signals)
     pltSpAIke.resultsFEC(afe_signals)
 
     print("This is the End, ... my only friend, ... the end")

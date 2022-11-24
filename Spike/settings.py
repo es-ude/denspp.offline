@@ -11,7 +11,7 @@ class Settings(BaseModel):
     realtime_mode = 0               # Realtime - Mode(0: offline, 1: online)
     ch_sel = 0                      # Auswahl der Elektroden(= 0, ruft alle Daten auf)
     desired_fs = 100e3              # Neuabtastungs-Rate der Eingangsdaten
-    t_range = np.array([10, 12])  # Angabe des zu betrachteten Zeit fensters [Start, Ende] in sec.
+    t_range = np.array([10, 16])  # Angabe des zu betrachteten Zeit fensters [Start, Ende] in sec.
     ch_to_no = 0
 
     # SETTINGS ABOUT FRAMEWORK
