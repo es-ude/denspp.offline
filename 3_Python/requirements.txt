@@ -1,0 +1,15 @@
+numpy
+matplotlib
+
+# Libs for GUI
+pyqt5
+
+# Libs for NN with PyTorch
+scipy
+scikit-learn
+torch
+torchvision
+
+# Libs for NN with TensorFlow
+tensorflow
+ipython
