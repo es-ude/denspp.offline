@@ -7,7 +7,6 @@ from scipy.io import savemat
 
 def getting_frames(data: np.ndarray, xpos: int, dxneg: int, dxpos: int, cluster: np.ndarray, cluster_no: int):
     frames_out = np.zeros(shape=(xpos.size, dxneg+dxpos))
-    frames_mean = np.zeros(shape=(np.unique(cluster).size, dxneg+dxpos))
     mean_value = np.zeros(shape=(np.unique(cluster).size, 1))
     frames_cluster = np.zeros(shape=(xpos.size, 1))
 
@@ -19,21 +18,19 @@ def getting_frames(data: np.ndarray, xpos: int, dxneg: int, dxpos: int, cluster:
     idx = 0
     for pos in xpos:
         frames_out[idx, :] = data[pos-dxneg:pos+dxpos]
-        frames_mean[cluster[idx], :] += frames_out[idx, :]
         frames_cluster[idx] = max_val + cluster[idx]
         mean_value[cluster[idx]] += 1
         idx += 1
 
-    frames_mean = frames_mean / mean_value
+    return frames_out, frames_cluster
 
-    return frames_out, frames_mean, frames_cluster
 
 def LoadSpAIke_Data(path2file: str, use_fulldata: bool):
     settings = Settings()
     afe = AFE(settings)
 
-    settings = Settings()
-    afe = AFE(settings)
+    #0: no aligning, 1: maximum, 2: minimum, 3: maximum positive slop, 4: maximum negative slope
+    align_mode = 3
 
     # --- Selection of datasets and points
     MaxDataPoints = np.array([5, 16, 22])
@@ -48,7 +45,6 @@ def LoadSpAIke_Data(path2file: str, use_fulldata: bool):
     # ------ Loading Data: Preparing Data
     print("... loading the datasets")
     frames_in = []
-    frames_mean = []
     frames_cluster = []
     runs = 0
 
@@ -76,20 +72,26 @@ def LoadSpAIke_Data(path2file: str, use_fulldata: bool):
 
             x_pos = np.floor(labeling.spike_xpos * settings.sample_rate / neuron.fs).astype("int")
 
-            (frame_raw, frame_mean, frame_cluster) = getting_frames(
+            (frame_raw, frame_cluster) = getting_frames(
                 data=x_adc, xpos=x_pos,
-                dxneg=-10, dxpos=10 + afe.frame_length,
+                dxneg=5, dxpos=15 + afe.frame_length,
                 cluster=labeling.cluster_id,
                 cluster_no=frames_cluster
             )
-            if runs == 0:
-                frames_in = frame_raw
-                frames_cluster = frame_cluster
-                frames_mean = frame_mean
+            # --- Aligning all frames
+            if(0):
+                frame_aligned = frame_raw
             else:
-                frames_in = np.concatenate((frames_in, frame_raw), axis=0)
+                frame_aligned = afe.frame_aligning(frame_raw, align_mode, 1)
+
+            if runs == 0:
+                frames_in = frame_aligned
+                frames_cluster = frame_cluster
+            else:
+                frames_in = np.concatenate((frames_in, frame_aligned), axis=0)
                 frames_cluster = np.concatenate((frames_cluster, frame_cluster), axis=0)
-                frames_mean = np.concatenate((frames_mean, frame_mean), axis=0)
+
+            # --- Meaning all input frames
 
             runs += 1
             runPoint += 1
@@ -97,18 +99,19 @@ def LoadSpAIke_Data(path2file: str, use_fulldata: bool):
         iteration += 1
 
     # --- Saving data
-    matdata = {"Frames_in": frames_in, "frames_cluster": frames_cluster, "frames_mean": frames_mean}
-
+    matdata = {"frames_in": frames_in, "frames_cluster": frames_cluster}
     savemat(path2file+'.mat', matdata)
-    np.savez(path2file+'.npz', frames_in, frames_mean, frames_cluster)
+    np.savez(path2file+'.npz', frames_in, frames_cluster)
 
+    # --- Ending
+    print("... This is the end")
 
 
 if __name__ == "__main__":
     print("\nPreparing datasets for AI Training in end-to-end spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
 
     # --- Settings
-    path2file = '0_checkMATLAB/denoising_dataset'
+    path2file = 'data/denoising_dataset'
 
     LoadSpAIke_Data(
         path2file=path2file,

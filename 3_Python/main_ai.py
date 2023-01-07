@@ -15,7 +15,7 @@ if __name__ == "__main__":
     # ----- Settings for AI -----
     NoFramesNoise = 1
 
-    path2file = '0_checkMATLAB/denoising_dataset.npz'
+    path2file = 'data/denoising_dataset.npz'
     NoEpoch = 100
     SizeBatch = 32
 
