@@ -1,12 +1,14 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from datetime import date
-
 from IPython.display import clear_output
 import tensorflow as tf
+from datetime import date
+
+
 from sklearn.model_selection import train_test_split
-from src_ai.nntf_architecture import nn_autoencoder
+# from src_ai.nntf_architecture import nn_autoencoder
+from src_ai.nntf_fcn import nn_autoencoder
 
 class NeuralNetwork (nn_autoencoder):
     def __init__(self, train_size: float, valid_size: float, shuffle: bool, input_size: int, model_name: str):
@@ -14,10 +16,10 @@ class NeuralNetwork (nn_autoencoder):
         # --- Properties
         self.os_type = os.name
         self.device = self.__setup()
-        self.__model_name = model_name + "_TensorFlow"
+        self.__model_name = model_name
         self.__path2models = "models"
         self.__path2logs = "logs"
-        self.__path2fig = "figures"
+        self.__path2fig = "figures_fcn"
         # --- Definition of the data
         self.__data_input = None
         self.__data_output = None
@@ -30,36 +32,19 @@ class NeuralNetwork (nn_autoencoder):
         self.__valid_input = None
         self.__valid_output = None
         # --- Model instanziation
-        self.__model_trained = False
+        self.__model_loaded = False
         self.model = self.model0
+        self.__model_trained = False
+        self.model.build((1,40))
 
     def load_data(self, input: np.ndarray, output: np.ndarray, do_norm: bool = False):
-        self.__data_input = input.astype("float")
-        self.__data_output = output.astype("float")
+        self.__data_input = input
+        self.__data_output = output
 
         # --- Normalization of the data
-        # TODO: Adding normalization of the data (1st: float, [-1, +1] - 2nd: int, fullscale adc in FPGA)
         if do_norm:
-            # plt.figure()
-            # ax1 = plt.subplot(4, 1, 1)
-            # ax1.plot(self.__data_input.T)
-            #
-            # ax2 = plt.subplot(4, 1, 3)
-            # ax2.plot(self.__data_output.T)
-            plt.plot(self.__data_input.T)
-            plt.show(block=False)
-
             self.__data_input = self.__norm_data(self.__data_input)
             self.__data_output = self.__norm_data(self.__data_output)
-
-            plt.plot(self.__data_input.T)
-            plt.show(block=True)
-            # ax1 = plt.subplot(4, 1, 2)
-            # ax1.plot(self.__data_input.T)
-            #
-            # ax2 = plt.subplot(4, 1, 4)
-            # ax2.plot(self.__data_output.T)
-            # plt.show(block=False)
 
         # --- Splitting the datasets into training and validation
         (Xin, Yin, Xout, Yout) = train_test_split(
@@ -70,11 +55,15 @@ class NeuralNetwork (nn_autoencoder):
         )
 
         # --- Converting data format from NumPy to Torch.Tensor
-        # --- tf.convert_to_tensor()
-        self.__train_input = tf.convert_to_tensor(Xin)
-        self.__valid_input = tf.convert_to_tensor(Yin)
-        self.__train_output = tf.convert_to_tensor(Xout)
-        self.__valid_output = tf.convert_to_tensor(Yout)
+        # self.__train_input = Xin.astype("float").reshape((len(Xin), 1,40))
+        # self.__valid_input = Yin.astype("float").reshape((len(Yin), 1,40))
+        # self.__train_output = Xout.astype("float").reshape((len(Xout), 1,40))
+        # self.__valid_output = Yout.astype("float").reshape((len(Yout), 1,40))
+        self.__train_input = tf.convert_to_tensor(Xin.astype("float").reshape((len(Xin), 1,40)))
+        self.__valid_input = tf.convert_to_tensor(Yin.astype("float").reshape((len(Yin), 1,40)))
+        self.__train_output = tf.convert_to_tensor(Xout.astype("float").reshape((len(Xout), 1,40)))
+        self.__valid_output = tf.convert_to_tensor(Yout.astype("float").reshape((len(Yout), 1,40)))
+        
 
     def print_model(self):
         print("... printing structure and parameters of the neural network")
@@ -90,12 +79,12 @@ class NeuralNetwork (nn_autoencoder):
         # )
         callbacks_list = [PlotLearning(epochs, self.__path2fig)]
 
-        # Overview of optimizer:    https://www.tensorflow.org/api_docs/python/tf/keras/optimizers
         # Overview of Losses:       https://www.tensorflow.org/api_docs/python/tf/keras/losses
         # Overview of Metrics:      https://www.tensorflow.org/api_docs/python/tf/keras/metrics
+        # Overview of optimizer:    https://www.tensorflow.org/api_docs/python/tf/keras/optimizers
         self.model.compile(
             optimizer="Adamax",
-            loss=["mse"],
+            loss=["mae"],
             metrics=["accuracy", "mean_absolute_error"]
         )
         # verbose = 0: None, 1: progress bar, 2: one line per epoch
@@ -108,7 +97,7 @@ class NeuralNetwork (nn_autoencoder):
             validation_data=(self.__valid_input, self.__valid_output),
             callbacks=[callbacks_list],
             shuffle=self.do_shuffle_data,
-            use_multiprocessing=True
+            use_multiprocessing=False
         )
         self.score = self.model.evaluate(
             x=self.__valid_input,
@@ -116,6 +105,19 @@ class NeuralNetwork (nn_autoencoder):
         )
         self.__model_trained = True
         print(f"... ANN model is trained with score: {self.score}")
+
+    def save_results(self, model_save: bool):
+        path2file = os.path.join(self.__path2models, self.__model_name)
+        if model_save:
+            self.model.save(filepath=path2file)
+        else:
+            self.model.save_weights(filepath=path2file)
+
+    def get_train_data(self):
+        valid_in = self.__valid_input
+        valid_out = self.__valid_output
+
+        return (valid_in, valid_out)
 
     def predict_model(self, x_input: np.ndarray):
         if(self.__model_trained):
@@ -128,19 +130,6 @@ class NeuralNetwork (nn_autoencoder):
             print("... model not loaded - Please check before running prediction")
 
         return Yout
-
-    def get_train_data(self):
-        valid_in = self.__valid_input
-        valid_out = self.__valid_output
-
-        return (valid_in, valid_out)
-
-    def save_results(self, model_save: bool):
-        path2file = os.path.join(self.__path2models, self.__model_name)
-        if model_save:
-            self.model.save(filepath=path2file)
-        else:
-            self.model.save_weights(filepath=path2file)
 
     def load_results(self):
         path2file = os.path.join(self.__path2models, self.__model_name)
@@ -165,7 +154,6 @@ class NeuralNetwork (nn_autoencoder):
         return device0
 
     def __plot_metrics(self):
-        # This is done with separate callback class "PlotLearning"
         pass
 
     def __norm_data(self, frames_in: np.ndarray) -> np.ndarray:
@@ -176,7 +164,6 @@ class NeuralNetwork (nn_autoencoder):
             frames_out[idx,:] = frame/np.max(np.abs(frame))
 
         return frames_out
-
 class PlotLearning(tf.keras.callbacks.Callback):
     """
     Callback to plot the learning curves of the model during training.

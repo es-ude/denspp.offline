@@ -7,7 +7,7 @@ from src.pipeline import PipelineSpike as spaike
 from src.call_data import call_data
 
 if __name__ == "__main__":
-    print("\nRunning spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
+    print("Running spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
     # ----- Preparation : Module calling -----
     settings = Settings()
     (neuron, labeling) = call_data(
@@ -23,7 +23,6 @@ if __name__ == "__main__":
 
     # ----- Preparation : Variable declaration -----
     SpikeSorting = spaike(settings)
-    SpikeSorting.initMod(settings.version)
 
     # ----- Channel Calculation -----
     print("... performing spike sorting incl. analogue pre-processing")
@@ -36,7 +35,7 @@ if __name__ == "__main__":
             doCalc = [1, 1, 1]
 
         SpikeSorting.u_in = neuron.data
-        SpikeSorting.runPipeline(doCalc)
+        SpikeSorting.runPipeline(0, doCalc)
 
         # ----- Determination of quality of Parameters -----
         if labeling.exist:
@@ -47,6 +46,6 @@ if __name__ == "__main__":
     print("... plotting results")
     pltSpAIke.results_afe(SpikeSorting)
     pltSpAIke.results_fec(SpikeSorting)
-    plt.show(block = True)
+    plt.show(block = False)
 
     print("This is the End, ... my only friend, ... the end")

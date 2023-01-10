@@ -9,18 +9,21 @@ from sklearn.model_selection import train_test_split
 from src_ai.nnpy_architecture import nn_autoencoder
 
 class NeuralNetwork (nn_autoencoder):
-    def __init__(self):
+    def __init__(self, train_size: float, valid_size: float, shuffle: bool, input_size: int, model_name: str):
+        nn_autoencoder.__init__(self, input_size)
         # --- Properties
         self.os_type = os.name
         self.device = self.__setup()
-        self.nn_mode = "Use"
-
+        self.__model_name = model_name + "_PyTorch"
         self.__path2models = "models"
         self.__path2logs = "logs"
         self.__path2fig = "figures"
         # --- Definition of the data
         self.__data_input = None
         self.__data_output = None
+        self.train_size = train_size
+        self.valid_size = valid_size
+        self.do_shuffle_data = shuffle
         # --- Splitting into training and validation datasets
         self.__train_input = None
         self.__train_output = None
@@ -28,15 +31,6 @@ class NeuralNetwork (nn_autoencoder):
         self.__valid_output = None
         # --- Model instanziation
         self.__model_loaded = False
-
-    def initTrain(self, train_size: float, valid_size: float, shuffle: bool, input_size: int, model_name: str):
-        nn_autoencoder.__init__(self, input_size)
-        self.nn_mode = "Train"
-
-        self.train_size = train_size
-        self.valid_size = valid_size
-        self.do_shuffle_data = shuffle
-        self.__model_name = model_name + "_PyTorch"
         self.model = self.model0
 
     def __setup(self):

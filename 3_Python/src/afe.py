@@ -2,6 +2,7 @@ import numpy as np
 from fractions import Fraction
 from scipy.signal import butter, filtfilt, resample_poly, savgol_filter, find_peaks
 from settings import Settings
+import matplotlib.pyplot as plt
 
 class AFE:
     #TODO: Testmethoden müssen generiert werden, um Package draus zu generieren (Leo weiß wie)
@@ -49,7 +50,6 @@ class AFE:
         # --- Spike detection incl. thresholding and frame generation
         self.__dx_sda = setting.d_xsda
         self.__frame_mode = setting.mode_frame
-        self.__mean_window = setting.x_window_mean
         self.frame_length = round(setting.x_window_length * self.sample_rate_adc)
         self.__frame_offset = round(setting.x_offset * self.sample_rate_adc)
         self.frame_neg = round(setting.x_window_start * self.sample_rate_adc)
@@ -122,8 +122,10 @@ class AFE:
             self.__x_old_adc = x_out
         else:
             x_out = self.__x_old_adc
-
+        # plt.plot(x_out)
+        # plt.show()
         return x_out
+
 
     def time_delay_dig(self, uin: np.ndarray) -> np.ndarray:  # review
         if self.__realtime_mode:
@@ -145,26 +147,23 @@ class AFE:
         return xout
 
     # ---Thershold determination of neural input
+    # TODO: Methoden zum Thresholding kontrollieren
     def thres(self, xin: np.ndarray, mode: int) -> np.ndarray:
         if mode == 1:    # standard derivation of background activity
-            x_out = 0 * xin + 8 / 0.6745 * np.mean(np.abs(xin))
+            x_out = 0 * xin + 8 / 0.6745* np.mean(np.abs(xin))
         elif mode == 2:  # Automated calculation of threshold (use by BlackRock)
-            x_out = 0 * xin + 4.5 * np.sqrt(np.sum(xin**2 / len(xin)))
+            x_out = 0 * xin + 4.5* np.sqrt(np.sum(xin**2 / len(xin)))
         elif mode == 3:  # Mean value
-            x_out = 10 * self.__movmean(xin, self.__mean_window)
+            x_out = 8 * self.__movmean(np.array([[self.__frame_length, 0]]), np.abs(xin))
         elif mode == 4:  # Lossy Peak detection
-            x_out = 10 * self.__movmean(np.abs(xin), self.__mean_window)
+            x_out = self.__hl_envelopes_idx(np.abs(xin), 21, 21)
         elif mode == 5:  # Window Mean method for Max-detection
             x_out = 0 * xin
-            gain = 10
             window_length = 20
-            window_mean = 200
-            for i in range(np.floor(xin.size / window_length).astype("int")):
-                # TODO: Problem finden und lösen
+            for i in range(1, np.floor(len(xin) / window_length)):
                 x0 = np.array([[1, window_length]]) + (i - 1) * window_length
                 x_out[x0[0, 0] : x0[0, 1]] = np.max(xin[x0[0, 0] : x0[0, 1]])
-
-            x_out = gain * self.__movmean(x_out, window_mean)
+            x_out = 10 * self.__movmean(np.array([[200, 0]]), x_out)  # Mean (Xhi,100)
         elif mode == 6: # Salvan-Goley-Fiter
             if xin.dtype == np.ushort:
                 x0 = xin.astype(np.double)
@@ -288,12 +287,7 @@ class AFE:
                 idx += 1
         return frame_out
 
-
-    def __movmean(self, xin: np.ndarray, window: int) -> np.ndarray:
-        xout = np.convolve(xin, np.ones(window)/window, mode='same')
-        return xout
-
-    def __hl_envelopes_idx(self, signal: np.ndarray, dmin=1, dmax=1, split=False):
+    def hl_envelopes_idx(self, signal: np.ndarray, dmin=1, dmax=1, split=False):
         """
         Input :
         s: 1d-array, data signal from which to extract high and low envelopes

@@ -42,12 +42,8 @@ def results_afe (signals: PipelineSpike) -> None:
 def results_fec (signals: PipelineSpike) -> None:
     color = ['k', 'r', 'b', 'g']
 
-    if signals.version == 0:
-        framesIn = signals.frames_orig
-        framesOut = signals.frames_align
-    else:
-        framesIn = signals.frames_align
-        framesOut = signals.frames_denoised
+    framesIn = signals.frames_orig
+    framesOut = signals.frames_align
 
     feat = signals.features
     cluster = signals.cluster_id

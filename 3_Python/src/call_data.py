@@ -139,8 +139,6 @@ def load_01_SimDaten_Martinez2009(
     data = dict()
     label = dict()
 
-    print(["... using data point:", path2file])
-
     loaded_data = loadmat(path2file)
     data["type"] = "Synthetic"
     data["channel"] = int(loaded_data["chan"][0])
@@ -155,21 +153,15 @@ def load_01_SimDaten_Martinez2009(
 
 
 def load_02_SimDaten_Pedreira2012(
-    path2data: str, indices: list = np.arange(1, 16)
+    path2data: str, indices: list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 90, 91, 92, 93, 94, 95]
 ) -> dict:
     folder = "02_SimDaten_Pedreira2012"
-    folder_content = os.listdir(os.path.join(path2data, folder))
-
-    file_data = folder_content[indices + 1]
-    prep_index = file_data.split("_", 1)[1]
-    num_index = int(prep_index[0:2])
+    file_data = "simulation_" + str(indices) + ".mat"
     file_ground = "ground_truth.mat"
     path2file = os.path.join(path2data, folder, file_data)
     path2ground = os.path.join(path2data, folder, file_ground)
     data = dict()
     label = dict()
-
-    print(["... using data point:", path2file, num_index])
 
     loaded_data = loadmat(path2file)
     data["type"] = "Synthetic"
@@ -179,33 +171,31 @@ def load_02_SimDaten_Pedreira2012(
     data["raw_data"] = 25e-6 * loaded_data["data"]
 
     ground_truth = loadmat(path2ground)
-    label["spike_times"] = ground_truth["spike_first_sample"][0][num_index - 1][0]
-    label["spike_cluster"] = ground_truth["spike_classes"][0][num_index - 1][0]
+    label["spike_times"] = ground_truth["spike_first_sample"][0][indices - 1][0]
+    label["spike_cluster"] = ground_truth["spike_classes"][0][indices - 1][0]
 
     return (data, label)
 
 
 def load_03_SimDaten_Quiroga2020(
-        path2data: str, indices: list = np.arange(1, 22)
+        path2data: str, indices: list = np.arange(1, 26)
 ) -> dict:
     folder = "03_SimDaten_Quiroga2020"
     path2folder = os.path.join(path2data, folder)
     files = os.listdir(path2folder)
     files.sort()
-    file = files[indices]
+    file = files[indices - 1]
     path2file = os.path.join(path2folder, file)
 
     data = dict()
     label = dict()
-
-    print(["... using data point:", path2file])
 
     loaded_data = loadmat(path2file)
     data["type"] = "Synthetic"
     data["channel"] = int(1)
     data["gain"] = 10 ** (0 / 20)
     data["sampling_rate"] = int(1 / loaded_data["samplingInterval"][0][0] * 1000)
-    data["raw_data"] = 100e-6 * loaded_data["data"]
+    data["raw_data"] = 100e-6* loaded_data["data"]
 
     label["spike_times"] = loaded_data["spike_times"][0][0][0]
     label["spike_cluster"] = loaded_data["spike_class"][0][0][0]-1

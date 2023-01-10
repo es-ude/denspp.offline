@@ -7,10 +7,8 @@ from src.afe import AFE
 import src.plotting as pltSpAIke
 import src_ai.processing as aiprocess
 
-#from src_ai.nn_pytorch import NeuralNetwork
-from src_ai.nn_tensorflow import NeuralNetwork
-
-# TODO: Implement early break training modus
+# from src_ai.nn_pytorch import NeuralNetwork
+from src_ai.nn_tensorflow_fcn import NeuralNetwork
 
 if __name__ == "__main__":
     print("Train modules of spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
@@ -18,13 +16,11 @@ if __name__ == "__main__":
     settings = Settings()
     afe = AFE(settings)
     # ----- Settings for AI -----
-    # TakeDatasets = np.array([1, 2, 3])
-    # NoDataPoints = np.array([5, 10, 23])
-    TakeDatasets = np.array([1])
+    TakeDatasets = np.array([3])
     NoDataPoints = np.array([2])
 
     NoFramesNoise = 1
-    NoEpoch = 100
+    NoEpoch = 10
     SizeBatch = 16
 
     # ------ Loading Data
@@ -32,7 +28,6 @@ if __name__ == "__main__":
     frames_mean = []
     frames_cluster = []
     runs = 0
-    print("... loading the datasets")
     for runSet in TakeDatasets:
         runPoint = 1
         while(runPoint <= NoDataPoints[runSet-1]):
@@ -47,8 +42,9 @@ if __name__ == "__main__":
             )
 
             # Adapting the input for our application
-            u_ana, _ = afe.pre_amp(neuron.data)
+            u_ana,_ = afe.pre_amp(neuron.data)
             x_adc = afe.adc_nyquist(u_ana, 1)
+            
 
             x_pos = np.floor(labeling.spike_xpos * settings.sample_rate/neuron.fs).astype("int")
 
@@ -84,7 +80,7 @@ if __name__ == "__main__":
 
     TrainDataIn = np.concatenate((frames_in, noise_framesIn), axis=0)
     TrainDataOut = np.concatenate((frames_out, noise_framesOut), axis=0)
-    print("... datasets for training are available")
+
 
     # --- Preparing PyTorch for Training
     nnTorch = NeuralNetwork(
@@ -95,7 +91,7 @@ if __name__ == "__main__":
     )
     nnTorch.load_data(
         input=TrainDataIn, output=TrainDataOut,
-        do_norm=True
+        do_norm=False
     )
 
     # --- Training phase and Saving the model
@@ -103,11 +99,11 @@ if __name__ == "__main__":
     nnTorch.train_model(
         batch_size=SizeBatch,
         epochs=NoEpoch,
-        learning_rate=1e-5
+        learning_rate=1e-6
     )
     nnTorch.save_results(True)
 
-    # --- Predicting results
+    # --- Plotting
     (Yin, Yout) = nnTorch.get_train_data()
     y_pred = nnTorch.predict_model(Yin)
 
