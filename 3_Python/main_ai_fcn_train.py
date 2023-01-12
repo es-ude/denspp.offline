@@ -17,7 +17,7 @@ if __name__ == "__main__":
     afe = AFE(settings)
     # ----- Settings for AI -----
     TakeDatasets = np.array([3])
-    NoDataPoints = np.array([2])
+    NoDataPoints = np.array([1,2,3])
 
     NoFramesNoise = 1
     NoEpoch = 10
@@ -67,7 +67,8 @@ if __name__ == "__main__":
             runPoint += 1
 
     print("... for training are", frames_in.shape[0], "frames with each", frames_in.shape[1], "points available")
-
+    frames_in = np.pad(frames_in, ((0, 0), (0, 24)), mode='constant', constant_values=0)
+    frames_mean = np.pad(frames_mean, ((0, 0), (0, 24)), mode='constant', constant_values=0)
     # TODO: Adding noise to spike frames from datasets
     # --- Preparing data for training and validation
     frames_out = np.zeros(shape=frames_in.shape)
@@ -80,6 +81,10 @@ if __name__ == "__main__":
 
     TrainDataIn = np.concatenate((frames_in, noise_framesIn), axis=0)
     TrainDataOut = np.concatenate((frames_out, noise_framesOut), axis=0)
+    plt.plot(TrainDataIn.T)
+    plt.show()
+    plt.plot(TrainDataOut.T)
+    plt.show()
 
 
     # --- Preparing PyTorch for Training
@@ -107,6 +112,8 @@ if __name__ == "__main__":
     (Yin, Yout) = nnTorch.get_train_data()
     y_pred = nnTorch.predict_model(Yin)
 
+    y_pred = y_pred.squeeze()
+    Yin = Yin.numpy().squeeze()
     # --- Plotting
     pltSpAIke.plot_frames(TrainDataIn, TrainDataOut)
     pltSpAIke.plot_frames(Yin, y_pred)

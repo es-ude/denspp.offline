@@ -20,11 +20,11 @@ if __name__ == "__main__":
     # ----- Settings for AI -----
     # TakeDatasets = np.array([1, 2, 3])
     # NoDataPoints = np.array([5, 10, 23])
-    TakeDatasets = np.array([1])
-    NoDataPoints = np.array([2])
+    TakeDatasets = np.array([3])
+    NoDataPoints = np.array([1,2,3])
 
     NoFramesNoise = 1
-    NoEpoch = 100
+    NoEpoch = 50
     SizeBatch = 16
 
     # ------ Loading Data

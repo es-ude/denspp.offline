@@ -35,7 +35,7 @@ class NeuralNetwork (nn_autoencoder):
         self.__model_loaded = False
         self.model = self.model0
         self.__model_trained = False
-        self.model.build((1,40))
+        # self.model.build((1,40))
 
     def load_data(self, input: np.ndarray, output: np.ndarray, do_norm: bool = False):
         self.__data_input = input
@@ -54,15 +54,11 @@ class NeuralNetwork (nn_autoencoder):
             shuffle=self.do_shuffle_data
         )
 
-        # --- Converting data format from NumPy to Torch.Tensor
-        # self.__train_input = Xin.astype("float").reshape((len(Xin), 1,40))
-        # self.__valid_input = Yin.astype("float").reshape((len(Yin), 1,40))
-        # self.__train_output = Xout.astype("float").reshape((len(Xout), 1,40))
-        # self.__valid_output = Yout.astype("float").reshape((len(Yout), 1,40))
-        self.__train_input = tf.convert_to_tensor(Xin.astype("float").reshape((len(Xin), 1,40)))
-        self.__valid_input = tf.convert_to_tensor(Yin.astype("float").reshape((len(Yin), 1,40)))
-        self.__train_output = tf.convert_to_tensor(Xout.astype("float").reshape((len(Xout), 1,40)))
-        self.__valid_output = tf.convert_to_tensor(Yout.astype("float").reshape((len(Yout), 1,40)))
+
+        self.__train_input = tf.convert_to_tensor(Xin.astype("float").reshape((len(Xin), 64,1)))
+        self.__valid_input = tf.convert_to_tensor(Yin.astype("float").reshape((len(Yin), 64,1)))
+        self.__train_output = tf.convert_to_tensor(Xout.astype("float").reshape((len(Xout), 64,1)))
+        self.__valid_output = tf.convert_to_tensor(Yout.astype("float").reshape((len(Yout), 64,1)))
         
 
     def print_model(self):
