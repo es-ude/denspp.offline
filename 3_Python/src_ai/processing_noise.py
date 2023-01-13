@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import random
+from sklearn.utils import shuffle
 
 def generate_frames(no_frames: int, width_frames: int):
     frames_ideal = np.zeros(shape=(no_frames, width_frames), dtype="double")
@@ -9,6 +11,42 @@ def generate_frames(no_frames: int, width_frames: int):
         frames_noise[idx] = generate_whiteNoise(width_frames, np.random.randint(3, 12), False)
 
     return frames_noise, frames_ideal
+
+def prepare_autoencoder_data(dataIn: np.ndarray, dataOut: np.ndarray, cluster: np.ndarray, train_size: float, valid_size: float):
+    noCluster = np.unique(cluster)
+    Xin = np.array([], dtype=int)
+    Xout = np.array([], dtype=int)
+    Yin = np.array([], dtype=int)
+    Yout = np.array([], dtype=int)
+
+    FirstRun = True
+    for idx in noCluster:
+        selX = np.where(cluster == idx)
+        sizeX = selX[0].size
+        shuffleX = shuffle(selX[0])
+
+        noSamplesTrain = int(sizeX * train_size)
+        noSamplesValid = int(sizeX * valid_size)
+
+        train_indices = shuffleX[0:noSamplesTrain]
+        valid_indices = shuffleX[noSamplesTrain+1:noSamplesTrain+noSamplesValid+1]
+
+        if FirstRun == True:
+            Xin = dataIn[train_indices, :]
+            Xout = dataOut[train_indices, :]
+            Yin = dataIn[valid_indices, :]
+            Yout = dataOut[valid_indices, :]
+        else:
+            Xin = np.concatenate((Xin, dataIn[train_indices, :]), axis=0)
+            Xout = np.concatenate((Xout, dataOut[train_indices, :]), axis=0)
+            Yin = np.concatenate((Yin, dataIn[valid_indices, :]), axis=0)
+            Yout = np.concatenate((Yout, dataOut[valid_indices, :]), axis=0)
+        FirstRun = False
+
+        (Xin, Xout) = shuffle(Xin, Xout)
+        (Yin, Yout) = shuffle(Yin, Yout)
+
+    return (Xin, Yin, Xout, Yout)
 
 
 def generate_whiteNoise(size: int, wgndB: int, type: bool) -> np.ndarray:

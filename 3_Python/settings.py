@@ -15,7 +15,7 @@ class Settings:
     udd = 0.6  # Supply Voltage
     uss = -0.6
 
-    version = 0                     # Version of SpikeSorting Pipeline
+    version = 1                    # Version of SpikeSorting Pipeline
     # --- Properties of the analogue pre-amplificaiton
     gain_ana = 40
     n_filt_ana = 1
@@ -36,7 +36,7 @@ class Settings:
 
     # --- Properties of spike detection and frame generation/aligning
     d_xsda = np.array([1])
-    mode_thres = 5
+    mode_thres = 3
     mode_frame = 1
     x_window_mean = 100
     x_window_length = 2e-3

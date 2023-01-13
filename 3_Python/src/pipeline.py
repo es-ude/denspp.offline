@@ -13,15 +13,15 @@ class PipelineSpike (AFE, FEC, NeuralNetwork, nntf.Model):
     def __init__(self, settings: Settings):
         AFE.__init__(self, settings)
         FEC.__init__(self, settings)
-        NeuralNetwork.__init__(self)
+        NeuralNetwork.__init__(self, 40)
         nntf.Model.__init__(self)
 
         # Settings for AI
-        self.denoising_name = "denoising_autoencoder_v0"
+        self.denoising_name = "denoising_autoencoder_v1"
         self.denoising_model = nntf.models.Sequential()
 
         # Settings
-        self.version = 0
+        self.version = settings.version
         self.__mode_thres = settings.mode_thres
         self.__mode_frame = settings.mode_frame
 
@@ -63,12 +63,13 @@ class PipelineSpike (AFE, FEC, NeuralNetwork, nntf.Model):
             ValueError("System error: Pipeline version is not available!")
 
     def metric_afe(self, Xsoll: np.ndarray) -> None:
+        # TODO: Metrik prüfen
         print("... Calculation of metrics with labeled informations")
         TP = 0  # number of true positive
         TN = 0  # number of true negative
         FP = 0  # number of false positive
         FN = 0  # number of false negative
-        tol = self.frame_length
+        tol = 2*self.frame_length
 
         for idxX in self.x_pos:
             for idxY in Xsoll:

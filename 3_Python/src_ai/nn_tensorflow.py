@@ -48,7 +48,30 @@ class NeuralNetwork (nn_autoencoder):
 
         return model
 
-    def load_data(self, input: np.ndarray, output: np.ndarray, do_norm: bool = False):
+    def load_data_direct(self, train_in: np.ndarray, train_out: np.ndarray, valid_in: np.ndarray, valid_out: np.ndarray, do_norm: bool):
+        self.__data_input = None
+        self.__data_output = None
+
+        # --- Normalization of the data
+        # TODO: Adding normalization of the data (1st: float, [-1, +1] - 2nd: int, fullscale adc in FPGA)
+        if do_norm:
+            Xin = self.__norm_data(train_in.astype("float"))
+            Yin = self.__norm_data(valid_in.astype("float"))
+            Xout = self.__norm_data(train_out.astype("float"))
+            Yout = self.__norm_data(valid_out.astype("float"))
+        else:
+            Xin = train_in.astype("float")
+            Yin = valid_in.astype("float")
+            Xout = train_out.astype("float")
+            Yout = valid_out.astype("float")
+
+        # --- Converting data format from NumPy to Torch.Tensor
+        self.__train_input = tf.convert_to_tensor(Xin)
+        self.__valid_input = tf.convert_to_tensor(Yin)
+        self.__train_output = tf.convert_to_tensor(Xout)
+        self.__valid_output = tf.convert_to_tensor(Yout)
+
+    def load_data_split(self, input: np.ndarray, output: np.ndarray, do_norm: bool, type: int):
         self.__data_input = input.astype("float")
         self.__data_output = output.astype("float")
 
@@ -175,6 +198,11 @@ class NeuralNetwork (nn_autoencoder):
             frame = frames_in[idx,:]
             frames_out[idx,:] = frame/np.max(np.abs(frame))
         return frames_out
+
+    def __split_data(self, frames_in: np.ndarray, frames_out: np.ndarray, train_size: float, valid_size: float):
+        NoCluster = 0
+
+        pass
 
 class PlotLearning(tf.keras.callbacks.Callback):
     """

@@ -4,7 +4,7 @@ from tensorflow import Tensor
 class nn_autoencoder (nntf.Model):
     def __init__(self, io_size: int):
         super().__init__()
-        self.nHiddenLayers = [io_size, 30, 21, 14, 8, 14, 21, 30, io_size]
+        self.nHiddenLayers = [io_size, 24, 16, 8, 16, 24, io_size]
         self.init_w = nntf.initializers.RandomUniform(minval=-0.1, maxval=0.1)
         self.init_b = nntf.initializers.Constant(value=0.0)
 
