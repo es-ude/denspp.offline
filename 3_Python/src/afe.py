@@ -289,6 +289,12 @@ class AFE:
         return frame_out
 
 
+    def calculate_snr(self, yin: np.ndarray, ymean: np.ndarray):
+        A = np.sum(np.square(yin))
+        B = np.sum(np.square(ymean - yin))
+        outdB = 10 * np.log10(A/B)
+        return outdB
+
     def __movmean(self, xin: np.ndarray, window: int) -> np.ndarray:
         xout = np.convolve(xin, np.ones(window)/window, mode='same')
         return xout
