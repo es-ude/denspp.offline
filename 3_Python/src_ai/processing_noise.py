@@ -19,6 +19,9 @@ def prepare_autoencoder_data(dataIn: np.ndarray, dataOut: np.ndarray, cluster: n
     Yin = np.array([], dtype=int)
     Yout = np.array([], dtype=int)
 
+    # --- Ignoring NoCluster (idx == 1)
+    noCluster = noCluster[1:-1]
+
     FirstRun = True
     for idx in noCluster:
         selX = np.where(cluster == idx)
@@ -58,7 +61,6 @@ def generate_whiteNoise(size: int, wgndB: int, type: bool) -> np.ndarray:
     noiseOut = np.random.normal(loc=0, scale=noiseLVL, size=size)
 
     return noiseOut
-
 
 def generate_realNoise(t: np.ndarray, wgndB: int, Fc: int, alpha: float):
     N = t.size

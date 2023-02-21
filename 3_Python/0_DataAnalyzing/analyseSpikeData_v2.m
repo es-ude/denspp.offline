@@ -1,7 +1,5 @@
 close all;  clear all;  clc;
 
-%% --- NICHT VOLLSTÄNDIG!!!
-
 %% --- Settings
 do_plot = 1;
 do_save = 1;
@@ -9,7 +7,7 @@ do_save = 1;
 %% --- Vorverarbeitung: Datenaufnahme
 % --- Daten laden
 path2file = "../data/";
-filename = "denoising_dataset_File3";
+filename = "denoising_dataset_File1";
 addon = "_Sorted";
 
 load(strcat(path2file, filename, '.mat'));

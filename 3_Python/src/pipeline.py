@@ -17,7 +17,7 @@ class PipelineSpike (AFE, FEC, NeuralNetwork, nntf.Model):
         nntf.Model.__init__(self)
 
         # Settings for AI
-        self.denoising_name = "denoising_autoencoder_v1"
+        self.denoising_name = "dnn_dae_v2_TEST"
         self.denoising_model = nntf.models.Sequential()
 
         # Settings
@@ -146,7 +146,9 @@ class PipelineSpike (AFE, FEC, NeuralNetwork, nntf.Model):
         self.frames_align = self.frame_aligning(self.frames_orig, self.__mode_frame, doCalc[2])
 
         # --- Adding denoising
-        self.frames_denoised = self.denoising_model.predict(self.frames_align)
+        val_max = 48
+        self.frames_denoised = self.denoising_model.predict(self.frames_align/val_max)
+        self.frames_denoised = self.frames_denoised * val_max
 
         # ----- Feature Extraction and Classification Module -----
         self.features = self.fe_pca(self.frames_denoised)

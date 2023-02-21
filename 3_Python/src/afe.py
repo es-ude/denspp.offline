@@ -3,8 +3,11 @@ from fractions import Fraction
 from scipy.signal import butter, filtfilt, resample_poly, savgol_filter, find_peaks
 from settings import Settings
 
+# TODO: Trennung der Klassen zwischen Verarbeitung des Bitstreams i) ganzer Datensatz und ii) sample-wise
+
 class AFE:
-    #TODO: Testmethoden müssen generiert werden, um Package draus zu generieren (Leo weiß wie)
+    # TODO: Testmethoden müssen generiert werden, um Package draus zu generieren (Leo weiß wie)
+    # TODO: Realtime-Mode (= Embedded Mode) nicht getestet
     def __init__(self, setting: Settings):
         self.__realtime_mode = setting.realtime_mode
         # --- Power supply
@@ -62,14 +65,9 @@ class AFE:
         self.__mem_thres = np.zeros((1, 100))
         self.__mem_frame = np.zeros((1, self.frame_length))
 
-    def update_iir_ana(self, fs):
-        iir_ana_result = butter(self.__n_filt_ana, 2 * self.__f_range_ana / fs, "bandpass")
-        self.__b_iir_ana, self.__a_iir_ana = iir_ana_result[0], iir_ana_result[1]
-        self.__mem_iir_ana = self.__ucm + np.zeros((1, len(self.__b_iir_ana) - 1))
-
     def pre_amp(self, uin):
         if self.__realtime_mode:
-            u0 = uin - self.ucm
+            u0 = uin - self.__ucm
             du0 = self.__a_iir_ana @ np.array([u0, *-self.__mem_iir_ana[0, :]]).T
             du1 = self.__b_iir_ana @ [du0, *self.__mem_iir_ana[0, :]]
             self.__mem_iir_ana[0, :] = np.array(du0, self.__mem_iir_ana[0])

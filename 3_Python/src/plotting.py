@@ -16,7 +16,7 @@ def results_afe (signals: PipelineSpike) -> None:
     tD = np.arange(0, xadc.size, 1) / fs_adc
 
     # --- Plotting
-    plt.figure(1)
+    plt.figure()
     ax1 = plt.subplot(4, 1, 1)
     ax1.plot(tA, 1e6* uin, 'k')
     plt.ylabel("$U_{in}$ (µV)")
@@ -62,7 +62,7 @@ def results_fec (signals: PipelineSpike) -> None:
         idx += 1
     mean_frames = mean_frames / mean_value
 
-    plt.figure(2)
+    plt.figure()
     ax1 = plt.subplot(2, 2, 1)
     ax1.plot(np.transpose(framesIn))
 

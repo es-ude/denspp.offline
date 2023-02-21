@@ -1,12 +1,15 @@
 import os
+import time
+
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import date
 
 from IPython.display import clear_output
 import tensorflow as tf
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
-from src_ai.nntf_architecture import nn_autoencoder
+from src_ai.nntf_architecture import nn_dnn_autoencoder as nn_autoencoder
 
 class NeuralNetwork (nn_autoencoder):
     def __init__(self, input_size: int):
@@ -30,8 +33,9 @@ class NeuralNetwork (nn_autoencoder):
         # --- Model instanziation
         self.__model_trained = False
 
-    def initTrain(self, train_size: float, valid_size: float, shuffle: bool, model_name: str):
-        self.__model_name = model_name + "_TensorFlow"
+    def initTrain(self, train_size: float, valid_size: float, shuffle: bool, name_addon: str):
+        self.__model_name = self.model_name + name_addon + "_TensorFlow"
+
         self.model = self.model0
 
         self.train_size = train_size
@@ -42,6 +46,7 @@ class NeuralNetwork (nn_autoencoder):
 
     def initPredict(self, model_name: str):
         self.__model_name = model_name + "_TensorFlow"
+
         model = self.load_results()
         print(["... ANN is loaded: ", self.__model_name])
         self.__model_trained = True
@@ -55,10 +60,23 @@ class NeuralNetwork (nn_autoencoder):
         # --- Normalization of the data
         # TODO: Adding normalization of the data (1st: float, [-1, +1] - 2nd: int, fullscale adc in FPGA)
         if do_norm:
-            Xin = self.__norm_data(train_in.astype("float"))
-            Yin = self.__norm_data(valid_in.astype("float"))
-            Xout = self.__norm_data(train_out.astype("float"))
-            Yout = self.__norm_data(valid_out.astype("float"))
+            # Xin = self.__norm_data(train_in.astype("float"))
+            # Yin = self.__norm_data(valid_in.astype("float"))
+            # Xout = self.__norm_data(train_out.astype("float"))
+            # Yout = self.__norm_data(valid_out.astype("float"))
+
+            val_max = np.zeros(shape=(4, 1))
+            val_max[0] = np.abs(train_in).max()
+            val_max[1] = np.abs(train_out).max()
+            val_max[2] = np.abs(valid_in).max()
+            val_max[3] = np.abs(valid_out).max()
+
+            val_norm = val_max.max()
+            print("... Normierungsfaktor von:", val_norm)
+            Xin = train_in.astype("float")/val_norm
+            Yin = valid_in.astype("float")/val_norm
+            Xout = train_out.astype("float")/val_norm
+            Yout = valid_out.astype("float")/val_norm
         else:
             Xin = train_in.astype("float")
             Yin = valid_in.astype("float")
@@ -71,7 +89,7 @@ class NeuralNetwork (nn_autoencoder):
         self.__train_output = tf.convert_to_tensor(Xout)
         self.__valid_output = tf.convert_to_tensor(Yout)
 
-    def load_data_split(self, input: np.ndarray, output: np.ndarray, do_norm: bool, type: int):
+    def load_data_split(self, input: np.ndarray, output: np.ndarray, do_norm: bool):
         self.__data_input = input.astype("float")
         self.__data_output = output.astype("float")
 
@@ -113,9 +131,9 @@ class NeuralNetwork (nn_autoencoder):
         # Overview of Losses:       https://www.tensorflow.org/api_docs/python/tf/keras/losses
         # Overview of Metrics:      https://www.tensorflow.org/api_docs/python/tf/keras/metrics
         self.model.compile(
-            optimizer="Adam",
-            loss=["mse"],
-            metrics=["accuracy", "mean_absolute_error"]
+            optimizer="sgd",
+            loss=["mae"],
+            metrics=["mse", "cosine_similarity"]
         )
         # verbose = 0: None, 1: progress bar, 2: one line per epoch
         self.model.fit(
@@ -127,7 +145,7 @@ class NeuralNetwork (nn_autoencoder):
             validation_data=(self.__valid_input, self.__valid_output),
             callbacks=[callbacks_list],
             shuffle=self.do_shuffle_data,
-            use_multiprocessing=True
+            use_multiprocessing=False
         )
         self.score = self.model.evaluate(
             x=self.__valid_input,
@@ -140,7 +158,7 @@ class NeuralNetwork (nn_autoencoder):
         if(self.__model_trained):
             Yout = self.model.predict(
                 x=x_input,
-                use_multiprocessing=True
+                use_multiprocessing=False
             )
         else:
             Yout = []
@@ -167,9 +185,9 @@ class NeuralNetwork (nn_autoencoder):
             model = tf.keras.models.load_model(filepath=path2file)
         else:
             model = None
-            ValueError("Wrong Pathname")
+            print(" --- MODEL NOT AVAILABLE - Check the naming or path!")
+            sys.exit()
         return model
-
 
     def __setup(self):
         # TODO: Differenzierung für Betriebssysteme einfügen
@@ -192,17 +210,19 @@ class NeuralNetwork (nn_autoencoder):
         # This is done with separate callback class "PlotLearning"
         pass
 
+    # TODO: Bessere Methode implementieren --> Methode bisher ist behindert
     def __norm_data(self, frames_in: np.ndarray) -> np.ndarray:
-        frames_out = frames_in
-        for idx in range(frames_in.shape[0]):
-            frame = frames_in[idx,:]
-            frames_out[idx,:] = frame/np.max(np.abs(frame))
+        max_val = np.argmax(frames_in)
+        min_val = np.argmin(frames_in)
+        frames_out = frames_in / max_val
+
+        # frames_out = np.zeros(shape=frames_in.shape)
+        # for idx in range(frames_in.shape[0]):
+        #    frame = frames_in[idx, :]
+        #    frames_out[idx, :] = frame/np.max(np.abs(frame))
+
         return frames_out
 
-    def __split_data(self, frames_in: np.ndarray, frames_out: np.ndarray, train_size: float, valid_size: float):
-        NoCluster = 0
-
-        pass
 
 class PlotLearning(tf.keras.callbacks.Callback):
     """

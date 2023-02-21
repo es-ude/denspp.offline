@@ -7,6 +7,7 @@ from src.pipeline import PipelineSpike as spaike
 from src.call_data import call_data
 
 if __name__ == "__main__":
+    #plt.close('all')
     print("\nRunning spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
     # ----- Preparation : Module calling -----
     settings = Settings()

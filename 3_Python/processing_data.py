@@ -29,12 +29,13 @@ def LoadSpAIke_Data(path2file: str, use_fulldata: bool, align_mode: int, separat
 
     # --- Selection of datasets and points
     MaxDataPoints = np.array([5, 16, 22])
+    SamplingPoints = np.array([[5, 4, 3], [15, 14, 13]], dtype="int8")
     if use_fulldata:
         TakeDatasets = np.array([1, 2, 3])
         # If value = 0 --> All data points will be loaded - otherwise Maximum number
         NoDataPoints = np.array([0, 0, 0])
     else:
-        TakeDatasets = np.array([3])
+        TakeDatasets = np.array([1])
         NoDataPoints = np.array([0])
 
     # ------ Loading Data: Preparing Data
@@ -49,6 +50,8 @@ def LoadSpAIke_Data(path2file: str, use_fulldata: bool, align_mode: int, separat
     iteration = 0
     for runSet in TakeDatasets:
         runPoint = 1
+        SamplingRange = SamplingPoints[:, runSet - 1]
+
         if NoDataPoints[iteration] == 0:
             endPoint = MaxDataPoints[runSet-1]
 
@@ -72,7 +75,7 @@ def LoadSpAIke_Data(path2file: str, use_fulldata: bool, align_mode: int, separat
             x_pos = np.floor(labeling.spike_xpos * settings.sample_rate / neuron.fs).astype("int")
             (frame_raw, frame_cluster) = getting_frames(
                 data=x_adc, xpos=x_pos,
-                dxneg=5, dxpos=15 + afe.frame_length,
+                dxneg=SamplingRange[0], dxpos=SamplingRange[1] + afe.frame_length,
                 cluster=labeling.cluster_id,
                 cluster_no=frames_cluster
             )
@@ -124,7 +127,7 @@ if __name__ == "__main__":
 
     LoadSpAIke_Data(
         path2file=path2file,
-        use_fulldata=True,
+        use_fulldata=False,
         separate_files=separate_files,
         align_mode=align_mode
     )
