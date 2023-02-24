@@ -11,9 +11,16 @@ class nn_dnn_autoencoder (nntf.Model):
 
         self.model0 = nntf.models.Sequential()
         self.model0.add(nntf.layers.Input(shape=(io_size)))
-        for idx in self.nHiddenLayers:
-            self.model0.add(nntf.layers.Dense(idx))
-            self.model0.add(nntf.layers.Activation("tanh"))
+
+        self.model0.add(nntf.layers.Dense(self.nHiddenLayers[0]))
+        self.model0.add(nntf.layers.Activation("tanh"))
+
+        self.model0.add(nntf.layers.Dense(self.nHiddenLayers[1]))
+
+        self.model0.add(nntf.layers.Activation("tanh"))
+
+        self.model0.add(nntf.layers.Dense(self.nHiddenLayers[2]))
+        self.model0.add(nntf.layers.Activation("tanh"))
 
         self.model0.add(nntf.layers.Dense(io_size))
 
