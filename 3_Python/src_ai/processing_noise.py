@@ -13,14 +13,17 @@ def generate_frames(no_frames: int, width_frames: int):
     return frames_noise, frames_ideal
 
 def prepare_autoencoder_data(dataIn: np.ndarray, dataOut: np.ndarray, cluster: np.ndarray, train_size: float, valid_size: float):
-    noCluster = np.unique(cluster)
+    # Verarbeiten und Shuffeln der Eingangsdaten, Trainingsdaten und Cluster-Informationen
     Xin = np.array([], dtype=int)
     Xout = np.array([], dtype=int)
     Yin = np.array([], dtype=int)
     Yout = np.array([], dtype=int)
+    Cin = np.array([], dtype=int)
+    Cout = np.array([], dtype=int)
 
     # --- Ignoring NoCluster (idx == 1)
-    noCluster = noCluster[1:-1]
+    # TODO: Anpassen der Daten, sodass bestimmte Cluster rausgefiltert werden
+    noCluster = np.unique(cluster)[1:]
 
     FirstRun = True
     for idx in noCluster:
@@ -37,19 +40,23 @@ def prepare_autoencoder_data(dataIn: np.ndarray, dataOut: np.ndarray, cluster: n
         if FirstRun == True:
             Xin = dataIn[train_indices, :]
             Xout = dataOut[train_indices, :]
+            Cin = cluster[train_indices]
             Yin = dataIn[valid_indices, :]
             Yout = dataOut[valid_indices, :]
+            Cout = cluster[valid_indices]
         else:
             Xin = np.concatenate((Xin, dataIn[train_indices, :]), axis=0)
             Xout = np.concatenate((Xout, dataOut[train_indices, :]), axis=0)
             Yin = np.concatenate((Yin, dataIn[valid_indices, :]), axis=0)
             Yout = np.concatenate((Yout, dataOut[valid_indices, :]), axis=0)
+            Cin = np.concatenate((Cin, cluster[train_indices]), axis=0)
+            Cout = np.concatenate((Cout, cluster[valid_indices]), axis=0)
         FirstRun = False
 
-        (Xin, Xout) = shuffle(Xin, Xout)
-        (Yin, Yout) = shuffle(Yin, Yout)
+        (Xin, Xout, Cin) = shuffle(Xin, Xout, Cin)
+        (Yin, Yout, Cout) = shuffle(Yin, Yout, Cout)
 
-    return (Xin, Yin, Xout, Yout)
+    return (Xin, Yin, Cin, Xout, Yout, Cout)
 
 
 def generate_whiteNoise(size: int, wgndB: int, type: bool) -> np.ndarray:

@@ -1,3 +1,5 @@
+import glob
+
 import numpy as np
 import os
 from typing import Tuple
@@ -134,8 +136,11 @@ def load_01_SimDaten_Martinez2009(
         path2data: str, indices: list = np.arange(1, 5)
 ) -> dict:
     folder = "01_SimDaten_Martinez2009"
-    file_data = "simulation_" + str(indices) + ".mat"
+    folder_content = glob.glob(os.path.join(path2data, folder) + '\simulation_*.mat')
+    folder_content.sort()
+    file_data = folder_content[indices - 1]
     path2file = os.path.join(path2data, folder, file_data)
+
     data = dict()
     label = dict()
 
@@ -158,10 +163,11 @@ def load_02_SimDaten_Pedreira2012(
     path2data: str, indices: list = np.arange(1, 16)
 ) -> dict:
     folder = "02_SimDaten_Pedreira2012"
-    folder_content = os.listdir(os.path.join(path2data, folder))
+    folder_content = glob.glob(os.path.join(path2data, folder)+'\simulation_*.mat')
+    folder_content.sort()
 
-    file_data = folder_content[indices + 1]
-    prep_index = file_data.split("_", 1)[1]
+    file_data = folder_content[indices - 1]
+    prep_index = file_data.split("_")[-1]
     num_index = int(prep_index[0:2])
     file_ground = "ground_truth.mat"
     path2file = os.path.join(path2data, folder, file_data)
@@ -190,14 +196,13 @@ def load_03_SimDaten_Quiroga2020(
 ) -> dict:
     folder = "03_SimDaten_Quiroga2020"
     path2folder = os.path.join(path2data, folder)
-    files = os.listdir(path2folder)
-    files.sort()
-    file = files[indices]
+    folder_content = glob.glob(os.path.join(path2data, folder)+'\C_*.mat')
+    folder_content.sort()
+    file = folder_content[indices-1]
     path2file = os.path.join(path2folder, file)
 
     data = dict()
     label = dict()
-
     print(["... using data point:", path2file])
 
     loaded_data = loadmat(path2file)

@@ -2,31 +2,31 @@ import torch
 import torch.nn as nnpy
 import torchvision.models as models
 
-class nn_autoencoder (nnpy.Module):
-    def __init__(self, io_size: int):
+class dnn_autoencoder(nnpy.Module):
+    def __init__(self):
         super().__init__()
+        self.mname = "dnn_dae_v2"
+        self.optimizer_param = None
 
+        # --- Encoder Path
         self.encoder = nnpy.Sequential(
-            # --- Encoder Path
-            nnpy.Linear(in_features=io_size, out_features=32, bias=False).double(),
+            nnpy.Linear(in_features=40, out_features=28, bias=False).double(),
             nnpy.Tanh(),
-            nnpy.Linear(in_features=32, out_features=20, bias=False).double(),
+            nnpy.Linear(in_features=28, out_features=12, bias=False).double(),
             nnpy.Tanh(),
-            nnpy.Linear(in_features=20, out_features=8, bias=False).double(),
+            nnpy.Linear(in_features=12, out_features=8, bias=False).double(),
+            nnpy.Tanh()
+        )
+        # --- Decoder Path
+        self.decoder = nnpy.Sequential(
+            nnpy.Linear(in_features=8, out_features=12, bias=False).double(),
+            nnpy.Tanh(),
+            nnpy.Linear(in_features=12, out_features=28, bias=False).double(),
+            nnpy.Tanh(),
+            nnpy.Linear(in_features=28, out_features=40, bias=False).double(),
             nnpy.Tanh()
         )
 
-        self.decoder = nnpy.Sequential(
-            # --- Decoder Path
-            nnpy.Linear(in_features=8, out_features=20, bias=False).double(),
-            nnpy.Tanh(),
-            nnpy.Linear(in_features=20, out_features=32, bias=False).double(),
-            nnpy.Tanh(),
-            nnpy.Linear(in_features=32, out_features=io_size, bias=False).double()
-        )
-
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         encoded = self.encoder(x)
-        decoded = self.decoder(encoded)
-
-        return encoded, decoded
+        return encoded, self.decoder(encoded)

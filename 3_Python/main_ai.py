@@ -1,13 +1,14 @@
 import numpy as np
+from datetime import date
 import matplotlib.pyplot as plt
 import src.plotting as pltSpAIke
 import src_ai.processing_noise as aiprocess
 
 from scipy.io import savemat, loadmat
-from sklearn.preprocessing import MinMaxScaler
-
 # from src_ai.nn_pytorch import NeuralNetwork
+# from src_ai.nnpy_architecture import dnn_autoencoder
 from src_ai.nn_tensorflow import NeuralNetwork
+from src_ai.nntf_architecture import dnn_autoencoder
 
 # TODO: Implement early break training modus
 if __name__ == "__main__":
@@ -18,12 +19,13 @@ if __name__ == "__main__":
     do_addnoise = False
     NoFramesNoise = 1
 
-    path2file = 'data/denoising_dataset_File1_Sorted.mat'
-    model_name = "_TEST"
-    NoEpoch = 50
-    SizeBatch = 4
+    path2file = 'tools/data/denoising_dataset_File1_Sorted.mat'
+    model_name = "_TEST2"
 
     # ------ Loading Data
+    datumHeute = date.today()
+    str_datum = datumHeute.strftime("%Y-%m-%d")
+    print(f"Running on {str_datum}")
     print("... loading the datasets")
 
     data_type = False
@@ -71,7 +73,7 @@ if __name__ == "__main__":
         TrainDataIn = frames_in
         TrainDataOut = frames_out
 
-    # TODO: MinMaxScaler bewirkt positives --> Testen
+    # TODO: MinMaxScaler kann positive sein --> Testen
     # scaler = MinMaxScaler(feature_range=(0, 1))
     # data = np.vstack((TrainDataIn, TrainDataOut))
     # data = scaler.fit_transform(data)
@@ -79,53 +81,46 @@ if __name__ == "__main__":
     # TrainDataOut = data[len(TrainDataIn):][:]
 
     # Step 3: Splitting data for training of the denoising autoencoder
-    (Xin, Yin, Xout, Yout) = aiprocess.prepare_autoencoder_data(
+    (Xin, Yin, cluster_in, Xout, Yout, cluster_out) = aiprocess.prepare_autoencoder_data(
         TrainDataIn, TrainDataOut, frames_cluster,
         train_size=0.7, valid_size=0.2
     )
 
     print("... datasets for training are available")
 
-    # --- Preparing PyTorch for Training
-    nnTorch = NeuralNetwork(input_size=TrainDataIn.shape[1])
+    # --- Preparing PyTorch network
+    nnTorch = NeuralNetwork()
+    nnTorch.defineModel(
+        model=dnn_autoencoder(),
+        input_size=TrainDataIn.shape[1]
+    )
     nnTorch.initTrain(
         train_size=0.7, valid_size=0.2,
         shuffle=False,
         name_addon=model_name
     )
+    # --- Loading data
     nnTorch.load_data_direct(
         train_in=Xin, train_out=Xout,
         valid_in=Yin, valid_out=Yout,
         do_norm=True
     )
-    # nnTorch.load_data_split(
-    #    input=TrainDataIn, output=TrainDataOut,
-    #    do_norm=True
-    # )
-
     # --- Training phase and Saving the model
-    nnTorch.print_model()
-    nnTorch.train_model(
-        batch_size=SizeBatch,
-        epochs=NoEpoch,
-        learning_rate=1e-3
-    )
-    nnTorch.save_results(True)
+    #nnTorch.print_model()
+    nnTorch.do_training()
+    nnTorch.save_results()
 
     # --- Predicting results
-    (Yin, Yout) = nnTorch.get_train_data()
-    y_pred = nnTorch.predict_model(Yin)
+    (TrainIn, TrainOut, ValidIn, ValidOut) = nnTorch.get_train_data()
+    feat, y_pred = nnTorch.do_prediction(ValidIn)
 
-    y_pred = y_pred.squeeze()
-    Yin = Yin.numpy().squeeze()
-
-    # --- Saving data for MATLAB
-    matdata = {"Train_Input": TrainDataIn, "Train_Output": TrainDataOut, "YPredIn": Yin, "YPredOut": y_pred}
-    savemat("0_checkMATLAB/Data.mat", matdata)
+    # --- Saving data for MATLAB (Wichtig: NumPy Arrays zum Übertragen)
+    matdata = {"Train_Input": TrainIn.numpy(), "Train_Output": TrainOut.numpy(), "PredIn": ValidIn.numpy(), "PredOut": ValidOut.numpy(), "YPred": y_pred.numpy(), "Feat": feat.numpy(), "Cluster": cluster_out}
+    savemat("logs/" + str_datum + "_predicted_data.mat", matdata)
 
     # --- Plotting
     pltSpAIke.plot_frames(TrainDataIn, TrainDataOut)
-    pltSpAIke.plot_frames(Yin, y_pred)
-    plt.show(block=True)
+    #pltSpAIke.plot_frames(Yin, y_pred)
+    plt.show(block=False)
 
     print("\nThis is the End, ... my only friend, ... the end")

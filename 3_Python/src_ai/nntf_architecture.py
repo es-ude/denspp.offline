@@ -1,38 +1,57 @@
 import tensorflow.keras as nntf
 from tensorflow import Tensor
 
-class nn_dnn_autoencoder (nntf.Model):
-    def __init__(self, io_size: int):
+# Infos zum Einstellen des TF-Compilers
+# Overview of optimizer:    https://www.tensorflow.org/api_docs/python/tf/keras/optimizers
+# Overview of Losses:       https://www.tensorflow.org/api_docs/python/tf/keras/losses
+# Overview of Metrics:      https://www.tensorflow.org/api_docs/python/tf/keras/metrics
+
+class dnn_autoencoder(nntf.Model):
+    def __init__(self):
         super().__init__()
         self.model_name = "dnn_dae_v2"
-        self.nHiddenLayers = [28, 12, 28]
-        # self.init_w = nntf.initializers.RandomUniform(minval=-0.1, maxval=0.1)
-        # self.init_b = nntf.initializers.Constant(value=0.0)
+        self.__io_size = 40
+        self.set_batchsize = 2
+        self.set_epochs = 300
+        self.set_learningrate = 1e-3
+        self.set_optimizer = "sgd"
+        self.set_loss = "mae"
+        self.set_metric = ["mse", "cosine_similarity"]
 
-        self.model0 = nntf.models.Sequential()
-        self.model0.add(nntf.layers.Input(shape=(io_size)))
+        self.nHiddenLayers = [20, 8, 20]
 
-        self.model0.add(nntf.layers.Dense(self.nHiddenLayers[0]))
-        self.model0.add(nntf.layers.Activation("tanh"))
+        # Input
+        input = nntf.layers.Input(shape=(self.__io_size))
+        # Encoder
+        encoded = nntf.layers.Dense(self.nHiddenLayers[0])(input)
+        encoded = nntf.layers.Activation("tanh")(encoded)
+        encoded = nntf.layers.Dense(self.nHiddenLayers[1])(encoded)
+        encoded0 = nntf.layers.Activation("tanh")(encoded)
 
-        self.model0.add(nntf.layers.Dense(self.nHiddenLayers[1]))
+        decoded = nntf.layers.Dense(self.nHiddenLayers[2])(encoded0)
+        decoded = nntf.layers.Activation("tanh")(decoded)
+        decoded = nntf.layers.Dense(self.__io_size)(decoded)
+        decoded0 = nntf.layers.Activation("tanh")(decoded)
 
-        self.model0.add(nntf.layers.Activation("tanh"))
+        self.encoder = nntf.Model(input, encoded0)
+        self.decoder = nntf.Model(encoded0, decoded0)
 
-        self.model0.add(nntf.layers.Dense(self.nHiddenLayers[2]))
-        self.model0.add(nntf.layers.Activation("tanh"))
+        self.model = nntf.Model(input, decoded0)
 
-        self.model0.add(nntf.layers.Dense(io_size))
-
-
-class nn_cnn_autoencoder (nntf.Model):
-    def __init__(self, io_size: int):
+class cnn_autoencoder(nntf.Model):
+    def __init__(self):
         super().__init__()
         self.model_name = "cnn_dae_v2"
-        # self.init_w = nntf.initializers.RandomUniform(minval=-0.05, maxval=0.05)
+        self.__optimizer_param = None
+        self.__io_size = 40
+        self.set_batchsize = 4
+        self.set_epochs = 300
+        self.set_learningrate = 1e-3
+        self.set_optimizer = "sgd"
+        self.set_loss = "mae"
+        self.set_metric = ["mse", "cosine_similarity"]
 
-        self.model0 = nntf.models.Sequential()
-        inputs = nntf.layers.Input(shape=(40, 1))
+        inputs = nntf.layers.Input(shape=(self.__io_size, 1))
         # Encoder setup
         encoded = nntf.layers.Conv1D(32, 3, padding='same')(inputs)
         encoded = nntf.layers.BatchNormalization()(encoded)
@@ -62,4 +81,4 @@ class nn_cnn_autoencoder (nntf.Model):
 
         decoded = nntf.layers.Conv1D(1, 3, activation='sigmoid', padding='same')(decoded)
 
-        self.model0 = nntf.models.Model(inputs, decoded)
+        self.model = nntf.models.Model(inputs, decoded)

@@ -1,6 +1,4 @@
-import os
-import time
-
+import os, time
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import date
@@ -9,48 +7,53 @@ from IPython.display import clear_output
 import tensorflow as tf
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
-from src_ai.nntf_architecture import nn_dnn_autoencoder as nn_autoencoder
+from src_ai.nntf_architecture import dnn_autoencoder as nn_topology
 
-class NeuralNetwork (nn_autoencoder):
-    def __init__(self, input_size: int):
-        nn_autoencoder.__init__(self, input_size)
-
+class NeuralNetwork (nn_topology):
+    def __init__(self):
+        nn_topology.__init__(self)
         # --- Properties
         self.os_type = os.name
-
+        self.device = self.__setup()
         self.__path2models = "models"
         self.__path2logs = "logs"
         self.__path2fig = "figures"
+        # --- Properties (Model)
+        #self.model = None
+        #self.model_name = None
+        self.model_input_size = 0
+        self.__model_name = None
+        self.__model_loaded = False
+        self.__model_trained = False
+
         # --- Definition of the data
         self.__data_input = None
         self.__data_output = None
-
         # --- Splitting into training and validation datasets
         self.__train_input = None
         self.__train_output = None
         self.__valid_input = None
         self.__valid_output = None
-        # --- Model instanziation
-        self.__model_trained = False
+
+
+    def defineModel(self, model, input_size: int):
+        pass
+        #self.model = model
+        #self.model_input_size = input_size
 
     def initTrain(self, train_size: float, valid_size: float, shuffle: bool, name_addon: str):
         self.__model_name = self.model_name + name_addon + "_TensorFlow"
-
-        self.model = self.model0
 
         self.train_size = train_size
         self.valid_size = valid_size
         self.do_shuffle_data = shuffle
 
-        self.device = self.__setup()
-
     def initPredict(self, model_name: str):
-        self.__model_name = model_name + "_TensorFlow"
+        self.__model_name = model_name + "_Tensorflor"
 
         model = self.load_results()
         print(["... ANN is loaded: ", self.__model_name])
         self.__model_trained = True
-
         return model
 
     def load_data_direct(self, train_in: np.ndarray, train_out: np.ndarray, valid_in: np.ndarray, valid_out: np.ndarray, do_norm: bool):
@@ -94,7 +97,8 @@ class NeuralNetwork (nn_autoencoder):
         self.__data_output = output.astype("float")
 
         # --- Normalization of the data
-        # TODO: Adding normalization of the data (1st: float, [-1, +1] - 2nd: int, fullscale adc in FPGA)
+        # (1st: float, [-1, +1] - 2nd: int, fullscale adc in FPGA)
+        # TODO: Select the normalization mode
         if do_norm:
             self.__data_input = self.__norm_data(self.__data_input)
             self.__data_output = self.__norm_data(self.__data_output)
@@ -113,11 +117,20 @@ class NeuralNetwork (nn_autoencoder):
         self.__train_output = tf.convert_to_tensor(Xout)
         self.__valid_output = tf.convert_to_tensor(Yout)
 
+    def get_train_data(self):
+        train_in = self.__train_input
+        train_out = self.__train_output
+        valid_in = self.__valid_input
+        valid_out = self.__valid_output
+
+        return (train_in, train_out, valid_in, valid_out)
+
+
     def print_model(self):
         print("... printing structure and parameters of the neural network")
         self.model.summary()
 
-    def train_model(self, batch_size: float, epochs: int, learning_rate: float):
+    def do_training(self):
         # conf_mat = ConfusionMatrix(
         #     self.model,
         #     self.__valid_input,
@@ -125,22 +138,22 @@ class NeuralNetwork (nn_autoencoder):
         #     classes_list=classes_list,
         #     log_dir=self.__path2logs
         # )
-        callbacks_list = [PlotLearning(epochs, self.__path2fig)]
+        callbacks_list = [PlotLearning(self.set_epochs, self.__path2fig)]
 
         # Overview of optimizer:    https://www.tensorflow.org/api_docs/python/tf/keras/optimizers
         # Overview of Losses:       https://www.tensorflow.org/api_docs/python/tf/keras/losses
         # Overview of Metrics:      https://www.tensorflow.org/api_docs/python/tf/keras/metrics
         self.model.compile(
-            optimizer="sgd",
-            loss=["mae"],
-            metrics=["mse", "cosine_similarity"]
+            optimizer=self.set_optimizer,
+            loss=self.set_loss,
+            metrics=self.set_metric
         )
         # verbose = 0: None, 1: progress bar, 2: one line per epoch
         self.model.fit(
             x=self.__train_input,
             y=self.__train_output,
-            epochs=epochs,
-            batch_size=batch_size,
+            epochs=self.set_epochs,
+            batch_size=self.set_batchsize,
             verbose=1,
             validation_data=(self.__valid_input, self.__valid_output),
             callbacks=[callbacks_list],
@@ -154,25 +167,19 @@ class NeuralNetwork (nn_autoencoder):
         self.__model_trained = True
         print(f"... ANN model is trained with score: {self.score}")
 
-    def predict_model(self, x_input: np.ndarray):
+    def do_prediction(self, x_input):
         if(self.__model_trained):
-            Yout = self.model.predict(
-                x=x_input,
-                use_multiprocessing=False
-            )
+            Yout = self.model(x_input)
+            Feat = self.encoder(x_input)
         else:
+            Feat = []
             Yout = []
             print("... model not loaded - Please check before running prediction")
 
-        return Yout
+        return Feat, Yout
 
-    def get_train_data(self):
-        valid_in = self.__valid_input
-        valid_out = self.__valid_output
 
-        return (valid_in, valid_out)
-
-    def save_results(self, model_save: bool):
+    def save_results(self, model_save: bool = True):
         path2file = os.path.join(self.__path2models, self.__model_name)
         if model_save:
             self.model.save(filepath=path2file)

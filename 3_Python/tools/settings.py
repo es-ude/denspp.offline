@@ -1,13 +1,14 @@
 import numpy as np
 
 class Settings:
+    # TODO: Variablen abspecken, sodass nur relevante Werte übernommen werden!
     # SETTINGS ABOUT FRAMEWORK
     path2data = "C:/HomeOffice/Arbeit/B_MERCUR_SpAIke/6_Daten"
     load_data_set = 3
     load_data_point = 0
 
     realtime_mode = 0               # Realtime - Mode(0: offline, 1: online)
-    ch_sel = -1                      # Auswahl der Elektroden(= -1, ruft alle Daten auf)
+    ch_sel = -1                     # Auswahl der Elektroden(= -1, ruft alle Daten auf)
     desired_fs = 50e3               # Neuabtastungs-Rate der Eingangsdaten
     t_range = np.array([0])         # Angabe des zu betrachteten Zeitfensters [Start, Ende] in sec.
 

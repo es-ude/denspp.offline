@@ -7,7 +7,8 @@ do_save = 1;
 %% --- Vorverarbeitung: Datenaufnahme
 % --- Daten laden
 path2file = "../data/";
-filename = "test_File2";
+%filename = "2023-03-16_Martinez2009_File1";
+filename = "2023-03-16_Pedeira2012_File2";
 addon = "_Sorted";
 
 load(strcat(path2file, filename, '.mat'));
@@ -232,11 +233,21 @@ if(do_plot)
     
         IteNo = 1;
         for idx = 1:1:length(selID)
+            
+
+            % Decision, if more than 100 frames
             Yin = frames_in(new_frames_pos{selID(idx)},:);
+            if(size(Yin,1) > 2000)
+                selFrames = randperm(size(Yin,1), 2000);
+            else
+                selFrames = 1:size(Yin,1);
+            end
+            
+            % Plot
             subplot(SubFig(1), SubFig(2), IteNo);
             IteNo = IteNo +1;
             
-            plot(Yin', 'b');
+            plot(Yin(selFrames,:)', 'b');
             hold on; grid on;
             plot(mean(Yin), 'r', 'Linewidth', 1);
     
