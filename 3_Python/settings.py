@@ -1,31 +1,31 @@
 import numpy as np
 
 class Settings:
-    # SETTINGS ABOUT FRAMEWORK
+    # SETTINGS ABOUT DATA SOURCE
     path2data = "C:/HomeOffice/Arbeit/B_MERCUR_SpAIke/6_Daten"
     load_data_set = 1
     load_data_point = 1
-
-    realtime_mode = 0               # Realtime - Mode(0: offline, 1: online)
-    ch_sel = -1                      # Auswahl der Elektroden(= -1, ruft alle Daten auf)
-    desired_fs = 50e3               # Neuabtastungs-Rate der Eingangsdaten
-    t_range = np.array([0])         # Angabe des zu betrachteten Zeitfensters [Start, Ende] in sec.
+    t_range = np.array([0])  # Angabe des zu betrachteten Zeitfensters [Start, Ende] in sec.
+    ch_sel = -1  # Auswahl der Elektroden(= -1, ruft alle Daten auf)
 
     # SETTINGS ABOUT FRAMEWORK
-    udd = 0.6  # Supply Voltage
-    uss = -0.6
-    version = 1                     # Version of SpikeSorting Pipeline (0: normal - 1: with DAE)
+    version = 1  # Version of SpikeSorting Pipeline (0: normal - 1: with DAE)
 
-    # --- Properties of the analogue pre-amplificaiton
+    # --- Properties of the analogue front-end
+    # Supply Voltage
+    udd = 0.6
+    uss = -0.6
+    # Analogue pre-amplification
+    fs_ana = 50e3  # Neuabtastungs-Rate der Eingangsdaten
     gain_ana = 40
-    n_filt_ana = 1
+    n_filt_ana = 4
     f_filt_ana = np.array([100, 8e3])
     delay_ana = 100e-6
-    # --- Properties of ADC
+    # ADC
     oversampling = 1
     n_bit_adc = 12
     d_uref = 0.1
-    sample_rate = 20e3
+    fs_adc = 20e3
     # 20e3 für 40 samples per frame
     # 32e3 for 64 samples per frame
 

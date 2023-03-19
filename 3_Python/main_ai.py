@@ -1,14 +1,17 @@
+import os.path
+
 import numpy as np
 from datetime import date
 import matplotlib.pyplot as plt
 import src.plotting as pltSpAIke
-import src_ai.processing_noise as aiprocess
+from src_ai.processing_noise import generate_noiseframe
+from src_ai.processing_data import prepare_data_ae_training
 
 from scipy.io import savemat, loadmat
 # from src_ai.nn_pytorch import NeuralNetwork
-# from src_ai.nnpy_architecture import dnn_autoencoder
+# from src_ai.nnpy_architecture import dnn_autoencoder as nn_network
 from src_ai.nn_tensorflow import NeuralNetwork
-from src_ai.nntf_architecture import dnn_autoencoder
+from src_ai.nntf_architecture import cnn_autoencoder as nn_network
 
 # TODO: Implement early break training modus
 if __name__ == "__main__":
@@ -16,20 +19,21 @@ if __name__ == "__main__":
     print("\nTrain modules of spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
 
     # ----- Settings for AI -----
+    path2data = 'src_ai/data'
+    file_name = '2023-03-16_Martinez2009_File1_Sorted.mat'
     do_addnoise = False
     NoFramesNoise = 1
-
-    path2file = 'tools/data/denoising_dataset_File1_Sorted.mat'
-    model_name = "_TEST2"
+    # Setzen des Ignorier-Clusters in Line 89
 
     # ------ Loading Data
     datumHeute = date.today()
-    str_datum = datumHeute.strftime("%Y-%m-%d")
+    str_datum = datumHeute.strftime("%Y%m%d-%H%M%S")
     print(f"Running on {str_datum}")
     print("... loading the datasets")
 
     data_type = False
-    if data_type:
+    path2file = os.path.join(path2data, file_name)
+    if file_name[-3:] == "npz":
         # --- NPZ reading file
         npzfile = np.load(path2file)
         frames_in = npzfile['arr_0']
@@ -63,7 +67,7 @@ if __name__ == "__main__":
     # TODO: Adding noise to spike frames from datasets (adding fake frames?)
     # Step 2: Adding generated noise to the input
     if do_addnoise:
-        (noise_framesIn, noise_framesOut) = aiprocess.generate_frames(
+        (noise_framesIn, noise_framesOut) = generate_noiseframe(
             no_frames=NoFramesNoise,
             width_frames=frames_in.shape[1]
         )
@@ -81,8 +85,9 @@ if __name__ == "__main__":
     # TrainDataOut = data[len(TrainDataIn):][:]
 
     # Step 3: Splitting data for training of the denoising autoencoder
-    (Xin, Yin, cluster_in, Xout, Yout, cluster_out) = aiprocess.prepare_autoencoder_data(
-        TrainDataIn, TrainDataOut, frames_cluster,
+    (Xin, Yin, cluster_in, Xout, Yout, cluster_out) = prepare_data_ae_training(
+        TrainDataIn, TrainDataOut,
+        cluster=frames_cluster, do_cluster=NoCluster[1:],
         train_size=0.7, valid_size=0.2
     )
 
@@ -91,13 +96,13 @@ if __name__ == "__main__":
     # --- Preparing PyTorch network
     nnTorch = NeuralNetwork()
     nnTorch.defineModel(
-        model=dnn_autoencoder(),
+        model=nn_network(),
         input_size=TrainDataIn.shape[1]
     )
     nnTorch.initTrain(
         train_size=0.7, valid_size=0.2,
         shuffle=False,
-        name_addon=model_name
+        name_addon=""
     )
     # --- Loading data
     nnTorch.load_data_direct(
@@ -106,21 +111,23 @@ if __name__ == "__main__":
         do_norm=True
     )
     # --- Training phase and Saving the model
-    #nnTorch.print_model()
+    nnTorch.print_model()
     nnTorch.do_training()
     nnTorch.save_results()
 
     # --- Predicting results
     (TrainIn, TrainOut, ValidIn, ValidOut) = nnTorch.get_train_data()
+    print("... do validation of network")
     feat, y_pred = nnTorch.do_prediction(ValidIn)
 
     # --- Saving data for MATLAB (Wichtig: NumPy Arrays zum Übertragen)
+    print("")
     matdata = {"Train_Input": TrainIn.numpy(), "Train_Output": TrainOut.numpy(), "PredIn": ValidIn.numpy(), "PredOut": ValidOut.numpy(), "YPred": y_pred.numpy(), "Feat": feat.numpy(), "Cluster": cluster_out}
-    savemat("logs/" + str_datum + "_predicted_data.mat", matdata)
+    savemat("logs/" + str_datum + "_" + nnTorch.set_name + ".mat", matdata)
 
     # --- Plotting
     pltSpAIke.plot_frames(TrainDataIn, TrainDataOut)
-    #pltSpAIke.plot_frames(Yin, y_pred)
+    pltSpAIke.plot_frames(Yin, y_pred)
     plt.show(block=False)
 
     print("\nThis is the End, ... my only friend, ... the end")

@@ -6,10 +6,7 @@ from settings import Settings
 # TODO: Trennung der Klassen zwischen Verarbeitung des Bitstreams i) ganzer Datensatz und ii) sample-wise
 
 class AFE:
-    # TODO: Testmethoden müssen generiert werden, um Package draus zu generieren (Leo weiß wie)
-    # TODO: Realtime-Mode (= Embedded Mode) nicht getestet
     def __init__(self, setting: Settings):
-        self.__realtime_mode = setting.realtime_mode
         # --- Power supply
         self.__udd = setting.udd
         self.__uss = setting.uss
@@ -17,10 +14,8 @@ class AFE:
 
         # --- Analogue pre-amp
         self.__gain_ana = setting.gain_ana
-        self.sample_rate_ana = setting.desired_fs
-        self.__n_filt_ana = setting.n_filt_ana
-        self.__f_filt_ana = setting.f_filt_ana
-        iir_ana_result = butter(self.__n_filt_ana, 2 * self.__f_filt_ana / self.sample_rate_ana, "bandpass")
+        self.sample_rate_ana = setting.fs_ana
+        iir_ana_result = butter(setting.n_filt_ana, 2 * setting.f_filt_ana / self.sample_rate_ana, "bandpass")
         (self.__b_iir_ana, self.__a_iir_ana) = iir_ana_result[0], iir_ana_result[1]
         self.__input_delay_ana = round(setting.delay_ana * self.sample_rate_ana)
 
@@ -29,7 +24,7 @@ class AFE:
         self.__n_bit_adc = setting.n_bit_adc
         self.__lsb = np.diff(self.__u_range) / np.power(2, self.__n_bit_adc)
         self.__partition_adc = self.__u_range[0] + np.arange(0, np.power(2, self.__n_bit_adc), 1) * self.__lsb + self.__lsb / 2
-        self.sample_rate_adc = setting.sample_rate
+        self.sample_rate_adc = setting.fs_adc
         self.__oversampling_ratio = setting.oversampling
         (self.__p_ratio, self.__q_ratio) = (
             Fraction(self.sample_rate_adc * self.__oversampling_ratio / self.sample_rate_ana)
@@ -38,14 +33,9 @@ class AFE:
         )
 
         # --- Digital pre-processing
-        self.__gain_dig = 1
-        self.__n_filt_dig = setting.n_filt_dig
-        self.__f_filt_dig = setting.f_filt_dig
-        iir_dig_result = butter(self.__n_filt_dig, 2 * self.__f_filt_dig / self.sample_rate_adc, "bandpass")
+        iir_dig_result = butter(setting.n_filt_dig, 2 * setting.f_filt_dig / self.sample_rate_adc, "bandpass")
         (self.__b_iir_dig, self.__a_iir_dig) = iir_dig_result[0], iir_dig_result[1]
-        iir_lpf_result = butter(
-            self.__n_filt_dig, 2 * np.array([1e-2, self.__f_filt_dig[0]]) / self.sample_rate_adc, "bandpass"
-        )
+        iir_lpf_result = butter(setting.n_filt_dig, 2 * np.array([1e-2, setting.f_filt_dig[0]]) / self.sample_rate_adc, "bandpass")
         self.__b_iir_lpf, self.__a_iir_lpf = iir_lpf_result[0], iir_lpf_result[1]
         self.__input_delay_dig = round(setting.delay_dig * self.sample_rate_adc)
 
@@ -55,64 +45,57 @@ class AFE:
         self.__mean_window = setting.x_window_mean
         self.frame_length = round(setting.x_window_length * self.sample_rate_adc)
         self.__frame_offset = round(setting.x_offset * self.sample_rate_adc)
+        self.offset_frame = self.__frame_offset
         self.frame_neg = round(setting.x_window_start * self.sample_rate_adc)
         self.frame_pos = self.frame_length - self.frame_neg
 
-        # --- Extension for realtime processing
-        self.__mem_iir_ana = self.__ucm + np.zeros((1, len(self.__b_iir_ana) - 1))
-        self.__mem_iir_dig = np.zeros((1, len(self.__b_iir_dig) - 1)) + np.power(2, self.__n_bit_adc - 1)
-        self.__mem_sda = np.zeros((1, 2 * self.__dx_sda[-1] + 1))
-        self.__mem_thres = np.zeros((1, 100))
-        self.__mem_frame = np.zeros((1, self.frame_length))
+    # TODO: Adding noise to analogue pre-amplifier (settable)
+    def pre_amp(self, uin: np.ndarray) -> [np.ndarray, np.ndarray]:
+        u_out = self.__ucm + self.__gain_ana * filtfilt(self.__b_iir_ana, self.__a_iir_ana, uin - self.__ucm)
+        u_lfp = self.__ucm + self.__gain_ana * filtfilt(self.__b_iir_lpf, self.__a_iir_lpf, uin - self.__ucm)
 
-    def pre_amp(self, uin):
-        if self.__realtime_mode:
-            u0 = uin - self.__ucm
-            du0 = self.__a_iir_ana @ np.array([u0, *-self.__mem_iir_ana[0, :]]).T
-            du1 = self.__b_iir_ana @ [du0, *self.__mem_iir_ana[0, :]]
-            self.__mem_iir_ana[0, :] = np.array(du0, self.__mem_iir_ana[0])
-            u_out = self.__gain_ana * du1 + self.__ucm
-            u_lfp = self.__ucm
-        else:
-            u_out = self.__ucm + self.__gain_ana * filtfilt(self.__b_iir_ana, self.__a_iir_ana, uin - self.__ucm)
-            u_lfp = self.__ucm + self.__gain_ana * filtfilt(self.__b_iir_lpf, self.__a_iir_lpf, uin - self.__ucm)
         # voltage clamping
         u_out[u_out >= self.__udd] = self.__udd
         u_out[u_out <= self.__uss] = self.__uss
         return u_out, u_lfp
 
+    # TODO: Implementieren (siehe MATLAB)
+    def pre_amp_chopper(self, uin: np.ndarray) -> [np.ndarray, np.ndarray]:
+        return uin, uin
+
     def time_delay_ana(self, uin: np.ndarray) -> np.ndarray:  # review
-        if self.__realtime_mode:
-            ...
-        else:
-            mat = np.zeros(shape=(self.__input_delay_ana,), dtype=float)
-            uout = np.concatenate((mat, uin[0:uin.size-self.__input_delay_ana]), axis=None)
+        mat = np.zeros(shape=(self.__input_delay_ana,), dtype=float)
+        uout = np.concatenate((mat, uin[0:uin.size-self.__input_delay_ana]), axis=None)
         return uout
 
-    def adc_nyquist(self, uin: np.ndarray, EN: bool) -> np.ndarray:
+    # TODO: Adding quantizazion noise (settable)
+    def adc_nyquist(self, uin: np.ndarray, do_sample: bool) -> np.ndarray:
         # TODO: ADC-Funktion mit Oversampling noch einfügen
         # clamping through supply voltage
         uin_adc = uin
         uin_adc[uin > self.__u_range[1]] = self.__u_range[1]
         uin_adc[uin < self.__u_range[0]] = self.__u_range[0]
 
-        if self.__realtime_mode:
-            x_out = self.__adc_conv(uin, EN)
-        else:
-            # Downsampling of input
-            uin0 = uin_adc[0] + resample_poly(uin_adc - uin_adc[0], self.__p_ratio, self.__q_ratio)
-            max_index = int(np.floor(uin0.size / self.__oversampling_ratio) * self.__oversampling_ratio)
-            sub_sampled = np.mean(uin0[:max_index].reshape(-1, self.__oversampling_ratio), axis=1)
-            if max_index < uin0.size:
-                sub_sampled = np.append(sub_sampled, np.mean(uin0[max_index:]))
+        uin0 = uin_adc[0] + resample_poly(uin_adc - uin_adc[0], self.__p_ratio, self.__q_ratio)
+        max_index = int(np.floor(uin0.size / self.__oversampling_ratio) * self.__oversampling_ratio)
+        sub_sampled = np.mean(uin0[:max_index].reshape(-1, self.__oversampling_ratio), axis=1)
+        if max_index < uin0.size:
+            sub_sampled = np.append(sub_sampled, np.mean(uin0[max_index:]))
 
-            x_out = self.__adc_conv(sub_sampled, EN)
+        x_out = self.__adc_conv(sub_sampled, do_sample)
 
         return x_out
 
-    def __adc_conv(self, uin: np.ndarray, en: bool):
-        # en defines in realtime-mode if a conversion is running or not
-        if en:
+    # TODO: Implementieren (siehe MATLAB)
+    def adc_sar(self, uin: np.ndarray, do_sample: bool) -> np.ndarray:
+        return uin
+
+    # TODO: Implementieren (siehe MATLAB)
+    def adc_deltasigma(self, uin: np.ndarray, do_sample: bool) -> np.ndarray:
+        return uin
+
+    def __adc_conv(self, uin: np.ndarray, do_sample: bool):
+        if do_sample:
             rng = self.__u_range[-1] - self.__u_range[0]
             x_out = np.rint((2**self.__n_bit_adc - 1) * (uin - self.__ucm) / rng)  # Digital value
             noise_quant = (2*(uin - self.__lsb * x_out)/self.__lsb)
@@ -124,23 +107,20 @@ class AFE:
         return x_out
 
     def time_delay_dig(self, uin: np.ndarray) -> np.ndarray:  # review
-        if self.__realtime_mode:
-            ...
-        else:
-            mat = np.zeros(shape=(self.__input_delay_dig,), dtype=int)
-            xout = np.concatenate((mat, uin[0:uin.size-self.__input_delay_dig]), axis=None)
+        mat = np.zeros(shape=(self.__input_delay_dig,), dtype=int)
+        xout = np.concatenate((mat, uin[0:uin.size-self.__input_delay_dig]), axis=None)
         return xout
 
-    def dig_filt(self, xin: np.ndarray) -> np.ndarray:
-        if self.__realtime_mode:
-            du0 = self.__a_iir_dig @ np.array([xin, *-self.__mem_iir_dig[0, :]])
-            du1 = self.__b_iir_dig @ [du0, *self.__mem_iir_dig[0, :]]
-            self.__mem_iir_dig[0, :] = np.array(du0, self.__mem_iir_dig[0])
-            xout = self.__gain_dig * round(du1)
-        else:
-            xout = self.__gain_dig * (filtfilt(self.__b_iir_dig, self.__a_iir_dig, xin)).astype("int16")
-
+    def dig_filt_iir(self, xin: np.ndarray) -> np.ndarray:
+        xout = filtfilt(self.__b_iir_dig, self.__a_iir_dig, xin).astype("int16")
         return xout
+
+    # TODO: Implementieren (siehe MATLAB)
+    def dig_filt_fir(self, xin: np.ndarray) -> np.ndarray:
+        return xin
+
+    def dig_filt_cic(self, xin: np.ndarray) -> np.ndarray:
+        return xin
 
     # ---Thershold determination of neural input
     def thres(self, xin: np.ndarray, mode: int) -> np.ndarray:
@@ -174,118 +154,105 @@ class AFE:
 
         return x_out
 
-    def spike_detection(self, xin:np.ndarray, mode: int, do_sda: bool):
+    def spike_detection(self, xin: np.ndarray, mode: int, do_sda: bool) -> [np.ndarray, np.ndarray]:
         # Selection of SDA is made via the vector length of dXsda
         # length(x) == 0: applied on raw datastream
         # length(x) == 1: with dX = 1 --> NEO, dX > 1 --> k-NEO
         # length(x) > 1: M - TEO
 
         ksda = self.__dx_sda
-        if self.__realtime_mode:
-            # execution of realtime mode spike detection with Memory adjustment
-            if do_sda:
-                # TODO: SDA in Realtime noch nicht lauffähig
-                self.__mem_sda = np.array([xin, self.__mem_sda[:-1]])
-                x_sda = self.__mem_sda[ksda + 1] ** 2 - self.__mem_sda[0, 0] * self.__dx_sda[-1, -1]
-                self.__x_sda_old = x_sda
-            else:
-                x_sda = self.__x_sda_old
+        if ksda.size == 0:
+            x_mteo = xin
         else:
-            if ksda.size == 0:
-                x_mteo = xin
+            # execution of parallel spikeDetection
+            if xin.dtype == np.ushort:
+                x_mteo = np.zeros(shape=(ksda.size, xin.size), dtype=np.ushort)
             else:
-                # execution of parallel spikeDetection
-                if xin.dtype == np.ushort:
-                    x_mteo = np.zeros(shape=(ksda.size, xin.size), dtype=np.ushort)
-                else:
-                    x_mteo = np.zeros(shape=(ksda.size, xin.size))
+                x_mteo = np.zeros(shape=(ksda.size, xin.size))
 
-                for idx in range(0, ksda.size):
-                    ksda0 = ksda[idx]
-                    x0 = np.power(xin[ksda0:-ksda0, ], 2) - xin[:-2 * ksda0, ] * xin[2 * ksda0:, ]
-                    x_mteo[idx, :] = np.concatenate([x0[:ksda0, ], x0, x0[-ksda0:, ]], axis=None)
+            for idx in range(0, ksda.size):
+                ksda0 = ksda[idx]
+                x0 = np.power(xin[ksda0:-ksda0, ], 2) - xin[:-2 * ksda0, ] * xin[2 * ksda0:, ]
+                x_mteo[idx, :] = np.concatenate([x0[:ksda0, ], x0, x0[-ksda0:, ]], axis=None)
 
         x_sda = np.max(x_mteo, 0)
         x_thr = self.thres(x_sda, mode)
 
         return x_sda, x_thr
 
-    def frame_generation(self, xraw: np.ndarray, xsda: np.ndarray, xthr: np.ndarray):
+    def frame_generation(self, xraw: np.ndarray, xsda: np.ndarray, xthr: np.ndarray) -> [np.ndarray, np.ndarray]:
         # Trigger generation
         result = ((xsda - xthr) > 0)
         xtrg = result.astype("int")
 
-        if self.__realtime_mode:
-            # TODO: Methode für Embedded einfügen und testen
+        frame = np.array([[]])
+        x_pos0 = np.array([[]])
+
+        if np.sum(xtrg) == 0:
+            # Abort if no results are available
             ...
         else:
-            frame = np.array([[]])
-            x_pos0 = np.array([[]])
+            # Extract x- position from the trigger signal
+            width = 5
+            x_pos = np.convolve(xtrg, np.ones(width), mode="same")
+            (x_pos0, _) = find_peaks(x_pos, distance=self.frame_length)
 
-            if np.sum(xtrg) == 0:
-                # Abort if no results are available
-                ...
-            else:
-                # Extract x- position from the trigger signal
-                width = 5
-                x_pos = np.convolve(xtrg, np.ones(width), mode="same")
-                (x_pos0, _) = find_peaks(x_pos, height=1.8, distance=self.frame_length)
-
-                frame = np.zeros(shape=(x_pos0.size, self.frame_length+self.__frame_offset), dtype="int")
-                # --- Generate frames
-                for idx in range(0, len(x_pos0)):
-                    dx_neg = x_pos0[idx]
-                    dx_pos = x_pos0[idx] + self.frame_length + self.__frame_offset
-                    if dx_neg >= 1 and dx_pos <= len(xtrg):
-                        frame0 = xraw[dx_neg:dx_pos]
-                        frame[idx, :] = frame0
+            lgth_frame = self.frame_length + 2 * self.__frame_offset
+            frame = np.zeros(shape=(x_pos0.size, lgth_frame), dtype="int")
+            # --- Generate frames
+            idx = 0
+            for pos_frame in x_pos0:
+                dx_neg = pos_frame
+                dx_pos = pos_frame + lgth_frame
+                frame[idx, :] = xraw[dx_neg:dx_pos]
+                idx += 1
 
         return frame, x_pos0
 
-    def frame_aligning(self, frame_in: np.ndarray, align_mode: int, en: bool) -> np.ndarray:
+    def frame_aligning(self, frame_in: np.ndarray, align_mode: int) -> np.ndarray:
         # ---Check if no results are available
-        if self.__realtime_mode:
-            # TODO: Methode für Embedded einfügen und testen
-            if en:
-                ...
-        else:
-            idx = 0
-            frame_out = np.zeros(shape=(frame_in.shape[0], self.frame_length), dtype="int")
-            for row in frame_in:
-                frame0 = row
-                frame = np.convolve(frame0, np.ones(2), mode="same")
+        idx = 0
+        frame_out = np.zeros(shape=(frame_in.shape[0], self.frame_length), dtype="int")
+        for row in frame_in:
+            frame0 = row
+            frame = np.convolve(frame0, np.ones(2), mode="same")
+            # --- Window of finding feature
+            idx0 = int(self.__frame_offset)
+            idx1 = row.size - idx0
 
-                # --- Aligning
-                if align_mode == 1:     # align to maximum
-                    max_pos = np.argmax(frame, axis=None)
-                elif align_mode == 2:   # align to minimum
-                    max_pos = np.argmin(frame, axis=None)
-                elif align_mode == 3:   # align to positive turning point
-                    max_pos = np.argmax(np.diff(frame), axis=None)
-                    max_pos = max_pos + 1
-                elif align_mode == 4:   # align to negative turning point
-                    max_pos = np.argmin(np.diff(frame), axis=None)
-                    max_pos = max_pos + 1
+            # --- Aligning
+            # TODO: Fenster-Methode einfügen
+            search_frame = frame #[idx0:idx1]
+            if align_mode == 1:     # align to maximum
+                max_pos = np.argmax(search_frame, axis=None)
+            elif align_mode == 2:   # align to minimum
+                max_pos = np.argmin(search_frame, axis=None)
+            elif align_mode == 3:   # align to positive turning point
+                max_pos = np.argmax(np.diff(search_frame), axis=None)
+                max_pos = max_pos + 1
+            elif align_mode == 4:   # align to negative turning point
+                max_pos = np.argmin(np.diff(search_frame), axis=None)
+                max_pos = max_pos + 1
 
-                # --- Do the Aligning (Detection of non-full frames due to offset edges)
-                dxneg = max_pos - self.frame_neg
-                dxpos = max_pos + self.frame_pos
+            # --- Do the Aligning (Detection of non-full frames due to offset edges)
+            dxneg = max_pos - self.frame_neg
+            dxpos = dxneg + self.frame_length
 
-                if dxpos > len(frame0):
-                    # Missing informations at upper edge
-                    mat = np.ones(shape=(1, np.abs(dxpos - len(frame0) +1))) * frame0[-1]
-                    frame1 = np.concatenate((frame0[dxneg:-1], mat), axis=None)
-                elif dxneg <= 0:
-                    # Missing informations at downer edge
-                    mat = np.ones(shape=(1, np.abs(dxneg))) * frame0[0]
-                    frame1 = np.concatenate((mat, frame0[0:dxpos]), axis=None)
-                else: # Normal state
-                    frame1 = frame0[dxneg:dxpos]
+            if dxpos > len(frame0):
+                # Missing informations at upper edge
+                mat = np.ones(shape=(1, np.abs(dxpos - len(frame0) +1))) * frame0[-1]
+                frame1 = np.concatenate((frame0[dxneg:-1], mat), axis=None)
+            elif dxneg <= 0:
+                # Missing informations at downer edge
+                mat = np.ones(shape=(1, np.abs(dxneg))) * frame0[0]
+                frame1 = np.concatenate((mat, frame0[0:dxpos]), axis=None)
+            else: # Normal state
+                frame1 = frame0[dxneg:dxpos]
 
-                frame_out[idx,:] = frame1
-                idx += 1
+            frame_out[idx,:] = frame1
+            idx += 1
+
         return frame_out
-
 
     def calculate_snr(self, yin: np.ndarray, ymean: np.ndarray):
         A = np.sum(np.square(yin))

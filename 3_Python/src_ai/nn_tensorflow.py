@@ -19,8 +19,6 @@ class NeuralNetwork (nn_topology):
         self.__path2logs = "logs"
         self.__path2fig = "figures"
         # --- Properties (Model)
-        #self.model = None
-        #self.model_name = None
         self.model_input_size = 0
         self.__model_name = None
         self.__model_loaded = False
@@ -42,7 +40,7 @@ class NeuralNetwork (nn_topology):
         #self.model_input_size = input_size
 
     def initTrain(self, train_size: float, valid_size: float, shuffle: bool, name_addon: str):
-        self.__model_name = self.model_name + name_addon + "_TensorFlow"
+        self.__model_name = self.set_name + name_addon + "_TensorFlow"
 
         self.train_size = train_size
         self.valid_size = valid_size
@@ -138,7 +136,7 @@ class NeuralNetwork (nn_topology):
         #     classes_list=classes_list,
         #     log_dir=self.__path2logs
         # )
-        callbacks_list = [PlotLearning(self.set_epochs, self.__path2fig)]
+        callbacks_list = [PlotLearning(self.set_epochs, self.__path2fig, self.set_name)]
 
         # Overview of optimizer:    https://www.tensorflow.org/api_docs/python/tf/keras/optimizers
         # Overview of Losses:       https://www.tensorflow.org/api_docs/python/tf/keras/losses
@@ -148,6 +146,10 @@ class NeuralNetwork (nn_topology):
             loss=self.set_loss,
             metrics=self.set_metric
         )
+
+        # --- Training phase
+        start_time = time.time()
+        print("... start training")
         # verbose = 0: None, 1: progress bar, 2: one line per epoch
         self.model.fit(
             x=self.__train_input,
@@ -160,6 +162,12 @@ class NeuralNetwork (nn_topology):
             shuffle=self.do_shuffle_data,
             use_multiprocessing=False
         )
+
+        end_time = time.time()
+        run_time = (end_time - start_time)
+        print(f'... training done after runtime of {run_time} s')
+
+        # --- Validation phase
         self.score = self.model.evaluate(
             x=self.__valid_input,
             y=self.__valid_output
@@ -169,8 +177,8 @@ class NeuralNetwork (nn_topology):
 
     def do_prediction(self, x_input):
         if(self.__model_trained):
-            Yout = self.model(x_input)
             Feat = self.encoder(x_input)
+            Yout = self.decoder(Feat)
         else:
             Feat = []
             Yout = []
@@ -227,7 +235,6 @@ class NeuralNetwork (nn_topology):
         # for idx in range(frames_in.shape[0]):
         #    frame = frames_in[idx, :]
         #    frames_out[idx, :] = frame/np.max(np.abs(frame))
-
         return frames_out
 
 
@@ -235,10 +242,11 @@ class PlotLearning(tf.keras.callbacks.Callback):
     """
     Callback to plot the learning curves of the model during training.
     """
-    def __init__(self, noEpoch: int, path2figures: str):
+    def __init__(self, noEpoch: int, path2figures: str, model_name: str):
         self.__no_epoch = noEpoch
-        self.__fig_size = (12,5)
+        self.__fig_size = (12, 5)
         self.__path2figs = path2figures
+        self.__name = model_name
 
     def on_train_begin(self, logs={}):
         self.metrics = {}
@@ -287,6 +295,7 @@ class PlotLearning(tf.keras.callbacks.Callback):
 
             # --- Saving Figure
             dateToday = date.today().strftime("%Y%m%d")
-            figname = os.path.join(self.__path2figs, dateToday + "_TrainingResults_PyTorch")
+            filename = dateToday + "_" + self.__name + "_TrainTF"
+            figname = os.path.join(self.__path2figs, filename)
             plt.savefig(figname+'.jpg', transparent=True, format='jpg')
             plt.savefig(figname+'.eps', transparent=True, format='eps')

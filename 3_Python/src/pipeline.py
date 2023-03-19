@@ -3,22 +3,18 @@ import numpy as np
 from settings import Settings
 from src.afe import AFE
 from src.fec import FEC
-
-import tensorflow.keras as nntf
-
 #from src_ai.nn_pytorch import NeuralNetwork
 from src_ai.nn_tensorflow import NeuralNetwork
 
-class PipelineSpike (AFE, FEC, NeuralNetwork, nntf.Model):
+class PipelineSpike (AFE, FEC, NeuralNetwork):
     def __init__(self, settings: Settings):
         AFE.__init__(self, settings)
         FEC.__init__(self, settings)
-        NeuralNetwork.__init__(self, 40)
-        nntf.Model.__init__(self)
+        NeuralNetwork.__init__(self)
 
         # Settings for AI
-        self.denoising_name = "dnn_dae_v2_TEST"
-        self.denoising_model = nntf.models.Sequential()
+        self.path2model = "models"
+        self.denoising_model = None
 
         # Settings
         self.version = settings.version
@@ -54,11 +50,11 @@ class PipelineSpike (AFE, FEC, NeuralNetwork, nntf.Model):
         if self.__version == 1:
             self.denoising_model = self.initPredict(self.denoising_name)
 
-    def runPipeline(self, doCalc) -> None:
+    def runPipeline(self) -> None:
         if self.version == 0:
-            self.__spikesorting_pipeline_v0(doCalc)
+            self.__spikesorting_pipeline_v0()
         elif self.version == 1:
-            self.__spikesorting_pipeline_v1(doCalc)
+            self.__spikesorting_pipeline_v1()
         else:
             ValueError("System error: Pipeline version is not available!")
 
@@ -69,7 +65,7 @@ class PipelineSpike (AFE, FEC, NeuralNetwork, nntf.Model):
         TN = 0  # number of true negative
         FP = 0  # number of false positive
         FN = 0  # number of false negative
-        tol = 2*self.frame_length
+        tol = 2 * self.frame_length
 
         for idxX in self.x_pos:
             for idxY in Xsoll:
@@ -112,38 +108,38 @@ class PipelineSpike (AFE, FEC, NeuralNetwork, nntf.Model):
         self.dr = self.x_adc.size / self.frame_length
 
 
-    def __spikesorting_pipeline_v0(self, doCalc) -> None:
+    def __spikesorting_pipeline_v0(self) -> None:
         # ----- Analogue Front End Module  -----
         (self.u_spk, self.u_lfp) = self.pre_amp(self.u_in)
-        self.x_adc = self.adc_nyquist(self.u_spk, doCalc[0])
+        self.x_adc = self.adc_nyquist(self.u_spk, True)
 
         # --- Digital Pre-processing ----
         self.x_filt = self.dig_filt(self.x_adc)
 
         # --- Spike detection incl. thresholding
-        (self.x_sda, self.x_thr) = self.spike_detection(self.x_filt, self.__mode_thres, doCalc[1])
+        (self.x_sda, self.x_thr) = self.spike_detection(self.x_filt, self.__mode_thres, True)
         self.x_dly = self.time_delay_dig(self.x_filt)
         (self.frames_orig, self.x_pos) = self.frame_generation(self.x_dly, self.x_sda, self.x_thr)
-        self.frames_align = self.frame_aligning(self.frames_orig, self.__mode_frame, doCalc[2])
+        self.frames_align = self.frame_aligning(self.frames_orig, self.__mode_frame)
 
         # ----- Feature Extraction and Classification Module -----
         self.features = self.fe_pca(self.frames_align)
         (self.cluster_id, self.cluster_no, self.sse) = self.cluster_kmeans(self.features)
         self.spike_ticks = self.calc_spiketicks(self.x_adc, self.x_pos, self.cluster_id, self.cluster_no)
 
-    def __spikesorting_pipeline_v1(self, doCalc) -> None:
+    def __spikesorting_pipeline_v1(self) -> None:
         # ----- Analogue Front End Module  -----
         (self.u_spk, self.u_lfp) = self.pre_amp(self.u_in)
-        self.x_adc = self.adc_nyquist(self.u_spk, doCalc[0])
+        self.x_adc = self.adc_nyquist(self.u_spk, True)
 
         # --- Digital Pre-processing ----
         self.x_filt = self.dig_filt(self.x_adc)
 
         # --- Spike detection incl. thresholding
-        (self.x_sda, self.x_thr) = self.spike_detection(self.x_filt, self.__mode_thres, doCalc[1])
+        (self.x_sda, self.x_thr) = self.spike_detection(self.x_filt, self.__mode_thres, True)
         self.x_dly = self.time_delay_dig(self.x_filt)
         (self.frames_orig, self.x_pos) = self.frame_generation(self.x_dly, self.x_sda, self.x_thr)
-        self.frames_align = self.frame_aligning(self.frames_orig, self.__mode_frame, doCalc[2])
+        self.frames_align = self.frame_aligning(self.frames_orig, self.__mode_frame)
 
         # --- Adding denoising
         val_max = 48

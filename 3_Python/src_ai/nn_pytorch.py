@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 
 import torch
 import torchvision.models as models
-from torchsummary import summary
+from torch.utils.data import DataLoader, Dataset, TensorDataset, WeightedRandomSampler
+from pytorch_model_summary import summary
 from sklearn.model_selection import train_test_split
 
 class NeuralNetwork():
@@ -140,30 +141,30 @@ class NeuralNetwork():
                 print(f"Layer: {name} | Size: {param.size()} | Values : {param[:2]} \n")
 
 
-    def do_training(self, batch_size: float, epochs: int, learning_rate: float):
+    def do_training(self):
         # TODO: Implement other optimizer over definition
         loss_function = torch.nn.MSELoss()
         optimizer = torch.optim.Adam(
             self.model.parameters(),
-            lr=learning_rate
+            lr=self.set_learningrate
         )
 
         losses_train = []
         losses_valid = []
         print("... start training")
 
-        # ---- Training
+        # --- Transfer data and model to device
         train_in = self.__train_input.to(self.device)
         train_out = self.__train_output.to(self.device)
+        self.model.to(self.device)
         size = len(train_in)
 
+        # ---- Training
         print("-------------------------------")
-        for epoch in range(epochs):
-            lossTrain = 0
+        for epoch in range(self.set_epochs):
             #for (batch, x_in) in enumerate(train_in):
             self.model.train()
             (_, y_pred) = self.model(train_in)
-            #y_soll = train_out[batch]
             y_soll = train_out
             lossTrain = loss_function(y_pred, y_soll)
 

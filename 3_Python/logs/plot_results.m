@@ -2,9 +2,13 @@ close all;
 clear all;
 clc;
 
-load('2023-03-15_predicted_data.mat')
+%file_input = '20230315-000000_dnn_dae_v2';
+file_input = '20230316-000000_dnn_dae_v2';
+%file_input = '20230316-000000_cnn_dae_v2';
 
 %% --- Pre-Processing
+load(file_input)
+
 NoCluster = unique(Cluster);
 for idx = 1:1:length(unique(Cluster))
     marker = NoCluster(idx);
@@ -35,7 +39,7 @@ end
 title('Network Predicted');
 
 nexttile;
-selFeat = [4 8];
+selFeat = [3 5];
 plot(Feat(mark{1}, selFeat(1)), Feat(mark{1}, selFeat(2)), 'LineStyle', 'none', 'Marker', '.', 'MarkerSize', 16, 'Color', color{1});
 grid on;    hold on;
 for idx = 2:1:length(unique(Cluster))
