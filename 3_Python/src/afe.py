@@ -4,7 +4,6 @@ from scipy.signal import butter, filtfilt, resample_poly, savgol_filter, find_pe
 from settings import Settings
 
 # TODO: Trennung der Klassen zwischen Verarbeitung des Bitstreams i) ganzer Datensatz und ii) sample-wise
-
 class AFE:
     def __init__(self, setting: Settings):
         # --- Power supply

@@ -3,8 +3,8 @@ import numpy as np
 from settings import Settings
 from src.afe import AFE
 from src.fec import FEC
-#from src_ai.nn_pytorch import NeuralNetwork
-from src_ai.nn_tensorflow import NeuralNetwork
+from src_ai.nn_pytorch import NeuralNetwork
+
 
 class PipelineSpike (AFE, FEC, NeuralNetwork):
     def __init__(self, settings: Settings):

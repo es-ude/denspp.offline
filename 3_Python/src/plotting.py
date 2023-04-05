@@ -78,11 +78,14 @@ def results_fec (signals: PipelineSpike) -> None:
         ax4.plot(np.transpose(mean_frames[idx, :]), color=color[idx])
 
 
-def plot_frames (framesIn: np.ndarray, framesMean: np.ndarray) -> None:
+def plot_frames (framesIn: np.ndarray, framesMean: np.ndarray, framesPred: np.ndarray) -> None:
     plt.figure()
-    ax1 = plt.subplot(2, 1, 1)
+    ax1 = plt.subplot(3, 1, 1)
     ax1.plot(np.transpose(framesIn))
 
-    ax2 = plt.subplot(2, 1, 2)
+    ax2 = plt.subplot(3, 1, 2)
     ax2.plot(np.transpose(framesMean))
+
+    ax3 = plt.subplot(3, 1, 3)
+    ax3.plot(np.transpose(framesPred))
 
