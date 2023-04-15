@@ -1,9 +1,14 @@
-import os, glob
+import os
+import glob
+import sys
 import numpy as np
 from typing import Tuple
+import neo
+
 from fractions import Fraction
 from scipy.io import loadmat
 from scipy.signal import resample_poly
+
 
 # ----- Read Settings -----
 class DataHandler():
@@ -27,18 +32,24 @@ class DataHandler():
 class DataController(DataHandler):
     def __init__(self, path2data: str, sel_channel: int):
         # Meta-Information about datasets
-        self.max_datapoints = np.array([5, 16, 22, 2])
+        self.max_datapoints = np.array([5, 16, 22, 2, 1])
         # Settings
         self.raw_data = DataHandler()
         self.path2data = path2data
         self.path2file = None
         # if sel_channel = 0 -> All data
         self.used_channel = sel_channel
-        self.__fill_factor = 0
+        self.__fill_factor = 1
         self.__scaling = 1
 
-
     def do_call(self, data_type: int, data_set: int):
+        # --- Checking if path is available
+        if os.path.exists(self.path2data):
+            print(f"... data path {self.path2data} is available")
+        else:
+            print(f"... data path {self.path2data} is not available! Please check")
+            sys.exit()
+
         # ----- Read data input -----
         if data_type == 1:
             self.__load_Martinez2009(data_set)
@@ -49,7 +60,7 @@ class DataController(DataHandler):
         elif data_type == 4:
             self.__load_Seidl2012(data_set)
         elif data_type == 5:
-            self.__load_Klaes2016(data_set)
+            self.__load_KlaesLab(data_set)
 
         self.raw_data.fs_used = self.raw_data.fs_orig
         print("... using data point:", self.path2file)
@@ -108,10 +119,10 @@ class DataController(DataHandler):
     def output_meta(self):
         print(f"... using data set of: {self.raw_data.data_name}")
         print(f"... original sampling rate of {int(1e-3 * self.raw_data.fs_orig)} kHz (resampling to {int(1e-3 * self.raw_data.fs_used)} kHz)")
-        print(f"... using", round(self.__fill_factor * 100 , 2), "% of the data (time length of", round(self.raw_data.raw_data.size / self.raw_data.fs_used / self.fill_factor, 2), "s)")
-        print(f"... data includes", self.raw_data.noChannel, "number of electrode (" + self.raw_data.data_type)
+        print(f"... using {self.__fill_factor * 100:.2f}% of the data (time length of {self.raw_data.raw_data.size / self.raw_data.fs_used / self.__fill_factor:.2f} s)")
+        print(f"... data includes {self.raw_data.noChannel} number of electrode ({self.raw_data.data_type})")
         if self.raw_data.label_exist:
-            print(f"... includes labels (noSpikes: {self.raw_data.spike_no} - noCluster: {self.raw_data.cluster_no}")
+            print(f"... includes labels (noSpikes: {self.raw_data.spike_no} - noCluster: {self.raw_data.cluster_no})")
         else:
             print(f"... excludes labels")
 
@@ -126,11 +137,11 @@ class DataController(DataHandler):
     def __prepare_access(self, folder_name: str, data_type: str, sel_dataset: int) -> None:
         folder_content = glob.glob(os.path.join(self.path2data, folder_name, data_type))
         folder_content.sort()
-        file_data = folder_content[sel_dataset - 1]
+        file_data = folder_content[sel_dataset]
         self.path2file = os.path.join(self.path2data, folder_name, file_data)
 
 
-    def __load_Martinez2009(self, indices: list = np.arange(1, 5)) -> None:
+    def __load_Martinez2009(self, indices: list = np.arange(0, 4)) -> None:
         folder_name = "01_SimDaten_Martinez2009"
         data_type = 'simulation_*.mat'
         self.__prepare_access(folder_name, data_type, indices)
@@ -151,7 +162,7 @@ class DataController(DataHandler):
         self.raw_data.cluster_no = np.unique(self.raw_data.cluster_id).size
         self.raw_data.spike_no = self.raw_data.spike_xpos.size
 
-    def __load_Pedreira2012(self, indices: list = np.arange(1, 16)) -> None:
+    def __load_Pedreira2012(self, indices: list = np.arange(0, 15)) -> None:
         folder_name = "02_SimDaten_Pedreira2012"
         data_type = 'simulation_*.mat'
         self.__prepare_access(folder_name, data_type, indices)
@@ -178,7 +189,7 @@ class DataController(DataHandler):
         self.raw_data.spike_no = self.raw_data.spike_xpos.size
 
 
-    def __load_Quiroga2020(self, indices: list = np.arange(1, 22)) -> None:
+    def __load_Quiroga2020(self, indices: list = np.arange(0, 21)) -> None:
         folder_name = "03_SimDaten_Quiroga2020"
         data_type = 'C_*.mat'
         self.__prepare_access(folder_name, data_type, indices)
@@ -199,7 +210,7 @@ class DataController(DataHandler):
         self.raw_data.cluster_no = np.unique(self.raw_data.cluster_id).size
         self.raw_data.spike_no = self.raw_data.spike_xpos.size
 
-    def __load_Seidl2012(self, indices: list = np.arange(1,2)) -> None:
+    def __load_Seidl2012(self, indices: list = np.arange(0, 1)) -> None:
         folder_name = "04_Freiburg_Seidl2014"
         data_type = '*.mat'
         self.__prepare_access(folder_name, data_type, indices)
@@ -219,25 +230,16 @@ class DataController(DataHandler):
         self.raw_data.cluster_no = 0
         self.raw_data.spike_no = 0
 
+    def __load_FZJ_Mueller(self, indices: list = np.arange(0, 1)) -> None:
+        pass
+
+    def __load_FZJ_Offenhauser(self, indices: list = np.arange(0, 1)) -> None:
+        pass
+
     # TODO: Andere Quellen noch anpassen
-    def __load_Klaes2016(self, indices: list = np.arange(1, 2)) -> None:
-        folder_name = "05_Daten_Klaes"
-        data_type = '*.mat'
+    def __load_KlaesLab(self, indices: list = np.arange(0, 21)) -> None:
+        folder_name = "10_Klaes_Caltech"
+        data_type = '_MERGED.mat'
         self.__prepare_access(folder_name, data_type, indices)
 
-        # Alter Code
-        """ 
-            sessions = list(set(os.listdir(path2folder)).difference(set([".DS_Store", ".", ".."])))
-            expected_subfolders = ["NSP1", "NSP2"]
-            
-            for session in sessions:
-            for subfolder in expected_subfolders:
-                path = os.sep.join([folder, session, subfolder])
-                files = os.listdir(path)
-                recordings = [x for x in files if ".mat" in x]
-                for record in recordings:
-                    if "102124-NSP1" in record:
-                        path_data = os.sep.join([path, record])
-                        path_metadata = path_data.replace(".mat", ".ccf")
-                        data = mat73.loadmat(path_data)
-        """
+

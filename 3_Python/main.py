@@ -7,13 +7,14 @@ from src.pipeline import PipelineSpike as spaike
 from src.call_data import DataController
 
 if __name__ == "__main__":
-    #plt.close('all')
+    plt.close('all')
     print("\nRunning spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
+
     # ----- Preparation : Module calling -----
     settings = Settings()
     datahandler = DataController(
         path2data=settings.path2data,
-        ch_sel=settings.ch_sel
+        sel_channel=settings.ch_sel
     )
     datahandler.do_call(
         data_type=settings.load_data_set,
@@ -21,7 +22,7 @@ if __name__ == "__main__":
     )
     datahandler.do_resample(
         t_range=settings.t_range,
-        desired_fs=settings.desired_fs
+        desired_fs=settings.fs_ana
     )
     datahandler.output_meta()
     dataIn = datahandler.get_data()
@@ -38,7 +39,7 @@ if __name__ == "__main__":
 
         # ----- Determination of quality of Parameters -----
         if dataIn.label_exist:
-            xposIst = np.round(settings.sample_rate/dataIn.fs_used * dataIn.spike_xpos)
+            xposIst = np.round(settings.fs_adc/settings.fs_ana * dataIn.spike_xpos)
             SpikeSorting.metric_afe(xposIst)
 
     # ----- Figures -----

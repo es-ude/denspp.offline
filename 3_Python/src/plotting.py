@@ -1,10 +1,14 @@
+import os.path
+
 from src.pipeline import PipelineSpike
 import matplotlib.pyplot as plt
 import numpy as np
 
+def cm_to_inch(value):
+    return value/2.54
 def results_afe (signals: PipelineSpike) -> None:
-    fs_ana = signals.sample_rate_ana
-    fs_adc = signals.sample_rate_adc
+    fs_ana = signals.fs_ana
+    fs_adc = signals.fs_adc
 
     uin = signals.u_in
     xadc = signals.x_adc
@@ -16,7 +20,7 @@ def results_afe (signals: PipelineSpike) -> None:
     tD = np.arange(0, xadc.size, 1) / fs_adc
 
     # --- Plotting
-    plt.figure()
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(21)))
     ax1 = plt.subplot(4, 1, 1)
     ax1.plot(tA, 1e6* uin, 'k')
     plt.ylabel("$U_{in}$ (µV)")
@@ -38,6 +42,8 @@ def results_afe (signals: PipelineSpike) -> None:
 
     plt.ylabel("Spike Ticks")
     plt.xlabel("Time t (s)")
+
+    save_figure(plt, "figures/Transient", "transient")
 
 def results_fec (signals: PipelineSpike) -> None:
     color = ['k', 'r', 'b', 'g']
@@ -62,7 +68,7 @@ def results_fec (signals: PipelineSpike) -> None:
         idx += 1
     mean_frames = mean_frames / mean_value
 
-    plt.figure()
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
     ax1 = plt.subplot(2, 2, 1)
     ax1.plot(np.transpose(framesIn))
 
@@ -77,6 +83,8 @@ def results_fec (signals: PipelineSpike) -> None:
     for idx in range(0, mean_frames.shape[0]):
         ax4.plot(np.transpose(mean_frames[idx, :]), color=color[idx])
 
+    save_figure(plt, "figures/Transient", "fec")
+
 
 def plot_frames (framesIn: np.ndarray, framesMean: np.ndarray, framesPred: np.ndarray) -> None:
     plt.figure()
@@ -89,3 +97,10 @@ def plot_frames (framesIn: np.ndarray, framesMean: np.ndarray, framesPred: np.nd
     ax3 = plt.subplot(3, 1, 3)
     ax3.plot(np.transpose(framesPred))
 
+def save_figure(fig, path: str, name: str):
+    format = ['eps', 'svg']
+    path2fig = os.path.join(path, name)
+
+    for idx, form in enumerate(format):
+        file_name = path2fig + '.' + form
+        fig.savefig(file_name, format=form)

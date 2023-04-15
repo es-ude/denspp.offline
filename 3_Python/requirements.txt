@@ -4,13 +4,12 @@ matplotlib
 # Libs for GUI
 pyqt5
 
+# Libs for reading electrophysiology datasets
+neo
+
 # Libs for NN with PyTorch
 scipy
 scikit-learn
 torch
 torchinfo
 torchvision
-
-# Libs for NN with TensorFlow
-tensorflow
-ipython

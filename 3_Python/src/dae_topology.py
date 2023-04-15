@@ -29,7 +29,7 @@ class dnn_dae_v2(nn.Module):
     def __init__(self):
         super().__init__()
 
-        iohiddenlayer = [28, 16, 8]
+        iohiddenlayer = [32, 24, 10]
         # --- Encoder Path
         self.encoder = nn.Sequential(
             nn.BatchNorm1d(),
