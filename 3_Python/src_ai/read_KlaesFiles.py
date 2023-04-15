@@ -1,7 +1,4 @@
-import os
-import sys
-import numpy
-from src.process_klaes_files import KlaesHandler
+from src_ai.process_klaes_files import KlaesHandler
 
 # ------------------------------ MAIN PROGRAMM
 if __name__ == '__main__':

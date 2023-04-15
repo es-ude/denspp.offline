@@ -50,18 +50,25 @@ class SDA:
             # Abort if no results are available
             pass
         else:
-            # Extract x- position from the trigger signal
-            width = 3
-            x_pos = np.convolve(xtrg, np.ones(width), mode="same")
+            # --- Extraction of x-positions
             # TODO: Methode ersetzen durch realistische Version
-            (x_pos0, _) = find_peaks(x_pos, distance=self.frame_length)
+            mode = 0
+            if mode == 0:
+                # Findpeak
+                width = 3
+                x_pos = np.convolve(xtrg, np.ones(width), mode="same")
+                (x_pos0, _) = find_peaks(x_pos, distance=self.frame_length)
+            elif mode == 1:
+                # Rising edge
+                x_pos0 = []
+                for idx, val in enumerate(xtrg):
+                    pass
 
+            # --- Generate frames
             lgth_frame = self.frame_length + self.__offset_frame
             lgth_data = len(result)
             frame = []
             xpos_out = []
-
-            # --- Generate frames
             for idx, pos_frame in enumerate(x_pos0):
                 dx_neg = pos_frame - self.__offset_frame_neg
                 dx_pos = pos_frame + lgth_frame

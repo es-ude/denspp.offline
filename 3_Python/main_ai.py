@@ -1,12 +1,11 @@
 import os.path
-import numpy as np
 import matplotlib.pyplot as plt
 import torch
 import torchinfo
 
-from src.pytorch_handler import do_training
-from src.dae_dataset import Dataset, get_dataloaders, prepare_dae_training, prepare_dae_plotting
-import src.dae_topology as nnModules
+from src_ai.pytorch_handler import do_training
+from src_ai.dae_dataset import Dataset, get_dataloaders, prepare_dae_training, prepare_dae_plotting
+import src_ai.dae_topology as nnModules
 import src.plotting as pltSpAIke
 
 

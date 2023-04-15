@@ -6,6 +6,15 @@ import numpy as np
 
 def cm_to_inch(value):
     return value/2.54
+
+def save_figure(fig, path: str, name: str):
+    format = ['eps', 'svg']
+    path2fig = os.path.join(path, name)
+
+    for idx, form in enumerate(format):
+        file_name = path2fig + '.' + form
+        fig.savefig(file_name, format=form)
+
 def results_afe (signals: PipelineSpike) -> None:
     fs_ana = signals.fs_ana
     fs_adc = signals.fs_adc
@@ -96,11 +105,3 @@ def plot_frames (framesIn: np.ndarray, framesMean: np.ndarray, framesPred: np.nd
 
     ax3 = plt.subplot(3, 1, 3)
     ax3.plot(np.transpose(framesPred))
-
-def save_figure(fig, path: str, name: str):
-    format = ['eps', 'svg']
-    path2fig = os.path.join(path, name)
-
-    for idx, form in enumerate(format):
-        file_name = path2fig + '.' + form
-        fig.savefig(file_name, format=form)
