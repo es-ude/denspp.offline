@@ -29,10 +29,10 @@ class FEC:
 
     def cluster_kmeans(self, features: np.ndarray):
         kmeans_kwargs = {
-            "init" : "random",
-            "n_init" : 10,
-            "max_iter" : 100,
-            "random_state" : 42
+            "init": "random",
+            "n_init": 10,
+            "max_iter": 100,
+            "random_state": 42
         }
         sse = []
         #for runs in self.__no_cluster:
@@ -48,12 +48,13 @@ class FEC:
 
         return (results, number, sse)
 
-    def calc_spiketicks(self, uin, xpos, cluster_id, cluster_no):
-        ticks = np.zeros(shape=(cluster_no, uin.size), dtype=int)
+    def calc_spiketicks(self, uin: np.ndarray, xpos: np.ndarray, cluster_id: np.ndarray) -> np.ndarray:
+        cluster_no = np.unique(cluster_id)
+
+        ticks = np.zeros(shape=(cluster_no.size, uin.size), dtype=int)
 
         idx = 0
         for val in xpos:
-            # print("#:", idx, "- Pos:", val, "- ID:", cluster[idx])
             ticks[cluster_id[idx], val] = 1
             idx += 1
         A = 1

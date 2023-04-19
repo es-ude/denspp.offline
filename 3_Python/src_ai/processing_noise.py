@@ -1,32 +1,40 @@
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-def generate_noiseframe(no_frames: int, width_frames: int):
-    frames_ideal = np.zeros(shape=(no_frames, width_frames), dtype="double")
-    frames_noise = np.zeros(shape=(no_frames, width_frames), dtype="double")
+def gen_noise_frame(no_frames: int, frame_in: np.ndarray, wgndB: [int, int]) -> np.ndarray:
+    width = frame_in.size
+    frames_noise = np.zeros(shape=(no_frames, width), dtype="double")
+    frames_out = np.zeros(shape=(no_frames, width), dtype="double")
 
-    for idx in range(0, no_frames-1):
-        frames_noise[idx] = generate_whiteNoise(width_frames, np.random.randint(3, 12), False)
+    # noise_lvl = np.random.uniform(wgndB[0], wgndB[1])
+    # TODO: Scaling des Rauschens noch überarbeiten
+    noise_lvl = np.random.uniform(0.5, 2)
 
-    return frames_noise, frames_ideal
+    for idx in range(0, no_frames):
+        frames_noise[idx, :],_ = gen_noise_awgn(width, noise_lvl, False)
+        frames_out[idx, :] = frame_in + frames_noise[idx, :]
 
-def generate_whiteNoise(size: int, wgndB: int, type: bool) -> np.ndarray:
-    if type == True:
-        noiseLVL = np.power(10, wgndB / 20)
+    return frames_noise, frames_out
+
+def gen_noise_awgn(size: int, scale: float, img: bool) -> np.ndarray:
+    if img:
+        noise_out = scale * (np.random.randn(size, ) + 1j * np.random.randn(size, ))/np.sqrt(2)
     else:
-        noiseLVL = wgndB
+        noise_out = scale * np.random.randn(size, )
 
-    noiseOut = np.random.normal(loc=0, scale=noiseLVL, size=size)
+    noise_eff = np.mean(np.abs(noise_out))
+    noise_mean = [np.mean(noise_out), np.std(noise_out)]
 
-    return noiseOut
+    return noise_out, noise_eff
 
-def generate_realNoise(t: np.ndarray, wgndB: int, Fc: int, alpha: float):
+def gen_noise_real(t: np.ndarray, wgndB: int, Fc: int, alpha: float):
     N = t.size
     df = 1/(t[1] - t[0])
 
     noiseLVL = np.power(10, wgndB/20)
     # --- Generate white noise with frequency components
-    Uwhite = np.random.normal(loc=0, scale=noiseLVL, size=N)
+    Uwhite,_ = gen_noise_awgn(N, noiseLVL, False)
     Uwhite = Uwhite - np.mean(Uwhite)
 #
     # --- Adapting the amplitude
@@ -77,8 +85,23 @@ def generate_realNoise(t: np.ndarray, wgndB: int, Fc: int, alpha: float):
 if __name__ == "__main__":
     print("Test routine for noise generation")
     fs = 20e3
+    t = np.arange(0, 1e6 - 1, 1) / fs
+    noise_out, noise_eff = gen_noise_awgn(t.size, 0.5, False)
+    noise_mean = np.mean(np.abs(noise_out)) + np.zeros(shape=t.shape)
+    print(noise_eff)
+
+    plt.figure()
+    plt.plot(t, noise_out, color='k')
+    plt.plot(t, noise_mean, color='r')
+    plt.show(block = True)
+
+    sys.exit()
+
+
+    print("Test routine for noise generation")
+    fs = 20e3
     t = np.arange(0, 1e6-1, 1) / fs
-    noise_out = generate_realNoise(t, -110, 100, 0.6)
+    noise_out = gen_noise_real(t, -110, 100, 0.6)
 
     df = 1 / (t[1] - t[0])
     freq = df * np.fft.fftfreq(t.shape[-1])

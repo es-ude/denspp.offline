@@ -8,33 +8,64 @@ class SDA:
         self.sample_rate_adc = setting.fs_adc
 
         # --- Spike detection incl. thresholding and frame generation
-        self.__dx_sda = setting.d_xsda
+        self.__dx_sda = setting.dx_sda
+        self.__dx_neo = setting.dx_neo
+        self.__dx_mteo = setting.dx_mteo
+
         self.__frame_mode = setting.mode_frame
         self.__mean_window = setting.x_window_mean
 
         self.__offset_frame_neg = round(setting.x_offset[0] * self.sample_rate_adc)
         self.__offset_frame_pos = round(setting.x_offset[1] * self.sample_rate_adc)
-        self.__offset_frame = self.__offset_frame_neg + self.__offset_frame_pos
+        self.offset_frame = self.__offset_frame_neg + self.__offset_frame_pos
 
         self.frame_length = round(setting.x_window_length * self.sample_rate_adc)
         self.frame_neg = round(setting.x_window_start * self.sample_rate_adc)
         self.frame_pos = self.frame_length - self.frame_neg
 
-    def spike_detection(self, xin: np.ndarray, mode: int) -> [np.ndarray, np.ndarray]:
-        # Selection of SDA is made via the vector length of dXsda
-        # length(x) == 0: applied on raw datastream
-        # length(x) == 1: with dX = 1 --> NEO, dX > 1 --> k-NEO
-        # length(x) > 1: M - TEO
-
+    def sda(self, xin: np.ndarray, mode: int) -> [np.ndarray, np.ndarray]:
         ksda = self.__dx_sda
         if ksda.size == 0:
             x_mteo = xin
         else:
             x_mteo = np.zeros(shape=(ksda.size, xin.size))
             for idx in range(0, ksda.size):
-                ksda0 = ksda[idx]
+                ksda0 = int(ksda[idx])
                 x0 = np.power(xin[ksda0:-ksda0, ], 2) - xin[:-2 * ksda0, ] * xin[2 * ksda0:, ]
                 x_mteo[idx, :] = np.concatenate([x0[:ksda0, ], x0, x0[-ksda0:, ]], axis=None)
+
+        x_sda = np.max(x_mteo, 0)
+        x_thr = self.__thres(x_sda, mode)
+
+        return x_sda, x_thr
+
+    def sda_norm(self, xin: np.ndarray, mode: int) -> [np.ndarray, np.ndarray]:
+        # Selection of SDA is made via the vector length of dXsda
+        # applied on raw datastream
+        x_sda = xin
+        x_thr = self.__thres(x_sda, mode)
+
+        return x_sda, x_thr
+
+    def sda_neo(self, xin: np.ndarray, mode: int) -> [np.ndarray, np.ndarray]:
+        # length(x) == 1: with dX = 1 --> NEO, dX > 1 --> k-NEO
+        ksda0 = self.__dx_neo
+
+        x0 = np.power(xin[ksda0:-ksda0, ], 2) - xin[:-2 * ksda0, ] * xin[2 * ksda0:, ]
+        x_neo = np.concatenate([x0[:ksda0, ], x0, x0[-ksda0:, ]], axis=None)
+
+        x_sda = x_neo
+        x_thr = self.__thres(x_sda, mode)
+
+        return x_sda, x_thr
+
+    def sda_mteo(self, xin: np.ndarray, mode: int) -> [np.ndarray, np.ndarray]:
+        # performing mteo
+        x_mteo = np.zeros(shape=(self.__dx_mteo.size, xin.size))
+
+        for idx, ksda0 in enumerate(self.__dx_mteo):
+            x0 = np.power(xin[ksda0:-ksda0, ], 2) - xin[:-2 * ksda0, ] * xin[2 * ksda0:, ]
+            x_mteo[idx, :] = np.concatenate([x0[:ksda0, ], x0, x0[-ksda0:, ]], axis=None)
 
         x_sda = np.max(x_mteo, 0)
         x_thr = self.__thres(x_sda, mode)
@@ -51,8 +82,7 @@ class SDA:
             pass
         else:
             # --- Extraction of x-positions
-            # TODO: Methode ersetzen durch realistische Version
-            mode = 0
+            mode = 1
             if mode == 0:
                 # Findpeak
                 width = 3
@@ -60,12 +90,20 @@ class SDA:
                 (x_pos0, _) = find_peaks(x_pos, distance=self.frame_length)
             elif mode == 1:
                 # Rising edge
-                x_pos0 = []
-                for idx, val in enumerate(xtrg):
-                    pass
+                width = 3
+                x_pos = np.convolve(xtrg, np.ones(width), mode="same")
+                trigger_val = 0.5
+                x_pos = np.flatnonzero((x_pos[:-1] < trigger_val) & (x_pos[1:] > trigger_val)) + 1
+
+            x_pos0 = []
+            for idx, val in enumerate(x_pos):
+                if not idx == 0:
+                    dx = val - x_pos[idx-1]
+                    if dx >= self.frame_length:
+                        x_pos0.append(val)
 
             # --- Generate frames
-            lgth_frame = self.frame_length + self.__offset_frame
+            lgth_frame = self.frame_length + self.offset_frame
             lgth_data = len(result)
             frame = []
             xpos_out = []
@@ -94,8 +132,10 @@ class SDA:
 
             # --- Aligning
             # TODO: Fenster-Methode einfügen
-            search_frame = frame #[idx0:idx1]
-            if align_mode == 1:     # align to maximum
+            search_frame = frame
+            if align_mode == 0:     # no alignment
+                max_pos = self.__offset_frame_neg + self.frame_neg
+            elif align_mode == 1:   # align to maximum
                 max_pos = np.argmax(search_frame, axis=None)
             elif align_mode == 2:   # align to minimum
                 max_pos = np.argmin(search_frame, axis=None)

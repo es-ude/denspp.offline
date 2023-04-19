@@ -1,19 +1,17 @@
 close all;  clear all;  clc;
 
 %% --- Settings
-setOptions.do_plot_check0 = false;
-setOptions.do_plot_check1 = false;
+setOptions.do_plot_check1 = true;
+setOptions.do_plot_check2 = true;
 setOptions.do_plot_result = true;
 
 setOptions.do_save = true;
 setOptions.do_2nd_run = false;
-setOptions.do_manual = false;
-setOptions.do_norm = false;
 addon = "_Sorted";
 
 % Settings für Martinez
 criterion_Check = [3 0.7];
-criterion_Run0 = 0.95;
+criterion_Run0 = 0.98;
 criterion_Run1 = [0.05 0.025];
 
 %% --- Vorverarbeitung: Datenaufnahme
@@ -73,23 +71,6 @@ for idx = 1:1:noRuns
             do_run = false;
         end        
         
-        % Probe-Plots
-        if setOptions.do_plot_check0
-            figure(1);
-            tiledlayout(2,1)
-            nexttile(1);
-            plot(Ycheck', 'k');
-            hold on; grid on;
-            plot(Ymean, 'r');
-            xlabel("Frame position");
-            title(strcat("ClusterID = ", num2str(idx-1), ", mean = ", num2str(mean(metric_Check(:,5)), '%.4f'), ", std = ", num2str(std(metric_Check(:,5)), '%.4f')));
-    
-            nexttile(2);
-            diffX = abs(metric_Check(:,1));
-            A = histogram(diffX);                
-            text(0, 1.1*max(A.Values), [strcat("mean(\DeltaX) = ", num2str(mean(diffX), '%.4f')); strcat("std(\DeltaX) = ", num2str(std(diffX), '%.4f'))]);
-            xlabel("\Delta X");
-        end
         IteNo = IteNo +1;
     end
     
@@ -108,9 +89,10 @@ new_frames_cluster = int16([]);
 new_frames_pos = {};
 XCheck_False = {};
 
-SelCluster = 0;
+SelCluster = 1;
 IteMiss = 1;
-for idx = 1:1:size(input_cluster_xpos, 2)
+IteNo = 1;
+for idx = 1:size(process_frames_pos, 2)
     Xin = process_frames_pos{idx};
     Yin = double(frames_in(Xin,:));
 
@@ -121,11 +103,12 @@ for idx = 1:1:size(input_cluster_xpos, 2)
     else
         %--- Erste Prüfung: Mean-Waveform vergleichen mit bereits gemergten Clustern
         metric_Run0 = [];
+        Ycheck = {};
         for idy = 1:1:size(new_frames_pos, 2)
             % --- Prüfung der Mean-Formen
-            Xcheck = new_frames_pos{idy};
-            Ycheck = double(frames_in(Xcheck,:));
-            Ymean = mean(Ycheck);
+            Xcheck = new_frames_pos{2, idy};
+            Ycheck{idy} = double(frames_in(Xcheck,:));
+            Ymean = mean(Ycheck{idy});
             
             WaveRef = crossval(Ymean, Ymean);
             WaveIn = crossval(mean(Yin), Ymean);     
@@ -137,11 +120,20 @@ for idx = 1:1:size(input_cluster_xpos, 2)
         OutX = [];
         while(do_rerun)
             do_rerun = false;
-
         end    
-        clear idy Xcheck Ycheck Ymean WaveRef Wavein
+        clear idy Xcheck Ymean WaveRef Wavein
 
         % --- Entscheidung treffen
+        if setOptions.do_plot_check1
+            close all;
+            figure();
+            color = 'rbyg';   
+            plot(Yin', 'k');
+            hold on;    grid on;
+            for idy = size(Ycheck)
+                plot(Ycheck{idy}', color(1+mod(idy,4)))
+            end
+        end
         [candY, candX] = max(metric_Run0(:, 5));
         if(isempty(candX))
             % Keine Lösung vorhanden --> Anhängen
@@ -170,7 +162,7 @@ for idx = 1:1:size(input_cluster_xpos, 2)
                 % --- Entscheidung Bedingung erfüllt   
                 SelCluster = candX;
                 Xold = Xin;
-                Xnew = new_frames_pos{SelCluster};
+                Xnew = new_frames_pos{2, SelCluster};
                 Xnew(OutX) = [];
                 Xcombine = [Xin; Xnew];
     
@@ -214,11 +206,12 @@ for idx = 1:1:size(input_cluster_xpos, 2)
                     check.output_std = std(metric_Run3(:,5));
                     check.diff_mean = abs(check.input_mean - check.output_mean);
                     check.diff_std = abs(check.input_std - check.output_std);
-    
+
+
                     check.result = (check.diff_mean <= criterion_Run1(1)) && check.diff_std <= criterion_Run1(2);
     
                     % Check point mit Variable check
-                    if setOptions.do_plot_check1
+                    if setOptions.do_plot_check2
                         figure(1);
                         tiledlayout(3,1);
                         nexttile;
@@ -272,74 +265,30 @@ for idx = 1:1:size(input_cluster_xpos, 2)
         XCheck_False{IteMiss} = Xout;
         IteMiss = IteMiss +1;
     else
-        new_frames_pos{SelCluster} = Xout;
+        new_frames_pos{1, SelCluster} = SelCluster;
+        new_frames_pos{2, SelCluster} = Xout;
     end
 end
 clear idx idy idz IteNo Xcheck Ycheck Xout;
 clear check Ycheck0 Ycheck1 Ymean0 Ymean1 WaveRef WaveIn;
 clear candX candY SelCluster mode;
 
-%% --- Nachbearbeitung: Manuelles Cluster mergen
-if(setOptions.do_manual)
-    new_frames_pos_change = new_frames_pos;
-    new_frames_pos_change{2} = [new_frames_pos{2}; new_frames_pos{6}];
-    new_frames_pos_change{6} = [];
-    
-    e = cellfun('isempty', new_frames_pos_change);
-    new_frames_pos_change(e) = [];
-    
-    new_frames_pos = new_frames_pos_change;
-    
-    for idx = 1:size(new_frames_pos,2)
-        e = new_frames_pos{idx};
-        new_frames_cluster(e) = idx;
-    end
-    clear e idx new_frames_pos_change;
-end
-
-%% --- Nachbearbeitung: Unsortierte Frames
-N = length(unique(new_frames_cluster));
-output_cluster_num = zeros(2, N+1);
-output_cluster_num(2,1) = size(XCheck_False,2);
-
-for idx = 1:N
-    output_cluster_num(1, idx+1) = idx;
-    output_cluster_num(2, idx+1) = length(find(new_frames_cluster == idx));
-end
-if output_cluster_num(2, 1) > 0 
-    missed_pos = [];
-    for idx = 1:1:size(XCheck_False, 2)
-        if idx == 1
-            missed_pos = XCheck_False{idx};
-        else 
-            missed_pos = [missed_pos; XCheck_False{idx}];
-        end
-    end
-    
-    unsortedFrames = double(frames_in(missed_pos,:));
-
-    figure(1);
-    plot(unsortedFrames', 'b');
-    grid on;
-
-    waitforbuttonpress
-end
-clear IteMiss idx N
-
-%% --- Nachbearbeitung: Berechnung SNR
+%% --- Neuen Output generieren und SNR berechnen
 snr_mean = [];
 snr_std = [];
 
 for idx = 1:size(new_frames_pos, 2)
-    Xin = new_frames_pos{idx};
-    Yin = double(frames_in(Xin,:));
+    selx = new_frames_pos{2,idx};
+    new_frames_pos{3, idx} = frames_in(selx, :);
 
-    val_snr = zeros(1, length(Xin));
+    Yin = double(new_frames_pos{3, idx});
+    val_snr = zeros(1, size(Yin, 1));
     for idy = 1:length(Xin)
         val_snr(idy) = calculate_snr(Yin(idy,:), mean(Yin));
     end
     snr_mean(idx) = mean(val_snr);
     snr_std(idx) = std(val_snr);
+
 end
 clear idx idy  Xin Yin Ymean val_snr;
 
@@ -371,7 +320,7 @@ if(setOptions.do_plot_result)
         for idx = 1:1:length(selID)
             NoCluster = selID(idx);
             % Decision, if more than 100 frames
-            Yin = frames_in(new_frames_pos{NoCluster},:);
+            Yin = double(new_frames_pos{3, NoCluster});
             if(size(Yin,1) > 2000)
                 selFrames = randperm(size(Yin,1), 2000);
             else
@@ -397,14 +346,44 @@ if(setOptions.do_plot_result)
 end
 
 %% --- Transfer to new file
-frames_in = frames_in;
-frames_cluster = int16(new_frames_cluster);
+output.frames = [];
+output.cluster = [];
+for idx = 1:size(new_frames_pos, 2)
+    X = new_frames_pos{1, idx} .* ones(size(new_frames_pos{2, idx}, 1), 1);
+    Z = new_frames_pos{3, idx};
+    if idx == 1
+        output.cluster = X;
+        output.frames = Z;
+    else
+        output.cluster = [output.cluster; X];
+        output.frames = [output.frames; Z];
+    end
+end
+
+
+frames_in = output.frames;
+frames_cluster = int16(output.cluster-1);
 save(setOptions.path2save, 'frames_in', 'frames_cluster');
 clear FileName;
+
+%% --- Test plot
+test_plot(frames_in, frames_cluster, 1);
 
 disp("Ende");
 
 %% --- External function
+function test_plot(frames_in, cluster, idx)
+    
+    Xsel = find(cluster == idx);
+    frames_sel = frames_in(Xsel, :);
+    mean0 = mean(frames_sel);
+
+    figure();
+    plot(frames_sel', 'k')
+    hold on;
+    plot(mean0, 'r')
+end
+
 function out = calc_metric(WaveIn, WaveRef)
     [Y1, X1] = max(WaveIn);
     [Y2, X2] = max(WaveRef);

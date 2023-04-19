@@ -1,11 +1,14 @@
 import numpy as np
 from datetime import datetime
 from scipy.io import loadmat
+import matplotlib.pyplot as plt
+
+from src_ai.processing_noise import gen_noise_frame
 
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
-
+from sklearn.preprocessing import MaxAbsScaler, MinMaxScaler
 
 class Dataset(Dataset):
     def __init__(self, frames: np.ndarray, index: np.ndarray, mean_frame: np.ndarray):
@@ -22,7 +25,7 @@ class Dataset(Dataset):
         frame = self.frames[idx, :]
         cluster_id = self.index[idx]
         mean_frame = self.mean_frame[cluster_id, :]
-        return {'frame': frame, 'mean_frame': mean_frame}
+        return {'frame': frame, 'mean_frame': mean_frame, 'cluster': cluster_id}
 
 def get_dataloaders(dataset: Dataset, batch_size: int, validation_split: float, shuffle: bool) -> tuple[DataLoader, DataLoader]:
     dataset_size = len(dataset)
@@ -48,7 +51,7 @@ def get_dataloaders(dataset: Dataset, batch_size: int, validation_split: float, 
 
     return train_loader, validation_loader
 
-def prepare_dae_training(path: str, do_addnoise: bool, do_reducesize: bool, excludeCluster: list, sel_pos: list) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def prepare_dae_training(path: str, do_addnoise: bool, num_min_frames: int, excludeCluster: list, sel_pos: list) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     # Setzen des Ignorier-Clusters in Line 89
     str_datum = datetime.now().strftime('%Y%m%d %H%M%S')
     print(f"Running on {str_datum}")
@@ -68,11 +71,15 @@ def prepare_dae_training(path: str, do_addnoise: bool, do_reducesize: bool, excl
 
     print("... for training are", frames_in.shape[0], "frames with each", frames_in.shape[1], "points available")
 
+    ## --- Doing pre-processing
+    #scaler = MinMaxScaler(feature_range=(-1, 1))
+    #frames_in = scaler.fit_transform(frames_in)
+
+    # --- Calculation of the mean waveform + reducing of frames size (opt.)
     NoCluster = np.unique(frames_cluster).tolist()
     SizeCluster = np.size(NoCluster)
+    NumCluster = np.zeros(shape=(SizeCluster, ), dtype=int)
 
-    # --- Calculation of the mean waveform + reducing of frames
-    max_frames = 630
     SizeFrame = frames_in.shape[1]
     if(len(sel_pos) != 2):
         # Alle Werte übernehmen
@@ -82,50 +89,80 @@ def prepare_dae_training(path: str, do_addnoise: bool, do_reducesize: bool, excl
         SizeFrame = sel_pos[1] - sel_pos[0]
         frames_in = frames_in[:, sel_pos[0]:sel_pos[1]]
 
-    #TODO: Arrayverkleinerung einfügen
     frames_mean = np.zeros(shape=(SizeCluster, SizeFrame), dtype=int)
-    frames_sel_new = np.zeros(shape=(SizeCluster, max_frames), dtype=int)
-    idx0 = 0
-    for idx in NoCluster:
-        indices = np.where(frames_cluster == idx)
+    for idx0, val in enumerate(NoCluster):
+        indices = np.where(frames_cluster == val)
+        NumCluster[idx0] = indices[0].size
         frames_sel = frames_in[indices[0], :]
         mean = np.mean(frames_sel, axis=0, dtype=int)
         frames_mean[idx0, :] = mean
-        # --- Extract specific amount of frame
-        if do_reducesize:
-            np.random.shuffle(indices[0])
-            if idx0 == 0:
-                frames_sel_new[idx0, :] = indices[0][:max_frames]
-            else:
-                frames_sel_new = indices[0][:max_frames]
 
-        # Increasing counter
-        idx0 += 1
+    # --- Calcuting SNR
+    SNRCluster = np.zeros(shape=(SizeCluster, 3), dtype=int)
+    for idx0, val in enumerate(NoCluster):
+        snr0 = np.zeros(shape=(indices[0].size,), dtype=float)
+        for i, frame in enumerate(frames_sel):
+            snr0[i] = calculate_snr(frame, mean)
+
+        SNRCluster[idx0, 0] = np.min(snr0)
+        SNRCluster[idx0, 1] = np.mean(snr0)
+        SNRCluster[idx0, 2] = np.max(snr0)
+
+    # --- Adding artificial noise frames (Augmented Path)
+    if do_addnoise:
+        maxY = np.max(NumCluster)
+        mode = 0
+        for idx0, val in enumerate(NumCluster):
+            if mode == 0:
+                # Anreichern bis Grenze und neue Frames
+                no_frames = num_min_frames + maxY - val
+            else:
+                # Nur neue Frames
+                no_frames = num_min_frames
+
+            new_cluster = NoCluster[idx0] * np.ones(shape=(no_frames, ), dtype=int)
+            noise_lvl = [SNRCluster[idx0, 0], SNRCluster[idx0, 2]]
+            _, new_frame = gen_noise_frame(no_frames, frames_mean[idx0, :], noise_lvl)
+
+            #plt.figure()
+            #print(NoCluster[idx0], no_frames, new_frame.size)
+            #plt.plot(np.transpose(new_frame[1:, :]), color='k')
+            #plt.plot(np.transpose(frames_mean[idx0, :]), color='r')
+            #plt.show(block = True)
+
+            frames_in = np.append(frames_in, new_frame, axis=0)
+            frames_cluster = np.append(frames_cluster, new_cluster, axis=0)
 
     # --- Exclusion of falling clusters
     if (len(excludeCluster) == 0):
         frames_in = frames_in
         frames_cluster = frames_cluster
     else:
-        for idx in excludeCluster:
-            selX = np.where(frames_cluster != idx)
+        for i, id in enumerate(excludeCluster):
+            selX = np.where(frames_cluster != id)
             frames_in = frames_in[selX[0], :]
             frames_cluster = frames_cluster[selX]
 
     return frames_in, frames_cluster, frames_mean
 
-def prepare_dae_plotting(data_plot) -> tuple[np.ndarray, np.ndarray]:
+def prepare_dae_plotting(data_plot) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     din = []
     dout = []
-    iteNo = 0
+    did = []
     for i, vdata in enumerate(data_plot):
-        if (iteNo == 0):
+        if i == 0:
             din = vdata['frame']
             dout = vdata['mean_frame']
+            did = vdata['cluster']
         else:
             din = np.append(din, vdata['frame'], axis=0)
             dout = np.append(dout, vdata['mean_frame'], axis=0)
-        iteNo += 1
+            did = np.append(did, vdata['cluster'])
 
-    return din, dout
+    return din, dout, did
 
+def calculate_snr(yin: np.ndarray, ymean: np.ndarray):
+    A = np.sum(np.square(yin))
+    B = np.sum(np.square(ymean - yin))
+    outdB = 10 * np.log10(A/B)
+    return outdB

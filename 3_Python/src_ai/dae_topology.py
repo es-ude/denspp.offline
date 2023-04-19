@@ -5,20 +5,20 @@ class dnn_dae_v1(nn.Module):
     def __init__(self):
         super().__init__()
 
-        iohiddenlayer = [40, 24, 8]
+        iohiddenlayer = [32, 20, 3]
         # --- Encoder Path
         self.encoder = nn.Sequential(
+            nn.BatchNorm1d(num_features=iohiddenlayer[0]),
             nn.Linear(in_features=iohiddenlayer[0], out_features=iohiddenlayer[1]),
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[2]),
-            nn.Tanh()
+            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[2])
         )
         # --- Decoder Path
         self.decoder = nn.Sequential(
+            nn.Tanh(),
             nn.Linear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[1]),
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0]),
-            # nn.Tanh()
+            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0])
         )
 
     def forward(self, x: torch.Tensor) -> [torch.Tensor, torch.Tensor]:
@@ -43,8 +43,7 @@ class dnn_dae_v2(nn.Module):
             nn.BatchNorm1d(),
             nn.Linear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[1]),
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0]),
-            #nn.Tanh()
+            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0])
         )
 
     def forward(self, x: torch.Tensor) -> [torch.Tensor, torch.Tensor]:

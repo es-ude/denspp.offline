@@ -41,7 +41,10 @@ class Settings:
 
     # --- Properties of spike detection and frame generation/aligning
     # x_offset[0] = time_delay of spike input to frame generation
-    d_xsda = np.array([1])
+    dx_sda = np.ndarray([1])
+    dx_neo = 1
+    dx_mteo = np.array([1, 2, 4, 5])
+
     mode_thres = 2
     mode_frame = 3
     x_window_mean = 1
