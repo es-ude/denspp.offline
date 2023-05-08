@@ -1,14 +1,11 @@
 import numpy as np
 from datetime import datetime
 from scipy.io import loadmat
-import matplotlib.pyplot as plt
-
-from src_ai.processing_noise import gen_noise_frame
-
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
-from sklearn.preprocessing import MaxAbsScaler, MinMaxScaler
+
+from src_ai.processing_noise import gen_noise_frame
 
 class Dataset(Dataset):
     def __init__(self, frames: np.ndarray, index: np.ndarray, mean_frame: np.ndarray):
@@ -51,8 +48,105 @@ def get_dataloaders(dataset: Dataset, batch_size: int, validation_split: float, 
 
     return train_loader, validation_loader
 
+def generate_frames(no_frames: int, frame_in: np.ndarray, cluster_in: int, noise_lvl: list) -> tuple[np.ndarray, np.ndarray]:
+    new_cluster = cluster_in * np.ones(shape=(no_frames,), dtype=int)
+    _, new_frame = gen_noise_frame(no_frames, frame_in, noise_lvl)
+
+    return new_cluster, new_frame
+
+def prepare_dae_plotting(data_plot) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    din = []
+    dout = []
+    did = []
+    for i, vdata in enumerate(data_plot):
+        if i == 0:
+            din = vdata['frame']
+            dout = vdata['mean_frame']
+            did = vdata['cluster']
+        else:
+            din = np.append(din, vdata['frame'], axis=0)
+            dout = np.append(dout, vdata['mean_frame'], axis=0)
+            did = np.append(did, vdata['cluster'])
+
+    return din, dout, did
+
+def change_frame_size(frames_in: np.ndarray, sel_pos: list) -> np.ndarray:
+    if (len(sel_pos) != 2):
+        # Alle Werte übernehmen
+        frames_out = frames_in
+    else:
+        # Fensterung der Frames
+        frames_out = frames_in[:, sel_pos[0]:sel_pos[1]]
+
+    return frames_out
+
+def calculate_mean_waveform(frames_in: np.ndarray, frames_cluster: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    NoCluster, NumCluster = np.unique(frames_cluster, return_counts=True)
+    # NoCluster = NoCluster.tolist()
+    SizeCluster = np.size(NoCluster)
+    SizeFrame = frames_in.shape[1]
+
+    frames_mean = np.zeros(shape=(SizeCluster, SizeFrame), dtype=int)
+    cluster_snr = np.zeros(shape=(SizeCluster, 3), dtype=int)
+    for idx0, val in enumerate(NoCluster):
+        # --- Mean waveform
+        indices = np.where(frames_cluster == val)
+        frames_sel = frames_in[indices[0], :]
+        mean = np.mean(frames_sel, axis=0, dtype=int)
+        frames_mean[idx0, :] = mean
+
+        # --- Calculating SNR
+        snr0 = np.zeros(shape=(indices[0].size,), dtype=float)
+        for i, frame in enumerate(frames_sel):
+            snr0[i] = calculate_snr(frame, mean)
+
+        cluster_snr[idx0, 0] = np.min(snr0)
+        cluster_snr[idx0, 1] = np.mean(snr0)
+        cluster_snr[idx0, 2] = np.max(snr0)
+
+    return frames_mean, cluster_snr
+
+def augmentation_data(frames_mean: np.ndarray, frames_cluster: np.ndarray, snr_cluster: np.ndarray, num_min_frames: int, run: bool) -> tuple[np.ndarray, np.ndarray] :
+    frames_out = np.array([], dtype='float')
+    cluster_out = np.array([], dtype='int')
+
+    NoCluster, NumCluster = np.unique(frames_cluster, return_counts=True)
+    # --- Adding artificial noise frames (Augmented Path)
+    if run:
+        noise_lvl = [-12, -6] # [snr_cluster[idx0, 0], snr_cluster[idx0, 2]]
+        maxY = np.max(NumCluster)
+
+        for idx0, val in enumerate(NumCluster):
+            no_frames = num_min_frames + maxY - val
+            (new_cluster, new_frame) = generate_frames(no_frames, frames_mean[idx0, :], NoCluster[idx0], noise_lvl)
+
+            if idx0 == 0:
+                frames_out = new_frame
+                cluster_out = new_cluster
+            else:
+                frames_out = np.append(frames_out, new_frame, axis=0)
+                cluster_out = np.append(cluster_out, new_cluster, axis=0)
+
+    return frames_out, cluster_out
+
+def generate_zero_frames(SizeFrame: int, num_frames: int, run: bool) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    # --- Adding zero frames
+    noise_lvl = [-3, 3]
+    if not run:
+        mean = np.array([], dtype='int')
+        cluster = np.array([], dtype='int16')
+        frames = np.array([], dtype='int16')
+    else:
+        mean = np.zeros(shape=(SizeFrame, ), dtype='int16')
+        (cluster, frames) = generate_frames(num_frames, mean, 0, noise_lvl)
+
+    return mean, cluster, frames
+
 def prepare_dae_training(path: str, do_addnoise: bool, num_min_frames: int, excludeCluster: list, sel_pos: list) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    # Setzen des Ignorier-Clusters in Line 89
+    """
+    Einlesen des Datensatzes inkl. Augmentierung (Kein Pre-Processing)
+    """
+
     str_datum = datetime.now().strftime('%Y%m%d %H%M%S')
     print(f"Running on {str_datum}")
     print("... loading the datasets")
@@ -71,67 +165,12 @@ def prepare_dae_training(path: str, do_addnoise: bool, num_min_frames: int, excl
 
     print("... for training are", frames_in.shape[0], "frames with each", frames_in.shape[1], "points available")
 
-    ## --- Doing pre-processing
-    #scaler = MinMaxScaler(feature_range=(-1, 1))
-    #frames_in = scaler.fit_transform(frames_in)
-
-    # --- Calculation of the mean waveform + reducing of frames size (opt.)
-    NoCluster = np.unique(frames_cluster).tolist()
-    SizeCluster = np.size(NoCluster)
-    NumCluster = np.zeros(shape=(SizeCluster, ), dtype=int)
-
-    SizeFrame = frames_in.shape[1]
-    if(len(sel_pos) != 2):
-        # Alle Werte übernehmen
-        frames_in = frames_in
-    else:
-        # Fensterung der Frames
-        SizeFrame = sel_pos[1] - sel_pos[0]
-        frames_in = frames_in[:, sel_pos[0]:sel_pos[1]]
-
-    frames_mean = np.zeros(shape=(SizeCluster, SizeFrame), dtype=int)
-    for idx0, val in enumerate(NoCluster):
-        indices = np.where(frames_cluster == val)
-        NumCluster[idx0] = indices[0].size
-        frames_sel = frames_in[indices[0], :]
-        mean = np.mean(frames_sel, axis=0, dtype=int)
-        frames_mean[idx0, :] = mean
-
-    # --- Calcuting SNR
-    SNRCluster = np.zeros(shape=(SizeCluster, 3), dtype=int)
-    for idx0, val in enumerate(NoCluster):
-        snr0 = np.zeros(shape=(indices[0].size,), dtype=float)
-        for i, frame in enumerate(frames_sel):
-            snr0[i] = calculate_snr(frame, mean)
-
-        SNRCluster[idx0, 0] = np.min(snr0)
-        SNRCluster[idx0, 1] = np.mean(snr0)
-        SNRCluster[idx0, 2] = np.max(snr0)
-
-    # --- Adding artificial noise frames (Augmented Path)
+    frames_in = change_frame_size(frames_in, sel_pos)
+    frames_mean, snr_mean = calculate_mean_waveform(frames_in, frames_cluster)
+    new_frames, new_clusters = augmentation_data(frames_mean, frames_cluster, snr_mean, num_min_frames, do_addnoise)
     if do_addnoise:
-        maxY = np.max(NumCluster)
-        mode = 0
-        for idx0, val in enumerate(NumCluster):
-            if mode == 0:
-                # Anreichern bis Grenze und neue Frames
-                no_frames = num_min_frames + maxY - val
-            else:
-                # Nur neue Frames
-                no_frames = num_min_frames
-
-            new_cluster = NoCluster[idx0] * np.ones(shape=(no_frames, ), dtype=int)
-            noise_lvl = [SNRCluster[idx0, 0], SNRCluster[idx0, 2]]
-            _, new_frame = gen_noise_frame(no_frames, frames_mean[idx0, :], noise_lvl)
-
-            #plt.figure()
-            #print(NoCluster[idx0], no_frames, new_frame.size)
-            #plt.plot(np.transpose(new_frame[1:, :]), color='k')
-            #plt.plot(np.transpose(frames_mean[idx0, :]), color='r')
-            #plt.show(block = True)
-
-            frames_in = np.append(frames_in, new_frame, axis=0)
-            frames_cluster = np.append(frames_cluster, new_cluster, axis=0)
+        frames_in = np.append(frames_in, new_frames, axis=0)
+        frames_cluster = np.append(frames_cluster, new_clusters, axis=0)
 
     # --- Exclusion of falling clusters
     if (len(excludeCluster) == 0):
@@ -143,23 +182,14 @@ def prepare_dae_training(path: str, do_addnoise: bool, num_min_frames: int, excl
             frames_in = frames_in[selX[0], :]
             frames_cluster = frames_cluster[selX]
 
+    do_addzeros = True
+    new_mean, new_clusters, new_frames = generate_zero_frames(frames_in.shape[1], num_min_frames, do_addzeros)
+    if do_addzeros:
+        frames_in = np.append(frames_in, new_frames, axis=0)
+        frames_cluster = np.append(1+frames_cluster, new_clusters, axis=0)
+        frames_mean = np.vstack([new_mean, frames_mean])
+
     return frames_in, frames_cluster, frames_mean
-
-def prepare_dae_plotting(data_plot) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    din = []
-    dout = []
-    did = []
-    for i, vdata in enumerate(data_plot):
-        if i == 0:
-            din = vdata['frame']
-            dout = vdata['mean_frame']
-            did = vdata['cluster']
-        else:
-            din = np.append(din, vdata['frame'], axis=0)
-            dout = np.append(dout, vdata['mean_frame'], axis=0)
-            did = np.append(did, vdata['cluster'])
-
-    return din, dout, did
 
 def calculate_snr(yin: np.ndarray, ymean: np.ndarray):
     A = np.sum(np.square(yin))

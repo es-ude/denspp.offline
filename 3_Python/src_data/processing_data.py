@@ -5,10 +5,10 @@ from scipy.io import savemat
 import matplotlib.pyplot as plt
 
 from settings import Settings
-from src.call_data import DataController
-import src.preamp
-import src.adc
-import src.sda
+from src.data_call import DataController
+import src.amp.preamp
+import src.adc.adc
+import src.sda.sda
 
 def cut_frames_from_stream(
         data: np.ndarray, xpos: int, dxneg: int, dxpos: int, cluster: np.ndarray, cluster_no: int
@@ -55,9 +55,9 @@ def test_plot(frames_in, frames_cluster):
 
 def get_frames_from_labeled_datasets(path2save: str, data_set: int, use_alldata: bool, align_mode: int, settings_afe: Settings, plot_result: bool):
     # --- Loading the pipeline
-    preamp = src.preamp.PreAmp(settings_afe, settings_afe.f_filt_ana)
-    adc = src.adc.ADC(settings_afe)
-    sda = src.sda.SDA(settings_afe)
+    preamp = src.amp.preamp.PreAmp(settings_afe, settings_afe.f_filt_ana)
+    adc = src.adc.adc.ADC(settings_afe)
+    sda = src.sda.sda.SDA(settings_afe)
 
     # --- Selection of datasets and points (Angabe in us)
     datahandler = DataController(settings_afe.path2data, 0)

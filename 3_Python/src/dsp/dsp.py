@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.signal import butter, filtfilt
+from scipy.signal import butter, lfilter
 from settings import Settings
 
 class DSP:
@@ -19,7 +19,7 @@ class DSP:
         return uout
 
     def dig_filt_iir(self, xin: np.ndarray) -> np.ndarray:
-        xout = filtfilt(self.__b_iir_dig, self.__a_iir_dig, xin).astype("int16")
+        xout = lfilter(self.__b_iir_dig, self.__a_iir_dig, xin).astype("int16")
         return xout
 
     def dig_filt_fir(self, xin: np.ndarray) -> np.ndarray:

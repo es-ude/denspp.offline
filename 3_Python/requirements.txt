@@ -1,9 +1,6 @@
 numpy
 matplotlib
 
-# Libs for GUI
-pyqt5
-
 # Libs for reading electrophysiology datasets
 neo
 
@@ -13,3 +10,5 @@ scikit-learn
 torch
 torchinfo
 torchvision
+tensorboard
+elasticai-creator

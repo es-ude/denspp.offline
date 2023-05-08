@@ -1,9 +1,50 @@
+import dataclasses
+
 import numpy as np
 from fractions import Fraction
 from scipy.signal import resample_poly
 from settings import Settings
 
+@dataclasses.dataclass
+class SettingsADC:
+    """"Individuall data class to configure the ADC"""
+    def __init__(self,
+        vdd:    float,
+        vss:    float,
+        dvref:  float,
+        fs:     int,
+        Nadc:   int,
+        osr:    int
+    ):
+        self.vdd = vdd
+        self.vss = vss
+        self.vcm = self.__calc_vcm()
+        self.vref = self.__calc_vref(dvref)
+        self.sampling_rate = fs
+        self.quant = Nadc
+        self.osr = osr
+
+    def __calc_vcm(self) -> float:
+        return (self.vdd + self.vss)/2
+
+    def __calc_vref(self, dvref: float) -> [float, float]:
+        vrefp = self.vcm + dvref
+        vrefn = self.vcm - dvref
+        return [vrefp, vrefn]
+
+class SettingsADCRecommended(SettingsADC):
+    """Recommended data class to configure the ADC with standard values"""
+    def __init__(self):
+
+        super.__init__(
+            vdd=0.6, vss=-0.6,
+            dvref=0.2,
+            fs=20000, osr=1,
+            Nadc=12
+        )
+
 class ADC:
+    """"Class for applying an Analogue-Digital-Converter (ADC) on the raw data for digitization"""
     def __init__(self, setting: Settings):
         # --- Power supply
         self.__udd = setting.udd
@@ -26,8 +67,13 @@ class ADC:
             .as_integer_ratio()
         )
 
+        self.offset = 0
+        self.drift = 0
+        self.noise = 0
+
     # TODO: Adding quantizazion noise (settable)
     def adc_nyquist(self, uin: np.ndarray, do_sample: bool) -> np.ndarray:
+        """"Using the Nyquist Topology as an ADC"""
         # TODO: ADC-Funktion mit Oversampling noch einfügen
         # clamping through supply voltage
         uin_adc = uin
@@ -46,11 +92,13 @@ class ADC:
 
     # TODO: Implementieren (siehe MATLAB)
     def adc_sar(self, uin: np.ndarray, do_sample: bool) -> np.ndarray:
-        return uin
+        """"Using the Successive-Approximation (SAR) Topology as an ADC"""
+        raise NotImplementedError
 
     # TODO: Implementieren (siehe MATLAB)
     def adc_deltasigma(self, uin: np.ndarray, do_sample: bool) -> np.ndarray:
-        return uin
+        """"Using the Delta Sigma Topology as an ADC"""
+        raise NotImplementedError
 
     def __adc_conv(self, uin: np.ndarray, do_sample: bool):
         if do_sample:

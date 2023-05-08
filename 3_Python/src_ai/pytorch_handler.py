@@ -1,14 +1,25 @@
 import os.path, shutil
 import numpy as np
 from datetime import datetime
-
-from src_ai.dae_dataset import calculate_snr
-
 import torch
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
-def do_training(model: nn.Module, training_loader, validation_loader, optimizer, loss_fn, epochs: int, model_name: str) -> str:
+from src_ai.dae_dataset import calculate_snr
+
+def setup() -> None:
+    os_type = os.name
+
+    device0 = "CUDA" if torch.cuda.is_available() else "CPU"
+    if device0 == "CUDA":
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
+
+    print(f"... using PyTorch with {device0} device on {os_type}")
+
+
+def do_training(model: nn.Module, training_loader, validation_loader, optimizer, loss_fn, epochs: int, model_name: str) -> tuple[str, np.ndarray]:
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     path = 'runs'
     folder = '{}_ai_training_'.format(timestamp) + model_name
@@ -30,16 +41,18 @@ def do_training(model: nn.Module, training_loader, validation_loader, optimizer,
         model.train(True)
         train_loss = train_one_epoch(
             model, training_loader,
-            optimizer, loss_fn,
-            epoch_number, writer
+            optimizer, loss_fn
         )
 
         # --- Validation
         # We don't need gradients on to do reporting
+        # model.eval()
         model.train(False)
         valid_loss = 0.0
         snr_valid = []
-        for i, vdata in enumerate(validation_loader):
+
+        total_batches = 0
+        for vdata in validation_loader:
             data_in = vdata['frame']
             data_out = vdata['mean_frame']
 
@@ -51,8 +64,10 @@ def do_training(model: nn.Module, training_loader, validation_loader, optimizer,
             ypred0 = pred_out.detach().numpy()
             out0 = data_out.detach().numpy()
             snr_valid.append([calculate_snr(ypred0, out0)])
+            total_batches += 1
 
-        valid_loss = valid_loss / (i+1)
+        valid_loss = valid_loss / total_batches
+
         print(f'... loss of epoch {epoch+1}/{epochs} [{(epoch+1)/epochs*100:.2f} %]: train = {train_loss:.5f}, valid = {valid_loss:.5f}')
 
         snr_valid = np.array(snr_valid)
@@ -62,9 +77,10 @@ def do_training(model: nn.Module, training_loader, validation_loader, optimizer,
 
         # Log the running loss averaged per batch
         # for both training and validation
-        writer.add_scalars(
-            'Training vs. Validation Loss',
-            {'Training': train_loss, 'Validation': valid_loss, 'mean(SNR)': epoch_plot[epoch, 1], 'min(SNR)': epoch_plot[epoch, 0], 'max(SNR)': epoch_plot[epoch, 2]},
+        writer.add_scalar('Loss_train', train_loss)
+        writer.add_scalar('Loss_valid', valid_loss)
+        writer.add_scalars('Training vs. Validation Loss',
+            {'mean(SNR)': epoch_plot[epoch, 1], 'min(SNR)': epoch_plot[epoch, 0], 'max(SNR)': epoch_plot[epoch, 2]},
             epoch_number + 1
         )
         writer.flush()
@@ -73,7 +89,7 @@ def do_training(model: nn.Module, training_loader, validation_loader, optimizer,
         if valid_loss < best_vloss:
             best_vloss = valid_loss
             model_path = os.path.join(path2log, 'model_{}'.format(epoch_number))
-            torch.save(model.state_dict(), model_path)
+            torch.save(model, model_path)
 
         epoch_number += 1
 
@@ -90,13 +106,13 @@ def do_training(model: nn.Module, training_loader, validation_loader, optimizer,
 
     return path2model, epoch_plot
 
-def train_one_epoch(model, training_loader, optimizer, loss_fn, epoch_index, tb_writer):
+def train_one_epoch(model, training_loader, optimizer, loss_fn):
     running_loss = 0.
-    last_loss = 0.
+    total_batches = 0
 
     # Here, we use enumerate(training_loader) instead of iter(training_loader)
     # so that we can track the batch index and do some intra-epoch reporting
-    for i, data in enumerate(training_loader):
+    for data in training_loader:
         # Every data instance is an input + label pair
         data_in = data['frame']
         data_out = data['mean_frame']
@@ -113,13 +129,8 @@ def train_one_epoch(model, training_loader, optimizer, loss_fn, epoch_index, tb_
 
         # Gather data and report
         running_loss += loss.item()
+        total_batches += 1
 
-        no_batch_print = 100
-        if i % no_batch_print == (no_batch_print-1):
-            # loss per batch
-            last_loss = running_loss / no_batch_print
-            tb_x = epoch_index * len(training_loader) + i + 1
-            tb_writer.add_scalar('Loss/train', last_loss, tb_x)
-            running_loss = 0.
+    avg_loss = running_loss / total_batches
 
-    return last_loss
+    return avg_loss

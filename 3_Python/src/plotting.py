@@ -62,7 +62,7 @@ def results_afe (signals: PipelineSpike, path: str) -> None:
 
 
 def results_fec(signals: PipelineSpike, path: str) -> None:
-    color = ['k', 'r', 'b', 'g']
+    color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
 
     if signals.version == 0:
         framesIn = signals.frames_orig
@@ -127,7 +127,7 @@ def results_test(signals: PipelineSpike, path: str) -> None:
     ax_histy.hist(y, bins=bins, orientation='horizontal')
 
 def results_paper(signals: PipelineSpike, path: str) -> None:
-    color = ['k', 'r', 'b', 'g']
+    color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
     textsize = 14
     timeCut = [50, 60]
 

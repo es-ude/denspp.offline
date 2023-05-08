@@ -7,6 +7,7 @@ import numpy as np
 from src_ai.pytorch_handler import do_training
 from src_ai.dae_dataset import Dataset, get_dataloaders, prepare_dae_training, prepare_dae_plotting, calculate_snr
 import src_ai.dae_topology as nnModules
+# import src_ai.dae_topology_embedded as nnModules
 import src_ai.plotting as pltSpAIke
 
 def loss_func(feat_1, feat_2):
@@ -24,8 +25,9 @@ if __name__ == "__main__":
     path2data = 'src_ai/data/Martinez_2009'
     file_name = '2023-04-17_Dataset01_SimDaten_Martinez2009_Sorted.mat'
     no_epochs = 1000
+    batch_size = 256
     addnoise_do = True
-    addnoise_num = 2000
+    addnoise_num = 5000
     excludeCluster = [1]
     sel_pos = [] #[1, 28]
 
@@ -40,7 +42,7 @@ if __name__ == "__main__":
     # pltSpAIke.test_plot(frames_in, frames_cluster)
     dataset = Dataset(frames_in, frames_cluster, frames_mean)
     train_dl, validation_dl = get_dataloaders(
-        dataset, batch_size=256,
+        dataset, batch_size=batch_size,
         validation_split=0.2,
         shuffle=True
     )
@@ -57,6 +59,7 @@ if __name__ == "__main__":
         no_epochs, model_name
     )
 
+    # TODO: Loading model_state_dict and save as model
     # --- Plotting some results with validation
     data_in, data_out, cluster_out = prepare_dae_plotting(validation_dl)
     feat_out, pred_out = model(torch.from_numpy(data_in))

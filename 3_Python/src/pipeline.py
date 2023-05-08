@@ -1,16 +1,15 @@
 import os, shutil
 
-from src.preamp import PreAmp
-from src.adc import ADC
-from src.dsp import DSP
-from src.sda import SDA
-from src.fec import FEC
+from src.amp.preamp import PreAmp
+from src.adc.adc import ADC
+from src.dsp.dsp import DSP
+from src.sda.sda import SDA
+from src.feature.fec import FEC
 from src.metric import Metric
 from settings import Settings
-from src.call_data import DataHandler
-from src_ai.nn_pytorch import NeuralNetwork
+from src.data_call import DataHandler
 
-class PipelineSpike (Metric, NeuralNetwork):
+class PipelineSpike (Metric):
     def __init__(self, settings: Settings):
         self.preamp0 = PreAmp(settings, settings.f_filt_ana)
         self.preamp1 = PreAmp(settings, settings.f_filt_spk)
@@ -20,7 +19,6 @@ class PipelineSpike (Metric, NeuralNetwork):
         self.dsp1 = DSP(settings, settings.f_filt_lfp)
         self.sda = SDA(settings)
         self.fec = FEC(settings)
-        NeuralNetwork.__init__(self)
         Metric.__init__(self, settings.x_window_length)
 
         self.fs_ana = settings.fs_ana

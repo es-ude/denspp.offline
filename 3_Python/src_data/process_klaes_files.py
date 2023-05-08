@@ -1,8 +1,5 @@
 import os
 import glob
-import struct
-import array
-
 import numpy as np
 from neo.io import BlackrockIO
 from scipy.io import savemat

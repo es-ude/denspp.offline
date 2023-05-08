@@ -8,6 +8,7 @@ class dnn_dae_v1(nn.Module):
         iohiddenlayer = [32, 20, 3]
         # --- Encoder Path
         self.encoder = nn.Sequential(
+            # nn.LayerNorm()
             nn.BatchNorm1d(num_features=iohiddenlayer[0]),
             nn.Linear(in_features=iohiddenlayer[0], out_features=iohiddenlayer[1]),
             nn.Tanh(),
@@ -32,7 +33,6 @@ class dnn_dae_v2(nn.Module):
         iohiddenlayer = [32, 24, 10]
         # --- Encoder Path
         self.encoder = nn.Sequential(
-            nn.BatchNorm1d(),
             nn.Linear(in_features=iohiddenlayer[0], out_features=iohiddenlayer[1]),
             nn.Tanh(),
             nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[2]),
