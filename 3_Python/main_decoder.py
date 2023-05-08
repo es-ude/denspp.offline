@@ -2,8 +2,10 @@ import matplotlib.pyplot as plt
 
 from settings import Settings
 from src_decoder.settings import DataSettings, DSPSettings, DecoderSettings
+from src_decoder.plotting import plot_featvec
 from src.data_call import DataController
 from src.dsp.dsp import DSP
+from scipy.io import loadmat
 
 if __name__ == "__main__":
     plt.close('all')
@@ -20,6 +22,10 @@ if __name__ == "__main__":
     )
     datahandler.output_meta()
     dataIn = datahandler.get_data()
+
+    # --- Import mat-file for feature vector
+    feat_in = loadmat("src_decoder/data.mat")
+    feat_vec = feat_in['Data']
 
     # --- Filtering the raw data (getting the lfp signal)
     setting_dsp = Settings()
@@ -41,3 +47,8 @@ if __name__ == "__main__":
 
     # --- Feature Mapping
 
+    # --- Plotting
+    plot_featvec(feat_vec)
+
+    # --- Ending
+    print("\nThe End")
