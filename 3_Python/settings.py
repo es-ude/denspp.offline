@@ -55,3 +55,35 @@ class Settings:
 
     # --- Properties for feature extraction and clustering
     no_cluster = 3
+
+class PreampSettings:
+    # Supply Voltage
+    udd = 0.6
+    uss = -0.6
+    # Analogue pre-amplification
+    # Neuabtastungs-Rate der Eingangsdaten
+    fs_ana = 50e3
+    gain_ana = 40
+    n_filt_ana = 1
+    f_filt_ana = np.array([0.1, 8e3])
+
+class DSPSettings:
+    fs_adc = 20e3
+    gain_dig = 1
+    n_filt_dig = 2
+    f_filt_lfp = np.array([0.1, 100])
+    f_filt_spk = np.array([100, 6e3])
+class ADCSettings:
+    # ADC
+    oversampling = 1
+    n_bit_adc = 12
+    d_uref = 0.1
+    fs_adc = 20e3
+    # 20e3 für 40 samples per frame
+    # 32e3 for 64 samples per frame
+
+    # --- Digital filtering for ADC output and CIC
+    gain_dig = 1
+    n_filt_dig = 2
+    f_filt_lfp = np.array([0.1, 100])
+    f_filt_spk = np.array([100, 6e3])
