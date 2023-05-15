@@ -35,7 +35,7 @@ def save_figure(fig, path: str, name: str):
         file_name = path2fig + '.' + form
         fig.savefig(file_name, format=form)
 
-def results_training(path: str, yin: np.ndarray, feat: np.ndarray, ypred: np.ndarray, cluster: np.ndarray, snr: list) -> None:
+def results_training(path: str, yin: np.ndarray, feat: np.ndarray, ypred: np.ndarray, cluster: np.ndarray, snr: np.ndarray) -> None:
     color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
     textsize = 12
 

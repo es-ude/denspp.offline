@@ -1,7 +1,4 @@
 0_include
 __pycache__
 .DS_Store
-figures/*
-logs/*
 runs/*
-settings.py

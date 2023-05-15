@@ -3,6 +3,8 @@ import numpy as np
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 
+from src.data_call import DataHandler
+
 class Metric():
     def __init__(self, frame_length: int):
         self.frame_length = frame_length
@@ -14,6 +16,17 @@ class Metric():
         self.ca = None           # compression accuracy
         self.cr = None           # compression ratio
 
+    def check_label(self, dataIn: DataHandler) -> None:
+        if not dataIn.label_exist:
+            pass
+        else:
+            print("... Calculation of metrics with labeled informations")
+            path2save = self.path2figure
+
+            x_ist = self.x_pos
+            x_soll = dataIn.spike_xpos * self.__scaling_metric
+            self.dr = self.x_adc.size / self.frame_length
+            self.metric_sda(path2save, x_ist, x_soll)
     def calculate_snr(self, yin: np.ndarray, ymean: np.ndarray):
         A = np.sum(np.square(yin))
         B = np.sum(np.square(ymean - yin))

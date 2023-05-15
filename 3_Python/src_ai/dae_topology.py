@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 
 class dnn_dae_v1(nn.Module):
+    """Class for using a denoising autoencoder with Dense-Layer"""
     def __init__(self):
         super().__init__()
 
@@ -26,35 +27,12 @@ class dnn_dae_v1(nn.Module):
         encoded = self.encoder(x)
         return encoded, self.decoder(encoded)
 
-class dnn_dae_v2(nn.Module):
-    def __init__(self):
-        super().__init__()
-
-        iohiddenlayer = [32, 24, 10]
-        # --- Encoder Path
-        self.encoder = nn.Sequential(
-            nn.Linear(in_features=iohiddenlayer[0], out_features=iohiddenlayer[1]),
-            nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[2]),
-            nn.Tanh()
-        )
-        # --- Decoder Path
-        self.decoder = nn.Sequential(
-            nn.BatchNorm1d(),
-            nn.Linear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[1]),
-            nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0])
-        )
-
-    def forward(self, x: torch.Tensor) -> [torch.Tensor, torch.Tensor]:
-        encoded = self.encoder(x)
-        return encoded, self.decoder(encoded)
-
 class cnn_dae_v1(nn.Module):
+    """Class for using a denoising autoencoder in Convolutional Matter"""
     def __init__(self):
         super().__init__()
 
-        iohiddenlayer = [40, 20, 8]
+        iohiddenlayer = [32, 20, 8]
         kernelC = [3, 3]
         kernelM = [2, 2]
         # Encoder setup

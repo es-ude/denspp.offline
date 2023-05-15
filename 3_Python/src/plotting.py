@@ -2,7 +2,7 @@ import os.path
 import numpy as np
 import matplotlib.pyplot as plt
 
-from src.pipeline import PipelineSpike
+from src.pipeline_signals import PipelineSignal
 
 def cm_to_inch(value):
     return value/2.54
@@ -15,7 +15,7 @@ def save_figure(fig, path: str, name: str):
         file_name = path2fig + '.' + form
         fig.savefig(file_name, format=form)
 
-def results_afe (signals: PipelineSpike, path: str) -> None:
+def results_afe (signals: PipelineSignal, path: str, no_electrode: int) -> None:
     fs_ana = signals.fs_ana
     fs_adc = signals.fs_adc
 
@@ -28,17 +28,41 @@ def results_afe (signals: PipelineSpike, path: str) -> None:
     tA = np.arange(0, uin.size, 1) / fs_ana
     tD = np.arange(0, xadc.size, 1) / fs_adc
 
+    # --- Plot afe
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(21)))
+    plt.subplots_adjust(hspace=0)
+
+    ax1 = plt.subplot(411)
+    ax2 = plt.subplot(412, sharex=ax1)
+    ax3 = plt.subplot(413, sharex=ax1)
+    ax4 = plt.subplot(414, sharex=ax1)
+
+    ax1.plot(tA, 1e6 * uin, 'k')
+    ax1.set_ylabel("U_in [µV]")
+    ax2.plot(tA, 1e6 * signals.u_chp, 'k')
+    ax2.set_ylabel("U_chopper [µV]")
+    ax3.plot(tA, 1e6 * signals.u_pre, 'k')
+    ax3.set_ylabel("Output pre-amplifier [µV]")
+    ax4.plot(tD, 1e6 * signals.u_quant, 'k')
+    ax4.set_ylabel("ADC error [µV]")
+    ax4.set_xlabel("Time t (s)")
+
+    plt.tight_layout()
+    # --- saving plots
+    if path:
+        save_figure(plt, path, "pipeline_afe_elec" + str(no_electrode))
+
     # --- Plotting
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(21)))
     plt.subplots_adjust(hspace=0)
 
-    ax1 = plt.subplot(4, 1, 1)
-    ax2 = plt.subplot(4, 1, 2, sharex=ax1)
-    ax3 = plt.subplot(4, 1, 3, sharex=ax1)
-    ax4 = plt.subplot(4, 1, 4, sharex=ax1)
+    ax1 = plt.subplot(411)
+    ax2 = plt.subplot(412, sharex=ax1)
+    ax3 = plt.subplot(413, sharex=ax1)
+    ax4 = plt.subplot(414, sharex=ax1)
 
     # Input signal
-    ax1.plot(tA, 1e6* uin, 'k')
+    ax1.plot(tA, 1e6 * uin, 'k')
     ax1.set_ylabel("$U_{in}$ (µV)")
 
     # ADC output
@@ -53,23 +77,21 @@ def results_afe (signals: PipelineSpike, path: str) -> None:
     # Spike Ticks
     ax4.set_ylabel("Spike Ticks")
     ax4.set_xlabel("Time t (s)")
+
     for idx, wave in enumerate(ticks):
         ax4.plot(tD, 1.25*idx + wave)
 
+    plt.tight_layout()
     # --- saving plots
     if path:
-        save_figure(plt, path, "pipeline_transient")
+        save_figure(plt, path, "pipeline_transient_elec"+str(no_electrode))
 
 
-def results_fec(signals: PipelineSpike, path: str) -> None:
+def results_fec(signals: PipelineSignal, path: str, no_electrode: int) -> None:
     color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
 
-    if signals.version == 0:
-        framesIn = signals.frames_orig
-        framesOut = signals.frames_align
-    else:
-        framesIn = signals.frames_align
-        framesOut = signals.frames_denoised
+    framesIn = signals.frames_orig
+    framesOut = signals.frames_align
 
     feat = signals.features
     cluster = signals.cluster_id
@@ -86,24 +108,24 @@ def results_fec(signals: PipelineSpike, path: str) -> None:
 
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
     ax1 = plt.subplot(2, 2, 1)
-    ax1.plot(np.transpose(framesIn))
-
     ax2 = plt.subplot(2, 2, 2)
-    ax2.plot(np.transpose(framesOut))
-
     ax3 = plt.subplot(2, 2, 3)
+    ax4 = plt.subplot(2, 2, 4)
+
+    ax1.plot(np.transpose(framesIn))
+    ax2.plot(np.transpose(framesOut))
     for idx in range(0, cluster.shape[0]):
         ax3.plot(feat[idx, 0], feat[idx, 1], color=color[cluster[idx]], marker='.')
 
-    ax4 = plt.subplot(2, 2, 4)
     for idx in range(0, mean_frames.shape[0]):
         ax4.plot(np.transpose(mean_frames[idx, :]), color=color[idx])
 
+    plt.tight_layout()
     # --- saving plots
     if path:
-        save_figure(plt, path, "pipeline_fec")
+        save_figure(plt, path, "pipeline_fec_elec"+str(no_electrode))
 
-def results_test(signals: PipelineSpike, path: str) -> None:
+def results_test(signals: PipelineSignal, path: str) -> None:
     feat = signals.features
     x = feat[:, 0]
     y = feat[:, 1]
@@ -126,7 +148,9 @@ def results_test(signals: PipelineSpike, path: str) -> None:
     ax_histx.hist(x, bins=bins)
     ax_histy.hist(y, bins=bins, orientation='horizontal')
 
-def results_paper(signals: PipelineSpike, path: str) -> None:
+    plt.tight_layout()
+
+def results_paper(signals: PipelineSignal, path: str, no_electrode: int) -> None:
     color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
     textsize = 14
     timeCut = [50, 60]
@@ -138,11 +162,7 @@ def results_paper(signals: PipelineSpike, path: str) -> None:
     xthr = signals.x_thr
     ticks = signals.spike_ticks
     tD = np.arange(0, xadc.size, 1) / fs_adc
-
-    if signals.version == 0:
-        framesOut = signals.frames_align
-    else:
-        framesOut = signals.frames_denoised
+    framesOut = signals.frames_align
 
     # --- Selection of FEC signals
     feat = signals.features
@@ -192,7 +212,7 @@ def results_paper(signals: PipelineSpike, path: str) -> None:
     plt.tight_layout()
     # --- saving plots
     if path:
-        save_figure(plt, path, "pipeline_paper0")
+        save_figure(plt, path, "pipeline_paper0_elec"+str(no_electrode))
 
     # --- Figure 2
     #plt.figure().set_figwidth(cm_to_inch(16))
@@ -223,5 +243,5 @@ def results_paper(signals: PipelineSpike, path: str) -> None:
     plt.tight_layout()
     # --- saving plots
     if path:
-        save_figure(plt, path, "pipeline_paper1")
+        save_figure(plt, path, "pipeline_paper1_elec"+str(no_electrode))
 

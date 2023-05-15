@@ -1,7 +1,3 @@
-#ignore configs to not overrite the global config
-0_old/
-3_Python/settings.m
-3_Python/0_include
 .idea/
 *.asv
 .DS_Store/

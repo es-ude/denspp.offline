@@ -5,9 +5,10 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 
-from src_ai.processing_noise import gen_noise_frame
+from src.processing_noise import frame_noise
 
-class Dataset(Dataset):
+# TODO: Rauschen mit SNR hier korrelieren
+class DatasetDAE(Dataset):
     def __init__(self, frames: np.ndarray, index: np.ndarray, mean_frame: np.ndarray):
         self.frames = np.array(frames, dtype=np.float32)
         self.index = index
@@ -24,7 +25,7 @@ class Dataset(Dataset):
         mean_frame = self.mean_frame[cluster_id, :]
         return {'frame': frame, 'mean_frame': mean_frame, 'cluster': cluster_id}
 
-def get_dataloaders(dataset: Dataset, batch_size: int, validation_split: float, shuffle: bool) -> tuple[DataLoader, DataLoader]:
+def get_dataloaders(dataset: DatasetDAE, batch_size: int, validation_split: float, shuffle: bool) -> tuple[DataLoader, DataLoader]:
     dataset_size = len(dataset)
     indices = list(range(dataset_size))
     split = int(np.floor(validation_split * dataset_size))
@@ -48,10 +49,10 @@ def get_dataloaders(dataset: Dataset, batch_size: int, validation_split: float, 
 
     return train_loader, validation_loader
 
-def generate_frames(no_frames: int, frame_in: np.ndarray, cluster_in: int, noise_lvl: list) -> tuple[np.ndarray, np.ndarray]:
+def generate_frames(no_frames: int, frame_in: np.ndarray, cluster_in: int, noise_lvl: [float, float]) -> tuple[np.ndarray, np.ndarray]:
+    fs = 20e3
     new_cluster = cluster_in * np.ones(shape=(no_frames,), dtype=int)
-    _, new_frame = gen_noise_frame(no_frames, frame_in, noise_lvl)
-
+    _, new_frame = frame_noise(no_frames, frame_in, noise_lvl, fs)
     return new_cluster, new_frame
 
 def prepare_dae_plotting(data_plot) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -81,6 +82,7 @@ def change_frame_size(frames_in: np.ndarray, sel_pos: list) -> np.ndarray:
     return frames_out
 
 def calculate_mean_waveform(frames_in: np.ndarray, frames_cluster: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Calculating mean waveforms of spike waveforms"""
     NoCluster, NumCluster = np.unique(frames_cluster, return_counts=True)
     # NoCluster = NoCluster.tolist()
     SizeCluster = np.size(NoCluster)
@@ -106,32 +108,30 @@ def calculate_mean_waveform(frames_in: np.ndarray, frames_cluster: np.ndarray) -
 
     return frames_mean, cluster_snr
 
-def augmentation_data(frames_mean: np.ndarray, frames_cluster: np.ndarray, snr_cluster: np.ndarray, num_min_frames: int, run: bool) -> tuple[np.ndarray, np.ndarray] :
+def augmentation_data(frames_mean: np.ndarray, frames_cluster: np.ndarray, snr_cluster: np.ndarray, num_min_frames: int, run: bool) -> tuple[np.ndarray, np.ndarray]:
+    """Tool for data augmentation of input spike frames"""
     frames_out = np.array([], dtype='float')
     cluster_out = np.array([], dtype='int')
 
     NoCluster, NumCluster = np.unique(frames_cluster, return_counts=True)
     # --- Adding artificial noise frames (Augmented Path)
     if run:
-        noise_lvl = [-12, -6] # [snr_cluster[idx0, 0], snr_cluster[idx0, 2]]
+        noise_lvl = [-1000, -800]
+        # noise_lvl = [snr_cluster[idx0, 0], snr_cluster[idx0, 2]]
         maxY = np.max(NumCluster)
 
         for idx0, val in enumerate(NumCluster):
             no_frames = num_min_frames + maxY - val
             (new_cluster, new_frame) = generate_frames(no_frames, frames_mean[idx0, :], NoCluster[idx0], noise_lvl)
-
-            if idx0 == 0:
-                frames_out = new_frame
-                cluster_out = new_cluster
-            else:
-                frames_out = np.append(frames_out, new_frame, axis=0)
-                cluster_out = np.append(cluster_out, new_cluster, axis=0)
+            # Adding to output
+            frames_out = new_frame if idx0 == 0 else np.append(frames_out, new_frame, axis=0)
+            cluster_out = new_cluster if idx0 == 0 else np.append(cluster_out, new_cluster, axis=0)
 
     return frames_out, cluster_out
 
 def generate_zero_frames(SizeFrame: int, num_frames: int, run: bool) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    # --- Adding zero frames
-    noise_lvl = [-3, 3]
+    """Generating zero frames with noise for data augmentation"""
+    noise_lvl = [-100, -80]
     if not run:
         mean = np.array([], dtype='int')
         cluster = np.array([], dtype='int16')
@@ -143,9 +143,7 @@ def generate_zero_frames(SizeFrame: int, num_frames: int, run: bool) -> tuple[np
     return mean, cluster, frames
 
 def prepare_dae_training(path: str, do_addnoise: bool, num_min_frames: int, excludeCluster: list, sel_pos: list) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Einlesen des Datensatzes inkl. Augmentierung (Kein Pre-Processing)
-    """
+    """Einlesen des Datensatzes inkl. Augmentierung (Kein Pre-Processing)"""
 
     str_datum = datetime.now().strftime('%Y%m%d %H%M%S')
     print(f"Running on {str_datum}")
@@ -192,6 +190,7 @@ def prepare_dae_training(path: str, do_addnoise: bool, num_min_frames: int, excl
     return frames_in, frames_cluster, frames_mean
 
 def calculate_snr(yin: np.ndarray, ymean: np.ndarray):
+    """Calculating the signal-to-noise ratio of the input signal compared to mean waveform"""
     A = np.sum(np.square(yin))
     B = np.sum(np.square(ymean - yin))
     outdB = 10 * np.log10(A/B)
