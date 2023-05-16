@@ -32,10 +32,9 @@ def results_afe (signals: PipelineSignal, path: str, no_electrode: int) -> None:
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(21)))
     plt.subplots_adjust(hspace=0)
 
-    ax1 = plt.subplot(411)
-    ax2 = plt.subplot(412, sharex=ax1)
-    ax3 = plt.subplot(413, sharex=ax1)
-    ax4 = plt.subplot(414, sharex=ax1)
+    ax1 = plt.subplot(311)
+    ax2 = plt.subplot(312, sharex=ax1)
+    ax3 = plt.subplot(313, sharex=ax1)
 
     ax1.plot(tA, 1e6 * uin, 'k')
     ax1.set_ylabel("U_in [µV]")
@@ -43,9 +42,7 @@ def results_afe (signals: PipelineSignal, path: str, no_electrode: int) -> None:
     ax2.set_ylabel("U_chopper [µV]")
     ax3.plot(tA, 1e6 * signals.u_pre, 'k')
     ax3.set_ylabel("Output pre-amplifier [µV]")
-    ax4.plot(tD, 1e6 * signals.u_quant, 'k')
-    ax4.set_ylabel("ADC error [µV]")
-    ax4.set_xlabel("Time t (s)")
+    ax3.set_xlabel("Time t (s)")
 
     plt.tight_layout()
     # --- saving plots
@@ -77,7 +74,6 @@ def results_afe (signals: PipelineSignal, path: str, no_electrode: int) -> None:
     # Spike Ticks
     ax4.set_ylabel("Spike Ticks")
     ax4.set_xlabel("Time t (s)")
-
     for idx, wave in enumerate(ticks):
         ax4.plot(tD, 1.25*idx + wave)
 
@@ -88,6 +84,7 @@ def results_afe (signals: PipelineSignal, path: str, no_electrode: int) -> None:
 
 
 def results_fec(signals: PipelineSignal, path: str, no_electrode: int) -> None:
+    """Plotting results """
     color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
 
     framesIn = signals.frames_orig
@@ -96,21 +93,15 @@ def results_fec(signals: PipelineSignal, path: str, no_electrode: int) -> None:
     feat = signals.features
     cluster = signals.cluster_id
     mean_frames = np.zeros(shape=(signals.cluster_no, framesOut.shape[1]))
-    mean_cluster = np.zeros(shape=(signals.cluster_no, feat.shape[0]))
-    mean_value = np.zeros(shape=(signals.cluster_no, 1))
-
-    idx = 0
-    for wave in framesOut:
-        mean_frames[cluster[idx], :] += wave
-        mean_value[cluster[idx]] += 1
-        idx += 1
-    mean_frames = mean_frames / mean_value
+    for idx, id in enumerate(np.unique(cluster)):
+        x0 = np.where(cluster == id)[0]
+        mean_frames[idx, :] = np.mean(framesOut[x0], axis=0)
 
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
-    ax1 = plt.subplot(2, 2, 1)
-    ax2 = plt.subplot(2, 2, 2)
-    ax3 = plt.subplot(2, 2, 3)
-    ax4 = plt.subplot(2, 2, 4)
+    ax1 = plt.subplot(221)
+    ax2 = plt.subplot(222)
+    ax3 = plt.subplot(223)
+    ax4 = plt.subplot(224, sharex=ax2)
 
     ax1.plot(np.transpose(framesIn))
     ax2.plot(np.transpose(framesOut))
@@ -125,32 +116,51 @@ def results_fec(signals: PipelineSignal, path: str, no_electrode: int) -> None:
     if path:
         save_figure(plt, path, "pipeline_fec_elec"+str(no_electrode))
 
-def results_test(signals: PipelineSignal, path: str) -> None:
-    feat = signals.features
-    x = feat[:, 0]
-    y = feat[:, 1]
+def results_ivt(signals: PipelineSignal, path: str, no_electrode: int) -> None:
+    """Plotting the results of interval timing spikes of each cluster"""
+    color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
 
-    # Start with a square Figure.
-    fig = plt.figure(figsize=(6, 6))
-    ax = fig.add_gridspec(top=0.75, right=0.75).subplots()
+    ax1 = plt.subplot(231)
+    ax2 = plt.subplot(232, sharex=ax1)
+    ax3 = plt.subplot(233, sharex=ax1)
+    ax4 = plt.subplot(234)
+    ax5 = plt.subplot(235, sharex=ax4)
+    ax6 = plt.subplot(236, sharex=ax4)
 
-    # Create the Axes.
-    ax.set(aspect=1)
-    ax_histx = ax.inset_axes([0, 1.05, 1, 0.25], sharex=ax)
-    ax_histy = ax.inset_axes([1.05, 0, 0.25, 1], sharey=ax)
+    # --- Mean waveform
+    frames = signals.frames_align
+    cluster = signals.cluster_id
+    mean_frames = np.zeros(shape=(signals.cluster_no, frames.shape[1]))
+    for idx, id in enumerate(np.unique(cluster)):
+        x0 = np.where(cluster == id)[0]
+        mean_frames[idx, :] = np.mean(frames[x0], axis=0)
 
-    # Draw the scatter plot and marginals.
-    ax_histx.tick_params(axis="x", labelbottom=False)
-    ax_histy.tick_params(axis="y", labelleft=False)
-    ax.scatter(x, y)
+    ax1.plot(mean_frames[0, :], color=color[0])
+    ax2.plot(mean_frames[1, :], color=color[1])
+    ax3.plot(mean_frames[2, :], color=color[2])
+    ax1.set_xticks([0, 7, 15, 23, 31])
+    ax1.set_ylabel("ADC output")
+    ax2.set_xlabel("Frame position")
 
-    bins = 100
-    ax_histx.hist(x, bins=bins)
-    ax_histy.hist(y, bins=bins, orientation='horizontal')
+    # --- Histograms
+    scale = 1e3
+    ax4.hist(scale * signals.its[0], bins=100)
+    ax5.hist(scale * signals.its[1], bins=100)
+    ax6.hist(scale * signals.its[2], bins=100)
+    ax4.set_xlim(0, 1000)
+    ax4.set_ylabel("No. bins")
+    ax5.set_xlabel("Interval timing [ms]")
+
+    plt.tight_layout()
+    # --- saving plots
+    if path:
+        save_figure(plt, path, "pipeline_ivt" + str(no_electrode))
 
     plt.tight_layout()
 
 def results_paper(signals: PipelineSignal, path: str, no_electrode: int) -> None:
+    """Plotting results of end-to-end spike sorting for paper"""
     color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
     textsize = 14
     timeCut = [50, 60]

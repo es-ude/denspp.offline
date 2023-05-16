@@ -6,17 +6,18 @@ from src.data_call import SettingsDATA
 from src.preamp import PreAmp, SettingsAMP
 from src.adc.adc_basic import SettingsADC
 from src.adc.adc_sar import ADC_SAR as ADC0
-from src.dsp.dsp import DSP, SettingsDSP
+from src.dsp import DSP, SettingsDSP
 from src.sda import SDA, SettingsSDA
 from src.feature_extraction import FeatureExtraction, SettingsFeature
 from src.clustering import Clustering, SettingsCluster
+from src.nsp import calc_spiketicks, calc_interval_timing
 
 # --- Configuring the pipeline
 class Settings:
     """Settings class for handling the pipeline setting"""
     SettingsDATA = SettingsDATA(
         path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
-        data_set=1, data_point=1,
+        data_set=1, data_point=0,
         t_range=[0],
         ch_sel=[-1],
         fs_resample=100e3
@@ -119,7 +120,7 @@ class Pipeline(PipelineSignal):
         self.u_pre, self.u_chp = self.preamp0.pre_amp_chopper(self.u_in, u_inn)
         # self.u_pre = self.preamp0.pre_amp(self.u_in, self.preamp0.settings.vcm)
         # self.u_chp = self.u_pre
-        self.x_adc = self.adc.adc_ideal(self.u_pre)[0]
+        self.x_adc, _, self.u_quant = self.adc.adc_ideal(self.u_pre)
         # ---- Digital Pre-processing ----
         self.x_lfp = self.dsp0.filter(self.x_adc)
         self.x_spk = self.dsp1.filter(self.x_adc)
@@ -129,8 +130,9 @@ class Pipeline(PipelineSignal):
         (self.frames_orig, self.x_pos) = self.sda.frame_generation(self.x_dly, self.x_sda, self.x_thr)
         self.frames_align = self.sda.frame_aligning(self.frames_orig, self.__mode_frame)
         # ---- Feature Extraction  ----
-        self.features = self.fe.fe_pdac_min(self.frames_align)
-        # self.features = self.fec.fe_pca(self.frames_align)
+        # self.features = self.fe.fe_pdac_min(self.frames_align)
+        self.features = self.fe.fe_pca(self.frames_align)
         # ---- Clustering | Classification ----
         (self.cluster_id, self.cluster_no, self.sse) = self.cl.cluster_kmeans(self.features)
-        self.spike_ticks = self.cl.calc_spiketicks(self.x_adc, self.x_pos, self.cluster_id)
+        self.spike_ticks = calc_spiketicks(self.x_adc, self.x_pos, self.cluster_id)
+        self.its = calc_interval_timing(self.spike_ticks, self.fs_dig)

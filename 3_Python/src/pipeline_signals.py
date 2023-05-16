@@ -19,6 +19,8 @@ class PipelineSignal:
         self.cluster_id = None
         self.cluster_no = None
         self.spike_ticks = None
+        self.its = None
+
         self.fs_ana = fs_ana
         self.fs_adc = osr * fs_adc
         self.fs_dig = fs_adc

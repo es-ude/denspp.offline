@@ -36,14 +36,3 @@ class Clustering:
         results = cluster.labels_
         number = cluster.n_clusters
         return (results, number, sse)
-
-    def calc_spiketicks(self, uin: np.ndarray, xpos: np.ndarray, cluster_id: np.ndarray) -> np.ndarray:
-        """Determining spike ticks with cluster results"""
-        cluster_no = np.unique(cluster_id)
-        ticks = np.zeros(shape=(cluster_no.size, uin.size), dtype=int)
-
-        idx = 0
-        for val in xpos:
-            ticks[cluster_id[idx], val] = 1
-            idx += 1
-        return ticks

@@ -6,6 +6,7 @@ from src.data_call import SettingsDATA
 from src.sda import SDA, SettingsSDA
 from src.feature_extraction import FeatureExtraction, SettingsFeature
 from src.clustering import Clustering, SettingsCluster
+from src.nsp import calc_spiketicks, calc_interval_timing
 
 # --- Configuring the pipeline
 class Settings:
@@ -35,7 +36,7 @@ class Settings:
     )
 
 # --- Setting the pipeline
-class PipelineV1(PipelineSignal):
+class Pipeline(PipelineSignal):
     def __init__(self, settings: Settings):
         PipelineSignal.__init__(self, settings.SettingsDATA.fs_resample, settings.SettingsDATA.fs_resample)
 
@@ -74,4 +75,4 @@ class PipelineV1(PipelineSignal):
         # ----- Feature Extraction -----
         self.features = self.fe.fe_pca(self.frames_align)
         (self.cluster_id, self.cluster_no, self.sse) = self.cl.cluster_kmeans(self.features)
-        self.spike_ticks = self.cl.calc_spiketicks(self.x_adc, self.x_pos, self.cluster_id)
+        self.spike_ticks = self.spiketicks(self.x_adc, self.x_pos, self.cluster_id)

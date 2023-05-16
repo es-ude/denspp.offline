@@ -55,6 +55,7 @@ class DataHandler:
     behaviour = None
     # --- GroundTruth
     label_exist = False
+    spike_offset = list()
     spike_xpos = list()
     spike_no = list()
     cluster_id = list()
@@ -66,13 +67,13 @@ class DataController:
     def __init__(self, setting: SettingsDATA) -> None:
         self.settings = setting
         self.raw_data = DataHandler()
-
-        # Meta-Information about datasets
-        self.max_datapoints = np.array([5, 16, 22, 2, 1])
         self.path2file = None
-        # if used_channel = 0 -> All data
-        self.no_channel = 0
 
+        # --- Meta-Information about datasets
+        # Number of points in data_set
+        self.dataset_numpoints = 0
+        # if used_channel = -1 -> All data
+        self.no_channel = 0
         self.__fill_factor = 1
         self.__scaling = 1
 
@@ -239,6 +240,7 @@ class DataController:
     def __prepare_access(self, folder_name: str, data_type: str, sel_dataset: int) -> None:
         folder_content = glob.glob(os.path.join(self.settings.path, folder_name, data_type))
         folder_content.sort()
+        self.dataset_numpoints = len(folder_content)
         try:
             file_data = folder_content[sel_dataset]
             self.path2file = os.path.join(self.settings.path, folder_name, file_data)
@@ -277,6 +279,7 @@ class DataController:
         data.cluster_id = [(loaded_data["spike_class"][0][0][0])]
         data.cluster_no = [np.unique(data.cluster_id[0]).size]
         data.spike_no = [data.spike_xpos[0].size]
+        data.spike_offset = [100]
         # Return
         self.raw_data = data
 
@@ -308,6 +311,7 @@ class DataController:
         data.cluster_id = [(ground_truth["spike_classes"][0][num_index - 1][0])]
         data.cluster_no = [(np.unique(data.cluster_id[-1]).size)]
         data.spike_no = [(data.spike_xpos[-1].size)]
+        data.spike_offset = [100]
         # Return
         self.raw_data = data
 
@@ -334,6 +338,7 @@ class DataController:
         data.cluster_id = [(loaded_data["spike_class"][0][0][0]-1)]
         data.cluster_no = [(np.unique(data.cluster_id[-1]).size)]
         data.spike_no = [(data.spike_xpos[-1].size)]
+        data.spike_offset = [100]
         # Return
         self.raw_data = data
 
@@ -359,6 +364,7 @@ class DataController:
         data.behaviour = None
         # Groundtruth
         data.label_exist = False
+        data.spike_offset = [0]
         # Return
         self.raw_data = data
 
@@ -384,6 +390,7 @@ class DataController:
         data.behaviour_exist = False
         # Groundtruth
         data.label_exist = False
+        data.spike_offset = [0]
         # Return
         self.raw_data = data
 
@@ -421,6 +428,6 @@ class DataController:
             data.spike_no.append(C)
             data.cluster_id.append(B)
             data.cluster_no.append(np.unique(B).size)
-
+            data.spike_offset.append(100)
         # Return
         self.raw_data = data

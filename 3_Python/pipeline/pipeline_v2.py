@@ -6,10 +6,11 @@ from src.data_call import SettingsDATA
 from src.preamp import PreAmp, SettingsAMP
 from src.adc.adc_basic import SettingsADC
 from src.adc.adc_sar import ADC_SAR as ADC0
-from src.dsp.dsp import DSP, SettingsDSP
+from src.dsp import DSP, SettingsDSP
 from src.sda import SDA, SettingsSDA
 from src.feature_extraction import FeatureExtraction, SettingsFeature
 from src.clustering import Clustering, SettingsCluster
+from src.nsp import calc_spiketicks, calc_interval_timing
 
 # --- Configuring the pipeline
 class Settings:
@@ -128,4 +129,5 @@ class Pipeline(PipelineSignal):
         self.features = self.fe.fe_pca(self.frames_denoised)
         # --- Classification ---
         (self.cluster_id, self.cluster_no, self.sse) = self.cl.cluster_kmeans(self.features)
-        self.spike_ticks = self.cl.calc_spiketicks(self.x_adc, self.x_pos, self.cluster_id)
+        self.spike_ticks = calc_spiketicks(self.x_adc, self.x_pos, self.cluster_id)
+        self.its = calc_interval_timing(self.spike_ticks, self.fs_dig)

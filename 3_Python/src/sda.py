@@ -24,6 +24,8 @@ class RecommendedSettingsSDA(SettingsSDA):
             t_dly=0.3e-3
         )
 
+# TODO: Trennen der Threshold-Methoden und extern einbinden lassen
+# TODO: Fensterung des Aligning um die Mitte einfügen, um Abschneiden zu vermeiden
 class SDA:
     def __init__(self, setting: SettingsSDA):
         self.settings = setting
@@ -151,7 +153,6 @@ class SDA:
             idx1 = row.size - idx0
 
             # --- Aligning
-            # TODO: Fenster-Methode einfügen
             search_frame = frame
             if align_mode == 0:     # no alignment
                 max_pos = self.__offset_frame_neg + self.frame_neg
@@ -231,23 +232,13 @@ class SDA:
         Output :
         lmin,lmax : high/low envelope idx of input signal s
         """
-
-        # locals min
         lmin = (np.diff(np.sign(np.diff(signal))) > 0).nonzero()[0] + 1
-        # locals max
         lmax = (np.diff(np.sign(np.diff(signal))) < 0).nonzero()[0] + 1
-
         if split:
-            # s_mid is zero if s centered around x-axis or more generally mean of signal
             s_mid = np.mean(signal)
-            # pre-sorting of locals min based on relative position with respect to s_mid
             lmin = lmin[signal[lmin] < s_mid]
-            # pre-sorting of local max based on relative position with respect to s_mid
             lmax = lmax[signal[lmax] > s_mid]
 
-        # global max of dmax-chunks of locals max
         lmin = lmin[[i + np.argmin(signal[lmin[i : i + dmin]]) for i in range(0, len(lmin), dmin)]]
-        # global min of dmin-chunks of locals min
         lmax = lmax[[i + np.argmax(signal[lmax[i : i + dmax]]) for i in range(0, len(lmax), dmax)]]
-
         return lmin, lmax
