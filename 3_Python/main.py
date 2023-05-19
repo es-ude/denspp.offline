@@ -2,8 +2,9 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 
 from pipeline.pipeline_v1 import Settings, Pipeline
+from src.metric import Metric
 from src.data_call import DataController
-from src.plotting import results_afe, results_fec, results_paper, results_ivt
+from src.plotting import results_afe1, results_fec, results_paper, results_ivt, results_firing_rate
 
 if __name__ == "__main__":
     plt.close('all')
@@ -22,20 +23,26 @@ if __name__ == "__main__":
 
     # ----- Module declaration & Channel Calculation -----
     SpikeSorting = Pipeline(settings)
+
     for idx, uin in enumerate(dataIn.raw_data):
         no_electrode = dataIn.channel[idx]
         print(f"\nPerforming end-to-end pipeline on channel {no_electrode}")
-        # ----- Run pipeline
+        # ---- Run pipeline
         SpikeSorting.run(uin)
-        # SpikeSorting.check_label(dataIn)
-        # ----- Plot results
+
         print("... plotting and saving results")
         path2save = SpikeSorting.saving_results(folder_name)
-        #results_afe(SpikeSorting, path2save, no_electrode)
+        # ---- Calculating metric
+        SpikeMetric = Metric(path2save, )
+
+        # ---- Plot results
+        results_afe1(SpikeSorting, path2save, no_electrode)
         results_fec(SpikeSorting, path2save, no_electrode)
         #results_paper(SpikeSorting, path2save, no_electrode)
         results_ivt(SpikeSorting, path2save, no_electrode)
-        plt.show(block=False)
+        results_firing_rate(SpikeSorting, path2save, no_electrode)
+
+        plt.show(block=True)
 
     # ----- Ending -----
     print("This is the End, ... my only friend, ... the end")

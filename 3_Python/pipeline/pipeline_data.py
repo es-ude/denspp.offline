@@ -6,7 +6,7 @@ from src.data_call import SettingsDATA
 from src.preamp import PreAmp, SettingsAMP
 from src.adc.adc_basic import SettingsADC
 from src.adc.adc_sar import ADC_SAR as ADC0
-from src.sda import SDA, SettingsSDA
+from src.sda import SpikeDetection, SettingsSDA
 
 # --- Configuring the pipeline
 class Settings:
@@ -34,7 +34,7 @@ class Settings:
     )
     SettingsSDA = SettingsSDA(
         fs=SettingsADC.fs_adc, dx_sda=[1],
-        mode_thres=2, mode_align=3,
+        mode_align=3,
         t_frame_lgth=1.6e-3, t_frame_start=0.4e-3,
         dt_offset=[0.4e-3, 0.3e-3],
         t_dly=0.4e-3
@@ -47,7 +47,7 @@ class Pipeline(PipelineSignal):
 
         self.preamp = PreAmp(settings.SettingsAMP)
         self.adc = ADC0(settings.SettingsADC)
-        self.sda = SDA(settings.SettingsSDA)
+        self.sda = SpikeDetection(settings.SettingsSDA)
 
         self.__mode_thres = settings.SettingsSDA.mode_thres
         self.__mode_frame = settings.SettingsSDA.mode_align
@@ -55,6 +55,7 @@ class Pipeline(PipelineSignal):
         self.path2logs = "logs"
         self.path2runs = "runs"
         self.path2figure = None
+        self.path2settings = "pipeline/pipeline_data.py"
 
     def saving_results(self, name: str) -> str:
         if not os.path.exists(self.path2runs):
@@ -65,7 +66,7 @@ class Pipeline(PipelineSignal):
             os.mkdir(path2figure)
 
         # --- Copy settings into this folder
-        shutil.copy(src="pipeline/pipeline_data.py", dst=path2figure)
+        shutil.copy(src=self.path2settings, dst=path2figure)
         self.path2figure = path2figure
 
         return path2figure

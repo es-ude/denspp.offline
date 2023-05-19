@@ -7,17 +7,18 @@ from src.preamp import PreAmp, SettingsAMP
 from src.adc.adc_basic import SettingsADC
 from src.adc.adc_sar import ADC_SAR as ADC0
 from src.dsp import DSP, SettingsDSP
-from src.sda import SDA, SettingsSDA
+from src.sda import SpikeDetection, SettingsSDA
 from src.feature_extraction import FeatureExtraction, SettingsFeature
 from src.clustering import Clustering, SettingsCluster
-from src.nsp import calc_spiketicks, calc_interval_timing
+from src.nsp import calc_spiketicks, calc_interval_timing, calc_firing_rate
 
 # --- Configuring the pipeline
 class Settings:
     """Settings class for handling the pipeline setting"""
     SettingsDATA = SettingsDATA(
         path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
-        data_set=1, data_point=0,
+        data_set=1,
+        data_point=3,
         t_range=[0],
         ch_sel=[-1],
         fs_resample=100e3
@@ -61,14 +62,14 @@ class Settings:
 
     SettingsSDA = SettingsSDA(
         fs=SettingsADC.fs_adc, dx_sda=[1],
-        mode_thres=2, mode_align=3,
+        mode_align=1,
         t_frame_lgth=1.6e-3, t_frame_start=0.4e-3,
-        dt_offset=[0.4e-3, 0.3e-3],
+        dt_offset=[0.5e-3, 0.5e-3],
         t_dly=0.4e-3
     )
 
     SettingsFE = SettingsFeature(
-        no_features=3
+        no_features=2
     )
     SettingsCL = SettingsCluster(
         no_cluster=3
@@ -88,12 +89,9 @@ class Pipeline(PipelineSignal):
         self.adc = ADC0(settings.SettingsADC)
         self.dsp0 = DSP(settings.SettingsDSP_LFP)
         self.dsp1 = DSP(settings.SettingsDSP_SPK)
-        self.sda = SDA(settings.SettingsSDA)
+        self.sda = SpikeDetection(settings.SettingsSDA)
         self.fe = FeatureExtraction(settings.SettingsFE)
         self.cl = Clustering(settings.SettingsCL)
-
-        self.__mode_thres = settings.SettingsSDA.mode_thres
-        self.__mode_frame = settings.SettingsSDA.mode_align
 
         self.path2logs = "logs"
         self.path2runs = "runs"
@@ -126,13 +124,15 @@ class Pipeline(PipelineSignal):
         self.x_spk = self.dsp1.filter(self.x_adc)
         # ---- Spike detection incl. thresholding ----
         self.x_dly = self.sda.time_delay(self.x_spk)
-        (self.x_sda, self.x_thr) = self.sda.sda(self.x_spk, self.__mode_thres)
-        (self.frames_orig, self.x_pos) = self.sda.frame_generation(self.x_dly, self.x_sda, self.x_thr)
-        self.frames_align = self.sda.frame_aligning(self.frames_orig, self.__mode_frame)
+        self.x_sda = self.sda.sda_neo(self.x_spk)
+        self.x_thr = self.sda.thres_blackrock(self.x_sda)
+        # self.x_thr = self.sda.thres_blackrock_runtime(self.x_sda)
+        (self.frames_orig, self.frames_align, self.x_pos) = self.sda.frame_generation(self.x_dly, self.x_sda, self.x_thr)
         # ---- Feature Extraction  ----
-        # self.features = self.fe.fe_pdac_min(self.frames_align)
         self.features = self.fe.fe_pca(self.frames_align)
         # ---- Clustering | Classification ----
-        (self.cluster_id, self.cluster_no, self.sse) = self.cl.cluster_kmeans(self.features)
+        (self.cluster_id, self.cluster_no) = self.cl.cluster_kmeans(self.features)
         self.spike_ticks = calc_spiketicks(self.x_adc, self.x_pos, self.cluster_id)
+        # ---- NSP Post-Processing ----
         self.its = calc_interval_timing(self.spike_ticks, self.fs_dig)
+        self.firing_rate = calc_firing_rate(self.spike_ticks, self.fs_dig)

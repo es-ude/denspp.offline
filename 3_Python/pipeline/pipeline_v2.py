@@ -7,7 +7,7 @@ from src.preamp import PreAmp, SettingsAMP
 from src.adc.adc_basic import SettingsADC
 from src.adc.adc_sar import ADC_SAR as ADC0
 from src.dsp import DSP, SettingsDSP
-from src.sda import SDA, SettingsSDA
+from src.sda import SpikeDetection, SettingsSDA
 from src.feature_extraction import FeatureExtraction, SettingsFeature
 from src.clustering import Clustering, SettingsCluster
 from src.nsp import calc_spiketicks, calc_interval_timing
@@ -59,7 +59,7 @@ class Settings:
 
     SettingsSDA = SettingsSDA(
         fs=SettingsADC.fs_adc, dx_sda=[1],
-        mode_thres=2, mode_align=3,
+        mode_align=3,
         t_frame_lgth=1.6e-3, t_frame_start=0.4e-3,
         dt_offset=[0.4e-3, 0.3e-3],
         t_dly=0.3e-3
@@ -79,13 +79,10 @@ class Pipeline(PipelineSignal):
         self.adc = ADC0(settings.SettingsADC)
         self.dsp0 = DSP(settings.SettingsDSP_LFP)
         self.dsp1 = DSP(settings.SettingsDSP_SPK)
-        self.sda = SDA(settings.SettingsSDA)
+        self.sda = SpikeDetection(settings.SettingsSDA)
         self.fe = FeatureExtraction(settings.SettingsFE)
         self.cl = Clustering(settings.SettingsCL)
         self.dae = None
-
-        self.__mode_thres = settings.SettingsSDA.mode_thres
-        self.__mode_frame = settings.SettingsSDA.mode_align
 
         self.path2model = "models"
         self.path2logs = "logs"
@@ -118,9 +115,10 @@ class Pipeline(PipelineSignal):
         self.x_spk = self.dsp1.filter(self.x_adc)
         # --- Spike detection incl. thresholding
         self.x_dly = self.sda.time_delay(self.x_spk)
-        (self.x_sda, self.x_thr) = self.sda.sda(self.x_spk, self.__mode_thres)
+        self.x_sda = self.sda.sda_neo(self.x_spk)
+        self.x_thr = self.sda.thres_blackrock(self.x_sda)
         (self.frames_orig, self.x_pos) = self.sda.frame_generation(self.x_spk, self.x_sda, self.x_thr)
-        self.frames_align = self.sda.frame_aligning(self.frames_orig, self.__mode_frame)
+        self.frames_align = self.sda.frame_aligning(self.frames_orig)
         # --- Adding denoising
         val_max = 48
         self.frames_denoised = self.dae.predict(self.frames_align/val_max)

@@ -5,9 +5,23 @@ import matplotlib.pyplot as plt
 
 from src.data_call import DataHandler
 
+
+def calculate_snr(yin: np.ndarray, ymean: np.ndarray):
+    """Calculating the signal-to-noise ratio [dB] of the input signal compared to mean waveform"""
+    a0 = np.sum(np.square(yin))
+    b0 = np.sum(np.square(yin - ymean))
+    return 10 * np.log10(a0 / b0)
+
+def calculate_prd(yin: np.ndarray, ymean: np.ndarray):
+    """Calculating the root-mean-square difference in percentage (PRD)"""
+    a0 = np.sum(np.square(yin - ymean))
+    b0 = np.sum(np.squre(yin))
+    return np.sqrt(a0 / b0) * 100
+
+# TODO: Metrik-Klasse ausbauen
 class Metric():
-    def __init__(self, frame_length: int):
-        self.frame_length = frame_length
+    def __init__(self, path2save: str):
+        self.path2figure = path2save
 
         self.cm = None
         # Metrics
@@ -16,30 +30,20 @@ class Metric():
         self.ca = None           # compression accuracy
         self.cr = None           # compression ratio
 
-    def check_label(self, dataIn: DataHandler) -> None:
-        if not dataIn.label_exist:
-            pass
-        else:
-            print("... Calculation of metrics with labeled informations")
-            path2save = self.path2figure
+    def __save_figure(self, name: str) -> None:
+        """Saving the selected figure/plot"""
+        format = ['eps', 'svg']
+        path2fig = os.path.join(self.path2figure, name)
 
-            x_ist = self.x_pos
-            x_soll = dataIn.spike_xpos * self.__scaling_metric
-            self.dr = self.x_adc.size / self.frame_length
-            self.metric_sda(path2save, x_ist, x_soll)
-    def calculate_snr(self, yin: np.ndarray, ymean: np.ndarray):
-        A = np.sum(np.square(yin))
-        B = np.sum(np.square(ymean - yin))
-        outdB = 10 * np.log10(A/B)
-        return outdB
+        for idx, form in enumerate(format):
+            file_name = path2fig + '.' + form
+            plt.savefig(file_name, format=form)
 
-    # TODO: Metrik prüfen
-    def __preprocess_sda0(self, x_ist: np.ndarray, x_soll: np.ndarray):
+    def __preprocess_sda0(self, x_ist: np.ndarray, x_soll: np.ndarray, tol: int):
         TP = 0  # number of true positive
         TN = 0  # number of true negative
         FP = 0  # number of false positive
         FN = 0  # number of false negative
-        tol = 2 * self.frame_length
 
         for idxX in x_ist:
             for idxY in x_soll:
@@ -84,7 +88,7 @@ class Metric():
 
         return FPR, FNR, TPR, TNR, PPV, NPV, acc
 
-    def metric_sda(self, path: str, xpred: np.ndarray, xtrue: np.ndarray) -> None:
+    def metric_sda(self, xpred: np.ndarray, xtrue: np.ndarray) -> None:
         (TP, TN, FP, FN) = self.__preprocess_sda0(xpred, xtrue)
         (FPR, FNR, TPR, TNR, PPV, NPV, Acc) = self.__calculate_param(TP, TN, FP, FN)
         self.ca = Acc
@@ -95,18 +99,7 @@ class Metric():
         print(f"... Metrics (SDA): {PPV:.3f} (PPV) {NPV:.3f} (NPV)")
         print(f"... Accuracy (SDA): {100 * Acc:.3f} %")
 
-        # Saving plots
-        do_plot = False
-        if path and do_plot:
-            format = ['eps', 'svg']
-            name = "pipeline_sda"
-            path2fig = os.path.join(path, name)
-
-            for idx, form in enumerate(format):
-                file_name = path2fig + '.' + form
-                plt.savefig(file_name, format=form)
-
-    def metric_fec(self, xpred: np.ndarray, ypred: np.ndarray, xtrue: np.ndarray, ytrue: np.ndarray, path: str) -> None:
+    def metric_fec(self, xpred: np.ndarray, ypred: np.ndarray, xtrue: np.ndarray, ytrue: np.ndarray) -> None:
         y_true = [2, 0, 2, 2, 0, 1]
         y_pred = [0, 0, 2, 2, 0, 2]
         self.cm = confusion_matrix(y_true, y_pred)
@@ -115,11 +108,4 @@ class Metric():
         disp.plot()
         plt.show()
 
-        if path:
-            format = ['eps', 'svg']
-            name = "pipeline_cm"
-            path2fig = os.path.join(path, name)
-
-            for idx, form in enumerate(format):
-                file_name = path2fig + '.' + form
-                plt.savefig(file_name, format=form)
+        self.__save_figure("metric_sda")

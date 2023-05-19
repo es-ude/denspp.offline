@@ -20,6 +20,7 @@ class PipelineSignal:
         self.cluster_no = None
         self.spike_ticks = None
         self.its = None
+        self.firing_rate = None
 
         self.fs_ana = fs_ana
         self.fs_adc = osr * fs_adc

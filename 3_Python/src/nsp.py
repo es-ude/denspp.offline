@@ -18,3 +18,14 @@ def calc_interval_timing(xticks: np.ndarray, fs: float) -> list:
         x0 = np.where(ticks == 1)[0]
         ivt.append(np.diff(x0) / fs)
     return ivt
+
+def calc_firing_rate(xticks: np.ndarray, fs: float) -> list:
+    """Calculation of the firing rate of each clustered spike ticks"""
+    out = list()
+    for idx, ticks in enumerate(xticks):
+        x0 = np.where(ticks == 1)[0]
+        xout = np.zeros(shape=(2, x0.size))
+        xout[0, :] = x0 / fs
+        xout[1, :] = np.concatenate((0, fs / np.diff(x0)), axis=None)
+        out.append(xout)
+    return out

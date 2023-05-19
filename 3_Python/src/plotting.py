@@ -15,18 +15,12 @@ def save_figure(fig, path: str, name: str):
         file_name = path2fig + '.' + form
         fig.savefig(file_name, format=form)
 
-def results_afe (signals: PipelineSignal, path: str, no_electrode: int) -> None:
+# TODO: Plots für IVT und FR anpassen in Abhängigkeit der Cluster-Anzahl
+def results_afe0(signals: PipelineSignal, path: str, no_electrode: int) -> None:
     fs_ana = signals.fs_ana
-    fs_adc = signals.fs_adc
-
     uin = signals.u_in
-    xadc = signals.x_adc
-    xsda = signals.x_sda
-    xthr = signals.x_thr
-    ticks = signals.spike_ticks
-
     tA = np.arange(0, uin.size, 1) / fs_ana
-    tD = np.arange(0, xadc.size, 1) / fs_adc
+
 
     # --- Plot afe
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(21)))
@@ -48,6 +42,19 @@ def results_afe (signals: PipelineSignal, path: str, no_electrode: int) -> None:
     # --- saving plots
     if path:
         save_figure(plt, path, "pipeline_afe_elec" + str(no_electrode))
+
+def results_afe1(signals: PipelineSignal, path: str, no_electrode: int) -> None:
+    fs_ana = signals.fs_ana
+    fs_adc = signals.fs_adc
+
+    uin = signals.u_in
+    xadc = signals.x_adc
+    xsda = signals.x_sda
+    xthr = signals.x_thr
+    ticks = signals.spike_ticks
+
+    tA = np.arange(0, uin.size, 1) / fs_ana
+    tD = np.arange(0, xadc.size, 1) / fs_adc
 
     # --- Plotting
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(21)))
@@ -157,7 +164,26 @@ def results_ivt(signals: PipelineSignal, path: str, no_electrode: int) -> None:
     if path:
         save_figure(plt, path, "pipeline_ivt" + str(no_electrode))
 
+def results_firing_rate(signals: PipelineSignal, path: str, no_electrode: int) -> None:
+    fr_in = signals.firing_rate
+
+    color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
+    ax1 = plt.subplot(131)
+    ax2 = plt.subplot(132, sharex=ax1)
+    ax3 = plt.subplot(133, sharex=ax1)
+
+    ax1.plot(fr_in[0][0, :], fr_in[0][1, :], color=color[0])
+    ax2.plot(fr_in[1][0, :], fr_in[1][1, :], color=color[1])
+    ax3.plot(fr_in[2][0, :], fr_in[2][1, :], color=color[2])
+
+    ax2.set_xlabel("Time t [s]")
+    ax1.set_ylabel("Firing rate [Spikes/s]")
+
     plt.tight_layout()
+    # --- saving plots
+    if path:
+        save_figure(plt, path, "pipeline_fr" + str(no_electrode))
 
 def results_paper(signals: PipelineSignal, path: str, no_electrode: int) -> None:
     """Plotting results of end-to-end spike sorting for paper"""
@@ -178,15 +204,9 @@ def results_paper(signals: PipelineSignal, path: str, no_electrode: int) -> None
     feat = signals.features
     cluster = signals.cluster_id
     mean_frames = np.zeros(shape=(signals.cluster_no, framesOut.shape[1]))
-    mean_cluster = np.zeros(shape=(signals.cluster_no, feat.shape[0]))
-    mean_value = np.zeros(shape=(signals.cluster_no, 1))
-
-    idx = 0
-    for wave in framesOut:
-        mean_frames[cluster[idx], :] += wave
-        mean_value[cluster[idx]] += 1
-        idx += 1
-    mean_frames = mean_frames / mean_value
+    for idx, id in enumerate(np.unique(cluster)):
+        x0 = np.where(cluster == id)[0]
+        mean_frames[idx, :] = np.mean(framesOut[x0], axis=0)
 
     #plt.figure().set_figwidth(cm_to_inch(16))
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(12)))

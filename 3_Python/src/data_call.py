@@ -77,6 +77,9 @@ class DataController:
         self.__fill_factor = 1
         self.__scaling = 1
 
+        # --- Waveform from NEV-File
+        self.nev_waveform = []
+
     def do_call(self):
         """Loading the dataset"""
         # --- Checking if path is available
@@ -419,15 +422,19 @@ class DataController:
         # --- Groundtruth from BlackRock
         data.label_exist = int(loaded_data['nev_detected']['Exits'][0, 0][0])
         # Processing of electrode information
+        nev_waveform = list()
         for idx in range(1, data.noChannel+1):
             str_out = 'Elec'+ str(idx)
             A = (loaded_data['nev_detected'][str_out][0, 0]['timestamps'][0, 0][0, :])
             B = (loaded_data['nev_detected'][str_out][0, 0]['cluster'][0, 0][0, :])
-            C = len(A)
+            C = (loaded_data['nev_detected'][str_out][0, 0]['waveform'][0, 0])
+            D = len(A)
             data.spike_xpos.append(A)
-            data.spike_no.append(C)
+            data.spike_no.append(D)
             data.cluster_id.append(B)
             data.cluster_no.append(np.unique(B).size)
             data.spike_offset.append(100)
+            nev_waveform.append(C)
         # Return
         self.raw_data = data
+        self.nev_waveform = nev_waveform

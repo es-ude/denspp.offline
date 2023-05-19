@@ -35,9 +35,11 @@ if __name__ == "__main__":
     # --- Getting the data for training and validation
     path = os.path.join(path2data, file_name)
     frames_in, frames_cluster, frames_mean = prepare_dae_training(
-        path, addnoise_do, addnoise_num, excludeCluster, sel_pos
+        path=path, do_augmentation=addnoise_do, num_new_frames=addnoise_num,
+        excludeCluster=excludeCluster, sel_pos=sel_pos,
+        do_zeroframes=True
     )
-    # pltSpAIke.test_plot(frames_in, frames_cluster)
+
     dataset = DatasetDAE(frames_in, frames_cluster, frames_mean)
     train_dl, valid_dl = get_dataloaders(
         dataset, batch_size=batch_size,
