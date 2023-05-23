@@ -3,6 +3,7 @@ matplotlib
 
 # Libs for reading electrophysiology datasets
 neo
+mat73
 
 # Libs for NN with PyTorch
 scipy
