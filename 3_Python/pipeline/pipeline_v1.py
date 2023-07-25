@@ -10,15 +10,16 @@ from src.dsp import DSP, SettingsDSP
 from src.sda import SpikeDetection, SettingsSDA
 from src.feature_extraction import FeatureExtraction, SettingsFeature
 from src.clustering import Clustering, SettingsCluster
-from src.nsp import calc_spiketicks, calc_interval_timing, calc_firing_rate
+from src.nsp import calc_spiketicks, calc_interval_timing, calc_firing_rate, calc_autocorrelogram
 
 # --- Configuring the pipeline
 class Settings:
     """Settings class for handling the pipeline setting"""
     SettingsDATA = SettingsDATA(
         path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
-        data_set=1,
-        data_point=3,
+        data_set=3,
+        data_case=0,
+        data_point=1,
         t_range=[0],
         ch_sel=[-1],
         fs_resample=100e3
@@ -55,7 +56,7 @@ class Settings:
     SettingsDSP_SPK = SettingsDSP(
         gain=1,
         fs=SettingsADC.fs_adc,
-        n_order=2, f_filt=[100, 6e3],
+        n_order=4, f_filt=[200, 6e3],
         type='iir', f_type='butter', b_type='bandpass',
         t_dly=0
     )
@@ -64,8 +65,10 @@ class Settings:
         fs=SettingsADC.fs_adc, dx_sda=[1],
         mode_align=1,
         t_frame_lgth=1.6e-3, t_frame_start=0.4e-3,
-        dt_offset=[0.5e-3, 0.5e-3],
-        t_dly=0.4e-3
+        dt_offset=[0.1e-3, 0.1e-3],
+        t_dly=0.4e-3,
+        window_size=7,
+        thr_gain=1
     )
 
     SettingsFE = SettingsFeature(
@@ -124,7 +127,8 @@ class Pipeline(PipelineSignal):
         self.x_spk = self.dsp1.filter(self.x_adc)
         # ---- Spike detection incl. thresholding ----
         self.x_dly = self.sda.time_delay(self.x_spk)
-        self.x_sda = self.sda.sda_neo(self.x_spk)
+        # self.x_sda = self.sda.sda_neo(self.x_spk)
+        self.x_sda = self.sda.sda_aso(self.x_spk)
         self.x_thr = self.sda.thres_blackrock(self.x_sda)
         # self.x_thr = self.sda.thres_blackrock_runtime(self.x_sda)
         (self.frames_orig, self.frames_align, self.x_pos) = self.sda.frame_generation(self.x_dly, self.x_sda, self.x_thr)
@@ -134,5 +138,6 @@ class Pipeline(PipelineSignal):
         (self.cluster_id, self.cluster_no) = self.cl.cluster_kmeans(self.features)
         self.spike_ticks = calc_spiketicks(self.x_adc, self.x_pos, self.cluster_id)
         # ---- NSP Post-Processing ----
-        self.its = calc_interval_timing(self.spike_ticks, self.fs_dig)
+        self.its = calc_firing_rate(self.spike_ticks, self.fs_dig)
+        self.correlogram = calc_autocorrelogram(self.spike_ticks, self.fs_dig)
         self.firing_rate = calc_firing_rate(self.spike_ticks, self.fs_dig)

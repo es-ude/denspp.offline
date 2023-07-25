@@ -2,6 +2,7 @@ import os.path
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 def test_plot(frames_in, frames_cluster):
     cluster_no = np.unique(frames_cluster)
 
@@ -19,13 +20,15 @@ def test_plot(frames_in, frames_cluster):
     # --- Plotting
     plt.figure()
     for idx, clid in enumerate(cluster_no):
-        #plt.plot(np.transpose(frames_plot[idx]), color='k')
+        # plt.plot(np.transpose(frames_plot[idx]), color='k')
         plt.plot(frames_mean[idx])
 
     plt.show(block=True)
 
+
 def cm_to_inch(value):
-    return value/2.54
+    return value / 2.54
+
 
 def save_figure(fig, path: str, name: str):
     format = ['eps', 'svg']
@@ -35,7 +38,9 @@ def save_figure(fig, path: str, name: str):
         file_name = path2fig + '.' + form
         fig.savefig(file_name, format=form)
 
-def results_training(path: str, yin: np.ndarray, feat: np.ndarray, ypred: np.ndarray, cluster: np.ndarray, snr: np.ndarray) -> None:
+
+def results_training(path: str, yin: np.ndarray, feat: np.ndarray, ypred: np.ndarray, cluster: np.ndarray,
+                     snr: np.ndarray) -> None:
     color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
     textsize = 12
 
@@ -96,8 +101,8 @@ def results_training(path: str, yin: np.ndarray, feat: np.ndarray, ypred: np.nda
     if path:
         save_figure(plt, path, "ai_training_snr")
 
-    # --- Plotting
-    #plt.figure().set_figwidth(cm_to_inch(16))
+    mode = 1
+    # --- Plotting - Feat 0
     fig = plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
     plt.subplots_adjust(hspace=0, wspace=0.5)
     plt.grid(visible=True)
@@ -119,12 +124,11 @@ def results_training(path: str, yin: np.ndarray, feat: np.ndarray, ypred: np.nda
     ax1.set_xlabel('Frame position')
 
     # Feature extraction
-    mode = 1
     if mode == 0:
         ax2.scatter(feat[:, 0], feat[:, 1])
     else:
         for i, id in enumerate(cluster_no):
-            ax2.scatter(mark_feat0[i], mark_feat1[i], color=color[i], marker='.')
+            ax2.scatter(mark_feat0[i], mark_feat2[i], color=color[i], marker='.')
     ax2.set_title('Features')
     ax2.set_ylabel('Feat[0]')
     ax2.set_xlabel('Feat[1]')
@@ -141,7 +145,97 @@ def results_training(path: str, yin: np.ndarray, feat: np.ndarray, ypred: np.nda
     plt.tight_layout(pad=0.5)
     # --- saving plots
     if path:
-        save_figure(plt, path, "ai_training_out")
+        save_figure(plt, path, "ai_training_out0")
+
+    # --- Plotting - Feat 1
+    fig = plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
+    plt.subplots_adjust(hspace=0, wspace=0.5)
+    plt.grid(visible=True)
+    row = 1
+    col = 3
+
+    ax1 = plt.subplot(row, col, 1)
+    ax1.margins(x=0)
+    ax1.set_xticks([0, 7, 15, 23, 31])
+    ax2 = plt.subplot(row, col, 2)
+    ax2.margins(x=0)
+    ax3 = plt.subplot(row, col, 3, sharex=ax1)
+    ax3.margins(x=0)
+
+    # Noisy input
+    ax1.plot(np.transpose(yin))
+    ax1.set_title('Network Input')
+    ax1.set_ylabel('Y_in')
+    ax1.set_xlabel('Frame position')
+
+    # Feature extraction
+    if mode == 0:
+        ax2.scatter(feat[:, 0], feat[:, 1])
+    else:
+        for i, id in enumerate(cluster_no):
+            ax2.scatter(mark_feat0[i], mark_feat2[i], color=color[i], marker='.')
+    ax2.set_title('Features')
+    ax2.set_ylabel('Feat[0]')
+    ax2.set_xlabel('Feat[1]')
+
+    # Denoised output
+    ax3.plot(np.transpose(ypred))
+    if mode == 1:
+        for i, id in enumerate(cluster_no):
+            ax3.plot(mark_mean[i], color=color[i])
+    ax3.set_title('Network Output')
+    ax3.set_ylabel('X_pred')
+    ax3.set_xlabel('Frame position')
+
+    plt.tight_layout(pad=0.5)
+    # --- saving plots
+    if path:
+        save_figure(plt, path, "ai_training_out1")
+
+    # --- Plotting - Feat 2
+    fig = plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
+    plt.subplots_adjust(hspace=0, wspace=0.5)
+    plt.grid(visible=True)
+    row = 1
+    col = 3
+
+    ax1 = plt.subplot(row, col, 1)
+    ax1.margins(x=0)
+    ax1.set_xticks([0, 7, 15, 23, 31])
+    ax2 = plt.subplot(row, col, 2)
+    ax2.margins(x=0)
+    ax3 = plt.subplot(row, col, 3, sharex=ax1)
+    ax3.margins(x=0)
+
+    # Noisy input
+    ax1.plot(np.transpose(yin))
+    ax1.set_title('Network Input')
+    ax1.set_ylabel('Y_in')
+    ax1.set_xlabel('Frame position')
+
+    # Feature extraction
+    if mode == 0:
+        ax2.scatter(feat[:, 0], feat[:, 1])
+    else:
+        for i, id in enumerate(cluster_no):
+            ax2.scatter(mark_feat1[i], mark_feat2[i], color=color[i], marker='.')
+    ax2.set_title('Features')
+    ax2.set_ylabel('Feat[0]')
+    ax2.set_xlabel('Feat[1]')
+
+    # Denoised output
+    ax3.plot(np.transpose(ypred))
+    if mode == 1:
+        for i, id in enumerate(cluster_no):
+            ax3.plot(mark_mean[i], color=color[i])
+    ax3.set_title('Network Output')
+    ax3.set_ylabel('X_pred')
+    ax3.set_xlabel('Frame position')
+
+    plt.tight_layout(pad=0.5)
+    # --- saving plots
+    if path:
+        save_figure(plt, path, "ai_training_out2")
 
     # --- Plotting: Feature space
     plt.figure()
@@ -157,5 +251,3 @@ def results_training(path: str, yin: np.ndarray, feat: np.ndarray, ypred: np.nda
     # --- saving plots
     if path:
         save_figure(plt, path, "ai_training_feat")
-
-

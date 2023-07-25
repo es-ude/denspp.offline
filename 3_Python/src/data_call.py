@@ -20,6 +20,7 @@ class SettingsDATA:
     """
     path: str
     data_set: int
+    data_case: int
     data_point: int
     # Angabe des zu betrachteten Zeitfensters [Start, Ende] in sec.
     t_range: list
@@ -32,7 +33,7 @@ class RecommendedSettingsDATA(SettingsDATA):
     def __init__(self):
         super().__init__(
             path="C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten",
-            data_set=1, data_point=0,
+            data_set=1, data_case=0, data_point=0,
             t_range=0, ch_sel=-1,
             fs_resample=100e3
         )
@@ -61,7 +62,6 @@ class DataHandler:
     cluster_id = list()
     cluster_no = list()
 
-# TODO: Meta-Information durch Ordner-Scan ermöglichen
 class DataController:
     """Class for loading and manipulating the used dataset"""
     def __init__(self, setting: SettingsDATA) -> None:
@@ -70,8 +70,9 @@ class DataController:
         self.path2file = None
 
         # --- Meta-Information about datasets
-        # Number of points in data_set
-        self.dataset_numpoints = 0
+        # Information of subfolders and files
+        self.no_subfolder = 0
+        self.no_files = 0
         # if used_channel = -1 -> All data
         self.no_channel = 0
         self.__fill_factor = 1
@@ -91,19 +92,20 @@ class DataController:
 
         # ----- Read data input -----
         data_type = self.settings.data_set
-        data_set = self.settings.data_point
+        data_set = self.settings.data_case
+        data_point = self.settings.data_point
         if data_type == 1:
-            self.__load_Martinez2009(data_set)
+            self.__load_Martinez2009(data_set, data_point)
         elif data_type == 2:
-            self.__load_Pedreira2012(data_set)
+            self.__load_Pedreira2012(data_set, data_point)
         elif data_type == 3:
-            self.__load_Quiroga2020(data_set)
+            self.__load_Quiroga2020(data_set, data_point)
         elif data_type == 4:
-            self.__load_Seidl2012(data_set)
+            self.__load_Seidl2012(data_set, data_point)
         elif data_type == 5:
-            self.__load_FZJ_MCS(data_set)
+            self.__load_FZJ_MCS(data_set, data_point)
         elif data_type == 6:
-            self.__load_KlaesLab(data_set)
+            self.__load_KlaesLab(data_set, data_point)
 
         self.no_channel = self.raw_data.noChannel
         self.raw_data.fs_used = self.raw_data.fs_orig
@@ -233,24 +235,27 @@ class DataController:
             print(f"... excludes labels")
 
     def get_data(self) -> DataHandler:
+        """Calling the raw data with groundtruth of the called data"""
         return self.raw_data
 
     def __get_resample_ratio(self, fin: float, fout: float) -> Tuple[int, int]:
         calced_fs = fout / fin
-        (p, q) = Fraction(calced_fs).limit_denominator(100).as_integer_ratio()
-        return (p, q)
+        p, q = Fraction(calced_fs).limit_denominator(100).as_integer_ratio()
+        return p, q
 
-    def __prepare_access(self, folder_name: str, data_type: str, sel_dataset: int) -> None:
+    def __prepare_access(self, folder_name: str, data_type: str, sel_datapoint: int) -> None:
+        """Getting the file of the corresponding trial"""
         folder_content = glob.glob(os.path.join(self.settings.path, folder_name, data_type))
         folder_content.sort()
-        self.dataset_numpoints = len(folder_content)
+        self.no_files = len(folder_content)
         try:
-            file_data = folder_content[sel_dataset]
+            file_data = folder_content[sel_datapoint]
             self.path2file = os.path.join(self.settings.path, folder_name, file_data)
         except:
             print("--- Folder not available - Please check folder name! ---")
 
-    def __prepare_access_klaes(self, folder_name: str, data_type: str, sel_dataset: int, sel_nsp: int) -> None:
+    def __prepare_access_subfolder(self, folder_name: str, data_type: str, sel_dataset: int, sel_datapoint: int) -> None:
+        """Getting the file structure within cases/experiments in one data set"""
         path2data = os.path.join(self.settings.path, folder_name)
         folder_content = glob.glob(os.path.join(self.settings.path, folder_name, data_type))
         folder_content.sort()
@@ -258,12 +263,14 @@ class DataController:
         file_data = folder_data[sel_dataset]
 
         path2data = os.path.join(path2data, file_data)
-        self.__prepare_access(path2data, data_type, sel_nsp)
+        self.__prepare_access(path2data, data_type, sel_datapoint)
+        self.no_subfolder = len(file_data)
 
-    def __load_Martinez2009(self, indices: int) -> None:
+    def __load_Martinez2009(self, case: int, point: int) -> None:
+        """Loading synthethic files from Quiroga simulator (2009)"""
         folder_name = "01_SimDaten_Martinez2009"
         data_type = 'simulation_*.mat'
-        self.__prepare_access(folder_name, data_type, indices)
+        self.__prepare_access(folder_name, data_type, point)
 
         loaded_data = loadmat(self.path2file)
         data = DataHandler()
@@ -286,10 +293,11 @@ class DataController:
         # Return
         self.raw_data = data
 
-    def __load_Pedreira2012(self, indices: int) -> None:
+    def __load_Pedreira2012(self, case: int, point: int) -> None:
+        """Loading synthethic files from Quiroga simulator (2012)"""
         folder_name = "02_SimDaten_Pedreira2012"
         data_type = 'simulation_*.mat'
-        self.__prepare_access(folder_name, data_type, indices)
+        self.__prepare_access(folder_name, data_type, point)
 
         prep_index = self.path2file.split("_")[-1]
         num_index = int(prep_index[0:2])
@@ -318,11 +326,13 @@ class DataController:
         # Return
         self.raw_data = data
 
-    def __load_Quiroga2020(self, indices: int) -> None:
+    def __load_Quiroga2020(self, case: int, point: int) -> None:
+        """Loading synthetic recordings from Quiroga simulator (Common benchmark)"""
         folder_name = "03_SimDaten_Quiroga2020"
         data_type = 'C_*.mat'
-        self.__prepare_access(folder_name, data_type, indices)
-        loaded_data = loadmat(self.path2file)
+        self.__prepare_access_subfolder(folder_name, data_type, case, point)
+
+        loaded_data = loadmat(self.path2file, mat_dtype=True)
 
         data = DataHandler()
         # Input and meta
@@ -330,7 +340,7 @@ class DataController:
         data.data_type = "Synthetic"
         data.noChannel = int(1)
         data.gain = 100e-6 * 10 ** (0 / 20)
-        data.fs_orig = float(1 / loaded_data["samplingInterval"][0][0] * 1000)
+        data.fs_orig = float(1000 / loaded_data["samplingInterval"][0][0])
         data.raw_data = [(data.gain * loaded_data["data"][0])]
         # Behaviour
         data.behaviour_exist = False
@@ -341,14 +351,16 @@ class DataController:
         data.cluster_id = [(loaded_data["spike_class"][0][0][0]-1)]
         data.cluster_no = [(np.unique(data.cluster_id[-1]).size)]
         data.spike_no = [(data.spike_xpos[-1].size)]
-        data.spike_offset = [100]
+        data.spike_offset = [500]
         # Return
         self.raw_data = data
 
-    def __load_Seidl2012(self, indices: int) -> None:
+    def __load_Seidl2012(self, case: int, point: int) -> None:
+        """Loading the recording files from the Freiburg probes from Karsten Seidl from this PhD"""
         folder_name = "04_Freiburg_Seidl2014"
         data_type = '*.mat'
-        self.__prepare_access(folder_name, data_type, indices)
+        self.__prepare_access(folder_name, data_type, point)
+
         loaded_data = loadmat(self.path2file)
 
         data = DataHandler()
@@ -371,10 +383,12 @@ class DataController:
         # Return
         self.raw_data = data
 
-    def __load_FZJ_MCS(self, indices: int) -> None:
+    def __load_FZJ_MCS(self, case: int, point: int) -> None:
+        """Loading the recording files from MCS setup in FZ Juelich (case = experiment, point = file)"""
         folder_name = "05_FZJ_MCS"
         data_type = '*_new.mat'
-        self.__prepare_access(folder_name, data_type, indices)
+        self.__prepare_access(folder_name, data_type, point)
+
         loaded_data = loadmat(self.path2file)
 
         data = DataHandler()
@@ -397,10 +411,12 @@ class DataController:
         # Return
         self.raw_data = data
 
-    def __load_KlaesLab(self, indices: int) -> None:
+    def __load_KlaesLab(self, case: int, nsp_device: int) -> None:
+        """Loading the *.ns6 and *.nev files from recordings with Utah array from Blackrock Neurotechnology (case = experiment, nsp_device)"""
         folder_name = "10_Klaes_Caltech"
         data_type = '*_MERGED.mat'
-        self.__prepare_access_klaes(folder_name, data_type, indices, 0)
+        self.__prepare_access_subfolder(folder_name, data_type, case, nsp_device)
+
         loaded_data = loadmat(self.path2file, mat_dtype=True)
 
         data = DataHandler()

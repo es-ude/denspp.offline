@@ -3,7 +3,6 @@ import numpy as np
 from scipy.signal import butter, lfilter, square
 from src.processing_noise import noise_real
 
-# TODO: Spannungsabhängige Verstörkungsprofil einfügen, bisher nur Versorgungsclipping drin
 @dataclasses.dataclass
 class SettingsAMP:
     """"Individuall data class to configure the PreAmp
@@ -75,12 +74,13 @@ class PreAmp:
         self.settings_noise = RecommendedSettingsNoise()
         self.noise_eff_out = 0.0
         self.noise_pp = 0.0
+        self.do_output = False
         # --- Filter properties
         self.f_filt = np.array(self.settings.f_filt)
         iir_spk_result = butter(self.settings.n_filt, 2 * self.f_filt / self.settings.fs_ana, self.settings.f_type)
         (self.__b_iir_spk, self.__a_iir_spk) = iir_spk_result[0], iir_spk_result[1]
 
-    def __gen_noise(self, size: int) -> np.ndarray:
+    def __gen_noise(self, size: int, output: bool) -> np.ndarray:
         """Generate the transient input noise of the amplifier"""
         unoise, self.noise_eff_out, self.noise_pp = noise_real(
             tsize=size,
@@ -89,8 +89,9 @@ class PreAmp:
             Fc=self.settings_noise.Fc,
             alpha=self.settings_noise.slope
         )
-        print(f"... effective input noise of pre-amplifier: {1e6 * self.noise_eff_out:.4f} µV")
-        print(f"... effective peak-to-peak noise of pre-amplifier: {1e6 * self.noise_pp:.4f} µV")
+        if output:
+            print(f"... effective input noise of pre-amplifier: {1e6 * self.noise_eff_out:.4f} µV")
+            print(f"... effective peak-to-peak noise of pre-amplifier: {1e6 * self.noise_pp:.4f} µV")
         return unoise
 
     def __gen_chop(self, size: int) -> np.ndarray:
@@ -117,7 +118,7 @@ class PreAmp:
 
         # Adding noise
         if self.settings.noise:
-            u_out += self.settings.gain * self.__gen_noise(du.size)
+            u_out += self.settings.gain * self.__gen_noise(du.size, self.do_output)
         return self.__voltage_clipping(u_out)
 
     def pre_amp_chopper(self, uinp: np.ndarray, uinn: np.ndarray) -> [np.ndarray, np.ndarray]:
@@ -132,7 +133,7 @@ class PreAmp:
         uchp_in = self.settings.vcm + self.settings.gain * du
         # --- Adding noise
         if self.settings.noise:
-            uchp_in += self.settings.gain * self.__gen_noise(du.size)
+            uchp_in += self.settings.gain * self.__gen_noise(du.size, self.do_output)
         # --- Back chopping and Filtering
         u_filt = uchp_in * clk_chop
         u_out = lfilter(self.__b_iir_spk, self.__a_iir_spk, u_filt)

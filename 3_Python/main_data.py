@@ -7,7 +7,8 @@ if __name__ == "__main__":
     # align mode = 0: no aligning, 1: maximum, 2: minimum, 3: maximum positive slop, 4: maximum negative slope
     get_frames_from_dataset(
         path2save=path2file,
-        data_set=2,
+        data_set=1,
+        data_case=0,
         align_mode=0
     )
     # --- Merging the frames to new cluster device

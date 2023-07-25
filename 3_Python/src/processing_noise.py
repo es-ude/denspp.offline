@@ -10,7 +10,7 @@ def frame_noise(no_frames: int, frame_in: np.ndarray, wgndB: [float, float], fs:
     # Calculation
     noise_lvl = np.random.uniform(wgndB[0], wgndB[1])
     for idx in range(0, no_frames):
-        frames_noise[idx, :] = noise_awgn(width, fs, noise_lvl)[0]
+        frames_noise[idx, :] = np.round(noise_awgn(width, fs, noise_lvl)[0])
         frames_out[idx, :] = frame_in + frames_noise[idx, :]
     return frames_noise, frames_out
 
@@ -107,7 +107,9 @@ if __name__ == "__main__":
     t = np.arange(0, 2e6, 1) / fs
 
     # Real Noise
-    noise_out, noise_pink, noise_f = noise_real(t.size, fs, -130, 1, 0.9)
+    noise_pink = noise_awgn(t.size, fs, -130)[0]
+    noise_f = noise_flicker(t.size, 1)
+    noise_out = noise_real(t.size, fs, -130, 1, 0.9)[0]
     freq1, psd_real = do_fft(noise_out, fs)
 
     scale = 1e3
@@ -138,4 +140,13 @@ if __name__ == "__main__":
     ax9.loglog(freq1, psd_real)
 
     plt.tight_layout()
+
+    # ---- Noise plot
+    plt.figure()
+    A = np.random.randint(-5, 5, 1000)
+    plt.hist(A, bins=100)
+
+    plt.tight_layout()
+
+    # --- Show all plots
     plt.show()

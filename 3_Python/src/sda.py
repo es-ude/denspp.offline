@@ -1,6 +1,7 @@
 import dataclasses
 import numpy as np
 from scipy.signal import savgol_filter, find_peaks, iirfilter, lfilter
+from numpy import hamming, bartlett, kaiser
 
 @dataclasses.dataclass
 class SettingsSDA:
@@ -11,6 +12,8 @@ class SettingsSDA:
     t_frame_start: float
     dt_offset: list
     t_dly: float
+    window_size: int
+    thr_gain: float
 
 class RecommendedSettingsSDA(SettingsSDA):
     def __init__(self):
@@ -19,8 +22,10 @@ class RecommendedSettingsSDA(SettingsSDA):
             dx_sda=[1],
             mode_align=1,
             t_frame_lgth=1.6e-3, t_frame_start=0.4e-3,
-            dt_offset=[0.4e-3, 0.3e-3],
-            t_dly=0.3e-3
+            dt_offset=[0.1e-3, 0.1e-3],
+            t_dly=0.3e-3,
+            window_size=7,
+            thr_gain=1
         )
 
 class SpikeDetection:
@@ -45,38 +50,68 @@ class SpikeDetection:
         uout = np.concatenate((mat, uin[0:uin.size - set_delay]), axis=None)
         return uout
 
-    def thres_sd(self, xin: np.ndarray) -> np.ndarray:
-        """Apply standard derivation as threshold"""
-        return  np.ones(xin.size) + 8 * np.mean(np.abs(xin))
+    def thres_mad(self, xin: np.ndarray) -> np.ndarray:
+        """Apply the median absolute derivation (MAD) as threshold"""
+        C = self.settings.thr_gain
+        return np.zeros(shape=xin.size) + C * np.median(np.abs(xin - np.mean(xin))/0.6745)
+
+    def thres_ma(self, xin: np.ndarray) -> np.ndarray:
+        """Applying the mean absolute (Moving average) as threshold"""
+        C = self.settings.thr_gain
+        M = self.settings.window_size
+        return C * 1.25 * np.convolve(np.abs(xin), np.ones(M)/M, mode='same')
+
+    def thres_rms(self, xin: np.ndarray) -> np.ndarray:
+        """Applying the root-mean-squre (RMS) on neural input"""
+        M = self.settings.window_size
+        C = self.settings.thr_gain
+        return C * np.sqrt(np.convolve(xin ** 2, np.ones(M) / M, mode='same'))
+
+    def thres_winsorization(self, xin: np.ndarray) -> np.ndarray:
+        """Applying the winsorization method on input"""
+        M = self.settings.window_size
+        C = self.settings.thr_gain
+        noise1 = self.thres_ma(xin)
+        noise2 = np.zeros(shape=xin.shape)
+        for idx, val in enumerate(np.abs(xin)):
+            if val < noise1[idx]:
+                noise2[idx] = val
+            else:
+                noise2[idx] = noise1[idx]
+
+        return C * 1.58 * np.convolve(noise2, np.ones(M)/M, 'valid')
 
     def thres_blackrock(self, xin: np.ndarray) -> np.ndarray:
-        """Automated calculation of threshold (use by BlackRock)"""
-        return np.ones(xin.size) + 4.5 * np.sqrt(np.sum(xin ** 2 / len(xin)))
+        """Automated rms calculation of threshold (use by BlackRock)"""
+        C = self.settings.thr_gain
+        return np.zeros(shape=xin.size) + C * 4.5 * np.sqrt(np.sum(xin ** 2 / len(xin)))
 
     def thres_blackrock_runtime(self, xin: np.ndarray) -> np.ndarray:
-        """Runtime calculation of threshold (use by BlackRock)"""
+        """Runtime std calculation of threshold (use by BlackRock)"""
         x_thr = np.zeros(shape=xin.shape, dtype=int)
-        window = 50
+        window = self.settings.window_size
+        C = self.settings.thr_gain
         mean = 0
         for idx, val in enumerate(xin):
             if idx < window:
-                xin0 = xin[0:idx]
                 N0 = idx + 1
             else:
-                xin0 = xin[idx-window:idx]
                 N0 = window
+
+            xin0 = xin[idx - window:idx]
             x_thr[idx] = np.sqrt(np.sum((xin0 - mean) ** 2) / N0)
             x_thr[0:window] = x_thr[-window-1:-1]
-        return 5 * x_thr
-
-    def thres_movmean(self, xin: np.ndarray) -> np.ndarray:
-        """Applying moving average filter on input"""
-        width = 100
-        return 10 * np.convolve(xin, np.ones(width)/width, mode='same')
+        return C * x_thr
 
     def thres_salvan_golay(self, xin: np.ndarray) -> np.ndarray:
         """Applying a Salvan-Golay Filter on input signal"""
-        return savgol_filter(xin, self.frame_length, 3)
+        C = self.settings.thr_gain
+        return C * savgol_filter(xin, self.frame_length, 3)
+
+    #TODO: Methode aus Paper 10.1088/1741-2552/accece implementieren
+    def thres_firing_rate(self, xin: np.ndarray) -> np.ndarray:
+        """Applying the firing-rate decoding of the threshold methode"""
+        return NotImplementedError
 
     # --------- Spike Detection Algorithm -------------
     def sda_norm(self, xin: np.ndarray) -> np.ndarray:
@@ -97,9 +132,9 @@ class SpikeDetection:
         """Applying Non-Linear Energy Operator (NEO, same like Teager-Kaiser-Operator) with dx_sda = 1 or kNEO with dx_sda > 1"""
         # length(x) == 1: with dX = 1 --> NEO, dX > 1 --> k-NEO
         ksda0 = self.settings.dx_sda[0]
-        x0 = np.floor(xin[ksda0:-ksda0] ** 2 - xin[:-2 * ksda0] * xin[2 * ksda0:])
-        x_sda = np.concatenate([x0[:ksda0, ], x0, x0[-ksda0:, ]], axis=None)
-        return x_sda
+        x_neo0 = np.floor(xin[ksda0:-ksda0] ** 2 - xin[:-2 * ksda0] * xin[2 * ksda0:])
+        x_neo = np.concatenate([x_neo0[:ksda0, ], x_neo0, x_neo0[-ksda0:, ]], axis=None)
+        return x_neo
 
     def sda_mteo(self, xin: np.ndarray) -> np.ndarray:
         """Applying Multiresolution Teager Energy Operator (MTEO) on input signal"""
@@ -110,23 +145,27 @@ class SpikeDetection:
 
         return np.max(np.floor(x_mteo), 0)
 
-    def sda_snn(self, xin: np.ndarray, y_thr: float) -> [np.ndarray, np.ndarray]:
-        """Applying the spiking neural network (SNN) converter in order to extract spike pattern"""
-        y_snn = np.zeros(shape=xin.size)
-        y_int = np.zeros(shape=xin.size)
-        y_int0 = 0.0
-        gain = 1.0
-        for idx, val in enumerate(np.abs(xin)):
-            if y_int0 >= y_thr:
-                y_int0 = 0.0
-                y_snn[idx] = 1
-            else:
-                y_int0 += gain * val
-                y_snn[idx] = 0
+    def sda_ado(self, xin: np.ndarray) -> np.ndarray:
+        """Applying the absolute difference operator (ADO) on input signal"""
+        ksda0 = self.settings.dx_sda[0]
+        x_aso0 = np.floor(np.absolute(xin[ksda0:, ] - xin[:-ksda0, ]))
+        x_aso = np.concatenate([x_aso0[:ksda0], x_aso0], axis=None)
+        return x_aso
 
-            y_int[idx] = y_int0
+    def sda_aso(self, xin: np.ndarray) -> np.ndarray:
+        """Applying the amplitude slope operator (ASO, k for window size) on input signal"""
+        ksda0 = self.settings.dx_sda[0]
+        x_aso0 = np.floor(xin[ksda0:, ] * (xin[ksda0:, ] - xin[:-ksda0, ]))
+        x_aso = np.concatenate([x_aso0[:ksda0], x_aso0], axis=None)
+        return x_aso
 
-        return y_snn, y_int
+    def sda_smooth(self, xin: np.ndarray) -> [np.ndarray, np.ndarray]:
+        """Smoothing the input"""
+        window = hamming(4 * self.settings.dx_sda[0] + 1)
+        gain_window = np.sum(window)
+        gain = 1
+        xout = np.convolve(xin, gain * window/gain_window, mode='same')
+        return xout, window
 
     # --------- Frame Generation -------------
     def __gen_findpeaks(self, xtrg: np.ndarray, width: int) -> list:
@@ -161,15 +200,15 @@ class SpikeDetection:
         # --- Generate frames
         frames_orig = []
         frames_align = []
-        xpos_out = []
 
         f0 = self.__offset_frame_neg
         f1 = f0 + int(self.frame_length_total / 2)
 
         for idx, pos_frame in enumerate(xpos):
+            print(idx, pos_frame/xpos[-1])
             # --- Original larger frame
             x_neg0 = int(pos_frame - self.__offset_frame_neg)
-            x_pos0 = int(pos_frame + self.frame_length_total)
+            x_pos0 = int(x_neg0 + self.frame_length_total)
             frame0 = xraw[x_neg0:x_pos0]
             # --- Aligned frame
             x_neg1 = int(x_neg0 + f0 + self.get_aligning_position(frame0[f0:f1])[0])
@@ -178,18 +217,51 @@ class SpikeDetection:
             # --- Add to output
             frames_orig.append(frame0)
             frames_align.append(frame1)
-            xpos_out.append(pos_frame)
 
         frames_orig = np.array(frames_orig, dtype=int)
         frames_align = np.array(frames_align, dtype=int)
-        xpos_out = np.array(xpos_out, dtype=int)
+        xpos_out = np.array(xpos, dtype=int)
+
+        return frames_orig, frames_align, xpos_out
+
+    def frame_generation_pos(self, xraw:np.ndarray, xpos: np.ndarray, xoffset: int) -> [np.ndarray, np.ndarray, np.ndarray]:
+        """Frame generation from already detected positions (from groundtruth)"""
+        # --- Generate frames
+        frames_orig = []
+        frames_align = []
+
+        f0 = self.__offset_frame_neg
+        f1 = f0 + int(self.frame_length_total / 2)
+        for idx, pos_frame in enumerate(xpos):
+            # --- Original larger frame
+            x_neg0 = int(pos_frame - self.__offset_frame_neg - xoffset)
+            x_pos0 = int(x_neg0 + self.frame_length_total)
+            frame0 = xraw[x_neg0:x_pos0]
+            # --- Aligned frame
+            x_neg1 = int(x_neg0 + f0 + self.get_aligning_position(frame0[f0:f1])[0])
+            x_pos1 = int(x_neg1 + self.frame_length)
+            frame1 = xraw[x_neg1:x_pos1]
+            # --- Add to output
+            frames_orig.append(frame0)
+            frames_align.append(frame1)
+
+        frames_orig = np.array(frames_orig, dtype=int)
+        frames_align = np.array(frames_align, dtype=int)
+        xpos_out = np.array(xpos, dtype=int)
 
         return frames_orig, frames_align, xpos_out
 
     # --------- Frame Aligning -------------
     def __frame_correction(self, frame_in: np.ndarray, dx_neg: int, dx_pos: int) -> np.ndarray:
-        raise NotImplementedError
-        # TODO: Methode noch implementieren
+        if dx_pos > frame_in.size:  # Add right side
+            mat = np.ones(shape=(1, np.abs(dx_pos - len(frame_in) + 1))) * frame_in[-1]
+            frame1 = np.concatenate((frame_in[dx_neg:-1], mat), axis=None)
+        elif dx_neg <= 0:       # Add left side
+            mat = np.ones(shape=(1, np.abs(dx_neg))) * frame_in[0]
+            frame1 = np.concatenate((mat, frame_in[0:dx_pos]), axis=None)
+        else:                   # Normal state
+            frame1 = frame_in[dx_neg:dx_pos]
+        return frame1
 
     def __frame_align_none(self, frame_in: np.ndarray) -> [int, int]:
         """None-aligning the detected spike frames (only smaller window)"""
@@ -241,6 +313,7 @@ class SpikeDetection:
             dxneg, dxpos = [0, 0]
 
         return dxneg, dxpos
+
     def do_aligning_frames(self, frame_in: np.ndarray) -> np.ndarray:
         """Aligning method for detected spike frames"""
         frame_out = np.zeros(shape=(frame_in.shape[0], self.frame_length), dtype="int")
@@ -251,6 +324,6 @@ class SpikeDetection:
         for idx, frame0 in enumerate(frame_in):
             frame_sel = frame0[f0:f1]
             dxneg, dxpos = self.get_aligning_position(frame_sel)
-            frame_out[idx, :] = frame0[f0+dxneg:dxpos]
+            frame_out[idx, :] = self.__frame_correction(frame0, dxneg, dxpos)
 
         return frame_out

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from pipeline.pipeline_v1 import Settings, Pipeline
 from src.metric import Metric
 from src.data_call import DataController
-from src.plotting import results_afe1, results_fec, results_paper, results_ivt, results_firing_rate
+from src.plotting import results_afe1, results_fec, results_paper, results_ivt, results_firing_rate, results_correlogram
 
 if __name__ == "__main__":
     plt.close('all')
@@ -33,7 +33,7 @@ if __name__ == "__main__":
         print("... plotting and saving results")
         path2save = SpikeSorting.saving_results(folder_name)
         # ---- Calculating metric
-        SpikeMetric = Metric(path2save, )
+        SpikeMetric = Metric(path2save)
 
         # ---- Plot results
         results_afe1(SpikeSorting, path2save, no_electrode)
@@ -41,6 +41,7 @@ if __name__ == "__main__":
         #results_paper(SpikeSorting, path2save, no_electrode)
         results_ivt(SpikeSorting, path2save, no_electrode)
         results_firing_rate(SpikeSorting, path2save, no_electrode)
+        results_correlogram(SpikeSorting, path2save, no_electrode)
 
         plt.show(block=True)
 

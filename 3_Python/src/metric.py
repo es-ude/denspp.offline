@@ -5,11 +5,10 @@ import matplotlib.pyplot as plt
 
 from src.data_call import DataHandler
 
-
 def calculate_snr(yin: np.ndarray, ymean: np.ndarray):
     """Calculating the signal-to-noise ratio [dB] of the input signal compared to mean waveform"""
-    a0 = np.sum(np.square(yin))
-    b0 = np.sum(np.square(yin - ymean))
+    a0 = (np.max(ymean) - np.min(ymean)) ** 2
+    b0 = np.sum((yin - ymean) ** 2)
     return 10 * np.log10(a0 / b0)
 
 def calculate_prd(yin: np.ndarray, ymean: np.ndarray):

@@ -13,7 +13,7 @@ class Settings:
     """Settings class for handling the pipeline setting"""
     SettingsDATA = SettingsDATA(
         path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
-        data_set=1, data_point=0,
+        data_set=1, data_case=0, data_point=0,
         t_range=[0],
         ch_sel=[-1],
         fs_resample=50e3
@@ -36,8 +36,10 @@ class Settings:
         fs=SettingsADC.fs_adc, dx_sda=[1],
         mode_align=3,
         t_frame_lgth=1.6e-3, t_frame_start=0.4e-3,
-        dt_offset=[0.4e-3, 0.3e-3],
-        t_dly=0.4e-3
+        dt_offset=[0.4e-3, 0.4e-3],
+        t_dly=0.4e-3,
+        window_size=7,
+        thr_gain=1
     )
 
 # --- Setting the pipeline
@@ -48,9 +50,6 @@ class Pipeline(PipelineSignal):
         self.preamp = PreAmp(settings.SettingsAMP)
         self.adc = ADC0(settings.SettingsADC)
         self.sda = SpikeDetection(settings.SettingsSDA)
-
-        self.__mode_thres = settings.SettingsSDA.mode_thres
-        self.__mode_frame = settings.SettingsSDA.mode_align
 
         self.path2logs = "logs"
         self.path2runs = "runs"

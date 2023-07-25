@@ -1,5 +1,6 @@
 import numpy as np
 
+# TODO: Weitere Methoden (wie Kreuz- und Autokorrelation einfügen)
 def calc_spiketicks(uin: np.ndarray, xpos: np.ndarray, cluster_id: np.ndarray) -> np.ndarray:
     """Determining spike ticks with cluster results"""
     cluster_no = np.unique(cluster_id)
@@ -10,6 +11,12 @@ def calc_spiketicks(uin: np.ndarray, xpos: np.ndarray, cluster_id: np.ndarray) -
         ticks[cluster_id[idx], val] = 1
         idx += 1
     return ticks
+
+def calc_amplitude(frame: np.ndarray, fs: float) -> list:
+    """Determining the min-max amplitudes of each spike frame over time"""
+    amp = list()
+    
+    return amp
 
 def calc_interval_timing(xticks: np.ndarray, fs: float) -> list:
     """Calculating the interval timing of clustered spike ticks"""
@@ -28,4 +35,28 @@ def calc_firing_rate(xticks: np.ndarray, fs: float) -> list:
         xout[0, :] = x0 / fs
         xout[1, :] = np.concatenate((0, fs / np.diff(x0)), axis=None)
         out.append(xout)
+    return out
+
+def calc_autocorrelogram(xticks: np.ndarray, fs: float) -> list:
+    """Calculation of the Auto-Correlogram"""
+    out = list()
+    for idx, ticks0 in enumerate(xticks):
+        isi = []
+        ticks = np.where(ticks0 == 1)[0]
+        for tick_ref in ticks:
+            dt_isi = ticks - tick_ref
+            isi = np.concatenate([isi, dt_isi], axis=None)
+        out.append(isi / fs)
+    return out
+def calc_crosscorrelogram(xticks: np.ndarray, xref: np.ndarray, fs: float) -> list:
+    """Calculation of the Cross-Correlogram"""
+    out = list()
+    tick_ref0 = np.where(xref == 1)[0]
+    for idx, ticks0 in enumerate(xticks):
+        isi = []
+        ticks = np.where(ticks0 == 1)[0]
+        for tick_ref in tick_ref0:
+            dt_isi = ticks - tick_ref
+            isi = np.concatenate([isi, dt_isi], axis=None)
+        out.append(isi / fs)
     return out

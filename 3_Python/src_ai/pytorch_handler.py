@@ -5,16 +5,18 @@ import torch
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
-from src_ai.dae_dataset import calculate_snr
+from src.metric import calculate_snr
 
 class training_pytorch:
-    def __init__(self, type: str, model_name: str) -> None:
+    def __init__(self, type: str, model_name: str, index_folder: str) -> None:
         self.__time_start = None
         self.__time_end = None
         self.device = None
+        self.os_type = None
         self.__setup_device()
 
         # --- Saving options
+        self.index_folder = index_folder
         self.aitype = type
         self.model_name = model_name
         self.__path2run = 'runs'
@@ -30,17 +32,24 @@ class training_pytorch:
         self.num_epoch = 1
 
     def __setup_device(self) -> None:
-        os_type = os.name
+        os_type0 = os.name
         device0 = "CUDA" if torch.cuda.is_available() else "CPU"
         if device0 == "CUDA":
             self.device = torch.device("cuda")
         else:
             self.device = torch.device("cpu")
 
-        print(f"... using PyTorch with {device0} device on {os_type}")
+        if os_type0 == 'nt':
+            self.os_type = 'Windows'
+        elif os_type0 == 'posix':
+            self.os_type = 'Linux'
+        else:
+            self.os_type = 'Mac'
+
+        print(f"... using PyTorch with {device0} device on {self.os_type}")
 
     def __init_train(self) -> None:
-        folder_name = '{}_ai_training_'.format(datetime.now().strftime('%Y%m%d_%H%M%S')) + self.model_name
+        folder_name = '{}_'.format(datetime.now().strftime('%Y%m%d_%H%M%S')) + self.index_folder + '_' + self.model_name
 
         self.path2save = os.path.join(self.__path2run, folder_name)
         self.__path2log = os.path.join(self.__path2run, folder_name, 'logs')
@@ -75,7 +84,10 @@ class training_pytorch:
             self.model.train(True)
             for tdata in self.train_loader:
                 self.optimizer.zero_grad()
-                (data_in, data_out, pred_out) = self.__calc_model(tdata)
+                data_in = tdata['in']
+                data_out = tdata['out']
+                _, pred_out = self.model(data_in)
+
                 loss = self.loss_fn(pred_out, data_out)
                 loss.backward()
                 self.optimizer.step()
@@ -93,7 +105,9 @@ class training_pytorch:
 
             self.model.eval()
             for vdata in self.valid_loader:
-                (data_in, data_out, pred_out) = self.__calc_model(vdata)
+                data_in = vdata['in']
+                data_out = vdata['out']
+                _, pred_out = self.model(data_in)
                 valid_loss += self.loss_fn(pred_out, data_out)
                 total_batches += 1
 
@@ -134,15 +148,3 @@ class training_pytorch:
         shutil.copy(model_path, self.path2save)
 
         return own_metric
-
-    def __calc_model(self, data):
-        if self.aitype == "dae":
-            din = data['frame']
-            dout = data['mean_frame']
-            _, pred_out = self.model(din)
-        else:
-            din = data['frame']
-            dout = data['spk_type']
-            pred_out = self.model(din)
-
-        return din, dout, pred_out

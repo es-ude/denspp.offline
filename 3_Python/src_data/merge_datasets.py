@@ -6,30 +6,7 @@ from scipy.io import savemat
 from src.data_call import DataController
 from pipeline.pipeline_data import Settings, Pipeline
 
-def cut_frames_from_stream(
-        data: np.ndarray, xpos: np.ndarray, dx: [int, int], cluster: np.ndarray, cluster_no: np.ndarray
-) -> [np.ndarray, np.ndarray]:
-    """Tool for cutting the spike frames out of the bitstream
-    (only useable with already labeled information)"""
-    dxneg = dx[0]
-    dxpos = dx[1]
-    frames_out = np.zeros(shape=(xpos.size, dxneg + dxpos))
-    frames_cluster = np.zeros(shape=(xpos.size, 1))
-
-    if cluster_no.size == 0:
-        max_val = 0
-    else:
-        max_val = 1 + np.argmax(np.unique(cluster_no))
-
-    idx = 0
-    for pos in xpos:
-        frames_out[idx, :] = data[pos-dxneg:pos+dxpos]
-        frames_cluster[idx] = max_val + cluster[idx]
-        idx += 1
-
-    return frames_out, frames_cluster
-
-def get_frames_from_dataset(path2save: str, data_set: int, align_mode: int):
+def get_frames_from_dataset(path2save: str, data_set: int, data_case: int, align_mode: int):
     """Tool for loading datasets in order to generate one new dataset (Step 1)"""
     # --- Loading the pipeline
     afe_set = Settings()
@@ -40,6 +17,8 @@ def get_frames_from_dataset(path2save: str, data_set: int, align_mode: int):
     # ------ Loading Data: Preparing Data
     print("... loading the datasets")
     afe_set.SettingsDATA.data_set = data_set
+    afe_set.SettingsDATA.data_case = data_case
+    afe_set.SettingsSDA.mode_align = align_mode
     datahandler = DataController(afe_set.SettingsDATA)
 
     frames_in = np.empty(shape=(0, 0), dtype=int)
@@ -55,33 +34,35 @@ def get_frames_from_dataset(path2save: str, data_set: int, align_mode: int):
         datahandler.do_call()
         datahandler.do_resample()
         data = datahandler.get_data()
+
         # --- Taking signals from handler
         u_in = data.raw_data[0]
         cl_in = data.cluster_id[0]
         spike_xpos = data.spike_xpos[0]
         spike_offset = data.spike_offset[0]
         file_name = data.data_name
-        endPoint = datahandler.dataset_numpoints
-        # --- Apply analogue signal into pipeline
+        endPoint = datahandler.no_files
+
+        # --- Pre-Processing with analogue pipeline
         afe.run_input(u_in)
-        # --- Spike Detection from Labeling
         spike_xpos = np.floor(spike_xpos * fs_adc / fs_ana).astype("int")
         x_start = np.floor(1e-6 * spike_offset / fs_ana).astype("int")
-        (frame_raw, frame_cluster) = cut_frames_from_stream(
-            data=afe.x_adc, xpos=spike_xpos,
-            dx=[x_start, afe.sda.offset_frame + afe.sda.frame_length - x_start],
-            cluster=cl_in,
-            cluster_no=frames_cluster
-        )
-        frame_aligned = afe.sda.frame_aligning(frame_raw, align_mode)
-        # --- Collecting datasets
+
+        # --- Processing (Frames and cluster)
+        frame_aligned = afe.sda.frame_generation_pos(afe.x_adc, spike_xpos, x_start)[1]
+
         if first_run:
+            max_cluster_num = 0
+            new_cluster_add = max_cluster_num + cl_in
             frames_in = frame_aligned
-            frames_cluster = frame_cluster
+            frames_cluster = new_cluster_add
         else:
-            frames_cluster = np.concatenate((frames_cluster, frame_cluster), axis=0)
+            max_cluster_num = 1 + np.argmax(np.unique(frames_cluster))
+            new_cluster_add = max_cluster_num + cl_in
+            frames_cluster = np.concatenate((frames_cluster, new_cluster_add), axis=0)
             frames_in = np.concatenate((frames_in, frame_aligned), axis=0)
 
+        # --- Control mechanism
         first_run = False
         runPoint += 1
 
