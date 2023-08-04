@@ -7,6 +7,7 @@ from src.signal_gen import EasyNeuralData_Generator
 from src.metric import calculate_snr
 from src.plotting import results_afe1
 
+
 def characterize_sda_output(spk_pos_in: np.ndarray, spk_pos_sda: np.ndarray, fs: float) -> [float, float, float]:
     true_right_cnt = 0
     false_right_cnt = 0
@@ -31,9 +32,10 @@ def characterize_sda_output(spk_pos_in: np.ndarray, spk_pos_sda: np.ndarray, fs:
 
     return dt_acc, true_right_rate, false_right_rate
 
+
 def plot_results_single(time: np.ndarray, spk_signal: np.ndarray, spk_frm_in: np.ndarray, methods: str) -> None:
     spk_mean_in = np.mean(spk_frm_in, axis=0)
-    #spk_mean_filt = np.mean(spk_frm_filt, axis=0)
+    # spk_mean_filt = np.mean(spk_frm_filt, axis=0)
 
     plt.figure()
     ax1 = plt.subplot(211)
@@ -51,7 +53,9 @@ def plot_results_single(time: np.ndarray, spk_signal: np.ndarray, spk_frm_in: np
 
     plt.tight_layout()
 
-def plot_results_sweep(spk_firing_rate: np.ndarray, snr: np.ndarray, dt_acc: np.ndarray, tr_rate: np.ndarray, fr_rate: np.ndarray, methods: str) -> None:
+
+def plot_results_sweep(spk_firing_rate: np.ndarray, snr: np.ndarray, dt_acc: np.ndarray, tr_rate: np.ndarray,
+                       fr_rate: np.ndarray, methods: str) -> None:
     plt.figure()
     ax1 = plt.subplot(211)
     ax2 = plt.subplot(212, sharex=ax1)
@@ -59,7 +63,6 @@ def plot_results_sweep(spk_firing_rate: np.ndarray, snr: np.ndarray, dt_acc: np.
     text_spk = list()
     for val in spk_firing_rate:
         text_spk.append("FR = " + str(val) + " Hz")
-
 
     dcolor = [0.42, 0.5, 0.58, 0.66, 1.0]
     for idx0, val in enumerate(spk_firing_rate):
@@ -78,6 +81,7 @@ def plot_results_sweep(spk_firing_rate: np.ndarray, snr: np.ndarray, dt_acc: np.
     ax2.grid()
 
     plt.tight_layout()
+
 
 # --------------- MAIN PROGRAMME
 if __name__ == "__main__":

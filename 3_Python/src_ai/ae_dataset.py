@@ -8,9 +8,9 @@ class DatasetAE(Dataset):
     """Dataset Preparator for training Autoencoder"""
 
     def __init__(self, frames: np.ndarray, index: np.ndarray, mean_frame: np.ndarray):
-        self.frames = np.array(frames, dtype=np.float32)
+        self.noisy_frames = np.array(frames, dtype=np.float32)
+        self.mean_frames = np.array(mean_frame, dtype=np.float32)
         self.index = index
-        self.use_dae = True
 
     def __len__(self):
         return self.index.shape[0]
@@ -18,9 +18,12 @@ class DatasetAE(Dataset):
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        frame = self.frames[idx, :]
+
         cluster_id = self.index[idx]
-        return {'in': frame, 'out': frame, 'cluster': cluster_id}
+        frame = self.noisy_frames[idx, :]
+        mean = self.mean_frames[cluster_id, :]
+
+        return {'in': frame, 'out': frame, 'cluster': cluster_id, 'mean': mean}
 
 
 def prepare_plotting(data_plot: DataLoader) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -30,12 +33,12 @@ def prepare_plotting(data_plot: DataLoader) -> tuple[np.ndarray, np.ndarray, np.
     for i, vdata in enumerate(data_plot):
         if i == 0:
             din = vdata['in']
+            dout = vdata['mean']
             did = vdata['cluster']
         else:
             din = np.append(din, vdata['in'], axis=0)
+            dout = np.append(dout, vdata['mean'], axis=0)
             did = np.append(did, vdata['cluster'])
-
-    dout = din
 
     return din, dout, did
 

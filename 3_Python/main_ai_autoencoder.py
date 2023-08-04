@@ -15,6 +15,7 @@ from src_ai.ae_topology import dnn_ae_v1 as ai_module
 # from src_ai.dae_topology_embedded import dnn_dae_v1 as ai_module
 import src_ai.plotting as plt_spaike
 
+# TODO: Hist richtig berechnen mit dataset
 
 def loss_func(feat_1, feat_2):
     scaling = [5, 4]
@@ -27,20 +28,26 @@ def loss_func(feat_1, feat_2):
 
 # --- Hauptprogramm
 if __name__ == "__main__":
-    plt.close('all')
-    print("\nTrain modules of spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
+    # --- Settings
     path2data = 'data'
     index_folder = 'train'
     file_name = '2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted'
     # file_name = '2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted'
 
-    no_epochs = 2000
+    no_epochs = 10
     batch_size = 64
-    augment_do = False
+    data_split_ratio = 0.2
+    do_shuffle = True
+
+    augment_do = True
     augment_num = 0
     noise_do = False
     excludeCluster = [1]
     sel_pos = []
+
+    # --- Programme start
+    plt.close('all')
+    print("\nTrain modules of spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
 
     # --- Pre-Processing: Loading data and splitting into training and validation
     path = os.path.join(path2data, file_name)
@@ -52,8 +59,8 @@ if __name__ == "__main__":
     dataset = DatasetUsed(frames_in, frames_cluster, frames_mean)
     train_dl, valid_dl = get_dataloaders(
         dataset, batch_size=batch_size,
-        validation_split=0.2,
-        shuffle=True
+        validation_split=data_split_ratio,
+        shuffle=do_shuffle
     )
 
     # --- Pre-Processing: Create NN
@@ -84,22 +91,17 @@ if __name__ == "__main__":
     ypred0 = pred_out.detach().numpy()
 
     # --- Post-Processing: SNR improvement
-    snr_before = []
-    snr_after = []
+    snr_run0 = []
+    snr_run1 = []
     for i, frame in enumerate(data_in):
-        xin = frame
-        fmean = data_out[i, :]
-        fpred = ypred0[i, :]
-        snr_before.append(calculate_snr(xin, fmean))
-        snr_after.append(calculate_snr(fpred, fmean))
+        snr_run0.append(calculate_snr(frame, data_out[i, :]))
+        snr_run1.append(calculate_snr(ypred0[i, :], data_out[i, :]))
 
-    snr_before = np.array(snr_before)
-    snr_after = np.array(snr_after)
+    snr_run0 = np.array(snr_run0)
+    snr_run1 = np.array(snr_run1)
 
-    print(
-        f"... SNR before of: {np.mean(snr_before):.5f} (mean) - {np.max(snr_before):.5f} (max) - {np.min(snr_before):.5f} (min)")
-    print(
-        f"... SNR after of: {np.mean(snr_after):.5f} (mean) - {np.max(snr_after):.5f} (max) - {np.min(snr_after):.5f} (min)")
+    print(f"- SNR_in: {np.mean(snr_run0):.2f} (mean) | {np.max(snr_run0):.2f} (max) | {np.min(snr_run0):.2f} (min)")
+    print(f"- SNR_out: {np.mean(snr_run1):.2f} (mean) | {np.max(snr_run1):.2f} (max) | {np.min(snr_run1):.2f} (min)")
 
     # --- Saving data
     matdata = {"frames_in": data_in, "frames_out": data_out, "frames_pred": ypred0, "feat": feat0,

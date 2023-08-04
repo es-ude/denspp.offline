@@ -8,10 +8,9 @@ class DatasetDAE(Dataset):
     """Preparing Dataset-Loader for training Denoising Autoencoder"""
 
     def __init__(self, frames: np.ndarray, index: np.ndarray, mean_frame: np.ndarray):
-        self.frames = np.array(frames, dtype=np.float32)
+        self.frames_noisy = np.array(frames, dtype=np.float32)
+        self.frames_mean = np.array(mean_frame, dtype=np.float32)
         self.index = index
-        self.mean_frame = np.array(mean_frame, dtype=np.float32)
-        self.use_dae = True
 
     def __len__(self):
         return self.index.shape[0]
@@ -19,9 +18,11 @@ class DatasetDAE(Dataset):
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        frame = self.frames[idx, :]
+
         cluster_id = self.index[idx]
-        mean_frame = self.mean_frame[cluster_id, :]
+        frame = self.frames_noisy[idx, :]
+        mean_frame = self.frames_mean[cluster_id, :]
+
         return {'in': frame, 'out': mean_frame, 'cluster': cluster_id}
 
 
