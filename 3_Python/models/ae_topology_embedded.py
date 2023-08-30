@@ -11,23 +11,23 @@ class dnn_dae_v1(nn.Module):
         bits_total = 12
         bits_frac = 9
         iohiddenlayer = [32, 20, 3]
+        use_bias = False
 
         # --- Encoder Path
         self.encoder = nn.Sequential(
-            FPLinear(in_features=iohiddenlayer[0], out_features=iohiddenlayer[1], total_bits=bits_total, frac_bits=bits_frac, bias=True),
-            nn.BatchNorm1d(num_features=iohiddenlayer[1]),
+            FPLinear(in_features=iohiddenlayer[0], out_features=iohiddenlayer[1], total_bits=bits_total, frac_bits=bits_frac, bias=use_bias),
+            # nn.BatchNorm1d(num_features=iohiddenlayer[1], bias=use_bias),
             FPHardTanh(total_bits=bits_total, frac_bits=bits_frac),
-            FPLinear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[2], total_bits=bits_total, frac_bits=bits_frac, bias=True)
+            FPLinear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[2], total_bits=bits_total, frac_bits=bits_frac, bias=use_bias)
         )
         # --- Decoder Path
         self.decoder = nn.Sequential(
-            nn.BatchNorm1d(num_features=iohiddenlayer[2]),
+            # nn.BatchNorm1d(num_features=iohiddenlayer[2], bias=use_bias),
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[1]),
-            nn.BatchNorm1d(num_features=iohiddenlayer[1]),
+            nn.Linear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[1], bias=use_bias),
+            # nn.BatchNorm1d(num_features=iohiddenlayer[1], bias=use_bias),
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0]),
-            nn.BatchNorm1d(num_features=iohiddenlayer[0])
+            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0], bias=use_bias)
         )
 
     def forward(self, x: torch.Tensor) -> [torch.Tensor, torch.Tensor]:

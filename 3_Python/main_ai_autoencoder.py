@@ -11,11 +11,9 @@ from src_ai.dataset_preparation import prepare_training
 from src_ai.pytorch_handler import training_pytorch
 # from src_ai.dae_dataset import DatasetDAE as DatasetUsed, prepare_plotting, get_dataloaders
 from src_ai.ae_dataset import DatasetAE as DatasetUsed, prepare_plotting, get_dataloaders
-from src_ai.ae_topology import dnn_ae_v1 as ai_module
+from models.ae_topology import dnn_dae_v1 as ai_module
 # from src_ai.dae_topology_embedded import dnn_dae_v1 as ai_module
 import src_ai.plotting as plt_spaike
-
-# TODO: Hist richtig berechnen mit dataset
 
 def loss_func(feat_1, feat_2):
     scaling = [5, 4]
@@ -34,15 +32,16 @@ if __name__ == "__main__":
     file_name = '2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted'
     # file_name = '2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted'
 
-    no_epochs = 10
+    no_epochs = 500
     batch_size = 64
     data_split_ratio = 0.2
     do_shuffle = True
+    do_norm = False
 
     augment_do = True
     augment_num = 0
     noise_do = False
-    excludeCluster = [1]
+    excludeCluster = [0, 1]
     sel_pos = []
 
     # --- Programme start
@@ -54,7 +53,7 @@ if __name__ == "__main__":
     frames_in, frames_cluster, frames_mean = prepare_training(
         path=path, do_augmentation=augment_do, num_new_frames=augment_num,
         excludeCluster=excludeCluster, sel_pos=sel_pos,
-        do_zeroframes=noise_do
+        do_norm=do_norm, do_zeroframes=noise_do
     )
     dataset = DatasetUsed(frames_in, frames_cluster, frames_mean)
     train_dl, valid_dl = get_dataloaders(
@@ -118,5 +117,5 @@ if __name__ == "__main__":
     )
     plt.show(block=False)
 
-    # Look data on TensorBoard -> open Terminal
-    # Type in: tensorboard serve --logdir ./runs
+    print("\nLook data on TensorBoard -> open Terminal")
+    print("Type in: tensorboard serve --logdir ./runs")

@@ -27,7 +27,8 @@ def generate_frames(num: int, frame_in: np.ndarray, cluster_in: int, snr_out: li
     return new_cluster, new_frame
 
 
-def generate_zero_frames(SizeFrame: int, num_frames: int, noise_range: list) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def generate_zero_frames(SizeFrame: int, num_frames: int, noise_range: list) -> tuple[
+    np.ndarray, np.ndarray, np.ndarray]:
     """Generating zero frames with noise for data augmentation"""
     mean = np.zeros(shape=(SizeFrame,), dtype='int16')
     (cluster, frames) = generate_frames(num_frames, mean, 0, noise_range)
@@ -64,6 +65,21 @@ def calculate_mean_waveform(frames_in: np.ndarray, frames_cluster: np.ndarray) -
     return frames_mean, cluster_snr
 
 
+def data_normalization(frames_in: np.ndarray, do_bipolar=True, do_globalmax=False) -> np.ndarray:
+    """Data Normalization of input with range setting do_bipolar (False: [0, 1] - True: [-1, +1])"""
+    mean_val = 0 if do_bipolar else 0.5
+    scale_mean = 1 if do_bipolar else 2
+    scale_global = np.max([np.max(frames_in), -np.min(frames_in)]) if do_globalmax else 1
+
+    frames_out = np.zeros(shape=frames_in.shape)
+    for i, frame in enumerate(frames_in):
+        scale_local = np.max([np.max(frame), -np.min(frame)]) if not do_globalmax else 1
+        scale = scale_mean * scale_local * scale_global
+        frames_out[i, :] = mean_val + frame / scale
+
+    return frames_out
+
+
 def augmentation_data(frames_mean: np.ndarray, frames_cluster: np.ndarray, snr_in: np.ndarray,
                       num_min_frames: int) -> tuple[np.ndarray, np.ndarray]:
     """Tool for data augmentation of input spike frames"""
@@ -87,7 +103,7 @@ def augmentation_data(frames_mean: np.ndarray, frames_cluster: np.ndarray, snr_i
 
 
 def prepare_training(path: str, excludeCluster: list, sel_pos: list, do_augmentation: bool, num_new_frames: int,
-                     do_zeroframes: bool) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+                     do_norm: bool, do_zeroframes: bool) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Einlesen des Datensatzes inkl. Augmentierung (Kein Pre-Processing)"""
     str_datum = datetime.now().strftime('%Y%m%d %H%M%S')
     print(f"Running on {str_datum}")
@@ -134,6 +150,11 @@ def prepare_training(path: str, excludeCluster: list, sel_pos: list, do_augmenta
         frames_in = np.append(frames_in, new_frames, axis=0)
         frames_cluster = np.append(1 + frames_cluster, new_clusters, axis=0)
         frames_mean = np.vstack([new_mean, frames_mean])
+
+    # --- Normalization of data
+    if do_norm:
+        frames_in = data_normalization(frames_in)
+        frames_mean = data_normalization(frames_mean)
 
     # --- Output
     print(np.unique(frames_cluster, return_counts=True))

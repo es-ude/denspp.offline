@@ -128,7 +128,7 @@ def results_training(path: str, yin: np.ndarray, feat: np.ndarray, ypred: np.nda
         ax2.scatter(feat[:, 0], feat[:, 1])
     else:
         for i, id in enumerate(cluster_no):
-            ax2.scatter(mark_feat0[i], mark_feat2[i], color=color[i], marker='.')
+            ax2.scatter(mark_feat0[i], mark_feat1[i], color=color[i], marker='.')
     ax2.set_title('Features')
     ax2.set_ylabel('Feat[0]')
     ax2.set_xlabel('Feat[1]')
@@ -173,10 +173,10 @@ def results_training(path: str, yin: np.ndarray, feat: np.ndarray, ypred: np.nda
         ax2.scatter(feat[:, 0], feat[:, 1])
     else:
         for i, id in enumerate(cluster_no):
-            ax2.scatter(mark_feat0[i], mark_feat2[i], color=color[i], marker='.')
+            ax2.scatter(mark_feat1[i], mark_feat2[i], color=color[i], marker='.')
     ax2.set_title('Features')
-    ax2.set_ylabel('Feat[0]')
-    ax2.set_xlabel('Feat[1]')
+    ax2.set_ylabel('Feat[1]')
+    ax2.set_xlabel('Feat[2]')
 
     # Denoised output
     ax3.plot(np.transpose(ypred))
@@ -218,10 +218,10 @@ def results_training(path: str, yin: np.ndarray, feat: np.ndarray, ypred: np.nda
         ax2.scatter(feat[:, 0], feat[:, 1])
     else:
         for i, id in enumerate(cluster_no):
-            ax2.scatter(mark_feat1[i], mark_feat2[i], color=color[i], marker='.')
+            ax2.scatter(mark_feat0[i], mark_feat2[i], color=color[i], marker='.')
     ax2.set_title('Features')
     ax2.set_ylabel('Feat[0]')
-    ax2.set_xlabel('Feat[1]')
+    ax2.set_xlabel('Feat[2]')
 
     # Denoised output
     ax3.plot(np.transpose(ypred))

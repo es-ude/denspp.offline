@@ -6,7 +6,6 @@ from torch.utils.data.sampler import SubsetRandomSampler
 
 class DatasetAE(Dataset):
     """Dataset Preparator for training Autoencoder"""
-
     def __init__(self, frames: np.ndarray, index: np.ndarray, mean_frame: np.ndarray):
         self.noisy_frames = np.array(frames, dtype=np.float32)
         self.mean_frames = np.array(mean_frame, dtype=np.float32)
