@@ -94,40 +94,14 @@ class DataController:
         data_type = self.settings.data_set
         data_set = self.settings.data_case
         data_point = self.settings.data_point
-        if data_type == 1:
+        if data_type == 0:
             self.__load_Kirchner2023(data_set, data_point)
+        else:
+            print("--- Structure is not available")
 
         self.no_channel = self.raw_data.noChannel
         self.raw_data.fs_used = self.raw_data.fs_orig
-        self.__do_take_elec()
         print("... using data point:", self.path2file)
-
-    def __do_take_elec(self):
-        used_ch = self.settings.ch_sel
-        if not used_ch == -1:
-            sel_channel = used_ch
-            self.raw_data.channel = used_ch
-
-            rawdata = list()
-            spike_xpos = list()
-            spike_no = list()
-            cluster_id = list()
-            cluster_no = list()
-
-            for idx in range(0, len(sel_channel)):
-                rawdata.append(self.raw_data.raw_data[idx])
-                spike_xpos.append(self.raw_data.spike_xpos[idx])
-                spike_no.append(self.raw_data.spike_no[idx])
-                cluster_id.append(self.raw_data.cluster_id[idx])
-                cluster_no.append(self.raw_data.cluster_no[idx])
-
-            self.raw_data.raw_data = rawdata
-            self.raw_data.spike_xpos = spike_xpos
-            self.raw_data.spike_no = spike_no
-            self.raw_data.cluster_id = cluster_id
-            self.raw_data.cluster_no = cluster_no
-        else:
-            self.raw_data.channel = range(0, self.no_channel)
 
     def do_cut(self):
         """Cutting all transient electrode signals in the given range"""
@@ -233,28 +207,61 @@ class DataController:
         p, q = Fraction(calced_fs).limit_denominator(100).as_integer_ratio()
         return p, q
 
+    def __prepare_access(self, folder_name: str, data_type: str, sel_datapoint: int) -> None:
+        """Getting the file of the corresponding trial"""
+        folder_content = glob.glob(os.path.join(self.settings.path, folder_name, data_type))
+        folder_content.sort()
+        self.no_files = len(folder_content)
+        try:
+            file_data = folder_content[sel_datapoint]
+            self.path2file = os.path.join(self.settings.path, folder_name, file_data)
+        except:
+            print("--- Folder not available - Please check folder name! ---")
+
+    def __prepare_access_subfolder(self, folder_name: str, data_type: str, sel_dataset: int,
+                                   sel_datapoint: int) -> None:
+        """Getting the file structure within cases/experiments in one data set"""
+        path2data = os.path.join(self.settings.path, folder_name)
+        folder_content = glob.glob(os.path.join(self.settings.path, folder_name, data_type))
+        folder_content.sort()
+        folder_data = [name for name in os.listdir(path2data) if os.path.isdir(os.path.join(path2data, name))]
+        file_data = folder_data[sel_dataset]
+
+        path2data = os.path.join(path2data, file_data)
+        self.__prepare_access(path2data, data_type, sel_datapoint)
+        self.no_subfolder = len(file_data)
+
     def __load_Kirchner2023(self, case: int, point: int) -> None:
         """Loading EMG recording files from Kirchner (2023)"""
-        folder_name = "01_SimDaten_Martinez2009"
-        data_type = '*.csv'
+        folder_name = "E0_Kirchner2023"
+        meta_type = 'Metadata_*.txt'
+        makrer_type = 'Markerfile_*.txt'
+        data_type = '*set*.txt'
+        self.__prepare_access(folder_name, data_type, 0)
 
-        loaded_data = loadmat(self.path2file)
+        # Read textfile and convert
+        file = open(self.path2file, 'r')
+        loaded_data = list()
+        for line in file:
+            input = line.split(" ")
+            data0 = list()
+            for val in input:
+                if val:
+                    data0.append(float(val))
+            loaded_data.append(data0)
+
+        loaded_data = np.array(loaded_data[:-1])
         data = DataHandler()
         # Input and meta
         data.data_name = folder_name
         data.data_type = "Synthetic"
-        data.noChannel = int(loaded_data["chan"][0])
-        data.gain = 0.5e-6 * 10 ** (0 / 20)
-        data.fs_orig = int(1 / loaded_data["samplingInterval"][0][0] * 1000)
-        data.raw_data = [(data.gain * loaded_data["data"][0])]
+        data.noChannel = loaded_data.shape[1]
+        data.gain = 1
+        data.fs_orig = int(1 / 1000)
+        data.raw_data = [(data.gain * loaded_data)]
         # Behaviour
         data.behaviour_exist = False
         # Groundtruth
-        data.label_exist = True
-        data.spike_xpos = [(loaded_data["spike_times"][0][0][0])]
-        data.cluster_id = [(loaded_data["spike_class"][0][0][0])]
-        data.cluster_no = [np.unique(data.cluster_id[0]).size]
-        data.spike_no = [data.spike_xpos[0].size]
-        data.spike_offset = [100]
+        data.label_exist = False
         # Return
         self.raw_data = data

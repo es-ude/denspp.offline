@@ -2,16 +2,17 @@ import os.path
 import glob
 import matplotlib.pyplot as plt
 import torch
-import torchinfo
+from torchinfo import summary as sum_model0
+from torchsummary import summary as sum_model1
 from scipy.io import savemat
 import numpy as np
 
 from src.metric import calculate_snr
 from src_ai.dataset_preparation import prepare_training
 from src_ai.pytorch_handler import training_pytorch
-# from src_ai.dae_dataset import DatasetDAE as DatasetUsed, prepare_plotting, get_dataloaders
-from src_ai.ae_dataset import DatasetAE as DatasetUsed, prepare_plotting, get_dataloaders
-from models.ae_topology import dnn_dae_v1 as ai_module
+from src_ai.ae_denoising_dataset import DatasetDAE as DatasetUsed, prepare_plotting, get_dataloaders
+# from src_ai.ae_dataset import DatasetAE as DatasetUsed, prepare_plotting, get_dataloaders
+from models.ae_topology import cnn_ae_v1 as ai_module
 # from src_ai.dae_topology_embedded import dnn_dae_v1 as ai_module
 import src_ai.plotting as plt_spaike
 
@@ -32,13 +33,13 @@ if __name__ == "__main__":
     file_name = '2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted'
     # file_name = '2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted'
 
-    no_epochs = 500
+    no_epochs = 100
     batch_size = 64
     data_split_ratio = 0.2
     do_shuffle = True
     do_norm = False
 
-    augment_do = True
+    augment_do = False
     augment_num = 0
     noise_do = False
     excludeCluster = [0, 1]
@@ -71,7 +72,8 @@ if __name__ == "__main__":
     loss_fn = torch.nn.MSELoss()
     # loss_fn = loss_func
 
-    torchinfo.summary(model)
+    sum_model0(model, input_size=(1, frames_in.shape[1]))
+
     # --- Processing: Do Training
     trainhandler = training_pytorch(model_typ, model_name, index_folder)
     trainhandler.load_model(model, optimizer, loss_fn, no_epochs)

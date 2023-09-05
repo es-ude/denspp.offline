@@ -243,8 +243,8 @@ def results_training(path: str, yin: np.ndarray, feat: np.ndarray, ypred: np.nda
 
     for i, id in enumerate(cluster_no):
         ax.scatter3D(mark_feat0[i], mark_feat1[i], mark_feat2[i], color=color[i], marker='.')
-    ax.set_ylabel('Feat[0]')
-    ax.set_xlabel('Feat[1]')
+    ax.set_xlabel('Feat[0]')
+    ax.set_ylabel('Feat[1]')
     ax.set_zlabel('Feat[2]')
 
     plt.tight_layout(pad=0.5)
