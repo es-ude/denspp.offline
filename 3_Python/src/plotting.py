@@ -66,7 +66,8 @@ def results_afe1(signals: PipelineSignal, path: str, no_electrode: int) -> None:
         ticks = list()
         ticks.append(testin)
     else:
-        ticks = signals.x_pos
+        ticks = np.zeros(shape=xadc.shape)
+        ticks[signals.x_pos] = 1
 
     tA = np.arange(0, uin.size, 1) / fs_ana
     tD = np.arange(0, xadc.size, 1) / fs_adc
@@ -97,8 +98,8 @@ def results_afe1(signals: PipelineSignal, path: str, no_electrode: int) -> None:
     ax4.set_ylabel("Spike Ticks")
     ax4.set_xlabel("Time t (s)")
     # ax4.eventplot(positions=tD[ticks], orientation="horizontal", lineoffsets=0, linelengths=0.1, color=color_cluster[:no_cluster])
-    for idx, wave in enumerate(ticks):
-        ax4.plot(tD, 1.25 * idx + wave, color=color_cluster[idx])
+    #for idx, wave in enumerate(ticks):
+        # ax4.plot(tD, 1.25 * idx + wave, color=color_cluster[idx])
 
     plt.tight_layout()
     # --- saving plots

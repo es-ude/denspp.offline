@@ -3,6 +3,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 
+
 class DatasetBAE(Dataset):
     def __init__(self, frames: np.ndarray, spk_type: np.ndarray, cluster: np.ndarray):
         self.frames = np.array(frames, dtype=np.float32)
@@ -12,7 +13,8 @@ class DatasetBAE(Dataset):
         # 1: artefact               -> Do nothing
         # 2: background activity    -> Only Spike Tick
         # 3: Unit                   -> Start Spike Sorting
-    def  __len__(self):
+
+    def __len__(self):
         return self.spk_type.shape[0]
 
     def __getitem__(self, idx):

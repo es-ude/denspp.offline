@@ -8,7 +8,7 @@ from src.processing_noise import frame_noise
 
 def change_frame_size(frames_in: np.ndarray, sel_pos: list) -> np.ndarray:
     """Reducing the frame size of input frames to specific values"""
-    if (len(sel_pos) != 2):
+    if len(sel_pos) != 2:
         # Alle Werte übernehmen
         frames_out = frames_in
     else:
@@ -18,28 +18,30 @@ def change_frame_size(frames_in: np.ndarray, sel_pos: list) -> np.ndarray:
     return frames_out
 
 
-def generate_frames(num: int, frame_in: np.ndarray, cluster_in: int, snr_out: list) -> [np.ndarray, np.ndarray]:
+def generate_frames(num: int, frame_in: np.ndarray, cluster_in: int, snr_out: list, fs=20e3) -> [np.ndarray, np.ndarray]:
     """Generating noisy spike frames"""
-    fs = 20e3
     new_cluster = cluster_in * np.ones(shape=(num,), dtype=int)
     _, new_frame = frame_noise(num, frame_in, snr_out, fs)
 
     return new_cluster, new_frame
 
 
-def generate_zero_frames(SizeFrame: int, num_frames: int, noise_range: list) -> tuple[
+def generate_zero_frames(frame_size: int, num_frames: int, noise_range: list) -> tuple[
     np.ndarray, np.ndarray, np.ndarray]:
     """Generating zero frames with noise for data augmentation"""
-    mean = np.zeros(shape=(SizeFrame,), dtype='int16')
+    mean = 2 + 4 * np.random.randn(1, frame_size)
+    out = np.zeros(shape=(frame_size, ), dtype="double")
     (cluster, frames) = generate_frames(num_frames, mean, 0, noise_range)
 
-    return mean, cluster, frames
+    return out, cluster, np.round(frames-mean)
 
 
-def calculate_mean_waveform(frames_in: np.ndarray, frames_cluster: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def calculate_mean_waveform(
+        frames_in: np.ndarray,
+        frames_cluster: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
     """Calculating mean waveforms of spike waveforms"""
     NoCluster, NumCluster = np.unique(frames_cluster, return_counts=True)
-    # NoCluster = NoCluster.tolist()
     SizeCluster = np.size(NoCluster)
     SizeFrame = frames_in.shape[1]
 
@@ -65,7 +67,11 @@ def calculate_mean_waveform(frames_in: np.ndarray, frames_cluster: np.ndarray) -
     return frames_mean, cluster_snr
 
 
-def data_normalization(frames_in: np.ndarray, do_bipolar=True, do_globalmax=False) -> np.ndarray:
+def data_normalization(
+        frames_in: np.ndarray,
+        do_bipolar=True,
+        do_globalmax=False
+    ) -> np.ndarray:
     """Data Normalization of input with range setting do_bipolar (False: [0, 1] - True: [-1, +1])"""
     mean_val = 0 if do_bipolar else 0.5
     scale_mean = 1 if do_bipolar else 2
@@ -80,8 +86,12 @@ def data_normalization(frames_in: np.ndarray, do_bipolar=True, do_globalmax=Fals
     return frames_out
 
 
-def augmentation_data(frames_mean: np.ndarray, frames_cluster: np.ndarray, snr_in: np.ndarray,
-                      num_min_frames: int) -> tuple[np.ndarray, np.ndarray]:
+def augmentation_data(
+        frames_mean: np.ndarray,
+        frames_cluster: np.ndarray,
+        snr_in: np.ndarray,
+        num_min_frames: int
+    ) -> tuple[np.ndarray, np.ndarray]:
     """Tool for data augmentation of input spike frames"""
     frames_out = np.array([], dtype='float')
     cluster_out = np.array([], dtype='int')
@@ -102,8 +112,9 @@ def augmentation_data(frames_mean: np.ndarray, frames_cluster: np.ndarray, snr_i
     return frames_out, cluster_out
 
 
-def prepare_training(path: str, excludeCluster: list, sel_pos: list, do_augmentation: bool, num_new_frames: int,
-                     do_norm: bool, do_zeroframes: bool) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def prepare_training(path: str, excludeCluster: list, sel_pos: list, num_new_frames: int,
+                     do_augmentation=False, do_norm=False, do_zeroframes=False
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Einlesen des Datensatzes inkl. Augmentierung (Kein Pre-Processing)"""
     str_datum = datetime.now().strftime('%Y%m%d %H%M%S')
     print(f"Running on {str_datum}")
@@ -126,13 +137,8 @@ def prepare_training(path: str, excludeCluster: list, sel_pos: list, do_augmenta
     frames_in = change_frame_size(frames_in, sel_pos)
     frames_mean, snr_mean = calculate_mean_waveform(frames_in, frames_cluster)
 
-    if do_augmentation:
-        new_frames, new_clusters = augmentation_data(frames_mean, frames_cluster, snr_mean, num_new_frames)
-        frames_in = np.append(frames_in, new_frames, axis=0)
-        frames_cluster = np.append(frames_cluster, new_clusters, axis=0)
-
-    # --- Exclusion of falling clusters
-    if (len(excludeCluster) == 0):
+    # --- PART: Exclusion of selected clusters
+    if len(excludeCluster) == 0:
         frames_in = frames_in
         frames_cluster = frames_cluster
     else:
@@ -141,21 +147,32 @@ def prepare_training(path: str, excludeCluster: list, sel_pos: list, do_augmenta
             frames_in = frames_in[selX[0], :]
             frames_cluster = frames_cluster[selX]
 
-    # --- Generate and add noise cluster
+    # --- PART: Data Augmentation
+    if do_augmentation:
+        print("... do data augmentation")
+        new_frames, new_clusters = augmentation_data(frames_mean, frames_cluster, snr_mean, num_new_frames)
+        frames_in = np.append(frames_in, new_frames, axis=0)
+        frames_cluster = np.append(frames_cluster, new_clusters, axis=0)
+
+    # --- PART: Generate and add noise cluster
     if do_zeroframes:
         snr_range_zero = [np.mean(snr_mean[:, 0]), np.mean(snr_mean[:, 2])]
-        num_zero_frames = np.max(np.unique(frames_cluster, return_counts=True)[1])
-        new_mean, new_clusters, new_frames = generate_zero_frames(frames_in.shape[1], num_zero_frames, snr_range_zero)
+        info = np.unique(frames_cluster, return_counts=True)
+        num_cluster = np.max(info[0]) + 1
+        num_frames = np.max(info[1])
+        print(f"... adding a zero-noise cluster: cluster = {num_cluster} - number of frames = {num_frames}")
 
+        new_mean, new_clusters, new_frames = generate_zero_frames(frames_in.shape[1], num_frames, snr_range_zero)
         frames_in = np.append(frames_in, new_frames, axis=0)
-        frames_cluster = np.append(1 + frames_cluster, new_clusters, axis=0)
-        frames_mean = np.vstack([new_mean, frames_mean])
+        frames_cluster = np.append(frames_cluster, num_cluster + new_clusters, axis=0)
+        frames_mean = np.vstack([frames_mean, new_mean])
 
-    # --- Normalization of data
+    # --- PART: Data Normalization
     if do_norm:
         frames_in = data_normalization(frames_in)
         frames_mean = data_normalization(frames_mean)
 
     # --- Output
-    print(np.unique(frames_cluster, return_counts=True))
+    check = np.unique(frames_cluster, return_counts=True)
+    print(f"... used data points for training: class = {check[0]} and num = {check[1]}")
     return frames_in, frames_cluster, frames_mean

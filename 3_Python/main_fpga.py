@@ -1,7 +1,8 @@
 import numpy as np
 import torch
 
-if __name__ == "__main__":
+
+def read_model_weights() -> None:
     path2model = "runs/20230531_164911_train_dnn_dae_v1/model_369"
     # path2model = "runs/20230830_162608_train_dnn_ae_v1/model_474"
 
@@ -17,4 +18,12 @@ if __name__ == "__main__":
         A = param
         print(param)
 
-    print("TEST")
+    print("TEST 1")
+
+
+def read_data() -> None:
+    print("TEST 2")
+
+
+if __name__ == "__main__":
+    read_data()

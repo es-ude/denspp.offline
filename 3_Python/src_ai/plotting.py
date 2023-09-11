@@ -39,7 +39,9 @@ def save_figure(fig, path: str, name: str):
         fig.savefig(file_name, format=form)
 
 
-def results_training(path: str, yin: np.ndarray, feat: np.ndarray, ypred: np.ndarray, cluster: np.ndarray,
+def results_training(path: str,
+                     yin: np.ndarray, ypred: np.ndarray, ymean: np.ndarray,
+                     feat: np.ndarray, cluster: np.ndarray,
                      snr: np.ndarray) -> None:
     color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
     textsize = 12
@@ -48,13 +50,11 @@ def results_training(path: str, yin: np.ndarray, feat: np.ndarray, ypred: np.nda
     cluster_no = np.unique(cluster)
 
     mark_pos = []
-    mark_mean = []
     mark_feat0 = []
     mark_feat1 = []
     mark_feat2 = []
     for i, id in enumerate(cluster_no):
         mark_pos.append(np.where(cluster == id))
-        mark_mean.append(np.mean(yin[mark_pos[-1][0], :], axis=0))
         mark_feat0.append(feat[mark_pos[-1], 0])
         mark_feat1.append(feat[mark_pos[-1], 1])
         mark_feat2.append(feat[mark_pos[-1], 2])
@@ -137,7 +137,7 @@ def results_training(path: str, yin: np.ndarray, feat: np.ndarray, ypred: np.nda
     ax3.plot(np.transpose(ypred))
     if mode == 1:
         for i, id in enumerate(cluster_no):
-            ax3.plot(mark_mean[i], color=color[i])
+            ax3.plot(ymean[i, :], color=color[i], linewidth=1.5)
     ax3.set_title('Network Output')
     ax3.set_ylabel('X_pred')
     ax3.set_xlabel('Frame position')
@@ -182,7 +182,7 @@ def results_training(path: str, yin: np.ndarray, feat: np.ndarray, ypred: np.nda
     ax3.plot(np.transpose(ypred))
     if mode == 1:
         for i, id in enumerate(cluster_no):
-            ax3.plot(mark_mean[i], color=color[i])
+            ax3.plot(ymean[i, :], color=color[i], linewidth=1.5)
     ax3.set_title('Network Output')
     ax3.set_ylabel('X_pred')
     ax3.set_xlabel('Frame position')
@@ -227,7 +227,7 @@ def results_training(path: str, yin: np.ndarray, feat: np.ndarray, ypred: np.nda
     ax3.plot(np.transpose(ypred))
     if mode == 1:
         for i, id in enumerate(cluster_no):
-            ax3.plot(mark_mean[i], color=color[i])
+            ax3.plot(ymean[i, :], color=color[i], linewidth=1.5)
     ax3.set_title('Network Output')
     ax3.set_ylabel('X_pred')
     ax3.set_xlabel('Frame position')

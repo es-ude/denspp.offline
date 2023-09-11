@@ -3,17 +3,17 @@ import numpy as np
 
 from src.pipeline_signals import PipelineSignal
 from src.data_call import SettingsDATA
-from src.preamp import PreAmp, SettingsAMP
+from src.pre_amp.preamp import PreAmp, SettingsAMP
 from src.adc.adc_basic import SettingsADC
 from src.adc.adc_sar import ADC_SAR as ADC0
-from src.sda import SpikeDetection, SettingsSDA
+from src.dsp.sda import SpikeDetection, SettingsSDA
 
 # --- Configuring the pipeline
 class Settings:
     """Settings class for handling the pipeline setting"""
     SettingsDATA = SettingsDATA(
         path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
-        data_set=1, data_case=0, data_point=0,
+        data_set=0, data_case=0, data_point=0,
         t_range=[0],
         ch_sel=[-1],
         fs_resample=50e3
@@ -34,7 +34,7 @@ class Settings:
     )
     SettingsSDA = SettingsSDA(
         fs=SettingsADC.fs_adc, dx_sda=[1],
-        mode_align=3,
+        mode_align=0,
         t_frame_lgth=1.6e-3, t_frame_start=0.4e-3,
         dt_offset=[0.4e-3, 0.4e-3],
         t_dly=0.4e-3,

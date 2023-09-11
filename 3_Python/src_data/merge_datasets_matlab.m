@@ -10,14 +10,16 @@ setOptions.doResort = true;
 addon = "_Sorted";
 
 % --- Settings für Martinez
-%criterion_CheckDismiss = [3 0.7];
-%criterion_Run0 = 0.98;
-%criterion_Resort = 0.98;
+criterion_CheckDismiss = [3 0.7];
+criterion_Run0 = 0.98;
+criterion_Resort = 0.98;
 
 % --- Settings für Quiroga
-criterion_CheckDismiss = [2 0.96];
-criterion_Run0 = 0.98;
-criterion_Resort = 0.95;
+%criterion_CheckDismiss = [2 0.96];
+%criterion_Run0 = 0.98;
+%criterion_Resort = 0.95;
+
+disp("Please check if the right settings are choicen!");
 
 %% --- Definition of Background Activity Detection (BAD)
 setOptions.do_bad_dec = false;
@@ -78,14 +80,14 @@ for idx = 1:1:length(input_cluster)
     check = [];
 
     IteNo = 0;
-    while(do_run)
-        XCheck(check) = [];                     
+    while(do_run && ~isempty(XCheck))                    
         % --- Crosscorrelation of each frame with mean frame
         metric_Check0 = [];
         YCheck = YCheckIn(XCheck, :);
-        WaveRef = crossval(mean(YCheck), mean(YCheck));
+        mean_wfg = mean(YCheck, 1);
+        WaveRef = crossval(mean_wfg, mean_wfg);
         for idy = 1:1:length(XCheck)
-            WaveIn = crossval(YCheck(idy,:), mean(YCheck));     
+            WaveIn = crossval(YCheck(idy,:), mean_wfg);     
             metric_Check0(idy, :) = [calc_metric(WaveIn, WaveRef), XCheck(idy)];
         end
         % --- Decision for filtering
@@ -98,34 +100,37 @@ for idx = 1:1:length(input_cluster)
             do_run = false;
             IteNo = IteNo;
         end                
+        XCheck(check) = []; 
     end
 
     % Übergabe: Processing frames
     metric_Check1 = [];
     YCheck = YCheckIn(XCheck, :); 
-    WaveRef = crossval(mean(YCheck), mean(YCheck));
+    mean_wfg = mean(YCheck, 1);
+    WaveRef = crossval(mean_wfg, mean_wfg);
     for idy = 1:length(XCheck)
-        WaveIn = crossval(YCheck(idy,:), mean(YCheck));     
+        WaveIn = crossval(YCheck(idy,:), mean_wfg);     
         metric_Check1(idy, :) = calc_metric(WaveIn, WaveRef);
     end
     data_1process{1, idx} = input_cluster(idx);
     data_1process{2, idx} = [XCheckIn(XCheck), idx + ones(size(XCheckIn(XCheck)))];
     data_1process{3, idx} = YCheckIn(XCheck, :);
-    data_1process{4, idx} = mean(YCheckIn(XCheck, :));
+    data_1process{4, idx} = mean_wfg;
     data_1process{5, idx} = metric_Check1;
 
     % Übergabe: Dismissed frames
     metric_Check1 = [];
     YCheck = YCheckIn(XCheck_False, :); 
-    WaveRef = crossval(mean(YCheck), mean(YCheck));
+    mean_wfg = mean(YCheck, 1);
+    WaveRef = crossval(mean_wfg, mean_wfg);
     for idy = 1:1:length(XCheck_False)
-        WaveIn = crossval(YCheck(idy,:), mean(YCheck));     
+        WaveIn = crossval(YCheck(idy,:), mean_wfg);     
         metric_Check1(idy, :) = calc_metric(WaveIn, WaveRef);
     end
     data_1dismiss{1, idx} = input_cluster(idx);
     data_1dismiss{2, idx} = [XCheckIn(XCheck_False), idx + ones(size(XCheckIn(XCheck_False)))];
     data_1dismiss{3, idx} = YCheckIn(XCheck_False, :);
-    data_1dismiss{4, idx} = mean(YCheckIn(XCheck_False, :));
+    data_1dismiss{4, idx} = mean_wfg;
     data_1dismiss{5, idx} = metric_Check1;
 end
 clear do_run check YCheck YCheckIn XCheckIn XCheck XCheck_False Ymean WaveIn WaveRef;
@@ -289,10 +294,6 @@ if(setOptions.do_bad_dec)
 end
 clear idx cluster_pre sel_id sel;
 
-%% --- Preparing: Plot results
-plot_results(data_2merge, setOptions.path2fig, '_ResultsMerged_Fig');
-plot_results(data_1dismiss, setOptions.path2fig, '_ResultsDismiss_Fig');
-
 %% --- Saving output
 data_ratio_merged = data_process_num / size(frames_in, 1);
 data_ratio_dismiss = 1 - data_ratio_merged;
@@ -302,6 +303,10 @@ frames_cluster = int16(output.cluster-1);
 
 save(setOptions.path2save, 'frames_in', 'frames_cluster', 'frames_bad', 'data_ratio_merged');
 clear FileName;
+
+%% --- Plot results
+plot_results(data_2merge, setOptions.path2fig, '_ResultsMerged_Fig');
+plot_results(data_1dismiss, setOptions.path2fig, '_ResultsDismiss_Fig');
 
 disp("This is the End!");
 

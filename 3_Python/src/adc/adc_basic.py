@@ -4,7 +4,7 @@ from fractions import Fraction
 from scipy.signal import square, resample_poly
 from src.processing_noise import noise_awgn
 
-# TODO: Die nichtlineare Klasse richtig einbinden
+
 @dataclasses.dataclass
 class SettingsADC:
     """"Individuall data class to configure the ADC
@@ -47,6 +47,7 @@ class SettingsADC:
     def lsb(self) -> float:
         return (self.vref[0]-self.vref[1]) / (2 ** self.Nadc)
 
+
 @dataclasses.dataclass
 class SettingsNon:
     """Settings for configuring the parasitics/non-linearities of the ADC
@@ -59,6 +60,7 @@ class SettingsNon:
     offset:     float
     gain_error: float
 
+
 @dataclasses.dataclass
 class RecommendedSettingsADC(SettingsADC):
     """Recommended values to configure the ADC with standard values"""
@@ -70,6 +72,7 @@ class RecommendedSettingsADC(SettingsADC):
             type_out="signed"
         )
 
+
 @dataclasses.dataclass
 class RecommendedSettingsNon(SettingsNon):
     """"Recommended values to configure the non-linearities of the ADC"""
@@ -79,6 +82,7 @@ class RecommendedSettingsNon(SettingsNon):
             offset=1e-6,
             gain_error=0.0
         )
+
 
 class ADC_Basic:
     """"Basic class for applying an Analogue-Digital-Converter (ADC) on the raw data"""

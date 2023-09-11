@@ -1,9 +1,9 @@
 import numpy as np
-
 from src.metric import calculate_snr
 from src.processing_noise import noise_awgn
 
 # TODO: Einbetten des MEArec-Packages (Natalie fragen)
+
 
 class EasyNeuralData_Generator():
     def __init__(self, no_spk: float, fs: float):

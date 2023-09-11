@@ -3,9 +3,9 @@ import numpy as np
 
 from src.pipeline_signals import PipelineSignal
 from src.data_call import SettingsDATA
-from src.sda import SpikeDetection, SettingsSDA
-from src.feature_extraction import FeatureExtraction, SettingsFeature
-from src.clustering import Clustering, SettingsCluster
+from src.dsp.sda import SpikeDetection, SettingsSDA
+from src.dsp.dsp import FeatureExtraction, SettingsFeature
+from src.dsp.cluster import Clustering, SettingsCluster
 from src.nsp import calc_spiketicks, calc_interval_timing, calc_firing_rate
 
 # --- Configuring the pipeline

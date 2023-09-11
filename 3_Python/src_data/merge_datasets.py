@@ -6,7 +6,7 @@ from scipy.io import savemat
 from src.data_call import DataController
 from pipeline.pipeline_data import Settings, Pipeline
 
-def get_frames_from_dataset(path2save: str, data_set: int, data_case: int, align_mode: int):
+def get_frames_from_dataset(path2save: str, data_set: int, data_case: int):
     """Tool for loading datasets in order to generate one new dataset (Step 1)"""
     # --- Loading the pipeline
     afe_set = Settings()
@@ -18,7 +18,7 @@ def get_frames_from_dataset(path2save: str, data_set: int, data_case: int, align
     print("... loading the datasets")
     afe_set.SettingsDATA.data_set = data_set
     afe_set.SettingsDATA.data_case = data_case
-    afe_set.SettingsSDA.mode_align = align_mode
+    print(afe_set.SettingsSDA.mode_align)
     datahandler = DataController(afe_set.SettingsDATA)
 
     frames_in = np.empty(shape=(0, 0), dtype=int)

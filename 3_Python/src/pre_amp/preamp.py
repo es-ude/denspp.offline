@@ -3,6 +3,7 @@ import numpy as np
 from scipy.signal import butter, lfilter, square
 from src.processing_noise import noise_real
 
+
 @dataclasses.dataclass
 class SettingsAMP:
     """"Individuall data class to configure the PreAmp
@@ -34,6 +35,7 @@ class SettingsAMP:
     def vcm(self) -> float:
         return (self.vdd + self.vss) / 2
 
+
 @dataclasses.dataclass
 class SettingsNoise:
     """Settings for configuring the parasitics of the pre-amp
@@ -46,6 +48,7 @@ class SettingsNoise:
     Fc: float
     slope: float
 
+
 @dataclasses.dataclass
 class RecommenedSettingsAMP(SettingsAMP):
     """"Recommended values to configure the PreAmp"""
@@ -57,6 +60,7 @@ class RecommenedSettingsAMP(SettingsAMP):
             offset=0e-6, noise=False,
         )
 
+
 @dataclasses.dataclass
 class RecommendedSettingsNoise(SettingsNoise):
     """"Recommended values to configure the noise properties of the pre-amp"""
@@ -67,7 +71,9 @@ class RecommendedSettingsNoise(SettingsNoise):
             slope=0.6
         )
 
+
 class PreAmp:
+    """Class for emulating an analogue pre-amplifier"""
     def __init__(self, setting: SettingsAMP):
         # --- Settings
         self.settings = setting

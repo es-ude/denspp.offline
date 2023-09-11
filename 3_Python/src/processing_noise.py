@@ -8,6 +8,7 @@ def frame_noise(no_frames: int, frame_in: np.ndarray, noise_pwr: list, fs: float
     width = frame_in.size
     frames_noise = np.zeros(shape=(no_frames, width), dtype="double")
     frames_out = np.zeros(shape=(no_frames, width), dtype="double")
+    snr_chck = np.zeros(shape=(no_frames, ), dtype="double")
 
     # --- Adding noise
     for idx in range(0, no_frames):
@@ -16,14 +17,16 @@ def frame_noise(no_frames: int, frame_in: np.ndarray, noise_pwr: list, fs: float
         noise_lvl = -80
 
         spk = frame_in
-        while (np.abs(SNR_diff) > 0.05):
+        SNR_ist = -1000
+        while np.abs(SNR_diff) > 0.02:
             noise = noise_awgn(width, fs, noise_lvl)[0]
             SNR_ist = calculate_snr(spk + noise, spk)
             SNR_diff = SNR_ist - SNR_soll
             noise_lvl += SNR_diff / 10
 
+        snr_chck[idx] = SNR_ist
+        frames_out[idx, :] = np.round(frame_in + noise)
         frames_noise[idx, :] = np.round(noise)
-        frames_out[idx, :] = frame_in + noise
     return frames_noise, frames_out
 
 

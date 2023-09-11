@@ -111,5 +111,6 @@ function val_snr = plot_results(data_packet, path2fig, name)
             t.FontSize = 10;
         end        
         saveas(gcf, strcat(path2fig, name, num2str(idy, '%02d'), '.jpg'));
+        saveas(gcf, strcat(path2fig, name, num2str(idy, '%02d'), '.svg'));
     end
 end

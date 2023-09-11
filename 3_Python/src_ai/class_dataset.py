@@ -4,40 +4,25 @@ from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 
 
-class DatasetAE(Dataset):
-    """Dataset Preparator for training Autoencoder"""
-    def __init__(self, frames: np.ndarray, index: np.ndarray,
-                 mean_frame: np.ndarray, mode_train=0):
+class DatasetClass(Dataset):
+    """Dataset Preparator for training Classification Neural Network"""
+    def __init__(self, frames: np.ndarray, feat: np.ndarray, index: np.ndarray):
         self.frames_orig = np.array(frames, dtype=np.float32)
-        self.frames_noise = np.array(frames, dtype=np.float32)
-        self.frames_mean = np.array(mean_frame, dtype=np.float32)
-        self.cluster = index
-        self.mode_train = mode_train
+        self.frames_feat = np.array(feat, dtype=np.float32)
+        self.frames_clus = index
 
     def __len__(self):
-        return self.cluster.shape[0]
+        return self.frames_clus.shape[0]
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        cluster_id = self.cluster[idx]
-        frame_mean = self.frames_mean[cluster_id, :]
+        frame_orig = self.frames_orig[idx, :]
+        frame_feat = self.frames_feat[idx, :]
+        frame_clus = self.frames_clus[idx]
 
-        if self.mode_train == 1:
-            # Denoising Autoencoder Training with mean
-            frame_in = self.frames_orig[idx, :]
-            frame_out = self.frames_mean[cluster_id, :]
-        elif self.mode_train == 2:
-            # Denoising Autoencoder Training with adding noise on input
-            frame_in = self.frames_noise[idx, :]
-            frame_out = self.frames_orig[idx, :]
-        else:
-            # Normal Autoencoder Training
-            frame_in = self.frames_orig[idx, :]
-            frame_out = self.frames_orig[idx, :]
-
-        return {'in': frame_in, 'out': frame_out, 'cluster': cluster_id, 'mean': frame_mean}
+        return {'in': frame_orig, 'feat': frame_feat, 'cluster': frame_clus}
 
 
 def prepare_plotting(data_plot: DataLoader) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -60,7 +45,7 @@ def prepare_plotting(data_plot: DataLoader) -> tuple[np.ndarray, np.ndarray, np.
     return din, dout, did, dmean
 
 
-def get_dataloaders(dataset: DatasetAE, batch_size=64,
+def get_dataloaders(dataset: DatasetClass, batch_size=64,
                     validation_split=0.2, shuffle=False
                     ) -> tuple[DataLoader, DataLoader]:
     """Generate datasets for training and validation from input dataset"""

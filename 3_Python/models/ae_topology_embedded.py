@@ -1,63 +1,42 @@
 import torch
 import torch.nn as nn
+# Using Elastic-AI.creator version: 0.57.1
+from elasticai.creator.nn import Sequential
+from elasticai.creator.nn.fixed_point import Linear, BatchNormedLinear, HardTanh
 
-from elasticai.creator.nn import FPLinear, FPHardTanh, FPBatchNormedLinear, Sequential
-
-class dnn_dae_v1(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.out_modelname = 'dnn_dae_embedded_v1'
-        self.out_modeltyp = 'dae'
-        bits_total = 12
-        bits_frac = 9
-        iohiddenlayer = [32, 20, 3]
-        use_bias = False
-
-        # --- Encoder Path
-        self.encoder = nn.Sequential(
-            FPLinear(in_features=iohiddenlayer[0], out_features=iohiddenlayer[1], total_bits=bits_total, frac_bits=bits_frac, bias=use_bias),
-            # nn.BatchNorm1d(num_features=iohiddenlayer[1], bias=use_bias),
-            FPHardTanh(total_bits=bits_total, frac_bits=bits_frac),
-            FPLinear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[2], total_bits=bits_total, frac_bits=bits_frac, bias=use_bias)
-        )
-        # --- Decoder Path
-        self.decoder = nn.Sequential(
-            # nn.BatchNorm1d(num_features=iohiddenlayer[2], bias=use_bias),
-            nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[1], bias=use_bias),
-            # nn.BatchNorm1d(num_features=iohiddenlayer[1], bias=use_bias),
-            nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0], bias=use_bias)
-        )
-
-    def forward(self, x: torch.Tensor) -> [torch.Tensor, torch.Tensor]:
-        encoded = self.encoder(x)
-        return encoded, self.decoder(encoded)
 
 class dnn_dae_v2(nn.Module):
     def __init__(self):
         super().__init__()
         self.out_modelname = 'dnn_dae_embedded_v2'
         self.out_modeltyp = 'dae'
+        self.model_shape = (1, 32)
+        self.out_embedded = True
         bits_total = 12
         bits_frac = 9
-        iohiddenlayer = [32, 20, 3]
+        iohiddenlayer = [self.model_shape[1], 20, 3]
+        do_train_bias = True
 
         # --- Encoder Path
         self.encoder = Sequential(
-            FPBatchNormedLinear(in_features=iohiddenlayer[0], out_features=iohiddenlayer[1], total_bits=bits_total, frac_bits=bits_frac, bias=True),
-            FPHardTanh(total_bits=bits_total, frac_bits=bits_frac),
-            FPLinear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[2], total_bits=bits_total, frac_bits=bits_frac, bias=True)
+            BatchNormedLinear(in_features=iohiddenlayer[0], out_features=iohiddenlayer[1],
+                              total_bits=bits_total, frac_bits=bits_frac,
+                              bias=do_train_bias),
+            HardTanh(total_bits=bits_total, frac_bits=bits_frac),
+            BatchNormedLinear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[2],
+                              total_bits=bits_total, frac_bits=bits_frac,
+                              bias=do_train_bias)
         )
         # --- Decoder Path
         self.decoder = nn.Sequential(
             nn.BatchNorm1d(num_features=iohiddenlayer[2]),
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[1]),
+            nn.Linear(in_features=iohiddenlayer[2],
+                      out_features=iohiddenlayer[1]),
             nn.BatchNorm1d(num_features=iohiddenlayer[1]),
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0]),
-            nn.BatchNorm1d(num_features=iohiddenlayer[0])
+            nn.Linear(in_features=iohiddenlayer[1],
+                      out_features=iohiddenlayer[0])
         )
 
     def forward(self, x: torch.Tensor) -> [torch.Tensor, torch.Tensor]:

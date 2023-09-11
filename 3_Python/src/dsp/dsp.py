@@ -3,6 +3,7 @@ import numpy as np
 import scipy.signal as scft
 from fxpmath import Fxp
 
+
 @dataclasses.dataclass
 class SettingsDSP:
     gain: int
@@ -14,6 +15,7 @@ class SettingsDSP:
     b_type: str         # btype = ['lowpass', 'highpass', 'bandpass', 'bandstop']
     t_dly: float
 
+
 @dataclasses.dataclass
 class RecommendedSettingsDSP(SettingsDSP):
     def __init__(self):
@@ -24,7 +26,9 @@ class RecommendedSettingsDSP(SettingsDSP):
             t_dly=100e-6
         )
 
-class DSP():
+
+class DSP:
+    """Class for Emulating Digital Signal Processing on FPGA"""
     def __init__(self, setting: SettingsDSP):
         self.settings = setting
 
@@ -135,3 +139,13 @@ class DSP():
         phase = np.angle(h, deg=True)
 
         return w, gain, phase
+
+    # TODO: Implementierung der Amplituden-Normalisierung
+    def do_normalization(self, input: np.ndarray) -> np.ndarray:
+        scaling_fix = [8, 16, 32, 64, 256, 1024, 2048]
+        frame_out = np.zeros(shape=input.shape, dtype='float')
+        for ite, frame in enumerate(input):
+            scale_val = 1
+            frame_out[ite, :] = frame
+
+        return frame_out

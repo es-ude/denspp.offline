@@ -2,10 +2,12 @@ import dataclasses
 import numpy as np
 from sklearn.decomposition import PCA
 
+
 @dataclasses.dataclass
 class SettingsFeature:
     """"Individuall data class to configure feature extractor and cluster"""
     no_features: int
+
 
 class RecommendedSettingsFeature(SettingsFeature):
     """Recommended values to configure the FEC with standard values"""
@@ -13,6 +15,7 @@ class RecommendedSettingsFeature(SettingsFeature):
         super().__init__(
             no_features=3
         )
+
 
 class FeatureExtraction:
     """Class with functions for feature extraction"""

@@ -297,6 +297,16 @@ class SpikeDetection:
         dxpos = dxneg + self.frame_length
         return dxneg, dxpos
 
+    def __frame_first_absmax(self, frame_in: np.ndarray) -> [int, int]:
+        """Aligning the detected spike frames to first min/max peak"""
+        x_max = np.argmax(frame_in, axis=None)
+        x_min = np.argmin(frame_in, axis=None)
+        x_start = np.min([x_max, x_min])
+        dxneg = x_start - self.frame_start
+        dxpos = dxneg + self.frame_length
+
+        return dxneg, dxpos
+
     def get_aligning_position(self, frame_in: np.ndarray) -> [int, int]:
         align_mode = self.settings.mode_align
         if align_mode == 0:
@@ -309,6 +319,8 @@ class SpikeDetection:
             dxneg, dxpos = self.__frame_align_ptp(frame_in)
         elif align_mode == 4:
             dxneg, dxpos = self.__frame_align_ntp(frame_in)
+        elif align_mode == 5:
+            dxneg, dxpos = self.__frame_first_absmax(frame_in)
         else:
             dxneg, dxpos = [0, 0]
 

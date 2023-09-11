@@ -5,6 +5,8 @@ from pipeline.pipeline_v1 import Settings, Pipeline
 from src.metric import Metric
 from src.data_call import DataController
 from src.plotting import results_afe1, results_fec, results_paper, results_ivt, results_firing_rate, results_correlogram
+#TODO: Problem bei SpikeTicks
+
 
 if __name__ == "__main__":
     plt.close('all')
@@ -38,8 +40,8 @@ if __name__ == "__main__":
         # ---- Plot results
         results_afe1(SpikeSorting, path2save, no_electrode)
         results_fec(SpikeSorting, path2save, no_electrode)
-        #results_paper(SpikeSorting, path2save, no_electrode)
-        results_ivt(SpikeSorting, path2save, no_electrode)
+        # results_paper(SpikeSorting, path2save, no_electrode)
+        # results_ivt(SpikeSorting, path2save, no_electrode)
         results_firing_rate(SpikeSorting, path2save, no_electrode)
         results_correlogram(SpikeSorting, path2save, no_electrode)
 

@@ -3,23 +3,23 @@ import numpy as np
 
 from src.pipeline_signals import PipelineSignal
 from src.data_call import SettingsDATA
-from src.preamp import PreAmp, SettingsAMP
+from src.pre_amp.preamp import PreAmp, SettingsAMP
 from src.adc.adc_basic import SettingsADC
 from src.adc.adc_sar import ADC_SAR as ADC0
-from src.dsp import DSP, SettingsDSP
-from src.sda import SpikeDetection, SettingsSDA
-from src.feature_extraction import FeatureExtraction, SettingsFeature
-from src.clustering import Clustering, SettingsCluster
-from src.nsp import calc_spiketicks, calc_interval_timing, calc_firing_rate, calc_autocorrelogram
+from src.dsp.dsp import DSP, SettingsDSP
+from src.dsp.sda import SpikeDetection, SettingsSDA
+from src.dsp.fex import FeatureExtraction, SettingsFeature
+from src.dsp.cluster import Clustering, SettingsCluster
+from src.nsp import calc_spiketicks, calc_firing_rate, calc_autocorrelogram
 
 # --- Configuring the pipeline
 class Settings:
     """Settings class for handling the pipeline setting"""
     SettingsDATA = SettingsDATA(
         path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
-        data_set=3,
+        data_set=1,
         data_case=0,
-        data_point=1,
+        data_point=3,
         t_range=[0],
         ch_sel=[-1],
         fs_resample=100e3
@@ -63,7 +63,7 @@ class Settings:
 
     SettingsSDA = SettingsSDA(
         fs=SettingsADC.fs_adc, dx_sda=[1],
-        mode_align=1,
+        mode_align=5,
         t_frame_lgth=1.6e-3, t_frame_start=0.4e-3,
         dt_offset=[0.1e-3, 0.1e-3],
         t_dly=0.4e-3,
