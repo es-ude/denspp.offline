@@ -166,18 +166,16 @@ class DataController:
                 # --- Cutting labeled informations
                 if self.raw_data.label_exist:
                     # Find values from x-positions
-                    idx2 = np.argwhere(spikepos_in >= idx0)
-                    idx2 = 1 + int(idx2[0])
-                    idx3 = np.argwhere(spikepos_in <= idx1)
-                    idx3 = int(idx3[-1])
+                    idx2 = int(np.argwhere(spikepos_in[idx] >= idx0)[0])
+                    idx3 = int(np.argwhere(spikepos_in[idx] <= idx1)[-1])
                 else:
                     idx2 = 0
                     idx3 = -1
 
-                    spike_xout.append(spikepos_in[idx][idx2:idx3])
-                    spike_nout.append(spikepos_in[-1].size)
-                    cluster_id_out.append(cluster_in[idx][idx2:idx3])
-                    cluster_no_out.append(np.unique(cluster_in[-1]).size)
+                spike_xout.append(spikepos_in[idx][idx2:idx3])
+                spike_nout.append(spikepos_in[idx].size)
+                cluster_id_out.append(cluster_in[idx][idx2:idx3])
+                cluster_no_out.append(np.unique(cluster_in[idx]).size)
 
             # Übergabe
             self.raw_data.raw_data = rawdata_out

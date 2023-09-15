@@ -17,31 +17,43 @@ import models.ae_topology_embedded as ai_module_embedded
 
 # TODO: Add normal training of denoising autoencoder
 # TODO: Data Normalization does not work very well
-class configure_train:
+class Config_PyTorch:
     def __init__(self):
         # Settings of Models/Training
-        self.model = ai_module.cnn_ae_v1
+        self.model = ai_module.dnn_ae_v2
         # self.model = ai_module_embedded.dnn_dae_v2
         self.is_embedded = False
         self.loss_fn = torch.nn.MSELoss()
         self.num_epochs = 500
-        self.batch_size = 128
+        self.batch_size = 256
         # Settings of Datasets
         self.data_path = 'data'
         self.data_file_name = '2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted'
-        self.data_split_ratio = 0.2
+        self.data_split_ratio = 0.25
         self.data_do_shuffle = True
-        self.data_do_augmentation = False
-        self.data_num_augmentation = 0
+        self.data_do_augmentation = True
+        self.data_num_augmentation = 2000
         self.data_do_normalization = False
         self.data_do_addnoise_cluster = False
         # Dataset Preparation
-        self.data_exclude_cluster = [1]
+        self.data_exclude_cluster = []
         self.data_sel_pos = []
 
     def set_optimizer(self, model):
         return torch.optim.Adam(model.parameters())
 
+    def get_topology(self, model) -> str:
+        return model.out_modeltyp
+
+
+def ae_addon(mode: int) -> str:
+    addon = ' (Normal)'
+    if mode == 1:
+        addon = ' (Denoising, mean output)'
+    elif mode == 2:
+        addon = ' (Denoising, noise input)'
+
+    return addon
 
 # --- Hauptprogramm
 if __name__ == "__main__":
@@ -52,32 +64,34 @@ if __name__ == "__main__":
     plt.close('all')
     print("\nTrain modules of spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
 
-    settings = configure_train()
+    model_settings = Config_PyTorch()
     # --- Pre-Processing: Create NN
-    model = settings.model()
-    model_opt = settings.set_optimizer(model)
+    model = model_settings.model()
+    model_opt = model_settings.set_optimizer(model)
     model_name = model.out_modelname
     model_typ = model.out_modeltyp
 
     # --- Pre-Processing: Loading data and splitting into training and validation
-    path = os.path.join(settings.data_path, settings.data_file_name)
+    path = os.path.join(model_settings.data_path, model_settings.data_file_name)
     frames_in, frames_cluster, frames_mean = prepare_training(
         path=path,
-        do_augmentation=settings.data_do_augmentation, num_new_frames=settings.data_num_augmentation,
-        excludeCluster=settings.data_exclude_cluster, sel_pos=settings.data_sel_pos,
-        do_norm=settings.data_do_normalization, do_zeroframes=settings.data_do_addnoise_cluster
+        do_augmentation=model_settings.data_do_augmentation, num_new_frames=model_settings.data_num_augmentation,
+        excludeCluster=model_settings.data_exclude_cluster, sel_pos=model_settings.data_sel_pos,
+        do_norm=model_settings.data_do_normalization, do_zeroframes=model_settings.data_do_addnoise_cluster
     )
     dataset = DatasetAE(frames_in, frames_cluster, frames_mean, mode_train=mode_train)
     train_dl, valid_dl = get_dataloaders(
-        dataset, batch_size=settings.batch_size,
-        validation_split=settings.data_split_ratio,
-        shuffle=settings.data_do_shuffle
+        dataset, batch_size=model_settings.batch_size,
+        validation_split=model_settings.data_split_ratio,
+        shuffle=model_settings.data_do_shuffle
     )
 
     # --- Processing: Do Training
-    trainhandler = training_pytorch(model_typ, model_name)
-    trainhandler.load_model(model, model_opt, settings.loss_fn, settings.num_epochs)
+    trainhandler = training_pytorch(model_typ, model_name, model_settings)
+    trainhandler.model_addon = ae_addon(mode_train)
+    trainhandler.load_model(model, model_opt)
     trainhandler.load_data(train_dl, valid_dl)
+
     snr_train = trainhandler.do_training()
     logsdir = trainhandler.path2save
 
@@ -113,7 +127,7 @@ if __name__ == "__main__":
                 "frames_pred": ypred0,
                 "feat": feat0,
                 "cluster": cluster_out,
-                "config": settings
+                "config": model_settings
     }
     filename = 'results.mat'
     savemat(os.path.join(logsdir, filename), matdata)

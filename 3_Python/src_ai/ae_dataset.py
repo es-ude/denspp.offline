@@ -7,12 +7,20 @@ from torch.utils.data.sampler import SubsetRandomSampler
 class DatasetAE(Dataset):
     """Dataset Preparator for training Autoencoder"""
     def __init__(self, frames: np.ndarray, index: np.ndarray,
-                 mean_frame: np.ndarray, mode_train=0):
+                 mean_frame: np.ndarray,
+                 mode_train=0):
         self.frames_orig = np.array(frames, dtype=np.float32)
         self.frames_noise = np.array(frames, dtype=np.float32)
         self.frames_mean = np.array(mean_frame, dtype=np.float32)
         self.cluster = index
+
         self.mode_train = mode_train
+        if mode_train == 1:
+            self.data_type = "Denoising Autoencoder (mean)"
+        elif mode_train == 2:
+            self.data_type = "Denoising Autoencoder (Add noise)"
+        else:
+            self.data_type = "Autoencoder"
 
     def __len__(self):
         return self.cluster.shape[0]

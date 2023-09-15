@@ -13,7 +13,7 @@ class Settings:
     """Settings class for handling the pipeline setting"""
     SettingsDATA = SettingsDATA(
         path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
-        data_set=0, data_case=0, data_point=0,
+        data_set=1, data_case=0, data_point=0,
         t_range=[0],
         ch_sel=[-1],
         fs_resample=50e3

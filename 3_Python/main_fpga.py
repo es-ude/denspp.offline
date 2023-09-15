@@ -1,29 +1,49 @@
 import numpy as np
-import torch
+from src.data_call import DataController
+from pipeline.pipeline_data import Settings, Pipeline
+from src.fpga_transfer import creating_testbench_verilog, translate_data_verilog_memory, read_model_weights
 
 
-def read_model_weights() -> None:
-    path2model = "runs/20230531_164911_train_dnn_dae_v1/model_369"
-    # path2model = "runs/20230830_162608_train_dnn_ae_v1/model_474"
+def do_data_transfer() -> None:
+    """Routine for transfering neural rawdata for Vivado simulations"""
+    print('\nTransfering time series signal (raw data) from neural datasets into Vivado testbenches')
+    # --- Loading the pipeline
+    afe_set = Settings()
+    afe_set.SettingsDATA.t_range = [10, 12]
+    afe = Pipeline(afe_set)
+    # ------ Loading Data: Getting the data
+    print("... loading the datasets")
+    datahandler = DataController(afe_set.SettingsDATA)
+    datahandler.do_call()
+    datahandler.do_cut()
+    datahandler.do_resample()
+    data = datahandler.get_data()
+    afe.run_input(data.raw_data[0])
 
-    model = torch.load(path2model)
+    u_in = afe.x_adc
 
-    print("Output of weights in AI model")
+    # --- Transfer to verilog files
+    path2save = 'data/fpga_sim/neural_data'
+    bit_size = 12
+    sampling_rate = afe_set.SettingsADC.fs_adc
+    creating_testbench_verilog(
+        path2save=path2save,
+        output_bitsize=bit_size,
+        use_trigger=False,
+        fs=sampling_rate
+    )
+    translate_data_verilog_memory(
+        raw_data=u_in,
+        path2save=path2save,
+        output_bitsize=bit_size,
+        fs=sampling_rate
+    )
 
-    ite = 0
-    for name, param in model.named_parameters():
-        print("--------------------")
-        print(f"\nIteration i={ite}")
-        print(name)
-        A = param
-        print(param)
 
-    print("TEST 1")
-
-
-def read_data() -> None:
-    print("TEST 2")
+def do_read_dnn_weights() -> None:
+    """Routine for reading DNN weights from trained model"""
+    read_model_weights()
 
 
 if __name__ == "__main__":
-    read_data()
+    do_data_transfer()

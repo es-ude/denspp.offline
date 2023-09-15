@@ -5,9 +5,9 @@ from pipeline.pipeline_v1 import Settings, Pipeline
 from src.metric import Metric
 from src.data_call import DataController
 from src.plotting import results_afe1, results_fec, results_paper, results_ivt, results_firing_rate, results_correlogram
-#TODO: Problem bei SpikeTicks
 
 
+# TODO: Problem bei SpikeTicks (Taucht schon bei datahandler.do_cut aufgrund Mehrkanalauswertung auf)
 if __name__ == "__main__":
     plt.close('all')
     str_datum = datetime.now().strftime('%Y%m%d_%H%M%S')

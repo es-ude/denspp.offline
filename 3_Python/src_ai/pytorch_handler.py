@@ -11,8 +11,7 @@ from src.metric import calculate_snr
 from elasticai.creator.file_generation.on_disk_path import OnDiskPath
 
 
-# TODO: Einfügen der Trainings-Auswahl durch model.out_modeltyp
-class ConfigPyTorch_Template:
+class Config_PyTorch:
     """Template for configurating pytorch for training a model"""
     def __init__(self):
         # Settings of Models/Training
@@ -38,32 +37,35 @@ class ConfigPyTorch_Template:
     def set_optimizer(self, model):
         return torch.optim.Adam(model.parameters())
 
+    def get_topology(self, model) -> str:
+        return model.out_modeltyp
+
 
 class training_pytorch:
     """Class for Handling Training of Deep Neural Networks in PyTorch"""
-    def __init__(self, type: str, model_name: str, do_train=True) -> None:
-        self.__time_start = None
-        self.__time_end = None
+    def __init__(self, type: str, model_name: str, config_train: Config_PyTorch, do_train=True) -> None:
         self.device = None
         self.os_type = None
         self.__setup_device()
 
         # --- Saving options
         self.index_folder = 'train' if do_train else 'inference'
-        self.embedded_model = False
         self.aitype = type
         self.model_name = model_name
+        self.model_addon = str()
         self.__path2run = 'runs'
         self.__path2log = str()
+        self.path2config = str()
+        self.config_available = False
         self.path2save = str()
 
         # --- Training input
+        self.settings = config_train
         self.model = None
-        self.optimizer = None
         self.loss_fn = None
+        self.optimizer = None
         self.train_loader = None
         self.valid_loader = None
-        self.num_epoch = 1
 
     def __setup_device(self) -> None:
         """Setup PyTorch for Training"""
@@ -96,15 +98,41 @@ class training_pytorch:
         self.train_loader = training_loader
         self.valid_loader = validation_loader
 
-    def load_model(self, model: nn.Module, optimizer, loss_fn, epochs: int, print_model=True) -> None:
+    def load_model(self, model: nn.Module, optimizer, print_model=True) -> None:
         """Loading model, optimizer, loss_fn into class"""
         self.model = model
         self.optimizer = optimizer
-        self.loss_fn = loss_fn
-        self.num_epoch = epochs
-        self.embedded_model = model.out_embedded
+        self.loss_fn = self.settings.loss_fn
         if print_model:
             summary(self.model, input_size=self.model.model_shape)
+
+    def __save_config_txt(self) -> None:
+        """Writing the content of the configuration class in *.txt-file"""
+        config_handler = self.settings
+        self.path2config = os.path.join(self.path2save, 'config.txt')
+        self.config_available = True
+
+        with open(self.path2config, 'w') as txt_handler:
+            txt_handler.write('--- Configuration of PyTorch Training Routine ---\n')
+            txt_handler.write(f'Date: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}\n')
+            txt_handler.write(f'AI Topology: {config_handler.get_topology(self.model) + self.model_addon}\n')
+            txt_handler.write(f'Embedded?: {self.model.model_embedded}\n')
+            txt_handler.write('\n')
+            txt_handler.write(f'Batchsize: {config_handler.batch_size}\n')
+            txt_handler.write(f'Num. of epochs: {config_handler.num_epochs}\n')
+            txt_handler.write(f'Splitting ratio (Training/Validation): {1-config_handler.data_split_ratio}/{config_handler.data_split_ratio}\n')
+            txt_handler.write(f'Do shuffle?: {config_handler.data_do_shuffle}\n')
+            txt_handler.write(f'Do data augmentation?: {config_handler.data_do_augmentation}\n')
+            txt_handler.write(f'Do input normalization?: {config_handler.data_do_normalization}\n')
+            txt_handler.write(f'Do add noise cluster?: {config_handler.data_do_addnoise_cluster}\n')
+            txt_handler.write(f'Exclude cluster: {config_handler.data_exclude_cluster}\n')
+
+    def __save_train_results(self, last_loss_train: float, last_loss_valid: float) -> None:
+        if self.config_available:
+            with open(self.path2config, 'a') as txt_handler:
+                txt_handler.write('\n--- Results of last epoch ---')
+                txt_handler.write(f'\nTraining Loss = {last_loss_train}')
+                txt_handler.write(f'\nValidation Loss = {last_loss_valid}')
 
     def __do_training_epoch(self) -> float:
         """Do training during epoch of training"""
@@ -164,20 +192,21 @@ class training_pytorch:
     def do_training(self):
         """Start model training incl. validation and custom-own metric calculation"""
         best_vloss = 1_000_000.
-
-        timestamp_start = datetime.now()
-        timestamp_string = timestamp_start.strftime('%H:%M:%S.%f')
-        self.__init_train()
-
+        loss_train = 1_000_000.
+        loss_valid = 1_000_000.
         own_metric = []
         model_path = str()
 
+        self.__init_train()
+        self.__save_config_txt()
+        timestamp_start = datetime.now()
+        timestamp_string = timestamp_start.strftime('%H:%M:%S.%f')
         print(f'\nTraining starts on: {timestamp_string}')
-        for epoch in range(0, self.num_epoch):
+        for epoch in range(0, self.settings.num_epochs):
             loss_train = self.__do_training_epoch()
             loss_valid = self.__do_valid_epoch()
 
-            print(f'... results of epoch {epoch + 1}/{self.num_epoch} [{(epoch + 1) / self.num_epoch * 100:.2f} %]: '
+            print(f'... results of epoch {epoch + 1}/{self.settings.num_epochs} [{(epoch + 1) / self.settings.num_epochs * 100:.2f} %]: '
                   f'train_loss = {loss_train:.5f},\tvalid_loss = {loss_valid:.5f}')
 
             # Log the running loss averaged per batch for both training and validation
@@ -195,6 +224,7 @@ class training_pytorch:
             own_metric.append(self.__do_snr_epoch())
 
         # --- Ausgabe nach Training
+        self.__save_train_results(loss_train, loss_valid)
         own_metric = np.array(own_metric)
         timestamp_end = datetime.now()
         timestamp_string = timestamp_end.strftime('%H:%M:%S.%f')

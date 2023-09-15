@@ -9,9 +9,9 @@ class dnn_dae_v2(nn.Module):
     def __init__(self):
         super().__init__()
         self.out_modelname = 'dnn_dae_embedded_v2'
-        self.out_modeltyp = 'dae'
+        self.out_modeltyp = 'ae'
         self.model_shape = (1, 32)
-        self.out_embedded = True
+        self.model_embedded = True
         bits_total = 12
         bits_frac = 9
         iohiddenlayer = [self.model_shape[1], 20, 3]

@@ -18,7 +18,6 @@ def get_frames_from_dataset(path2save: str, data_set: int, data_case: int):
     print("... loading the datasets")
     afe_set.SettingsDATA.data_set = data_set
     afe_set.SettingsDATA.data_case = data_case
-    print(afe_set.SettingsSDA.mode_align)
     datahandler = DataController(afe_set.SettingsDATA)
 
     frames_in = np.empty(shape=(0, 0), dtype=int)
