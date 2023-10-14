@@ -1,5 +1,5 @@
 import numpy as np
-from src.adc.adc_basic import ADC_Basic, SettingsADC, SettingsNon, RecommendedSettingsADC, RecommendedSettingsNon
+from package.adc.adc_basic import ADC_Basic, SettingsADC, SettingsNon, RecommendedSettingsADC, RecommendedSettingsNon
 
 class ADC_DeltaSigma(ADC_Basic):
     """Class for using Continuous Time Delta Sigma ADC"""
@@ -108,49 +108,3 @@ class ADC_DeltaSigma(ADC_Basic):
         xout -= 2 ** (self.settings.Nadc - 1) if self.settings.type_out == "signed" else 0
         xout = self.clipping_digital(xout)
         return xout
-
-# ----- TEST ROUTINE ------------
-import matplotlib.pyplot as plt
-from src.processing_noise import noise_real, do_fft
-if __name__ == "__main__":
-    set_adc = SettingsADC(
-        vdd=0.6, vss=-0.6,
-        fs_ana=200e3, fs_dig=20e3, osr=32,
-        dvref=0.1, Nadc=10,
-        type_out="signed"
-    )
-    adc0 = ADC_DeltaSigma(set_adc)
-
-    t_end = 1
-    tA = np.arange(0, t_end, 1 / set_adc.fs_ana)
-    tD = np.arange(0, t_end, 1 / set_adc.fs_dig)
-    # --- Input signal
-    upp = 0.8 * set_adc.dvref
-    fsine = 100
-    uin = upp * np.sin(2 * np.pi * tA * fsine)
-    uin += noise_real(tA.size, tA.size, -120, 1, 0.6)[0]
-    # --- ADC output
-    xout = adc0.adc_deltasigma_order_two(uin)
-    freq, Yadc = do_fft(xout, set_adc.fs_dig)
-
-    # --- Plotting results
-    plt.figure()
-    ax1 = plt.subplot(311)
-    ax2 = plt.subplot(312, sharex=ax1)
-    ax3 = plt.subplot(313)
-
-    vscale = 1e3
-    ax1.plot(tA, vscale * uin)
-    ax1.set_ylabel('U_in [mV]')
-    ax1.set_xlim([100e-3, 150e-3])
-
-    ax2.plot(tD, xout)
-    ax2.set_ylabel('X_adc []')
-    ax2.set_xlabel('Time t [s]')
-
-    ax3.semilogx(freq, 20 * np.log10(Yadc))
-    ax3.set_ylabel('X_adc []')
-    ax3.set_xlabel('Frequency f [Hz]')
-
-    plt.tight_layout()
-    plt.show(block=True)

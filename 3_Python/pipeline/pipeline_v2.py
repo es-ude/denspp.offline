@@ -1,16 +1,16 @@
 import os, shutil
 import numpy as np
 
-from src.pipeline_signals import PipelineSignal
-from src.data_call import SettingsDATA
-from src.pre_amp.preamp import PreAmp, SettingsAMP
-from src.adc.adc_basic import SettingsADC
-from src.adc.adc_sar import ADC_SAR as ADC0
-from src.dsp.dsp import DSP, SettingsDSP
-from src.dsp.sda import SpikeDetection, SettingsSDA
-from src.dsp.dsp import FeatureExtraction, SettingsFeature
-from src.dsp.cluster import Clustering, SettingsCluster
-from src.nsp import calc_spiketicks, calc_interval_timing
+from pipeline.pipeline_signals import PipelineSignal
+from package.data_call import SettingsDATA
+from package.pre_amp.preamp import PreAmp, SettingsAMP
+from package.adc.adc_basic import SettingsADC
+from package.adc.adc_sar import ADC_SAR as ADC0
+from package.dsp.dsp import DSP, SettingsDSP
+from package.dsp.sda import SpikeDetection, SettingsSDA
+from package.dsp.dsp import FeatureExtraction, SettingsFeature
+from package.dsp.cluster import Clustering, SettingsCluster
+from package.nsp import calc_spiketicks, calc_interval_timing
 
 # --- Configuring the pipeline
 class Settings:
@@ -59,7 +59,7 @@ class Settings:
 
     SettingsSDA = SettingsSDA(
         fs=SettingsADC.fs_adc, dx_sda=[1],
-        mode_align=3,
+        mode_align=1,
         t_frame_lgth=1.6e-3, t_frame_start=0.4e-3,
         dt_offset=[0.4e-3, 0.3e-3],
         t_dly=0.3e-3,
@@ -119,7 +119,7 @@ class Pipeline(PipelineSignal):
         self.x_sda = self.sda.sda_neo(self.x_spk)
         self.x_thr = self.sda.thres_blackrock(self.x_sda)
         (self.frames_orig, self.x_pos) = self.sda.frame_generation(self.x_spk, self.x_sda, self.x_thr)
-        self.frames_align = self.sda.frame_aligning(self.frames_orig)
+        self.frames_align = self.sda.do_aligning_frames(self.frames_orig)
         # --- Adding denoising
         val_max = 48
         self.frames_denoised = self.dae.predict(self.frames_align/val_max)
@@ -129,4 +129,6 @@ class Pipeline(PipelineSignal):
         # --- Classification ---
         (self.cluster_id, self.cluster_no, self.sse) = self.cl.cluster_kmeans(self.features)
         self.spike_ticks = calc_spiketicks(self.x_adc, self.x_pos, self.cluster_id)
+
+    def run_nsp(self):
         self.its = calc_interval_timing(self.spike_ticks, self.fs_dig)

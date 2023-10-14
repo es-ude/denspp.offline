@@ -1,11 +1,10 @@
 import numpy as np
-
-from src.pipeline_signals import PipelineSignal
-from src.pre_amp.preamp import PreAmp, SettingsAMP
-from src.adc.adc_basic import SettingsADC
-from src.adc.adc_sar import ADC_SAR as ADC0
-from src.dsp.dsp import DSP, SettingsDSP
-from src.dsp.sda import SpikeDetection, SettingsSDA
+from pipeline.pipeline_signals import PipelineSignal
+from package.pre_amp.preamp import PreAmp, SettingsAMP
+from package.adc.adc_basic import SettingsADC
+from package.adc.adc_sar import ADC_SAR as ADC0
+from package.dsp.dsp import DSP, SettingsDSP
+from package.dsp.sda import SpikeDetection, SettingsSDA
 
 
 # --- Configuring the pipeline
@@ -15,11 +14,10 @@ class Settings:
         vss=-0.6, vdd=0.6,
         fs_ana=100,
         gain=40,
-        n_filt=1, f_filt=[0.1, 10e3], f_type="band",
+        n_filt=1, f_filt=[10, 8e3], f_type="band",
         offset=1e-6, noise=True,
         f_chop=10e3
     )
-
     SettingsADC = SettingsADC(
         vdd=0.6, vss=-0.6,
         type_out="signed",
@@ -32,20 +30,20 @@ class Settings:
     SettingsDSP_SPK = SettingsDSP(
         gain=1,
         fs=SettingsADC.fs_adc,
-        n_order=1, f_filt=[100],
-        type='iir', f_type='butter', b_type='high',
+        n_order=2, f_filt=[100, 8e3],
+        type='iir', f_type='butter', b_type='band',
         t_dly=0
     )
-
     SettingsSDA = SettingsSDA(
-        fs=SettingsADC.fs_adc, dx_sda=[8],
+        fs=SettingsADC.fs_adc, dx_sda=[2, 3, 4, 5, 6],
         mode_align=1,
         t_frame_lgth=1.6e-3, t_frame_start=0.4e-3,
         dt_offset=[0.1e-3, 0.1e-3],
         t_dly=0.4e-3,
         window_size=7,
-        thr_gain=0.5
+        thr_gain=1
     )
+
 
 # --- Setting the pipeline
 class Pipeline_Digital(PipelineSignal):
@@ -62,8 +60,14 @@ class Pipeline_Digital(PipelineSignal):
         self.dsp1 = DSP(settings.SettingsDSP_SPK)
         self.sda = SpikeDetection(settings.SettingsSDA)
         self.used_methods = None
+        self.mode_sda = None
+        self.mode_thr = None
 
-    def run_preprocess(self, uin: np.ndarray, mode_sda: int, mode_thr: int) -> None:
+    def define_sda(self, mode_sda: int, mode_thr: int) -> None:
+        self.mode_sda = mode_sda
+        self.mode_thr = mode_thr
+
+    def run_preprocess(self, uin: np.ndarray, do_smooth=False, do_get_frames=False) -> None:
         self.u_in = uin
         u_inn = np.array(self.preamp0.settings.vcm)
         # ---- Analogue Front End Module ----
@@ -73,10 +77,13 @@ class Pipeline_Digital(PipelineSignal):
         self.x_spk = self.dsp1.filter(self.x_adc)
         # ---- Spike detection incl. thresholding ----
         self.x_dly = self.sda.time_delay(self.x_spk)
-        self.used_methods = self.__do_sda(self.x_spk, mode_sda, mode_thr)
-        (self.frames_orig, self.frames_align, self.x_pos) = self.sda.frame_generation(self.x_dly, self.x_sda, self.x_thr)
+        self.__do_sda(self.x_spk, self.mode_sda, self.mode_thr, do_smooth=do_smooth)
+        if do_get_frames:
+            (_, self.frames_align, self.x_pos) = self.sda.frame_generation(self.x_dly, self.x_sda, self.x_thr)
+        else:
+            self.x_pos = self.sda.frame_position(self.x_sda, self.x_thr)
 
-    def __do_sda(self, xin: np.ndarray, mode_sda: int, mode_thr: int) -> str:
+    def __do_sda(self, xin: np.ndarray, mode_sda: int, mode_thr: int, do_smooth=False) -> None:
         # --- Performing SDA
         if mode_sda == 0:
             xsda = self.sda.sda_norm(xin)
@@ -91,25 +98,30 @@ class Pipeline_Digital(PipelineSignal):
             xsda = self.sda.sda_aso(xin)
             text_sda = 'ASO'
         elif mode_sda == 4:
+            xsda = self.sda.sda_ado(xin)
+            text_sda = 'ADO'
+        elif mode_sda == 5:
             xsda = self.sda.sda_eed(xin, self.fs_adc)
             text_sda = 'EED'
+        elif mode_sda == 6:
+            xsda = self.sda.sda_spb(xin)
+            text_sda = 'SPB'
         else:
             xsda = np.zeros(shape=xin.shape)
             text_sda = 'Err'
 
-        xsda, window = self.sda.sda_smooth(xsda)
-        self.x_sda = xsda
+        self.x_sda = self.sda.sda_smooth(xsda)[0] if do_smooth else xsda
 
         # --- Performing Thresholding
         if mode_thr == 0:
             xthr = self.sda.thres_mad(xsda)
             text_thr = 'MAD'
         elif mode_thr == 1:
-            xthr = self.sda.thres_blackrock(xsda)
-            text_thr = 'RMS_BL'
-        elif mode_thr == 2:
             xthr = self.sda.thres_rms(xsda)
             text_thr = 'RMS'
+        elif mode_thr == 2:
+            xthr = self.sda.thres_blackrock(xsda)
+            text_thr = 'RMS_BL'
         elif mode_thr == 3:
             xthr = self.sda.thres_ma(xsda)
             text_thr = 'MA'
@@ -124,4 +136,5 @@ class Pipeline_Digital(PipelineSignal):
             text_thr = 'Err'
 
         self.x_thr = xthr
-        return text_sda + '+' + text_thr
+        addon = "+Smooth" if do_smooth else ""
+        self.used_methods = f'{text_sda}+{text_thr}{addon}'

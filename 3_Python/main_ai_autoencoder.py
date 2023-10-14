@@ -1,4 +1,3 @@
-import dataclasses
 import os.path
 import glob
 import matplotlib.pyplot as plt
@@ -6,13 +5,12 @@ import torch
 from scipy.io import savemat
 import numpy as np
 
-from src.metric import calculate_snr
-from src_ai.dataset_preparation import prepare_training
-import src_ai.plotting as plt_spaike
-from src_ai.pytorch_handler import training_pytorch
-from src_ai.ae_dataset import DatasetAE, prepare_plotting, get_dataloaders
+from package.metric import calculate_snr
+from package.dnn.dataset_preparation import prepare_training
+import package.dnn.plotting as plt_spaike
+from package.dnn.pytorch_handler import training_pytorch
+from package.dnn.ae_dataset import DatasetAE, prepare_plotting, get_dataloaders
 import models.ae_topology as ai_module
-import models.ae_topology_embedded as ai_module_embedded
 
 
 # TODO: Add normal training of denoising autoencoder

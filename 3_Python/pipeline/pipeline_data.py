@@ -1,12 +1,12 @@
 import os, shutil
 import numpy as np
 
-from src.pipeline_signals import PipelineSignal
-from src.data_call import SettingsDATA
-from src.pre_amp.preamp import PreAmp, SettingsAMP
-from src.adc.adc_basic import SettingsADC
-from src.adc.adc_sar import ADC_SAR as ADC0
-from src.dsp.sda import SpikeDetection, SettingsSDA
+from pipeline.pipeline_signals import PipelineSignal
+from package.data_call import SettingsDATA
+from package.pre_amp.preamp import PreAmp, SettingsAMP
+from package.adc.adc_basic import SettingsADC
+from package.adc.adc_sar import ADC_SAR as ADC0
+from package.dsp.sda import SpikeDetection, SettingsSDA
 
 # --- Configuring the pipeline
 class Settings:

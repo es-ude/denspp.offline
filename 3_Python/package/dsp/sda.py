@@ -63,14 +63,14 @@ class SpikeDetection:
 
     def thres_rms(self, xin: np.ndarray) -> np.ndarray:
         """Applying the root-mean-squre (RMS) on neural input"""
-        M = self.settings.window_size
         C = self.settings.thr_gain
+        M = self.settings.window_size
         return C * np.sqrt(np.convolve(xin ** 2, np.ones(M) / M, mode='same'))
 
     def thres_winsorization(self, xin: np.ndarray) -> np.ndarray:
         """Applying the winsorization method on input"""
-        M = self.settings.window_size
         C = self.settings.thr_gain
+        M = self.settings.window_size
         noise1 = self.thres_ma(xin)
         noise2 = np.zeros(shape=xin.shape)
         for idx, val in enumerate(np.abs(xin)):
@@ -89,18 +89,18 @@ class SpikeDetection:
     def thres_blackrock_runtime(self, xin: np.ndarray) -> np.ndarray:
         """Runtime std calculation of threshold (use by BlackRock)"""
         x_thr = np.zeros(shape=xin.shape, dtype=int)
-        window = self.settings.window_size
         C = self.settings.thr_gain
+        M = self.settings.window_size
         mean = 0
         for idx, val in enumerate(xin):
-            if idx < window:
+            if idx < M:
                 N0 = idx + 1
             else:
-                N0 = window
+                N0 = M
 
-            xin0 = xin[idx - window:idx]
+            xin0 = xin[idx-M:idx]
             x_thr[idx] = np.sqrt(np.sum((xin0 - mean) ** 2) / N0)
-            x_thr[0:window] = x_thr[-window-1:-1]
+            x_thr[0:M] = x_thr[-M-1:-1]
         return C * x_thr
 
     def thres_salvan_golay(self, xin: np.ndarray) -> np.ndarray:
@@ -115,18 +115,8 @@ class SpikeDetection:
 
     # --------- Spike Detection Algorithm -------------
     def sda_norm(self, xin: np.ndarray) -> np.ndarray:
-        """Normal spike detection algorithm (Durchschleifen)"""
+        """Normal spike detection algorithm"""
         return xin
-
-    def sda_eed(self, xin: np.ndarray, fs: float) -> np.ndarray:
-        """Applying the enhanced energy-derivation operator (eED) on input signal"""
-        fhp = 150
-        filter = iirfilter(
-            N=2, Wn=2 * fhp / fs, ftype="butter", btype="highpass",
-            analog=True, output='ba'
-        )
-        eed = np.array(lfilter(filter[0], filter[1], xin))
-        return np.square(eed)
 
     def sda_neo(self, xin: np.ndarray) -> np.ndarray:
         """Applying Non-Linear Energy Operator (NEO, same like Teager-Kaiser-Operator) with dx_sda = 1 or kNEO with dx_sda > 1"""
@@ -148,16 +138,31 @@ class SpikeDetection:
     def sda_ado(self, xin: np.ndarray) -> np.ndarray:
         """Applying the absolute difference operator (ADO) on input signal"""
         ksda0 = self.settings.dx_sda[0]
-        x_aso0 = np.floor(np.absolute(xin[ksda0:, ] - xin[:-ksda0, ]))
-        x_aso = np.concatenate([x_aso0[:ksda0], x_aso0], axis=None)
-        return x_aso
+        x_sda = np.floor(np.absolute(xin[ksda0:, ] - xin[:-ksda0, ]))
+        x_ado = np.concatenate([x_sda[:ksda0], x_sda], axis=None)
+        return x_ado
 
     def sda_aso(self, xin: np.ndarray) -> np.ndarray:
         """Applying the amplitude slope operator (ASO, k for window size) on input signal"""
         ksda0 = self.settings.dx_sda[0]
-        x_aso0 = np.floor(xin[ksda0:, ] * (xin[ksda0:, ] - xin[:-ksda0, ]))
-        x_aso = np.concatenate([x_aso0[:ksda0], x_aso0], axis=None)
+        x_sda = np.floor(xin[ksda0:, ] * (xin[ksda0:, ] - xin[:-ksda0, ]))
+        x_aso = np.concatenate([x_sda[:ksda0], x_sda], axis=None)
         return x_aso
+
+    def sda_eed(self, xin: np.ndarray, fs: float) -> np.ndarray:
+        """Applying the enhanced energy-derivation operator (eED) on input signal"""
+        fhp = 150
+        filter = iirfilter(
+            N=2, Wn=2 * fhp / fs, ftype="butter", btype="highpass",
+            analog=True, output='ba'
+        )
+        eed = np.array(lfilter(filter[0], filter[1], xin))
+        return np.square(eed)
+
+    # TODO: Implementierung SBP Funktion
+    def sda_spb(self, xin: np.ndarray) -> [np.ndarray, np.ndarray]:
+        """Performing the spike detection with spike band-power estimation [Nason et al., 2020]"""
+        return NotImplementedError
 
     def sda_smooth(self, xin: np.ndarray) -> [np.ndarray, np.ndarray]:
         """Smoothing the input"""
@@ -177,25 +182,34 @@ class SpikeDetection:
     def __gen_risingedge(self, xtrg: np.ndarray, width: int) -> list:
         """Method for x_pos determination with looking for rising edge"""
         trigger_val = 0.5
-        x_pos = np.convolve(xtrg, np.ones(width) / width, mode="same")
-        x_pos = np.argwhere(x_pos >= trigger_val)
-        x_pos0 = [x_pos[0]]
-        for idx, pos in enumerate(x_pos):
-            dx = pos - x_pos0[-1]
+        x_pos0 = np.convolve(xtrg, np.ones(width) / width, mode="same")
+        x_pos1 = np.argwhere(x_pos0 >= trigger_val)
+        x_out = list()
+        x_out.append(x_pos1[0][0])
+        for idx, pos in enumerate(x_pos1):
+            dx = pos[0] - x_out[-1]
             if dx >= self.frame_length:
-                x_pos0.append(pos)
-        return x_pos0
+                x_out.append(pos[0])
+        return x_out
 
-    def frame_generation(self, xraw: np.ndarray, xsda: np.ndarray, xthr: np.ndarray) -> [np.ndarray, np.ndarray, np.ndarray]:
-        """Frame generation of SDA output and threshold"""
+    def frame_position(self, xsda: np.ndarray, xthr: np.ndarray) -> np.ndarray:
+        """Getting frame position of SDA output and thresholding"""
         xtrg = ((xsda - xthr) > 0).astype("int")
         # --- Extraction of x-positions
-        mode = 1
+        mode = 0
         width = 1
         if mode == 0:
             xpos = self.__gen_findpeaks(xtrg, width)
         else:
             xpos = self.__gen_risingedge(xtrg, width)
+
+        xpos_out = np.array(xpos, dtype=int)
+
+        return xpos_out
+
+    def frame_generation(self, xraw: np.ndarray, xsda: np.ndarray, xthr: np.ndarray) -> [np.ndarray, np.ndarray, np.ndarray]:
+        """Frame generation of SDA output and threshold"""
+        xpos = self.frame_position(xsda, xthr)
 
         # --- Generate frames
         frames_orig = []
@@ -205,7 +219,6 @@ class SpikeDetection:
         f1 = f0 + int(self.frame_length_total / 2)
 
         for idx, pos_frame in enumerate(xpos):
-            print(idx, pos_frame/xpos[-1])
             # --- Original larger frame
             x_neg0 = int(pos_frame - self.__offset_frame_neg)
             x_pos0 = int(x_neg0 + self.frame_length_total)
@@ -218,11 +231,10 @@ class SpikeDetection:
             frames_orig.append(frame0)
             frames_align.append(frame1)
 
-        frames_orig = np.array(frames_orig, dtype=int)
-        frames_align = np.array(frames_align, dtype=int)
-        xpos_out = np.array(xpos, dtype=int)
+        frames_orig = np.array(frames_orig, dtype=np.int16)
+        frames_align = np.array(frames_align, dtype=np.int16)
 
-        return frames_orig, frames_align, xpos_out
+        return frames_orig, frames_align, xpos
 
     def frame_generation_pos(self, xraw:np.ndarray, xpos: np.ndarray, xoffset: int) -> [np.ndarray, np.ndarray, np.ndarray]:
         """Frame generation from already detected positions (from groundtruth)"""
@@ -253,6 +265,7 @@ class SpikeDetection:
 
     # --------- Frame Aligning -------------
     def __frame_correction(self, frame_in: np.ndarray, dx_neg: int, dx_pos: int) -> np.ndarray:
+        """Do a frame correction if set x-values are out-of-range"""
         if dx_pos > frame_in.size:  # Add right side
             mat = np.ones(shape=(1, np.abs(dx_pos - len(frame_in) + 1))) * frame_in[-1]
             frame1 = np.concatenate((frame_in[dx_neg:-1], mat), axis=None)
@@ -308,6 +321,7 @@ class SpikeDetection:
         return dxneg, dxpos
 
     def get_aligning_position(self, frame_in: np.ndarray) -> [int, int]:
+        """Extracting aligning position of spike frames"""
         align_mode = self.settings.mode_align
         if align_mode == 0:
             dxneg, dxpos = self.__frame_align_none(frame_in)

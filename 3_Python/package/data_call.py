@@ -1,11 +1,11 @@
-import os, sys
-import glob
+import os
+import sys
 import dataclasses
 import numpy as np
 from typing import Tuple
-from scipy.io import loadmat
 from fractions import Fraction
 from scipy.signal import resample_poly
+from package.data_load import DataLoader, DataHandler
 
 
 @dataclasses.dataclass
@@ -34,7 +34,7 @@ class RecommendedSettingsDATA(SettingsDATA):
     """Recommended configuration for testing"""
     def __init__(self):
         super().__init__(
-            path="C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten",
+            path="D:\Data",
             data_set=1, data_case=0, data_point=0,
             t_range=0, ch_sel=-1,
             fs_resample=100e3
@@ -42,12 +42,14 @@ class RecommendedSettingsDATA(SettingsDATA):
 
 
 # ----- Read Settings -----
-class DataController:
+class DataController(DataLoader):
     """Class for loading and manipulating the used dataset"""
     def __init__(self, setting: SettingsDATA) -> None:
+        DataLoader.__init__(self)
         self.settings = setting
+        self.path2data = setting.path
+        self.path2file = str()
         self.raw_data = DataHandler()
-        self.path2file = None
 
         # --- Meta-Information about datasets
         # Information of subfolders and files
@@ -61,7 +63,7 @@ class DataController:
         # --- Waveform from NEV-File
         self.nev_waveform = []
 
-    def do_call(self):
+    def do_call(self) -> None:
         """Loading the dataset"""
         # --- Checking if path is available
         if os.path.exists(self.settings.path):
@@ -74,16 +76,41 @@ class DataController:
         data_type = self.settings.data_set
         data_set = self.settings.data_case
         data_point = self.settings.data_point
-        if data_type == 0:
-            self.__load_Kirchner2023(data_set, data_point)
-        else:
-            print("--- Structure is not available")
+
+        self.execute_data_call(data_type, data_set, data_point)
 
         self.no_channel = self.raw_data.noChannel
         self.raw_data.fs_used = self.raw_data.fs_orig
+        self.__do_take_elec()
         print("... using data point:", self.path2file)
 
-    def do_cut(self):
+    def __do_take_elec(self) -> None:
+        used_ch = self.settings.ch_sel
+        sel_channel = used_ch if not used_ch[0] == -1 else np.arange(0, self.no_channel)
+
+        rawdata = list()
+        spike_xpos = list()
+        spike_no = list()
+        cluster_id = list()
+        cluster_no = list()
+
+        for idx in sel_channel:
+            rawdata.append(self.raw_data.raw_data[idx])
+
+            if self.raw_data.label_exist:
+                spike_xpos.append(self.raw_data.spike_xpos[idx])
+                spike_no.append(self.raw_data.spike_no[idx])
+                cluster_id.append(self.raw_data.cluster_id[idx])
+                cluster_no.append(self.raw_data.cluster_no[idx])
+
+        self.raw_data.raw_data = rawdata
+        self.raw_data.spike_xpos = spike_xpos
+        self.raw_data.spike_no = spike_no
+        self.raw_data.cluster_id = cluster_id
+        self.raw_data.cluster_no = cluster_no
+        self.raw_data.channel = sel_channel
+
+    def do_cut(self) -> None:
         """Cutting all transient electrode signals in the given range"""
         t_range = np.array(self.settings.t_range)
 
@@ -110,18 +137,16 @@ class DataController:
                 # --- Cutting labeled informations
                 if self.raw_data.label_exist:
                     # Find values from x-positions
-                    idx2 = np.argwhere(spikepos_in >= idx0)
-                    idx2 = 1 + int(idx2[0])
-                    idx3 = np.argwhere(spikepos_in <= idx1)
-                    idx3 = int(idx3[-1])
+                    idx2 = int(np.argwhere(spikepos_in[idx] >= idx0)[0])
+                    idx3 = int(np.argwhere(spikepos_in[idx] <= idx1)[-1])
                 else:
                     idx2 = 0
                     idx3 = -1
 
-                    spike_xout.append(spikepos_in[idx][idx2:idx3])
-                    spike_nout.append(spikepos_in[-1].size)
-                    cluster_id_out.append(cluster_in[idx][idx2:idx3])
-                    cluster_no_out.append(np.unique(cluster_in[-1]).size)
+                spike_xout.append(spikepos_in[idx][idx2:idx3])
+                spike_nout.append(spikepos_in[idx].size)
+                cluster_id_out.append(cluster_in[idx][idx2:idx3])
+                cluster_no_out.append(np.unique(cluster_in[idx]).size)
 
             # Übergabe
             self.raw_data.raw_data = rawdata_out
@@ -130,7 +155,7 @@ class DataController:
             self.raw_data.cluster_id = cluster_id_out
             self.raw_data.cluster_no = cluster_no_out
 
-    def do_resample(self):
+    def do_resample(self) -> None:
         """Do resampling all transient signals"""
         desired_fs = self.settings.fs_resample
         self.raw_data.fs_used = desired_fs
@@ -145,8 +170,6 @@ class DataController:
             self.__scaling = p / q
 
             for idx, data_in in enumerate(self.raw_data.raw_data):
-                spikepos_in = self.raw_data.spike_xpos[idx]
-
                 # --- Resampling the input
                 u_chck = np.mean(data_in[0:10])
                 if np.abs((u_chck < u_safe) - 1) == 1:
@@ -158,6 +181,7 @@ class DataController:
 
                 # --- Resampling the labeled information
                 if self.raw_data.label_exist:
+                    spikepos_in = self.raw_data.spike_xpos[idx]
                     spike_out.append(np.array(self.__scaling * spikepos_in, dtype=int))
 
             self.raw_data.raw_data = data_out
@@ -186,62 +210,3 @@ class DataController:
         calced_fs = fout / fin
         p, q = Fraction(calced_fs).limit_denominator(100).as_integer_ratio()
         return p, q
-
-    def __prepare_access(self, folder_name: str, data_type: str, sel_datapoint: int) -> None:
-        """Getting the file of the corresponding trial"""
-        folder_content = glob.glob(os.path.join(self.settings.path, folder_name, data_type))
-        folder_content.sort()
-        self.no_files = len(folder_content)
-        try:
-            file_data = folder_content[sel_datapoint]
-            self.path2file = os.path.join(self.settings.path, folder_name, file_data)
-        except:
-            print("--- Folder not available - Please check folder name! ---")
-
-    def __prepare_access_subfolder(self, folder_name: str, data_type: str, sel_dataset: int,
-                                   sel_datapoint: int) -> None:
-        """Getting the file structure within cases/experiments in one data set"""
-        path2data = os.path.join(self.settings.path, folder_name)
-        folder_content = glob.glob(os.path.join(self.settings.path, folder_name, data_type))
-        folder_content.sort()
-        folder_data = [name for name in os.listdir(path2data) if os.path.isdir(os.path.join(path2data, name))]
-        file_data = folder_data[sel_dataset]
-
-        path2data = os.path.join(path2data, file_data)
-        self.__prepare_access(path2data, data_type, sel_datapoint)
-        self.no_subfolder = len(file_data)
-
-    def __load_Kirchner2023(self, case: int, point: int) -> None:
-        """Loading EMG recording files from Kirchner (2023)"""
-        folder_name = "E0_Kirchner2023"
-        meta_type = 'Metadata_*.txt'
-        makrer_type = 'Markerfile_*.txt'
-        data_type = '*set*.txt'
-        self.__prepare_access(folder_name, data_type, 0)
-
-        # Read textfile and convert
-        file = open(self.path2file, 'r')
-        loaded_data = list()
-        for line in file:
-            input = line.split(" ")
-            data0 = list()
-            for val in input:
-                if val:
-                    data0.append(float(val))
-            loaded_data.append(data0)
-
-        loaded_data = np.array(loaded_data[:-1])
-        data = DataHandler()
-        # Input and meta
-        data.data_name = folder_name
-        data.data_type = "Synthetic"
-        data.noChannel = loaded_data.shape[1]
-        data.gain = 1
-        data.fs_orig = int(1 / 1000)
-        data.raw_data = [(data.gain * loaded_data)]
-        # Behaviour
-        data.behaviour_exist = False
-        # Groundtruth
-        data.label_exist = False
-        # Return
-        self.raw_data = data

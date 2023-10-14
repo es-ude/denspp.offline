@@ -2,8 +2,8 @@ import os
 import numpy as np
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
+from package.data_call import DataHandler
 
-from src.data_call import DataHandler
 
 def calculate_snr(yin: np.ndarray, ymean: np.ndarray):
     """Calculating the signal-to-noise ratio [dB] of the input signal compared to mean waveform"""
@@ -11,32 +11,23 @@ def calculate_snr(yin: np.ndarray, ymean: np.ndarray):
     b0 = np.sum((yin - ymean) ** 2)
     return 10 * np.log10(a0 / b0)
 
+
 def calculate_prd(yin: np.ndarray, ymean: np.ndarray):
     """Calculating the root-mean-square difference in percentage (PRD)"""
     a0 = np.sum(np.square(yin - ymean))
     b0 = np.sum(np.squre(yin))
     return np.sqrt(a0 / b0) * 100
 
+
 # TODO: Metrik-Klasse ausbauen
-class Metric():
-    def __init__(self, path2save: str):
-        self.path2figure = path2save
-
-        self.cm = None
+class Metric:
+    def __init__(self):
+        self.cm = 0.0
         # Metrics
-        self.sse = None
-        self.dr = None           # ???
-        self.ca = None           # compression accuracy
-        self.cr = None           # compression ratio
-
-    def __save_figure(self, name: str) -> None:
-        """Saving the selected figure/plot"""
-        format = ['eps', 'svg']
-        path2fig = os.path.join(self.path2figure, name)
-
-        for idx, form in enumerate(format):
-            file_name = path2fig + '.' + form
-            plt.savefig(file_name, format=form)
+        self.sse = 0.0
+        self.dr = 0.0           # ???
+        self.ca = 0.0           # compression accuracy
+        self.cr = 0.0           # compression ratio
 
     def __preprocess_sda0(self, x_ist: np.ndarray, x_soll: np.ndarray, tol: int):
         TP = 0  # number of true positive

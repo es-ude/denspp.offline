@@ -1,6 +1,6 @@
 import numpy as np
-from src.metric import calculate_snr
-from src.processing_noise import frame_noise
+from package.metric import calculate_snr
+from package.process_noise import frame_noise
 
 def change_frame_size(frames_in: np.ndarray, sel_pos: list) -> np.ndarray:
     """Reducing the frame size of input frames to specific values"""

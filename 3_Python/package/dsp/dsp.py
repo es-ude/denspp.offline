@@ -81,8 +81,7 @@ class DSP:
         uout = np.concatenate((mat, uin[0:uin.size - set_delay]), axis=None)
         return uout
 
-    def coeff_print(self, bit_size: int, bit_frac: int) -> None:
-        signed = True
+    def coeff_print(self, bit_size: int, bit_frac: int, signed=True) -> None:
         print("\nAusgabe der Filterkoeffizienten:")
         if self.coeff_a:
             for id, coeff in enumerate(self.coeff_a):
@@ -96,9 +95,8 @@ class DSP:
                 error = coeff - float(quant)
                 print(f".. Coeff_B{id}: {float(quant):.8f} = {quant.hex()} (Delta = {error:.6f})")
 
-    def coeff_verilog(self, bit_size: int, bit_frac: int) -> None:
-        signed = True
-        print(f"\n//--- Used filter coefficients for {self.settings.b_type, self.type0} with {np.array(self.settings.f_filt) / 1000:.3f} kHz @ {self.settings.fs / 1000:.3f} kHz")
+    def coeff_verilog(self, bit_size: int, bit_frac: int, signed=True) -> None:
+        print(f"\n//--- Used filter coefficients for {self.settings.b_type, self.settings.f_type} with {np.array(self.settings.f_filt) / 1000:.3f} kHz @ {self.settings.fs / 1000:.3f} kHz")
         if not self.type1 == 'fir':
             coeffa_size = len(self.coeff_a)
             print(f"wire signed [{bit_size - 1:d}:0] coeff_a [{coeffa_size - 1:d}:0];")
@@ -118,7 +116,7 @@ class DSP:
         if self.type1 == 'iir':
             fout = scft.iirfilter(
                 N=self.settings.n_order, Wn=frange, #rs=60, rp=1,
-                btype=self.type0, ftype=self.settings.b_type, analog=True,
+                btype=self.settings.f_type, ftype=self.settings.b_type, analog=True,
                 output='ba'
             )
             b = fout[0]
@@ -140,12 +138,13 @@ class DSP:
 
         return w, gain, phase
 
-    # TODO: Implementierung der Amplituden-Normalisierung
-    def do_normalization(self, input: np.ndarray) -> np.ndarray:
-        scaling_fix = [8, 16, 32, 64, 256, 1024, 2048]
+    def do_hw_normalization(self, input: np.ndarray, full_range=False) -> np.ndarray:
+        """Normalization of the input to binary shifting, range [+1, -1]"""
         frame_out = np.zeros(shape=input.shape, dtype='float')
+        offset = 0.5 if full_range else 0
         for ite, frame in enumerate(input):
-            scale_val = 1
-            frame_out[ite, :] = frame
+            max_val = np.max(np.abs(frame))
+            scale_val = 1 / np.ceil(np.log2(max_val))
+            frame_out[ite, :] = offset + scale_val * frame
 
         return frame_out

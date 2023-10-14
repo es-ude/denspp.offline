@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pandas
 
+
 # TODO: Funktionen nochmals prüfen
 class NeuroPixelHandler:
     def __init__(self, path: str, filename, fs: int):
@@ -130,7 +131,6 @@ class NeuroPixelHandler:
                             for pos in range(self.dX):
                                 fileWR.write(data[pos.numerator][idx.numerator])
                             fileWR.close()
-                        # TODO: Save to npy einfügen
                     do_read = True
                     file_exists = True
                 else:

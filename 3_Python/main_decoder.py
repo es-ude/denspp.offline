@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 from scipy.io import loadmat
 
 from pipeline.pipeline_nev import Settings, Pipeline
-from src.data_call import DataController
-from src.plotting import results_fec, results_ivt, results_firing_rate
+from package.data_call import DataController
+from package.plotting import results_fec, results_ivt, results_firing_rate
 
 if __name__ == "__main__":
     plt.close('all')
@@ -26,13 +26,13 @@ if __name__ == "__main__":
 
     # --- Processing the data
     SpikeSorting = Pipeline(settings)
+    path2save = SpikeSorting.saving_results(folder_name)
     for elec in range(0, dataIn.noChannel):
         SpikeSorting.run(dataWave[elec])
         # --- Plotting
-        path2save = SpikeSorting.saving_results(folder_name)
-        results_fec(SpikeSorting, path2save, elec)
-        results_ivt(SpikeSorting, path2save, elec)
-        results_firing_rate(SpikeSorting, path2save, elec)
+        results_fec(SpikeSorting, elec, path2save)
+        results_ivt(SpikeSorting, elec, path2save)
+        results_firing_rate(SpikeSorting, elec, path2save)
         plt.show(block=False)
 
     # --- Ending

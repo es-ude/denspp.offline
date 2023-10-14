@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from src.metric import calculate_snr
+from package.metric import calculate_snr
 
 
 def frame_noise(no_frames: int, frame_in: np.ndarray, noise_pwr: list, fs: float) -> [np.ndarray, np.ndarray]:
@@ -42,8 +42,10 @@ def noise_awgn(size: int, fs: float, wgndBW: float) -> [np.ndarray, np.ndarray]:
     """
     rho = 10 ** (wgndBW / 10)
     sigma = rho * np.sqrt(fs / 2)
-    noise = np.random.normal(0, sigma, size)
-    noise -= np.mean(noise)
+    noise = np.random.randn(size) * sigma
+
+    #noise = np.random.normal(0, sigma, size)
+    #noise -= np.mean(noise)
     # Calculation of effective noise
     noise_eff = np.std(noise)
     noise_pp = np.max(noise) - np.min(noise)
@@ -51,6 +53,7 @@ def noise_awgn(size: int, fs: float, wgndBW: float) -> [np.ndarray, np.ndarray]:
 
 
 def noise_flicker(size: int, alpha: float) -> np.ndarray:
+    """Generating flicker noise"""
     M = 2 * size + (size % 2)
     # --- Thermal noise
     ynoise = np.random.randn(M)

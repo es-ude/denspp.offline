@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 from torchinfo import summary
-from src.metric import calculate_snr
+from package.metric import calculate_snr
 from elasticai.creator.file_generation.on_disk_path import OnDiskPath
 
 

@@ -1,30 +1,33 @@
 import os.path
 import numpy as np
 import matplotlib.pyplot as plt
-
 from sklearn.metrics import ConfusionMatrixDisplay
-from src.pipeline_signals import PipelineSignal
+from pipeline.pipeline_signals import PipelineSignal
 
 # TODO: Plots für IVT und FR anpassen in Abhängigkeit der Cluster-Anzahl
 # TODO: Schöne Rasterplots erstellen (Problem: Ungleiche Vektorlänge)
+# TODO: ConfusionMatrix erstellen
 
 color_cluster = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
 
 
 def cm_to_inch(value):
+    """Plotting the results in type of ... """
     return value / 2.54
 
 
 def save_figure(fig, path: str, name: str):
-    format = ['eps', 'svg']
+    """Function to save figure in specific formats"""
+    format_fig = ['eps', 'svg']
     path2fig = os.path.join(path, name)
 
-    for idx, form in enumerate(format):
+    for idx, form in enumerate(format_fig):
         file_name = path2fig + '.' + form
         fig.savefig(file_name, format=form)
 
 
-def results_afe0(signals: PipelineSignal, path: str, no_electrode: int) -> None:
+def results_afe0(signals: PipelineSignal, no_electrode: int, path="") -> None:
+    """Plotting the results in type of ... """
     fs_ana = signals.fs_ana
     uin = signals.u_in
     tA = np.arange(0, uin.size, 1) / fs_ana
@@ -39,10 +42,10 @@ def results_afe0(signals: PipelineSignal, path: str, no_electrode: int) -> None:
 
     ax1.plot(tA, 1e6 * uin, 'k')
     ax1.set_ylabel("U_in [µV]")
-    ax2.plot(tA, 1e6 * signals.u_chp, 'k')
-    ax2.set_ylabel("U_chopper [µV]")
-    ax3.plot(tA, 1e6 * signals.u_pre, 'k')
-    ax3.set_ylabel("Output pre-amplifier [µV]")
+    ax2.plot(tA, 1e6 * signals.u_pre, 'k')
+    ax2.set_ylabel("U_pre [µV]")
+    ax3.plot(tA, 1e6 * signals.u_quant, 'k')
+    ax3.set_ylabel("U_adc [µV]")
     ax3.set_xlabel("Time t (s)")
 
     plt.tight_layout()
@@ -51,7 +54,8 @@ def results_afe0(signals: PipelineSignal, path: str, no_electrode: int) -> None:
         save_figure(plt, path, "pipeline_afe_elec" + str(no_electrode))
 
 
-def results_afe1(signals: PipelineSignal, path: str, no_electrode: int) -> None:
+def results_afe1(signals: PipelineSignal, no_electrode: int, path="") -> None:
+    """Plotting the results in type of ... """
     fs_ana = signals.fs_ana
     fs_adc = signals.fs_adc
 
@@ -59,15 +63,7 @@ def results_afe1(signals: PipelineSignal, path: str, no_electrode: int) -> None:
     xadc = signals.x_adc
     xsda = signals.x_sda
     xthr = signals.x_thr
-
-    if signals.spike_ticks is None:
-        testin = np.zeros(shape=xadc.shape)
-        testin[signals.x_pos] = 1
-        ticks = list()
-        ticks.append(testin)
-    else:
-        ticks = np.zeros(shape=xadc.shape)
-        ticks[signals.x_pos] = 1
+    ticks = signals.spike_ticks
 
     tA = np.arange(0, uin.size, 1) / fs_ana
     tD = np.arange(0, xadc.size, 1) / fs_adc
@@ -98,8 +94,8 @@ def results_afe1(signals: PipelineSignal, path: str, no_electrode: int) -> None:
     ax4.set_ylabel("Spike Ticks")
     ax4.set_xlabel("Time t (s)")
     # ax4.eventplot(positions=tD[ticks], orientation="horizontal", lineoffsets=0, linelengths=0.1, color=color_cluster[:no_cluster])
-    #for idx, wave in enumerate(ticks):
-        # ax4.plot(tD, 1.25 * idx + wave, color=color_cluster[idx])
+    for idx, wave in enumerate(ticks):
+        ax4.plot(tD, 1.25 * idx + wave, color=color_cluster[idx])
 
     plt.tight_layout()
     # --- saving plots
@@ -107,7 +103,7 @@ def results_afe1(signals: PipelineSignal, path: str, no_electrode: int) -> None:
         save_figure(plt, path, "pipeline_transient_elec" + str(no_electrode))
 
 
-def results_fec(signals: PipelineSignal, path: str, no_electrode: int) -> None:
+def results_fec(signals: PipelineSignal, no_electrode: int, path="") -> None:
     """Plotting results """
     framesIn = signals.frames_orig
     framesOut = signals.frames_align
@@ -125,13 +121,19 @@ def results_fec(signals: PipelineSignal, path: str, no_electrode: int) -> None:
     ax3 = plt.subplot(223)
     ax4 = plt.subplot(224, sharex=ax2)
 
-    ax1.plot(np.transpose(framesIn))
-    ax2.plot(np.transpose(framesOut))
+    ax1.set_title("Input Frames")
+    ax1.plot(np.transpose(framesIn), marker='.', markersize=4)
+
+    ax2.set_title("Aligned Frames")
+    ax2.plot(np.transpose(framesOut), marker='.', markersize=4)
+
+    ax3.set_title("Feature Space")
     for idx in range(0, cluster.shape[0]):
         ax3.plot(feat[idx, 0], feat[idx, 1], color=color_cluster[cluster[idx]], marker='.')
 
+    ax4.set_title("Mean Frames (Clustered)")
     for idx in range(0, mean_frames.shape[0]):
-        ax4.plot(np.transpose(mean_frames[idx, :]), color=color_cluster[idx])
+        ax4.plot(np.transpose(mean_frames[idx, :]), color=color_cluster[idx], marker='.', markersize=4)
 
     plt.tight_layout()
     # --- saving plots
@@ -139,7 +141,7 @@ def results_fec(signals: PipelineSignal, path: str, no_electrode: int) -> None:
         save_figure(plt, path, "pipeline_fec_elec" + str(no_electrode))
 
 
-def results_ivt(signals: PipelineSignal, path: str, no_electrode: int) -> None:
+def results_ivt(signals: PipelineSignal, no_electrode: int, path="") -> None:
     """Plotting the results of interval timing spikes of each cluster"""
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
 
@@ -180,7 +182,7 @@ def results_ivt(signals: PipelineSignal, path: str, no_electrode: int) -> None:
         save_figure(plt, path, "pipeline_ivt" + str(no_electrode))
 
 
-def results_confusion(signals: PipelineSignal, path: str, no_electrode: int) -> None:
+def results_confusion(signals: PipelineSignal, no_electrode: int, path="") -> None:
     do_norm = True
     title = "Spike Sorting"
     x_in = 0
@@ -199,7 +201,7 @@ def results_confusion(signals: PipelineSignal, path: str, no_electrode: int) -> 
         save_figure(plt, path, "pipeline_ivt" + str(no_electrode))
 
 
-def results_correlogram(signals: PipelineSignal, path: str, no_electrode: int) -> None:
+def results_correlogram(signals: PipelineSignal, no_electrode: int, path="") -> None:
     """Plotting the results of interval timing spikes of each cluster"""
     val_in = signals.correlogram
     no_cluster = signals.cluster_no
@@ -221,20 +223,20 @@ def results_correlogram(signals: PipelineSignal, path: str, no_electrode: int) -
         save_figure(plt, path, "pipeline_correlogram" + str(no_electrode))
 
 
-def results_firing_rate(signals: PipelineSignal, path: str, no_electrode: int) -> None:
+def results_firing_rate(signals: PipelineSignal, no_electrode: int, path="") -> None:
     fr_in = signals.firing_rate
+    no_cluster = len(fr_in)
 
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
-    ax1 = plt.subplot(131)
-    ax2 = plt.subplot(132, sharex=ax1)
-    ax3 = plt.subplot(133, sharex=ax1)
+    axs = list()
+    for idx in range(0, no_cluster):
+        axs.append(plt.subplot(no_cluster, 1, idx+1))
 
-    ax1.plot(fr_in[0][0, :], fr_in[0][1, :], color=color_cluster[0])
-    ax2.plot(fr_in[1][0, :], fr_in[1][1, :], color=color_cluster[1])
-    ax3.plot(fr_in[2][0, :], fr_in[2][1, :], color=color_cluster[2])
+    for idx, ax in enumerate(axs):
+        ax.plot(fr_in[idx][0, :], fr_in[idx][1, :], color=color_cluster[idx])
 
-    ax2.set_xlabel("Time t [s]")
-    ax1.set_ylabel("Firing rate [Spikes/s]")
+    axs[no_cluster-1].set_xlabel("Time t [s]")
+    axs[0].set_ylabel("Firing rate [Spikes/s]")
 
     plt.tight_layout()
     # --- saving plots
@@ -242,7 +244,7 @@ def results_firing_rate(signals: PipelineSignal, path: str, no_electrode: int) -
         save_figure(plt, path, "pipeline_fr" + str(no_electrode))
 
 
-def results_paper(signals: PipelineSignal, path: str, no_electrode: int) -> None:
+def results_paper(signals: PipelineSignal, no_electrode: int, path="") -> None:
     """Plotting results of end-to-end spike sorting for paper"""
     textsize = 14
     timeCut = [50, 60]
@@ -318,7 +320,7 @@ def results_paper(signals: PipelineSignal, path: str, no_electrode: int) -> None
 
     # Spike Frames
     for idx in range(0, mean_frames.shape[0]):
-        ax2.plot(np.transpose(mean_frames[idx, :]), color=color_cluster[idx])
+        ax2.plot(np.transpose(mean_frames[idx, :]), color=color_cluster[idx], marker='.', markersize=4)
 
     ax2.set_xticks([0, 7, 15, 23, 31])
     ax2.set_yticks([-20, 0, 40])

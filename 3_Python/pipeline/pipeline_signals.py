@@ -1,7 +1,6 @@
 class PipelineSignal:
     def __init__(self, fs_ana: float, fs_adc: float, osr: int) -> None:
         self.u_in = None        # Input voltage
-        self.u_chp = None       # Chopper voltage
         self.u_pre = None       # Output of pre-amp
         self.u_spk = None       # Output of analogue filtering - spike acitivity
         self.u_lfp = None       # Output of analogue filtering - lfp

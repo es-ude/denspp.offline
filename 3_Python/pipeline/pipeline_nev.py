@@ -1,12 +1,12 @@
 import os, shutil
 import numpy as np
 
-from src.pipeline_signals import PipelineSignal
-from src.data_call import SettingsDATA
-from src.dsp.sda import SpikeDetection, SettingsSDA
-from src.dsp.dsp import FeatureExtraction, SettingsFeature
-from src.dsp.cluster import Clustering, SettingsCluster
-from src.nsp import calc_spiketicks, calc_interval_timing, calc_firing_rate
+from pipeline.pipeline_signals import PipelineSignal
+from package.data_call import SettingsDATA
+from package.dsp.sda import SpikeDetection, SettingsSDA
+from package.dsp.dsp import FeatureExtraction, SettingsFeature
+from package.dsp.cluster import Clustering, SettingsCluster
+from package.nsp import calc_spiketicks, calc_interval_timing, calc_firing_rate
 
 # --- Configuring the pipeline
 class Settings:

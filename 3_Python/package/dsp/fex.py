@@ -29,7 +29,6 @@ class FeatureExtraction:
             # Parameter berechnen
             ymin = np.min(frame)
             ymax = np.max(frame)
-            xmax = np.where(frame == ymax)
             xmin = np.where(frame == ymin)
             a0 = np.sum(frame[0:xmin[0][0]] - ymin)
             a1 = np.sum(frame[xmin[0][0]:-1] - ymin)
@@ -46,7 +45,6 @@ class FeatureExtraction:
             ymin = np.min(frame)
             ymax = np.max(frame)
             xmax = np.where(frame == ymax)
-            xmin = np.where(frame == ymin)
             a0 = np.sum(ymax - frame[0:xmax[0][0]])
             a1 = np.sum(ymax - frame[xmax[0][0]:-1])
             # Akkumulation

@@ -1,5 +1,5 @@
 import numpy as np
-from src_ai.data_preprocessing import generate_frames
+from package.dnn.data_preprocessing import generate_frames
 
 def augmentation_mean_waveform(
         frames_mean: np.ndarray,

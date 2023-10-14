@@ -2,8 +2,8 @@ import numpy as np
 from datetime import datetime
 from scipy.io import loadmat
 
-from src_ai.data_preprocessing import change_frame_size, calculate_mean_waveform, generate_zero_frames, data_normalization
-from src_ai.data_augmentation import augmentation_mean_waveform, augmentation_change_position
+from package.dnn.data_preprocessing import change_frame_size, calculate_mean_waveform, generate_zero_frames, data_normalization
+from package.dnn.data_augmentation import augmentation_change_position
 
 
 def prepare_training(path: str, excludeCluster: list, sel_pos: list, num_new_frames: int,
@@ -30,6 +30,7 @@ def prepare_training(path: str, excludeCluster: list, sel_pos: list, num_new_fra
     # --- Mean waveform calculation and data augmentation
     frames_in = change_frame_size(frames_in, sel_pos)
     frames_mean, snr_mean = calculate_mean_waveform(frames_in, frames_cluster)
+    # plt_memristor_ref(frames_in, frames_cluster, frames_mean)
 
     # --- PART: Exclusion of selected clusters
     if len(excludeCluster) == 0:

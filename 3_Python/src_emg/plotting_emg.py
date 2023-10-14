@@ -2,9 +2,6 @@ import os.path
 import numpy as np
 import matplotlib.pyplot as plt
 
-from sklearn.metrics import ConfusionMatrixDisplay
-from src.pipeline_signals import PipelineSignal
-
 color_cluster = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
 
 

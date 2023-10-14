@@ -2,7 +2,7 @@ import dataclasses
 import numpy as np
 from fractions import Fraction
 from scipy.signal import square, resample_poly
-from src.processing_noise import noise_awgn
+from package.process_noise import noise_awgn
 
 
 @dataclasses.dataclass
@@ -135,15 +135,17 @@ class ADC_Basic:
 
     def clipping_voltage(self, uin: np.ndarray) -> np.ndarray:
         """Do voltage clipping at voltage supply"""
-        uin[uin > self.settings.vref[0]] = self.settings.vref[0]
-        uin[uin <= self.settings.vref[1]] = self.settings.vref[1]
-        return uin
+        uout = uin
+        uout[uin > self.settings.vref[0]] = self.settings.vref[0]
+        uout[uin <= self.settings.vref[1]] = self.settings.vref[1]
+        return uout
 
     def clipping_digital(self, xin: np.ndarray) -> np.ndarray:
         """Do digital clipping of quantizied values"""
-        xin[xin > self.__digital_border[1]] = self.__digital_border[1]
-        xin[xin <= self.__digital_border[0]] = self.__digital_border[0]
-        return xin
+        xout = xin.astype('int16') if self.settings.type_out == "signed" else xin.astype('uint16')
+        xout[xin > self.__digital_border[1]] = self.__digital_border[1]
+        xout[xin <= self.__digital_border[0]] = self.__digital_border[0]
+        return xout
 
     def gen_noise(self, size: int) -> np.ndarray:
         """Generate the transient input noise of the amplifier"""
