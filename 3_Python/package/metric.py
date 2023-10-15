@@ -2,7 +2,6 @@ import os
 import numpy as np
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
-from package.data_call import DataHandler
 
 
 def calculate_snr(yin: np.ndarray, ymean: np.ndarray):
@@ -97,5 +96,3 @@ class Metric:
         disp = ConfusionMatrixDisplay(confusion_matrix=self.cm)
         disp.plot()
         plt.show()
-
-        self.__save_figure("metric_sda")

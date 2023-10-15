@@ -20,7 +20,7 @@ def do_data_transfer(mode='Vivado') -> None:
     datahandler.do_cut()
     datahandler.do_resample()
     data = datahandler.get_data()
-    afe.run_input(data.raw_data[0])
+    afe.run_input(data.data_raw[0])
 
     if mode == 'Vivado':
         u_in = afe.x_adc

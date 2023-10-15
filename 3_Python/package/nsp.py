@@ -2,29 +2,42 @@ import numpy as np
 
 
 # TODO: Weitere Methoden (wie Kreuz- und Autokorrelation einfügen)
-def calc_spiketicks(uin: np.ndarray, xpos: np.ndarray, cluster_id: np.ndarray, do_short=False) -> np.ndarray:
+def calc_spiketicks(frames_in: list, do_short=False, out_transient_size=0) -> np.ndarray:
     """Determining spike ticks with cluster results"""
+    frames_pos = frames_in[1]
+    cluster_id = frames_in[2]
     cluster_no = np.unique(cluster_id)
+    is_clustered = False if cluster_id.size == 1 else True
 
+    # --- Generation of spike ticks
     if do_short:
-        ticks = np.zeros(shape=(xpos.size, 2), dtype=np.int8)
-        ticks[:, 0] = xpos
+        ticks = np.zeros(shape=(frames_pos.size, 2), dtype=np.int)
+        ticks[:, 0] = frames_pos
         ticks[:, 1] = cluster_id
     else:
         # --- Performing the long type
-        ticks = np.zeros(shape=(cluster_no.size, uin.size), dtype=np.int8)
-        for idx, val in enumerate(xpos):
+        ticks = np.zeros(shape=(cluster_no.size, out_transient_size), dtype=np.int8)
+        for idx, val in enumerate(frames_pos):
             ticks[cluster_id[idx], val] = 1
 
     return ticks
 
 
-def calc_amplitude(frame: np.ndarray, xpos: np.ndarray) -> list:
+def calc_amplitude(frames_in: list) -> list:
     """Determining the min-max amplitudes of each spike frame over time"""
+    frames0_in = frames_in[0]
+    frames_pos = frames_in[1]
+    cluster_id = frames_in[2]
     amp = list()
-    for idx, frame0 in enumerate(frame):
-        amp.append([xpos[idx], np.min(frame0), np.max(frame0)])
-    
+    cluster_no = np.unique(cluster_id)
+    for id in cluster_no:
+        selx = np.where(cluster_id == id)[0]
+        amp_id = list()
+        sel_frames = frames0_in[selx, :]
+        for idx, frame0 in enumerate(sel_frames):
+            amp_id.append([frames_pos[selx[idx]], np.min(frame0), np.max(frame0)])
+        amp.append(amp_id)
+
     return amp
 
 

@@ -50,6 +50,7 @@ class DataController(DataLoader):
         self.path2data = setting.path
         self.path2file = str()
         self.raw_data = DataHandler()
+        self.fs_input = 10.0
 
         # --- Meta-Information about datasets
         # Information of subfolders and files
@@ -79,14 +80,15 @@ class DataController(DataLoader):
 
         self.execute_data_call(data_type, data_set, data_point)
 
-        self.no_channel = self.raw_data.noChannel
-        self.raw_data.fs_used = self.raw_data.fs_orig
+        self.raw_data.data_fs_used = self.raw_data.data_fs_orig
+        self.no_channel = len(self.raw_data.electrode_id)
         self.__do_take_elec()
         print("... using data point:", self.path2file)
 
     def __do_take_elec(self) -> None:
+        """Taking all electrodes from configuration/settings"""
         used_ch = self.settings.ch_sel
-        sel_channel = used_ch if not used_ch[0] == -1 else np.arange(0, self.no_channel)
+        sel_channel = used_ch if not used_ch[0] == -1 else self.raw_data.electrode_id
 
         rawdata = list()
         spike_xpos = list()
@@ -95,26 +97,22 @@ class DataController(DataLoader):
         cluster_no = list()
 
         for idx in sel_channel:
-            rawdata.append(self.raw_data.raw_data[idx])
+            rawdata.append(self.raw_data.data_raw[idx])
 
             if self.raw_data.label_exist:
                 spike_xpos.append(self.raw_data.spike_xpos[idx])
-                spike_no.append(self.raw_data.spike_no[idx])
                 cluster_id.append(self.raw_data.cluster_id[idx])
-                cluster_no.append(self.raw_data.cluster_no[idx])
 
-        self.raw_data.raw_data = rawdata
+        self.raw_data.electrode_id = [sel_channel]
+        self.raw_data.data_raw = rawdata
         self.raw_data.spike_xpos = spike_xpos
-        self.raw_data.spike_no = spike_no
         self.raw_data.cluster_id = cluster_id
-        self.raw_data.cluster_no = cluster_no
-        self.raw_data.channel = sel_channel
 
     def do_cut(self) -> None:
         """Cutting all transient electrode signals in the given range"""
         t_range = np.array(self.settings.t_range)
 
-        rawdata = self.raw_data.raw_data
+        rawdata = self.raw_data.data_raw
         spikepos_in = self.raw_data.spike_xpos
         cluster_in = self.raw_data.cluster_id
 
@@ -126,8 +124,8 @@ class DataController(DataLoader):
 
         # --- Positionen ermitteln
         if t_range.size == 2:
-            idx0 = int(t_range[0] * self.raw_data.fs_orig)
-            idx1 = int(t_range[1] * self.raw_data.fs_orig)
+            idx0 = int(t_range[0] * self.raw_data.data_fs_orig)
+            idx1 = int(t_range[1] * self.raw_data.data_fs_orig)
 
             for idx, data_in in enumerate(rawdata):
                 # --- Cutting specific time range out of raw data
@@ -144,32 +142,28 @@ class DataController(DataLoader):
                     idx3 = -1
 
                 spike_xout.append(spikepos_in[idx][idx2:idx3])
-                spike_nout.append(spikepos_in[idx].size)
                 cluster_id_out.append(cluster_in[idx][idx2:idx3])
-                cluster_no_out.append(np.unique(cluster_in[idx]).size)
 
             # Übergabe
-            self.raw_data.raw_data = rawdata_out
+            self.raw_data.data_raw = rawdata_out
             self.raw_data.spike_xpos = spike_xout
-            self.raw_data.spike_no = spike_nout
             self.raw_data.cluster_id = cluster_id_out
-            self.raw_data.cluster_no = cluster_no_out
 
     def do_resample(self) -> None:
         """Do resampling all transient signals"""
         desired_fs = self.settings.fs_resample
-        self.raw_data.fs_used = desired_fs
-        do_resampling = bool(self.raw_data.fs_used != self.raw_data.fs_orig)
+        do_resampling = bool(self.raw_data.data_fs_used != self.raw_data.data_fs_orig)
 
         data_out = list()
         spike_out = list()
 
         if do_resampling:
+            self.raw_data.data_fs_used = desired_fs
             u_safe = 5e-6
-            (p, q) = self.__get_resample_ratio(self.raw_data.fs_orig, self.raw_data.fs_used)
+            (p, q) = self.__get_resample_ratio(self.raw_data.data_fs_orig, self.raw_data.data_fs_used)
             self.__scaling = p / q
 
-            for idx, data_in in enumerate(self.raw_data.raw_data):
+            for idx, data_in in enumerate(self.raw_data.data_raw):
                 # --- Resampling the input
                 u_chck = np.mean(data_in[0:10])
                 if np.abs((u_chck < u_safe) - 1) == 1:
@@ -184,7 +178,7 @@ class DataController(DataLoader):
                     spikepos_in = self.raw_data.spike_xpos[idx]
                     spike_out.append(np.array(self.__scaling * spikepos_in, dtype=int))
 
-            self.raw_data.raw_data = data_out
+            self.raw_data.data_raw = data_out
             self.raw_data.spike_xpos = spike_out
         else:
             self.__scaling = 1
@@ -192,13 +186,25 @@ class DataController(DataLoader):
     def output_meta(self) -> None:
         """Print some meta information into the console"""
         print(f"... using data set of: {self.raw_data.data_name}")
-        print(
-            f"... original sampling rate of {int(1e-3 * self.raw_data.fs_orig)} kHz (resampling to {int(1e-3 * self.raw_data.fs_used)} kHz)")
-        print(
-            f"... using {self.__fill_factor * 100:.2f}% of the data (time length of {self.raw_data.raw_data[-1].size / self.raw_data.fs_used / self.__fill_factor:.2f} s)")
-        print(f"... data includes {self.raw_data.noChannel} number of electrode ({self.raw_data.data_type})")
+        print(f"... original sampling rate of {int(1e-3 * self.raw_data.data_fs_orig)} kHz "
+              f"(resampling to {int(1e-3 * self.raw_data.data_fs_used)} kHz)")
+        print(f"... using {self.__fill_factor * 100:.2f}% of the data "
+              f"(time length of {self.raw_data.data_time / self.__fill_factor:.2f} s)")
+        print(f"... data includes {self.no_channel} number of electrode ({self.raw_data.data_type})")
+
         if self.raw_data.label_exist:
-            print(f"... includes labels (noSpikes: {np.sum(self.raw_data.spike_no)} - noCluster: {self.raw_data.cluster_no[-1]})")
+            spike_no = 0
+            for xpos in self.raw_data.spike_xpos:
+                spike_no += xpos.size
+
+            cluster_array = None
+            for idx, clid in enumerate(self.raw_data.cluster_id):
+                if idx == 0:
+                    cluster_array = clid
+                else:
+                    cluster_array = np.append(cluster_array, clid)
+            cluster_no = np.unique(cluster_array)
+            print(f"... includes labels (noSpikes: {spike_no} - noCluster: {cluster_no.size})")
         else:
             print(f"... excludes labels")
 

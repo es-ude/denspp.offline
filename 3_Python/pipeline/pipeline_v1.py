@@ -12,21 +12,21 @@ from package.dsp.dsp import DSP, SettingsDSP
 from package.dsp.sda import SpikeDetection, SettingsSDA
 from package.dsp.fex import FeatureExtraction, SettingsFeature
 from package.dsp.cluster import Clustering, SettingsCluster
-from package.nsp import calc_spiketicks, calc_firing_rate, calc_autocorrelogram
+from package.nsp import calc_spiketicks, calc_firing_rate, calc_autocorrelogram, calc_amplitude
+
 
 # --- Configuring the pipeline
 class Settings:
     """Settings class for handling the pipeline setting"""
     SettingsDATA = SettingsDATA(
         path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
-        data_set=1,
+        data_set=0,
         data_case=0,
         data_point=0,
         t_range=[0],
         ch_sel=[-1],
         fs_resample=100e3
     )
-    # ch_sel = [34, 55, 95]
 
     SettingsAMP = SettingsAMP(
         vss=-0.6, vdd=0.6,
@@ -119,8 +119,9 @@ class Pipeline:
 
     def saving_mat(self, num_elec: int) -> None:
         mdict = {"Settings": self.settings,
-                 "frames_out": self.signals.frames_align,
-                 "frames_pos": self.signals.x_pos,
+                 "frames_out": self.signals.frames_align[0],
+                 "frames_pos": self.signals.frames_align[1],
+                 "frames_id": self.signals.frames_align[2],
                  "spike_tick": self.signals.spike_ticks}
 
         savemat(os.path.join(self.path2figure, f'results_ch{num_elec}.mat'), mdict)
@@ -140,17 +141,21 @@ class Pipeline:
         self.signals.x_sda, _ = self.sda.sda_smooth(self.sda.sda_neo(self.signals.x_spk))
         self.signals.x_thr = self.sda.thres_blackrock(self.signals.x_sda)
         # self.signals.x_thr = self.sda.thres_blackrock_runtime(self.signals.x_sda)
-        (self.signals.frames_orig, self.signals.frames_align, self.signals.x_pos) = self.sda.frame_generation(
+        (self.signals.frames_orig, self.signals.frames_align) = self.sda.frame_generation(
             self.signals.x_dly, self.signals.x_sda, self.signals.x_thr
         )
         # ---- Feature Extraction  ----
-        self.signals.features = self.fe.fe_pca(self.signals.frames_align)
+        self.signals.features = self.fe.fe_pca(self.signals.frames_align[0])
         # ---- Clustering | Classification ----
-        (self.signals.cluster_id, self.signals.cluster_no) = self.cl.cluster_kmeans(self.signals.features)
-        self.signals.spike_ticks = calc_spiketicks(self.signals.x_adc, self.signals.x_pos, self.signals.cluster_id)
+        (self.signals.frames_align[2]) = self.cl.cluster_kmeans(self.signals.features)
+        self.signals.spike_ticks = calc_spiketicks(
+            self.signals.frames_align,
+            out_transient_size=self.signals.x_adc.size
+        )
 
     def run_nsp(self):
         # ---- NSP Post-Processing ----
         self.signals.its = calc_firing_rate(self.signals.spike_ticks, self.signals.fs_dig)
         self.signals.correlogram = calc_autocorrelogram(self.signals.spike_ticks, self.signals.fs_dig)
         self.signals.firing_rate = calc_firing_rate(self.signals.spike_ticks, self.signals.fs_dig)
+        self.signals.cluster_amp = calc_amplitude(self.signals.frames_align)

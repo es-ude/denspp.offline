@@ -105,15 +105,16 @@ def results_afe1(signals: PipelineSignal, no_electrode: int, path="") -> None:
 
 def results_fec(signals: PipelineSignal, no_electrode: int, path="") -> None:
     """Plotting results """
-    framesIn = signals.frames_orig
-    framesOut = signals.frames_align
-
+    frames_in = signals.frames_orig[0]
+    frames_out = signals.frames_align[0]
     feat = signals.features
-    cluster = signals.cluster_id
-    mean_frames = np.zeros(shape=(signals.cluster_no, framesOut.shape[1]))
+    cluster = signals.frames_align[2]
+    cluster_no = len(np.unique(cluster))
+
+    frames_mean = np.zeros(shape=(cluster_no, frames_out.shape[1]))
     for idx, id in enumerate(np.unique(cluster)):
         x0 = np.where(cluster == id)[0]
-        mean_frames[idx, :] = np.mean(framesOut[x0], axis=0)
+        frames_mean[idx, :] = np.mean(frames_out[x0], axis=0)
 
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
     ax1 = plt.subplot(221)
@@ -122,18 +123,18 @@ def results_fec(signals: PipelineSignal, no_electrode: int, path="") -> None:
     ax4 = plt.subplot(224, sharex=ax2)
 
     ax1.set_title("Input Frames")
-    ax1.plot(np.transpose(framesIn), marker='.', markersize=4)
+    ax1.plot(np.transpose(frames_in), marker='.', markersize=4)
 
     ax2.set_title("Aligned Frames")
-    ax2.plot(np.transpose(framesOut), marker='.', markersize=4)
+    ax2.plot(np.transpose(frames_out), marker='.', markersize=4)
 
     ax3.set_title("Feature Space")
-    for idx in range(0, cluster.shape[0]):
-        ax3.plot(feat[idx, 0], feat[idx, 1], color=color_cluster[cluster[idx]], marker='.')
+    for idx, id in enumerate(cluster):
+        ax3.plot(feat[idx, 0], feat[idx, 1], color=color_cluster[id], marker='.')
 
     ax4.set_title("Mean Frames (Clustered)")
-    for idx in range(0, mean_frames.shape[0]):
-        ax4.plot(np.transpose(mean_frames[idx, :]), color=color_cluster[idx], marker='.', markersize=4)
+    for idx, frame in enumerate(frames_mean):
+        ax4.plot(np.transpose(frame), color=color_cluster[idx], marker='.', markersize=4)
 
     plt.tight_layout()
     # --- saving plots
@@ -153,8 +154,8 @@ def results_ivt(signals: PipelineSignal, no_electrode: int, path="") -> None:
     ax6 = plt.subplot(236, sharex=ax4)
 
     # --- Mean waveform
-    frames = signals.frames_align
-    cluster = signals.cluster_id
+    frames = signals.frames_align[0]
+    cluster = signals.frames_align[2]
     mean_frames = np.zeros(shape=(signals.cluster_no, frames.shape[1]))
     for idx, id in enumerate(np.unique(cluster)):
         x0 = np.where(cluster == id)[0]
@@ -237,6 +238,18 @@ def results_firing_rate(signals: PipelineSignal, no_electrode: int, path="") -> 
 
     axs[no_cluster-1].set_xlabel("Time t [s]")
     axs[0].set_ylabel("Firing rate [Spikes/s]")
+
+    plt.tight_layout()
+    # --- saving plots
+    if path:
+        save_figure(plt, path, "pipeline_fr" + str(no_electrode))
+
+
+def results_cluster_amplitude(signals: PipelineSignal, no_electrode: int, path="") -> None:
+    cluster_no = np.unique(signals.frames_align[2])
+
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
+
 
     plt.tight_layout()
     # --- saving plots

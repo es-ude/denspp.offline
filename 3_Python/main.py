@@ -58,7 +58,7 @@ if __name__ == "__main__":
     dataIn = datahand.get_data()
 
     # ----- Module declaration & Channel Calculation -----
-    num_electrodes = dataIn.channel
+    num_electrodes = dataIn.electrode_id[0]
     SpikeSorting = Pipeline(settings)
     path2save = SpikeSorting.generate_folder(folder_name)
     results = [None] * len(num_electrodes)
@@ -76,7 +76,7 @@ if __name__ == "__main__":
         for thr in process_threads:
             threads = list()
             for idx, elec in enumerate(thr):
-                threads.append(CustomThread(idx, dataIn.raw_data[elec], elec, path2save))
+                threads.append(CustomThread(idx, dataIn.data_raw[elec], elec, path2save))
                 threads[idx].start()
 
             for idx, elec in enumerate(thr):
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     else:
         # --- Path for Single-Threading
         for idx, elec in enumerate(num_electrodes):
-            thread = CustomThread(0, dataIn.raw_data[idx], elec, path2save)
+            thread = CustomThread(0, dataIn.data_raw[idx], elec, path2save)
             thread.start()
             thread.join()
             results[elec] = thread.output

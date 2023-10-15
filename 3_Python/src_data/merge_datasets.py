@@ -35,7 +35,7 @@ def get_frames_from_dataset(path2save: str, data_set: int, data_case: int):
         data = datahandler.get_data()
 
         # --- Taking signals from handler
-        u_in = data.raw_data[0]
+        u_in = data.data_raw[0]
         cl_in = data.cluster_id[0]
         spike_xpos = data.spike_xpos[0]
         spike_offset = data.spike_offset[0]

@@ -3,10 +3,12 @@ import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.mixture import GaussianMixture
 
+
 @dataclasses.dataclass
 class SettingsCluster:
     """"Individuall data class to configure clustering"""
     no_cluster: int
+
 
 @dataclasses.dataclass
 class RecommendedSettingsCluster(SettingsCluster):
@@ -15,6 +17,7 @@ class RecommendedSettingsCluster(SettingsCluster):
         super().__init__(
             no_cluster=3
         )
+
 
 class Clustering:
     def __init__(self, settings: SettingsCluster):
@@ -37,4 +40,4 @@ class Clustering:
             n_clusters=self.settings.no_cluster
         ).fit(features)
 
-        return cluster.labels_, cluster.n_clusters
+        return cluster.labels_

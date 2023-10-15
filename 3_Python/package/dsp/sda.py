@@ -207,24 +207,28 @@ class SpikeDetection:
 
         return xpos_out
 
-    def frame_generation(self, xraw: np.ndarray, xsda: np.ndarray, xthr: np.ndarray) -> [np.ndarray, np.ndarray, np.ndarray]:
+    def frame_generation(self, xraw: np.ndarray, xsda: np.ndarray, xthr: np.ndarray) -> [list, list]:
         """Frame generation of SDA output and threshold"""
         xpos = self.frame_position(xsda, xthr)
+        xpos_aligned = 0 * xpos
 
         # --- Generate frames
-        frames_orig = []
-        frames_align = []
+        frames_out0 = list()
+        frames_out1 = list()
 
         f0 = self.__offset_frame_neg
         f1 = f0 + int(self.frame_length_total / 2)
 
+        frames_orig = []
+        frames_align = []
         for idx, pos_frame in enumerate(xpos):
             # --- Original larger frame
             x_neg0 = int(pos_frame - self.__offset_frame_neg)
             x_pos0 = int(x_neg0 + self.frame_length_total)
             frame0 = xraw[x_neg0:x_pos0]
             # --- Aligned frame
-            x_neg1 = int(x_neg0 + f0 + self.get_aligning_position(frame0[f0:f1])[0])
+            xpos_aligned[idx] = int(x_neg0 + f0 + self.get_aligning_position(frame0[f0:f1])[0])
+            x_neg1 = xpos_aligned[idx]
             x_pos1 = int(x_neg1 + self.frame_length)
             frame1 = xraw[x_neg1:x_pos1]
             # --- Add to output
@@ -233,8 +237,10 @@ class SpikeDetection:
 
         frames_orig = np.array(frames_orig, dtype=np.int16)
         frames_align = np.array(frames_align, dtype=np.int16)
+        frames_out0 = [frames_orig, xpos, np.zeros(shape=(xpos.size,), dtype=np.int)]
+        frames_out1 = [frames_align, xpos_aligned, np.zeros(shape=(xpos_aligned.size, ), dtype=np.int)]
 
-        return frames_orig, frames_align, xpos
+        return frames_out0, frames_out1
 
     def frame_generation_pos(self, xraw:np.ndarray, xpos: np.ndarray, xoffset: int) -> [np.ndarray, np.ndarray, np.ndarray]:
         """Frame generation from already detected positions (from groundtruth)"""
