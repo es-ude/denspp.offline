@@ -2,12 +2,11 @@ import numpy as np
 
 
 # TODO: Weitere Methoden (wie Kreuz- und Autokorrelation einfügen)
-def calc_spiketicks(frames_in: list, do_short=False, out_transient_size=0) -> np.ndarray:
+def calc_spiketicks(frames_in: list, do_short=True, out_transient_size=0) -> np.ndarray:
     """Determining spike ticks with cluster results"""
     frames_pos = frames_in[1]
     cluster_id = frames_in[2]
     cluster_no = np.unique(cluster_id)
-    is_clustered = False if cluster_id.size == 1 else True
 
     # --- Generation of spike ticks
     if do_short:

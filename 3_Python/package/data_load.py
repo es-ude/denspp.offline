@@ -301,3 +301,8 @@ class DataLoader:
     def __load_NeuroPixel(self, case: int, probe: int):
         """Loading the files from recordings with NeuroPixel probes"""
         print("NOT IMPLEMENTED")
+
+    # TODO: Einlesen noch implementieren
+    def __load_rgc_type(self, case: int, probe: int):
+        """Loading the files from the Retinal Ganglian Cell Database"""
+        print("NOT IMPLEMENTED")

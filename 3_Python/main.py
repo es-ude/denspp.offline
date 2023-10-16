@@ -6,7 +6,8 @@ from datetime import datetime
 from pipeline.pipeline_v1 import Settings, Pipeline
 from package.metric import Metric
 from package.data_call import DataController
-from package.plotting import results_afe1, results_fec, results_paper, results_ivt, results_firing_rate, results_correlogram
+from package.plotting import results_afe1, results_afe2, results_fec, results_paper
+from package.plotting import results_ivt, results_firing_rate, results_correlogram, results_cluster_amplitude
 
 
 class CustomThread(Thread):
@@ -25,19 +26,23 @@ class CustomThread(Thread):
         SpikeSorting.run(self.input)
         self.metric = Metric()
         self.output = SpikeSorting.signals
-        SpikeSorting.run_nsp()
         SpikeSorting.saving_mat(self.channel)
         print(f"... process done ({self.thread_num} closed)")
 
 
 def func_plots(data, channel: int, path2save="") -> None:
     """Function to plot resilts from spike sorting"""
-    results_afe1(data, channel, path=path2save)
-    results_fec(data, channel, path=path2save)
-    # results_paper(data, path2save, channel, path=path2save)
-    # results_ivt(data, path2save, channel, path=path2save)
-    results_firing_rate(data, channel, path=path2save)
-    results_correlogram(data, channel, path=path2save)
+    # --- Spike Sorting output
+    # results_afe1(data, channel, path=path2save)
+    results_afe2(data, channel, path=path2save)
+    # results_fec(data, channel, path=path2save)
+    # results_paper(data, channel, path=path2save)
+
+    # --- NSP block
+    # results_ivt(data, channel, path=path2save)
+    # results_firing_rate(data, channel, path=path2save)
+    # results_correlogram(data, channel, path=path2save)
+    # results_cluster_amplitude(data, channel, path=path2save)
 
 
 if __name__ == "__main__":
@@ -91,7 +96,9 @@ if __name__ == "__main__":
             results[elec] = thread.output
 
     # --- Plot all plots and save results (must be externally)
+    print("\nPlotting and saving the results")
     for idx, elec in enumerate(num_electrodes):
         func_plots(results[elec], elec, path2save)
 
+    print("This is the End!")
     plt.show(block=False)

@@ -1,4 +1,4 @@
-from src_data.process_utah import UtahDataHandler
+from package.merge.process_utah import UtahDataHandler
 
 # ------------------------------ MAIN PROGRAMM
 if __name__ == '__main__':

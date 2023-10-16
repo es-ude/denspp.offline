@@ -148,14 +148,7 @@ class Pipeline:
         self.signals.features = self.fe.fe_pca(self.signals.frames_align[0])
         # ---- Clustering | Classification ----
         (self.signals.frames_align[2]) = self.cl.cluster_kmeans(self.signals.features)
-        self.signals.spike_ticks = calc_spiketicks(
-            self.signals.frames_align,
-            out_transient_size=self.signals.x_adc.size
-        )
+        self.signals.spike_ticks = calc_spiketicks(self.signals.frames_align)
 
-    def run_nsp(self):
-        # ---- NSP Post-Processing ----
-        self.signals.its = calc_firing_rate(self.signals.spike_ticks, self.signals.fs_dig)
-        self.signals.correlogram = calc_autocorrelogram(self.signals.spike_ticks, self.signals.fs_dig)
-        self.signals.firing_rate = calc_firing_rate(self.signals.spike_ticks, self.signals.fs_dig)
-        self.signals.cluster_amp = calc_amplitude(self.signals.frames_align)
+    def run_nsp(self) -> None:
+        print("NO FURTHER PROCESSING IS INCLUDED")

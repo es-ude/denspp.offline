@@ -92,9 +92,7 @@ class DataController(DataLoader):
 
         rawdata = list()
         spike_xpos = list()
-        spike_no = list()
         cluster_id = list()
-        cluster_no = list()
 
         for idx in sel_channel:
             rawdata.append(self.raw_data.data_raw[idx])
@@ -117,10 +115,8 @@ class DataController(DataLoader):
         cluster_in = self.raw_data.cluster_id
 
         rawdata_out = list()
-        cluster_id_out = list()
-        cluster_no_out = list()
+        spike_cout = list()
         spike_xout = list()
-        spike_nout = list()
 
         # --- Positionen ermitteln
         if t_range.size == 2:
@@ -132,7 +128,7 @@ class DataController(DataLoader):
                 rawdata_out.append(data_in[idx0:idx1])
                 self.__fill_factor = (idx0 - idx1) / data_in.size
 
-                # --- Cutting labeled informations
+                # --- Cutting labeled information
                 if self.raw_data.label_exist:
                     # Find values from x-positions
                     idx2 = int(np.argwhere(spikepos_in[idx] >= idx0)[0])
@@ -142,17 +138,17 @@ class DataController(DataLoader):
                     idx3 = -1
 
                 spike_xout.append(spikepos_in[idx][idx2:idx3])
-                cluster_id_out.append(cluster_in[idx][idx2:idx3])
+                spike_cout.append(cluster_in[idx][idx2:idx3])
 
             # Übergabe
             self.raw_data.data_raw = rawdata_out
             self.raw_data.spike_xpos = spike_xout
-            self.raw_data.cluster_id = cluster_id_out
+            self.raw_data.cluster_id = spike_cout
 
     def do_resample(self) -> None:
         """Do resampling all transient signals"""
         desired_fs = self.settings.fs_resample
-        do_resampling = bool(self.raw_data.data_fs_used != self.raw_data.data_fs_orig)
+        do_resampling = bool(desired_fs != self.raw_data.data_fs_orig)
 
         data_out = list()
         spike_out = list()

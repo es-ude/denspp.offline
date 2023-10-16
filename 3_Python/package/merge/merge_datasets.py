@@ -77,4 +77,4 @@ def get_frames_from_dataset(path2save: str, data_set: int, data_case: int):
 
 def merge_frames_from_dataset():
     """Tool for merging all spike frames to one new dataset (Step 2)"""
-    print("... Start MATLAB script manually: src_data/merge_datasets_matlab.m")
+    print("... Start MATLAB script manually: merge/merge_datasets_matlab.m")
