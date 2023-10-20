@@ -1,7 +1,7 @@
 import os, shutil
 import numpy as np
 
-from pipeline.pipeline_signals import PipelineSignal
+from package.pipeline_signals import PipelineSignal
 from package.data_call import SettingsDATA
 from package.pre_amp.preamp import PreAmp, SettingsAMP
 from package.adc.adc_basic import SettingsADC
@@ -9,9 +9,9 @@ from package.adc.adc_sar import ADC_SAR as ADC0
 from package.dsp.dsp import DSP, SettingsDSP
 from package.dsp.sda import SpikeDetection, SettingsSDA
 
-# --- Configuring the pipeline
+# --- Configuring the src_neuro
 class Settings:
-    """Settings class for handling the pipeline setting"""
+    """Settings class for handling the src_neuro setting"""
     SettingsDATA = SettingsDATA(
         path='C:\HomeOffice\Arbeit\D_EMG\Daten',
         data_set=0,
@@ -61,7 +61,7 @@ class Settings:
         thr_gain=1
     )
 
-# --- Setting the pipeline
+# --- Setting the src_neuro
 class Pipeline(PipelineSignal):
     """"""
     def __init__(self, settings: Settings):
@@ -81,7 +81,7 @@ class Pipeline(PipelineSignal):
         self.path2logs = "logs"
         self.path2runs = "runs"
         self.path2figure = None
-        self.path2settings = "pipeline/pipeline_emg.py"
+        self.path2settings = "src_neuro/pipeline_emg.py"
 
     def saving_results(self, name: str) -> str:
         if not os.path.exists(self.path2runs):

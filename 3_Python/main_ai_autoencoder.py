@@ -7,10 +7,10 @@ import numpy as np
 
 from package.metric import calculate_snr
 from package.dnn.dataset_preparation import prepare_training
-import package.dnn.plotting as plt_spaike
+import package.plotting.plot_dnn as plt_spaike
 from package.dnn.pytorch_handler import training_pytorch
 from package.dnn.ae_dataset import DatasetAE, prepare_plotting, get_dataloaders
-import models.ae_topology as ai_module
+import package.dnn.models.ae_topology as ai_module
 
 
 # TODO: Add normal training of denoising autoencoder

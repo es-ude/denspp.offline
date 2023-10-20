@@ -1,18 +1,32 @@
-# MERCUR Sp:AI:ke-Project
-In this MERCUR-project Sp:Ai:ke, the software framework for developing an end-to-end pipeline for BCI's is stored.
+# End-To-End Deep Neural Signal Pre-Processing (DeNSSP)
+This Python package is developed in the research project Sp:AI:ke, funded by MERCUR (Germany). This software framework enables a AI-enhanced developing of hardware accelerator in end-to-end neural signal processing pipelines for future neural devices (Brain-Computer Interfaces, retinal implants, ...).
+Actually, this framework supports the data analysis of invasive device which requires a processing of action potentials.
 
 ## Getting started
-The software framework will be used to optimise the spike sorting pipeline for the integration in embedded systems und in ASICs for future neural implants. For this, we propose to use PyCharm Community Version ([Link](https://www.jetbrains.com/de-de/pycharm/download/#section=windows) and the Python Interpreter 3.9/3.10. 
-It is also an older version of the pipeline in MATLAB available. For this you need:
-- MATLAB R2022a from The Mathworks
-- Additional MATLAB Toolboxs: Fuzzy Logic, Communications, ParallelComputing 
+This framework can be used for optimising your end-to-end signal processing for the integration in embedded systems und in ASICs. For using this framework, the following software tools are necessary / recommended.
+- PyCharm Community Version ([Link](https://www.jetbrains.com/de-de/pycharm/download/#section=windows))
+- Python Interpreter 3.11 ([Link}(https://www.python.org/downloads/release/python-3116/))
+- Git ([Link](https://git-scm.com/downloads))
 
 It is recommended that each working group will create a new branch for editing their input. At the end of each project, their input will be merged with the main branch. Further informations about this software framework are described in the PPTX/PDF-Documentation.
 
-The 2_data folder has only a subset of the data. In this repo, only a few points of the synthetic datasets are available. To get access to all datasets, get in Contact with Leo Buron.
+The folder "2_Data" contains only a subset of the data. In this repo, only a few points of the synthetic datasets are available.
 
-## Installation
-To use the software framework locally, please use the GitHub Desktop Software to clone the desired branch of this repository to your personal computer. A detailed description is available at this [homepage](https://www.devopszones.com/2020/08/how-to-use-github-desktop-with-gitlab.html).
+## File structure
+This Git project contains the three folders:
+- 1_Docu: Documentation 
+- 2_Data: Containing neural datasets. In this repo, only the synthetic dataset of Martinez2009 is available.
+- 3_Python: Containing the functions in order to setup a NSP pipeline incl. plotting examples
+
+The Python folder contains the following folder structure:
+- data: Merged datasets from your dataset library in order to train deep learning networks
+- experiments: Custom-made functions for characterizing pipeline segments (e.g. spike detection)
+- package: All functions in order to setup the pipeline with (i) analogue, (ii) digital, (iii) neural signal processing and (iv) handler for train Autoencoders
+- runs: Temporary folder which saves the results of each run
+- src_decoder: Pipeline and necessary functions decoding informations from recordings with Utah electrode arrays
+- src_emg: Pipeline and necessary functions for analysing EMG signals
+- src_neuro: Pipeline and necesary functions for analysing action potentials from invasive microelectrode arrays
+
 
 ## Collaborate with your team
 Responsible persons:
@@ -21,4 +35,9 @@ Responsible persons:
 - Neural Decoder: Zia Ur Rehman - Email: ing.zia@yahoo.com
 
 ## Usage
-For starting the software framework in your branch, please start Python script "main.py". Further functions and classes are outsourced into the folder "src". For AI training, please use "main_ai.py".
+For starting the software framework in your branch, please start Python script ...
+- "main.py" for normal pipeline processing
+- "main_ai_autoencoder.py" for AI training of the deep learning structure of Autoencoders
+- "main_data.py" for merging of given datasets
+- "main_decoder.py" for decoding data from Utah electrode arrays
+- "main_fpga.py" for processing data using in Xilinx simulation environment and transfer the weights of a trained model in memory file 

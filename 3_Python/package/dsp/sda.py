@@ -14,6 +14,7 @@ class SettingsSDA:
     t_dly: float
     window_size: int
     thr_gain: float
+    thr_min_value: float
 
 class RecommendedSettingsSDA(SettingsSDA):
     def __init__(self):
@@ -25,7 +26,8 @@ class RecommendedSettingsSDA(SettingsSDA):
             dt_offset=[0.1e-3, 0.1e-3],
             t_dly=0.3e-3,
             window_size=7,
-            thr_gain=1
+            thr_gain=1.0,
+            thr_value=100.0
         )
 
 class SpikeDetection:
@@ -49,6 +51,10 @@ class SpikeDetection:
         mat = np.zeros(shape=(set_delay,), dtype=float)
         uout = np.concatenate((mat, uin[0:uin.size - set_delay]), axis=None)
         return uout
+
+    def thres_const(self, xin: np.ndarray) -> np.ndarray:
+        """Applying a constant value for thresholding"""
+        return np.zeros(shape=xin.size) + self.settings.thr_min_value
 
     def thres_mad(self, xin: np.ndarray) -> np.ndarray:
         """Apply the median absolute derivation (MAD) as threshold"""

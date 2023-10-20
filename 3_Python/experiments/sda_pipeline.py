@@ -1,5 +1,5 @@
 import numpy as np
-from pipeline.pipeline_signals import PipelineSignal
+from package.pipeline_signals import PipelineSignal
 from package.pre_amp.preamp import PreAmp, SettingsAMP
 from package.adc.adc_basic import SettingsADC
 from package.adc.adc_sar import ADC_SAR as ADC0
@@ -7,9 +7,9 @@ from package.dsp.dsp import DSP, SettingsDSP
 from package.dsp.sda import SpikeDetection, SettingsSDA
 
 
-# --- Configuring the pipeline
+# --- Configuring the src_neuro
 class Settings:
-    """Settings class for handling the pipeline setting"""
+    """Settings class for handling the src_neuro setting"""
     SettingsAMP = SettingsAMP(
         vss=-0.6, vdd=0.6,
         fs_ana=100,
@@ -45,7 +45,7 @@ class Settings:
     )
 
 
-# --- Setting the pipeline
+# --- Setting the src_neuro
 class Pipeline_Digital(PipelineSignal):
     """Pipeline for processing SDA in digital approaches"""
     def __init__(self, settings: Settings, fs: float):
@@ -114,21 +114,24 @@ class Pipeline_Digital(PipelineSignal):
 
         # --- Performing Thresholding
         if mode_thr == 0:
+            xthr = self.sda.thres_const(xsda)
+            text_thr = 'CONST'
+        elif mode_thr == 1:
             xthr = self.sda.thres_mad(xsda)
             text_thr = 'MAD'
-        elif mode_thr == 1:
+        elif mode_thr == 2:
             xthr = self.sda.thres_rms(xsda)
             text_thr = 'RMS'
-        elif mode_thr == 2:
+        elif mode_thr == 3:
             xthr = self.sda.thres_blackrock(xsda)
             text_thr = 'RMS_BL'
-        elif mode_thr == 3:
+        elif mode_thr == 4:
             xthr = self.sda.thres_ma(xsda)
             text_thr = 'MA'
-        elif mode_thr == 4:
+        elif mode_thr == 5:
             xthr = self.sda.thres_winsorization(xsda)
             text_thr = 'Wins'
-        elif mode_thr == 5:
+        elif mode_thr == 6:
             xthr = self.sda.thres_salvan_golay(xsda)
             text_thr = 'SG'
         else:

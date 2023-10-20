@@ -2,8 +2,8 @@ import os.path
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay
-from pipeline.pipeline_signals import PipelineSignal
-from package.nsp import calc_amplitude, calc_autocorrelogram, calc_interval_timing, calc_firing_rate
+from package.pipeline_signals import PipelineSignal
+from package.nsp import calc_amplitude, calc_autocorrelogram, calc_firing_rate
 
 color_none = ['#929591']
 color_cluster = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
@@ -127,7 +127,6 @@ def results_afe2(signals: PipelineSignal, no_electrode: int, path="", time_cut=[
     """Plotting ADC output"""
     fs_dig = signals.fs_dig
     xadc = signals.x_adc
-    xadc0 = xadc
     time = np.arange(0, xadc.size, 1) / fs_dig
     ticks = signals.frames_align[1]
     ticks_id = signals.frames_align[2]

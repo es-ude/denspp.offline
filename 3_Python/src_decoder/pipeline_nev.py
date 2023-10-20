@@ -1,16 +1,16 @@
 import os, shutil
 import numpy as np
 
-from pipeline.pipeline_signals import PipelineSignal
+from package.pipeline_signals import PipelineSignal
 from package.data_call import SettingsDATA
 from package.dsp.sda import SpikeDetection, SettingsSDA
 from package.dsp.dsp import FeatureExtraction, SettingsFeature
 from package.dsp.cluster import Clustering, SettingsCluster
 from package.nsp import calc_spiketicks, calc_interval_timing, calc_firing_rate
 
-# --- Configuring the pipeline
+# --- Configuring the src_neuro
 class Settings:
-    """Settings class for handling the pipeline setting"""
+    """Settings class for handling the src_neuro setting"""
     SettingsDATA = SettingsDATA(
         path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
         data_set=6, data_case=0, data_point=0,
@@ -36,7 +36,7 @@ class Settings:
         no_cluster=3
     )
 
-# --- Setting the pipeline
+# --- Setting the src_neuro
 class Pipeline(PipelineSignal):
     def __init__(self, settings: Settings):
         PipelineSignal.__init__(self, settings.SettingsDATA.fs_resample, settings.SettingsDATA.fs_resample, 1)
@@ -51,7 +51,7 @@ class Pipeline(PipelineSignal):
         self.path2logs = "logs"
         self.path2runs = "runs"
         self.path2figure = None
-        self.path2settings = "pipeline/pipeline_nev.py"
+        self.path2settings = "src_neuro/pipeline_nev.py"
 
     def saving_results(self, name: str) -> str:
         if not os.path.exists(self.path2runs):

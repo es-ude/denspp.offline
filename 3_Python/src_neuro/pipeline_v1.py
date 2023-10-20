@@ -1,9 +1,8 @@
 import os
 import shutil
 import numpy as np
-from scipy.io import savemat
 
-from pipeline.pipeline_signals import PipelineSignal
+from package.pipeline_signals import PipelineSignal
 from package.data_call import SettingsDATA
 from package.pre_amp.preamp import PreAmp, SettingsAMP
 from package.adc.adc_basic import SettingsADC
@@ -12,12 +11,12 @@ from package.dsp.dsp import DSP, SettingsDSP
 from package.dsp.sda import SpikeDetection, SettingsSDA
 from package.dsp.fex import FeatureExtraction, SettingsFeature
 from package.dsp.cluster import Clustering, SettingsCluster
-from package.nsp import calc_spiketicks, calc_firing_rate, calc_autocorrelogram, calc_amplitude
+from package.nsp import calc_spiketicks
 
 
-# --- Configuring the pipeline
+# --- Configuring the src_neuro
 class Settings:
-    """Settings class for handling the pipeline setting"""
+    """Settings class for handling the src_neuro setting"""
     SettingsDATA = SettingsDATA(
         # path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
         path='C:\GitHub\spaike_project\\2_Data',
@@ -71,7 +70,8 @@ class Settings:
         dt_offset=[0.1e-3, 0.1e-3],
         t_dly=0.4e-3,
         window_size=7,
-        thr_gain=1
+        thr_gain=1.0,
+        thr_min_value=100.0
     )
 
     SettingsFE = SettingsFeature(
@@ -82,7 +82,7 @@ class Settings:
     )
 
 
-# --- Setting the pipeline
+# --- Setting the src_neuro
 class Pipeline:
     """Processing Pipeline for analysing invasive neural activities"""
     def __init__(self, settings: Settings):
@@ -103,7 +103,7 @@ class Pipeline:
         self.path2logs = "logs"
         self.path2runs = "runs"
         self.path2figure = str()
-        self.path2settings = "pipeline/pipeline_v1.py"
+        self.path2settings = "src_neuro/pipeline_v1.py"
 
     def generate_folder(self, name: str) -> str:
         if not os.path.exists(self.path2runs):

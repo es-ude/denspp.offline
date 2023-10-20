@@ -5,11 +5,11 @@ from threading import Thread, active_count
 from datetime import datetime
 from scipy.io import savemat
 
-from pipeline.pipeline_v1 import Settings, Pipeline
+from src_neuro.pipeline_v1 import Settings, Pipeline
 from package.metric import Metric
 from package.data_call import DataController
-from package.plotting import results_afe1, results_afe2, results_fec, results_paper
-from package.plotting import results_ivt, results_firing_rate, results_correlogram, results_cluster_amplitude
+from package.plotting.plot_pipeline import results_afe1, results_afe2, results_fec, results_paper
+from package.plotting.plot_pipeline import results_ivt, results_firing_rate, results_correlogram, results_cluster_amplitude
 
 
 class CustomThread(Thread):
@@ -25,7 +25,7 @@ class CustomThread(Thread):
 
     def run(self):
         print(f"... start processing of channel #{self.channel} on {self.thread_num}")
-        # ---- Run pipeline and calculate metrics
+        # ---- Run src_neuro and calculate metrics
         SpikeSorting.run(self.input)
         self.metric = Metric()
         self.output = SpikeSorting.signals
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     path2save = SpikeSorting.generate_folder(folder_name)
     results = [None] * len(num_electrodes)
 
-    print("\nPerforming end-to-end pipeline on all channels")
+    print("\nPerforming end-to-end src_neuro on all channels")
     if use_multithreading and len(num_electrodes) > 1:
         # --- Path for Multi-Threading
         max_num_workers = 2

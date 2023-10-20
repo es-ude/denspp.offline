@@ -1,6 +1,6 @@
 import numpy as np
 from package.data_call import DataController
-from pipeline.pipeline_data import Settings, Pipeline
+from src_neuro.pipeline_data import Settings, Pipeline
 from package.fpga.translation_timeseries_1ch import translate_data_veriloga, creating_testbench_verilog, translate_data_verilog_memory
 from package.fpga.translation_weights_dnn import read_model_weights
 
@@ -9,7 +9,7 @@ def do_data_transfer(mode='Vivado') -> None:
     """Routine for transfering neural rawdata for Vivado simulations
     (mode = 'Vivado' or 'Cadence')"""
     print('\nTransfering time series signal (raw data) from neural datasets into Vivado testbenches')
-    # --- Loading the pipeline
+    # --- Loading the src_neuro
     afe_set = Settings()
     afe_set.SettingsDATA.t_range = [10, 12]
     afe = Pipeline(afe_set)

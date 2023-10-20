@@ -1,16 +1,16 @@
 import os, shutil
 import numpy as np
 
-from pipeline.pipeline_signals import PipelineSignal
+from package.pipeline_signals import PipelineSignal
 from package.data_call import SettingsDATA
 from package.pre_amp.preamp import PreAmp, SettingsAMP
 from package.adc.adc_basic import SettingsADC
 from package.adc.adc_sar import ADC_SAR as ADC0
 from package.dsp.sda import SpikeDetection, SettingsSDA
 
-# --- Configuring the pipeline
+# --- Configuring the src_neuro
 class Settings:
-    """Settings class for handling the pipeline setting"""
+    """Settings class for handling the src_neuro setting"""
     SettingsDATA = SettingsDATA(
         path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
         data_set=1, data_case=0, data_point=0,
@@ -42,7 +42,7 @@ class Settings:
         thr_gain=1
     )
 
-# --- Setting the pipeline
+# --- Setting the src_neuro
 class Pipeline(PipelineSignal):
     def __init__(self, settings: Settings):
         PipelineSignal.__init__(self, settings.SettingsDATA.fs_resample, settings.SettingsADC.fs_adc, settings.SettingsADC.osr)
@@ -54,7 +54,7 @@ class Pipeline(PipelineSignal):
         self.path2logs = "logs"
         self.path2runs = "runs"
         self.path2figure = None
-        self.path2settings = "pipeline/pipeline_data.py"
+        self.path2settings = "src_neuro/pipeline_data.py"
 
     def saving_results(self, name: str) -> str:
         if not os.path.exists(self.path2runs):

@@ -1,7 +1,7 @@
 from datetime import datetime
 import matplotlib.pyplot as plt
 
-from pipeline.pipeline_emg import Settings, Pipeline
+from src_emg.pipeline_emg import Settings
 from src_emg.data_call_emg import DataController
 from src_emg.plotting_emg import results_input
 

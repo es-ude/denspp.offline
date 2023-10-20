@@ -4,11 +4,11 @@ from datetime import date
 from scipy.io import savemat
 
 from package.data_call import DataController
-from pipeline.pipeline_data import Settings, Pipeline
+from src_neuro.pipeline_data import Settings, Pipeline
 
 def get_frames_from_dataset(path2save: str, data_set: int, data_case: int):
     """Tool for loading datasets in order to generate one new dataset (Step 1)"""
-    # --- Loading the pipeline
+    # --- Loading the src_neuro
     afe_set = Settings()
     afe = Pipeline(afe_set)
     fs_ana = afe_set.SettingsADC.fs_ana
@@ -42,7 +42,7 @@ def get_frames_from_dataset(path2save: str, data_set: int, data_case: int):
         file_name = data.data_name
         endPoint = datahandler.no_files
 
-        # --- Pre-Processing with analogue pipeline
+        # --- Pre-Processing with analogue src_neuro
         afe.run_input(u_in)
         spike_xpos = np.floor(spike_xpos * fs_adc / fs_ana).astype("int")
         x_start = np.floor(1e-6 * spike_offset / fs_ana).astype("int")
