@@ -239,7 +239,6 @@ class training_pytorch:
 
         return own_metric
 
-    # TODO: Einfügen der Generierung von VHDL-Files
     def generate_vhdl_file(self):
         """Generating the VHDL code for FPGA implementation"""
         destination = OnDiskPath(os.path.join(self.__path2run, "build"))

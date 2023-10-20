@@ -53,6 +53,7 @@ def ae_addon(mode: int) -> str:
 
     return addon
 
+
 # --- Hauptprogramm
 if __name__ == "__main__":
     # 0 = normal autoencoder, 1 = denoising AE (mean), 2 = denoising AE (more noise input)

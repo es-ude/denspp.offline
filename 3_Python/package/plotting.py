@@ -123,11 +123,11 @@ def results_afe1(signals: PipelineSignal, no_electrode: int, path="", time_cut=[
         save_figure(plt, path, "pipeline_transient_elec" + str(no_electrode) + addon_zoom)
 
 
-def results_afe2(signals: PipelineSignal, no_electrode: int, path="", time_cut=[]):
+def results_afe2(signals: PipelineSignal, no_electrode: int, path="", time_cut=[], show_noise=False):
     """Plotting ADC output"""
-    show_noise = False
     fs_dig = signals.fs_dig
     xadc = signals.x_adc
+    xadc0 = xadc
     time = np.arange(0, xadc.size, 1) / fs_dig
     ticks = signals.frames_align[1]
     ticks_id = signals.frames_align[2]
@@ -144,19 +144,42 @@ def results_afe2(signals: PipelineSignal, no_electrode: int, path="", time_cut=[
         tran0.append(xadc[sel[0]:sel[1]])
         colo0.append(color_none[0])
         colo0.append(color_cluster[ticks_id[idx]])
+
         tick_old = sel[1]
 
+    # --- Plot generation
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
-    plt.subplots_adjust(hspace=0)
+    # plt.subplots_adjust(hspace=0)
     axs = list()
-    axs.append(plt.subplot(111))
+    for idx in range(0, 1):
+        axs.append(plt.subplot(1, 2, 1+2*idx))
+        axs.append(plt.subplot(1, 2, 2+2*idx, sharey=axs[2*idx]))
 
+    # Subplot 1: Transient signal (colored)
     for idx, time1 in enumerate(time0):
         axs[0].plot(time1, tran0[idx], linewidth=1, color=colo0[idx], drawstyle='steps-post')
 
+    # --- Subplot 2: Histogram (from Subplot 1)
+    no_bins = 1 + abs(max(xadc)) + abs(min(xadc))
+    if not len(time_cut) == 0:
+        sel0 = np.where(time >= time_cut[0])[0][0]
+        sel1 = np.where(time >= time_cut[1])[0][0] -1
+        x_bins = xadc[sel0:sel1]
+    else:
+        x_bins = xadc
+    x_nonzero = np.where(x_bins != 0)[0]
+    axs[1].hist(xadc[x_nonzero], color='k',
+                density=True, log=True,
+                bins=no_bins,
+                orientation="horizontal")
+
+    # --- Axis test
     axs[0].set_xlabel('Time t [ms]')
     axs[0].set_ylabel('X_adc(t) [ ]')
     axs[0].grid()
+
+    axs[1].set_xlabel('Density')
+    axs[1].grid()
 
     # --- Zooming
     if not len(time_cut) == 0:
@@ -166,7 +189,7 @@ def results_afe2(signals: PipelineSignal, no_electrode: int, path="", time_cut=[
         axs[0].set_xlim([time[0], time[-1]])
         addon_zoom = ''
 
-    plt.tight_layout()
+    # plt.tight_layout()
     # --- saving plots
     if path:
         save_figure(plt, path, "pipeline_transient_sorted" + str(no_electrode) + addon_zoom)

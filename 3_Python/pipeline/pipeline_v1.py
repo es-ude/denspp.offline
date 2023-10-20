@@ -19,7 +19,8 @@ from package.nsp import calc_spiketicks, calc_firing_rate, calc_autocorrelogram,
 class Settings:
     """Settings class for handling the pipeline setting"""
     SettingsDATA = SettingsDATA(
-        path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
+        # path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
+        path='C:\GitHub\spaike_project\\2_Data',
         data_set=0,
         data_case=0,
         data_point=0,
@@ -117,14 +118,12 @@ class Pipeline:
         self.path2figure = path2figure
         return path2figure
 
-    def saving_mat(self, num_elec: int) -> None:
+    def prepare_saving(self) -> dict:
         mdict = {"Settings": self.settings,
                  "frames_out": self.signals.frames_align[0],
                  "frames_pos": self.signals.frames_align[1],
-                 "frames_id": self.signals.frames_align[2],
-                 "spike_tick": self.signals.spike_ticks}
-
-        savemat(os.path.join(self.path2figure, f'results_ch{num_elec}.mat'), mdict)
+                 "frames_id": self.signals.frames_align[2]}
+        return mdict
 
     def run(self, uinp: np.ndarray) -> None:
         self.signals.u_in = uinp

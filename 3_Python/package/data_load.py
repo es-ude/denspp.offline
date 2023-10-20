@@ -12,7 +12,7 @@ class DataHandler:
     data_type = str()
     data_fs_orig = 0
     data_fs_used = 0
-    data_gain = 1.0
+    data_lsb = 1.0
     data_time = 0.0
     # Num of devices
     device_id = str()
@@ -94,12 +94,12 @@ class DataLoader:
         # Input and meta
         self.raw_data.data_name = folder_name
         self.raw_data.data_type = "Synthetic"
-        self.raw_data.data_gain = 0.5e-6 * 10 ** (0 / 20)
+        self.raw_data.data_lsb = 0.5e-6
         self.raw_data.data_fs_orig = int(1 / loaded_data["samplingInterval"][0][0] * 1000)
 
         self.raw_data.device_id = [0]
         self.raw_data.electrode_id = [int(loaded_data["chan"][0])-1]
-        self.raw_data.data_raw = [(self.raw_data.data_gain * loaded_data["data"][0])]
+        self.raw_data.data_raw = [(self.raw_data.data_lsb * loaded_data["data"][0])]
         self.raw_data.data_time = loaded_data["data"][0].size / self.raw_data.data_fs_orig
         # Groundtruth
         self.raw_data.label_exist = True
@@ -128,12 +128,12 @@ class DataLoader:
         # Input and meta
         self.raw_data.data_name = folder_name
         self.raw_data.data_type = "Synthetic"
-        self.raw_data.data_gain = 25e-6 * 10 ** (0 / 20)
+        self.raw_data.data_lsb = 25e-6
         self.raw_data.data_fs_orig = 24e3
 
         self.raw_data.device_id = [0]
         self.raw_data.electrode_id = [int(loaded_data["data"].shape[0])-1]
-        self.raw_data.data_raw = [(self.raw_data.data_gain * loaded_data["data"][0])]
+        self.raw_data.data_raw = [(self.raw_data.data_lsb * loaded_data["data"][0])]
         self.raw_data.data_time = loaded_data["data"].shape[1] / self.raw_data.data_fs_orig
         # Groundtruth
         self.raw_data.label_exist = True
@@ -157,12 +157,12 @@ class DataLoader:
         # --- Input and meta
         self.raw_data.data_name = folder_name
         self.raw_data.data_type = "Synthetic"
-        self.raw_data.data_gain = 100e-6 * 10 ** (0 / 20)
+        self.raw_data.data_lsb = 100e-6
         self.raw_data.data_fs_orig = float(1000 / loaded_data["samplingInterval"][0][0])
 
         self.raw_data.device_id = [0]
         self.raw_data.electrode_id = [int(loaded_data["chan"][0][0])-1]
-        self.raw_data.data_raw = [(self.raw_data.data_gain * loaded_data["data"][0])]
+        self.raw_data.data_raw = [(self.raw_data.data_lsb * loaded_data["data"][0])]
         self.raw_data.data_time = loaded_data["data"].shape[1] / self.raw_data.data_fs_orig
         # --- Groundtruth
         self.raw_data.label_exist = True
@@ -199,12 +199,12 @@ class DataLoader:
         # Input and meta
         self.raw_data.data_name = folder_name
         self.raw_data.data_type = "Penetrating"
-        self.raw_data.data_gain = loaded_data['GainPre'][0][0]
+        self.raw_data.data_lsb = 1 / loaded_data['GainPre'][0][0]
         self.raw_data.data_fs_orig = loaded_data['origFs'][0][0]
 
         self.raw_data.device_id = [1]
         self.raw_data.electrode_id = [np.arange(0, loaded_data['raw_data'].shape[0])]
-        data_raw = loaded_data['raw_data'] / self.raw_data.data_gain
+        data_raw = self.raw_data.data_lsb * loaded_data['raw_data']
         for raw_ch in data_raw:
             self.raw_data.data_raw.append(raw_ch)
         self.raw_data.data_time = loaded_data['raw_data'].shape[1] / self.raw_data.data_fs_orig
@@ -228,12 +228,12 @@ class DataLoader:
         # Input and meta
         self.raw_data.data_name = folder_name
         self.raw_data.data_type = "MCS 60MEA"
-        self.raw_data.data_gain = loaded_data['gain'][0]
+        self.raw_data.data_lsb = 1 / loaded_data['gain'][0]
         self.raw_data.data_fs_orig = 1e3 * loaded_data['fs'][0]
 
         self.raw_data.device_id = [1]
         self.raw_data.electrode_id = [np.arange(0, loaded_data['raw'].shape[1])]
-        data_raw = np.transpose(loaded_data['raw']/self.raw_data.data_gain)
+        data_raw = self.raw_data.data_lsb * np.transpose(loaded_data['raw'])
         for raw_ch in data_raw:
             self.raw_data.data_raw.append(raw_ch)
         self.raw_data.data_time = loaded_data['raw'].shape[0] / self.raw_data.data_fs_orig
@@ -268,13 +268,13 @@ class DataLoader:
                 gain_base = 1e0
         else:
             gain_base = 1e0
-        self.raw_data.data_gain = gain_base * float(gain_str[0])
+        self.raw_data.data_lsb = gain_base * float(gain_str[0])
         self.raw_data.data_fs_orig = int(loaded_data['rawdata']['SamplingRate'][0, 0][0])
 
         # TODO: Daten vom Utah-Array einlesen (Zwei Devices)
         self.raw_data.device_id = [nsp_device]
         self.raw_data.electrode_id = [np.arange(0, int(loaded_data['rawdata']['NoElectrodes'][0, 0][0]))]
-        data_raw = np.transpose(self.raw_data.data_gain * loaded_data['rawdata']['spike'][0, 0])
+        data_raw = np.transpose(self.raw_data.data_lsb * loaded_data['rawdata']['spike'][0, 0])
         for raw_ch in data_raw:
             self.raw_data.data_raw.append(raw_ch)
         self.raw_data.data_time = data_raw.shape[0]
@@ -286,7 +286,7 @@ class DataLoader:
             str_out = 'Elec' + str(1+idx)
             A = loaded_data['nev_detected'][str_out][0, 0]['timestamps'][0, 0][0, :]
             B = loaded_data['nev_detected'][str_out][0, 0]['cluster'][0, 0][0, :]
-            C = self.raw_data.data_gain * loaded_data['nev_detected'][str_out][0, 0]['waveform'][0, 0]
+            C = self.raw_data.data_lsb * loaded_data['nev_detected'][str_out][0, 0]['waveform'][0, 0]
             self.raw_data.spike_xpos.append(A)
             self.raw_data.cluster_id.append(B)
             self.raw_data.spike_offset.append(100)
