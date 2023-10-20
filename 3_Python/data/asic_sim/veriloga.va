@@ -1,0 +1,51 @@
+`include "constants.vams"
+`include "disciplines.vams"
+
+// -----------------------------------------------------------------
+// Company: UDE-ES
+// Raw data converting from DeNSSP to Cadence (v1.0)
+// Testbench file for playing data sets in simulations
+// -----------------------------------------------------------------
+// Generate file on: 10/15/2023, 15:05:01
+// Original sampling rate fs =  20.00 kHz
+// Size of input array: 48000
+// -----------------------------------------------------------------
+
+module data_player(
+	input electrical EN,
+	output electrical Vout,
+	output electrical CLK
+);
+
+	parameter real AVDD = 0.6;
+	parameter real AVSS = -0.6;
+	parameter real T_SAMP = 5e-05;
+
+	real v_cm, v_read, v_clk;
+	integer cnt_pos;
+
+	analog begin
+		@(initial_step) begin
+			cnt_pos = 0;
+			v_clk = -1;
+			// Change path to txt-file
+			v_read = $fopen("/home/erbsloeh/data_raw.txt", "r");
+		end
+		v_cm = (AVDD - AVSS)/2;
+
+		// Clock generation and counter
+		@(timer(0, T_SAMP/2)) begin
+			if(V(EN) > v_cm) begin
+				v_clk = -v_clk;
+				cnt_pos = cnt_pos + 1;
+			end else begin
+				v_clk = -1;
+				cnt_pos = 1;
+			end
+		end
+
+		// Generate output
+		V(Vout) <+ v_read;
+		V(CLK) <+ AVSS + (1+v_clk)/2* AVDD;
+	end
+endmodule
