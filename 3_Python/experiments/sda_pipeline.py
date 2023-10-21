@@ -1,5 +1,5 @@
 import numpy as np
-from package.pipeline_signals import PipelineSignal
+from package.data.pipeline_signals import PipelineSignal
 from package.pre_amp.preamp import PreAmp, SettingsAMP
 from package.adc.adc_basic import SettingsADC
 from package.adc.adc_sar import ADC_SAR as ADC0

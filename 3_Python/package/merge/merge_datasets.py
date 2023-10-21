@@ -3,7 +3,7 @@ import numpy as np
 from datetime import date
 from scipy.io import savemat
 
-from package.data_call import DataController
+from package.data.data_call import DataController
 from src_neuro.pipeline_data import Settings, Pipeline
 
 def get_frames_from_dataset(path2save: str, data_set: int, data_case: int):

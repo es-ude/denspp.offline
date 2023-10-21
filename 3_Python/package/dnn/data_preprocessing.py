@@ -1,6 +1,7 @@
 import numpy as np
 from package.metric import calculate_snr
-from package.process_noise import frame_noise
+from package.data.process_noise import frame_noise
+
 
 def change_frame_size(frames_in: np.ndarray, sel_pos: list) -> np.ndarray:
     """Reducing the frame size of input frames to specific values"""
@@ -63,6 +64,7 @@ def calculate_mean_waveform(
     return frames_mean, cluster_snr
 
 
+# TODO: Data Normalization does not work very well
 def data_normalization(
         frames_in: np.ndarray,
         do_bipolar=True,

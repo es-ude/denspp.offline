@@ -2,14 +2,22 @@ import numpy as np
 from datetime import datetime
 from scipy.io import loadmat
 
+from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.data_preprocessing import change_frame_size, calculate_mean_waveform, generate_zero_frames, data_normalization
 from package.dnn.data_augmentation import augmentation_change_position
 
 
-def prepare_training(path: str, excludeCluster: list, sel_pos: list, num_new_frames: int,
-                     do_augmentation=False, do_norm=False, do_zeroframes=False
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def prepare_training(path: str, settings: Config_PyTorch) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Einlesen des Datensatzes inkl. Augmentierung (Kein Pre-Processing)"""
+    # --- Getting the settings
+    exc_cluster = settings.data_exclude_cluster
+    use_position = settings.data_sel_pos
+    num_new_frames = settings.data_num_augmentation
+    do_augmentation = settings.data_do_augmentation
+    do_normalization = settings.data_do_normalization
+    do_addnoise_cluster = settings.data_do_addnoise_cluster
+
+    # --- Pre-definitions
     str_datum = datetime.now().strftime('%Y%m%d %H%M%S')
     print(f"Running on {str_datum}")
     print("... loading the datasets")
@@ -28,16 +36,16 @@ def prepare_training(path: str, excludeCluster: list, sel_pos: list, num_new_fra
     print("... for training are", frames_in.shape[0], "frames with each", frames_in.shape[1], "points available")
 
     # --- Mean waveform calculation and data augmentation
-    frames_in = change_frame_size(frames_in, sel_pos)
+    frames_in = change_frame_size(frames_in, use_position)
     frames_mean, snr_mean = calculate_mean_waveform(frames_in, frames_cluster)
     # plt_memristor_ref(frames_in, frames_cluster, frames_mean)
 
     # --- PART: Exclusion of selected clusters
-    if len(excludeCluster) == 0:
+    if len(exc_cluster) == 0:
         frames_in = frames_in
         frames_cluster = frames_cluster
     else:
-        for i, id in enumerate(excludeCluster):
+        for i, id in enumerate(exc_cluster):
             selX = np.where(frames_cluster != id)
             frames_in = frames_in[selX[0], :]
             frames_cluster = frames_cluster[selX]
@@ -51,7 +59,7 @@ def prepare_training(path: str, excludeCluster: list, sel_pos: list, num_new_fra
         frames_cluster = np.append(frames_cluster, new_clusters, axis=0)
 
     # --- PART: Generate and add noise cluster
-    if do_zeroframes:
+    if do_addnoise_cluster:
         snr_range_zero = [np.mean(snr_mean[:, 0]), np.mean(snr_mean[:, 2])]
         info = np.unique(frames_cluster, return_counts=True)
         num_cluster = np.max(info[0]) + 1
@@ -64,7 +72,7 @@ def prepare_training(path: str, excludeCluster: list, sel_pos: list, num_new_fra
         frames_mean = np.vstack([frames_mean, new_mean])
 
     # --- PART: Data Normalization
-    if do_norm:
+    if do_normalization:
         frames_in = data_normalization(frames_in)
         frames_mean = data_normalization(frames_mean)
 

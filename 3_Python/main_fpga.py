@@ -1,5 +1,5 @@
 import numpy as np
-from package.data_call import DataController
+from package.data.data_call import DataController
 from src_neuro.pipeline_data import Settings, Pipeline
 from package.fpga.translation_timeseries_1ch import translate_data_veriloga, creating_testbench_verilog, translate_data_verilog_memory
 from package.fpga.translation_weights_dnn import read_model_weights

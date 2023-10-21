@@ -1,6 +1,6 @@
-import os.path
 import numpy as np
 import matplotlib.pyplot as plt
+from package.plotting.plot_common import cm_to_inch, save_figure
 
 
 def plt_memristor_ref(frames_in: np.ndarray, frames_cluster: np.ndarray, frames_mean: np.ndarray) -> None:
@@ -82,19 +82,6 @@ def test_plot(frames_in, frames_cluster):
         plt.plot(frames_mean[idx])
 
     plt.show(block=True)
-
-
-def cm_to_inch(value):
-    return value / 2.54
-
-
-def save_figure(fig, path: str, name: str):
-    format = ['eps', 'svg']
-    path2fig = os.path.join(path, name)
-
-    for idx, form in enumerate(format):
-        file_name = path2fig + '.' + form
-        fig.savefig(file_name, format=form)
 
 
 def results_training(path: str,

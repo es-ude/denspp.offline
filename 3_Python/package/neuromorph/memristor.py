@@ -1,6 +1,6 @@
 import numpy as np
 
-class Neuromorph():
+class Memristor:
     def __init__(self):
         pass
 

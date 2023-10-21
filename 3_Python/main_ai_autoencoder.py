@@ -6,15 +6,13 @@ from scipy.io import savemat
 import numpy as np
 
 from package.metric import calculate_snr
-from package.dnn.dataset_preparation import prepare_training
+from package.dnn.pytorch_data import prepare_training
 import package.plotting.plot_dnn as plt_spaike
-from package.dnn.pytorch_handler import training_pytorch
-from package.dnn.ae_dataset import DatasetAE, prepare_plotting, get_dataloaders
-import package.dnn.models.ae_topology as ai_module
+from package.dnn.pytorch_control import training_pytorch
+from package.dnn.dataset.autoencoder import DatasetAE, prepare_plotting
+import package.dnn.models.autoencoder as ai_module
 
 
-# TODO: Add normal training of denoising autoencoder
-# TODO: Data Normalization does not work very well
 class Config_PyTorch:
     def __init__(self):
         # Settings of Models/Training
@@ -22,7 +20,8 @@ class Config_PyTorch:
         # self.model = ai_module_embedded.dnn_dae_v2
         self.is_embedded = False
         self.loss_fn = torch.nn.MSELoss()
-        self.num_epochs = 500
+        self.num_kfold = 2
+        self.num_epochs = 10
         self.batch_size = 256
         # Settings of Datasets
         self.data_path = 'data'
@@ -70,35 +69,27 @@ if __name__ == "__main__":
     model_name = model.out_modelname
     model_typ = model.out_modeltyp
 
-    # --- Pre-Processing: Loading data and splitting into training and validation
+    # --- Pre-Processing: Loading dataset
     path = os.path.join(model_settings.data_path, model_settings.data_file_name)
-    frames_in, frames_cluster, frames_mean = prepare_training(
-        path=path,
-        do_augmentation=model_settings.data_do_augmentation, num_new_frames=model_settings.data_num_augmentation,
-        excludeCluster=model_settings.data_exclude_cluster, sel_pos=model_settings.data_sel_pos,
-        do_norm=model_settings.data_do_normalization, do_zeroframes=model_settings.data_do_addnoise_cluster
-    )
+    frames_in, frames_cluster, frames_mean = prepare_training(path=path, settings=model_settings)
     dataset = DatasetAE(frames_in, frames_cluster, frames_mean, mode_train=mode_train)
-    train_dl, valid_dl = get_dataloaders(
-        dataset, batch_size=model_settings.batch_size,
-        validation_split=model_settings.data_split_ratio,
-        shuffle=model_settings.data_do_shuffle
-    )
 
     # --- Processing: Do Training
     trainhandler = training_pytorch(model_typ, model_name, model_settings)
     trainhandler.model_addon = ae_addon(mode_train)
     trainhandler.load_model(model, model_opt)
-    trainhandler.load_data(train_dl, valid_dl)
+    trainhandler.load_data(dataset)
 
-    snr_train = trainhandler.do_training()
+    loss, snr_train = trainhandler.do_training()
     logsdir = trainhandler.path2save
 
     # --- Post-Processing: Getting data from validation set for plotting
-    model_name_test = glob.glob(os.path.join(logsdir, 'model_*'))
+    valid_dl = trainhandler.valid_loader[0]
+    data_in, data_out, cluster_out, data_mean = prepare_plotting(valid_dl)
+
+    model_name_test = glob.glob(os.path.join(logsdir, 'model_fold*.pth'))
     model_test = torch.load(model_name_test[0])
 
-    data_in, data_out, cluster_out, data_mean = prepare_plotting(valid_dl)
     model_in = torch.from_numpy(data_in)
     feat_out, pred_out = model_test(model_in)
     feat0 = feat_out.detach().numpy()
@@ -120,13 +111,13 @@ if __name__ == "__main__":
     print(f"- SNR_inc: {np.mean(snr_delta): .2f} (mean)")
 
     # --- Saving data
-    matdata = { "frames_in": data_in,
-                "frames_out": data_out,
-                "frames_mean": data_mean,
-                "frames_pred": ypred0,
-                "feat": feat0,
-                "cluster": cluster_out,
-                "config": model_settings
+    matdata = {"frames_in": data_in,
+               "frames_out": data_out,
+               "frames_mean": data_mean,
+               "frames_pred": ypred0,
+               "feat": feat0,
+               "cluster": cluster_out,
+               "config": model_settings
     }
     filename = 'results.mat'
     savemat(os.path.join(logsdir, filename), matdata)

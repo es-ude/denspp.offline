@@ -2,8 +2,8 @@ import os
 import shutil
 import numpy as np
 
-from package.pipeline_signals import PipelineSignal
-from package.data_call import SettingsDATA
+from package.data.pipeline_signals import PipelineSignal
+from package.data.data_call import SettingsDATA
 from package.pre_amp.preamp import PreAmp, SettingsAMP
 from package.adc.adc_basic import SettingsADC
 from package.adc.adc_sar import ADC_SAR as ADC0
@@ -100,7 +100,6 @@ class Pipeline:
             osr=settings.SettingsADC.osr
         )
 
-        self.path2logs = "logs"
         self.path2runs = "runs"
         self.path2figure = str()
         self.path2settings = "src_neuro/pipeline_v1.py"

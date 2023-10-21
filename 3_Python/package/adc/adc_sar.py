@@ -1,5 +1,5 @@
 import numpy as np
-from package.adc.adc_basic import ADC_Basic, SettingsADC, SettingsNon, RecommendedSettingsNon
+from package.adc.adc_basic import ADC_Basic, SettingsADC, RecommendedSettingsNon
 
 class ADC_SAR(ADC_Basic):
     """"Class for applying a Sukzessive Approximation (SAR) Analogue-Digital-Converter (ADC) on the raw data"""
@@ -137,7 +137,7 @@ class ADC_SAR(ADC_Basic):
         return xout, uout, uerr
 
 # ------------ TEST ROUTINE -------------
-from package.process_noise import noise_real, do_fft
+from package.data.process_noise import noise_real, do_fft
 import matplotlib.pyplot as plt
 if __name__ == "__main__":
     set_adc = SettingsADC(

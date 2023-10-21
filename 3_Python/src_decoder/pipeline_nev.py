@@ -1,8 +1,8 @@
 import os, shutil
 import numpy as np
 
-from package.pipeline_signals import PipelineSignal
-from package.data_call import SettingsDATA
+from package.data.pipeline_signals import PipelineSignal
+from package.data.data_call import SettingsDATA
 from package.dsp.sda import SpikeDetection, SettingsSDA
 from package.dsp.dsp import FeatureExtraction, SettingsFeature
 from package.dsp.cluster import Clustering, SettingsCluster

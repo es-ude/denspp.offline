@@ -1,7 +1,6 @@
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
-from torch.utils.data.sampler import SubsetRandomSampler
 
 
 class DatasetClass(Dataset):
@@ -43,31 +42,3 @@ def prepare_plotting(data_plot: DataLoader) -> tuple[np.ndarray, np.ndarray, np.
         did = did0 if i == 0 else np.append(did, did0)
 
     return din, dout, did, dmean
-
-
-def get_dataloaders(dataset: DatasetClass, batch_size=64,
-                    validation_split=0.2, shuffle=False
-                    ) -> tuple[DataLoader, DataLoader]:
-    """Generate datasets for training and validation from input dataset"""
-    dataset_size = len(dataset)
-    indices = list(range(dataset_size))
-    split = int(np.floor(validation_split * dataset_size))
-    if shuffle:
-        np.random.shuffle(indices)
-
-    train_indices, val_indices = indices[split:], indices[:split]
-
-    # Creating PT data samplers and loaders:
-    train_sampler = SubsetRandomSampler(train_indices)
-    valid_sampler = SubsetRandomSampler(val_indices)
-
-    train_loader = torch.utils.data.DataLoader(
-        dataset, batch_size=batch_size,
-        sampler=train_sampler
-    )
-    validation_loader = torch.utils.data.DataLoader(
-        dataset, batch_size=batch_size,
-        sampler=valid_sampler
-    )
-
-    return train_loader, validation_loader

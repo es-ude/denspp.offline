@@ -5,7 +5,7 @@ import numpy as np
 from typing import Tuple
 from fractions import Fraction
 from scipy.signal import resample_poly
-from package.data_load import DataLoader, DataHandler
+from package.data.data_load import DataLoader, DataHandler
 
 
 @dataclasses.dataclass

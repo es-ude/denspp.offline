@@ -2,7 +2,7 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 
 from src_decoder.pipeline_nev import Settings, Pipeline
-from package.data_call import DataController
+from package.data.data_call import DataController
 from package.plotting.plot_pipeline import results_fec, results_ivt, results_firing_rate
 
 if __name__ == "__main__":

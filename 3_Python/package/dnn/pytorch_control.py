@@ -4,21 +4,21 @@ import shutil
 import numpy as np
 from datetime import datetime
 import torch
-import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
+from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
+from sklearn.model_selection import KFold
 from package.metric import calculate_snr
-from elasticai.creator.file_generation.on_disk_path import OnDiskPath
 
 
 class Config_PyTorch:
     """Template for configurating pytorch for training a model"""
     def __init__(self):
         # Settings of Models/Training
-        # self.model = ai_module.cnn_ae_v1
-        self.model = "model name"
+        self.model = "model name"   # example: ai_module.cnn_ae_v1
         self.is_embedded = False
         self.loss_fn = torch.nn.MSELoss()
+        self.num_kfold = 1
         self.num_epochs = 1000
         self.batch_size = 512
         # Settings of Datasets
@@ -48,6 +48,10 @@ class training_pytorch:
         self.os_type = None
         self.__setup_device()
 
+        # --- Preparing options
+        self.do_kfold = False
+        self.run_kfold = 0
+
         # --- Saving options
         self.index_folder = 'train' if do_train else 'inference'
         self.aitype = type
@@ -62,6 +66,7 @@ class training_pytorch:
         # --- Training input
         self.settings = config_train
         self.model = None
+        self.used_model = None
         self.loss_fn = None
         self.optimizer = None
         self.train_loader = None
@@ -87,18 +92,50 @@ class training_pytorch:
 
     def __init_train(self) -> None:
         """Do init of class for training"""
-        folder_name = '{}_'.format(datetime.now().strftime('%Y%m%d_%H%M%S')) + self.index_folder + '_' + self.model_name
-
+        folder_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{self.index_folder}_{self.model_name}'
         self.path2save = os.path.join(self.__path2run, folder_name)
-        self.__path2log = os.path.join(self.__path2run, folder_name, 'logs')
+        os.mkdir(self.path2save)
+
+    def __init_writer(self) -> None:
+        """Do init of writer"""
+        self.__path2log = os.path.join(self.path2save, f'logs_{self.run_kfold: 03d}')
         self.__writer = SummaryWriter(self.__path2log)
 
-    def load_data(self, training_loader, validation_loader) -> None:
+    def load_data(self, data_set) -> None:
         """Loading data for training and validation in DataLoader format into class"""
-        self.train_loader = training_loader
-        self.valid_loader = validation_loader
+        self.__preparing_data(data_set)
 
-    def load_model(self, model: nn.Module, optimizer, print_model=True) -> None:
+    def __preparing_data(self, data_set) -> None:
+        self.do_kfold = True if self.settings.num_kfold > 1 else False
+        num_samples = len(data_set)
+
+        # --- Preparing datasets
+        out_train = list()
+        out_valid = list()
+        if self.do_kfold:
+            kfold = KFold(n_splits=self.settings.num_kfold, shuffle=True)
+            for fold, (idx_train, idx_valid) in enumerate(kfold.split(np.arange(num_samples))):
+                subsamps_train = SubsetRandomSampler(idx_train)
+                subsamps_valid = SubsetRandomSampler(idx_valid)
+                out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train))
+                out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
+        else:
+            idx = np.arange(num_samples)
+            np.random.shuffle(idx)
+            pos = int(num_samples * (1 - self.settings.data_split_ratio))
+            idx_train = idx[0:pos]
+            idx_valid = idx[pos:]
+            subsamps_train = SubsetRandomSampler(idx_train)
+            subsamps_valid = SubsetRandomSampler(idx_valid)
+
+            out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train))
+            out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
+
+        # --- Output
+        self.train_loader = out_train
+        self.valid_loader = out_valid
+
+    def load_model(self, model: torch.nn.Module, optimizer, print_model=True) -> None:
         """Loading model, optimizer, loss_fn into class"""
         self.model = model
         self.optimizer = optimizer
@@ -121,6 +158,7 @@ class training_pytorch:
             txt_handler.write(f'Batchsize: {config_handler.batch_size}\n')
             txt_handler.write(f'Num. of epochs: {config_handler.num_epochs}\n')
             txt_handler.write(f'Splitting ratio (Training/Validation): {1-config_handler.data_split_ratio}/{config_handler.data_split_ratio}\n')
+            txt_handler.write(f'Do kfold cross validation?: {self.do_kfold}, Number of steps: {self.settings.num_kfold}\n')
             txt_handler.write(f'Do shuffle?: {config_handler.data_do_shuffle}\n')
             txt_handler.write(f'Do data augmentation?: {config_handler.data_do_augmentation}\n')
             txt_handler.write(f'Do input normalization?: {config_handler.data_do_normalization}\n')
@@ -140,7 +178,7 @@ class training_pytorch:
         total_batches = 0
 
         self.model.train(True)
-        for tdata in self.train_loader:
+        for tdata in self.train_loader[self.run_kfold]:
             self.optimizer.zero_grad()
             data_in = tdata['in']
             data_out = tdata['out']
@@ -162,7 +200,7 @@ class training_pytorch:
         valid_loss = 0.0
 
         self.model.eval()
-        for vdata in self.valid_loader:
+        for vdata in self.valid_loader[self.run_kfold]:
             data_in = vdata['in']
             data_out = vdata['out']
             _, pred_out = self.model(data_in)
@@ -177,7 +215,7 @@ class training_pytorch:
         """Do metric calculation during validation step of training"""
         metric_epoch = []
         self.model.eval()
-        for vdata in self.valid_loader:
+        for vdata in self.valid_loader[self.run_kfold]:
             data_in = vdata['in']
             data_mean = vdata['mean'].detach().numpy()
             _, pred_out = self.model(data_in)
@@ -191,57 +229,75 @@ class training_pytorch:
 
     def do_training(self):
         """Start model training incl. validation and custom-own metric calculation"""
-        best_vloss = 1_000_000.
-        loss_train = 1_000_000.
-        loss_valid = 1_000_000.
-        own_metric = []
-        model_path = str()
 
         self.__init_train()
         self.__save_config_txt()
-        timestamp_start = datetime.now()
-        timestamp_string = timestamp_start.strftime('%H:%M:%S.%f')
-        print(f'\nTraining starts on: {timestamp_string}')
-        for epoch in range(0, self.settings.num_epochs):
-            loss_train = self.__do_training_epoch()
-            loss_valid = self.__do_valid_epoch()
+        # --- Handling Kfold cross validation training
+        if self.do_kfold:
+            print(f"Starting Kfold cross validation training in {self.settings.num_kfold} steps")
 
-            print(f'... results of epoch {epoch + 1}/{self.settings.num_epochs} [{(epoch + 1) / self.settings.num_epochs * 100:.2f} %]: '
-                  f'train_loss = {loss_train:.5f},\tvalid_loss = {loss_valid:.5f}')
+        metrics = list()
+        own_metric = list()
+        path2model = str()
+        path2model_init = os.path.join(self.path2save, f'model_reset.pth')
+        torch.save(self.model.state_dict(), path2model_init)
+        for fold in np.arange(self.settings.num_kfold):
+            best_vloss = 1_000_000.
+            loss_train = 1_000_000.
+            loss_valid = 1_000_000.
+            own_metric = []
 
-            # Log the running loss averaged per batch for both training and validation
-            self.__writer.add_scalar('Loss_train', loss_train)
-            self.__writer.add_scalar('Loss_valid', loss_valid, epoch+1)
-            self.__writer.flush()
+            # - Reset of model
+            self.model.load_state_dict(torch.load(path2model_init))
+            self.run_kfold = fold
+            self.__init_writer()
 
-            # Track best performance, and save the model
-            if loss_valid < best_vloss:
-                best_vloss = loss_valid
-                model_path = os.path.join(self.__path2log, 'model_{}'.format(epoch))
-                torch.save(self.model, model_path)
+            timestamp_start = datetime.now()
+            timestamp_string = timestamp_start.strftime('%H:%M:%S.%f')
+            if self.do_kfold:
+                print(f'\nTraining starts on: {timestamp_string} with fold #{fold}')
+            else:
+                print(f'\nTraining starts on: {timestamp_string}')
 
-            # Calculation of custom metrics
-            own_metric.append(self.__do_snr_epoch())
+            for epoch in range(0, self.settings.num_epochs):
+                loss_train = self.__do_training_epoch()
+                loss_valid = self.__do_valid_epoch()
 
-        # --- Ausgabe nach Training
-        self.__save_train_results(loss_train, loss_valid)
-        own_metric = np.array(own_metric)
-        timestamp_end = datetime.now()
-        timestamp_string = timestamp_end.strftime('%H:%M:%S.%f')
-        diff_time = timestamp_end - timestamp_start
-        diff_string = diff_time
+                print(f'... results of epoch {epoch + 1}/{self.settings.num_epochs} [{(epoch + 1) / self.settings.num_epochs * 100:.2f} %]: '
+                      f'train_loss = {loss_train:.5f},'
+                      f'\tvalid_loss = {loss_valid:.5f}')
 
-        print(f'Training ends on: {timestamp_string}')
-        print(f'Training runs: {diff_string}')
-        print(f'\nSave best model: {model_path}')
+                # Log the running loss averaged per batch for both training and validation
+                self.__writer.add_scalar('Loss_train', loss_train)
+                self.__writer.add_scalar('Loss_valid', loss_valid, epoch+1)
+                self.__writer.flush()
 
-        shutil.copy(model_path, self.path2save)
+                # Tracking the best performance and saving the model
+                if loss_valid < best_vloss:
+                    best_vloss = loss_valid
+                    path2model = os.path.join(self.__path2log, f'model_fold{fold:03d}_epoch{epoch:04d}.pth')
+                    torch.save(self.model, path2model)
 
-        return own_metric
+                # Calculation of custom metrics
+                own_metric.append(self.__do_snr_epoch())
 
-    def generate_vhdl_file(self):
-        """Generating the VHDL code for FPGA implementation"""
-        destination = OnDiskPath(os.path.join(self.__path2run, "build"))
-        print(f"... generate VHDL output file in folder: {destination}")
-        # design = self.model.translate("my_model")
-        # design.save_to(destination)
+            # --- Ausgabe nach Training
+            self.__save_train_results(loss_train, loss_valid)
+            # TODO: Metrikgeschiebe anpassen
+            own_metric = np.array(own_metric)
+            metrics.append([loss_train, loss_valid])
+
+            timestamp_end = datetime.now()
+            timestamp_string = timestamp_end.strftime('%H:%M:%S.%f')
+            diff_time = timestamp_end - timestamp_start
+            diff_string = diff_time
+
+            print(f'Training ends on: {timestamp_string}')
+            print(f'Training runs: {diff_string}')
+            print(f'Save best model: {path2model}')
+            shutil.copy(path2model, self.path2save)
+
+            if os.path.exists(path2model_init):
+                os.remove(path2model_init)
+
+        return metrics, own_metric

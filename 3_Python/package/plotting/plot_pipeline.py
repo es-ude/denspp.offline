@@ -1,28 +1,15 @@
-import os.path
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay
-from package.pipeline_signals import PipelineSignal
+from package.plotting.plot_common import cm_to_inch, save_figure
+
+from package.data.pipeline_signals import PipelineSignal
 from package.nsp import calc_amplitude, calc_autocorrelogram, calc_firing_rate
+
 
 color_none = ['#929591']
 color_cluster = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
 text_size = 14
-
-
-def cm_to_inch(value):
-    """Plotting the results in type of ... """
-    return value / 2.54
-
-
-def save_figure(fig, path: str, name: str):
-    """Function to save figure in specific formats"""
-    format_fig = ['jpg', 'svg']
-    path2fig = os.path.join(path, name)
-
-    for idx, form in enumerate(format_fig):
-        file_name = path2fig + '.' + form
-        fig.savefig(file_name, format=form)
 
 
 def results_afe0(signals: PipelineSignal, no_electrode: int, path="", time_cut=[]) -> None:

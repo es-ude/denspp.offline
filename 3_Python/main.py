@@ -7,9 +7,9 @@ from scipy.io import savemat
 
 from src_neuro.pipeline_v1 import Settings, Pipeline
 from package.metric import Metric
-from package.data_call import DataController
-from package.plotting.plot_pipeline import results_afe1, results_afe2, results_fec, results_paper
-from package.plotting.plot_pipeline import results_ivt, results_firing_rate, results_correlogram, results_cluster_amplitude
+from package.data.data_call import DataController
+from package.plotting.plot_pipeline import results_afe2
+from package.data.mnist_call import load_mnist
 
 
 class CustomThread(Thread):
