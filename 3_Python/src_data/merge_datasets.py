@@ -4,7 +4,8 @@ from datetime import date
 from scipy.io import savemat
 
 from package.data.data_call import DataController
-from src_neuro.pipeline_data import Settings, Pipeline
+from src_data.pipeline_data import Settings, Pipeline
+
 
 def get_frames_from_dataset(path2save: str, data_set: int, data_case: int):
     """Tool for loading datasets in order to generate one new dataset (Step 1)"""
@@ -74,6 +75,7 @@ def get_frames_from_dataset(path2save: str, data_set: int, data_case: int):
     # np.savez(newfile_name + '.npz', frames_in, frames_cluster, create_time)
     print('\nSaving file in: ' + newfile_name + '.mat/.npz')
     print("... This is the end")
+
 
 def merge_frames_from_dataset():
     """Tool for merging all spike frames to one new dataset (Step 2)"""

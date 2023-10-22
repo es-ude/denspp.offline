@@ -1,4 +1,4 @@
-from package.merge.merge_datasets import get_frames_from_dataset, merge_frames_from_dataset
+from src_data.merge_datasets import get_frames_from_dataset, merge_frames_from_dataset
 
 
 if __name__ == "__main__":

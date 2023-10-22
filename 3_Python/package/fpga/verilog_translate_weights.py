@@ -2,12 +2,9 @@ import numpy as np
 import torch
 
 
-def read_model_weights() -> None:
+def read_model_weights(path: str) -> None:
     """Reading DNN model weights for usage in FPGAs"""
-    path2model = "runs/20230531_164911_train_dnn_dae_v1/model_369"
-    # path2model = "runs/20230830_162608_train_dnn_ae_v1/model_474"
-
-    model = torch.load(path2model)
+    model = torch.load(path)
 
     print("Output of weights in AI model")
 

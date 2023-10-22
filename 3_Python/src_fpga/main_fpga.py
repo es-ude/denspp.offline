@@ -2,10 +2,10 @@ import os
 from scipy.io import loadmat
 
 from package.data.data_call import DataController
-from src_neuro.pipeline_data import Settings, Pipeline
+from src_data.pipeline_data import Settings, Pipeline
+import package.fpga.verilog_translate_frames as verilog_frame
 import package.fpga.verilog_translate_timeseries_1ch as verilog_time
 import package.fpga.veriloga_translate_timeseries_1ch as veriloga_time
-import package.fpga.verilog_translate_frames as verilog_frame
 from package.fpga.verilog_translate_weights import read_model_weights
 
 
@@ -79,11 +79,11 @@ def do_data_transfer_timeseries_cadence(path: str) -> None:
     )
 
 
-def do_read_frames() -> None:
+def do_read_frames(path: str) -> None:
     print("Do read frames from")
 
     # --- Reading data
-    data_frames = loadmat('data/2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat')
+    data_frames = loadmat('../data/2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat')
     frames_in = data_frames['frames_in']
     frames_cl = data_frames['frames_cluster']
 
@@ -92,20 +92,23 @@ def do_read_frames() -> None:
     verilog_frame.create_testbench(
         bitsize_frame=bitsize_frame, num_frames=frames_in.shape[0], size_frame=frames_in.shape[1],
         use_trigger=True, max_value_trigger=int(max(frames_cl)),
-        path2save='data', file_name='frame_tb')
+        path2save=path, file_name='frame_tb')
     verilog_frame.translate_data_memory(
         frame_in=frames_in, bitsize_frame=bitsize_frame, cluster=frames_cl,
-        path2save='data', file_name='frame_call'
+        path2save=path, file_name='frame_call'
     )
 
 
 def do_read_dnn_weights() -> None:
     """Routine for reading DNN weights from trained model"""
-    read_model_weights()
+    path2model = "runs/20230531_164911_train_dnn_dae_v1/model_369"
+    # path2model = "runs/20230830_162608_train_dnn_ae_v1/model_474"
+
+    read_model_weights(path2model)
 
 
 if __name__ == "__main__":
     # do_data_transfer_timeseries_vivado('data')
     # do_data_transfer_timeseries_cadence('data')
-
-    do_read_frames()
+    # do_read_frames('data')
+    do_read_dnn_weights()
