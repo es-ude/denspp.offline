@@ -1,5 +1,6 @@
 numpy
 matplotlib
+fxpmath
 
 # Libs for reading electrophysiology datasets
 neo

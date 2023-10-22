@@ -1,4 +1,5 @@
-import os, shutil
+import os
+import shutil
 import numpy as np
 
 from package.data.pipeline_signals import PipelineSignal
@@ -7,6 +8,7 @@ from package.pre_amp.preamp import PreAmp, SettingsAMP
 from package.adc.adc_basic import SettingsADC
 from package.adc.adc_sar import ADC_SAR as ADC0
 from package.dsp.sda import SpikeDetection, SettingsSDA
+
 
 # --- Configuring the src_neuro
 class Settings:
@@ -39,8 +41,10 @@ class Settings:
         dt_offset=[0.4e-3, 0.4e-3],
         t_dly=0.4e-3,
         window_size=7,
-        thr_gain=1
+        thr_gain=1,
+        thr_min_value=100
     )
+
 
 # --- Setting the src_neuro
 class Pipeline(PipelineSignal):
