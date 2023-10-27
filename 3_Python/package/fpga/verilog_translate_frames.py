@@ -5,7 +5,7 @@ import numpy as np
 from fxpmath import Fxp
 
 
-def create_testbench(path2save='data/fpga_sim', file_name='TB_NeuralSim',
+def create_testbench(path2save='data/fpga_sim', filename_tb='TB_NeuralSim',
                      bitsize_frame=12, size_frame=32, num_frames=6098,
                      max_value_trigger=4, use_trigger=False, fs=20e3) -> None:
     """Creating the testbench environment in Verilog for using in digital design software (frames)"""
@@ -19,7 +19,7 @@ def create_testbench(path2save='data/fpga_sim', file_name='TB_NeuralSim',
 
     tb_name = 'Testbench for running dataset simulator'
     print('... create testbench verilog file (*.v)')
-    with open(join(path2save, file_name + '.v'), 'w') as tb_handler:
+    with open(join(path2save, filename_tb + '.v'), 'w') as tb_handler:
         tb_handler.write(f'`timescale 1ns / 1ps\n')
         tb_handler.write(f'// -----------------------------------------------------------------\n')
         tb_handler.write(f'// Company: UDE-ES\n')
@@ -27,7 +27,7 @@ def create_testbench(path2save='data/fpga_sim', file_name='TB_NeuralSim',
         tb_handler.write(f'// Generate file on: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}\n')
         tb_handler.write(f'// Target Devices: Simulation file\n')
         tb_handler.write(f'// -----------------------------------------------------------------\n\n')
-        tb_handler.write(f'module {file_name}();\n')
+        tb_handler.write(f'module {filename_tb}();\n')
         tb_handler.write(f'\tlocalparam CLK_CYC = {size_period}\'d{period_time};\n')
         tb_handler.write(f'\treg clk, nrst, en_sim;\n')
         tb_handler.write(f'\treg [{size_cnt_runs - 1}:0] cnt_frame;\n')
@@ -90,7 +90,8 @@ def create_testbench(path2save='data/fpga_sim', file_name='TB_NeuralSim',
 
 def translate_data_memory(frame_in: np.ndarray, bitsize_frame: int,
                           cluster=np.zeros(shape=(1,), dtype=int),
-                          path2save='data\\fpga_sim', file_name='test_mem',
+                          path2save='data\\fpga_sim', filename_mod='test_mem',
+                          filename_raw='data_frame', filename_trg='data_cluster',
                           fs=20e3, output_signed=True) -> None:
     """Translating raw_data and trigger signals (opt.) from Python to Verilog module for testbenches"""
     trigger_avaible = True if cluster.size != 1 else False
@@ -98,10 +99,8 @@ def translate_data_memory(frame_in: np.ndarray, bitsize_frame: int,
 
     if path2save != '' and not isdir(path2save):
         mkdir(path2save)
-    mem_name = 'data_frame.mem'
-    trg_name = 'data_cluster.mem'
-    path2mem = join(path2save, mem_name)
-    path2trg = join(path2save, trg_name)
+    path2mem = join(path2save, filename_raw + '.mem')
+    path2trg = join(path2save, filename_trg + '.mem')
 
     num_frames = int(frame_in.shape[0])
     size_frame = int(frame_in.shape[1])
@@ -113,7 +112,7 @@ def translate_data_memory(frame_in: np.ndarray, bitsize_frame: int,
 
     # --- First file for testbench file
     print('... create verilog file for handling data (*.v)')
-    with open(join(path2save, file_name + '.v'), 'w') as v_handler:
+    with open(join(path2save, filename_mod + '.v'), 'w') as v_handler:
         # --- Header 1: Used tools and data
         v_handler.write(f'// ---------------------------------------------------\n')
         v_handler.write(f'// Raw data converting from DeNSSP to Verilog ({version})\n')
@@ -154,9 +153,9 @@ def translate_data_memory(frame_in: np.ndarray, bitsize_frame: int,
         v_handler.write(f'end\n')
         v_handler.write(f'assign DATA_END = (SEL == \'d{num_frames - 1});\n\n')
         v_handler.write(f'initial begin\n')
-        v_handler.write(f'\t$readmemh("{mem_name}", bram_data);\n')
+        v_handler.write(f'\t$readmemh("{filename_raw}.mem", bram_data);\n')
         if trigger_avaible:
-            v_handler.write(f'\t$readmemb("{trg_name}", bram_trgg);\n')
+            v_handler.write(f'\t$readmemb("{filename_trg}.mem", bram_trgg);\n')
         v_handler.write(f'end\n\n')
         v_handler.write(f'endmodule\n')
 

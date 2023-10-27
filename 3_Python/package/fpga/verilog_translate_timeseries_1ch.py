@@ -23,7 +23,7 @@ def create_template_testbench(path2save='data/fpga_sim', output_bitsize=12) -> N
     translate_data_memory(wfg, output_bitsize, trigger=trgg, path2save=path2save)
 
 
-def create_testbench(path2save='data/fpga_sim', file_name='TB_NeuralSim',
+def create_testbench(path2save='data/fpga_sim', filename_tb='TB_NeuralSim',
                                output_bitsize=12, use_trigger=False,
                                fs=20e3) -> None:
     """Creating the testbench environment in Verilog for using in digital design software"""
@@ -34,7 +34,7 @@ def create_testbench(path2save='data/fpga_sim', file_name='TB_NeuralSim',
 
     tb_name = 'Testbench for running dataset simulator'
     print('... create testbench verilog file (*.v)')
-    with open(join(path2save, file_name + '.v'), 'w') as tb_handler:
+    with open(join(path2save, filename_tb + '.v'), 'w') as tb_handler:
         tb_handler.write(f'`timescale 1ns / 1ps\n')
         tb_handler.write(f'// -----------------------------------------------------------------\n')
         tb_handler.write(f'// Company: UDE-ES\n')
@@ -42,7 +42,7 @@ def create_testbench(path2save='data/fpga_sim', file_name='TB_NeuralSim',
         tb_handler.write(f'// Generate file on: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}\n')
         tb_handler.write(f'// Target Devices: Simulation file\n')
         tb_handler.write(f'// -----------------------------------------------------------------\n\n')
-        tb_handler.write(f'module {file_name}();\n')
+        tb_handler.write(f'module {filename_tb}();\n')
         tb_handler.write(f'\tlocalparam CLK_CYC = {size_period}\'d{period_time};\n\n')
         tb_handler.write(f'\treg clk, nrst, en_sim;\n')
         tb_handler.write(f'\twire signed[{output_bitsize-1}:0] data_out0;\n')
@@ -77,7 +77,8 @@ def create_testbench(path2save='data/fpga_sim', file_name='TB_NeuralSim',
 
 
 def translate_data_memory(raw_data: np.ndarray, output_bitsize: int,
-                          path2save='data\\fpga_sim', file_name='test_mem',
+                          path2save='data\\fpga_sim', filename_mod='test_mem',
+                          filename_raw='data_raw', filename_trg='data_trg',
                           trigger=np.zeros(shape=(1,), dtype=int),
                           fs=20e3, output_signed=True) -> None:
     """Translating raw_data and trigger signals (opt.) from Python to Verilog module for testbenches"""
@@ -86,10 +87,8 @@ def translate_data_memory(raw_data: np.ndarray, output_bitsize: int,
 
     if path2save != '' and not isdir(path2save):
         mkdir(path2save)
-    mem_name = 'data_raw.mem'
-    trg_name = 'data_trg.mem'
-    path2mem = join(path2save, mem_name)
-    path2trg = join(path2save, trg_name)
+    path2mem = join(path2save, filename_raw + '.mem')
+    path2trg = join(path2save, filename_trg + '.mem')
 
     size_input = int(raw_data.size)
     size_cnt = int(np.ceil(np.log2(size_input)))
@@ -99,7 +98,7 @@ def translate_data_memory(raw_data: np.ndarray, output_bitsize: int,
 
     # --- First file for testbench file
     print('... create verilog file for handling data (*.v)')
-    with open(join(path2save, file_name + '.v'), 'w') as v_handler:
+    with open(join(path2save, filename_mod + '.v'), 'w') as v_handler:
         # --- Header 1: Used tools and data
         v_handler.write(f'// ---------------------------------------------------\n')
         v_handler.write(f'// Raw data converting from DeNSSP to Verilog ({version})\n')
@@ -139,9 +138,9 @@ def translate_data_memory(raw_data: np.ndarray, output_bitsize: int,
         v_handler.write(f'assign DATA_OUT = (EN && !DATA_END) ? bram_data[cnt_pos] : {output_bitsize}\'d0;\n\n')
         v_handler.write(f'assign DATA_END = (cnt_pos == \'d{size_input - 1});\n\n')
         v_handler.write(f'initial begin\n')
-        v_handler.write(f'\t$readmemh("{mem_name}", bram_data);\n')
+        v_handler.write(f'\t$readmemh("{filename_raw}.mem", bram_data);\n')
         if trigger_avaible:
-            v_handler.write(f'\t$readmemb("{trg_name}", bram_trgg);\n')
+            v_handler.write(f'\t$readmemb("{filename_trg}.mem", bram_trgg);\n')
         v_handler.write(f'end\n\n')
         v_handler.write(f'\treg first_start;\n')
         v_handler.write(f'always@(posedge CLK_ADC or negedge nRST) begin\n')
@@ -172,7 +171,7 @@ def translate_data_memory(raw_data: np.ndarray, output_bitsize: int,
 
 
 def translate_data_module(raw_data: np.ndarray, output_bitsize: int,
-                          path2save='data\\fpga_sim', file_name='test_mod',
+                          path2save='data\\fpga_sim', filename_mod='test_mod',
                           trigger=np.zeros(shape=(1,), dtype=int),
                           fs=20e3) -> None:
     """Translating raw_data and trigger signals (opt.) from Python to Verilog module for testbenches"""
@@ -188,7 +187,7 @@ def translate_data_module(raw_data: np.ndarray, output_bitsize: int,
     raw_data0 = np.array(raw_data, dtype=int)
     trgg0 = np.array(trigger, dtype=int)
     print('... create verilog file for handling data (*.v)')
-    with open(join(path2save, file_name + '.v'), 'w') as v_handler:
+    with open(join(path2save, filename_mod + '.v'), 'w') as v_handler:
         # --- Header 1: Used tools and data
         v_handler.write(f'// ---------------------------------------------------\n')
         v_handler.write(f'// Raw data converting from DeNSSP to Verilog ({version})\n')

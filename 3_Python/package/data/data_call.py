@@ -88,7 +88,7 @@ class DataController(DataLoader):
     def __do_take_elec(self) -> None:
         """Taking all electrodes from configuration/settings"""
         used_ch = self.settings.ch_sel
-        sel_channel = used_ch if not used_ch[0] == -1 else self.raw_data.electrode_id
+        sel_channel = used_ch if not used_ch[0] == -1 else self.raw_data.electrode_id[0]
 
         rawdata = list()
         spike_xpos = list()

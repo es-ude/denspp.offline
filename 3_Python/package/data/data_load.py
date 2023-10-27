@@ -3,8 +3,10 @@ from os.path import join, isdir
 from glob import glob
 import numpy as np
 from scipy.io import loadmat
+from mat73 import loadmat as loadmat_mat73
 
 
+# TODO: Device Selection is not implemented correct
 class DataHandler:
     """Class with data and meta information of the used neural dataset"""
     # --- Meta Information
@@ -66,22 +68,26 @@ class DataLoader:
 
     def execute_data_call(self, data_type: int, data_set: int, data_point: int):
         """Loading the dataset"""
-        if data_type == 0:
+        if data_type == 1:
             self.__load_Martinez2009(data_set, data_point)
-        elif data_type == 1:
-            self.__load_Pedreira2012(data_set, data_point)
         elif data_type == 2:
-            self.__load_Quiroga2020(data_set, data_point)
+            self.__load_Pedreira2012(data_set, data_point)
         elif data_type == 3:
-            self.__load_Seidl2012(data_set, data_point)
+            self.__load_Quiroga2020(data_set, data_point)
         elif data_type == 4:
-            self.__load_FZJ_MCS(data_set, data_point)
+            self.__load_Seidl2012(data_set, data_point)
         elif data_type == 5:
-            self.__load_KlaesLab(data_set, data_point)
+            self.__load_Marre2018(data_set, data_point)
         elif data_type == 6:
-            self.__load_NeuroPixel(data_set, data_point)
+            self.__load_Klaes_UtahArray(data_set, data_point)
+        elif data_type == 7:
+            self.__load_RGC_TDB(data_set, data_point)
+        elif data_type == 8:
+            self.__load_FZJ_MCS(data_set, data_point)
+        elif data_type == 9:
+            self.__load_Musall_NeuroPixel(data_set, data_point)
         else:
-            print("\nPlease select new input for data_type! -> [0, 5]")
+            print("\nPlease select new input for data_type! -> [1, 9]")
 
     def __load_Martinez2009(self, case: int, point: int) -> None:
         """Loading synthethic files from Quiroga simulation (2009)"""
@@ -151,7 +157,6 @@ class DataLoader:
         folder_name = "03_SimDaten_Quiroga2020"
         data_type = 'C_*.mat'
         self.__prepare_access_subfolder(folder_name, data_type, case, point)
-
         loaded_data = loadmat(self.path2file, mat_dtype=True)
 
         # --- Input and meta
@@ -193,7 +198,6 @@ class DataLoader:
         folder_name = "04_Freiburg_Seidl2014"
         data_type = '*.mat'
         self.__prepare_access(folder_name, data_type, point)
-
         loaded_data = loadmat(self.path2file)
 
         # Input and meta
@@ -216,41 +220,22 @@ class DataLoader:
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None
 
-    def __load_FZJ_MCS(self, case: int, point: int) -> None:
-        """Loading the recording files from MCS setup in FZ Juelich (case = experiment, point = file)"""
+    def __load_Marre2018(self, case: int, point: int) -> None:
         self.__path2data = self.path2data
-        folder_name = "05_FZJ_MCS"
-        data_type = '*_new.mat'
+        folder_name = "05_Zenodo_Marre2018"
+        data_type = '*.mat'
         self.__prepare_access(folder_name, data_type, point)
-
         loaded_data = loadmat(self.path2file)
+        # TODO: Funktionen implementieren
+        print("NOT IMPLEMENTED")
 
-        # Input and meta
-        self.raw_data.data_name = folder_name
-        self.raw_data.data_type = "MCS 60MEA"
-        self.raw_data.data_lsb = 1 / loaded_data['gain'][0]
-        self.raw_data.data_fs_orig = 1e3 * loaded_data['fs'][0]
-
-        self.raw_data.device_id = [1]
-        self.raw_data.electrode_id = [np.arange(0, loaded_data['raw'].shape[1])]
-        data_raw = self.raw_data.data_lsb * np.transpose(loaded_data['raw'])
-        for raw_ch in data_raw:
-            self.raw_data.data_raw.append(raw_ch)
-        self.raw_data.data_time = loaded_data['raw'].shape[0] / self.raw_data.data_fs_orig
-        # Groundtruth
-        self.raw_data.label_exist = False
-        self.raw_data.spike_offset = [0]
-        # Behaviour
-        self.raw_data.behaviour_exist = False
-        self.raw_data.behaviour = None
-
-    def __load_KlaesLab(self, case: int, nsp_device: int) -> None:
-        """Loading the *.ns6 and *.nev files from recordings with Utah array from Blackrock Neurotechnology (case = experiment, nsp_device)"""
+    def __load_Klaes_UtahArray(self, case: int, nsp_device: int) -> None:
+        """Loading the *.ns6 and *.nev files from recordings with Utah electrode array from Blackrock Neurotechnology
+        (case = experiment, nsp_device)"""
         self.__path2data = self.path2data
-        folder_name = "10_Klaes_Caltech"
+        folder_name = "06_Klaes_Caltech"
         data_type = '*_MERGED.mat'
         self.__prepare_access_subfolder(folder_name, data_type, case, nsp_device)
-
         loaded_data = loadmat(self.path2file, mat_dtype=True)
 
         # Input and meta
@@ -297,12 +282,81 @@ class DataLoader:
         self.raw_data.behaviour_exist = True
         self.raw_data.behaviour = loaded_data['behaviour']
 
-    # TODO: Auswertung von NeuroPixel probes einlesen
-    def __load_NeuroPixel(self, case: int, probe: int):
+    def __load_RGC_TDB(self, case: int, point: int) -> None:
+        """Loading the transient files from the Retinal Ganglian Cell Transient Database (RGC TDB)"""
+        self.__path2data = self.path2data
+        folder_name = "07_RGC_TDB"
+        data_type = '*.mat'
+        self.__prepare_access_subfolder(folder_name, data_type, 0, point)
+        loaded_data = loadmat_mat73(self.path2file)
+
+        # Pre-Processing: Remove empty entries and runs with only one spike
+        spike_xpos = loaded_data['sp_trains']['sp']
+        used_ch = list()
+        for idx, pos in enumerate(spike_xpos):
+            if not isinstance(pos[0], str):
+                if pos[0].ndim == 1:
+                    used_ch.append(idx)
+
+        # Input and meta --- This type are no electrode simultanously. It is more the experiment run
+        self.raw_data.data_name = folder_name
+        self.raw_data.data_type = "Isolated RGC"
+        self.raw_data.data_lsb = 1e-6
+        self.raw_data.data_fs_orig = int(loaded_data['sp_trains']['sample_rate'][0][0])
+
+        self.raw_data.device_id = [1]
+        self.raw_data.electrode_id = [np.arange(0, len(used_ch))]
+        data_raw = loaded_data['sp_trains']['data']
+        for pos_ch in used_ch:
+            data_in = self.raw_data.data_lsb * (data_raw[pos_ch][0]-data_raw[pos_ch][0][0])
+            self.raw_data.data_raw.append(data_in)
+        self.raw_data.data_time = data_raw[0][0].shape[0] / self.raw_data.data_fs_orig
+
+        # Groundtruth
+        self.raw_data.label_exist = True
+        self.raw_data.spike_offset = [0]
+        for pos_ch in used_ch:
+            self.raw_data.spike_xpos.append(spike_xpos[pos_ch][0].astype(int))
+            self.raw_data.cluster_id.append([loaded_data['sp_trains']['cell_unid'][pos_ch][0], loaded_data['sp_trains']['cell_type'][pos_ch][0]])
+        # Behaviour
+        self.raw_data.behaviour_exist = False
+        self.raw_data.behaviour = None
+
+    def __load_FZJ_MCS(self, case: int, point: int) -> None:
+        """Loading the recording files from MCS setup in FZ Juelich (case = experiment, point = file)"""
+        self.__path2data = self.path2data
+        folder_name = "08_RGC_FZJuelich"
+        data_type = '*_new.mat'
+        self.__prepare_access(folder_name, data_type, point)
+        loaded_data = loadmat(self.path2file)
+
+        # Input and meta
+        self.raw_data.data_name = folder_name
+        self.raw_data.data_type = "MCS 60MEA"
+        self.raw_data.data_lsb = 1 / loaded_data['gain'][0]
+        self.raw_data.data_fs_orig = 1e3 * loaded_data['fs'][0]
+
+        self.raw_data.device_id = [1]
+        self.raw_data.electrode_id = [np.arange(0, loaded_data['raw'].shape[1])]
+        data_raw = self.raw_data.data_lsb * np.transpose(loaded_data['raw'])
+        for raw_ch in data_raw:
+            self.raw_data.data_raw.append(raw_ch)
+        self.raw_data.data_time = loaded_data['raw'].shape[0] / self.raw_data.data_fs_orig
+        # Groundtruth
+        self.raw_data.label_exist = False
+        self.raw_data.spike_offset = [0]
+        # Behaviour
+        self.raw_data.behaviour_exist = False
+        self.raw_data.behaviour = None
+
+    def __load_Musall_NeuroPixel(self, case: int, point: int) -> None:
         """Loading the files from recordings with NeuroPixel probes"""
+        self.__path2data = self.path2data
+        folder_name = "07_RGC_TDB"
+        data_type = '*.mat'
+        self.__prepare_access_subfolder(folder_name, data_type, case, point)
+        loaded_data = loadmat_mat73(self.path2file)
+        # TODO: Auswertung von NeuroPixel probes einlesen
+
         print("NOT IMPLEMENTED")
 
-    # TODO: Einlesen noch implementieren
-    def __load_rgc_type(self, case: int, probe: int):
-        """Loading the files from the Retinal Ganglian Cell Database"""
-        print("NOT IMPLEMENTED")

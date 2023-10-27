@@ -18,13 +18,13 @@ from package.nsp import calc_spiketicks
 class Settings:
     """Settings class for handling the src_neuro setting"""
     SettingsDATA = SettingsDATA(
-        # path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
-        path='C:\GitHub\spaike_project\\2_Data',
-        data_set=0,
+        path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
+        # path='C:\GitHub\spaike_project\\2_Data',
+        data_set=7,
         data_case=0,
         data_point=0,
         t_range=[0],
-        ch_sel=[-1],
+        ch_sel=[0, 1, 2, 3],
         fs_resample=100e3
     )
 
@@ -58,7 +58,7 @@ class Settings:
     SettingsDSP_SPK = SettingsDSP(
         gain=1,
         fs=SettingsADC.fs_adc,
-        n_order=4, f_filt=[200, 6e3],
+        n_order=2, f_filt=[200, 8e3],
         type='iir', f_type='butter', b_type='bandpass',
         t_dly=0
     )
@@ -138,7 +138,6 @@ class Pipeline:
         # self.x_sda = self.sda.sda_neo(self.x_spk)
         self.signals.x_sda, _ = self.sda.sda_smooth(self.sda.sda_neo(self.signals.x_spk))
         self.signals.x_thr = self.sda.thres_blackrock(self.signals.x_sda)
-        # self.signals.x_thr = self.sda.thres_blackrock_runtime(self.signals.x_sda)
         (self.signals.frames_orig, self.signals.frames_align) = self.sda.frame_generation(
             self.signals.x_dly, self.signals.x_sda, self.signals.x_thr
         )

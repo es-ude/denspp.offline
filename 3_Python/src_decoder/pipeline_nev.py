@@ -4,7 +4,7 @@ import numpy as np
 from package.data.pipeline_signals import PipelineSignal
 from package.data.data_call import SettingsDATA
 from package.dsp.sda import SpikeDetection, SettingsSDA
-from package.dsp.dsp import FeatureExtraction, SettingsFeature
+from package.dsp.fex import FeatureExtraction, SettingsFeature
 from package.dsp.cluster import Clustering, SettingsCluster
 from package.nsp import calc_spiketicks, calc_interval_timing, calc_firing_rate
 
@@ -74,6 +74,3 @@ class Pipeline(PipelineSignal):
         self.features = self.fe.fe_pca(self.frames_align)
         (self.cluster_id, self.cluster_no, self.sse) = self.cl.cluster_kmeans(self.features)
         self.spike_ticks = calc_spiketicks(self.x_adc, self.x_pos, self.cluster_id)
-        # ----- Neural Post-Processing -----
-        self.its = calc_interval_timing(self.spike_ticks, self.fs_dig)
-        self.firing_rate = calc_firing_rate(self.spike_ticks, self.fs_dig)
