@@ -24,8 +24,8 @@ class Settings:
         vss=-0.6, vdd=0.6,
         fs_ana=SettingsDATA.fs_resample,
         gain=40,
-        n_filt=2, f_filt=[200, 8e3], f_type="band",
-        offset=0e-6, noise=True,
+        n_filt=2, f_filt=[200, 4.5e3], f_type="band",
+        offset=0e-6, noise=False,
         f_chop=10e3
     )
     SettingsADC = SettingsADC(
@@ -36,7 +36,7 @@ class Settings:
     )
     SettingsSDA = SettingsSDA(
         fs=SettingsADC.fs_adc, dx_sda=[1],
-        mode_align=0,
+        mode_align=2,
         t_frame_lgth=1.6e-3, t_frame_start=0.4e-3,
         dt_offset=[0.4e-3, 0.4e-3],
         t_dly=0.4e-3,
@@ -74,10 +74,20 @@ class Pipeline(PipelineSignal):
 
         return path2figure
 
+    def save_settings(self) -> dict:
+        mdict = {"fs_adc": self.fs_adc,
+                 "v_pre": self.preamp.settings.gain,
+                 "f_filt": self.preamp.settings.f_filt,
+                 "n_filt": self.preamp.settings.n_filt,
+                 "u_lsb": self.adc.settings.lsb,
+                 "n_bit": self.adc.settings.Nadc
+        }
+        return mdict
+
     def run_input(self, uin: np.ndarray) -> None:
         self.u_in = uin
         u_inn = np.array(self.preamp.settings.vcm)
         # --- Analogue Frontend
-        self.u_pre, self.u_chp = self.preamp.pre_amp_chopper(self.u_in, u_inn)
+        self.u_pre, _ = self.preamp.pre_amp_chopper(self.u_in, u_inn)
         # self.u_pre = self.preamp0.pre_amp(self.u_in, self.preamp0.settings.vcm)
         self.x_adc = self.adc.adc_ideal(self.u_pre)[0]

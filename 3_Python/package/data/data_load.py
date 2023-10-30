@@ -25,7 +25,7 @@ class DataHandler:
 
     # --- GroundTruth: Spike Sorting (per Channel)
     label_exist = False
-    spike_offset = list()
+    spike_offset_us = list()
     spike_ovrlap = list()
     spike_xpos = list()
     cluster_id = list()
@@ -111,7 +111,7 @@ class DataLoader:
         self.raw_data.data_time = loaded_data["data"][0].size / self.raw_data.data_fs_orig
         # Groundtruth
         self.raw_data.label_exist = True
-        self.raw_data.spike_offset = [100]
+        self.raw_data.spike_offset_us = [-100]
         self.raw_data.spike_ovrlap = list()
         self.raw_data.spike_xpos = [(loaded_data["spike_times"][0][0][0])]
         self.raw_data.cluster_id = [(loaded_data["spike_class"][0][0][0])]
@@ -145,7 +145,7 @@ class DataLoader:
         self.raw_data.data_time = loaded_data["data"].shape[1] / self.raw_data.data_fs_orig
         # Groundtruth
         self.raw_data.label_exist = True
-        self.raw_data.spike_offset = [100]
+        self.raw_data.spike_offset_us = [-100]
         self.raw_data.spike_ovrlap = list()
         self.raw_data.spike_xpos = [(ground_truth["spike_first_sample"][0][num_index - 1][0])]
         self.raw_data.cluster_id = [(ground_truth["spike_classes"][0][num_index - 1][0])]
@@ -173,7 +173,7 @@ class DataLoader:
         self.raw_data.data_time = loaded_data["data"].shape[1] / self.raw_data.data_fs_orig
         # --- Groundtruth
         self.raw_data.label_exist = True
-        self.raw_data.spike_offset = [500]
+        self.raw_data.spike_offset_us = [-500]
         # Process overlapping data
         ovrlap_input = np.array(loaded_data["OVERLAP_DATA"][0], dtype=int)
         ovrlap_event_pos = np.where(ovrlap_input != 0)[0]
@@ -217,7 +217,7 @@ class DataLoader:
 
         # Groundtruth
         self.raw_data.label_exist = False
-        self.raw_data.spike_offset = [0]
+        self.raw_data.spike_offset_us = [0]
         # Behaviour
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None
@@ -268,6 +268,7 @@ class DataLoader:
 
         # --- Groundtruth from BlackRock
         self.raw_data.label_exist = int(loaded_data['nev_detected']['Exits'][0, 0][0])
+        self.raw_data.spike_offset_us = [0]
         self.nev_waveform = list()
         for idx in self.raw_data.electrode_id:
             str_out = 'Elec' + str(1+idx)
@@ -276,7 +277,7 @@ class DataLoader:
             C = self.raw_data.data_lsb * loaded_data['nev_detected'][str_out][0, 0]['waveform'][0, 0]
             self.raw_data.spike_xpos.append(A)
             self.raw_data.cluster_id.append(B)
-            self.raw_data.spike_offset.append(100)
+            self.raw_data.spike_offset_us.append(100)
             self.nev_waveform.append(C)
 
         # --- Behaviour
@@ -294,9 +295,10 @@ class DataLoader:
 
         # Pre-Processing: Remove empty entries and runs with only one spike
         spike_xpos = loaded_data['sp_trains']['sp']
+        data_raw = loaded_data['sp_trains']['data']
         used_ch = list()
         for idx, pos in enumerate(spike_xpos):
-            if not isinstance(pos[0], str) and pos[0] is not None:
+            if not isinstance(pos[0], str) and pos[0] is not None and data_raw[idx][0] is not None:
                 if pos[0].ndim == 1:
                     used_ch.append(idx)
 
@@ -308,15 +310,13 @@ class DataLoader:
 
         self.raw_data.device_id = [0]
         self.raw_data.electrode_id = np.arange(0, len(used_ch)).tolist()
-        data_raw = loaded_data['sp_trains']['data']
         for pos_ch in used_ch:
-            data_in = self.raw_data.data_lsb * (data_raw[pos_ch][0]-data_raw[pos_ch][0][0])
-            self.raw_data.data_raw.append(data_in)
-        self.raw_data.data_time = data_raw[0][0].shape[0] / self.raw_data.data_fs_orig
+            self.raw_data.data_raw.append(self.raw_data.data_lsb * (data_raw[pos_ch][0]-data_raw[pos_ch][0][0]))
+        self.raw_data.data_time = data_raw[used_ch[0]][0].shape[0] / self.raw_data.data_fs_orig
 
         # Groundtruth
         self.raw_data.label_exist = True
-        self.raw_data.spike_offset = [0]
+        self.raw_data.spike_offset_us = [-500]
         for pos_ch in used_ch:
             self.raw_data.spike_xpos.append(spike_xpos[pos_ch][0].astype(int))
             num_spikes = len(spike_xpos[pos_ch][0])
@@ -348,7 +348,7 @@ class DataLoader:
         self.raw_data.data_time = loaded_data['raw'].shape[0] / self.raw_data.data_fs_orig
         # Groundtruth
         self.raw_data.label_exist = False
-        self.raw_data.spike_offset = [0]
+        self.raw_data.spike_offset_us = [0]
         # Behaviour
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None

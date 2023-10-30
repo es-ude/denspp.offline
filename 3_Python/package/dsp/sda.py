@@ -3,6 +3,7 @@ import numpy as np
 from scipy.signal import savgol_filter, find_peaks, iirfilter, lfilter
 from numpy import hamming, bartlett, kaiser
 
+
 @dataclasses.dataclass
 class SettingsSDA:
     fs: float
@@ -15,6 +16,7 @@ class SettingsSDA:
     window_size: int
     thr_gain: float
     thr_min_value: float
+
 
 class RecommendedSettingsSDA(SettingsSDA):
     def __init__(self):
@@ -29,6 +31,7 @@ class RecommendedSettingsSDA(SettingsSDA):
             thr_gain=1.0,
             thr_value=100.0
         )
+
 
 class SpikeDetection:
     def __init__(self, setting: SettingsSDA):
@@ -213,66 +216,51 @@ class SpikeDetection:
 
         return xpos_out
 
-    def frame_generation(self, xraw: np.ndarray, xsda: np.ndarray, xthr: np.ndarray) -> [list, list]:
-        """Frame generation of SDA output and threshold"""
-        xpos = self.frame_position(xsda, xthr)
-        xpos_aligned = 0 * xpos
-
-        # --- Generate frames
-        frames_out0 = list()
-        frames_out1 = list()
-
+    def __frame_extraction(self, xraw: np.ndarray, xpos: np.ndarray, xoffset=0) -> [list, list]:
+        """Extraction of the frames"""
         f0 = self.__offset_frame_neg
         f1 = f0 + int(self.frame_length_total / 2)
 
         frames_orig = []
         frames_align = []
-        for idx, pos_frame in enumerate(xpos):
+        for idx, pos in enumerate(xpos):
             # --- Original larger frame
-            x_neg0 = int(pos_frame - self.__offset_frame_neg)
-            x_pos0 = int(x_neg0 + self.frame_length_total)
-            frame0 = xraw[x_neg0:x_pos0]
-            # --- Aligned frame
-            xpos_aligned[idx] = int(x_neg0 + f0 + self.get_aligning_position(frame0[f0:f1])[0])
-            x_neg1 = xpos_aligned[idx]
-            x_pos1 = int(x_neg1 + self.frame_length)
-            frame1 = xraw[x_neg1:x_pos1]
-            # --- Add to output
-            frames_orig.append(frame0)
-            frames_align.append(frame1)
-
-        frames_orig = np.array(frames_orig, dtype=np.int16)
-        frames_align = np.array(frames_align, dtype=np.int16)
-        frames_out0 = [frames_orig, xpos, np.zeros(shape=(xpos.size,), dtype=int)]
-        frames_out1 = [frames_align, xpos_aligned, np.zeros(shape=(xpos_aligned.size, ), dtype=int)]
-
-        return frames_out0, frames_out1
-
-    def frame_generation_pos(self, xraw:np.ndarray, xpos: np.ndarray, xoffset: int) -> [np.ndarray, np.ndarray, np.ndarray]:
-        """Frame generation from already detected positions (in datasets with groundtruth)"""
-        # --- Generate frames
-        frames_orig = []
-        frames_align = []
-
-        f0 = self.__offset_frame_neg
-        f1 = f0 + int(self.frame_length_total / 2)
-
-        # --- Generate frames
-        for idx, pos_frame in enumerate(xpos):
-            # --- Original larger frame
-            x_neg0 = int(pos_frame - self.__offset_frame_neg - xoffset)
+            x_neg0 = int(pos - self.__offset_frame_neg + xoffset)
             x_pos0 = int(x_neg0 + self.frame_length_total)
             # Abort condition if values are out of range
             if x_neg0 < 0 or x_pos0 > xraw.size:
                 continue
             frame0 = xraw[x_neg0:x_pos0]
             # --- Aligned frame
-            x_neg1 = int(x_neg0 + f0 + self.get_aligning_position(frame0[f0:f1])[0])
-            x_pos1 = int(x_neg1 + self.frame_length)
+            x_neg1 = x_neg0 + f0 + self.get_aligning_position(frame0[f0:f1])[0]
+            x_pos1 = x_neg1 + self.frame_length
+            # Abort condition if values are out of range
+            if x_neg1 < 0 or x_pos1 > xraw.size:
+                continue
             frame1 = xraw[x_neg1:x_pos1]
             # --- Add to output
             frames_orig.append(frame0)
             frames_align.append(frame1)
+
+        return frames_orig, frames_align
+
+    def frame_generation(self, xraw: np.ndarray, xsda: np.ndarray, xthr: np.ndarray) -> [list, list]:
+        """Frame generation of SDA output and threshold"""
+        xpos = self.frame_position(xsda, xthr)
+        xpos_aligned = 0 * xpos
+
+        frames_orig, frames_align = self.__frame_extraction(xraw, xpos)
+
+        frames_orig = np.array(frames_orig, dtype=np.dtype('int16'))
+        frames_align = np.array(frames_align, dtype=np.dtype('int16'))
+        frames_out0 = [frames_orig, xpos, np.zeros(shape=(xpos.size,), dtype=np.dtype('uint32'))]
+        frames_out1 = [frames_align, xpos_aligned, np.zeros(shape=(xpos_aligned.size, ), dtype=int)]
+
+        return frames_out0, frames_out1
+
+    def frame_generation_pos(self, xraw:np.ndarray, xpos: np.ndarray, xoffset: int) -> [np.ndarray, np.ndarray, np.ndarray]:
+        """Frame generation from already detected positions (in datasets with groundtruth)"""
+        frames_orig, frames_align = self.__frame_extraction(xraw, xpos, xoffset=xoffset)
 
         frames_orig = np.array(frames_orig, dtype=np.dtype('int16'))
         frames_align = np.array(frames_align, dtype=np.dtype('int16'))

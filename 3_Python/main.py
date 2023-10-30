@@ -77,6 +77,7 @@ if __name__ == "__main__":
     datahand.do_resample()
     datahand.output_meta()
     dataIn = datahand.get_data()
+    del datahand
 
     # ----- Module declaration & Channel Calculation -----
     num_electrodes = dataIn.electrode_id[0]

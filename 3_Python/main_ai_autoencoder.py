@@ -73,6 +73,7 @@ if __name__ == "__main__":
     path = os.path.join(model_settings.data_path, model_settings.data_file_name)
     frames_in, frames_cluster, frames_mean = prepare_training(path=path, settings=model_settings)
     dataset = DatasetAE(frames_in, frames_cluster, frames_mean, mode_train=mode_train)
+    del frames_in, frames_cluster, frames_mean
 
     # --- Processing: Do Training
     trainhandler = training_pytorch(model_typ, model_name, model_settings)
@@ -85,6 +86,7 @@ if __name__ == "__main__":
 
     # --- Post-Processing: Getting data from validation set for plotting
     valid_dl = trainhandler.valid_loader[0]
+    del valid_dl
     data_in, data_out, cluster_out, data_mean = prepare_plotting(valid_dl)
 
     model_name_test = glob.glob(os.path.join(logsdir, 'model_fold*.pth'))
