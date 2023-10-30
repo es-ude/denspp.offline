@@ -10,7 +10,7 @@ def calc_spiketicks(frames_in: list, do_short=True, out_transient_size=0) -> np.
 
     # --- Generation of spike ticks
     if do_short:
-        ticks = np.zeros(shape=(frames_pos.size, 2), dtype=np.int)
+        ticks = np.zeros(shape=(frames_pos.size, 2), dtype=int)
         ticks[:, 0] = frames_pos
         ticks[:, 1] = cluster_id
     else:

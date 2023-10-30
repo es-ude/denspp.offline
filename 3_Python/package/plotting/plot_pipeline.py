@@ -126,7 +126,7 @@ def results_afe2(signals: PipelineSignal, no_electrode: int, path="", time_cut=[
         sel = [tick-12, tick+30]
         time0.append(time[tick_old:sel[0]])
         time0.append(time[sel[0]:sel[1]])
-        tran0.append(xadc[tick_old:sel[0]] if show_noise else np.zeros(shape=(len(xadc[tick_old:sel[0]]), ), dtype=np.int))
+        tran0.append(xadc[tick_old:sel[0]] if show_noise else np.zeros(shape=(len(xadc[tick_old:sel[0]]), ), dtype=int))
         tran0.append(xadc[sel[0]:sel[1]])
         colo0.append(color_none[0])
         colo0.append(color_cluster[ticks_id[idx]])

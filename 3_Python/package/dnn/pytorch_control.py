@@ -1,5 +1,6 @@
 import dataclasses
 import os.path
+from glob import glob
 import shutil
 import numpy as np
 from datetime import datetime
@@ -297,7 +298,14 @@ class training_pytorch:
             print(f'Save best model: {path2model}')
             shutil.copy(path2model, self.path2save)
 
-            if os.path.exists(path2model_init):
-                os.remove(path2model_init)
+        # --- Ending of all trainings phases
+        # Delete init model
+        if os.path.exists(path2model_init):
+            os.remove(path2model_init)
+
+        # Delete log folders
+        folder_logs = glob(os.path.join(self.path2save, 'logs*'))
+        for folder in folder_logs:
+            shutil.rmtree(folder, ignore_errors=True)
 
         return metrics, own_metric

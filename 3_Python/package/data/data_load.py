@@ -29,11 +29,13 @@ class DataHandler:
     spike_ovrlap = list()
     spike_xpos = list()
     cluster_id = list()
+    cluster_type = list()
     # --- Behaviour (in total of MEA)
     behaviour_exist = False
     behaviour = None
 
 
+# TODO: Einfügen der Device-Auswahl
 class DataLoader:
     """Class for loading and manipulating the used dataset"""
     def __init__(self) -> None:
@@ -206,8 +208,8 @@ class DataLoader:
         self.raw_data.data_lsb = 1 / loaded_data['GainPre'][0][0]
         self.raw_data.data_fs_orig = loaded_data['origFs'][0][0]
 
-        self.raw_data.device_id = [1]
-        self.raw_data.electrode_id = [np.arange(0, loaded_data['raw_data'].shape[0])]
+        self.raw_data.device_id = [0]
+        self.raw_data.electrode_id = np.arange(0, loaded_data['raw_data'].shape[0]).tolist()
         data_raw = self.raw_data.data_lsb * loaded_data['raw_data']
         for raw_ch in data_raw:
             self.raw_data.data_raw.append(raw_ch)
@@ -258,7 +260,7 @@ class DataLoader:
 
         # TODO: Daten vom Utah-Array einlesen (Zwei Devices)
         self.raw_data.device_id = [nsp_device]
-        self.raw_data.electrode_id = [np.arange(0, int(loaded_data['rawdata']['NoElectrodes'][0, 0][0]))]
+        self.raw_data.electrode_id = np.arange(0, int(loaded_data['rawdata']['NoElectrodes'][0, 0][0])).tolist()
         data_raw = np.transpose(self.raw_data.data_lsb * loaded_data['rawdata']['spike'][0, 0])
         for raw_ch in data_raw:
             self.raw_data.data_raw.append(raw_ch)
@@ -267,7 +269,7 @@ class DataLoader:
         # --- Groundtruth from BlackRock
         self.raw_data.label_exist = int(loaded_data['nev_detected']['Exits'][0, 0][0])
         self.nev_waveform = list()
-        for idx in self.raw_data.electrode_id[0]:
+        for idx in self.raw_data.electrode_id:
             str_out = 'Elec' + str(1+idx)
             A = loaded_data['nev_detected'][str_out][0, 0]['timestamps'][0, 0][0, :]
             B = loaded_data['nev_detected'][str_out][0, 0]['cluster'][0, 0][0, :]
@@ -294,7 +296,7 @@ class DataLoader:
         spike_xpos = loaded_data['sp_trains']['sp']
         used_ch = list()
         for idx, pos in enumerate(spike_xpos):
-            if not isinstance(pos[0], str):
+            if not isinstance(pos[0], str) and pos[0] is not None:
                 if pos[0].ndim == 1:
                     used_ch.append(idx)
 
@@ -304,8 +306,8 @@ class DataLoader:
         self.raw_data.data_lsb = 1e-6
         self.raw_data.data_fs_orig = int(loaded_data['sp_trains']['sample_rate'][0][0])
 
-        self.raw_data.device_id = [1]
-        self.raw_data.electrode_id = [np.arange(0, len(used_ch))]
+        self.raw_data.device_id = [0]
+        self.raw_data.electrode_id = np.arange(0, len(used_ch)).tolist()
         data_raw = loaded_data['sp_trains']['data']
         for pos_ch in used_ch:
             data_in = self.raw_data.data_lsb * (data_raw[pos_ch][0]-data_raw[pos_ch][0][0])
@@ -317,7 +319,9 @@ class DataLoader:
         self.raw_data.spike_offset = [0]
         for pos_ch in used_ch:
             self.raw_data.spike_xpos.append(spike_xpos[pos_ch][0].astype(int))
-            self.raw_data.cluster_id.append([loaded_data['sp_trains']['cell_unid'][pos_ch][0], loaded_data['sp_trains']['cell_type'][pos_ch][0]])
+            num_spikes = len(spike_xpos[pos_ch][0])
+            self.raw_data.cluster_id.append(np.zeros(shape=(num_spikes, ), dtype=int) + loaded_data['sp_trains']['cell_unid'][pos_ch][0])
+            self.raw_data.cluster_type.append(loaded_data['sp_trains']['cell_type'][pos_ch][0])
         # Behaviour
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None
@@ -336,8 +340,8 @@ class DataLoader:
         self.raw_data.data_lsb = 1 / loaded_data['gain'][0]
         self.raw_data.data_fs_orig = 1e3 * loaded_data['fs'][0]
 
-        self.raw_data.device_id = [1]
-        self.raw_data.electrode_id = [np.arange(0, loaded_data['raw'].shape[1])]
+        self.raw_data.device_id = [0]
+        self.raw_data.electrode_id = np.arange(0, loaded_data['raw'].shape[1]).tolist()
         data_raw = self.raw_data.data_lsb * np.transpose(loaded_data['raw'])
         for raw_ch in data_raw:
             self.raw_data.data_raw.append(raw_ch)

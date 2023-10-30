@@ -8,7 +8,7 @@ from scipy.io import savemat
 from src_neuro.pipeline_v1 import Settings, Pipeline
 from package.metric import Metric
 from package.data.data_call import DataController
-from package.plotting.plot_pipeline import results_afe1, results_afe2
+from package.plotting.plot_pipeline import results_afe1, results_afe2, results_fec
 
 
 class CustomThread(Thread):
@@ -51,7 +51,7 @@ def func_plots(data, channel: int, path2save="") -> None:
     results_afe1(data, channel, path=path2save)
     results_afe2(data, channel, path=path2save)
     #results_afe2(data, channel, path=path2save, time_cut=[10, 12])
-    # results_fec(data, channel, path=path2save)
+    results_fec(data, channel, path=path2save)
     # results_paper(data, channel, path=path2save)
 
     # --- NSP block

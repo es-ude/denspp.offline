@@ -15,7 +15,7 @@ class Settings:
     """Settings class for handling the src_neuro setting"""
     SettingsDATA = SettingsDATA(
         path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
-        data_set=1, data_case=0, data_point=0,
+        data_set=7, data_case=0, data_point=0,
         t_range=[0],
         ch_sel=[-1],
         fs_resample=50e3
@@ -24,8 +24,8 @@ class Settings:
         vss=-0.6, vdd=0.6,
         fs_ana=SettingsDATA.fs_resample,
         gain=40,
-        n_filt=1, f_filt=[100, 8e3], f_type="band",
-        offset=1000e-6, noise=True,
+        n_filt=2, f_filt=[200, 8e3], f_type="band",
+        offset=0e-6, noise=True,
         f_chop=10e3
     )
     SettingsADC = SettingsADC(
@@ -58,7 +58,7 @@ class Pipeline(PipelineSignal):
         self.path2logs = "logs"
         self.path2runs = "runs"
         self.path2figure = None
-        self.path2settings = "src_neuro/pipeline_data.py"
+        self.path2settings = "src_data/pipeline_data.py"
 
     def saving_results(self, name: str) -> str:
         if not os.path.exists(self.path2runs):

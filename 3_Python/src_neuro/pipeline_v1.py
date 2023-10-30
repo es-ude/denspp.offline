@@ -24,7 +24,7 @@ class Settings:
         data_case=0,
         data_point=0,
         t_range=[0],
-        ch_sel=[0, 1, 2, 3],
+        ch_sel=[-1],
         fs_resample=100e3
     )
 

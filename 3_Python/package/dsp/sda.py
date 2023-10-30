@@ -243,23 +243,28 @@ class SpikeDetection:
 
         frames_orig = np.array(frames_orig, dtype=np.int16)
         frames_align = np.array(frames_align, dtype=np.int16)
-        frames_out0 = [frames_orig, xpos, np.zeros(shape=(xpos.size,), dtype=np.int)]
-        frames_out1 = [frames_align, xpos_aligned, np.zeros(shape=(xpos_aligned.size, ), dtype=np.int)]
+        frames_out0 = [frames_orig, xpos, np.zeros(shape=(xpos.size,), dtype=int)]
+        frames_out1 = [frames_align, xpos_aligned, np.zeros(shape=(xpos_aligned.size, ), dtype=int)]
 
         return frames_out0, frames_out1
 
     def frame_generation_pos(self, xraw:np.ndarray, xpos: np.ndarray, xoffset: int) -> [np.ndarray, np.ndarray, np.ndarray]:
-        """Frame generation from already detected positions (from groundtruth)"""
+        """Frame generation from already detected positions (in datasets with groundtruth)"""
         # --- Generate frames
         frames_orig = []
         frames_align = []
 
         f0 = self.__offset_frame_neg
         f1 = f0 + int(self.frame_length_total / 2)
+
+        # --- Generate frames
         for idx, pos_frame in enumerate(xpos):
             # --- Original larger frame
             x_neg0 = int(pos_frame - self.__offset_frame_neg - xoffset)
             x_pos0 = int(x_neg0 + self.frame_length_total)
+            # Abort condition if values are out of range
+            if x_neg0 < 0 or x_pos0 > xraw.size:
+                continue
             frame0 = xraw[x_neg0:x_pos0]
             # --- Aligned frame
             x_neg1 = int(x_neg0 + f0 + self.get_aligning_position(frame0[f0:f1])[0])
@@ -269,9 +274,9 @@ class SpikeDetection:
             frames_orig.append(frame0)
             frames_align.append(frame1)
 
-        frames_orig = np.array(frames_orig, dtype=int)
-        frames_align = np.array(frames_align, dtype=int)
-        xpos_out = np.array(xpos, dtype=int)
+        frames_orig = np.array(frames_orig, dtype=np.dtype('int16'))
+        frames_align = np.array(frames_align, dtype=np.dtype('int16'))
+        xpos_out = np.array(xpos, dtype=np.dtype('uint32'))
 
         return frames_orig, frames_align, xpos_out
 

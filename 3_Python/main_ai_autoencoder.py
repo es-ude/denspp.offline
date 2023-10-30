@@ -21,7 +21,7 @@ class Config_PyTorch:
         self.is_embedded = False
         self.loss_fn = torch.nn.MSELoss()
         self.num_kfold = 2
-        self.num_epochs = 10
+        self.num_epochs = 5
         self.batch_size = 256
         # Settings of Datasets
         self.data_path = 'data'
@@ -90,6 +90,8 @@ if __name__ == "__main__":
     model_name_test = glob.glob(os.path.join(logsdir, 'model_fold*.pth'))
     model_test = torch.load(model_name_test[0])
 
+    # Doing the inference of best model
+    print(f"\nDoing the inference with validation data on best model")
     model_in = torch.from_numpy(data_in)
     feat_out, pred_out = model_test(model_in)
     feat0 = feat_out.detach().numpy()

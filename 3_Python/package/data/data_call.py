@@ -60,6 +60,8 @@ class DataController(DataLoader):
         self.no_channel = 0
         self.__fill_factor = 1
         self.__scaling = 1
+        self.num_spikes = 0
+        self.num_clusters = 0
 
         # --- Waveform from NEV-File
         self.nev_waveform = []
@@ -88,7 +90,7 @@ class DataController(DataLoader):
     def __do_take_elec(self) -> None:
         """Taking all electrodes from configuration/settings"""
         used_ch = self.settings.ch_sel
-        sel_channel = used_ch if not used_ch[0] == -1 else self.raw_data.electrode_id[0]
+        sel_channel = used_ch if not used_ch[0] == -1 else self.raw_data.electrode_id
 
         rawdata = list()
         spike_xpos = list()
@@ -100,8 +102,9 @@ class DataController(DataLoader):
             if self.raw_data.label_exist:
                 spike_xpos.append(self.raw_data.spike_xpos[idx])
                 cluster_id.append(self.raw_data.cluster_id[idx])
+                self.num_spikes += len(self.raw_data.spike_xpos[idx])
 
-        self.raw_data.electrode_id = [sel_channel]
+        self.raw_data.electrode_id = sel_channel
         self.raw_data.data_raw = rawdata
         self.raw_data.spike_xpos = spike_xpos
         self.raw_data.cluster_id = cluster_id
@@ -189,10 +192,6 @@ class DataController(DataLoader):
         print(f"... data includes {self.no_channel} number of electrode ({self.raw_data.data_type})")
 
         if self.raw_data.label_exist:
-            spike_no = 0
-            for xpos in self.raw_data.spike_xpos:
-                spike_no += xpos.size
-
             cluster_array = None
             for idx, clid in enumerate(self.raw_data.cluster_id):
                 if idx == 0:
@@ -200,7 +199,7 @@ class DataController(DataLoader):
                 else:
                     cluster_array = np.append(cluster_array, clid)
             cluster_no = np.unique(cluster_array)
-            print(f"... includes labels (noSpikes: {spike_no} - noCluster: {cluster_no.size})")
+            print(f"... includes labels (noSpikes: {self.num_spikes} - noCluster: {cluster_no.size})")
         else:
             print(f"... excludes labels")
 
