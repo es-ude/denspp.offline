@@ -16,17 +16,14 @@ if __name__ == "__main__":
     datahand = DataController(settings.SettingsDATA)
     datahand.do_call()
     dataIn = datahand.get_data()
+    elec_id = dataIn.electrode_id
+    del dataIn
     dataWave = datahand.nev_waveform
-
-    # --- Import mat-file for feature vector
-    # feat_in = loadmat("src_decoder/data.mat")
-    # feat_vec = feat_in['Data']
-    # plot_featvec(feat_vec)
 
     # --- Processing the data
     SpikeSorting = Pipeline(settings)
     path2save = SpikeSorting.saving_results(folder_name)
-    for elec in range(0, dataIn.noChannel):
+    for elec in elec_id:
         SpikeSorting.run(dataWave[elec])
         # --- Plotting
         results_fec(SpikeSorting, elec, path2save)
