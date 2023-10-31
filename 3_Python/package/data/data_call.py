@@ -50,7 +50,6 @@ class DataController(DataLoader):
         self.path2data = setting.path
         self.path2file = str()
         self.raw_data = DataHandler()
-        self.fs_input = 10.0
 
         # --- Meta-Information about datasets
         # Information of subfolders and files

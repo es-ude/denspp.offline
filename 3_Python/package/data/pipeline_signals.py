@@ -4,10 +4,8 @@ class PipelineSignal:
         self.u_pre = None           # Output of pre-amp
         self.u_spk = None           # Output of analogue filtering - spike acitivity
         self.u_lfp = None           # Output of analogue filtering - lfp
-        self.u_quant = None         # Quantization error of ADC
         self.x_adc = None           # ADC output
         self.x_spk = None           # Output of digital filtering - spike
-        self.x_dly = None           # Delay signal between SDA and frame generation
         self.x_lfp = None           # Output of digital filtering - lfp
         self.x_sda = None           # Output of Spike Detection Algorithm (SDA)
         self.x_thr = None           # Threshold value for SDA

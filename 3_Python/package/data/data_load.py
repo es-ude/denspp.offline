@@ -108,7 +108,7 @@ class DataLoader:
 
         self.raw_data.device_id = [0]
         self.raw_data.electrode_id = [int(loaded_data["chan"][0])-1]
-        self.raw_data.data_raw = [(self.raw_data.data_lsb * loaded_data["data"][0])]
+        self.raw_data.data_raw = [self.raw_data.data_lsb * np.float32(loaded_data["data"][0])]
         self.raw_data.data_time = loaded_data["data"][0].size / self.raw_data.data_fs_orig
         # Groundtruth
         self.raw_data.label_exist = True
@@ -142,7 +142,7 @@ class DataLoader:
 
         self.raw_data.device_id = [0]
         self.raw_data.electrode_id = [int(loaded_data["data"].shape[0])-1]
-        self.raw_data.data_raw = [(self.raw_data.data_lsb * loaded_data["data"][0])]
+        self.raw_data.data_raw = [self.raw_data.data_lsb * np.float32(loaded_data["data"][0])]
         self.raw_data.data_time = loaded_data["data"].shape[1] / self.raw_data.data_fs_orig
         # Groundtruth
         self.raw_data.label_exist = True
@@ -170,7 +170,7 @@ class DataLoader:
 
         self.raw_data.device_id = [0]
         self.raw_data.electrode_id = [int(loaded_data["chan"][0][0])-1]
-        self.raw_data.data_raw = [(self.raw_data.data_lsb * loaded_data["data"][0])]
+        self.raw_data.data_raw = [self.raw_data.data_lsb * np.float32(loaded_data["data"][0])]
         self.raw_data.data_time = loaded_data["data"].shape[1] / self.raw_data.data_fs_orig
         # --- Groundtruth
         self.raw_data.label_exist = True
@@ -214,7 +214,7 @@ class DataLoader:
         elec_orig = np.arange(0, loaded_data['raw_data'].shape[0]).tolist()
         elec_process = self.select_electrodes if not self.select_electrodes[0] == -1 else elec_orig
         for elec in elec_process:
-            self.raw_data.data_raw.append(self.raw_data.data_lsb * loaded_data['raw_data'][elec])
+            self.raw_data.data_raw.append(self.raw_data.data_lsb * np.float32(loaded_data['raw_data'][elec]))
 
         self.raw_data.electrode_id = elec_process
         self.raw_data.data_time = loaded_data['raw_data'].shape[1] / self.raw_data.data_fs_orig
@@ -329,7 +329,7 @@ class DataLoader:
         self.raw_data.device_id = [0]
         self.raw_data.electrode_id = np.arange(0, len(elec_process)).tolist()
         for idx, pos_ch in enumerate(elec_process):
-            self.raw_data.data_raw.append(self.raw_data.data_lsb * (data_raw[idx]-data_raw[idx][0]))
+            self.raw_data.data_raw.append(self.raw_data.data_lsb * np.float32(data_raw[idx]-data_raw[idx][0]))
         self.raw_data.data_time = self.raw_data.data_raw[0].shape[0] / self.raw_data.data_fs_orig
 
         # Groundtruth
@@ -362,7 +362,7 @@ class DataLoader:
         elec_orig = np.arange(0, loaded_data['raw'].shape[1]).tolist()
         elec_process = self.select_electrodes if not self.select_electrodes[0] == -1 else elec_orig
         for elec in elec_process:
-            self.raw_data.data_raw.append(self.raw_data.data_lsb * loaded_data['raw'][elec, ])
+            self.raw_data.data_raw.append(self.raw_data.data_lsb * np.float32(loaded_data['raw'][elec, ]))
         self.raw_data.data_time = loaded_data['raw'].shape[0] / self.raw_data.data_fs_orig
         self.raw_data.electrode_id = elec_process
         # Groundtruth

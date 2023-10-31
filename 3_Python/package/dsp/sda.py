@@ -258,7 +258,7 @@ class SpikeDetection:
 
         return frames_out0, frames_out1
 
-    def frame_generation_pos(self, xraw:np.ndarray, xpos: np.ndarray, xoffset: int) -> [np.ndarray, np.ndarray, np.ndarray]:
+    def frame_generation_pos(self, xraw: np.ndarray, xpos: np.ndarray, xoffset: int) -> [np.ndarray, np.ndarray, np.ndarray]:
         """Frame generation from already detected positions (in datasets with groundtruth)"""
         frames_orig, frames_align = self.__frame_extraction(xraw, xpos, xoffset=xoffset)
 

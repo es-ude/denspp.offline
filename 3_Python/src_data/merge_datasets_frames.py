@@ -1,9 +1,8 @@
-import os.path
+from os.path import join
 import numpy as np
 from datetime import date
 from scipy.io import savemat
 from tqdm import tqdm
-from gc import collect
 
 from package.data.data_call import DataController
 from src_data.pipeline_data import Settings, Pipeline
@@ -21,15 +20,14 @@ def get_frames_from_dataset_common(path2save: str, cluster_class_avai=False, pro
     # ------ Loading Data: Preparing Data
     print("... loading the datasets")
 
-    frames_in = np.empty(shape=(0, 0), dtype=np.dtype('int16'))
-    frames_cluster = np.empty(shape=(0, 0), dtype=np.dtype('uint16'))
-
     # --- Calling the data into RAM
     runPoint = process_points[0]
     endPoint = 0
     first_run = True
     file_name = ''
     settings = dict()
+    frames_in = np.empty(shape=(0, 0), dtype=np.dtype('int16'))
+    frames_cluster = np.empty(shape=(0, 0), dtype=np.dtype('uint16'))
     while first_run or runPoint < endPoint:
         afe_set.SettingsDATA.data_point = runPoint
         datahandler = DataController(afe_set.SettingsDATA)
@@ -41,32 +39,28 @@ def get_frames_from_dataset_common(path2save: str, cluster_class_avai=False, pro
 
         # --- Taking signals from handler
         for ch in tqdm(data.electrode_id, ncols=100, desc="Progress: "):
-            u_in = data.data_raw[ch]
             cl_in = data.cluster_id[ch]
-            spike_xpos_orig = data.spike_xpos[ch]
-            spike_offset = int(1e-6 * data.spike_offset_us[0] * fs_adc)
+            spike_xpos = np.floor(data.spike_xpos[ch] * fs_adc / fs_ana).astype("int")
+            spike_xoff = int(1e-6 * data.spike_offset_us[0] * fs_adc)
 
             # --- Pre-Processing with analogue src_neuro
             afe = Pipeline(afe_set)
-            afe.run_input(u_in)
-            spike_xpos_adc = np.floor(spike_xpos_orig * fs_adc / fs_ana).astype("int")
+            afe.run_input(data.data_raw[ch], spike_xpos, spike_xoff)
 
             # --- Processing (Frames and cluster)
-            frame_aligned = afe.sda.frame_generation_pos(afe.x_adc, spike_xpos_adc, spike_offset)[1]
             max_cluster_num = 0 if (first_run or cluster_class_avai) else 1 + np.argmax(np.unique(frames_cluster))
             if first_run:
                 settings = afe.save_settings()
-                frames_in = frame_aligned
+                frames_in = afe.signals.frames_align
                 frames_cluster = cl_in + max_cluster_num
             else:
-                frames_in = np.concatenate((frames_in, frame_aligned), axis=0)
+                frames_in = np.concatenate((frames_in, afe.signals.frames_align), axis=0)
                 frames_cluster = np.concatenate((frames_cluster, cl_in + max_cluster_num), axis=0)
             first_run = False
 
             # --- Release memory
-            del afe
-            del u_in, cl_in, frame_aligned
-            del spike_xpos_adc, spike_xpos_orig
+            del afe, spike_xpos, cl_in
+
         file_name = data.data_name
         del data
 
@@ -78,7 +72,7 @@ def get_frames_from_dataset_common(path2save: str, cluster_class_avai=False, pro
     matdata = {"frames_in": frames_in,
                "frames_cluster": frames_cluster,
                "create_time": create_time, "settings": settings}
-    newfile_name = os.path.join(path2save, (create_time + '_Dataset-' + file_name))
+    newfile_name = join(path2save, (create_time + '_Dataset-' + file_name))
     savemat(newfile_name + '.mat', matdata)
     print('\nSaving file in: ' + newfile_name + '.mat/.npz')
     print("... This is the end")
@@ -114,18 +108,16 @@ def get_frames_from_dataset_unique(path2save: str, cluster_class_avai=False, pro
 
         # --- Taking signals from handler
         for ch in tqdm(data.electrode_id, ncols=100, desc="Progress: "):
-            u_in = data.data_raw[ch]
             cl_in = data.cluster_id[ch]
-            spike_xpos_orig = data.spike_xpos[ch]
-            spike_offset = int(1e-6 * data.spike_offset_us[0] * fs_adc)
+            spike_xpos = np.floor(data.spike_xpos[ch] * fs_adc / fs_ana).astype("int")
+            spike_xoff = int(1e-6 * data.spike_offset_us[0] * fs_adc)
 
             # --- Pre-Processing with analogue src_neuro
             afe = Pipeline(afe_set)
-            afe.run_input(u_in)
-            spike_xpos_adc = np.floor(spike_xpos_orig * fs_adc / fs_ana).astype("int")
+            afe.run_input(data.data_raw[ch], spike_xpos, spike_xoff)
 
             # --- Processing (Frames and cluster)
-            frame_aligned = afe.sda.frame_generation_pos(afe.x_adc, spike_xpos_adc, spike_offset)[1]
+            frame_aligned = afe.signals.frames_align
             max_cluster_num = 0 if (first_run or cluster_class_avai) else 1 + np.argmax(np.unique(frames_cluster))
             if first_run:
                 settings = afe.save_settings()
@@ -137,9 +129,7 @@ def get_frames_from_dataset_unique(path2save: str, cluster_class_avai=False, pro
             first_run = False
 
             # --- delete large variables and release memory
-            del afe
-            del u_in, cl_in, frame_aligned
-            del spike_xpos_adc, spike_xpos_orig
+            del afe, cl_in, frame_aligned
 
         file_name = data.data_name
         del data
@@ -149,7 +139,7 @@ def get_frames_from_dataset_unique(path2save: str, cluster_class_avai=False, pro
         matdata = {"frames_in": frames_in,
                    "frames_cluster": frames_cluster,
                    "create_time": create_time, "settings": settings}
-        newfile_name = os.path.join(path2save, (create_time + f'_Dataset-' + file_name) + f'-Step{runPoint:03d}')
+        newfile_name = join(path2save, (create_time + f'_Dataset-' + file_name) + f'-Step{runPoint:03d}')
         savemat(newfile_name + '.mat', matdata)
         runPoint += 1
     print("... This is the end")
