@@ -39,6 +39,7 @@ class DataHandler:
 class DataLoader:
     """Class for loading and manipulating the used dataset"""
     def __init__(self) -> None:
+        self.select_electrodes = list()
         self.path2data = str()
         self.path2file = str()
         self.raw_data = DataHandler()
@@ -202,6 +203,7 @@ class DataLoader:
         self.__prepare_access(folder_name, data_type, point)
         loaded_data = loadmat(self.path2file)
 
+
         # Input and meta
         self.raw_data.data_name = folder_name
         self.raw_data.data_type = "Penetrating"
@@ -209,10 +211,12 @@ class DataLoader:
         self.raw_data.data_fs_orig = loaded_data['origFs'][0][0]
 
         self.raw_data.device_id = [0]
-        self.raw_data.electrode_id = np.arange(0, loaded_data['raw_data'].shape[0]).tolist()
-        data_raw = self.raw_data.data_lsb * loaded_data['raw_data']
-        for raw_ch in data_raw:
-            self.raw_data.data_raw.append(raw_ch)
+        elec_orig = np.arange(0, loaded_data['raw_data'].shape[0]).tolist()
+        elec_process = self.select_electrodes if not self.select_electrodes[0] == -1 else elec_orig
+        for elec in elec_process:
+            self.raw_data.data_raw.append(self.raw_data.data_lsb * loaded_data['raw_data'][elec])
+
+        self.raw_data.electrode_id = elec_process
         self.raw_data.data_time = loaded_data['raw_data'].shape[1] / self.raw_data.data_fs_orig
 
         # Groundtruth
@@ -232,8 +236,8 @@ class DataLoader:
         print("NOT IMPLEMENTED")
 
     def __load_Klaes_UtahArray(self, case: int, nsp_device: int) -> None:
-        """Loading the *.ns6 and *.nev files from recordings with Utah electrode array from Blackrock Neurotechnology
-        (case = experiment, nsp_device)"""
+        """Loading the merged data file (from *.ns6 and *.nev files) from recordings with Utah electrode array
+        from Blackrock Neurotechnology (case = experiment, nsp_device)"""
         self.__path2data = self.path2data
         folder_name = "06_Klaes_Caltech"
         data_type = '*_MERGED.mat'
@@ -258,27 +262,25 @@ class DataLoader:
         self.raw_data.data_lsb = gain_base * float(gain_str[0])
         self.raw_data.data_fs_orig = int(loaded_data['rawdata']['SamplingRate'][0, 0][0])
 
-        # TODO: Daten vom Utah-Array einlesen (Zwei Devices)
         self.raw_data.device_id = [nsp_device]
-        self.raw_data.electrode_id = np.arange(0, int(loaded_data['rawdata']['NoElectrodes'][0, 0][0])).tolist()
-        data_raw = np.transpose(self.raw_data.data_lsb * loaded_data['rawdata']['spike'][0, 0])
-        for raw_ch in data_raw:
-            self.raw_data.data_raw.append(raw_ch)
+        elec_orig = np.arange(0, int(loaded_data['rawdata']['NoElectrodes'][0, 0][0])).tolist()
+        elec_process = self.select_electrodes if not self.select_electrodes[0] == -1 else elec_orig
+        # TODO: Daten vom Utah-Array einlesen (Zwei Devices)
+        data_raw = np.transpose(loaded_data['rawdata']['spike'][0, 0])
+        for elec in elec_process:
+            self.raw_data.data_raw.append(self.raw_data.data_lsb * np.float32(data_raw[elec]))
+        self.raw_data.electrode_id = elec_process
         self.raw_data.data_time = data_raw.shape[0]
 
         # --- Groundtruth from BlackRock
         self.raw_data.label_exist = int(loaded_data['nev_detected']['Exits'][0, 0][0])
         self.raw_data.spike_offset_us = [0]
         self.nev_waveform = list()
-        for idx in self.raw_data.electrode_id:
-            str_out = 'Elec' + str(1+idx)
-            A = loaded_data['nev_detected'][str_out][0, 0]['timestamps'][0, 0][0, :]
-            B = loaded_data['nev_detected'][str_out][0, 0]['cluster'][0, 0][0, :]
-            C = self.raw_data.data_lsb * loaded_data['nev_detected'][str_out][0, 0]['waveform'][0, 0]
-            self.raw_data.spike_xpos.append(A)
-            self.raw_data.cluster_id.append(B)
+        for elec in elec_process:
             self.raw_data.spike_offset_us.append(100)
-            self.nev_waveform.append(C)
+            self.raw_data.spike_xpos.append(loaded_data['nev_detected'][f'Elec{1+elec}'][0, 0]['timestamps'][0, 0][0, :])
+            self.raw_data.cluster_id.append(loaded_data['nev_detected'][f'Elec{1+elec}'][0, 0]['cluster'][0, 0][0, :])
+            self.nev_waveform.append(self.raw_data.data_lsb * loaded_data['nev_detected'][f'Elec{1+elec}'][0, 0]['waveform'][0, 0])
 
         # --- Behaviour
         # TODO: Daten vom Utah-Array einlesen (Verhaltensanalyse)
@@ -294,13 +296,29 @@ class DataLoader:
         loaded_data = loadmat_mat73(self.path2file)
 
         # Pre-Processing: Remove empty entries and runs with only one spike
-        spike_xpos = loaded_data['sp_trains']['sp']
-        data_raw = loaded_data['sp_trains']['data']
+        check_xpos = loaded_data['sp_trains']['sp']
+        check_data = loaded_data['sp_trains']['data']
         used_ch = list()
-        for idx, pos in enumerate(spike_xpos):
-            if not isinstance(pos[0], str) and pos[0] is not None and data_raw[idx][0] is not None:
+        for idx, pos in enumerate(check_xpos):
+            if not isinstance(pos[0], str) and pos[0] is not None and check_data[idx][0] is not None:
                 if pos[0].ndim == 1:
                     used_ch.append(idx)
+        del check_data, check_xpos
+
+        # Pre-Processing: Getting only the desired channels
+        elec_orig = used_ch
+        if not self.select_electrodes[0] == -1:
+            elec_process = list()
+            for elec in self.select_electrodes:
+                elec_process.append(elec_orig[elec])
+        else:
+            elec_process = elec_orig
+
+        spike_xpos = list()
+        data_raw = list()
+        for elec in elec_process:
+            spike_xpos.append(loaded_data['sp_trains']['sp'][elec][0].astype('int'))
+            data_raw.append(loaded_data['sp_trains']['data'][elec][0])
 
         # Input and meta --- This type are no electrode simultanously. It is more the experiment run
         self.raw_data.data_name = folder_name
@@ -309,17 +327,17 @@ class DataLoader:
         self.raw_data.data_fs_orig = int(loaded_data['sp_trains']['sample_rate'][0][0])
 
         self.raw_data.device_id = [0]
-        self.raw_data.electrode_id = np.arange(0, len(used_ch)).tolist()
-        for pos_ch in used_ch:
-            self.raw_data.data_raw.append(self.raw_data.data_lsb * (data_raw[pos_ch][0]-data_raw[pos_ch][0][0]))
-        self.raw_data.data_time = data_raw[used_ch[0]][0].shape[0] / self.raw_data.data_fs_orig
+        self.raw_data.electrode_id = np.arange(0, len(elec_process)).tolist()
+        for idx, pos_ch in enumerate(elec_process):
+            self.raw_data.data_raw.append(self.raw_data.data_lsb * (data_raw[idx]-data_raw[idx][0]))
+        self.raw_data.data_time = self.raw_data.data_raw[0].shape[0] / self.raw_data.data_fs_orig
 
         # Groundtruth
         self.raw_data.label_exist = True
         self.raw_data.spike_offset_us = [-500]
-        for pos_ch in used_ch:
-            self.raw_data.spike_xpos.append(spike_xpos[pos_ch][0].astype(int))
-            num_spikes = len(spike_xpos[pos_ch][0])
+        for idx, pos_ch in enumerate(elec_process):
+            self.raw_data.spike_xpos.append(spike_xpos[idx])
+            num_spikes = len(spike_xpos[idx])
             self.raw_data.cluster_id.append(np.zeros(shape=(num_spikes, ), dtype=int) + loaded_data['sp_trains']['cell_unid'][pos_ch][0])
             self.raw_data.cluster_type.append(loaded_data['sp_trains']['cell_type'][pos_ch][0])
         # Behaviour
@@ -341,11 +359,12 @@ class DataLoader:
         self.raw_data.data_fs_orig = 1e3 * loaded_data['fs'][0]
 
         self.raw_data.device_id = [0]
-        self.raw_data.electrode_id = np.arange(0, loaded_data['raw'].shape[1]).tolist()
-        data_raw = self.raw_data.data_lsb * np.transpose(loaded_data['raw'])
-        for raw_ch in data_raw:
-            self.raw_data.data_raw.append(raw_ch)
+        elec_orig = np.arange(0, loaded_data['raw'].shape[1]).tolist()
+        elec_process = self.select_electrodes if not self.select_electrodes[0] == -1 else elec_orig
+        for elec in elec_process:
+            self.raw_data.data_raw.append(self.raw_data.data_lsb * loaded_data['raw'][elec, ])
         self.raw_data.data_time = loaded_data['raw'].shape[0] / self.raw_data.data_fs_orig
+        self.raw_data.electrode_id = elec_process
         # Groundtruth
         self.raw_data.label_exist = False
         self.raw_data.spike_offset_us = [0]

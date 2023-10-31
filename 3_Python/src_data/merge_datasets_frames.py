@@ -138,7 +138,7 @@ def get_frames_from_dataset_unique(path2save: str, cluster_class_avai=False, pro
 
             # --- delete large variables and release memory
             del afe
-            del u_in, cl_in, spike_xpos_orig, frame_aligned
+            del u_in, cl_in, frame_aligned
             del spike_xpos_adc, spike_xpos_orig
 
         file_name = data.data_name

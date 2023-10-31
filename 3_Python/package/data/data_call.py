@@ -36,7 +36,7 @@ class RecommendedSettingsDATA(SettingsDATA):
         super().__init__(
             path="D:\Data",
             data_set=1, data_case=0, data_point=0,
-            t_range=0, ch_sel=-1,
+            t_range=[0], ch_sel=[-1],
             fs_resample=100e3
         )
 
@@ -56,7 +56,8 @@ class DataController(DataLoader):
         # Information of subfolders and files
         self.no_subfolder = 0
         self.no_files = 0
-        # if used_channel = -1 -> All data
+        # if self.select_electrode = -1 -> All data
+        self.select_electrodes = setting.ch_sel
         self.no_channel = 0
         self.__fill_factor = 1
         self.__scaling = 1
@@ -84,30 +85,7 @@ class DataController(DataLoader):
 
         self.raw_data.data_fs_used = self.raw_data.data_fs_orig
         self.no_channel = len(self.raw_data.electrode_id)
-        self.__do_take_elec()
         print("... using data point:", self.path2file)
-
-    def __do_take_elec(self) -> None:
-        """Taking all electrodes from configuration/settings"""
-        used_ch = self.settings.ch_sel
-        sel_channel = used_ch if not used_ch[0] == -1 else self.raw_data.electrode_id
-
-        rawdata = list()
-        spike_xpos = list()
-        cluster_id = list()
-
-        for idx in sel_channel:
-            rawdata.append(self.raw_data.data_raw[idx])
-
-            if self.raw_data.label_exist:
-                spike_xpos.append(self.raw_data.spike_xpos[idx])
-                cluster_id.append(self.raw_data.cluster_id[idx])
-                self.num_spikes += len(self.raw_data.spike_xpos[idx])
-
-        self.raw_data.electrode_id = sel_channel
-        self.raw_data.data_raw = rawdata
-        self.raw_data.spike_xpos = spike_xpos
-        self.raw_data.cluster_id = cluster_id
 
     def do_cut(self) -> None:
         """Cutting all transient electrode signals in the given range"""

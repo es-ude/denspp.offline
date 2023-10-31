@@ -17,7 +17,7 @@ class Settings:
         path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
         data_set=7, data_case=0, data_point=0,
         t_range=[0],
-        ch_sel=[-1],
+        ch_sel=[0,1,2,3],
         fs_resample=50e3
     )
     SettingsAMP = SettingsAMP(

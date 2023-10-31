@@ -8,7 +8,7 @@ if __name__ == "__main__":
     get_frames_from_dataset_unique(
         path2save=path2file,
         cluster_class_avai=True,
-        process_points=[0, 10]
+        process_points=[2, 10]
     )
     # --- Merging the frames to new cluster device
     merge_frames_from_dataset()
