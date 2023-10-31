@@ -4,41 +4,31 @@ from torch.utils.data import Dataset, DataLoader
 
 
 class DatasetClass(Dataset):
-    """Dataset Preparator for training Classification Neural Network"""
-    def __init__(self, frames: np.ndarray, feat: np.ndarray, index: np.ndarray):
-        self.frames_orig = np.array(frames, dtype=np.float32)
-        self.frames_feat = np.array(feat, dtype=np.float32)
-        self.frames_clus = index
+    """Dataset Preparator for training Spike Detection Classification with Neural Network"""
+    def __init__(self, frame: np.ndarray, sda: np.ndarray, slice: int):
+        self.frame_slice = np.array(frame, dtype=float)
+        self.sda_class = np.array(sda, dtype=bool)
+        self.sda_slice = np.array(slice, dtype=int)
 
     def __len__(self):
-        return self.frames_clus.shape[0]
+        return self.frame_slice.shape[0]
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
+        decision = False if np.sum(self.sda_class[idx]) < self.sda_slice else True
 
-        frame_orig = self.frames_orig[idx, :]
-        frame_feat = self.frames_feat[idx, :]
-        frame_clus = self.frames_clus[idx]
-
-        return {'in': frame_orig, 'feat': frame_feat, 'cluster': frame_clus}
+        return {'in': self.frame_slice[idx], 'sda': self.sda_class[idx], 'out': decision}
 
 
-def prepare_plotting(data_plot: DataLoader) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def prepare_plotting(data_plot: DataLoader) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Getting data from DataLoader for Plotting Results"""
     din = []
+    dsda = []
     dout = []
-    did = []
-    dmean = []
-    for i, vdata in enumerate(data_plot):
-        din0 = vdata['in']
-        dout0 = vdata['out']
-        dmean0 = vdata['mean']
-        did0 = vdata['cluster']
+    for idx, vdata in enumerate(data_plot):
+        din = vdata['in'] if idx == 0 else np.append(din, vdata['in'], axis=0)
+        dsda = vdata['sda'] if idx == 0 else np.append(dsda, vdata['sda'], axis=0)
+        dout = vdata['out'] if idx == 0 else np.append(dout, vdata['out'], axis=0)
 
-        din = din0 if i == 0 else np.append(din, din0, axis=0)
-        dout = dout0 if i == 0 else np.append(dout, dout0, axis=0)
-        dmean = dmean0 if i == 0 else np.append(dmean, dmean0, axis=0)
-        did = did0 if i == 0 else np.append(did, did0)
-
-    return din, dout, did, dmean
+    return din, dsda, dout

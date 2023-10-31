@@ -54,15 +54,10 @@ def prepare_plotting(data_plot: DataLoader) -> tuple[np.ndarray, np.ndarray, np.
     dout = []
     did = []
     dmean = []
-    for i, vdata in enumerate(data_plot):
-        din0 = vdata['in']
-        dout0 = vdata['out']
-        dmean0 = vdata['mean']
-        did0 = vdata['cluster']
-
-        din = din0 if i == 0 else np.append(din, din0, axis=0)
-        dout = dout0 if i == 0 else np.append(dout, dout0, axis=0)
-        dmean = dmean0 if i == 0 else np.append(dmean, dmean0, axis=0)
-        did = did0 if i == 0 else np.append(did, did0)
+    for idx, vdata in enumerate(data_plot):
+        din = vdata['in'] if idx == 0 else np.append(din, vdata['in'], axis=0)
+        dout = vdata['out'] if idx == 0 else np.append(dout, vdata['out'], axis=0)
+        dmean = vdata['mean'] if idx == 0 else np.append(dmean, vdata['mean'], axis=0)
+        did = vdata['cluster'] if idx == 0 else np.append(did, vdata['cluster'])
 
     return din, dout, did, dmean

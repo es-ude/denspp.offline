@@ -16,7 +16,7 @@ import package.dnn.models.autoencoder as ai_module
 class Config_PyTorch:
     def __init__(self):
         # Settings of Models/Training
-        self.model = ai_module.dnn_ae_v2
+        self.model = ai_module.cnn_ae_v2
         # self.model = ai_module_embedded.dnn_dae_v2
         self.is_embedded = False
         self.loss_fn = torch.nn.MSELoss()

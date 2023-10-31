@@ -1,4 +1,4 @@
-from src_data.merge_datasets import get_frames_from_dataset_unique, merge_frames_from_dataset
+from src_data.merge_datasets_frames import get_frames_from_dataset_unique, merge_frames_from_dataset
 
 if __name__ == "__main__":
     print("\nPreparing datasets for AI Training in "

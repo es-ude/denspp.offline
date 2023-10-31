@@ -1,9 +1,8 @@
-import torch
-import torch.nn as nn
+from torch import nn, Tensor, unsqueeze
 
 
 class dnn_ae_v1(nn.Module):
-    """Class for using an autoencoder with Dense-Layer"""
+    """Class of an autoencoder with Dense-Layer for feature extraction"""
     def __init__(self):
         super().__init__()
         self.out_modelname = 'dnn_ae_v1'
@@ -37,13 +36,13 @@ class dnn_ae_v1(nn.Module):
             nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0], bias=do_train_bias)
         )
 
-    def forward(self, x: torch.Tensor) -> [torch.Tensor, torch.Tensor]:
+    def forward(self, x: Tensor) -> [Tensor, Tensor]:
         encoded = self.encoder(x)
         return encoded, self.decoder(encoded)
 
 
 class dnn_ae_v2(nn.Module):
-    """Class for using an autoencoder with Dense-Layer"""
+    """Class of an autoencoder with Dense-Layer for feature extraction"""
     def __init__(self):
         super().__init__()
         self.out_modelname = 'dnn_ae_v2'
@@ -78,13 +77,13 @@ class dnn_ae_v2(nn.Module):
                       bias=do_train_bias)
         )
 
-    def forward(self, x: torch.Tensor) -> [torch.Tensor, torch.Tensor]:
+    def forward(self, x: Tensor) -> [Tensor, Tensor]:
         encoded = self.encoder(x)
         return encoded, self.decoder(encoded)
 
 
 class cnn_ae_v1(nn.Module):
-    """Class for using a convolutional autoencoder"""
+    """Class of a convolutional autoencoder for feature extraction"""
     def __init__(self):
         super().__init__()
         self.out_modelname = 'cnn_ae_v1'
@@ -127,15 +126,15 @@ class cnn_ae_v1(nn.Module):
                                padding=kernel_padding[0], output_padding=kernel_out[0])
         )
 
-    def forward(self, x: torch.Tensor) -> [torch.Tensor, torch.Tensor]:
-        x0 = torch.unsqueeze(x, dim=1)
+    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+        x0 = unsqueeze(x, dim=1)
         encoded = self.encoder(x0)
         decoded = self.decoder(encoded)
         return self.flatten(encoded), self.flatten(decoded)
 
 
 class cnn_ae_v2(nn.Module):
-    """Class for using a convolutional autoencoder"""
+    """Class of a convolutional autoencoder for feature extraction"""
     def __init__(self):
         super().__init__()
         self.out_modelname = 'cnn_ae_v2'
@@ -154,7 +153,6 @@ class cnn_ae_v2(nn.Module):
         self.encoder = nn.Sequential(
             nn.Conv1d(kernel_layer[0], kernel_layer[1], kernel_size[0],
                       stride=kernel_stride[0], padding=kernel_padding[0]),
-
             nn.BatchNorm1d(kernel_layer[1]),
             nn.Tanh(),
             nn.Conv1d(kernel_layer[1], kernel_layer[2], kernel_size[1],
@@ -183,79 +181,10 @@ class cnn_ae_v2(nn.Module):
                                padding=kernel_padding[0], output_padding=kernel_out[0])
         )
 
-    def forward(self, x: torch.Tensor) -> [torch.Tensor, torch.Tensor]:
-        x0 = torch.unsqueeze(x, dim=1)
+    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+        x0 = unsqueeze(x, dim=1)
         encoded0 = self.encoder(x0)
         encoded, indices = self.pool(encoded0)
         decoded0 = self.un_pool(encoded, indices)
         decoded = self.decoder(decoded0)
         return self.flatten(encoded), self.flatten(decoded)
-
-
-class cnn_ae_v3(nn.Module):
-    """Class for using a convolutional autoencoder"""
-    def __init__(self):
-        super().__init__()
-        self.out_modelname = 'cnn_ae_v3'
-        self.out_modeltyp = 'Autoencoder'
-        self.model_embedded = False
-        self.model_shape = (1, 32)
-        kernel_layer = [1, 22, 8, 2]
-        kernel_size = [4, 3, 3]
-        kernel_stride = [2, 2, 2]
-        kernel_padding = [0, 0, 0]
-        kernel_out = [0, 0, 0]
-        pool_size = [6, 3]
-        do_train_bias = True
-
-        # Encoder setup
-        self.encoder = nn.Sequential(
-            nn.Conv1d(kernel_layer[0], kernel_layer[1], kernel_size[0],
-                      stride=kernel_stride[0], padding=kernel_padding[0]),
-
-            nn.BatchNorm1d(kernel_layer[1]),
-            nn.Tanh(),
-            nn.Conv1d(kernel_layer[1], kernel_layer[2], kernel_size[1],
-                      stride=kernel_stride[1], padding=kernel_padding[1]),
-            nn.BatchNorm1d(kernel_layer[2]),
-            nn.Tanh(),
-            nn.Conv1d(kernel_layer[2], kernel_layer[3], kernel_size[2],
-                      stride=kernel_stride[2], padding=kernel_padding[2]),
-            nn.BatchNorm1d(kernel_layer[3]),
-            nn.Tanh()
-        )
-        self.flatten = nn.Flatten(start_dim=1)
-        self.unflatten = nn.Unflatten(2, 6)
-        self.pool = nn.Sequential(
-            nn.Linear(in_features=pool_size[0], out_features=pool_size[1],
-                      bias=do_train_bias),
-            nn.BatchNorm1d(num_features=pool_size[1])
-        )
-        self.un_pool = nn.Sequential(
-            nn.Tanh(),
-            nn.Linear(in_features=pool_size[1], out_features=pool_size[0],
-                      bias=do_train_bias),
-            nn.BatchNorm1d(num_features=pool_size[0])
-        )
-        # Decoder setup
-        self.decoder = nn.Sequential(
-            nn.ConvTranspose1d(kernel_layer[3], kernel_layer[2], kernel_size[2], stride=kernel_stride[2],
-                               padding=kernel_padding[2], output_padding=kernel_out[2]),
-            nn.BatchNorm1d(kernel_layer[2]),
-            nn.Tanh(),
-            nn.ConvTranspose1d(kernel_layer[2], kernel_layer[1], kernel_size[1], stride=kernel_stride[1],
-                               padding=kernel_padding[1], output_padding=kernel_out[1]),
-            nn.BatchNorm1d(kernel_layer[1]),
-            nn.Tanh(),
-            nn.ConvTranspose1d(kernel_layer[1], kernel_layer[0], kernel_size[0], stride=kernel_stride[0],
-                               padding=kernel_padding[0], output_padding=kernel_out[0])
-        )
-
-    def forward(self, x: torch.Tensor) -> [torch.Tensor, torch.Tensor]:
-        x0 = torch.unsqueeze(x, dim=1)
-        encoded0 = self.encoder(x0)
-        encoded = self.pool(self.flatten(encoded0))
-        decoded0 = self.un_pool(self.unflatten(encoded))
-        decoded = self.decoder(decoded0)
-        return encoded, self.flatten(decoded)
-
