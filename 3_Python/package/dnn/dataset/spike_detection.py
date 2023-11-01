@@ -3,7 +3,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 
 
-class DatasetClass(Dataset):
+class DatasetSDA(Dataset):
     """Dataset Preparator for training Spike Detection Classification with Neural Network"""
     def __init__(self, frame: np.ndarray, sda: np.ndarray, slice: int):
         self.frame_slice = np.array(frame, dtype=float)

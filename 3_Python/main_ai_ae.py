@@ -1,12 +1,12 @@
-import os.path
-import glob
+from os.path import join
+from glob import glob
 import matplotlib.pyplot as plt
 import torch
 from scipy.io import savemat
 import numpy as np
 
 from package.metric import calculate_snr
-from package.dnn.pytorch_data import prepare_training
+from package.dnn.pytorch_data import prepare_training_spike_frame
 import package.plotting.plot_dnn as plt_spaike
 from package.dnn.pytorch_control import training_pytorch
 from package.dnn.dataset.autoencoder import DatasetAE, prepare_plotting
@@ -62,18 +62,16 @@ if __name__ == "__main__":
     plt.close('all')
     print("\nTrain modules of spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
 
-    model_settings = Config_PyTorch()
     # --- Pre-Processing: Create NN
+    model_settings = Config_PyTorch()
     model = model_settings.model()
     model_opt = model_settings.set_optimizer(model)
     model_name = model.out_modelname
     model_typ = model.out_modeltyp
 
     # --- Pre-Processing: Loading dataset
-    path = os.path.join(model_settings.data_path, model_settings.data_file_name)
-    frames_in, frames_cluster, frames_mean = prepare_training(path=path, settings=model_settings)
-    dataset = DatasetAE(frames_in, frames_cluster, frames_mean, mode_train=mode_train)
-    del frames_in, frames_cluster, frames_mean
+    path = join(model_settings.data_path, model_settings.data_file_name)
+    dataset = prepare_training_spike_frame(path=path, settings=model_settings, mode_train_ae=mode_train)
 
     # --- Processing: Do Training
     trainhandler = training_pytorch(model_typ, model_name, model_settings)
@@ -86,10 +84,10 @@ if __name__ == "__main__":
 
     # --- Post-Processing: Getting data from validation set for plotting
     valid_dl = trainhandler.valid_loader[0]
-    del valid_dl
     data_in, data_out, cluster_out, data_mean = prepare_plotting(valid_dl)
+    del valid_dl
 
-    model_name_test = glob.glob(os.path.join(logsdir, 'model_fold*.pth'))
+    model_name_test = glob(join(logsdir, 'model_fold*.pth'))
     model_test = torch.load(model_name_test[0])
 
     # Doing the inference of best model
@@ -124,7 +122,7 @@ if __name__ == "__main__":
                "config": model_settings
     }
     filename = 'results.mat'
-    savemat(os.path.join(logsdir, filename), matdata)
+    savemat(join(logsdir, filename), matdata)
 
     # --- Plotting
     plt_spaike.results_training(

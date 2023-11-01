@@ -1,12 +1,13 @@
 import os, shutil
 import numpy as np
 
-from package.data.pipeline_signals import PipelineSignal
+from package.template.pipeline_signals import PipelineSignal
 from package.data.data_call import SettingsDATA
 from package.dsp.sda import SpikeDetection, SettingsSDA
 from package.dsp.fex import FeatureExtraction, SettingsFeature
 from package.dsp.cluster import Clustering, SettingsCluster
-from package.nsp import calc_spiketicks, calc_interval_timing, calc_firing_rate
+from package.nsp import calc_spiketicks
+
 
 # --- Configuring the src_decoder
 class Settings:

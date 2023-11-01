@@ -5,17 +5,12 @@ from scipy.io import loadmat
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.data_preprocessing import change_frame_size, calculate_mean_waveform, generate_zero_frames, data_normalization
 from package.dnn.data_augmentation import augmentation_change_position
+from package.dnn.dataset.autoencoder import DatasetAE
+from package.dnn.dataset.spike_detection import DatasetSDA
 
 
-def prepare_training(path: str, settings: Config_PyTorch) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Einlesen des Datensatzes inkl. Augmentierung (Kein Pre-Processing)"""
-    # --- Getting the settings
-    exc_cluster = settings.data_exclude_cluster
-    use_position = settings.data_sel_pos
-    num_new_frames = settings.data_num_augmentation
-    do_augmentation = settings.data_do_augmentation
-    do_normalization = settings.data_do_normalization
-    do_addnoise_cluster = settings.data_do_addnoise_cluster
+def prepare_training_spike_frame(path: str, settings: Config_PyTorch, mode_train_ae=0) -> DatasetAE:
+    """Preparing datasets incl. augmentation for spike-frame based training (without pre-processing)"""
 
     # --- Pre-definitions
     str_datum = datetime.now().strftime('%Y%m%d %H%M%S')
@@ -36,30 +31,32 @@ def prepare_training(path: str, settings: Config_PyTorch) -> tuple[np.ndarray, n
     print("... for training are", frames_in.shape[0], "frames with each", frames_in.shape[1], "points available")
 
     # --- Mean waveform calculation and data augmentation
-    frames_in = change_frame_size(frames_in, use_position)
+    frames_in = change_frame_size(frames_in, settings.data_sel_pos)
     frames_mean, snr_mean = calculate_mean_waveform(frames_in, frames_cluster)
     # plt_memristor_ref(frames_in, frames_cluster, frames_mean)
 
     # --- PART: Exclusion of selected clusters
-    if len(exc_cluster) == 0:
+    if len(settings.data_exclude_cluster) == 0:
         frames_in = frames_in
         frames_cluster = frames_cluster
     else:
-        for i, id in enumerate(exc_cluster):
+        for i, id in enumerate(settings.data_exclude_cluster):
             selX = np.where(frames_cluster != id)
             frames_in = frames_in[selX[0], :]
             frames_cluster = frames_cluster[selX]
 
     # --- PART: Data Augmentation
-    if do_augmentation:
+    if settings.data_do_augmentation:
         print("... do data augmentation")
-        # new_frames, new_clusters = augmentation_mean_waveform(frames_mean, frames_cluster, snr_mean, num_new_frames)
-        new_frames, new_clusters = augmentation_change_position(frames_in, frames_cluster, snr_mean, num_new_frames)
+        # new_frames, new_clusters = augmentation_mean_waveform(
+        # frames_mean, frames_cluster, snr_mean, settings.data_num_augmentation)
+        new_frames, new_clusters = augmentation_change_position(
+            frames_in, frames_cluster, snr_mean, settings.data_num_augmentation)
         frames_in = np.append(frames_in, new_frames, axis=0)
         frames_cluster = np.append(frames_cluster, new_clusters, axis=0)
 
     # --- PART: Generate and add noise cluster
-    if do_addnoise_cluster:
+    if settings.data_do_addnoise_cluster:
         snr_range_zero = [np.mean(snr_mean[:, 0]), np.mean(snr_mean[:, 2])]
         info = np.unique(frames_cluster, return_counts=True)
         num_cluster = np.max(info[0]) + 1
@@ -72,11 +69,27 @@ def prepare_training(path: str, settings: Config_PyTorch) -> tuple[np.ndarray, n
         frames_mean = np.vstack([frames_mean, new_mean])
 
     # --- PART: Data Normalization
-    if do_normalization:
+    if settings.data_do_normalization:
         frames_in = data_normalization(frames_in)
         frames_mean = data_normalization(frames_mean)
 
     # --- Output
     check = np.unique(frames_cluster, return_counts=True)
     print(f"... used data points for training: class = {check[0]} and num = {check[1]}")
-    return frames_in, frames_cluster, frames_mean
+    return DatasetAE(frames_in, frames_cluster, frames_mean, mode_train_ae)
+
+
+def prepare_training_sda(path: str, settings: Config_PyTorch) -> DatasetSDA:
+    """Preparing datasets incl. augmentation for spike-detection-based training (without pre-processing)"""
+    # --- Pre-definitions
+    str_datum = datetime.now().strftime('%Y%m%d %H%M%S')
+    print(f"Running on {str_datum}")
+    print("... loading the datasets")
+
+    # --- MATLAB reading file
+    npzfile = loadmat(path)
+    frames_in = npzfile["sda_in"]
+    frames_pred = npzfile["sda_pred"]
+    print("... for training are", frames_in.shape[0], "frames with each", frames_in.shape[1], "points available")
+
+    return DatasetSDA(frames_in, frames_pred, 3)

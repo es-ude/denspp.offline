@@ -1,16 +1,14 @@
 from os.path import join
 import numpy as np
-from datetime import date
+from time import time_ns
 from scipy.io import savemat
 from tqdm import tqdm
 
 from package.data.data_call import DataController
 from src_data.pipeline_data import Settings, Pipeline
 
-from package.dnn.dataset.spike_detection import DatasetClass
 
-
-def prepare_sda_dataset(path2save: str, process_points=[]) -> DatasetClass:
+def prepare_sda_dataset(path2save: str, process_points=[]) -> None:
     """Tool for loading datasets in order to generate one new dataset (Step 1),
         cluster_class_avai: False = Concatenate the class number with increasing id number (useful for non-biological clusters)
         only_pos: Taking the datapoints of the choicen dataset [Start, End]"""
@@ -20,8 +18,9 @@ def prepare_sda_dataset(path2save: str, process_points=[]) -> DatasetClass:
     fs_adc = afe_set.SettingsADC.fs_adc
 
     # ------ Loading Data: Preparing Data
-    print("... loading the datasets")
-
+    timepoint_start = time_ns()
+    print("\nStart merging datasets for generating a dataset for train spike detection algorithms (SDA)")
+    print(f"... loading the datasets")
     datahandler = DataController(afe_set.SettingsDATA)
     datahandler.do_call()
     datahandler.do_resample()
@@ -49,21 +48,14 @@ def prepare_sda_dataset(path2save: str, process_points=[]) -> DatasetClass:
         del pipeline
 
     # --- Saving results
+
     mdict = {'fs_adc': fs_adc,
              'sda_in': sda_input[0],
              'sda_pred': sda_pred[0],
              'sda_xpos': xpos}
     newfile_name = join(path2save, 'SDA_Dataset' + '.mat')
     savemat(newfile_name, mdict)
-    print('\nSaving file in: ' + newfile_name)
-    print("... This is the end")
+    print('... saving results in: ' + newfile_name)
 
-    # --- Loading into dataset
-    return DatasetClass(sda_input[0], sda_pred[0], 2)
-
-
-if __name__ == "__main__":
-    dataset_sda = prepare_sda_dataset("")
-
-    for idx, data in enumerate(dataset_sda):
-        print(idx, data)
+    delta_time = 1e-9 * (time_ns() - timepoint_start)
+    print(f"... done after {delta_time: .4f} s")

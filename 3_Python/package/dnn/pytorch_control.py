@@ -4,7 +4,7 @@ from glob import glob
 import shutil
 import numpy as np
 from datetime import datetime
-import torch
+from torch import nn, optim, load, save, device, cuda
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
@@ -18,7 +18,7 @@ class Config_PyTorch:
         # Settings of Models/Training
         self.model = "model name"   # example: ai_module.cnn_ae_v1
         self.is_embedded = False
-        self.loss_fn = torch.nn.MSELoss()
+        self.loss_fn = nn.MSELoss()
         self.num_kfold = 1
         self.num_epochs = 1000
         self.batch_size = 512
@@ -36,7 +36,7 @@ class Config_PyTorch:
         self.data_sel_pos = []
 
     def set_optimizer(self, model):
-        return torch.optim.Adam(model.parameters())
+        return optim.Adam(model.parameters())
 
     def get_topology(self, model) -> str:
         return model.out_modeltyp
@@ -76,11 +76,11 @@ class training_pytorch:
     def __setup_device(self) -> None:
         """Setup PyTorch for Training"""
         os_type0 = os.name
-        device0 = "CUDA" if torch.cuda.is_available() else "CPU"
+        device0 = "CUDA" if cuda.is_available() else "CPU"
         if device0 == "CUDA":
-            self.device = torch.device("cuda")
+            self.device = device("cuda")
         else:
-            self.device = torch.device("cpu")
+            self.device = device("cpu")
 
         if os_type0 == 'nt':
             self.os_type = 'Windows'
@@ -136,7 +136,7 @@ class training_pytorch:
         self.train_loader = out_train
         self.valid_loader = out_valid
 
-    def load_model(self, model: torch.nn.Module, optimizer, print_model=True) -> None:
+    def load_model(self, model: nn.Module, optimizer, print_model=True) -> None:
         """Loading model, optimizer, loss_fn into class"""
         self.model = model
         self.optimizer = optimizer
@@ -241,7 +241,7 @@ class training_pytorch:
         own_metric = list()
         path2model = str()
         path2model_init = os.path.join(self.path2save, f'model_reset.pth')
-        torch.save(self.model.state_dict(), path2model_init)
+        save(self.model.state_dict(), path2model_init)
         for fold in np.arange(self.settings.num_kfold):
             best_vloss = 1_000_000.
             loss_train = 1_000_000.
@@ -249,7 +249,7 @@ class training_pytorch:
             own_metric = []
 
             # - Reset of model
-            self.model.load_state_dict(torch.load(path2model_init))
+            self.model.load_state_dict(load(path2model_init))
             self.run_kfold = fold
             self.__init_writer()
 
@@ -277,7 +277,7 @@ class training_pytorch:
                 if loss_valid < best_vloss:
                     best_vloss = loss_valid
                     path2model = os.path.join(self.__path2log, f'model_fold{fold:03d}_epoch{epoch:04d}.pth')
-                    torch.save(self.model, path2model)
+                    save(self.model, path2model)
 
                 # Calculation of custom metrics
                 own_metric.append(self.__do_snr_epoch())

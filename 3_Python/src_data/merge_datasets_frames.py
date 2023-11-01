@@ -1,6 +1,7 @@
+import time
 from os.path import join
 import numpy as np
-from datetime import date
+from datetime import datetime
 from scipy.io import savemat
 from tqdm import tqdm
 
@@ -8,7 +9,7 @@ from package.data.data_call import DataController
 from src_data.pipeline_data import Settings, Pipeline
 
 
-def get_frames_from_dataset_common(path2save: str, cluster_class_avai=False, process_points=[]):
+def get_frames_from_dataset_common(path2save: str, cluster_class_avai=False, process_points=[]) -> None:
     """Tool for loading datasets in order to generate one new dataset (Step 1),
     cluster_class_avai: False = Concatenate the class number with increasing id number (useful for non-biological clusters)
     only_pos: Taking the datapoints of the choicen dataset [Start, End]"""
@@ -68,7 +69,7 @@ def get_frames_from_dataset_common(path2save: str, cluster_class_avai=False, pro
         runPoint += 1
 
     # --- Saving data
-    create_time = date.today().strftime("%Y-%m-%d")
+    create_time = datetime.now().strftime("%Y-%m-%d")
     matdata = {"frames_in": frames_in,
                "frames_cluster": frames_cluster,
                "create_time": create_time, "settings": settings}
@@ -78,7 +79,7 @@ def get_frames_from_dataset_common(path2save: str, cluster_class_avai=False, pro
     print("... This is the end")
 
 
-def get_frames_from_dataset_unique(path2save: str, cluster_class_avai=False, process_points=[]):
+def get_frames_from_dataset_unique(path2save: str, cluster_class_avai=False, process_points=[]) -> None:
     """Tool for loading datasets in order to generate one new dataset (Step 1),
     cluster_class_avai: False = Concatenate the class number with increasing id number (useful for non-biological clusters)
     only_pos: Taking the datapoints of the choicen dataset [Start, End]"""
@@ -88,6 +89,7 @@ def get_frames_from_dataset_unique(path2save: str, cluster_class_avai=False, pro
     fs_adc = afe_set.SettingsADC.fs_adc
 
     # ------ Loading Data: Preparing Data
+    start_time = time.strftime().s
     print("... loading the datasets")
     runPoint = process_points[0]
     endPoint = 0
@@ -135,7 +137,7 @@ def get_frames_from_dataset_unique(path2save: str, cluster_class_avai=False, pro
         del data
 
         # --- End control routine
-        create_time = date.today().strftime("%Y-%m-%d")
+        create_time = datetime.now().strftime("%Y-%m-%d")
         matdata = {"frames_in": frames_in,
                    "frames_cluster": frames_cluster,
                    "create_time": create_time, "settings": settings}
@@ -145,6 +147,6 @@ def get_frames_from_dataset_unique(path2save: str, cluster_class_avai=False, pro
     print("... This is the end")
 
 
-def merge_frames_from_dataset():
+def merge_frames_from_dataset() -> None:
     """Tool for merging all spike frames to one new dataset (Step 2)"""
-    print("... Start MATLAB script manually: merge/merge_datasets_matlab.m")
+    print("\nStart MATLAB script manually: merge/merge_datasets_matlab.m")
