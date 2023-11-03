@@ -20,7 +20,7 @@ class Settings:
     SettingsDATA = SettingsDATA(
         path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
         # path='C:\GitHub\spaike_project\\2_Data',
-        data_set=4,
+        data_set=8,
         data_case=0,
         data_point=0,
         t_range=[0],
@@ -143,10 +143,11 @@ class Pipeline:
             x_dly, self.signals.x_sda, self.signals.x_thr
         )
         # ---- Feature Extraction  ----
-        self.signals.features = self.__fe.fe_pca(self.signals.frames_align[0])
-        # ---- Clustering | Classification ----
-        (self.signals.frames_align[2]) = self.__cl.cluster_kmeans(self.signals.features)
-        self.signals.spike_ticks = calc_spiketicks(self.signals.frames_align)
+        if not len(self.signals.frames_align) == 0:
+            self.signals.features = self.__fe.fe_pca(self.signals.frames_align[0])
+            # ---- Clustering | Classification ----
+            (self.signals.frames_align[2]) = self.__cl.cluster_kmeans(self.signals.features)
+            self.signals.spike_ticks = calc_spiketicks(self.signals.frames_align)
 
     def run_nsp(self) -> None:
         print("NO FURTHER PROCESSING IS INCLUDED")

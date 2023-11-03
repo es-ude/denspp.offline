@@ -1,9 +1,11 @@
 from src_data.merge_datasets_sda import prepare_sda_dataset
-from src_data.merge_datasets_frames import merge_frames_from_dataset
+from src_data.merge_datasets_frames import merge_frames_from_dataset, merge_data_from_diff_data
 
 if __name__ == "__main__":
     print("\nPreparing datasets for AI Training in "
           "end-to-end spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
+    merge_data_from_diff_data('data')
+
 
     path2file = "data"
     prepare_sda_dataset(

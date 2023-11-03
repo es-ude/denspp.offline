@@ -59,9 +59,6 @@ class DataLoader:
     def __prepare_access_subfolder(self, folder_name: str, data_type: str, sel_dataset: int, sel_datapoint: int) -> None:
         """Getting the file structure within cases/experiments in one data set"""
         path2data = join(self.path2data, folder_name)
-        path = join(path2data, data_type)
-        folder_content = glob(path)
-        folder_content.sort()
         folder_data = [name for name in listdir(path2data) if isdir(join(path2data, name))]
         file_data = folder_data[sel_dataset]
 
@@ -202,7 +199,6 @@ class DataLoader:
         data_type = '*.mat'
         self.__prepare_access(folder_name, data_type, point)
         loaded_data = loadmat(self.path2file)
-
 
         # Input and meta
         self.raw_data.data_name = folder_name
@@ -348,22 +344,22 @@ class DataLoader:
         """Loading the recording files from MCS setup in FZ Juelich (case = experiment, point = file)"""
         self.__path2data = self.path2data
         folder_name = "08_RGC_FZJuelich"
-        data_type = '*_new.mat'
-        self.__prepare_access(folder_name, data_type, point)
-        loaded_data = loadmat(self.path2file)
+        data_type = '*_merged.mat'
+        self.__prepare_access_subfolder(folder_name, data_type, case, point)
+        loaded_data = loadmat_mat73(self.path2file)
 
         # Input and meta
         self.raw_data.data_name = folder_name
         self.raw_data.data_type = "MCS 60MEA"
-        self.raw_data.data_lsb = 1 / loaded_data['gain'][0]
-        self.raw_data.data_fs_orig = 1e3 * loaded_data['fs'][0]
+        self.raw_data.data_lsb = float(loaded_data['gain'])
+        self.raw_data.data_fs_orig = float(loaded_data['fs'])
 
         self.raw_data.device_id = [0]
-        elec_orig = np.arange(0, loaded_data['raw'].shape[1]).tolist()
+        elec_orig = np.arange(0, loaded_data['electrode'].shape[1]).tolist()
         elec_process = self.select_electrodes if not self.select_electrodes[0] == -1 else elec_orig
         for elec in elec_process:
-            self.raw_data.data_raw.append(self.raw_data.data_lsb * np.float32(loaded_data['raw'][elec, ]))
-        self.raw_data.data_time = loaded_data['raw'].shape[0] / self.raw_data.data_fs_orig
+            self.raw_data.data_raw.append(self.raw_data.data_lsb * np.float32(loaded_data['electrode'][:, elec]))
+        self.raw_data.data_time = loaded_data['electrode'].shape[0] / self.raw_data.data_fs_orig
         self.raw_data.electrode_id = elec_process
         # Groundtruth
         self.raw_data.label_exist = False

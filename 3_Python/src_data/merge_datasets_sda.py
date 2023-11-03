@@ -1,6 +1,7 @@
 from os.path import join
 import numpy as np
 from time import time_ns
+from datetime import datetime
 from scipy.io import savemat
 from tqdm import tqdm
 
@@ -8,7 +9,7 @@ from package.data.data_call import DataController
 from src_data.pipeline_data import Settings, Pipeline
 
 
-def prepare_sda_dataset(path2save: str, process_points=[]) -> None:
+def prepare_sda_dataset(path2save: str, slice_size=9, process_points=[]) -> None:
     """Tool for loading datasets in order to generate one new dataset (Step 1),
         cluster_class_avai: False = Concatenate the class number with increasing id number (useful for non-biological clusters)
         only_pos: Taking the datapoints of the choicen dataset [Start, End]"""
@@ -31,7 +32,7 @@ def prepare_sda_dataset(path2save: str, process_points=[]) -> None:
     sda_input = list()
     sda_pred = list()
     xpos = None
-    for idx, elec in enumerate(tqdm(data.electrode_id, ncols=100, desc='Progress:')):
+    for idx0, elec in enumerate(tqdm(data.electrode_id, ncols=100, desc='Progress:')):
         spike_xpos = np.floor(data.spike_xpos[elec] * fs_adc / fs_ana).astype("int")
         spike_xoff = int(1e-6 * data.spike_offset_us[0] * fs_adc)
 
@@ -39,21 +40,33 @@ def prepare_sda_dataset(path2save: str, process_points=[]) -> None:
         pipeline.run_input(data.data_raw[elec], spike_xpos, spike_xoff)
 
         # --- Process dataset for SDA
-        len_data = int(pipeline.signals.x_adc.shape[0] / 8)
         xpos = pipeline.signals.x_pos
-        sda_input.append(pipeline.signals.x_adc.reshape(len_data, 8))
-        sda_pred.append(np.zeros(shape=sda_input[idx].shape, dtype=bool))
+
+        # TODO: Processing noch richtig ausbauen
+        cut_end = (pipeline.signals.x_adc.size % slice_size)
+        data0 = pipeline.signals.x_adc if cut_end == 0 else pipeline.signals.x_adc[:-cut_end]
+        sda_data = data0.reshape((int(data0.size/slice_size), slice_size))
+        # sds_data = list()
+        # sda_buffer = np.zeros(shape=(slice_size,), dtype=int)
+        #for idx1, val in enumerate(pipeline.signals.x_adc):
+         #   sda_buffer = np.append(val, sda_buffer[0:slice_size-1])
+          #  if idx1 >= slice_size-1:
+           #     sda_data.append(sda_buffer)
+
+        # --- Add to output
+        sda_input.append(np.array(sda_data, dtype=int))
+        sda_pred.append(np.zeros(shape=sda_input[idx0].shape, dtype=bool))
 
         # --- Release memory
         del pipeline
 
     # --- Saving results
-
+    create_time = datetime.now().strftime("%Y-%m-%d")
     mdict = {'fs_adc': fs_adc,
              'sda_in': sda_input[0],
              'sda_pred': sda_pred[0],
              'sda_xpos': xpos}
-    newfile_name = join(path2save, 'SDA_Dataset' + '.mat')
+    newfile_name = join(path2save, create_time + '_SDA_Dataset' + '.mat')
     savemat(newfile_name, mdict)
     print('... saving results in: ' + newfile_name)
 

@@ -5,9 +5,8 @@ from torch import nn, optim, from_numpy, load
 from scipy.io import savemat
 import numpy as np
 
-from package.dnn.pytorch_data import prepare_training_sda
-from package.dnn.pytorch_control import training_pytorch
-from package.dnn.dataset.spike_detection import DatasetSDA, prepare_plotting
+from package.dnn.pytorch_structure import pytorch_classifier
+from package.dnn.dataset.spike_detection import prepare_plotting, prepare_training
 import package.plotting.plot_dnn as plt_spaike
 import package.dnn.models.spike_detection as ai_module
 
@@ -27,7 +26,7 @@ class Config_PyTorch:
         self.data_file_name = 'SDA_Dataset.mat'
         self.data_split_ratio = 0.25
         self.data_do_shuffle = True
-        self.data_do_augmentation = True
+        self.data_do_augmentation = False
         self.data_num_augmentation = 2000
         self.data_do_normalization = False
         self.data_do_addnoise_cluster = False
@@ -56,10 +55,10 @@ if __name__ == "__main__":
 
     # --- Pre-Processing: Loading dataset
     path = join(model_settings.data_path, model_settings.data_file_name)
-    dataset = prepare_training_sda(path=path, settings=model_settings)
+    dataset = prepare_training(path=path, settings=model_settings)
 
     # --- Processing: Do Training
-    trainhandler = training_pytorch(model_typ, model_name, model_settings)
+    trainhandler = pytorch_classifier(model_typ, model_name, model_settings)
     trainhandler.load_model(model, model_opt)
     trainhandler.load_data(dataset)
 

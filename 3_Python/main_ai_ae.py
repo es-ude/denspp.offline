@@ -6,22 +6,21 @@ from scipy.io import savemat
 import numpy as np
 
 from package.metric import calculate_snr
-from package.dnn.pytorch_data import prepare_training_spike_frame
 import package.plotting.plot_dnn as plt_spaike
-from package.dnn.pytorch_control import training_pytorch
-from package.dnn.dataset.autoencoder import DatasetAE, prepare_plotting
+from package.dnn.pytorch_structure import pytorch_autoencoder
+from package.dnn.dataset.autoencoder import prepare_plotting, prepare_training
 import package.dnn.models.autoencoder as ai_module
 
 
 class Config_PyTorch:
     def __init__(self):
         # Settings of Models/Training
-        self.model = ai_module.cnn_ae_v2
+        self.model = ai_module.cnn_ae_v1
         # self.model = ai_module_embedded.dnn_dae_v2
         self.is_embedded = False
         self.loss_fn = torch.nn.MSELoss()
-        self.num_kfold = 2
-        self.num_epochs = 5
+        self.num_kfold = 1
+        self.num_epochs = 100
         self.batch_size = 256
         # Settings of Datasets
         self.data_path = 'data'
@@ -71,10 +70,10 @@ if __name__ == "__main__":
 
     # --- Pre-Processing: Loading dataset
     path = join(model_settings.data_path, model_settings.data_file_name)
-    dataset = prepare_training_spike_frame(path=path, settings=model_settings, mode_train_ae=mode_train)
+    dataset = prepare_training(path=path, settings=model_settings, mode_train_ae=mode_train)
 
     # --- Processing: Do Training
-    trainhandler = training_pytorch(model_typ, model_name, model_settings)
+    trainhandler = pytorch_autoencoder(model_typ, model_name, model_settings)
     trainhandler.model_addon = ae_addon(mode_train)
     trainhandler.load_model(model, model_opt)
     trainhandler.load_data(dataset)

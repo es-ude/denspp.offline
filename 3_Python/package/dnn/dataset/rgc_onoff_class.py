@@ -6,12 +6,11 @@ from torch.utils.data import Dataset, DataLoader
 from package.dnn.pytorch_control import Config_PyTorch
 
 
-class DatasetSDA(Dataset):
-    """Dataset Preparator for training Spike Detection Classification with Neural Network"""
-    def __init__(self, frame: np.ndarray, sda: np.ndarray, threshold: int):
+class DatasetRGC(Dataset):
+    """Dataset Loader for Retinal Ganglion Cells ON-/OFF Cell Classification"""
+    def __init__(self, frame: np.ndarray, sda: np.ndarray):
         self.frame_slice = np.array(frame, dtype=np.float32)
-        self.sda_class = np.array(sda, dtype=bool)
-        self.sda_thr = threshold
+        self.frame_cellid = np.array(sda, dtype=bool)
 
     def __len__(self):
         return self.frame_slice.shape[0]
@@ -19,9 +18,8 @@ class DatasetSDA(Dataset):
     def __getitem__(self, idx):
         if is_tensor(idx):
             idx = idx.tolist()
-        decision = 0 if np.sum(self.sda_class[idx]) < self.sda_thr else 1
 
-        return {'in': self.frame_slice[idx], 'sda': self.sda_class[idx], 'out': np.array([decision], dtype=np.float32)}
+        return {'in': self.frame_slice[idx], 'out': self.frame_cellid[idx]}
 
 
 def prepare_plotting(data_plot: DataLoader) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -37,7 +35,7 @@ def prepare_plotting(data_plot: DataLoader) -> tuple[np.ndarray, np.ndarray, np.
     return din, dsda, dout
 
 
-def prepare_training(path: str, settings: Config_PyTorch) -> DatasetSDA:
+def prepare_training(path: str, settings: Config_PyTorch) -> DatasetRGC:
     """Preparing datasets incl. augmentation for spike-detection-based training (without pre-processing)"""
     # --- Pre-definitions
     str_datum = datetime.now().strftime('%Y%m%d %H%M%S')

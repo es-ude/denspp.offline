@@ -1,5 +1,7 @@
+import glob
 import time
-from os.path import join
+from os.path import join, exists
+from os import mkdir
 import numpy as np
 from datetime import datetime
 from scipy.io import savemat
@@ -19,6 +21,7 @@ def get_frames_from_dataset_common(path2save: str, cluster_class_avai=False, pro
     fs_adc = afe_set.SettingsADC.fs_adc
 
     # ------ Loading Data: Preparing Data
+    timepoint_start = time.time_ns()
     print("... loading the datasets")
 
     # --- Calling the data into RAM
@@ -62,6 +65,9 @@ def get_frames_from_dataset_common(path2save: str, cluster_class_avai=False, pro
             # --- Release memory
             del afe, spike_xpos, cl_in
 
+            delta_time = 1e-9 * (time.time_ns() - timepoint_start)
+            print(f"... done after {delta_time: .4f} s")
+
         file_name = data.data_name
         del data
 
@@ -88,14 +94,19 @@ def get_frames_from_dataset_unique(path2save: str, cluster_class_avai=False, pro
     fs_ana = afe_set.SettingsADC.fs_ana
     fs_adc = afe_set.SettingsADC.fs_adc
 
+    # --- Generate merging folder
+    path2folder = join(path2save, 'Merging')
+    if not exists(path2folder):
+        mkdir(path2folder)
+
     # ------ Loading Data: Preparing Data
-    start_time = time.strftime().s
     print("... loading the datasets")
-    runPoint = process_points[0]
+    runPoint = process_points[0] if len(process_points) > 0 else 0
     endPoint = 0
     first_run = True
     settings = dict()
     while first_run or runPoint < endPoint:
+        start_time = time.time_ns()
         first_run = True
         frames_in = np.zeros(shape=(0, 0), dtype=np.dtype('int16'))
         frames_cluster = np.zeros(shape=(0, 0), dtype=np.dtype('uint16'))
@@ -105,7 +116,7 @@ def get_frames_from_dataset_unique(path2save: str, cluster_class_avai=False, pro
         datahandler.do_call()
         datahandler.do_resample()
         data = datahandler.get_data()
-        endPoint = datahandler.no_files if len(process_points) == 1 else process_points[1]
+        endPoint = process_points[1] if len(process_points) > 0 else datahandler.no_files
         del datahandler
 
         # --- Taking signals from handler
@@ -136,7 +147,7 @@ def get_frames_from_dataset_unique(path2save: str, cluster_class_avai=False, pro
         file_name = data.data_name
         del data
 
-        # --- End control routine
+        # --- End control routine after each run
         create_time = datetime.now().strftime("%Y-%m-%d")
         matdata = {"frames_in": frames_in,
                    "frames_cluster": frames_cluster,
@@ -144,9 +155,20 @@ def get_frames_from_dataset_unique(path2save: str, cluster_class_avai=False, pro
         newfile_name = join(path2save, (create_time + f'_Dataset-' + file_name) + f'-Step{runPoint:03d}')
         savemat(newfile_name + '.mat', matdata)
         runPoint += 1
+
+        delta_time = 1e-9 * (time.time_ns() - start_time)
+        print(f"... done after {delta_time: .4f} s")
+
     print("... This is the end")
 
 
 def merge_frames_from_dataset() -> None:
     """Tool for merging all spike frames to one new dataset (Step 2)"""
     print("\nStart MATLAB script manually: merge/merge_datasets_matlab.m")
+
+
+def merge_data_from_diff_data(path2data: str) -> None:
+    folder_content = glob.glob(join(path2data, 'Merging', '*.mat'))
+
+    for idx, file in enumerate(folder_content):
+        print(idx, file)
