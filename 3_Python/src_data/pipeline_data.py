@@ -14,7 +14,7 @@ from package.dsp.sda import SpikeDetection, SettingsSDA
 class Settings:
     """Settings class for handling the src_neuro setting"""
     SettingsDATA = SettingsDATA(
-        path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
+        path='E:\\0_Invasive',
         data_set=7, data_case=0, data_point=0,
         t_range=[0],
         ch_sel=[-1],

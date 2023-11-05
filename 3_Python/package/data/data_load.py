@@ -60,6 +60,7 @@ class DataLoader:
         """Getting the file structure within cases/experiments in one data set"""
         path2data = join(self.path2data, folder_name)
         folder_data = [name for name in listdir(path2data) if isdir(join(path2data, name))]
+        folder_data.sort()
         file_data = folder_data[sel_dataset]
 
         path2data = join(path2data, file_data)

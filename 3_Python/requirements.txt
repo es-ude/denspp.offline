@@ -2,10 +2,10 @@ numpy
 matplotlib
 fxpmath
 tqdm
+mat73
 
 # Libs for reading electrophysiology datasets
 neo
-mat73
 
 # Libs for NN with PyTorch
 scipy
@@ -14,7 +14,7 @@ torch
 torchinfo
 torchvision
 tensorboard
-elasticai-creator[0.59.2]
+elasticai-creator
 
 # Libs for neuromorphic training of Spiking Neural Networks
-snntorch
+# snntorch

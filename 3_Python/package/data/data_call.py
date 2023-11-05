@@ -35,7 +35,7 @@ class RecommendedSettingsDATA(SettingsDATA):
     """Recommended configuration for testing"""
     def __init__(self):
         super().__init__(
-            path="D:\Data",
+            path="C:\Data",
             data_set=1, data_case=0, data_point=0,
             t_range=[0], ch_sel=[-1],
             fs_resample=100e3
@@ -70,9 +70,7 @@ class DataController(DataLoader):
     def do_call(self) -> None:
         """Loading the dataset"""
         # --- Checking if path is available
-        if os.path.exists(self.settings.path):
-            print(f"... data path {self.settings.path} is available")
-        else:
+        if not os.path.exists(self.settings.path):
             print(f"... data path {self.settings.path} is not available! Please check")
             sys.exit()
 
