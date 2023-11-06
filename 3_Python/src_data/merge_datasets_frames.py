@@ -105,20 +105,32 @@ def merge_data_from_diff_data(path2data: str) -> None:
     folder_content = glob(join(path2data, 'Merging', '*.mat'))
     folder_content.sort()
 
-    frame_in = list()
-    frame_cl = list()
+    frame_in = np.zeros((0,0), dtype='int16')
+    frame_cl = np.zeros((0,0), dtype='uint16')
 
     for idx, file in enumerate(folder_content):
         print(idx, file)
         data = loadmat(file)
 
         frame_in = data['frames_in'] if idx == 0 else np.append(frame_in, data['frames_in'], axis=0)
-        frame_cl = data['frames_cluster'] if idx == 0 else np.append(frame_cl, data['frames_cluster'], axis=0)
+        frame_cl = data['frames_cluster'] if idx == 0 else np.append(frame_cl, data['frames_cluster'], axis=1)
 
         if idx == 0:
-            file_name = file
+            file_name = file.split('\\')[-1]
+            file_name = file_name.split('_step')[0]
+            print(file_name)
 
-    newfile_name = join(path2data, file_name)
-    savemat(newfile_name + '.mat', {"frames_in": frame_in,
-                                    "frames_cluster": frame_cl,
-                                    "create_time": data['create_time'], "settings": data['settings']})
+    # --- Transfering to mat-file
+    frame_in = np.array(frame_in, dtype='int16')
+    frame_cl = np.array(frame_cl, dtype='uint16')
+    savemat(join(path2data, file_name) + '_Sorted.mat',
+            {"frames_in": frame_in,
+             "frames_cluster": frame_cl,
+             "create_time": data['create_time'],
+             "settings": data['settings']}
+    )
+
+    # --- Output of clustering
+    num_clusters = np.unique(frame_cl, return_counts=True)
+    print(f'Type of cluster classes: {num_clusters[0]}\n'
+          f'Number of samples: {num_clusters[1]}')
