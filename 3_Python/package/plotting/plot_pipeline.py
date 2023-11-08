@@ -223,23 +223,24 @@ def results_fec(signals: PipelineSignal, no_electrode: int, path="") -> None:
 
 
 # TODO: ConfusionMatrix erstellen
-def results_confusion(signals: PipelineSignal, no_electrode: int, path="") -> None:
-    do_norm = True
+def results_confusion(true_labels, pred_labels, no_electrode: int, path="") -> None:
     title = "Spike Sorting"
-    x_in = 0
-    x_out = 0
 
-    disp = ConfusionMatrixDisplay.from_estimator(
-        x=x_in,
-        y=x_out,
+    disp = ConfusionMatrixDisplay.from_predictions(
+        y_true=true_labels,
+        y_pred=pred_labels,
         cmap=plt.cm.Blues,
-        normalize=do_norm,
-        colorbar=True
-    )
+        normalize='true',
+        colorbar=True,
+        )
+
     disp.ax_.set_title(title)
+    print(title)
+    print(disp.confusion_matrix)
+    plt.show()
 
     if path:
-        save_figure(plt, path, "pipeline_ivt" + str(no_electrode))
+            save_figure(plt, path, "pipeline_ivt" + str(no_electrode))
 
 
 def results_ivt(signals: PipelineSignal, no_electrode: int, path="") -> None:
