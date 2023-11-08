@@ -1,4 +1,3 @@
-
 class Cell_Names:
     def __init__(self):
         self.cell_type_to_id = {
@@ -11,10 +10,10 @@ class Cell_Names:
             "ON DS ventral": 6,
             "OFF sustained EW3o": 7,
             "OFF medium sustained": 8,
-            "OFF vertical OS" : 9,
-            "OFF horizontal OS" : 10,
-            "OFF sustained alpha" : 11,
-            "OFF sustained EW1no" : 12,
+            "OFF vertical OS": 9,
+            "OFF horizontal OS": 10,
+            "OFF sustained alpha": 11,
+            "OFF sustained EW1no": 12,
             "OFF transient alpha": 13,
             "OFF transient medium RF": 14,
             "OFF transient small RF": 15,
@@ -54,9 +53,8 @@ class Cell_Names:
             return -1
 
     def get_class_to_id(self, id):
+        result = ''
         for key, values in self.cell_class_to_id.items():
             if id in values:
-                return key
-            else:
-                return ""
-
+                result = key
+        return result
