@@ -135,7 +135,7 @@ class DataController(DataLoader):
         if do_resampling:
             self.raw_data.data_fs_used = desired_fs
             u_safe = 5e-6
-            (p, q) = self.__get_resample_ratio(self.raw_data.data_fs_orig, self.raw_data.data_fs_used)
+            (p, q) = Fraction(self.raw_data.data_fs_used / self.raw_data.data_fs_orig).limit_denominator(100).as_integer_ratio()
             self.__scaling = p / q
 
             for idx, data_in in enumerate(self.raw_data.data_raw):
@@ -182,8 +182,3 @@ class DataController(DataLoader):
     def get_data(self) -> DataHandler:
         """Calling the raw data with groundtruth of the called data"""
         return self.raw_data
-
-    def __get_resample_ratio(self, fin: float, fout: float) -> Tuple[int, int]:
-        calced_fs = fout / fin
-        p, q = Fraction(calced_fs).limit_denominator(100).as_integer_ratio()
-        return p, q

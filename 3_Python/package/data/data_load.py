@@ -4,9 +4,10 @@ from glob import glob
 import numpy as np
 from scipy.io import loadmat
 from mat73 import loadmat as loadmat_mat73
+from package.data.data_addon import RGC_Cell_Names
 
 
-# TODO: Device Selection is not implemented correct
+# TODO: Device Selection is still missing
 class DataHandler:
     """Class with data and meta information of the used neural dataset"""
     # --- Meta Information
@@ -29,13 +30,11 @@ class DataHandler:
     spike_ovrlap = list()
     spike_xpos = list()
     cluster_id = list()
-    cluster_type = list()
     # --- Behaviour (in total of MEA)
     behaviour_exist = False
     behaviour = None
 
 
-# TODO: Einfügen der Device-Auswahl
 class DataLoader:
     """Class for loading and manipulating the used dataset"""
     def __init__(self) -> None:
@@ -56,7 +55,8 @@ class DataLoader:
         except:
             print("--- Folder not available - Please check folder name! ---")
 
-    def __prepare_access_subfolder(self, folder_name: str, data_type: str, sel_dataset: int, sel_datapoint: int) -> None:
+    def __prepare_access_subfolder(self, folder_name: str, data_type: str,
+                                   sel_dataset: int, sel_datapoint: int) -> None:
         """Getting the file structure within cases/experiments in one data set"""
         path2data = join(self.path2data, folder_name)
         folder_data = [name for name in listdir(path2data) if isdir(join(path2data, name))]
@@ -70,27 +70,27 @@ class DataLoader:
     def execute_data_call(self, data_type: int, data_set: int, data_point: int):
         """Loading the dataset"""
         if data_type == 1:
-            self.__load_Martinez2009(data_set, data_point)
+            self.__load_martinez2009(data_set, data_point)
         elif data_type == 2:
-            self.__load_Pedreira2012(data_set, data_point)
+            self.__load_pedreira2012(data_set, data_point)
         elif data_type == 3:
-            self.__load_Quiroga2020(data_set, data_point)
+            self.__load_quiroga2020(data_set, data_point)
         elif data_type == 4:
-            self.__load_Seidl2012(data_set, data_point)
+            self.__load_seidl2012(data_set, data_point)
         elif data_type == 5:
-            self.__load_Marre2018(data_set, data_point)
+            self.__load_marre2018(data_set, data_point)
         elif data_type == 6:
-            self.__load_Klaes_UtahArray(data_set, data_point)
+            self.__load_klaes_utah_array(data_set, data_point)
         elif data_type == 7:
-            self.__load_RGC_TDB(data_set, data_point)
+            self.__load_rgc_tdb(data_set, data_point)
         elif data_type == 8:
-            self.__load_FZJ_MCS(data_set, data_point)
+            self.__load_fzj_mcs(data_set, data_point)
         elif data_type == 9:
-            self.__load_Musall_NeuroPixel(data_set, data_point)
+            self.__load_musall_neuropixel(data_set, data_point)
         else:
             print("\nPlease select new input for data_type! -> [1, 9]")
 
-    def __load_Martinez2009(self, case: int, point: int) -> None:
+    def __load_martinez2009(self, case: int, point: int) -> None:
         """Loading synthethic files from Quiroga simulation (2009)"""
         self.__path2data = self.path2data
         folder_name = "01_SimDaten_Martinez2009"
@@ -118,7 +118,7 @@ class DataLoader:
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None
 
-    def __load_Pedreira2012(self, case: int, point: int) -> None:
+    def __load_pedreira2012(self, case: int, point: int) -> None:
         """Loading synthethic files from Quiroga simulator (2012)"""
         self.__path2data = self.path2data
         folder_name = "02_SimDaten_Pedreira2012"
@@ -152,7 +152,7 @@ class DataLoader:
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None
 
-    def __load_Quiroga2020(self, case: int, point: int) -> None:
+    def __load_quiroga2020(self, case: int, point: int) -> None:
         """Loading synthetic recordings from Quiroga simulator (Common benchmark)"""
         self.__path2data = self.path2data
         folder_name = "03_SimDaten_Quiroga2020"
@@ -193,7 +193,7 @@ class DataLoader:
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None
 
-    def __load_Seidl2012(self, case: int, point: int) -> None:
+    def __load_seidl2012(self, case: int, point: int) -> None:
         """Loading the recording files from the Freiburg probes from Karsten Seidl from this PhD"""
         self.__path2data = self.path2data
         folder_name = "04_Freiburg_Seidl2014"
@@ -223,7 +223,7 @@ class DataLoader:
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None
 
-    def __load_Marre2018(self, case: int, point: int) -> None:
+    def __load_marre2018(self, case: int, point: int) -> None:
         self.__path2data = self.path2data
         folder_name = "05_Zenodo_Marre2018"
         data_type = '*.mat'
@@ -232,7 +232,7 @@ class DataLoader:
         # TODO: Funktionen implementieren
         print("NOT IMPLEMENTED")
 
-    def __load_Klaes_UtahArray(self, case: int, nsp_device: int) -> None:
+    def __load_klaes_utah_array(self, case: int, nsp_device: int) -> None:
         """Loading the merged data file (from *.ns6 and *.nev files) from recordings with Utah electrode array
         from Blackrock Neurotechnology (case = experiment, nsp_device)"""
         self.__path2data = self.path2data
@@ -284,7 +284,7 @@ class DataLoader:
         self.raw_data.behaviour_exist = True
         self.raw_data.behaviour = loaded_data['behaviour']
 
-    def __load_RGC_TDB(self, case: int, point: int) -> None:
+    def __load_rgc_tdb(self, case: int, point: int) -> None:
         """Loading the transient files from the Retinal Ganglian Cell Transient Database (RGC TDB)"""
         self.__path2data = self.path2data
         folder_name = "07_RGC_TDB"
@@ -330,18 +330,19 @@ class DataLoader:
         self.raw_data.data_time = self.raw_data.data_raw[0].shape[0] / self.raw_data.data_fs_orig
 
         # Groundtruth
+        rgc_translator = RGC_Cell_Names()
         self.raw_data.label_exist = True
         self.raw_data.spike_offset_us = [-500]
         for idx, pos_ch in enumerate(elec_process):
             self.raw_data.spike_xpos.append(spike_xpos[idx])
             num_spikes = len(spike_xpos[idx])
-            self.raw_data.cluster_id.append(np.zeros(shape=(num_spikes, ), dtype=int) + loaded_data['sp_trains']['cell_unid'][pos_ch][0])
-            self.raw_data.cluster_type.append(loaded_data['sp_trains']['cell_type'][pos_ch][0])
+            self.raw_data.cluster_id.append(np.zeros(shape=(num_spikes, ), dtype=int) + rgc_translator.get_id_from_cell_type(loaded_data['sp_trains']['cell_type'][pos_ch][0]))
+
         # Behaviour
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None
 
-    def __load_FZJ_MCS(self, case: int, point: int) -> None:
+    def __load_fzj_mcs(self, case: int, point: int) -> None:
         """Loading the recording files from MCS setup in FZ Juelich (case = experiment, point = file)"""
         self.__path2data = self.path2data
         folder_name = "08_RGC_FZJuelich"
@@ -369,7 +370,7 @@ class DataLoader:
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None
 
-    def __load_Musall_NeuroPixel(self, case: int, point: int) -> None:
+    def __load_musall_neuropixel(self, case: int, point: int) -> None:
         """Loading the files from recordings with NeuroPixel probes"""
         self.__path2data = self.path2data
         folder_name = "07_RGC_TDB"
@@ -379,4 +380,3 @@ class DataLoader:
         # TODO: Auswertung von NeuroPixel probes einlesen
 
         print("NOT IMPLEMENTED")
-
