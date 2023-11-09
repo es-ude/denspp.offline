@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from threading import Thread, active_count
 from datetime import datetime
 from scipy.io import savemat
+from tqdm import tqdm
 
 from src_neuro.pipeline_v1 import Settings, Pipeline
 from package.metric import Metric
@@ -12,7 +13,7 @@ from package.plotting.plot_pipeline import results_afe1, results_afe2, results_f
 
 
 class CustomThread(Thread):
-    def __init__(self, rawdata: np.ndarray, channel: int, path2save=''):
+    def __init__(self, rawdata: np.ndarray, channel: int, settings, path2save=''):
         Thread.__init__(self)
         self.input = rawdata
         self.output = None
@@ -21,15 +22,15 @@ class CustomThread(Thread):
         self.path2save = path2save
         self.thread_num = self.name
         self.channel = channel
+        self.settings = settings
 
     def run(self):
-        print(f"... start processing of channel #{self.channel} on {self.thread_num}")
         # ---- Run src_neuro and calculate metrics
-        SpikeSorting.run(self.input)
+        pipeline = Pipeline(self.settings)
+        pipeline.run(self.input)
         self.metric = Metric()
-        self.output = SpikeSorting.signals
-        self.out_save = SpikeSorting.prepare_saving()
-        print(f"... process done ({self.thread_num} closed)")
+        self.output = pipeline.signals
+        self.out_save = pipeline.prepare_saving()
 
 
 def save_results(data: list, path2save="") -> None:
@@ -49,9 +50,9 @@ def func_plots(data, channel: int, path2save="") -> None:
     """Function to plot resilts from spike sorting"""
     # --- Spike Sorting output
     results_afe1(data, channel, path=path2save)
-    results_afe2(data, channel, path=path2save)
-    #results_afe2(data, channel, path=path2save, time_cut=[10, 12])
-    results_fec(data, channel, path=path2save)
+    # results_afe2(data, channel, path=path2save)
+    # results_afe2(data, channel, path=path2save, time_cut=[10, 12])
+    # results_fec(data, channel, path=path2save)
     # results_paper(data, channel, path=path2save)
 
     # --- NSP block
@@ -64,6 +65,7 @@ def func_plots(data, channel: int, path2save="") -> None:
 if __name__ == "__main__":
     plt.close('all')
 
+    block_plots = False
     use_multithreading = False
     str_datum = datetime.now().strftime('%Y%m%d_%H%M%S')
     folder_name = '{}_pipeline'.format(str_datum)
@@ -80,25 +82,25 @@ if __name__ == "__main__":
     del datahand
 
     # ----- Module declaration & Channel Calculation -----
-    num_electrodes = dataIn.electrode_id[0]
-    SpikeSorting = Pipeline(settings)
-    path2save = SpikeSorting.generate_folder(folder_name)
+    num_electrodes = dataIn.electrode_id
+    pipe_test = Pipeline(settings)
+    path2save = pipe_test.generate_folder(folder_name)
     results = [None] * len(num_electrodes)
 
     print("\nPerforming end-to-end src_neuro on all channels")
     if use_multithreading and len(num_electrodes) > 1:
         # --- Path for Multi-Threading
         max_num_workers = 2
-        print(f"... using {max_num_workers} of {active_count()} threading workers")
         num_iterations = int(np.ceil(len(num_electrodes) / max_num_workers))
         process_threads = [None] * num_iterations
         for ite in range(num_iterations):
             process_threads[ite] = (num_electrodes[ite * max_num_workers: (ite + 1) * max_num_workers])
 
-        for thr in process_threads:
+        print(f"... using {max_num_workers} of {active_count()} threading workers")
+        for thr in tqdm(process_threads, ncols=100, desc='Progress: '):
             threads = list()
             for idx, elec in enumerate(thr):
-                threads.append(CustomThread(dataIn.data_raw[elec], elec, path2save))
+                threads.append(CustomThread(dataIn.data_raw[elec], elec, settings, path2save))
                 threads[idx].start()
 
             for idx, elec in enumerate(thr):
@@ -106,8 +108,9 @@ if __name__ == "__main__":
                 results[elec] = threads[idx].output
     else:
         # --- Path for Single-Threading
-        for idx, elec in enumerate(num_electrodes):
-            thread = CustomThread(dataIn.data_raw[idx], elec, path2save)
+        print('... using single threading')
+        for idx, elec in enumerate(tqdm(num_electrodes, ncols=100, desc='Progress: ')):
+            thread = CustomThread(dataIn.data_raw[idx], elec, settings, path2save)
             thread.start()
             thread.join()
             results[elec] = thread.output
@@ -119,4 +122,4 @@ if __name__ == "__main__":
         func_plots(results[elec], elec, path2save)
 
     print("This is the End!")
-    plt.show(block=True)
+    plt.show(block=block_plots)
