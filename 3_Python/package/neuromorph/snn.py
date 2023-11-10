@@ -1,9 +1,6 @@
 import numpy as np
 
-import torch
-import torch.nn as nn
-
-import snntorch as snn
+from torch import nn
 from snntorch import surrogate
 from snntorch import backprop
 from snntorch import functional as SF

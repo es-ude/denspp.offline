@@ -26,6 +26,9 @@ def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_po
     print("... loading the datasets")
     path2folder = join(path2save, 'Merging')
 
+    if not exists(path2save):
+        mkdir(path2save)
+
     if not exists(path2folder):
         mkdir(path2folder)
 
@@ -37,7 +40,7 @@ def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_po
     first_run = True
     while first_run or runPoint < endPoint:
         first_run = True
-        timepoint_start = datetime.now()
+        time_start = datetime.now()
 
         frames_in = np.empty(shape=(0, 0), dtype=np.dtype('int16'))
         frames_cluster = np.empty(shape=(0, 0), dtype=np.dtype('uint16'))
@@ -76,7 +79,10 @@ def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_po
             # --- Release memory
             del afe, spike_xpos, cl_in
 
-        print(f"... done after {1e-6 * (datetime.now() - timepoint_start).microseconds: .2f} s")
+        time_stop = datetime.now()
+        time_dt = time_stop - time_start
+        print(f"... done after {time_dt.seconds + 1e-6 * time_dt.microseconds: .2f} s")
+        del time_start, time_stop, time_dt
         # --- Saving data (each run)
         newfile_name = join(path2folder, (create_time + '_Dataset-'
                                           + datahandler.raw_data.data_name
