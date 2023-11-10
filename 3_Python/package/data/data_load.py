@@ -117,6 +117,7 @@ class DataLoader:
         # Behaviour
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None
+        del loaded_data
 
     def __load_pedreira2012(self, case: int, point: int) -> None:
         """Loading synthethic files from Quiroga simulator (2012)"""
@@ -151,6 +152,7 @@ class DataLoader:
         # Behaviour
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None
+        del loaded_data
 
     def __load_quiroga2020(self, case: int, point: int) -> None:
         """Loading synthetic recordings from Quiroga simulator (Common benchmark)"""
@@ -192,6 +194,7 @@ class DataLoader:
         # Behaviour
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None
+        del loaded_data
 
     def __load_seidl2012(self, case: int, point: int) -> None:
         """Loading the recording files from the Freiburg probes from Karsten Seidl from this PhD"""
@@ -209,7 +212,7 @@ class DataLoader:
 
         self.raw_data.device_id = [0]
         elec_orig = np.arange(0, loaded_data['raw_data'].shape[0]).tolist()
-        elec_process = self.select_electrodes if not self.select_electrodes[0] == -1 else elec_orig
+        elec_process = self.select_electrodes if not len(self.select_electrodes) == 0 else elec_orig
         for elec in elec_process:
             self.raw_data.data_raw.append(self.raw_data.data_lsb * np.float32(loaded_data['raw_data'][elec]))
 
@@ -222,15 +225,39 @@ class DataLoader:
         # Behaviour
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None
+        del loaded_data
 
     def __load_marre2018(self, case: int, point: int) -> None:
+        # Link to data: https://zenodo.org/record/1205233#.YrBYrOzP1PZ
         self.__path2data = self.path2data
         folder_name = "05_Zenodo_Marre2018"
         data_type = '*.mat'
         self.__prepare_access(folder_name, data_type, point)
         loaded_data = loadmat(self.path2file)
-        # TODO: Funktionen implementieren
-        print("NOT IMPLEMENTED")
+
+        self.raw_data.data_name = folder_name
+        self.raw_data.data_type = "Intracellular Matching"
+        self.raw_data.data_lsb = float(loaded_data['Gain'][0])
+        self.raw_data.data_fs_orig = int(loaded_data['fs'][0])
+
+        self.raw_data.device_id = [0]
+        # Information for data structure(Channel No = 255: Müll, No = 254: Intracellular response)
+        elec_orig = np.arange(0, loaded_data['juxta_channel'][0]).tolist()
+        elec_process = self.select_electrodes if not len(self.select_electrodes) == 0 else elec_orig
+        for elec in elec_process:
+            self.raw_data.data_raw.append(self.raw_data.data_lsb * (np.float32(loaded_data['data'][:, elec]) - 32767))
+
+        self.raw_data.electrode_id = elec_process
+        self.raw_data.data_time = loaded_data['data'].shape[0] / self.raw_data.data_fs_orig
+
+        # Groundtruth
+        # TODO: Verarbeitung der Intrazellulären Antwort des juxta_channels
+        self.raw_data.label_exist = False
+        self.raw_data.spike_offset_us = [0]
+        # Behaviour
+        self.raw_data.behaviour_exist = False
+        self.raw_data.behaviour = None
+        del loaded_data
 
     def __load_klaes_utah_array(self, case: int, nsp_device: int) -> None:
         """Loading the merged data file (from *.ns6 and *.nev files) from recordings with Utah electrode array
@@ -261,7 +288,7 @@ class DataLoader:
 
         self.raw_data.device_id = [nsp_device]
         elec_orig = np.arange(0, int(loaded_data['rawdata']['NoElectrodes'][0, 0][0])).tolist()
-        elec_process = self.select_electrodes if not self.select_electrodes[0] == -1 else elec_orig
+        elec_process = self.select_electrodes if not len(self.select_electrodes) == 0 else elec_orig
         # TODO: Daten vom Utah-Array einlesen (Zwei Devices)
         data_raw = np.transpose(loaded_data['rawdata']['spike'][0, 0])
         for elec in elec_process:
@@ -283,6 +310,7 @@ class DataLoader:
         # TODO: Daten vom Utah-Array einlesen (Verhaltensanalyse)
         self.raw_data.behaviour_exist = True
         self.raw_data.behaviour = loaded_data['behaviour']
+        del loaded_data
 
     def __load_rgc_tdb(self, case: int, point: int) -> None:
         """Loading the transient files from the Retinal Ganglian Cell Transient Database (RGC TDB)"""
@@ -304,7 +332,7 @@ class DataLoader:
 
         # Pre-Processing: Getting only the desired channels
         elec_orig = used_ch
-        if not self.select_electrodes[0] == -1:
+        if not len(self.select_electrodes) == 0:
             elec_process = list()
             for elec in self.select_electrodes:
                 elec_process.append(elec_orig[elec])
@@ -341,6 +369,7 @@ class DataLoader:
         # Behaviour
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None
+        del loaded_data
 
     def __load_fzj_mcs(self, case: int, point: int) -> None:
         """Loading the recording files from MCS setup in FZ Juelich (case = experiment, point = file)"""
@@ -358,7 +387,7 @@ class DataLoader:
 
         self.raw_data.device_id = [0]
         elec_orig = np.arange(0, loaded_data['electrode'].shape[1]).tolist()
-        elec_process = self.select_electrodes if not self.select_electrodes[0] == -1 else elec_orig
+        elec_process = self.select_electrodes if not len(self.select_electrodes) == 0 else elec_orig
         for elec in elec_process:
             self.raw_data.data_raw.append(self.raw_data.data_lsb * np.float32(loaded_data['electrode'][:, elec]))
         self.raw_data.data_time = loaded_data['electrode'].shape[0] / self.raw_data.data_fs_orig
@@ -369,6 +398,7 @@ class DataLoader:
         # Behaviour
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None
+        del loaded_data
 
     def __load_musall_neuropixel(self, case: int, point: int) -> None:
         """Loading the files from recordings with NeuroPixel probes"""
@@ -378,5 +408,6 @@ class DataLoader:
         self.__prepare_access_subfolder(folder_name, data_type, case, point)
         loaded_data = loadmat_mat73(self.path2file)
         # TODO: Auswertung von NeuroPixel probes einlesen
+        del loaded_data
 
         print("NOT IMPLEMENTED")

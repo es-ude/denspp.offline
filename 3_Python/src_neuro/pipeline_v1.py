@@ -20,11 +20,11 @@ class Settings:
     SettingsDATA = SettingsDATA(
         path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
         # path='C:\GitHub\spaike_project\\2_Data',
-        data_set=8,
+        data_set=5,
         data_case=0,
         data_point=0,
         t_range=[0],
-        ch_sel=[0, 1, 2],
+        ch_sel=[],
         fs_resample=100e3
     )
 

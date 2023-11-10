@@ -26,7 +26,7 @@ class SettingsDATA:
     data_point: int
     # Angabe des zu betrachteten Zeitfensters [Start, Ende] in sec.
     t_range: list
-    # Auswahl der Elektroden(= -1, ruft alle Daten auf)
+    # Selection of electrodes(Empty calls all data)
     ch_sel: list
     fs_resample: float
 
@@ -37,7 +37,7 @@ class RecommendedSettingsDATA(SettingsDATA):
         super().__init__(
             path="C:\Data",
             data_set=1, data_case=0, data_point=0,
-            t_range=[0], ch_sel=[-1],
+            t_range=[0], ch_sel=[],
             fs_resample=100e3
         )
 
