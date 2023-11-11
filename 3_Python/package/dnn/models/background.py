@@ -1,5 +1,4 @@
-import torch
-import torch.nn as nn
+from torch import nn, Tensor
 
 class sda_bae_v1(nn.Module):
     """Class to identify spike type from NEO operator"""
@@ -20,6 +19,6 @@ class sda_bae_v1(nn.Module):
             nn.Sigmoid()
         )
 
-    def forward(self, x: torch.Tensor) -> [torch.Tensor, torch.Tensor]:
+    def forward(self, x: Tensor) -> [Tensor, Tensor]:
         encoded = self.encoder(x)
         return encoded, self.decoder(encoded)
