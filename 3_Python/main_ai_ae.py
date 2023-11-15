@@ -28,7 +28,7 @@ class Config_PyTorch:
         self.data_file_name = '2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted'
         self.data_split_ratio = 0.25
         self.data_do_shuffle = True
-        self.data_do_augmentation = True
+        self.data_do_augmentation = False
         self.data_num_augmentation = 2000
         self.data_do_normalization = False
         self.data_do_addnoise_cluster = False
