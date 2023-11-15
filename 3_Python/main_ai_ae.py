@@ -1,5 +1,5 @@
-import numpy as np
 from os.path import join
+from glob import glob
 import matplotlib.pyplot as plt
 from torch import nn, from_numpy, load
 from scipy.io import savemat
