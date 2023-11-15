@@ -119,8 +119,8 @@ class pytorch_autoencoder(training_pytorch):
                     path2model = os.path.join(self.path2log, f'model_fold{fold:03d}_epoch{epoch:04d}.pth')
                     save(self.model, path2model)
 
-                # Calculation of custom metrics
-                # own_metric.append(self.__do_snr_epoch())
+                    # Calculation of custom metrics
+                    own_metric.append(self.__do_snr_epoch())
 
             # --- Ausgabe nach Training
             self.save_train_results(loss_train, loss_valid)

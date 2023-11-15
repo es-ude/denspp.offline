@@ -65,7 +65,7 @@ def calculate_mean_waveform(
 
 
 # TODO: Data Normalization does not work very well
-def data_normalization(
+def data_normalization_CPU(
         frames_in: np.ndarray,
         do_bipolar=True,
         do_globalmax=False
@@ -82,3 +82,44 @@ def data_normalization(
         frames_out[i, :] = mean_val + frame / scale
 
     return frames_out
+
+
+def data_normalization_FPGA(
+        frames_in: np.ndarray,
+        do_bipolar=True,
+        do_globalmax=False
+    ) -> np.ndarray:
+    """Data Normalization of input with range setting do_bipolar (False: [0, 1] - True: [-1, +1])"""
+    mean_val = 0 if do_bipolar else 0.5
+    scale_mean = 1 if do_bipolar else 2
+    scale_global = np.max([np.max(frames_in), -np.min(frames_in)]) if do_globalmax else 1
+
+    frames_out = np.zeros(shape=frames_in.shape)
+    for i, frame in enumerate(frames_in):
+        scale_local = np.max([np.max(frame), -np.min(frame)]) if not do_globalmax else 1
+        scale = scale_mean * scale_local * scale_global
+        division_value = 1
+        while (scale > (2**division_value)):
+            division_value += 1
+        print("Division value frame number ", i, ":", 2**division_value)
+        print("Original scale frame number  ", i, ":", scale)
+        frames_out[i, :] = mean_val + frame / (2**division_value)
+
+    return frames_out
+
+
+#---Testing
+if __name__ == "__main__":
+
+    test_array = np.array([[-500, 24, 5, 19], [-32, 23, 8, 51]])
+    #bipolar_out = data_normalization_CPU(test_array, True)
+    #bipolar_globalmax_out = data_normalization_CPU(test_array, True, True)
+    #polar_out = data_normalization_CPU(test_array, False)
+    #polar_globalmax_out = data_normalization_CPU(test_array, False, True)
+    out = data_normalization_FPGA(test_array)
+
+    #print(bipolar_out, "\n")
+    #print(bipolar_globalmax_out, "\n")
+    #print(polar_out, "\n")
+    #print(polar_globalmax_out, "\n")
+    print(out)
