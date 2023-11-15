@@ -1,5 +1,6 @@
 class RGC_Cell_Names:
     """Retinal Ganglion Cell Selection"""
+    # Bis *_part_07 getestet
     def __init__(self):
         self.cell_type_to_id = {
             "ONOFF DS dorsal": 0,
@@ -18,12 +19,12 @@ class RGC_Cell_Names:
             "OFF transient alpha": 13,
             "OFF transient medium RF": 14,
             "OFF transient small RF": 15,
-            "F mini ON": 16,
+            "F-mini-ON": 16,
             "Local Edge Detector": 17,
             "UHD": 18,
             "HD1": 19,
             "HD2": 20,
-            "F mini OFF": 21,
+            "F-mini-OFF": 21,
             "M1": 22,
             "M2": 23,
             "PixON": 24,
@@ -36,7 +37,8 @@ class RGC_Cell_Names:
             "ON transient EW6t": 31,
             "ON transient medium RF": 32,
             "ON transient small RF": 33,
-            "Sustained suppressed-by-contrast strong surround EW28": 34
+            "Sustained suppressed-by-contrast strong surround EW28": 34,
+            'Bursty suppressed by contrast': 35
         }
 
         self.cell_class_to_id = {

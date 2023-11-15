@@ -5,6 +5,7 @@ import numpy as np
 from datetime import datetime
 from scipy.io import savemat, loadmat
 from tqdm import tqdm
+import platform
 
 from package.data.data_call import DataController
 from src_data.pipeline_data import Settings, Pipeline
@@ -111,8 +112,8 @@ def merge_data_from_diff_data(path2data: str) -> None:
     folder_content = glob(join(path2data, 'Merging', '*.mat'))
     folder_content.sort()
 
-    frame_in = np.zeros((0,0), dtype='int16')
-    frame_cl = np.zeros((0,0), dtype='uint16')
+    frame_in = np.zeros((0, 0), dtype='int16')
+    frame_cl = np.zeros((0, 0), dtype='uint16')
 
     for idx, file in enumerate(folder_content):
         print(idx, file)
@@ -122,7 +123,7 @@ def merge_data_from_diff_data(path2data: str) -> None:
         frame_cl = data['frames_cluster'] if idx == 0 else np.append(frame_cl, data['frames_cluster'], axis=1)
 
         if idx == 0:
-            file_name = file.split('\\')[-1]
+            file_name = file.split('\\')[-1] if platform.system() == "Windows" else file.split('/')[-1]
             file_name = file_name.split('_step')[0]
             print(file_name)
 

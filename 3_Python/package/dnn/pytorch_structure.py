@@ -120,7 +120,7 @@ class pytorch_autoencoder(training_pytorch):
                     save(self.model, path2model)
 
                 # Calculation of custom metrics
-                # own_metric.append(self.__do_snr_epoch())
+                own_metric.append(self.__do_snr_epoch())
 
             # --- Ausgabe nach Training
             self.save_train_results(loss_train, loss_valid)
@@ -193,22 +193,6 @@ class pytorch_classifier(training_pytorch):
         valid_loss = valid_loss / total_batches
 
         return valid_loss
-
-    def __do_snr_epoch(self) -> list:
-        """Do metric calculation during validation step of training"""
-        metric_epoch = []
-        self.model.eval()
-        for vdata in self.valid_loader[self.run_kfold]:
-            data_in = vdata['in']
-            data_mean = vdata['mean'].detach().numpy()
-            pred_out = self.model(data_in)
-
-            snr_in = calculate_snr(data_in.detach().numpy(), data_mean)
-            snr_out = calculate_snr(pred_out.detach().numpy(), data_mean)
-            metric_epoch.append([snr_out - snr_in])
-
-        metric_epoch = np.array(metric_epoch)
-        return [np.min(metric_epoch), np.mean(metric_epoch), np.max(metric_epoch)]
 
     def do_training(self) -> list:
         """Start model training incl. validation and custom-own metric calculation"""
@@ -286,4 +270,3 @@ class pytorch_classifier(training_pytorch):
             shutil.rmtree(folder, ignore_errors=True)
 
         return metrics
-
