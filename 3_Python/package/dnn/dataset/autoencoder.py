@@ -5,7 +5,7 @@ from torch import is_tensor
 from torch.utils.data import Dataset, DataLoader
 
 from package.dnn.pytorch_control import Config_PyTorch
-from package.dnn.data_preprocessing import change_frame_size, calculate_mean_waveform, generate_zero_frames, data_normalization
+from package.dnn.data_preprocessing import change_frame_size, calculate_mean_waveform, generate_zero_frames, data_normalization_CPU
 from package.dnn.data_augmentation import augmentation_change_position
 
 
