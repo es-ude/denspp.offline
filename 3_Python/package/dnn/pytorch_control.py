@@ -20,7 +20,7 @@ class Config_PyTorch:
         self.num_epochs = 1000
         self.batch_size = 512
         # Settings of Datasets
-        self.data_path = 'data'
+        self.data_path = '../2_Data/00_Merged_Datasets'
         self.data_file_name = '2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted'
         self.data_split_ratio = 0.2
         self.data_do_shuffle = True
@@ -93,7 +93,11 @@ class training_pytorch:
         """Do init of class for training"""
         folder_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{self.index_folder}_{self.model_name}'
         self.path2save = os.path.join(self.path2run, folder_name)
-        os.mkdir(self.path2save)
+        if not os.path.exists(self.path2run):
+            os.mkdir(self.path2run)
+
+        if not os.path.exists(self.path2save):
+            os.mkdir(self.path2save)
 
     def init_writer(self) -> None:
         """Do init of writer"""

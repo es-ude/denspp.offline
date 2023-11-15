@@ -23,7 +23,7 @@ class Config_PyTorch:
         self.num_epochs = 100
         self.batch_size = 256
         # Settings of Datasets
-        self.data_path = 'data'
+        self.data_path = '../2_Data/00_Merged_Datasets'
         self.data_file_name = '2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted'
         self.data_split_ratio = 0.25
         self.data_do_shuffle = True
