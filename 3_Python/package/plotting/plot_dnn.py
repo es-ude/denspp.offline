@@ -61,48 +61,30 @@ def plt_memristor_ref(frames_in: np.ndarray, frames_cluster: np.ndarray, frames_
 
     plt.show(block=True)
 
-def test_plot(frames_in, frames_cluster):
-    cluster_no = np.unique(frames_cluster)
-
-    frames_plot = []
-    frames_mean = []
-    for idx, clid in enumerate(cluster_no):
-        xsel = np.where(frames_cluster == clid)
-        frames0 = np.zeros(shape=(len(xsel[0]), frames_in.shape[1]))
-        for i, sel in enumerate(xsel[0]):
-            frames0[i, :] = frames_in[sel, :]
-
-        frames_plot.append(frames0)
-        frames_mean.append(np.mean(frames0, axis=0))
-
-    # --- Plotting
-    plt.figure()
-    for idx, clid in enumerate(cluster_no):
-        # plt.plot(np.transpose(frames_plot[idx]), color='k')
-        plt.plot(frames_mean[idx])
-
-    plt.show(block=True)
-
 
 def results_training(path: str,
                      yin: np.ndarray, ypred: np.ndarray, ymean: np.ndarray,
                      feat: np.ndarray, cluster: np.ndarray,
-                     snr: np.ndarray) -> None:
+                     snr: np.ndarray, xframes=100) -> None:
     color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
     textsize = 12
 
     # --- Pre-Processing
     cluster_no = np.unique(cluster)
 
-    mark_pos = []
-    mark_feat0 = []
-    mark_feat1 = []
-    mark_feat2 = []
+    mark_pos = list()
+    mark_feat0 = list()
+    mark_feat1 = list()
+    mark_feat2 = list()
+    take_frames = list()
     for i, id in enumerate(cluster_no):
+        # Features
         mark_pos.append(np.where(cluster == id))
         mark_feat0.append(feat[mark_pos[-1], 0])
         mark_feat1.append(feat[mark_pos[-1], 1])
         mark_feat2.append(feat[mark_pos[-1], 2])
+        # Take frames for plotting
+        take_frames.append(np.random.choice(mark_pos[i], size=xframes, replace=False))
 
     # --- Plotting: Statistics
     plt.rcParams.update({'font.size': textsize})
@@ -163,7 +145,8 @@ def results_training(path: str,
     ax3.margins(x=0)
 
     # Noisy input
-    ax1.plot(np.transpose(yin))
+    for pos in take_frames:
+        ax1.plot(np.transpose(yin[pos, :]), linewidth=1)
     ax1.set_title('Network Input')
     ax1.set_ylabel('Y_in')
     ax1.set_xlabel('Frame position')
@@ -179,7 +162,8 @@ def results_training(path: str,
     ax2.set_xlabel('Feat[1]')
 
     # Denoised output
-    ax3.plot(np.transpose(ypred))
+    for pos in take_frames:
+        ax3.plot(np.transpose(ypred[pos, :]), linewith=1)
     if mode == 1:
         for i, id in enumerate(cluster_no):
             ax3.plot(ymean[i, :], color=color[i], linewidth=1.5)
@@ -296,3 +280,55 @@ def results_training(path: str,
     # --- saving plots
     if path:
         save_figure(plt, path, "ai_training_feat")
+
+
+def plot_autoencoder_results(mark_feat: list, mark_idx: list,
+                             frames_in: np.ndarray, frames_out: np.ndarray, frames_mean: np.ndarray,
+                             cluster_no: list, take_frames: list, mode=0, path2save='') -> None:
+    """Handler for plotting results"""
+    color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
+    textsize = 12
+
+    fig = plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
+    plt.rcParams.update({'font.size': textsize})
+    plt.subplots_adjust(hspace=0, wspace=0.5)
+    plt.grid(visible=True)
+    row = 1
+    col = 3
+
+    ax1 = plt.subplot(row, col, 1)
+    ax1.margins(x=0)
+    ax1.set_xticks([0, 7, 15, 23, 31])
+    ax2 = plt.subplot(row, col, 2)
+    ax2.margins(x=0)
+    ax3 = plt.subplot(row, col, 3, sharex=ax1)
+    ax3.margins(x=0)
+
+    # Noisy input
+    for pos in take_frames:
+        ax1.plot(np.transpose(frames_in[pos, :]), linewidth=1)
+    ax1.set_title('Network Input')
+    ax1.set_ylabel('Y_in')
+    ax1.set_xlabel('Frame position')
+
+    # Feature extraction
+    for i, id in enumerate(cluster_no):
+        ax2.scatter(mark_feat[mark_idx[0]][i], mark_feat[mark_idx[1]][i], color=color[i], marker='.')
+    ax2.set_title('Features')
+    ax2.set_ylabel(f'Feat[{mark_idx[0]}]')
+    ax2.set_xlabel(f'Feat[{mark_idx[1]}]')
+
+    # Denoised output
+    for pos in take_frames:
+        ax3.plot(np.transpose(frames_out[pos, :]), linewith=1)
+    if mode == 1:
+        for i, id in enumerate(cluster_no):
+            ax3.plot(frames_mean[i, :], color=color[i], linewidth=1.5)
+    ax3.set_title('Network Output')
+    ax3.set_ylabel('X_pred')
+    ax3.set_xlabel('Frame position')
+
+    plt.tight_layout(pad=0.5)
+    # --- saving plots
+    if path2save:
+        save_figure(plt, path2save, f"ai_training_out{mark_idx[0]}-{mark_idx[1]}")
