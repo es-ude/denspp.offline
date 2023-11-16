@@ -15,7 +15,7 @@ import package.dnn.models.autoencoder as ai_module
 class Config_PyTorch:
     def __init__(self):
         # Settings of Models/Training
-        self.model = ai_module.cnn_ae_v1
+        self.model = ai_module.dnn_ae_v2
         # self.model = ai_module_embedded.dnn_dae_v2
         self.is_embedded = False
         self.loss_fn = torch.nn.MSELoss()
@@ -23,13 +23,15 @@ class Config_PyTorch:
         self.num_epochs = 10
         self.batch_size = 256
         # Settings of Datasets
-        self.data_path = '../2_Data/00_Merged_Datasets'
+        self.data_path = 'src_data'
+        # self.data_path = '../2_Data/00_Merged_Datasets'
         # self.data_path = 'data'
-        self.data_file_name = '2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted'
+        self.data_file_name = 'rgc_onoff_fzj.mat'
+        # self.data_file_name = '2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted'
         self.data_split_ratio = 0.25
         self.data_do_shuffle = True
-        self.data_do_augmentation = False
-        self.data_num_augmentation = 2000
+        self.data_do_augmentation = True
+        self.data_num_augmentation = 0
         self.data_do_normalization = False
         self.data_do_addnoise_cluster = False
         # Dataset Preparation

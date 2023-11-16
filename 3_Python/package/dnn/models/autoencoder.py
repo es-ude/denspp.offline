@@ -47,9 +47,9 @@ class dnn_ae_v2(nn.Module):
         super().__init__()
         self.out_modelname = 'dnn_ae_v2'
         self.out_modeltyp = 'Autoencoder'
-        self.model_shape = (1, 32)
+        self.model_shape = (1, 40)
         self.model_embedded = False
-        iohiddenlayer = [self.model_shape[1], 20, 3]
+        iohiddenlayer = [self.model_shape[1], 28, 3]
         do_train_bias = True
         do_train_batch = True
 
