@@ -1,4 +1,5 @@
-from os.path import join
+from os import mkdir
+from os.path import join, exists
 import numpy as np
 import matplotlib.pyplot as plt
 from threading import Thread, active_count
@@ -35,6 +36,9 @@ class CustomThread(Thread):
 
 def save_results(data: list, path2save="") -> None:
     """Function for plotting the results"""
+    if not exists(path2save):
+        mkdir(path2save)
+
     name = 'results.mat'
     mdict = dict()
     for elec, val in enumerate(data):

@@ -23,10 +23,9 @@ class Config_PyTorch:
         self.num_epochs = 10
         self.batch_size = 256
         # Settings of Datasets
-        self.data_path = 'src_data'
+        self.data_path = 'data'
+        self.data_file_name = '2023-11-16_rgc_onoff_fzj.mat'
         # self.data_path = '../2_Data/00_Merged_Datasets'
-        # self.data_path = 'data'
-        self.data_file_name = 'rgc_onoff_fzj.mat'
         # self.data_file_name = '2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted'
         self.data_split_ratio = 0.25
         self.data_do_shuffle = True
@@ -34,6 +33,8 @@ class Config_PyTorch:
         self.data_num_augmentation = 0
         self.data_do_normalization = False
         self.data_do_addnoise_cluster = False
+        self.data_do_reduce_samples_per_cluster = True
+        self.data_num_samples_per_cluster = 10000
         # Dataset Preparation
         self.data_exclude_cluster = []
         self.data_sel_pos = []
@@ -55,7 +56,7 @@ def ae_addon(mode: int) -> str:
     return addon
 
 
-# --- Hauptprogramm
+# --- Main programme
 if __name__ == "__main__":
     # 0 = normal autoencoder, 1 = denoising AE (mean), 2 = denoising AE (more noise input)
     mode_train = 1

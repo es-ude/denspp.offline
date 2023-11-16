@@ -90,7 +90,8 @@ def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_po
                                           + f'_step{runPoint + 1:03d}'))
         savemat(newfile_name + '.mat', {"frames_in": frames_in,
                    "frames_cluster": frames_cluster,
-                   "create_time": create_time, "settings": settings})
+                   "create_time": create_time, "settings": settings},
+                do_compression=True)
         print('Saving file in: ' + newfile_name + '.mat')
 
         # --- Release memory
@@ -101,11 +102,6 @@ def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_po
 
     # --- The End
     print("... This is the end")
-
-
-def merge_frames_from_dataset() -> None:
-    """Tool for merging all spike frames to one new dataset (Step 2)"""
-    print("\nStart MATLAB script manually: merge/merge_datasets_matlab.m")
 
 
 def merge_data_from_diff_data(path2data: str) -> None:
@@ -131,13 +127,17 @@ def merge_data_from_diff_data(path2data: str) -> None:
     frame_in = np.array(frame_in, dtype='int16')
     frame_cl = np.array(frame_cl, dtype='uint16')
     savemat(join(path2data, file_name) + '_Sorted.mat',
-            {"frames_in": frame_in,
-             "frames_cluster": frame_cl,
-             "create_time": data['create_time'],
-             "settings": data['settings']}
+            {"frames_in": frame_in, "frames_cluster": frame_cl,
+             "create_time": data['create_time'], "settings": data['settings']},
+            do_compression=True
     )
 
     # --- Output of clustering
     num_clusters = np.unique(frame_cl, return_counts=True)
     print(f'Type of cluster classes: {num_clusters[0]}\n'
           f'Number of samples: {num_clusters[1]}')
+
+
+def merge_frames_from_dataset() -> None:
+    """Tool for merging all spike frames to one new dataset (Step 2)"""
+    print("\nStart MATLAB script manually: merge/merge_datasets_matlab.m")

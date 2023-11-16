@@ -6,7 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.data_preprocessing import change_frame_size, calculate_mean_waveform, generate_zero_frames, data_normalization
-from package.dnn.data_augmentation import augmentation_change_position
+from package.dnn.data_augmentation import *
 
 
 # TODO: Add normal training of denoising autoencoder
@@ -93,27 +93,31 @@ def prepare_training(path: str, settings: Config_PyTorch, mode_train_ae=0) -> Da
     # --- Mean waveform calculation and data augmentation
     frames_in = change_frame_size(frames_in, settings.data_sel_pos)
     frames_mean, snr_mean = calculate_mean_waveform(frames_in, frames_cl)
-    # plt_memristor_ref(frames_in, frames_cluster, frames_mean)
+    # plt_memristor_ref(frames_in, frames_cl, frames_mean)
 
     # --- PART: Exclusion of selected clusters
     if len(settings.data_exclude_cluster) == 0:
         frames_in = frames_in
-        frames_cluster = frames_cl
+        frames_cl = frames_cl
     else:
         for i, id in enumerate(settings.data_exclude_cluster):
             selX = np.where(frames_cl != id)
             frames_in = frames_in[selX[0], :]
-            frames_cluster = frames_cl[selX]
+            frames_cl = frames_cl[selX]
 
     # --- PART: Data Augmentation
-    if settings.data_do_augmentation:
+    if settings.data_do_augmentation and not settings.data_do_reduce_samples_per_cluster:
         print("... do data augmentation")
         # new_frames, new_clusters = augmentation_mean_waveform(
-        # frames_mean, frames_cluster, snr_mean, settings.data_num_augmentation)
+        # frames_mean, frames_cl, snr_mean, settings.data_num_augmentation)
         new_frames, new_clusters = augmentation_change_position(
             frames_in, frames_cl, snr_mean, settings.data_num_augmentation)
         frames_in = np.append(frames_in, new_frames, axis=0)
-        frames_cluster = np.append(frames_cl, new_clusters, axis=0)
+        frames_cl = np.append(frames_cl, new_clusters, axis=0)
+
+    if settings.data_do_reduce_samples_per_cluster:
+        print("... do data augmentation with reducing the samples per cluster")
+        frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl, settings.data_num_samples_per_cluster)
 
     # --- PART: Generate and add noise cluster
     if settings.data_do_addnoise_cluster:
@@ -125,7 +129,7 @@ def prepare_training(path: str, settings: Config_PyTorch, mode_train_ae=0) -> Da
 
         new_mean, new_clusters, new_frames = generate_zero_frames(frames_in.shape[1], num_frames, snr_range_zero)
         frames_in = np.append(frames_in, new_frames, axis=0)
-        frames_cluster = np.append(frames_cl, num_cluster + new_clusters, axis=0)
+        frames_cl = np.append(frames_cl, num_cluster + new_clusters, axis=0)
         frames_mean = np.vstack([frames_mean, new_mean])
 
     # --- PART: Data Normalization

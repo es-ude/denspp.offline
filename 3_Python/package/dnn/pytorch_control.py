@@ -1,5 +1,6 @@
-import dataclasses
-import os.path
+from os import mkdir
+from os.path import exists, join
+import platform
 import numpy as np
 from datetime import datetime
 from torch import nn, optim, device, cuda
@@ -28,6 +29,8 @@ class Config_PyTorch:
         self.data_num_augmentation = 2000
         self.data_do_normalization = False
         self.data_do_addnoise_cluster = False
+        self.data_do_reduce_samples_per_cluster = True
+        self.data_num_samples_per_cluster = 10000
         # Dataset Preparation
         self.data_exclude_cluster = [1]
         self.data_sel_pos = []
@@ -73,31 +76,29 @@ class training_pytorch:
 
     def __setup_device(self) -> None:
         """Setup PyTorch for Training"""
-        os_type0 = os.name
         device0 = "CUDA" if cuda.is_available() else "CPU"
         if device0 == "CUDA":
             self.device = device("cuda")
         else:
             self.device = device("cpu")
 
-        if os_type0 == 'nt':
-            self.os_type = 'Windows'
-        elif os_type0 == 'posix':
-            self.os_type = 'Linux'
-        else:
-            self.os_type = 'Mac'
+        self.os_type = platform.system()
 
         print(f"... using PyTorch with {device0} device on {self.os_type}")
 
     def init_train(self) -> None:
         """Do init of class for training"""
         folder_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{self.index_folder}_{self.model_name}'
-        self.path2save = os.path.join(self.path2run, folder_name)
-        os.mkdir(self.path2save)
+        self.path2save = join(self.path2run, folder_name)
+
+        if not exists(self.path2run):
+            mkdir(self.path2run)
+
+        mkdir(self.path2save)
 
     def init_writer(self) -> None:
         """Do init of writer"""
-        self.path2log = os.path.join(self.path2save, f'logs_{self.run_kfold:03d}')
+        self.path2log = join(self.path2save, f'logs_{self.run_kfold:03d}')
         self.writer = SummaryWriter(self.path2log)
 
     def load_data(self, data_set) -> None:
@@ -145,7 +146,7 @@ class training_pytorch:
     def save_config_txt(self) -> None:
         """Writing the content of the configuration class in *.txt-file"""
         config_handler = self.settings
-        self.path2config = os.path.join(self.path2save, 'config.txt')
+        self.path2config = join(self.path2save, 'config.txt')
         self.config_available = True
 
         with open(self.path2config, 'w') as txt_handler:
@@ -156,8 +157,10 @@ class training_pytorch:
             txt_handler.write('\n')
             txt_handler.write(f'Batchsize: {config_handler.batch_size}\n')
             txt_handler.write(f'Num. of epochs: {config_handler.num_epochs}\n')
-            txt_handler.write(f'Splitting ratio (Training/Validation): {1-config_handler.data_split_ratio}/{config_handler.data_split_ratio}\n')
-            txt_handler.write(f'Do kfold cross validation?: {self.do_kfold}, Number of steps: {self.settings.num_kfold}\n')
+            txt_handler.write(f'Splitting ratio (Training/Validation): '
+                              f'{1-config_handler.data_split_ratio}/{config_handler.data_split_ratio}\n')
+            txt_handler.write(f'Do kfold cross validation?: {self.do_kfold}, '
+                              f'Number of steps: {self.settings.num_kfold}\n')
             txt_handler.write(f'Do shuffle?: {config_handler.data_do_shuffle}\n')
             txt_handler.write(f'Do data augmentation?: {config_handler.data_do_augmentation}\n')
             txt_handler.write(f'Do input normalization?: {config_handler.data_do_normalization}\n')
@@ -170,4 +173,3 @@ class training_pytorch:
                 txt_handler.write('\n--- Results of last epoch ---')
                 txt_handler.write(f'\nTraining Loss = {last_loss_train}')
                 txt_handler.write(f'\nValidation Loss = {last_loss_valid}')
-
