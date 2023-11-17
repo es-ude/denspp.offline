@@ -1,26 +1,26 @@
-from os.path import join
-from glob import glob
-import matplotlib.pyplot as plt
-import torch
-from scipy.io import savemat
 import numpy as np
+from os.path import join
+import matplotlib.pyplot as plt
+from torch import nn, optim, from_numpy, load
+from scipy.io import savemat
 
-from package.metric import calculate_snr
 import package.plotting.plot_dnn as plt_spaike
-from package.dnn.pytorch_structure import pytorch_autoencoder
+from package.dnn.pytorch_autoencoder import *
 from package.dnn.dataset.autoencoder import prepare_plotting, prepare_training
+from package.dnn.data_preprocessing import calculate_frame_mean, calculate_frame_snr
 import package.dnn.models.autoencoder as ai_module
 
 
 class Config_PyTorch:
     def __init__(self):
         # Settings of Models/Training
-        self.model = ai_module.dnn_ae_v2
+        self.model = ai_module.dnn_ae_rgc_fzj_v2
         # self.model = ai_module_embedded.dnn_dae_v2
         self.is_embedded = False
-        self.loss_fn = torch.nn.MSELoss()
+        # self.loss_fn = torch.nn.L1Loss()
+        self.loss_fn = nn.MSELoss()
         self.num_kfold = 1
-        self.num_epochs = 10
+        self.num_epochs = 100
         self.batch_size = 256
         # Settings of Datasets
         self.data_path = 'data'
@@ -34,13 +34,13 @@ class Config_PyTorch:
         self.data_do_normalization = False
         self.data_do_addnoise_cluster = False
         self.data_do_reduce_samples_per_cluster = True
-        self.data_num_samples_per_cluster = 10000
+        self.data_num_samples_per_cluster = 20000
         # Dataset Preparation
-        self.data_exclude_cluster = []
+        self.data_exclude_cluster = [1, 2, 3]
         self.data_sel_pos = []
 
     def set_optimizer(self, model):
-        return torch.optim.Adam(model.parameters())
+        return optim.Adam(model.parameters())
 
     def get_topology(self, model) -> str:
         return model.out_modeltyp
@@ -59,7 +59,7 @@ def ae_addon(mode: int) -> str:
 # --- Main programme
 if __name__ == "__main__":
     # 0 = normal autoencoder, 1 = denoising AE (mean), 2 = denoising AE (more noise input)
-    mode_train = 1
+    mode_train = 0
 
     # --- Programme start
     plt.close('all')
@@ -77,13 +77,13 @@ if __name__ == "__main__":
     dataset = prepare_training(path=path, settings=model_settings, mode_train_ae=mode_train)
 
     # --- Processing: Do Training
-    trainhandler = pytorch_autoencoder(model_typ, model_name, model_settings)
+    trainhandler = pytorch_train(model_typ, model_name, model_settings)
     trainhandler.model_addon = ae_addon(mode_train)
     trainhandler.load_model(model, model_opt)
     trainhandler.load_data(dataset)
 
     loss, snr_train = trainhandler.do_training()
-    logsdir = trainhandler.path2save
+    logsdir = trainhandler.get_saving_path()
 
     # --- Post-Processing: Getting data from validation set for plotting
     valid_dl = trainhandler.valid_loader[0]
@@ -91,11 +91,11 @@ if __name__ == "__main__":
     del valid_dl
 
     model_name_test = glob(join(logsdir, 'model_fold*.pth'))
-    model_test = torch.load(model_name_test[0])
+    model_test = load(model_name_test[0])
 
     # Doing the inference of best model
     print(f"\nDoing the inference with validation data on best model")
-    model_in = torch.from_numpy(data_in)
+    model_in = from_numpy(data_in)
     feat_out, pred_out = model_test(model_in)
     feat0 = feat_out.detach().numpy()
     ypred0 = pred_out.detach().numpy()
@@ -115,6 +115,9 @@ if __name__ == "__main__":
     print(f"- SNR_out: {np.mean(snr_out):.2f} (mean) | {np.max(snr_out):.2f} (max) | {np.min(snr_out):.2f} (min)")
     print(f"- SNR_inc: {np.mean(snr_delta): .2f} (mean)")
 
+    # --- Reducing data_mean
+    data_mean = calculate_frame_mean(data_in, cluster_out)
+
     # --- Saving data
     matdata = {"frames_in": data_in,
                "frames_out": data_out,
@@ -123,9 +126,11 @@ if __name__ == "__main__":
                "feat": feat0,
                "cluster": cluster_out,
                "config": model_settings
-    }
+               }
     filename = 'results.mat'
-    savemat(join(logsdir, filename), matdata)
+    savemat(join(logsdir, filename), matdata,
+            do_compression=True,
+            long_field_names=True)
 
     # --- Plotting
     plt_spaike.results_training(

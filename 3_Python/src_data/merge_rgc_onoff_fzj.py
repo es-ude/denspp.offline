@@ -34,5 +34,6 @@ if __name__ == "__main__":
     # --- Saving the data
     savemat(f'../data/{datetime.now().strftime("%Y-%m-%d")}_rgc_onoff_fzj.mat',
             {"frames_in": frames_in, "frames_cluster": frames_cl, "cluster_dict": cluster_dict,
-             "create_time": datetime.now().strftime("%Y-%m-%d"), "fsamp": 25000})
+             "create_time": datetime.now().strftime("%Y-%m-%d"), "fsamp": 25000},
+            do_compression=True)
     print("This is the End!")

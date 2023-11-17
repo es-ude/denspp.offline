@@ -47,9 +47,9 @@ class dnn_ae_v2(nn.Module):
         super().__init__()
         self.out_modelname = 'dnn_ae_v2'
         self.out_modeltyp = 'Autoencoder'
-        self.model_shape = (1, 40)
+        self.model_shape = (1, 32)
         self.model_embedded = False
-        iohiddenlayer = [self.model_shape[1], 28, 3]
+        iohiddenlayer = [self.model_shape[1], 20, 3]
         do_train_bias = True
         do_train_batch = True
 
@@ -75,6 +75,80 @@ class dnn_ae_v2(nn.Module):
             nn.Tanh(),
             nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0],
                       bias=do_train_bias)
+        )
+
+    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+        encoded = self.encoder(x)
+        return encoded, self.decoder(encoded)
+
+
+class dnn_ae_rgc_fzj_v1(nn.Module):
+    """Class of an autoencoder with Dense-Layer for feature extraction"""
+    def __init__(self):
+        super().__init__()
+        self.out_modelname = 'dnn_rgc_fzj_ae_v1'
+        self.out_modeltyp = 'Autoencoder'
+        self.model_shape = (1, 40)
+        self.model_embedded = False
+        iohiddenlayer = [self.model_shape[1], 24, 6]
+        do_train_bias = True
+        do_train_batch = True
+
+        # --- Encoder Path
+        self.encoder = nn.Sequential(
+            nn.Linear(in_features=iohiddenlayer[0], out_features=iohiddenlayer[1], bias=do_train_bias),
+            nn.BatchNorm1d(num_features=iohiddenlayer[1], affine=do_train_batch),
+            nn.Tanh(),
+            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[2], bias=do_train_bias),
+            nn.BatchNorm1d(num_features=iohiddenlayer[2], affine=do_train_batch)
+        )
+        # --- Decoder Path
+        self.decoder = nn.Sequential(
+            nn.Tanh(),
+            nn.Linear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[1], bias=do_train_bias),
+            nn.BatchNorm1d(num_features=iohiddenlayer[1], affine=do_train_batch),
+            nn.Tanh(),
+            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0], bias=do_train_bias)
+        )
+
+    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+        encoded = self.encoder(x)
+        return encoded, self.decoder(encoded)
+
+
+class dnn_ae_rgc_fzj_v2(nn.Module):
+    """Class of an autoencoder with Dense-Layer for feature extraction"""
+    def __init__(self):
+        super().__init__()
+        self.out_modelname = 'dnn_rgc_fzj_ae_v2'
+        self.out_modeltyp = 'Autoencoder'
+        self.model_shape = (1, 40)
+        self.model_embedded = False
+        iohiddenlayer = [self.model_shape[1], 28, 14, 4]
+        do_train_bias = True
+        do_train_batch = True
+
+        # --- Encoder Path
+        self.encoder = nn.Sequential(
+            nn.Linear(in_features=iohiddenlayer[0], out_features=iohiddenlayer[1], bias=do_train_bias),
+            nn.BatchNorm1d(num_features=iohiddenlayer[1], affine=do_train_batch),
+            nn.Tanh(),
+            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[2], bias=do_train_bias),
+            nn.BatchNorm1d(num_features=iohiddenlayer[2], affine=do_train_batch),
+            nn.Tanh(),
+            nn.Linear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[3], bias=do_train_bias),
+            nn.BatchNorm1d(num_features=iohiddenlayer[3], affine=do_train_batch)
+        )
+        # --- Decoder Path
+        self.decoder = nn.Sequential(
+            nn.Tanh(),
+            nn.Linear(in_features=iohiddenlayer[3], out_features=iohiddenlayer[2], bias=do_train_bias),
+            nn.BatchNorm1d(num_features=iohiddenlayer[2], affine=do_train_batch),
+            nn.Tanh(),
+            nn.Linear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[1], bias=do_train_bias),
+            nn.BatchNorm1d(num_features=iohiddenlayer[1], affine=do_train_batch),
+            nn.Tanh(),
+            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0], bias=do_train_bias)
         )
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:

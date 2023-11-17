@@ -17,7 +17,6 @@ def calculate_prd(yin: np.ndarray, ymean: np.ndarray):
     return np.sqrt(a0 / b0) * 100
 
 
-# TODO: Metrik-Klasse ausbauen
 class Metric:
     def __init__(self):
         self.cm = 0.0

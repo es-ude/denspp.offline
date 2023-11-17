@@ -65,14 +65,16 @@ def augmentation_change_position(
 def augmentation_reducing_samples(
         frames_in: np.ndarray,
         frames_cl: np.ndarray,
-        num_frames: int
+        num_frames: int,
+        do_shuffle: bool
     ) -> tuple[np.ndarray, np.ndarray]:
     """Tool for Data Augmentation in which the data points per samples will be reduced"""
     cluster_no = np.unique(frames_cl)
     for ite, id in enumerate(cluster_no):
         pos = np.argwhere(frames_cl == id).flatten()
-        for idx in range(0, 5):
-            np.random.shuffle(pos)
+        if do_shuffle:
+            for idx in range(0, 5):
+                np.random.shuffle(pos)
         pos = pos[:num_frames]
 
         frames_out = frames_in[pos, :] if ite == 0 else np.append(frames_out, frames_in[pos, :], axis=0)

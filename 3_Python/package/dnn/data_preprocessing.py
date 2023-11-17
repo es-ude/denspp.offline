@@ -33,35 +33,45 @@ def generate_zero_frames(frame_size: int, num_frames: int, noise_range: list) ->
     return out, cluster, np.round(frames-mean)
 
 
-def calculate_mean_waveform(
+def calculate_frame_mean(
         frames_in: np.ndarray,
-        frames_cluster: np.ndarray
-    ) -> tuple[np.ndarray, np.ndarray]:
+        frames_cl: np.ndarray
+    ) -> np.ndarray:
     """Calculating mean waveforms of spike waveforms"""
-    NoCluster, NumCluster = np.unique(frames_cluster, return_counts=True)
+    NoCluster, NumCluster = np.unique(frames_cl, return_counts=True)
     SizeCluster = np.size(NoCluster)
-    SizeFrame = frames_in.shape[1]
 
-    frames_mean = np.zeros(shape=(SizeCluster, SizeFrame), dtype=int)
-    cluster_snr = np.zeros(shape=(SizeCluster, 4), dtype=int)
+    frames_mean = np.zeros(shape=(SizeCluster, frames_in.shape[1]), dtype=int)
     for idx0, val in enumerate(NoCluster):
         # --- Mean waveform
-        indices = np.where(frames_cluster == val)
-        frames_sel = frames_in[indices[0], :]
-        mean = np.mean(frames_sel, axis=0, dtype=int)
-        frames_mean[idx0, :] = mean
+        indices = np.argwhere(frames_cl == val).flatten()
+        frames_mean[idx0, :] = np.mean(frames_in[indices, :], axis=0, dtype=int)
 
-        # --- Calculating SNR
-        snr0 = np.zeros(shape=(indices[0].size,), dtype=float)
-        for i, frame in enumerate(frames_sel):
-            snr0[i] = calculate_snr(frame, mean)
+    return frames_mean
 
-        cluster_snr[idx0, 0] = np.min(snr0)
-        cluster_snr[idx0, 1] = np.mean(snr0)
-        cluster_snr[idx0, 2] = np.max(snr0)
-        cluster_snr[idx0, 3] = i
 
-    return frames_mean, cluster_snr
+def calculate_frame_snr(
+        frames_in: np.ndarray,
+        frames_cl: np.ndarray,
+        frames_mean: np.ndarray
+) -> np.ndarray:
+    """Calculating SNR of each cluster"""""
+    NoCluster, NumCluster = np.unique(frames_cl, return_counts=True)
+
+    cluster_snr = np.zeros(shape=(NumCluster.size, 4), dtype=float)
+    for idx, id in enumerate(NoCluster):
+        indices = np.where(frames_cl == id)[0]
+        snr0 = np.zeros(shape=(indices.size,), dtype=float)
+
+        for i, frame in enumerate(frames_in[indices, :]):
+            snr0[i] = calculate_snr(frame, frames_mean[id, :])
+
+        cluster_snr[idx, 0] = np.min(snr0)
+        cluster_snr[idx, 1] = np.mean(snr0)
+        cluster_snr[idx, 2] = np.max(snr0)
+        cluster_snr[idx, 3] = i
+
+    return cluster_snr
 
 
 # TODO: Data Normalization does not work very well

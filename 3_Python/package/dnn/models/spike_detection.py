@@ -1,15 +1,15 @@
-from torch import nn, Tensor, unsqueeze
+from torch import nn, Tensor, unsqueeze, argmax
 
 
 class dnn_sda_v1(nn.Module):
     """Class of a dense-layer based spike detection classifier"""
-    def __init__(self):
+    def __init__(self, input_size=9, output_size=1):
         super().__init__()
         self.out_modelname = 'dnn_sda_v1'
         self.out_modeltyp = 'Classification'
         self.model_embedded = False
-        self.model_shape = (1, 9)
-        lin_size = [self.model_shape[1], 6, 4, 1]
+        self.model_shape = (1, input_size)
+        lin_size = [input_size, 6, 4, output_size]
         do_train_bias = True
         self.out_class = ['Spike', 'Non-Spike']
 
@@ -25,24 +25,25 @@ class dnn_sda_v1(nn.Module):
             nn.Softmax()
         )
 
-    def forward(self, x: Tensor) -> Tensor:
-        return self.detector(x)
+    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+        y = self.detector(x)
+        return y, argmax(y)
 
 
 class cnn_sda_v1(nn.Module):
     """Class of a convolutional spike detection classifier"""
-    def __init__(self):
+    def __init__(self, input_size=9, output_size=1):
         super().__init__()
         self.out_modelname = 'cnn_sda_v1'
         self.out_modeltyp = 'Classification'
         self.model_embedded = False
-        self.model_shape = (1, 9)
+        self.model_shape = (1, input_size)
         kernel_layer = [1, 4, 3]
         kernel_size = [3, 3]
         kernel_stride = [2, 1]
         kernel_padding = [0, 0, 0]
         pool_size = [2]
-        lin_size = [3, 1]
+        lin_size = [3, output_size]
         do_train_bias = True
         self.out_class = ['Spike', 'Non-Spike']
 

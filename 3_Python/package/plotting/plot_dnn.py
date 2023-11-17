@@ -96,22 +96,28 @@ def results_training(path: str,
     )
 
     # --- Plotting: Feature Space and Metrics
+    plot_statistic_data(cluster, snr, path)
     plot_autoencoder_snr(snr, path)
     plot_autoencoder_features(cluster_no, mark_feat, [0, 1, 2], path)
-    plot_statistic_data(cluster, snr, path)
 
 
-def plot_autoencoder_snr(snr: np.ndarray, path2save='') -> None:
+def plot_autoencoder_snr(snr: np.ndarray | list, path2save='') -> None:
     """"""
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
     plt.rcParams.update({'font.size': 12})
     plt.subplots_adjust(hspace=0, wspace=0.5)
     plt.grid()
 
-    plt.plot(snr[:, 0], color='k', marker='.', label='min')
-    plt.plot(snr[:, 1], color='r', marker='.', label='mean')
-    plt.plot(snr[:, 2], color='g', marker='.', label='max')
-    plt.legend()
+    if isinstance(snr, np.ndarray):
+        plt.plot(snr[:, 0], color='k', marker='.', label='min')
+        plt.plot(snr[:, 1], color='r', marker='.', label='mean')
+        plt.plot(snr[:, 2], color='g', marker='.', label='max')
+        plt.legend()
+        plt.xticks(np.linspace(0, snr.shape[0], num=7, endpoint=True))
+    elif isinstance(snr, list):
+        plt.boxplot(snr, patch_artist=True, showfliers=False)
+        # plt.xticks(np.linspace(0, len(snr)-1, num=10, endpoint=True))
+
     plt.xlabel("Epoch")
     plt.ylabel("Improved SNR (dB)")
 
@@ -140,31 +146,38 @@ def plot_autoencoder_features(cluster_no: np.ndarray, mark_feat: list, idx: [0, 
         save_figure(plt, path2save, "ai_training_feat")
 
 
-def plot_statistic_data(cluster: np.ndarray, snr: np.ndarray, path2save='') -> None:
+def plot_statistic_data(cluster: np.ndarray, snr: np.ndarray | list, path2save='') -> None:
     """"""
-    color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
-
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
     plt.rcParams.update({'font.size': 12})
     plt.subplots_adjust(hspace=0, wspace=0.5)
-    ax1 = plt.subplot(121)
-    ax2 = plt.subplot(122)
+    axs = list()
+    for idx in range(0, 2):
+        axs.append(plt.subplot(1, 2, 1+idx))
 
     # Histogram
-    ax1.hist(cluster, bins=range(0, 1+np.unique(cluster).size), align='left', stacked=True, rwidth=0.8)
-    ax1.set_xticks(range(0, 1+cluster.max()))
-    ax1.set_xlabel("Cluster")
-    ax1.set_ylabel("Bins")
-    ax1.grid()
+    check = np.unique(cluster, return_counts=True)
+    axs[0].hist(cluster, bins=range(0, 1+check[0].size), align='left', stacked=True, rwidth=0.8)
+    axs[0].set_xticks(range(0, 1+cluster.max()))
+    axs[0].set_xlabel("Cluster")
+    axs[0].set_ylabel("Bins")
+    axs[0].set_ylim([int(0.99*check[1].min()), int(1.01*check[1].max())])
 
     # SNR
-    ax2.plot(snr[:, 0], color='k', marker='.', label='min')
-    ax2.plot(snr[:, 1], color='r', marker='.', label='mean')
-    ax2.plot(snr[:, 2], color='g', marker='.', label='max')
-    ax2.legend()
-    ax2.grid()
-    ax2.set_xlabel("Epoch")
-    ax2.set_ylabel("Improved SNR (dB)")
+    if isinstance(snr, np.ndarray):
+        axs[1].plot(snr[:, 0], color='k', marker='.', label='min')
+        axs[1].plot(snr[:, 1], color='r', marker='.', label='mean')
+        axs[1].plot(snr[:, 2], color='g', marker='.', label='max')
+        axs[1].legend()
+    elif isinstance(snr, list):
+        axs[1].boxplot(snr, patch_artist=True, showfliers=False)
+        # axs[1].set_xticks(np.linspace(0, len(snr)-1, num=7, endpoint=True))
+
+    axs[1].set_xlabel("Epoch")
+    axs[1].set_ylabel("Improved SNR (dB)")
+
+    for ax in axs:
+        ax.grid()
 
     plt.tight_layout(pad=0.5)
     # --- saving plots
@@ -192,10 +205,10 @@ def plot_autoencoder_results(mark_feat: list, mark_idx: list,
     # Noisy input
     for pos in take_frames:
         axs[0].plot(np.transpose(frames_in[pos, :]), linewidth=0.5)
-    axs[0].set_title('Network Input')
+    axs[0].set_title('Input')
     axs[0].set_ylabel('Y_in')
     axs[0].set_xlabel('Frame position')
-    axs[0].set_xticks([0, 7, 15, 23, 31])
+    axs[0].set_xticks(np.linspace(0, frames_in.shape[1]-1, num=6, endpoint=True))
 
     # Feature extraction
     for i, id in enumerate(cluster_no):
@@ -210,10 +223,10 @@ def plot_autoencoder_results(mark_feat: list, mark_idx: list,
     if data_labeled:
         for i, id in enumerate(cluster_no):
             axs[2].plot(frames_mean[i, :], color=color[i], linewidth=1.5)
-    axs[2].set_title('Network Output')
+    axs[2].set_title('Output')
     axs[2].set_ylabel('Y_pred')
     axs[2].set_xlabel('Frame position')
-    axs[2].set_xticks([0, 7, 15, 23, 31])
+    axs[2].set_xticks(np.linspace(0, frames_mean.shape[1]-1, num=6, endpoint=True))
 
     for ax in axs:
         ax.grid()
