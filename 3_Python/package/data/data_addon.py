@@ -1,6 +1,5 @@
 class RGC_Cell_Names:
     """Retinal Ganglion Cell Selection"""
-
     def __init__(self):
         self.cell_type_to_id = {
             "ON-OFF DS - dorsal": 0,
