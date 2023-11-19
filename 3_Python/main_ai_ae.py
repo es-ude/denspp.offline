@@ -20,7 +20,7 @@ class Config_PyTorch:
         # self.loss_fn = torch.nn.L1Loss()
         self.loss_fn = nn.MSELoss()
         self.num_kfold = 1
-        self.num_epochs = 100
+        self.num_epochs = 20
         self.batch_size = 256
         # Settings of Datasets
         self.data_path = 'data'

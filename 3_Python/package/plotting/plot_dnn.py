@@ -101,6 +101,7 @@ def results_training(path: str,
     plot_autoencoder_features(cluster_no, mark_feat, [0, 1, 2], path)
 
 
+# TODO: Xticks bei SNR mit boxplot falsch
 def plot_autoencoder_snr(snr: np.ndarray | list, path2save='') -> None:
     """"""
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
@@ -116,7 +117,8 @@ def plot_autoencoder_snr(snr: np.ndarray | list, path2save='') -> None:
         plt.xticks(np.linspace(0, snr.shape[0], num=7, endpoint=True))
     elif isinstance(snr, list):
         plt.boxplot(snr, patch_artist=True, showfliers=False)
-        # plt.xticks(np.linspace(0, len(snr)-1, num=10, endpoint=True))
+        pos = np.linspace(1, len(snr), num=10, endpoint=True)
+        plt.xticks(pos)
 
     plt.xlabel("Epoch")
     plt.ylabel("Improved SNR (dB)")
@@ -146,7 +148,7 @@ def plot_autoencoder_features(cluster_no: np.ndarray, mark_feat: list, idx: [0, 
         save_figure(plt, path2save, "ai_training_feat")
 
 
-def plot_statistic_data(cluster: np.ndarray, snr: np.ndarray | list, path2save='') -> None:
+def plot_statistic_data(cluster: np.ndarray, snr: np.ndarray | list, path2save='', cl_dict=[]) -> None:
     """"""
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
     plt.rcParams.update({'font.size': 12})
@@ -158,7 +160,10 @@ def plot_statistic_data(cluster: np.ndarray, snr: np.ndarray | list, path2save='
     # Histogram
     check = np.unique(cluster, return_counts=True)
     axs[0].hist(cluster, bins=range(0, 1+cluster.max()), align='left', stacked=True, rwidth=0.8)
-    axs[0].set_xticks(range(0, 1+cluster.max()))
+    if len(cl_dict) == 0:
+        axs[0].set_xticks(range(0, 1+cluster.max()))
+    else:
+        axs[0].set_xticks(range(0, 1 + cluster.max()), cl_dict)
     axs[0].set_xlabel("Cluster")
     axs[0].set_ylabel("Bins")
     axs[0].set_ylim([int(0.99*check[1].min()), int(1.01*check[1].max())])
@@ -171,7 +176,8 @@ def plot_statistic_data(cluster: np.ndarray, snr: np.ndarray | list, path2save='
         axs[1].legend()
     elif isinstance(snr, list):
         axs[1].boxplot(snr, patch_artist=True, showfliers=False)
-        # axs[1].set_xticks(np.linspace(0, len(snr)-1, num=7, endpoint=True))
+        pos = np.linspace(1, len(snr), num=7, endpoint=True)
+        axs[1].set_xticks(pos)
 
     axs[1].set_xlabel("Epoch")
     axs[1].set_ylabel("Improved SNR (dB)")
