@@ -1,12 +1,12 @@
-import os
 import sys
+from os import listdir
+from os.path import join, exists, isdir
 from glob import glob
 import dataclasses
 import numpy as np
-from typing import Tuple
 from fractions import Fraction
 from scipy.signal import resample_poly
-from package.data.data_load import DataLoader, DataHandler
+from package.data.data_call_files import DataHandler, DataLoader
 
 
 @dataclasses.dataclass
@@ -17,16 +17,14 @@ class SettingsDATA:
     data_set    - Type of dataset
     data_point  - Number within the dataset
     t_range     - List of the given time range for cutting the data [x, y]
-    ch_sel      - List of electrodes to use
+    ch_sel      - List of electrodes to use [empty=all]
     fs_resample - Resampling frequency of the datapoint
     """
     path: str
     data_set: int
     data_case: int
     data_point: int
-    # Angabe des zu betrachteten Zeitfensters [Start, Ende] in sec.
     t_range: list
-    # Selection of electrodes(Empty calls all data)
     ch_sel: list
     fs_resample: float
 
@@ -35,7 +33,7 @@ class RecommendedSettingsDATA(SettingsDATA):
     """Recommended configuration for testing"""
     def __init__(self):
         super().__init__(
-            path="C:\Data",
+            path="../2_Data",
             data_set=1, data_case=0, data_point=0,
             t_range=[0], ch_sel=[],
             fs_resample=100e3
@@ -70,7 +68,7 @@ class DataController(DataLoader):
     def do_call(self) -> None:
         """Loading the dataset"""
         # --- Checking if path is available
-        if not os.path.exists(self.settings.path):
+        if not exists(self.settings.path):
             print(f"... data path {self.settings.path} is not available! Please check")
             sys.exit()
 
@@ -169,12 +167,17 @@ class DataController(DataLoader):
 
         if self.raw_data.label_exist:
             cluster_array = None
+            # Extract number of cluster size in all inputs
             for idx, clid in enumerate(self.raw_data.cluster_id):
                 if idx == 0:
                     cluster_array = clid
                 else:
                     cluster_array = np.append(cluster_array, clid)
             cluster_no = np.unique(cluster_array)
+            # Extract number of spikes in all inputs
+            for idx, spk_num in enumerate(self.raw_data.spike_xpos):
+                self.num_spikes += spk_num.size
+
             print(f"... includes labels (noSpikes: {self.num_spikes} - noCluster: {cluster_no.size})")
         else:
             print(f"... excludes labels")
@@ -182,3 +185,26 @@ class DataController(DataLoader):
     def get_data(self) -> DataHandler:
         """Calling the raw data with groundtruth of the called data"""
         return self.raw_data
+
+    def _prepare_access_file(self, folder_name: str, data_type: str, sel_datapoint: int) -> None:
+        """Getting the file of the corresponding trial"""
+        path = join(self.path2data, folder_name, data_type)
+        folder_content = glob(path)
+        folder_content.sort()
+        self.no_files = len(folder_content)
+        try:
+            self.path2file = folder_content[sel_datapoint]
+        except:
+            print("--- Folder not available - Please check folder name! ---")
+
+    def _prepare_access_folder(self, folder_name: str, data_type: str,
+                                   sel_dataset: int, sel_datapoint: int) -> None:
+        """Getting the file structure within cases/experiments in one data set"""
+        path2data = join(self.path2data, folder_name)
+        folder_data = [name for name in listdir(path2data) if isdir(join(path2data, name))]
+        folder_data.sort()
+        file_data = folder_data[sel_dataset]
+
+        path2data = join(path2data, file_data)
+        self._prepare_access_file(path2data, data_type, sel_datapoint)
+        self.no_subfolder = len(file_data)

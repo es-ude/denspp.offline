@@ -66,8 +66,7 @@ def augmentation_reducing_samples(
         frames_in: np.ndarray,
         frames_cl: np.ndarray,
         num_frames: int,
-        do_shuffle: bool
-    ) -> tuple[np.ndarray, np.ndarray]:
+        do_shuffle: bool) -> tuple[np.ndarray, np.ndarray]:
     """Tool for Data Augmentation in which the data points per samples will be reduced"""
     cluster_no = np.unique(frames_cl)
     for ite, id in enumerate(cluster_no):
@@ -80,7 +79,7 @@ def augmentation_reducing_samples(
         frames_out = frames_in[pos, :] if ite == 0 else np.append(frames_out, frames_in[pos, :], axis=0)
         frames_clo = frames_cl[pos] if ite == 0 else np.append(frames_clo, frames_cl[pos], axis=0)
 
-    frames_out = np.array(frames_out, dtype=frames_in.dtype)
-    frames_clo = np.array(frames_clo, dtype=frames_cl.dtype)
+    frames_out.dtype = frames_in.dtype
+    frames_clo.dtype = frames_cl.dtype
 
     return frames_out, frames_clo

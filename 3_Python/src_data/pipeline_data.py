@@ -3,7 +3,7 @@ import shutil
 import numpy as np
 
 from package.template.pipeline_signals import PipelineSignal
-from package.data.data_call import SettingsDATA
+from package.data.data_call_common import SettingsDATA
 from package.pre_amp.preamp import PreAmp, SettingsAMP
 from package.adc.adc_basic import SettingsADC
 from package.adc.adc_sar import ADC_SAR as ADC0
@@ -18,7 +18,7 @@ class Settings:
         path='/media/erbsloeh/ExtremeSSD/0_Invasive',
         data_set=7, data_case=0, data_point=0,
         t_range=[0],
-        ch_sel=[-1],
+        ch_sel=[],
         fs_resample=50e3
     )
     SettingsAMP = SettingsAMP(

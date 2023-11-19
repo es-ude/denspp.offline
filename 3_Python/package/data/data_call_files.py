@@ -1,13 +1,10 @@
-from os import listdir
-from os.path import join, isdir
-from glob import glob
+from os.path import join
 import numpy as np
 from scipy.io import loadmat
 from mat73 import loadmat as loadmat_mat73
-from package.data.data_addon import RGC_Cell_Names
+from package.data.data_call_addon import RGC_Cell_Names
 
 
-# TODO: Device Selection is still missing
 class DataHandler:
     """Class with data and meta information of the used neural dataset"""
     # --- Meta Information
@@ -43,30 +40,6 @@ class DataLoader:
         self.path2file = str()
         self.raw_data = DataHandler()
 
-    def __prepare_access(self, folder_name: str, data_type: str, sel_datapoint: int) -> None:
-        """Getting the file of the corresponding trial"""
-        path = join(self.path2data, folder_name, data_type)
-        folder_content = glob(path)
-        folder_content.sort()
-        self.no_files = len(folder_content)
-        try:
-            file_data = folder_content[sel_datapoint]
-            self.path2file = join(self.path2data, folder_name, file_data)
-        except:
-            print("--- Folder not available - Please check folder name! ---")
-
-    def __prepare_access_subfolder(self, folder_name: str, data_type: str,
-                                   sel_dataset: int, sel_datapoint: int) -> None:
-        """Getting the file structure within cases/experiments in one data set"""
-        path2data = join(self.path2data, folder_name)
-        folder_data = [name for name in listdir(path2data) if isdir(join(path2data, name))]
-        folder_data.sort()
-        file_data = folder_data[sel_dataset]
-
-        path2data = join(path2data, file_data)
-        self.__prepare_access(path2data, data_type, sel_datapoint)
-        self.no_subfolder = len(file_data)
-
     def execute_data_call(self, data_type: int, data_set: int, data_point: int):
         """Loading the dataset"""
         if data_type == 1:
@@ -95,7 +68,7 @@ class DataLoader:
         self.__path2data = self.path2data
         folder_name = "01_SimDaten_Martinez2009"
         data_type = 'simulation_*.mat'
-        self.__prepare_access(folder_name, data_type, point)
+        self._prepare_access_file(folder_name, data_type, point)
 
         loaded_data = loadmat(self.path2file)
         # Input and meta
@@ -124,7 +97,7 @@ class DataLoader:
         self.__path2data = self.path2data
         folder_name = "02_SimDaten_Pedreira2012"
         data_type = 'simulation_*.mat'
-        self.__prepare_access(folder_name, data_type, point)
+        self._prepare_access_file(folder_name, data_type, point)
 
         prep_index = self.path2file.split("_")[-1]
         num_index = int(prep_index[0:2])
@@ -159,7 +132,7 @@ class DataLoader:
         self.__path2data = self.path2data
         folder_name = "03_SimDaten_Quiroga2020"
         data_type = 'C_*.mat'
-        self.__prepare_access_subfolder(folder_name, data_type, case, point)
+        self._prepare_access_folder(folder_name, data_type, case, point)
         loaded_data = loadmat(self.path2file, mat_dtype=True)
 
         # --- Input and meta
@@ -201,7 +174,7 @@ class DataLoader:
         self.__path2data = self.path2data
         folder_name = "04_Freiburg_Seidl2014"
         data_type = '*.mat'
-        self.__prepare_access(folder_name, data_type, point)
+        self._prepare_access_file(folder_name, data_type, point)
         loaded_data = loadmat(self.path2file)
 
         # Input and meta
@@ -229,10 +202,10 @@ class DataLoader:
 
     def __load_marre2018(self, case: int, point: int) -> None:
         # Link to data: https://zenodo.org/record/1205233#.YrBYrOzP1PZ
-        self.__path2data = self.path2data
+        self._path2data = self.path2data
         folder_name = "05_Zenodo_Marre2018"
         data_type = '*.mat'
-        self.__prepare_access(folder_name, data_type, point)
+        self._prepare_access_file(folder_name, data_type, point)
         loaded_data = loadmat(self.path2file)
 
         self.raw_data.data_name = folder_name
@@ -265,7 +238,7 @@ class DataLoader:
         self.__path2data = self.path2data
         folder_name = "06_Klaes_Caltech"
         data_type = '*_MERGED.mat'
-        self.__prepare_access_subfolder(folder_name, data_type, case, nsp_device)
+        self._prepare_access_folder(folder_name, data_type, case, nsp_device)
         loaded_data = loadmat(self.path2file, mat_dtype=True)
 
         # Input and meta
@@ -317,7 +290,7 @@ class DataLoader:
         self.__path2data = self.path2data
         folder_name = "07_RGC_TDB"
         data_type = '*.mat'
-        self.__prepare_access_subfolder(folder_name, data_type, 0, point)
+        self._prepare_access_file(folder_name, data_type, point)
         loaded_data = loadmat_mat73(self.path2file)
 
         # Pre-Processing: Remove empty entries and runs with only one spike
@@ -377,7 +350,7 @@ class DataLoader:
         self.__path2data = self.path2data
         folder_name = "08_RGC_FZJuelich"
         data_type = '*_merged.mat'
-        self.__prepare_access_subfolder(folder_name, data_type, case, point)
+        self._prepare_access_folder(folder_name, data_type, case, point)
         loaded_data = loadmat_mat73(self.path2file)
 
         # Input and meta
@@ -406,7 +379,7 @@ class DataLoader:
         self.__path2data = self.path2data
         folder_name = "07_RGC_TDB"
         data_type = '*.mat'
-        self.__prepare_access_subfolder(folder_name, data_type, case, point)
+        self._prepare_access_folder(folder_name, data_type, case, point)
         loaded_data = loadmat_mat73(self.path2file)
         # TODO: Auswertung von NeuroPixel probes einlesen
         del loaded_data

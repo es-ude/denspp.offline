@@ -157,7 +157,7 @@ def plot_statistic_data(cluster: np.ndarray, snr: np.ndarray | list, path2save='
 
     # Histogram
     check = np.unique(cluster, return_counts=True)
-    axs[0].hist(cluster, bins=range(0, 1+check[0].size), align='left', stacked=True, rwidth=0.8)
+    axs[0].hist(cluster, bins=range(0, 1+cluster.max()), align='left', stacked=True, rwidth=0.8)
     axs[0].set_xticks(range(0, 1+cluster.max()))
     axs[0].set_xlabel("Cluster")
     axs[0].set_ylabel("Bins")
