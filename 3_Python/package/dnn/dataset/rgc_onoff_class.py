@@ -11,47 +11,47 @@ from package.dnn.data_preprocessing import data_normalization
 class DatasetRGC(Dataset):
     """Dataset Loader for Retinal Ganglion Cells ON-/OFF Cell Classification"""
     def __init__(self, frame: np.ndarray, cluster_id: np.ndarray, cluster_dict=[]):
-        self.frame_input = np.array(frame, dtype=np.float32)
-        self.frame_cellid = np.array(cluster_id, dtype=np.uint8)
-        self.frame_dict = cluster_dict
+        self.__frame_input = np.array(frame, dtype=np.float32)
+        self.__frame_cellid = np.array(cluster_id, dtype=np.uint8)
         self.cluster_name_available = False if len(cluster_dict) == 0 else True
+        self.frame_dict = cluster_dict
         self.data_type = 'RGC Classification'
 
     def __len__(self):
-        return self.frame_input.shape[0]
+        return self.__frame_input.shape[0]
 
     def __getitem__(self, idx):
         if is_tensor(idx):
             idx = idx.tolist()
 
-        out = {'in': self.frame_input[idx], 'out': self.frame_cellid[idx]} if not self.cluster_name_available else {'in': self.frame_input[idx], 'out': self.frame_cellid[idx], 'name': self.frame_dict[self.frame_cellid[idx]]}
+        out = {'in': self.__frame_input[idx], 'out': self.__frame_cellid[idx]} if not self.cluster_name_available \
+            else {'in': self.__frame_input[idx], 'out': self.__frame_cellid[idx], 'name': self.frame_dict[self.__frame_cellid[idx]]}
         return out
 
 
-def prepare_plotting(data_plot: DataLoader) -> tuple[np.ndarray, np.ndarray]:
+def prepare_plotting(data_in: DataLoader) -> tuple[np.ndarray, np.ndarray]:
     """Getting data from DataLoader for Plotting Results"""
-    din = []
-    dsda = []
-    dout = []
-    for idx, vdata in enumerate(data_plot):
-        din = vdata['in'] if idx == 0 else np.append(din, vdata['in'], axis=0)
-        dout = vdata['out'] if idx == 0 else np.append(dout, vdata['out'], axis=0)
+    din = None
+    dout = None
+    first_run = True
+    for vdata in data_in:
+        for data in vdata:
+            din = data['in'] if first_run else np.append(din, data['in'], axis=0)
+            dout = data['out'] if first_run else np.append(dout, data['out'], axis=0)
+            first_run = False
 
-    return din, dsda, dout
+    return din, dout
 
 
 def prepare_training(path: str, settings: Config_PyTorch) -> DatasetRGC:
     """Preparing datasets incl. augmentation for spike-detection-based training (without pre-processing)"""
-    # --- Pre-definitions
-    str_datum = datetime.now().strftime('%Y%m%d %H%M%S')
-    print(f"Running on {str_datum}")
     print("... loading the datasets")
 
     # --- MATLAB reading file
     npzfile = loadmat(path)
     frames_in = npzfile["frames_in"]
     frames_cl = npzfile["frames_cluster"].flatten()
-    frames_dict = npzfile['cluster_dict']
+    frames_dict = [] # npzfile['cluster_dict']
 
     # --- PART: Exclusion of selected clusters
     if not len(settings.data_exclude_cluster) == 0:

@@ -1,9 +1,10 @@
 from torch import nn, Tensor, unsqueeze, argmax
 from package.dnn.pytorch_control import Config_PyTorch
 
+
 class dnn_sda_v1(nn.Module):
     """Class of a dense-layer based spike detection classifier"""
-    def __init__(self, input_size=9, output_size=1):
+    def __init__(self, input_size=9, output_size=2):
         super().__init__()
         self.out_modelname = 'dnn_sda_v1'
         self.out_modeltyp = 'Classification'
@@ -32,7 +33,7 @@ class dnn_sda_v1(nn.Module):
 
 class cnn_sda_v1(nn.Module):
     """Class of a convolutional spike detection classifier"""
-    def __init__(self, input_size=9, output_size=1):
+    def __init__(self, input_size=9, output_size=2):
         super().__init__()
         self.out_modelname = 'cnn_sda_v1'
         self.out_modeltyp = 'Classification'

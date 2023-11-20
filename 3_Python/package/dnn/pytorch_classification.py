@@ -24,17 +24,15 @@ class pytorch_train(training_pytorch):
         self.model.train(True)
         for tdata in self.train_loader[self._run_kfold]:
             self.optimizer.zero_grad()
-            data_in = tdata['in']
-            data_cl = tdata['out']
-            pred_cl, dec_cl = self.model(data_in)
-            loss = self.loss_fn(pred_cl, data_cl)
+            pred_cl, dec_cl = self.model(tdata['in'])
+            loss = self.loss_fn(pred_cl, tdata['out'])
             loss.backward()
             self.optimizer.step()
 
             train_loss += loss.item()
             total_batches += 1
-            total_correct += int(sum(dec_cl == data_cl))
-            total_samples += len(data_in)
+            total_correct += int(sum(dec_cl == tdata['out']))
+            total_samples += len(tdata['in'])
 
         accuracy = total_correct / total_samples
         train_loss = train_loss / total_batches
@@ -50,14 +48,12 @@ class pytorch_train(training_pytorch):
 
         self.model.eval()
         for vdata in self.valid_loader[self._run_kfold]:
-            data_in = vdata['in']
-            data_cl = vdata['out']
-            pred_cl, dec_cl = self.model(data_in)
+            pred_cl, dec_cl = self.model(vdata['in'])
 
-            valid_loss += self.loss_fn(pred_cl, data_cl).item()
+            valid_loss += self.loss_fn(pred_cl, vdata['out']).item()
             total_batches += 1
-            total_correct += int(sum(dec_cl == data_cl))
-            total_samples += len(data_in)
+            total_correct += int(sum(dec_cl == vdata['out']))
+            total_samples += len(vdata['in'])
 
         accuracy = total_correct / total_samples
         valid_loss = valid_loss / total_batches
@@ -78,13 +74,7 @@ class pytorch_train(training_pytorch):
         path2model_init = join(self._path2save, f'model_reset.pth')
         save(self.model.state_dict(), path2model_init)
         for fold in np.arange(self.settings.num_kfold):
-            best_vloss = 1_000_000.
-            loss_train = 1_000_000.
-            loss_valid = 1_000_000.
-            acc_train = 0.0
-            acc_valid = 0.0
-
-            # - Reset of model
+            # Reseting the model
             self.model.load_state_dict(load(path2model_init))
             self._run_kfold = fold
             self._init_writer()
@@ -96,6 +86,11 @@ class pytorch_train(training_pytorch):
             else:
                 print(f'\nTraining starts on: {timestamp_string}')
 
+            best_vloss = 1_000_000.
+            loss_train = 1_000_000.
+            loss_valid = 1_000_000.
+            acc_train = 0.0
+            acc_valid = 0.0
             for epoch in range(0, self.settings.num_epochs):
                 loss_train, acc_train = self.__do_training_epoch()
                 loss_valid, acc_valid = self.__do_valid_epoch()
@@ -118,10 +113,13 @@ class pytorch_train(training_pytorch):
                     path2model = join(self._path2log, f'model_fold{fold:03d}_epoch{epoch:04d}.pth')
                     save(self.model, path2model)
 
+                # Saving metrics
+                metrics.append([loss_train, loss_valid])
+                own_metric.append([acc_train, acc_valid])
+
             # --- Ausgabe nach Training
             self._save_train_results(loss_train, loss_valid, 'Loss')
             self._save_train_results(acc_train, acc_valid, 'Acc.')
-            metrics.append([loss_train, loss_valid, acc_train, acc_valid])
 
             timestamp_end = datetime.now()
             timestamp_string = timestamp_end.strftime('%H:%M:%S')

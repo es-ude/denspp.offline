@@ -24,18 +24,22 @@ class DatasetSDA(Dataset):
             idx = idx.tolist()
         decision = 0 if np.sum(self.sda_class[idx]) < self.sda_thr else 1
 
-        return {'in': self.frame_slice[idx], 'sda': self.sda_class[idx], 'out': np.array([decision], dtype=np.float32)}
+        return {'in': self.frame_slice[idx], 'sda': self.sda_class[idx],
+                'out': np.array(decision, dtype=np.uint8)}
 
 
-def prepare_plotting(data_plot: DataLoader) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def prepare_plotting(data_in: DataLoader) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Getting data from DataLoader for Plotting Results"""
-    din = []
-    dsda = []
-    dout = []
-    for idx, vdata in enumerate(data_plot):
-        din = vdata['in'] if idx == 0 else np.append(din, vdata['in'], axis=0)
-        dsda = vdata['sda'] if idx == 0 else np.append(dsda, vdata['sda'], axis=0)
-        dout = vdata['out'] if idx == 0 else np.append(dout, vdata['out'], axis=0)
+    din = None
+    dsda = None
+    dout = None
+    first_run = True
+    for vdata in data_in:
+        for data in vdata:
+            din = data['in'] if first_run else np.append(din, data['in'], axis=0)
+            dsda = data['sda'] if first_run else np.append(dsda, data['sda'], axis=0)
+            dout = data['out'] if first_run else np.append(dout, data['out'], axis=0)
+            first_run = False
 
     return din, dsda, dout
 
@@ -49,7 +53,7 @@ def prepare_training(path: str, settings: Config_PyTorch, threshold: int) -> Dat
 
     # --- MATLAB reading file
     npzfile = loadmat(path)
-    frames_in = npzfile["sda_pred"]
+    frames_in = npzfile["sda_in"]
     frames_cl = npzfile["sda_pred"]
 
     # --- PART: Exclusion of selected clusters

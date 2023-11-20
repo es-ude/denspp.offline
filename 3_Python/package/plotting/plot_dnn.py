@@ -96,7 +96,7 @@ def results_training(path: str,
     )
 
     # --- Plotting: Feature Space and Metrics
-    plot_statistic_data(cluster, snr, path)
+    plot_statistic_data(cluster, path2save=path)
     plot_autoencoder_snr(snr, path)
     plot_autoencoder_features(cluster_no, mark_feat, [0, 1, 2], path)
 
@@ -146,49 +146,6 @@ def plot_autoencoder_features(cluster_no: np.ndarray, mark_feat: list, idx: [0, 
     # --- saving plots
     if path2save:
         save_figure(plt, path2save, "ai_training_feat")
-
-
-def plot_statistic_data(cluster: np.ndarray, snr: np.ndarray | list, path2save='', cl_dict=[]) -> None:
-    """"""
-    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
-    plt.rcParams.update({'font.size': 12})
-    plt.subplots_adjust(hspace=0, wspace=0.5)
-    axs = list()
-    for idx in range(0, 2):
-        axs.append(plt.subplot(1, 2, 1+idx))
-
-    # Histogram
-    check = np.unique(cluster, return_counts=True)
-    axs[0].hist(cluster, bins=range(0, 1+cluster.max()), align='left', stacked=True, rwidth=0.8)
-    if len(cl_dict) == 0:
-        axs[0].set_xticks(range(0, 1+cluster.max()))
-    else:
-        axs[0].set_xticks(range(0, 1 + cluster.max()), cl_dict)
-    axs[0].set_xlabel("Cluster")
-    axs[0].set_ylabel("Bins")
-    axs[0].set_ylim([int(0.99*check[1].min()), int(1.01*check[1].max())])
-
-    # SNR
-    if isinstance(snr, np.ndarray):
-        axs[1].plot(snr[:, 0], color='k', marker='.', label='min')
-        axs[1].plot(snr[:, 1], color='r', marker='.', label='mean')
-        axs[1].plot(snr[:, 2], color='g', marker='.', label='max')
-        axs[1].legend()
-    elif isinstance(snr, list):
-        axs[1].boxplot(snr, patch_artist=True, showfliers=False)
-        pos = np.linspace(1, len(snr), num=7, endpoint=True)
-        axs[1].set_xticks(pos)
-
-    axs[1].set_xlabel("Epoch")
-    axs[1].set_ylabel("Improved SNR (dB)")
-
-    for ax in axs:
-        ax.grid()
-
-    plt.tight_layout(pad=0.5)
-    # --- saving plots
-    if path2save:
-        save_figure(plt, path2save, "ai_training_hist")
 
 
 def plot_autoencoder_results(mark_feat: list, mark_idx: list,
@@ -242,3 +199,49 @@ def plot_autoencoder_results(mark_feat: list, mark_idx: list,
     # --- Saving plots
     if path2save:
         save_figure(plt, path2save, f"ai_training_out{mark_idx[0]}-{mark_idx[1]}")
+
+
+def plot_statistic_data(train_cl: np.ndarray, valid_cl=None, path2save='', cl_dict=[]) -> None:
+    """Plotting the statistics of the data"""
+    do_plots_avai = isinstance(valid_cl, np.ndarray)
+
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
+    plt.rcParams.update({'font.size': 12})
+    plt.subplots_adjust(hspace=0, wspace=0.5)
+    axs = list()
+    for idx in range(0, 1+do_plots_avai):
+        axs.append(plt.subplot(1, 1 + do_plots_avai, 1+idx))
+
+    # Histogram of Training data
+    check = np.unique(train_cl, return_counts=True)
+    xbins = [idx for idx in range(0, 1+check[0].max())]
+    axs[0].hist(train_cl, bins=xbins, align='left', stacked=True, rwidth=0.8, color='k')
+    if len(cl_dict) == 0:
+        axs[0].set_xticks(xbins)
+    else:
+        axs[0].set_xticks(xbins, cl_dict)
+    axs[0].set_xlabel("Cluster")
+    axs[0].set_ylabel("Bins")
+    axs[0].set_ylim([int(0.99*check[1].min()), int(1.01*check[1].max())])
+    axs[0].set_title('Training')
+
+    # Histogram of Validation data
+    if do_plots_avai:
+        check = np.unique(valid_cl, return_counts=True)
+        xbins = [idx for idx in range(0, 1 + check[0].max())]
+        axs[1].hist(valid_cl, bins=xbins, align='left', stacked=True, rwidth=0.8, color='r')
+        if len(cl_dict) == 0:
+            axs[1].set_xticks(xbins)
+        else:
+            axs[1].set_xticks(xbins, cl_dict)
+        axs[1].set_xlabel("Cluster")
+        axs[1].set_ylim([int(0.99 * check[1].min()), int(1.01 * check[1].max())])
+        axs[1].set_title('Validation')
+
+    for ax in axs:
+        ax.grid()
+
+    plt.tight_layout(pad=0.5)
+    # --- saving plots
+    if path2save:
+        save_figure(plt, path2save, "ai_training_histdata")

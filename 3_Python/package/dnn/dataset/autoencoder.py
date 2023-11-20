@@ -54,27 +54,26 @@ class DatasetAE(Dataset):
         return {'in': frame_in, 'out': frame_out, 'cluster': cluster_id, 'mean': frame_mean}
 
 
-def prepare_plotting(data_plot: DataLoader) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def prepare_plotting(data_in: DataLoader) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Getting data from DataLoader for Plotting Results"""
-    din = []
-    dout = []
-    did = []
-    dmean = []
-    for idx, vdata in enumerate(data_plot):
-        din = vdata['in'] if idx == 0 else np.append(din, vdata['in'], axis=0)
-        dout = vdata['out'] if idx == 0 else np.append(dout, vdata['out'], axis=0)
-        dmean = vdata['mean'] if idx == 0 else np.append(dmean, vdata['mean'], axis=0)
-        did = vdata['cluster'] if idx == 0 else np.append(did, vdata['cluster'])
+    din = None
+    dout = None
+    did = None
+    dmean = None
+    first_run = True
+    for vdata in data_in:
+        for data in vdata:
+            din = data['in'] if first_run else np.append(din, data['in'], axis=0)
+            dout = data['out'] if first_run else np.append(dout, data['out'], axis=0)
+            dmean = data['mean'] if first_run else np.append(dmean, data['mean'], axis=0)
+            did = data['cluster'] if first_run else np.append(did, data['cluster'])
+            first_run = False
 
     return din, dout, did, dmean
 
 
 def prepare_training(path: str, settings: Config_PyTorch, mode_train_ae=0) -> DatasetAE:
     """Preparing datasets incl. augmentation for spike-frame based training (without pre-processing)"""
-
-    # --- Pre-definitions
-    str_datum = datetime.now().strftime('%Y%m%d %H%M%S')
-    print(f"Running on {str_datum}")
     print("... loading the datasets")
 
     # --- Data loading
