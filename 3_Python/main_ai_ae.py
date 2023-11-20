@@ -18,7 +18,6 @@ mode_train = 0
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
     model=ai_module.dnn_ae_rgc_fzj_v2(),
-    is_embedded=False,
     loss_fn=nn.MSELoss(),
     optimizer='Adam',
     num_kfold=1,

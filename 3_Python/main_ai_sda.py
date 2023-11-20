@@ -15,7 +15,6 @@ import package.dnn.models.spike_detection as ai_module
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
     model=ai_module.cnn_sda_v1(),
-    is_embedded=False,
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,

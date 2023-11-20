@@ -18,7 +18,6 @@ class Config_PyTorch:
     """Template for configurating pytorch for training a model"""
     # --- Settings of Models/Training
     model: Any
-    is_embedded: bool
     loss_fn: Any
     optimizer: str
     num_kfold: int

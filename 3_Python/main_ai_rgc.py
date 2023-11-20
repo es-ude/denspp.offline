@@ -15,7 +15,6 @@ import package.dnn.models.rgc_onoff_class as ai_module
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
     model=ai_module.dnn_rgc_v1(),
-    is_embedded=False,
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,

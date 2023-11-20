@@ -266,7 +266,6 @@ class cnn_ae_v2(nn.Module):
 
 Recommended_Config_PytorchSettings = Config_PyTorch(
     model=dnn_ae_v1(),
-    is_embedded=False,
     loss_fn=nn.MSELoss(),
     optimizer='Adam',
     num_kfold=1,
