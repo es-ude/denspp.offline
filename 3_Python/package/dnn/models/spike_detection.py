@@ -22,12 +22,12 @@ class dnn_sda_v1(nn.Module):
             nn.ReLU(),
             nn.Linear(lin_size[2], lin_size[3]),
             nn.BatchNorm1d(lin_size[3], affine=do_train_bias),
-            nn.Softmax()
+            nn.Softmax(dim=0)
         )
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
-        y = self.detector(x)
-        return y, argmax(y)
+        xdist = self.detector(x)
+        return xdist, argmax(xdist, dim=1)
 
 
 class cnn_sda_v1(nn.Module):
@@ -60,9 +60,10 @@ class cnn_sda_v1(nn.Module):
             nn.Flatten(start_dim=1),
             nn.Linear(lin_size[0], lin_size[1]),
             nn.BatchNorm1d(lin_size[1], affine=do_train_bias),
-            nn.Softmax()
+            nn.Softmax(dim=0)
         )
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x: Tensor) -> [Tensor, Tensor]:
         xin = unsqueeze(x, dim=1)
-        return self.detector(xin)
+        xds = self.detector(xin)
+        return xds, argmax(xds, dim=1)

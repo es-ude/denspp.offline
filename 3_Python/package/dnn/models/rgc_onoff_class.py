@@ -29,6 +29,5 @@ class dnn_rgc_v1(nn.Module):
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
         val = self.classifier(x)
-        dec = argmax(val, dim=1)
-        return val, dec
+        return val, argmax(val, dim=1)
 

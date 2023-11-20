@@ -1,4 +1,5 @@
-import os.path
+from os import remove
+from os.path import join, exists
 from glob import glob
 import shutil
 import numpy as np
@@ -6,13 +7,12 @@ from datetime import datetime
 
 from torch import load, save
 from package.dnn.pytorch_control import Config_PyTorch, training_pytorch
-from tqdm import tqdm
 
 
 class pytorch_train(training_pytorch):
     """Class for Handling the Training of Classifiers"""
-    def __init__(self, type: str, model_name: str, config_train: Config_PyTorch, do_train=True) -> None:
-        training_pytorch.__init__(self, type, model_name, config_train, do_train)
+    def __init__(self, config_train: Config_PyTorch, do_train=True) -> None:
+        training_pytorch.__init__(self, config_train, do_train)
 
     def __do_training_epoch(self) -> tuple[float, float]:
         """Do training during epoch of training"""
@@ -75,7 +75,7 @@ class pytorch_train(training_pytorch):
         metrics = list()
         own_metric = list()
         path2model = str()
-        path2model_init = os.path.join(self._path2save, f'model_reset.pth')
+        path2model_init = join(self._path2save, f'model_reset.pth')
         save(self.model.state_dict(), path2model_init)
         for fold in np.arange(self.settings.num_kfold):
             best_vloss = 1_000_000.
@@ -115,7 +115,7 @@ class pytorch_train(training_pytorch):
                 # Tracking the best performance and saving the model
                 if loss_valid < best_vloss:
                     best_vloss = loss_valid
-                    path2model = os.path.join(self._path2log, f'model_fold{fold:03d}_epoch{epoch:04d}.pth')
+                    path2model = join(self._path2log, f'model_fold{fold:03d}_epoch{epoch:04d}.pth')
                     save(self.model, path2model)
 
             # --- Ausgabe nach Training
@@ -135,11 +135,11 @@ class pytorch_train(training_pytorch):
 
         # --- Ending of all trainings phases
         # Delete init model
-        if os.path.exists(path2model_init):
-            os.remove(path2model_init)
+        if exists(path2model_init):
+            remove(path2model_init)
 
         # Delete log folders
-        folder_logs = glob(os.path.join(self._path2save, 'logs*'))
+        folder_logs = glob(join(self._path2save, 'logs*'))
         for folder in folder_logs:
             shutil.rmtree(folder, ignore_errors=True)
 

@@ -15,10 +15,10 @@ class DatasetAE(Dataset):
     def __init__(self, frames: np.ndarray, index: np.ndarray,
                  mean_frame: np.ndarray,
                  mode_train=0):
-        self.frames_orig = np.array(frames, dtype=np.float32)
-        self.frames_noise = np.array(frames, dtype=np.float32)
-        self.frames_mean = np.array(mean_frame, dtype=np.float32)
-        self.cluster = index
+        self.__frames_orig = np.array(frames, dtype=np.float32)
+        self.__frames_noise = np.array(frames, dtype=np.float32)
+        self.__frames_mean = np.array(mean_frame, dtype=np.float32)
+        self.__cluster = index
 
         self.mode_train = mode_train
         if mode_train == 1:
@@ -29,27 +29,27 @@ class DatasetAE(Dataset):
             self.data_type = "Autoencoder"
 
     def __len__(self):
-        return self.cluster.shape[0]
+        return self.__cluster.shape[0]
 
     def __getitem__(self, idx):
         if is_tensor(idx):
             idx = idx.tolist()
 
-        cluster_id = self.cluster[idx]
-        frame_mean = self.frames_mean[cluster_id, :]
+        cluster_id = self.__cluster[idx]
+        frame_mean = self.__frames_mean[cluster_id, :]
 
         if self.mode_train == 1:
             # Denoising Autoencoder Training with mean
-            frame_in = self.frames_orig[idx, :]
-            frame_out = self.frames_mean[cluster_id, :]
+            frame_in = self.__frames_orig[idx, :]
+            frame_out = self.__frames_mean[cluster_id, :]
         elif self.mode_train == 2:
             # Denoising Autoencoder Training with adding noise on input
-            frame_in = self.frames_noise[idx, :]
-            frame_out = self.frames_orig[idx, :]
+            frame_in = self.__frames_noise[idx, :]
+            frame_out = self.__frames_orig[idx, :]
         else:
             # Normal Autoencoder Training
-            frame_in = self.frames_orig[idx, :]
-            frame_out = self.frames_orig[idx, :]
+            frame_in = self.__frames_orig[idx, :]
+            frame_out = self.__frames_orig[idx, :]
 
         return {'in': frame_in, 'out': frame_out, 'cluster': cluster_id, 'mean': frame_mean}
 

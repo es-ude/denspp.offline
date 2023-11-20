@@ -5,21 +5,22 @@ from torch.utils.data import Dataset, DataLoader
 
 class DatasetClass(Dataset):
     """Dataset Preparator for training Classification Neural Network"""
-    def __init__(self, frames: np.ndarray, feat: np.ndarray, index: np.ndarray):
-        self.frames_orig = np.array(frames, dtype=np.float32)
-        self.frames_feat = np.array(feat, dtype=np.float32)
-        self.frames_clus = index
+    def __init__(self, frames: np.ndarray, feat: np.ndarray, index: np.ndarray, type=''):
+        self.__frames_orig = np.array(frames, dtype=np.float32)
+        self.__frames_feat = np.array(feat, dtype=np.float32)
+        self.__frames_clus = index
+        self.data_type = 'Classifier' if not type else type
 
     def __len__(self):
-        return self.frames_clus.shape[0]
+        return self.__frames_clus.shape[0]
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        frame_orig = self.frames_orig[idx, :]
-        frame_feat = self.frames_feat[idx, :]
-        frame_clus = self.frames_clus[idx]
+        frame_orig = self.__frames_orig[idx, :]
+        frame_feat = self.__frames_feat[idx, :]
+        frame_clus = self.__frames_clus[idx]
 
         return {'in': frame_orig, 'feat': frame_feat, 'cluster': frame_clus}
 

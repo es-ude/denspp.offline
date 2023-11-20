@@ -15,6 +15,7 @@ class DatasetRGC(Dataset):
         self.frame_cellid = np.array(cluster_id, dtype=np.uint8)
         self.frame_dict = cluster_dict
         self.cluster_name_available = False if len(cluster_dict) == 0 else True
+        self.data_type = 'RGC Classification'
 
     def __len__(self):
         return self.frame_input.shape[0]

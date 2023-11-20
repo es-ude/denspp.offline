@@ -1,15 +1,16 @@
 from torch import nn, Tensor, unsqueeze
+from package.dnn.pytorch_control import Config_PyTorch
 
 
 class dnn_ae_v1(nn.Module):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
-    def __init__(self):
+    def __init__(self, input_size=32, output_size=3):
         super().__init__()
         self.out_modelname = 'dnn_ae_v1'
         self.out_modeltyp = 'Autoencoder'
-        self.model_shape = (1, 32)
+        self.model_shape = (1, input_size)
         self.model_embedded = False
-        iohiddenlayer = [self.model_shape[1], 20, 14, 3]
+        iohiddenlayer = [input_size, 20, 14, output_size]
         do_train_bias = True
         do_train_batch = True
 
@@ -43,13 +44,13 @@ class dnn_ae_v1(nn.Module):
 
 class dnn_ae_v2(nn.Module):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
-    def __init__(self):
+    def __init__(self, input_size=32, output_size=3):
         super().__init__()
         self.out_modelname = 'dnn_ae_v2'
         self.out_modeltyp = 'Autoencoder'
-        self.model_shape = (1, 32)
+        self.model_shape = (1, input_size)
         self.model_embedded = False
-        iohiddenlayer = [self.model_shape[1], 20, 3]
+        iohiddenlayer = [input_size, 20, output_size]
         do_train_bias = True
         do_train_batch = True
 
@@ -84,13 +85,13 @@ class dnn_ae_v2(nn.Module):
 
 class dnn_ae_rgc_fzj_v1(nn.Module):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
-    def __init__(self):
+    def __init__(self, input_size=40, output_size=6):
         super().__init__()
         self.out_modelname = 'dnn_rgc_fzj_ae_v1'
         self.out_modeltyp = 'Autoencoder'
-        self.model_shape = (1, 40)
+        self.model_shape = (1, input_size)
         self.model_embedded = False
-        iohiddenlayer = [self.model_shape[1], 24, 6]
+        iohiddenlayer = [input_size, 24, output_size]
         do_train_bias = True
         do_train_batch = True
 
@@ -118,13 +119,13 @@ class dnn_ae_rgc_fzj_v1(nn.Module):
 
 class dnn_ae_rgc_fzj_v2(nn.Module):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
-    def __init__(self):
+    def __init__(self, input_size=40, output_size=4):
         super().__init__()
         self.out_modelname = 'dnn_rgc_fzj_ae_v2'
         self.out_modeltyp = 'Autoencoder'
-        self.model_shape = (1, 40)
+        self.model_shape = (1, input_size)
         self.model_embedded = False
-        iohiddenlayer = [self.model_shape[1], 28, 14, 4]
+        iohiddenlayer = [input_size, 28, 14, output_size]
         do_train_bias = True
         do_train_batch = True
 
@@ -158,11 +159,11 @@ class dnn_ae_rgc_fzj_v2(nn.Module):
 
 class cnn_ae_v1(nn.Module):
     """Class of a convolutional autoencoder for feature extraction"""
-    def __init__(self):
+    def __init__(self, input_size=32):
         super().__init__()
         self.out_modelname = 'cnn_ae_v1'
         self.out_modeltyp = 'Autoencoder'
-        self.model_shape = (1, 32)
+        self.model_shape = (1, input_size)
         self.model_embedded = False
         kernel_layer = [1, 16, 6, 1]
         kernel_size = [4, 3, 2]
@@ -183,7 +184,6 @@ class cnn_ae_v1(nn.Module):
             nn.Conv1d(kernel_layer[2], kernel_layer[3], kernel_size[2],
                       stride=kernel_stride[2], padding=kernel_padding[2]),
             nn.BatchNorm1d(kernel_layer[3]),
-            #nn.Tanh(),
         )
         self.flatten = nn.Flatten(start_dim=1)
         self.decoder = nn.Sequential(
@@ -209,12 +209,12 @@ class cnn_ae_v1(nn.Module):
 
 class cnn_ae_v2(nn.Module):
     """Class of a convolutional autoencoder for feature extraction"""
-    def __init__(self):
+    def __init__(self, input_size=32):
         super().__init__()
         self.out_modelname = 'cnn_ae_v2'
         self.out_modeltyp = 'Autoencoder'
         self.model_embedded = False
-        self.model_shape = (1, 32)
+        self.model_shape = (1, input_size)
         kernel_layer = [1, 22, 8, 2]
         kernel_size = [4, 3, 3]
         kernel_stride = [2, 2, 2]
@@ -262,3 +262,29 @@ class cnn_ae_v2(nn.Module):
         decoded0 = self.un_pool(encoded, indices)
         decoded = self.decoder(decoded0)
         return self.flatten(encoded), self.flatten(decoded)
+
+
+Recommended_Config_PytorchSettings = Config_PyTorch(
+    model=dnn_ae_v1(),
+    is_embedded=False,
+    loss_fn=nn.MSELoss(),
+    optimizer='Adam',
+    num_kfold=1,
+    num_epochs=40,
+    batch_size=256,
+    # --- Settings of Datasets
+    data_path='../2_Data/00_Merged_Datasets',
+    data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
+    data_split_ratio=0.25,
+    data_do_shuffle=True,
+    # --- Data Augmentation
+    data_do_augmentation=False,
+    data_num_augmentation=0,
+    data_do_normalization=False,
+    data_do_addnoise_cluster=False,
+    data_do_reduce_samples_per_cluster=False,
+    data_num_samples_per_cluster=0,
+    # --- Dataset Preparation
+    data_exclude_cluster=[],
+    data_sel_pos=[]
+)

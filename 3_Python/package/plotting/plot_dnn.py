@@ -65,7 +65,7 @@ def plt_memristor_ref(frames_in: np.ndarray, frames_cluster: np.ndarray, frames_
 def results_training(path: str,
                      yin: np.ndarray, ypred: np.ndarray, ymean: np.ndarray,
                      feat: np.ndarray, cluster: np.ndarray,
-                     snr: np.ndarray, xframes=50, num_feat=3) -> None:
+                     snr: np.ndarray | list, xframes=50, num_feat=3) -> None:
     data_labeled = True
 
     # --- Pre-Processing

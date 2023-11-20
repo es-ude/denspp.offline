@@ -14,6 +14,7 @@ class DatasetSDA(Dataset):
         self.frame_slice = np.array(frame, dtype=np.float32)
         self.sda_class = np.array(sda, dtype=bool)
         self.sda_thr = threshold
+        self.data_type = 'Spike Detection Algorithm'
 
     def __len__(self):
         return self.frame_slice.shape[0]
@@ -39,7 +40,7 @@ def prepare_plotting(data_plot: DataLoader) -> tuple[np.ndarray, np.ndarray, np.
     return din, dsda, dout
 
 
-def prepare_training(path: str, settings: Config_PyTorch) -> DatasetSDA:
+def prepare_training(path: str, settings: Config_PyTorch, threshold: int) -> DatasetSDA:
     """Preparing datasets incl. augmentation for spike-detection-based training (without pre-processing)"""
     # --- Pre-definitions
     str_datum = datetime.now().strftime('%Y%m%d %H%M%S')
@@ -48,9 +49,8 @@ def prepare_training(path: str, settings: Config_PyTorch) -> DatasetSDA:
 
     # --- MATLAB reading file
     npzfile = loadmat(path)
-    frames_in = npzfile["frames_in"]
-    frames_cl = npzfile["frames_cluster"].flatten()
-    frames_dict = npzfile['cluster_dict']
+    frames_in = npzfile["sda_pred"]
+    frames_cl = npzfile["sda_pred"]
 
     # --- PART: Exclusion of selected clusters
     if not len(settings.data_exclude_cluster) == 0:
@@ -73,9 +73,6 @@ def prepare_training(path: str, settings: Config_PyTorch) -> DatasetSDA:
     # --- Output
     check = np.unique(frames_cl, return_counts=True)
     print(f"... for training are {frames_in.shape[0]} frames with each {frames_in.shape[1]} points available")
-    if len(frames_dict) == 0:
-        print(f"... used data points for training: class = {check[0]} and num = {check[1]}")
-    else:
-        print(f"... used data points for training: class = {frames_dict[check[0]]} and num = {check[1]}")
+    print(f"... used data points for training: class = {check[0]} and num = {check[1]}")
 
-    return DatasetSDA(frames_in, frames_cl, frames_dict)
+    return DatasetSDA(frames_in, frames_cl, threshold)
