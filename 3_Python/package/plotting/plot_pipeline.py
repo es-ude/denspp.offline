@@ -222,7 +222,6 @@ def results_fec(signals: PipelineSignal, no_electrode: int, path="") -> None:
         save_figure(plt, path, "pipeline_fec_elec" + str(no_electrode))
 
 
-# TODO: ConfusionMatrix erstellen
 def results_confusion(signals: PipelineSignal, no_electrode: int, path="") -> None:
     do_norm = True
     title = "Spike Sorting"

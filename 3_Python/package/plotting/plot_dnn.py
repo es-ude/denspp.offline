@@ -7,7 +7,7 @@ def plt_memristor_ref(frames_in: np.ndarray, frames_cluster: np.ndarray, frames_
     """Plotting reference signals for testing with BFO memristor-based calculation"""
     color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
     path = 'runs'
-    fig_size =[22, 8]
+    fig_size = [22, 8]
     textsize = 12
     yrange = [-20, 60]
     error = [-70.3, -111.1, 0.2, 72.85, -119.5]
@@ -61,238 +61,184 @@ def plt_memristor_ref(frames_in: np.ndarray, frames_cluster: np.ndarray, frames_
 
     plt.show(block=True)
 
-def test_plot(frames_in, frames_cluster):
-    cluster_no = np.unique(frames_cluster)
-
-    frames_plot = []
-    frames_mean = []
-    for idx, clid in enumerate(cluster_no):
-        xsel = np.where(frames_cluster == clid)
-        frames0 = np.zeros(shape=(len(xsel[0]), frames_in.shape[1]))
-        for i, sel in enumerate(xsel[0]):
-            frames0[i, :] = frames_in[sel, :]
-
-        frames_plot.append(frames0)
-        frames_mean.append(np.mean(frames0, axis=0))
-
-    # --- Plotting
-    plt.figure()
-    for idx, clid in enumerate(cluster_no):
-        # plt.plot(np.transpose(frames_plot[idx]), color='k')
-        plt.plot(frames_mean[idx])
-
-    plt.show(block=True)
-
 
 def results_training(path: str,
                      yin: np.ndarray, ypred: np.ndarray, ymean: np.ndarray,
                      feat: np.ndarray, cluster: np.ndarray,
-                     snr: np.ndarray) -> None:
-    color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
-    textsize = 12
+                     snr: np.ndarray | list, xframes=50, num_feat=3) -> None:
+    data_labeled = True
 
     # --- Pre-Processing
     cluster_no = np.unique(cluster)
-
-    mark_pos = []
-    mark_feat0 = []
-    mark_feat1 = []
-    mark_feat2 = []
+    mark_feat = [[] for idx in range(0, num_feat)]
+    take_frames = list()
     for i, id in enumerate(cluster_no):
-        mark_pos.append(np.where(cluster == id))
-        mark_feat0.append(feat[mark_pos[-1], 0])
-        mark_feat1.append(feat[mark_pos[-1], 1])
-        mark_feat2.append(feat[mark_pos[-1], 2])
+        pos = np.where(cluster == id)[0]
+        # Take only X frames per cluster
+        np.random.shuffle(pos)
+        take_frames.append(pos[:xframes])
+        # Separating the features for plotting
+        for idx in range(0, num_feat):
+            mark_feat[idx].append(feat[pos, idx])
 
-    # --- Plotting: Statistics
-    plt.rcParams.update({'font.size': textsize})
+    # --- Plotting: Inference model
+    plot_autoencoder_results(
+        mark_feat, [0, 1], yin, ypred, ymean,
+        cluster_no, take_frames, data_labeled=data_labeled, path2save=path
+    )
+    plot_autoencoder_results(
+        mark_feat, [0, 2], yin, ypred, ymean,
+        cluster_no, take_frames, data_labeled=data_labeled, path2save=path
+    )
+    plot_autoencoder_results(
+        mark_feat, [1, 2], yin, ypred, ymean,
+        cluster_no, take_frames, data_labeled=data_labeled, path2save=path
+    )
+
+    # --- Plotting: Feature Space and Metrics
+    plot_statistic_data(cluster, snr, path)
+    plot_autoencoder_snr(snr, path)
+    plot_autoencoder_features(cluster_no, mark_feat, [0, 1, 2], path)
+
+
+# TODO: Xticks bei SNR mit boxplot falsch
+def plot_autoencoder_snr(snr: np.ndarray | list, path2save='') -> None:
+    """"""
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
+    plt.rcParams.update({'font.size': 12})
     plt.subplots_adjust(hspace=0, wspace=0.5)
-    plt.grid(visible=True)
-    ax1 = plt.subplot(121)
-    ax2 = plt.subplot(122)
+    plt.grid()
 
-    ax1.hist(cluster)
-    ax1.set_xticks(range(0, np.max(cluster_no)))
-    ax1.set_xlabel("Cluster")
-    ax1.set_ylabel("Bins")
+    if isinstance(snr, np.ndarray):
+        plt.plot(snr[:, 0], color='k', marker='.', label='min')
+        plt.plot(snr[:, 1], color='r', marker='.', label='mean')
+        plt.plot(snr[:, 2], color='g', marker='.', label='max')
+        plt.legend()
+        plt.xticks(np.linspace(0, snr.shape[0], num=7, endpoint=True))
+    elif isinstance(snr, list):
+        plt.boxplot(snr, patch_artist=True, showfliers=False)
+        pos = np.linspace(1, len(snr), num=10, endpoint=True)
+        plt.xticks(pos)
 
-    ax2.plot(snr[:, 0], color='k')
-    ax2.plot(snr[:, 1], color='r')
-    ax2.plot(snr[:, 2], color='g')
-    ax2.legend(["min", "mean", "max"])
-    ax2.set_xlabel("Epoch")
-    ax2.set_ylabel("Improved SNR (dB)")
-
-    plt.tight_layout(pad=0.5)
-    # --- saving plots
-    if path:
-        save_figure(plt, path, "ai_training_hist")
-
-    # --- Plotting: SNR
-    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
-    plt.subplots_adjust(hspace=0, wspace=0.5)
-    plt.grid(visible=True)
-
-    plt.plot(snr[:, 0], color='k')
-    plt.plot(snr[:, 1], color='r')
-    plt.plot(snr[:, 2], color='g')
-    plt.legend(["min", "mean", "max"])
     plt.xlabel("Epoch")
     plt.ylabel("Improved SNR (dB)")
 
     plt.tight_layout(pad=0.5)
-    # --- saving plots
-    if path:
-        save_figure(plt, path, "ai_training_snr")
+    if path2save:
+        save_figure(plt, path2save, "ai_training_snr")
 
-    mode = 1
-    # --- Plotting - Feat 0
-    fig = plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
-    plt.subplots_adjust(hspace=0, wspace=0.5)
-    plt.grid(visible=True)
-    row = 1
-    col = 3
 
-    ax1 = plt.subplot(row, col, 1)
-    ax1.margins(x=0)
-    ax1.set_xticks([0, 7, 15, 23, 31])
-    ax2 = plt.subplot(row, col, 2)
-    ax2.margins(x=0)
-    ax3 = plt.subplot(row, col, 3, sharex=ax1)
-    ax3.margins(x=0)
+def plot_autoencoder_features(cluster_no: np.ndarray, mark_feat: list, idx: [0, 1, 2], path2save='') -> None:
+    """"""
+    color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
 
-    # Noisy input
-    ax1.plot(np.transpose(yin))
-    ax1.set_title('Network Input')
-    ax1.set_ylabel('Y_in')
-    ax1.set_xlabel('Frame position')
-
-    # Feature extraction
-    if mode == 0:
-        ax2.scatter(feat[:, 0], feat[:, 1])
-    else:
-        for i, id in enumerate(cluster_no):
-            ax2.scatter(mark_feat0[i], mark_feat1[i], color=color[i], marker='.')
-    ax2.set_title('Features')
-    ax2.set_ylabel('Feat[0]')
-    ax2.set_xlabel('Feat[1]')
-
-    # Denoised output
-    ax3.plot(np.transpose(ypred))
-    if mode == 1:
-        for i, id in enumerate(cluster_no):
-            ax3.plot(ymean[i, :], color=color[i], linewidth=1.5)
-    ax3.set_title('Network Output')
-    ax3.set_ylabel('X_pred')
-    ax3.set_xlabel('Frame position')
-
-    plt.tight_layout(pad=0.5)
-    # --- saving plots
-    if path:
-        save_figure(plt, path, "ai_training_out0")
-
-    # --- Plotting - Feat 1
-    fig = plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
-    plt.subplots_adjust(hspace=0, wspace=0.5)
-    plt.grid(visible=True)
-    row = 1
-    col = 3
-
-    ax1 = plt.subplot(row, col, 1)
-    ax1.margins(x=0)
-    ax1.set_xticks([0, 7, 15, 23, 31])
-    ax2 = plt.subplot(row, col, 2)
-    ax2.margins(x=0)
-    ax3 = plt.subplot(row, col, 3, sharex=ax1)
-    ax3.margins(x=0)
-
-    # Noisy input
-    ax1.plot(np.transpose(yin))
-    ax1.set_title('Network Input')
-    ax1.set_ylabel('Y_in')
-    ax1.set_xlabel('Frame position')
-
-    # Feature extraction
-    if mode == 0:
-        ax2.scatter(feat[:, 0], feat[:, 1])
-    else:
-        for i, id in enumerate(cluster_no):
-            ax2.scatter(mark_feat1[i], mark_feat2[i], color=color[i], marker='.')
-    ax2.set_title('Features')
-    ax2.set_ylabel('Feat[1]')
-    ax2.set_xlabel('Feat[2]')
-
-    # Denoised output
-    ax3.plot(np.transpose(ypred))
-    if mode == 1:
-        for i, id in enumerate(cluster_no):
-            ax3.plot(ymean[i, :], color=color[i], linewidth=1.5)
-    ax3.set_title('Network Output')
-    ax3.set_ylabel('X_pred')
-    ax3.set_xlabel('Frame position')
-
-    plt.tight_layout(pad=0.5)
-    # --- saving plots
-    if path:
-        save_figure(plt, path, "ai_training_out1")
-
-    # --- Plotting - Feat 2
-    fig = plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
-    plt.subplots_adjust(hspace=0, wspace=0.5)
-    plt.grid(visible=True)
-    row = 1
-    col = 3
-
-    ax1 = plt.subplot(row, col, 1)
-    ax1.margins(x=0)
-    ax1.set_xticks([0, 7, 15, 23, 31])
-    ax2 = plt.subplot(row, col, 2)
-    ax2.margins(x=0)
-    ax3 = plt.subplot(row, col, 3, sharex=ax1)
-    ax3.margins(x=0)
-
-    # Noisy input
-    ax1.plot(np.transpose(yin))
-    ax1.set_title('Network Input')
-    ax1.set_ylabel('Y_in')
-    ax1.set_xlabel('Frame position')
-
-    # Feature extraction
-    if mode == 0:
-        ax2.scatter(feat[:, 0], feat[:, 1])
-    else:
-        for i, id in enumerate(cluster_no):
-            ax2.scatter(mark_feat0[i], mark_feat2[i], color=color[i], marker='.')
-    ax2.set_title('Features')
-    ax2.set_ylabel('Feat[0]')
-    ax2.set_xlabel('Feat[2]')
-
-    # Denoised output
-    ax3.plot(np.transpose(ypred))
-    if mode == 1:
-        for i, id in enumerate(cluster_no):
-            ax3.plot(ymean[i, :], color=color[i], linewidth=1.5)
-    ax3.set_title('Network Output')
-    ax3.set_ylabel('X_pred')
-    ax3.set_xlabel('Frame position')
-
-    plt.tight_layout(pad=0.5)
-    # --- saving plots
-    if path:
-        save_figure(plt, path, "ai_training_out2")
-
-    # --- Plotting: Feature space
-    plt.figure()
+    plt.figure(figsize=(cm_to_inch(12), cm_to_inch(9)))
+    plt.rcParams.update({'font.size': 12})
     ax = plt.axes(projection='3d')
 
     for i, id in enumerate(cluster_no):
-        ax.scatter3D(mark_feat0[i], mark_feat1[i], mark_feat2[i], color=color[i], marker='.')
+        ax.scatter3D(mark_feat[idx[0]][i], mark_feat[idx[1]][i], mark_feat[idx[2]][i], color=color[i], marker='.')
     ax.set_xlabel('Feat[0]')
     ax.set_ylabel('Feat[1]')
     ax.set_zlabel('Feat[2]')
 
     plt.tight_layout(pad=0.5)
     # --- saving plots
-    if path:
-        save_figure(plt, path, "ai_training_feat")
+    if path2save:
+        save_figure(plt, path2save, "ai_training_feat")
+
+
+def plot_statistic_data(cluster: np.ndarray, snr: np.ndarray | list, path2save='', cl_dict=[]) -> None:
+    """"""
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
+    plt.rcParams.update({'font.size': 12})
+    plt.subplots_adjust(hspace=0, wspace=0.5)
+    axs = list()
+    for idx in range(0, 2):
+        axs.append(plt.subplot(1, 2, 1+idx))
+
+    # Histogram
+    check = np.unique(cluster, return_counts=True)
+    axs[0].hist(cluster, bins=range(0, 1+cluster.max()), align='left', stacked=True, rwidth=0.8)
+    if len(cl_dict) == 0:
+        axs[0].set_xticks(range(0, 1+cluster.max()))
+    else:
+        axs[0].set_xticks(range(0, 1 + cluster.max()), cl_dict)
+    axs[0].set_xlabel("Cluster")
+    axs[0].set_ylabel("Bins")
+    axs[0].set_ylim([int(0.99*check[1].min()), int(1.01*check[1].max())])
+
+    # SNR
+    if isinstance(snr, np.ndarray):
+        axs[1].plot(snr[:, 0], color='k', marker='.', label='min')
+        axs[1].plot(snr[:, 1], color='r', marker='.', label='mean')
+        axs[1].plot(snr[:, 2], color='g', marker='.', label='max')
+        axs[1].legend()
+    elif isinstance(snr, list):
+        axs[1].boxplot(snr, patch_artist=True, showfliers=False)
+        pos = np.linspace(1, len(snr), num=7, endpoint=True)
+        axs[1].set_xticks(pos)
+
+    axs[1].set_xlabel("Epoch")
+    axs[1].set_ylabel("Improved SNR (dB)")
+
+    for ax in axs:
+        ax.grid()
+
+    plt.tight_layout(pad=0.5)
+    # --- saving plots
+    if path2save:
+        save_figure(plt, path2save, "ai_training_hist")
+
+
+def plot_autoencoder_results(mark_feat: list, mark_idx: list,
+                             frames_in: np.ndarray, frames_out: np.ndarray, frames_mean: np.ndarray,
+                             cluster_no: np.ndarray, take_frames: list, data_labeled=False, path2save='') -> None:
+    """Handler for plotting results"""
+    color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
+
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
+    plt.rcParams.update({'font.size': 12})
+    plt.subplots_adjust(hspace=0, wspace=0.5)
+    plt.grid(visible=True)
+    row = 1
+    col = 3
+
+    axs = list()
+    for idx in range(0, row*col):
+        axs.append(plt.subplot(row, col, 1+idx))
+
+    # Noisy input
+    for pos in take_frames:
+        axs[0].plot(np.transpose(frames_in[pos, :]), linewidth=0.5)
+    axs[0].set_title('Input')
+    axs[0].set_ylabel('Y_in')
+    axs[0].set_xlabel('Frame position')
+    axs[0].set_xticks(np.linspace(0, frames_in.shape[1]-1, num=6, endpoint=True))
+
+    # Feature extraction
+    for i, id in enumerate(cluster_no):
+        axs[1].scatter(mark_feat[mark_idx[0]][i], mark_feat[mark_idx[1]][i], color=color[i], marker='.')
+    axs[1].set_title('Feature Space')
+    axs[1].set_ylabel(f'Feat[{mark_idx[0]}]')
+    axs[1].set_xlabel(f'Feat[{mark_idx[1]}]')
+
+    # Denoised output
+    for pos in take_frames:
+        axs[2].plot(np.transpose(frames_out[pos, :]), linewidth=0.5)
+    if data_labeled:
+        for i, id in enumerate(cluster_no):
+            axs[2].plot(frames_mean[i, :], color=color[i], linewidth=1.5)
+    axs[2].set_title('Output')
+    axs[2].set_ylabel('Y_pred')
+    axs[2].set_xlabel('Frame position')
+    axs[2].set_xticks(np.linspace(0, frames_mean.shape[1]-1, num=6, endpoint=True))
+
+    for ax in axs:
+        ax.grid()
+        ax.margins(x=0)
+
+    plt.tight_layout(pad=0.5)
+    # --- Saving plots
+    if path2save:
+        save_figure(plt, path2save, f"ai_training_out{mark_idx[0]}-{mark_idx[1]}")

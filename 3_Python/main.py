@@ -1,4 +1,5 @@
-from os.path import join
+from os import mkdir
+from os.path import join, exists
 import numpy as np
 import matplotlib.pyplot as plt
 from threading import Thread, active_count
@@ -8,7 +9,7 @@ from tqdm import tqdm
 
 from src_neuro.pipeline_v1 import Settings, Pipeline
 from package.metric import Metric
-from package.data.data_call import DataController
+from package.data.data_call_common import DataController
 from package.plotting.plot_pipeline import results_afe1, results_afe2, results_fec
 
 
@@ -35,6 +36,9 @@ class CustomThread(Thread):
 
 def save_results(data: list, path2save="") -> None:
     """Function for plotting the results"""
+    if not exists(path2save):
+        mkdir(path2save)
+
     name = 'results.mat'
     mdict = dict()
     for elec, val in enumerate(data):

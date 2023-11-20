@@ -3,7 +3,7 @@ import shutil
 import numpy as np
 
 from package.template.pipeline_signals import PipelineSignal
-from package.data.data_call import SettingsDATA
+from package.data.data_call_common import SettingsDATA
 from package.pre_amp.preamp import PreAmp, SettingsAMP
 from package.adc.adc_basic import SettingsADC
 from package.adc.adc_sar import ADC_SAR as ADC0
@@ -18,13 +18,13 @@ from package.nsp import calc_spiketicks
 class Settings:
     """Settings class for handling the src_neuro setting"""
     SettingsDATA = SettingsDATA(
-        path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
-        # path='C:\GitHub\spaike_project\\2_Data',
-        data_set=8,
+        # path='C:/HomeOffice/Arbeit/C_MERCUR_SpAIke/Daten',
+        path='../2_Data',
+        data_set=1,
         data_case=0,
         data_point=0,
         t_range=[0],
-        ch_sel=[0, 1, 2],
+        ch_sel=[],
         fs_resample=100e3
     )
 
@@ -44,8 +44,6 @@ class Settings:
         fs_ana=SettingsDATA.fs_resample,
         fs_dig=20e3, osr=1, Nadc=12
     )
-    # 20e3 für 40 samples per frame
-    # 32e3 for 64 samples per frame
 
     # --- Digital filtering for ADC output and CIC
     SettingsDSP_LFP = SettingsDSP(

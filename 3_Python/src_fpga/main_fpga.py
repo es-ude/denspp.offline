@@ -1,7 +1,7 @@
 import os
 from scipy.io import loadmat
 
-from package.data.data_call import DataController
+from package.data.data_call_common import DataController
 from src_data.pipeline_data import Settings, Pipeline
 import package.fpga.verilog_translate_frames as verilog_frame
 import package.fpga.verilog_translate_timeseries_1ch as verilog_time
