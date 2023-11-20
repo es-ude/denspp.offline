@@ -42,9 +42,6 @@ def prepare_plotting(data_plot: DataLoader) -> tuple[np.ndarray, np.ndarray]:
 
 def prepare_training(path: str, settings: Config_PyTorch) -> DatasetRGC:
     """Preparing datasets incl. augmentation for spike-detection-based training (without pre-processing)"""
-    # --- Pre-definitions
-    str_datum = datetime.now().strftime('%Y%m%d %H%M%S')
-    print(f"Running on {str_datum}")
     print("... loading the datasets")
 
     # --- MATLAB reading file
