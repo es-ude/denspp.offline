@@ -22,10 +22,8 @@ class pytorch_train(training_pytorch):
         self.model.train(True)
         for tdata in self.train_loader[self._run_kfold]:
             self.optimizer.zero_grad()
-            data_in = tdata['in']
-            data_out = tdata['out']
-            pred_out = self.model(data_in)[1]
-            loss = self.loss_fn(pred_out, data_out)
+            pred_out = self.model(tdata['in'])[1]
+            loss = self.loss_fn(pred_out, tdata['out'])
             loss.backward()
             self.optimizer.step()
 
@@ -43,10 +41,8 @@ class pytorch_train(training_pytorch):
 
         self.model.eval()
         for vdata in self.valid_loader[self._run_kfold]:
-            data_in = vdata['in']
-            data_out = vdata['out']
-            pred_out = self.model(data_in)[1]
-            valid_loss += self.loss_fn(pred_out, data_out).item()
+            pred_out = self.model( vdata['in'])[1]
+            valid_loss += self.loss_fn(pred_out, vdata['out']).item()
             total_batches += 1
 
         valid_loss = valid_loss / total_batches
@@ -58,11 +54,10 @@ class pytorch_train(training_pytorch):
         metric_epoch = []
         self.model.eval()
         for vdata in self.valid_loader[self._run_kfold]:
-            data_in = vdata['in']
             data_mean = vdata['mean'].detach().numpy()
-            pred_out = self.model(data_in)[1]
+            pred_out = self.model(vdata['in'])[1]
 
-            snr_in = calculate_snr(data_in.detach().numpy(), data_mean)
+            snr_in = calculate_snr(vdata['in'].detach().numpy(), data_mean)
             snr_out = calculate_snr(pred_out.detach().numpy(), data_mean)
             metric_epoch.append([snr_out - snr_in])
 
@@ -77,7 +72,7 @@ class pytorch_train(training_pytorch):
         metric_epoch = self.__do_snr_calculation()
         return np.array((np.min(metric_epoch), np.mean(metric_epoch), np.max(metric_epoch)))
 
-    def do_training(self, reduced_own_metric=False) -> tuple[list, list]:
+    def do_training(self, reduced_own_metric=True) -> tuple[list, list]:
         """Start model training incl. validation and custom-own metric calculation"""
         self._init_train()
         self._save_config_txt()
@@ -91,11 +86,7 @@ class pytorch_train(training_pytorch):
         path2model_init = join(self._path2save, f'model_reset.pth')
         save(self.model.state_dict(), path2model_init)
         for fold in np.arange(self.settings.num_kfold):
-            best_vloss = 1_000_000.
-            loss_train = 1_000_000.
-            loss_valid = 1_000_000.
-
-            # - Reset of model
+            # Reseting the model
             self.model.load_state_dict(load(path2model_init))
             self._run_kfold = fold
             self._init_writer()
@@ -107,6 +98,9 @@ class pytorch_train(training_pytorch):
             else:
                 print(f'\nTraining starts on: {timestamp_string}')
 
+            best_vloss = 1_000_000.
+            loss_train = 1_000_000.
+            loss_valid = 1_000_000.
             for epoch in range(0, self.settings.num_epochs):
                 loss_train = self.__do_training_epoch()
                 loss_valid = self.__do_valid_epoch()
@@ -126,12 +120,12 @@ class pytorch_train(training_pytorch):
                     path2model = join(self._path2log, f'model_fold{fold:03d}_epoch{epoch:04d}.pth')
                     save(self.model, path2model)
 
-                # Calculation of custom metrics
+                # Saving metrics
+                metrics.append([loss_train, loss_valid])
                 own_metric.append(self.__do_snr_epoch_reduced() if reduced_own_metric else self.__do_snr_epoch())
 
             # --- Ausgabe nach Training
             self._save_train_results(loss_train, loss_valid)
-            metrics.append([loss_train, loss_valid])
 
             timestamp_end = datetime.now()
             timestamp_string = timestamp_end.strftime('%H:%M:%S')

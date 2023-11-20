@@ -10,7 +10,7 @@ class dnn_rgc_v1(nn.Module):
         self.out_modeltyp = 'Classification'
         self.model_shape = (1, input_size)
         self.model_embedded = False
-        lin_size = [input_size, 50, 26, 18, output_size]
+        lin_size = [input_size, 60, 32, 24, output_size]
         do_train_bias = True
 
         self.classifier = nn.Sequential(

@@ -1,5 +1,4 @@
 from os.path import join
-from glob import glob
 import matplotlib.pyplot as plt
 from torch import nn, from_numpy, load
 from scipy.io import savemat
@@ -36,7 +35,7 @@ config_train = Config_PyTorch(
     data_do_reduce_samples_per_cluster=True,
     data_num_samples_per_cluster=20000,
     # --- Dataset Preparation
-    data_exclude_cluster=[1, 2, 3],
+    data_exclude_cluster=[],
     data_sel_pos=[]
 )
 
@@ -50,18 +49,16 @@ if __name__ == "__main__":
     trainhandler = pytorch_train(config_train)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
+    del dataset
     loss, snr_train = trainhandler.do_training()
 
     # --- Post-Processing: Getting data from validation set for inference
-    valid_dl = trainhandler.valid_loader[0]
-    data_in, data_out, cluster_out, data_mean = prepare_plotting(valid_dl)
-    del valid_dl
+    data_in, data_out, cluster_out, data_mean = prepare_plotting(trainhandler.valid_loader)
 
     # --- Post-Processing: Do the Inference with Best Model
     print(f"\nDoing the inference with validation data on best model")
     model_test = load(trainhandler.get_best_model()[0])
-    model_in = from_numpy(data_in)
-    feat_out, pred_out = model_test(model_in)
+    feat_out, pred_out = model_test(from_numpy(data_in))
     feat0 = feat_out.detach().numpy()
     ypred0 = pred_out.detach().numpy()
 
