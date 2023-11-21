@@ -51,7 +51,7 @@ def save_results(data: list, path2save="") -> None:
 
 
 def func_plots(data, channel: int, path2save="") -> None:
-    """Function to plot resilts from spike sorting"""
+    """Function to plot results from spike sorting"""
     # --- Spike Sorting output
     results_afe1(data, channel, path=path2save)
     # results_afe2(data, channel, path=path2save)
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     use_multithreading = False
     str_datum = datetime.now().strftime('%Y%m%d_%H%M%S')
     folder_name = '{}_pipeline'.format(str_datum)
-    print("\nRunning spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
+    print("\nRunning end-to-end spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
 
     # ----- Preparation: Module calling -----
     settings = Settings()
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     path2save = pipe_test.generate_folder(folder_name)
     results = [None] * len(num_electrodes)
 
-    print("\nPerforming end-to-end src_neuro on all channels")
+    print("\nPerforming neural signal processing on all channels")
     if use_multithreading and len(num_electrodes) > 1:
         # --- Path for Multi-Threading
         max_num_workers = 2

@@ -125,9 +125,8 @@ class Pipeline:
 
     def run(self, uinp: np.ndarray) -> None:
         self.signals.u_in = uinp
-        u_inn = np.array(self.__preamp0.settings.vcm)
         # ---- Analogue Front End Module ----
-        self.signals.u_pre, _ = self.__preamp0.pre_amp_chopper(uinp, u_inn)
+        self.signals.u_pre, _ = self.__preamp0.pre_amp_chopper(uinp, np.array(self.__preamp0.settings.vcm))
         self.signals.x_adc, _, self.signals.u_quant = self.__adc.adc_ideal(self.signals.u_pre)
         # ---- Digital Pre-processing ----
         self.signals.x_lfp = self.__dsp0.filter(self.signals.x_adc)
@@ -135,17 +134,21 @@ class Pipeline:
         # ---- Spike detection incl. thresholding ----
         x_dly = self.__sda.time_delay(self.signals.x_spk)
         # self.x_sda = self.sda.sda_neo(self.x_spk)
-        self.signals.x_sda, _ = self.__sda.sda_smooth(self.__sda.sda_neo(self.signals.x_spk))
+        self.signals.x_sda = self.__sda.sda_spb(self.signals.x_spk, self.signals.fs_dig, [200, 2e3])
+        # self.signals.x_sda = self.__sda.sda_smooth(self.__sda.sda_neo(self.signals.x_spk))
         self.signals.x_thr = self.__sda.thres_blackrock(self.signals.x_sda)
-        (self.signals.frames_orig, self.signals.frames_align) = self.__sda.frame_generation(
+        self.signals.frames_orig, self.signals.frames_align = self.__sda.frame_generation(
             x_dly, self.signals.x_sda, self.signals.x_thr
         )
+
         # ---- Feature Extraction  ----
-        if not len(self.signals.frames_align) == 0:
+        if not self.signals.frames_align[1].size == 0:
             self.signals.features = self.__fe.fe_pca(self.signals.frames_align[0])
             # ---- Clustering | Classification ----
             (self.signals.frames_align[2]) = self.__cl.cluster_kmeans(self.signals.features)
             self.signals.spike_ticks = calc_spiketicks(self.signals.frames_align)
+        else:
+            print("No frames available!")
 
     def run_nsp(self) -> None:
         print("NO FURTHER PROCESSING IS INCLUDED")

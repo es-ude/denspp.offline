@@ -8,7 +8,6 @@ from package.dnn.data_preprocessing import change_frame_size, calculate_frame_me
 from package.dnn.data_augmentation import *
 
 
-# TODO: Add normal training of denoising autoencoder
 class DatasetAE(Dataset):
     """Dataset Preparator for training Autoencoder"""
     def __init__(self, frames: np.ndarray, index: np.ndarray,

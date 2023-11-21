@@ -10,13 +10,9 @@ class SettingsCluster:
     no_cluster: int
 
 
-@dataclasses.dataclass
-class RecommendedSettingsCluster(SettingsCluster):
-    """Recommended values to configure clustering with standard values"""
-    def __init__(self):
-        super().__init__(
-            no_cluster=3
-        )
+RecommendedSettingsCluster = SettingsCluster(
+    no_cluster=3
+)
 
 
 class Clustering:

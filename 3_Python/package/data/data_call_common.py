@@ -29,15 +29,12 @@ class SettingsDATA:
     fs_resample: float
 
 
-class RecommendedSettingsDATA(SettingsDATA):
-    """Recommended configuration for testing"""
-    def __init__(self):
-        super().__init__(
-            path="../2_Data",
-            data_set=1, data_case=0, data_point=0,
-            t_range=[0], ch_sel=[],
-            fs_resample=100e3
-        )
+RecommendedSettingsDATA = SettingsDATA(
+    path="../2_Data",
+    data_set=1, data_case=0, data_point=0,
+    t_range=[0], ch_sel=[],
+    fs_resample=100e3
+)
 
 
 # ----- Read Settings -----

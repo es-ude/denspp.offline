@@ -74,7 +74,6 @@ def calculate_frame_snr(
     return cluster_snr
 
 
-# TODO: Data Normalization does not work very well
 def data_normalization(
         frames_in: np.ndarray,
         do_bipolar=True,
