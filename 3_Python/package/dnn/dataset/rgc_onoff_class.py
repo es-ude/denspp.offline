@@ -1,8 +1,8 @@
 import numpy as np
-from datetime import datetime
 from scipy.io import loadmat
 from torch import is_tensor
 from torch.utils.data import Dataset, DataLoader
+from package.data.data_call_addon import RGC_Cell_Names, RGC_ONOFF_FZJ
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.data_augmentation import augmentation_reducing_samples
 from package.dnn.data_preprocessing import data_normalization
@@ -10,10 +10,10 @@ from package.dnn.data_preprocessing import data_normalization
 
 class DatasetRGC(Dataset):
     """Dataset Loader for Retinal Ganglion Cells ON-/OFF Cell Classification"""
-    def __init__(self, frame: np.ndarray, cluster_id: np.ndarray, cluster_dict=[]):
+    def __init__(self, frame: np.ndarray, cluster_id: np.ndarray, cluster_dict=None):
         self.__frame_input = np.array(frame, dtype=np.float32)
         self.__frame_cellid = np.array(cluster_id, dtype=np.uint8)
-        self.cluster_name_available = False if len(cluster_dict) == 0 else True
+        self.cluster_name_available = isinstance(cluster_dict, list)
         self.frame_dict = cluster_dict
         self.data_type = 'RGC Classification'
 
@@ -24,9 +24,7 @@ class DatasetRGC(Dataset):
         if is_tensor(idx):
             idx = idx.tolist()
 
-        out = {'in': self.__frame_input[idx], 'out': self.__frame_cellid[idx]} if not self.cluster_name_available \
-            else {'in': self.__frame_input[idx], 'out': self.__frame_cellid[idx], 'name': self.frame_dict[self.__frame_cellid[idx]]}
-        return out
+        return {'in': self.__frame_input[idx], 'out': self.__frame_cellid[idx]}
 
 
 def prepare_plotting(data_in: DataLoader) -> tuple[np.ndarray, np.ndarray]:
@@ -43,7 +41,8 @@ def prepare_plotting(data_in: DataLoader) -> tuple[np.ndarray, np.ndarray]:
     return din, dout
 
 
-def prepare_training(path: str, settings: Config_PyTorch) -> DatasetRGC:
+def prepare_training(path: str, settings: Config_PyTorch,
+                     reduce_fzj_data=False, reduce_rgc_data=False) -> DatasetRGC:
     """Preparing datasets incl. augmentation for spike-detection-based training (without pre-processing)"""
     print("... loading the datasets")
 
@@ -51,7 +50,7 @@ def prepare_training(path: str, settings: Config_PyTorch) -> DatasetRGC:
     npzfile = loadmat(path)
     frames_in = npzfile["frames_in"]
     frames_cl = npzfile["frames_cluster"].flatten()
-    frames_dict = [] # npzfile['cluster_dict']
+    frames_dict = npzfile['cluster_dict'].tolist()
 
     # --- PART: Exclusion of selected clusters
     if not len(settings.data_exclude_cluster) == 0:
@@ -59,6 +58,24 @@ def prepare_training(path: str, settings: Config_PyTorch) -> DatasetRGC:
             selX = np.where(frames_cl != id)
             frames_in = frames_in[selX[0], :]
             frames_cl = frames_cl[selX]
+
+    # --- PART: Reducing classes with abort condition
+    if reduce_fzj_data and reduce_rgc_data:
+        raise Exception("\nPlease select only one reducing methode!")
+
+    if reduce_fzj_data or reduce_rgc_data:
+        print("... reducing output classes")
+
+    if reduce_fzj_data:
+        cl_sampler = RGC_ONOFF_FZJ()
+        frames_dict = cl_sampler.get_classes()
+        for idx, cl in enumerate(frames_cl):
+            frames_cl[idx] = cl_sampler.get_class_to_id(cl)[0]
+
+    if reduce_rgc_data:
+        cl_sampler = RGC_Cell_Names()
+        for idx, cl in enumerate(frames_cl):
+            frames_cl[idx] = cl_sampler.get_class_to_id(cl)[0]
 
     # --- PART: Reducing samples per cluster (if too large)
     if settings.data_do_reduce_samples_per_cluster:
@@ -77,6 +94,6 @@ def prepare_training(path: str, settings: Config_PyTorch) -> DatasetRGC:
     if len(frames_dict) == 0:
         print(f"... used data points for training: class = {check[0]} and num = {check[1]}")
     else:
-        print(f"... used data points for training: class = {frames_dict[check[0]]} and num = {check[1]}")
+        print(f"... used data points for training: class = {frames_dict} and num = {check[1]}")
 
     return DatasetRGC(frames_in, frames_cl, frames_dict)

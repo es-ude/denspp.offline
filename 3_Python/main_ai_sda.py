@@ -18,7 +18,7 @@ config_train = Config_PyTorch(
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=10,
+    num_epochs=5,
     batch_size=256,
     # --- Settings of Datasets
     data_path='data',
@@ -44,6 +44,7 @@ if __name__ == "__main__":
 
     # --- Processing: Loading Data and Do Training
     dataset = prepare_training(path=config_train.get_path2data(), settings=config_train, threshold=2)
+    dataset_dict = dataset.sda_dict
     trainhandler = pytorch_train(config_train)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
@@ -70,15 +71,14 @@ if __name__ == "__main__":
             {"frames_in": xdata0,
              "cluster_orig": xclus0,
              "cluster_pred": ypred,
-             "config": config_train
-             },
+             "config": config_train},
             do_compression=True,
             long_field_names=True)
 
     # --- Plotting
     plot_loss(epoch_metric, 'Acc.', path2save=logsdir)
-    plot_confusion(xclus0, ypred, path2save=logsdir)
-    plot_statistic_data(xclus, yclus, path2save=logsdir)
+    plot_confusion(xclus0, ypred, path2save=logsdir, cl_dict=dataset_dict)
+    plot_statistic_data(xclus, yclus, path2save=logsdir, cl_dict=dataset_dict)
 
     plt.show(block=False)
     plt.close("all")

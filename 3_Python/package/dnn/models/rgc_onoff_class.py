@@ -10,21 +10,24 @@ class dnn_rgc_v1(nn.Module):
         self.out_modeltyp = 'Classification'
         self.model_shape = (1, input_size)
         self.model_embedded = False
-        lin_size = [input_size, 60, 32, 24, output_size]
+        lin_size = [input_size, 60, 40, 24, 10, output_size]
         do_train_bias = True
 
         self.classifier = nn.Sequential(
             nn.Linear(lin_size[0], lin_size[1]),
             nn.BatchNorm1d(lin_size[1], affine=do_train_bias),
-            nn.Tanh(),
+            nn.SiLU(),
             nn.Linear(lin_size[1], lin_size[2]),
             nn.BatchNorm1d(lin_size[2], affine=do_train_bias),
-            nn.Tanh(),
+            nn.SiLU(),
             nn.Linear(lin_size[2], lin_size[3]),
             nn.BatchNorm1d(lin_size[3], affine=do_train_bias),
-            nn.Tanh(),
+            nn.SiLU(),
             nn.Linear(lin_size[3], lin_size[4]),
             nn.BatchNorm1d(lin_size[4], affine=do_train_bias),
+            nn.SiLU(),
+            nn.Linear(lin_size[4], lin_size[5]),
+            nn.BatchNorm1d(lin_size[5], affine=do_train_bias),
             nn.Softmax()
         )
 
@@ -38,7 +41,7 @@ Recommended_Config_PytorchSettings = Config_PyTorch(
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=40,
+    num_epochs=10,
     batch_size=256,
     # --- Settings of Datasets
     data_path='../2_Data/00_Merged_Datasets',

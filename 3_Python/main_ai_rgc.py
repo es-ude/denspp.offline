@@ -14,11 +14,11 @@ import package.dnn.models.rgc_onoff_class as ai_module
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
-    model=ai_module.dnn_rgc_v1(),
+    model=ai_module.dnn_rgc_v1(output_size=2),
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=50,
+    num_epochs=2,
     batch_size=128,
     # --- Settings of Datasets
     data_path='data',
@@ -32,7 +32,7 @@ config_train = Config_PyTorch(
     data_do_normalization=False,
     data_do_addnoise_cluster=False,
     data_do_reduce_samples_per_cluster=True,
-    data_num_samples_per_cluster=5000,
+    data_num_samples_per_cluster=20000,
     # --- Dataset Preparation
     data_exclude_cluster=[],
     data_sel_pos=[]
@@ -44,7 +44,9 @@ if __name__ == "__main__":
     print("\nTrain modules of spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
 
     # --- Processing: Loading Data and Do Training
-    dataset = prepare_training(path=config_train.get_path2data(), settings=config_train)
+    dataset = prepare_training(path=config_train.get_path2data(), settings=config_train,
+                               reduce_fzj_data=True, reduce_rgc_data=False)
+    dataset_dict = dataset.frame_dict if dataset.cluster_name_available else []
     trainhandler = pytorch_train(config_train)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
@@ -70,15 +72,14 @@ if __name__ == "__main__":
             {"frames_in": xdata0,
              "cluster_orig": xclus0,
              "cluster_pred": ypred,
-             "config": config_train
-             },
+             "config": config_train},
             do_compression=True,
             long_field_names=True)
 
     # --- Plotting
     plot_loss(epoch_metric, 'Acc.', path2save=logsdir)
-    plot_confusion(xclus0, ypred, path2save=logsdir)
-    plot_statistic_data(xclus, yclus, path2save=logsdir)
+    plot_confusion(xclus0, ypred, path2save=logsdir, cl_dict=dataset_dict)
+    plot_statistic_data(xclus, yclus, path2save=logsdir, cl_dict=dataset_dict)
 
     plt.show(block=False)
     plt.close("all")

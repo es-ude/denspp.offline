@@ -14,7 +14,7 @@ class pytorch_train(training_pytorch):
     def __init__(self, config_train: Config_PyTorch, do_train=True) -> None:
         training_pytorch.__init__(self, config_train, do_train)
 
-    def __do_training_epoch(self) -> tuple[float, float]:
+    def __do_training_epoch(self) -> [float, float]:
         """Do training during epoch of training"""
         train_loss = 0.0
         total_batches = 0
@@ -34,12 +34,12 @@ class pytorch_train(training_pytorch):
             total_correct += int(sum(dec_cl == tdata['out']))
             total_samples += len(tdata['in'])
 
-        accuracy = total_correct / total_samples
+        train_acc = total_correct / total_samples
         train_loss = train_loss / total_batches
 
-        return train_loss, accuracy
+        return train_loss, train_acc
 
-    def __do_valid_epoch(self) -> tuple[float, float]:
+    def __do_valid_epoch(self) -> [float, float]:
         """Do validation during epoch of training"""
         valid_loss = 0.0
         total_batches = 0
@@ -55,12 +55,12 @@ class pytorch_train(training_pytorch):
             total_correct += int(sum(dec_cl == vdata['out']))
             total_samples += len(vdata['in'])
 
-        accuracy = total_correct / total_samples
+        valid_acc = total_correct / total_samples
         valid_loss = valid_loss / total_batches
 
-        return valid_loss, accuracy
+        return valid_loss, valid_acc
 
-    def do_training(self) -> tuple[list, list]:
+    def do_training(self) -> [list, list]:
         """Start model training incl. validation and custom-own metric calculation"""
         self._init_train()
         self._save_config_txt()
@@ -86,40 +86,38 @@ class pytorch_train(training_pytorch):
             else:
                 print(f'\nTraining starts on: {timestamp_string}')
 
-            best_vloss = 1_000_000.
-            loss_train = 1_000_000.
-            loss_valid = 1_000_000.
-            acc_train = 0.0
-            acc_valid = 0.0
+            best_loss = [1e6, 1e6]
+            best_acc = [0.0, 0.0]
             for epoch in range(0, self.settings.num_epochs):
-                loss_train, acc_train = self.__do_training_epoch()
-                loss_valid, acc_valid = self.__do_valid_epoch()
+                train_loss, train_acc = self.__do_training_epoch()
+                valid_loss, valid_acc = self.__do_valid_epoch()
 
                 print(f'... results of epoch {epoch + 1}/{self.settings.num_epochs} '
                       f'[{(epoch + 1) / self.settings.num_epochs * 100:.2f} %]: '
-                      f'train_loss = {loss_train:.5f}, train_acc = {100 * acc_train:.2f} % - '
-                      f'valid_loss = {loss_valid:.5f}, valid_acc = {100 * acc_valid:.2f} %')
+                      f'train_loss = {train_loss:.5f}, train_acc = {100 * train_acc:.2f} % - '
+                      f'valid_loss = {valid_loss:.5f}, valid_acc = {100 * valid_acc:.2f} %')
 
                 # Log the running loss averaged per batch for both training and validation
-                self._writer.add_scalar('Loss_train', loss_train)
-                self._writer.add_scalar('Loss_valid', loss_valid)
-                self._writer.add_scalar('Acc_train', acc_train)
-                self._writer.add_scalar('Acc_valid', acc_valid, epoch+1)
+                self._writer.add_scalar('Loss_train', train_loss)
+                self._writer.add_scalar('Loss_valid', valid_loss)
+                self._writer.add_scalar('Acc_train', train_acc)
+                self._writer.add_scalar('Acc_valid', valid_acc, epoch+1)
                 self._writer.flush()
 
                 # Tracking the best performance and saving the model
-                if loss_valid < best_vloss:
-                    best_vloss = loss_valid
+                if valid_loss < best_loss[1]:
+                    best_loss = [train_loss, valid_loss]
+                    best_acc = [train_acc, valid_acc]
                     path2model = join(self._path2log, f'model_fold{fold:03d}_epoch{epoch:04d}.pth')
                     save(self.model, path2model)
 
                 # Saving metrics
-                metrics.append([loss_train, loss_valid])
-                own_metric.append([acc_train, acc_valid])
+                own_metric.append(np.array((train_acc, valid_acc), dtype=float))
 
             # --- Ausgabe nach Training
-            self._save_train_results(loss_train, loss_valid, 'Loss')
-            self._save_train_results(acc_train, acc_valid, 'Acc.')
+            metrics.append(best_loss)
+            self._save_train_results(best_loss[0], best_loss[1], 'Loss')
+            self._save_train_results(best_acc[0], best_acc[1], 'Acc.')
 
             timestamp_end = datetime.now()
             timestamp_string = timestamp_end.strftime('%H:%M:%S')

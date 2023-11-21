@@ -187,7 +187,8 @@ class training_pytorch:
             txt_handler.write(f'Do add noise cluster?: {self.settings.data_do_addnoise_cluster}\n')
             txt_handler.write(f'Exclude cluster: {self.settings.data_exclude_cluster}\n')
 
-    def _save_train_results(self, last_metric_train: float, last_metric_valid: float, type='Loss') -> None:
+    def _save_train_results(self, last_metric_train: float | np.ndarray,
+                            last_metric_valid: float | np.ndarray, type='Loss') -> None:
         """Writing some training metrics into txt-file"""
         if self.config_available:
             with open(self._path2config, 'a') as txt_handler:

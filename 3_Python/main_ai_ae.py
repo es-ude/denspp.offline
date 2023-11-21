@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from torch import nn, from_numpy, load
 from scipy.io import savemat
 
-import package.plotting.plot_dnn as plt_spaike
+from package.plotting.plot_dnn import results_training, plot_statistic_data
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.pytorch_autoencoder import *
 from package.dnn.dataset.autoencoder import prepare_plotting, prepare_training
@@ -20,7 +20,7 @@ config_train = Config_PyTorch(
     loss_fn=nn.MSELoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=10,
+    num_epochs=3,
     batch_size=256,
     # --- Settings of Datasets
     data_path='data',
@@ -46,6 +46,7 @@ if __name__ == "__main__":
 
     # --- Processing: Loading dataset and Do Training
     dataset = prepare_training(path=config_train.get_path2data(), settings=config_train, mode_train_ae=mode_train)
+    dataset_dict = dataset.frame_dict
     trainhandler = pytorch_train(config_train)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
@@ -54,6 +55,7 @@ if __name__ == "__main__":
 
     # --- Post-Processing: Getting data from validation set for inference
     data_in, data_out, cluster_out, data_mean = prepare_plotting(trainhandler.valid_loader)
+    yclus = prepare_plotting(trainhandler.train_loader)[2]
 
     # --- Post-Processing: Do the Inference with Best Model
     print(f"\nDoing the inference with validation data on best model")
@@ -88,17 +90,18 @@ if __name__ == "__main__":
              "frames_pred": ypred0,
              "feat": feat0,
              "cluster": cluster_out,
-             "config": config_train
-             },
+             "config": config_train},
             do_compression=True,
             long_field_names=True)
 
     # --- Plotting
-    plt_spaike.results_training(
+    results_training(
         path=logsdir, feat=feat0,
         yin=data_in, ypred=ypred0, ymean=data_mean,
         cluster=cluster_out, snr=snr_train
     )
+    plot_statistic_data(yclus, cluster_out, path2save=logsdir, cl_dict=dataset_dict)
+
     plt.show(block=False)
     plt.close("all")
 

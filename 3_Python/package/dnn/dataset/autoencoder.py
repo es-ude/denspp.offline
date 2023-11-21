@@ -1,5 +1,4 @@
 import numpy as np
-from datetime import datetime
 from scipy.io import loadmat
 from torch import is_tensor
 from torch.utils.data import Dataset, DataLoader
@@ -13,12 +12,13 @@ from package.dnn.data_augmentation import *
 class DatasetAE(Dataset):
     """Dataset Preparator for training Autoencoder"""
     def __init__(self, frames: np.ndarray, index: np.ndarray,
-                 mean_frame: np.ndarray,
-                 mode_train=0):
+                 mean_frame: np.ndarray, cluster_dict=None, mode_train=0):
         self.__frames_orig = np.array(frames, dtype=np.float32)
         self.__frames_noise = np.array(frames, dtype=np.float32)
         self.__frames_mean = np.array(mean_frame, dtype=np.float32)
         self.__cluster = index
+        self.cluster_name_available = isinstance(cluster_dict, list)
+        self.frame_dict = cluster_dict
 
         self.mode_train = mode_train
         if mode_train == 1:
@@ -76,23 +76,14 @@ def prepare_training(path: str, settings: Config_PyTorch, mode_train_ae=0) -> Da
     """Preparing datasets incl. augmentation for spike-frame based training (without pre-processing)"""
     print("... loading the datasets")
 
-    # --- Data loading
-    if path[-3:] == "npz":
-        # --- NPZ reading file
-        npzfile = np.load(path)
-        frames_in = npzfile['arr_0']
-        frames_cl = npzfile['arr_2']
-    else:
-        # --- MATLAB reading file
-        npzfile = loadmat(path)
-        frames_in = npzfile["frames_in"]
-        frames_cl = npzfile["frames_cluster"].flatten()
+    npzfile = loadmat(path)
+    frames_in = npzfile["frames_in"]
+    frames_cl = npzfile["frames_cluster"].flatten()
     print("... for training are", frames_in.shape[0], "frames with each", frames_in.shape[1], "points available")
 
     # --- Mean waveform calculation and data augmentation
     frames_in = change_frame_size(frames_in, settings.data_sel_pos)
     frames_mean = calculate_frame_mean(frames_in, frames_cl)
-    # plt_memristor_ref(frames_in, frames_cl, frames_mean)
 
     # --- PART: Exclusion of selected clusters
     if len(settings.data_exclude_cluster) == 0:
