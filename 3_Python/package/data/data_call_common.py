@@ -130,7 +130,7 @@ class DataController(DataLoader):
         if do_resampling:
             self.raw_data.data_fs_used = desired_fs
             u_safe = 5e-6
-            (p, q) = Fraction(self.raw_data.data_fs_used / self.raw_data.data_fs_orig).limit_denominator(100).as_integer_ratio()
+            (p, q) = Fraction(self.raw_data.data_fs_used / self.raw_data.data_fs_orig).limit_denominator(10000).as_integer_ratio()
             self.__scaling = p / q
 
             for idx, data_in in enumerate(self.raw_data.data_raw):

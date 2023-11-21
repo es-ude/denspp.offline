@@ -4,12 +4,13 @@ from time import time_ns
 from datetime import datetime
 from scipy.io import savemat
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 from package.data.data_call_common import DataController
 from src_data.pipeline_data import Settings, Pipeline
 
 
-def prepare_sda_dataset(path2save: str, slice_size=9, process_points=[]) -> None:
+def prepare_sda_dataset(path2save: str, slice_size=12, process_points=[]) -> None:
     """Tool for loading datasets in order to generate one new dataset (Step 1),
         cluster_class_avai: False = Concatenate the class number with increasing id number (useful for non-biological clusters)
         only_pos: Taking the datapoints of the choicen dataset [Start, End]"""
@@ -33,25 +34,40 @@ def prepare_sda_dataset(path2save: str, slice_size=9, process_points=[]) -> None
     sda_pred = list()
     xpos = None
     for idx0, elec in enumerate(tqdm(data.electrode_id, ncols=100, desc='Progress:')):
-        spike_xpos = np.floor(data.spike_xpos[elec] * fs_adc / fs_ana).astype("int")
+        window = [-16, 40]
+        spike_clus = data.cluster_id[elec]
+        pos = np.argwhere(spike_clus != 0)
+        spike_xpos = np.floor(data.spike_xpos[elec][pos].flatten() * fs_adc / fs_ana).astype("int")
         spike_xoff = int(1e-6 * data.spike_offset_us[0] * fs_adc)
 
         pipeline = Pipeline(afe_set)
         pipeline.run_input(data.data_raw[elec], spike_xpos, spike_xoff)
 
         # --- Process dataset for SDA
-        xpos = pipeline.signals.x_pos
-
         cut_end = (pipeline.signals.x_adc.size % slice_size)
-        data0 = pipeline.signals.x_adc if cut_end == 0 else pipeline.signals.x_adc[:-cut_end]
-        sda_data = data0.reshape((int(data0.size/slice_size), slice_size))
+        data_in = pipeline.signals.x_adc if cut_end == 0 else pipeline.signals.x_adc[:-cut_end]
+
+        data_sda = np.zeros(shape=data_in.shape, dtype=bool)
+        for xpos in (spike_xpos + spike_xoff + 25):
+            for dx in range(window[0], window[1]):
+                data_sda[int(xpos+dx)] = True
+
+        # --- Plotting
+        plt.figure()
+        axs = list()
+        axs.append(plt.subplot(2, 1, 1))
+        axs.append(plt.subplot(2, 1, 2))
+
+        axs[0].plot(data_in[515700:515900], color='r')
+        axs[1].plot(data_sda[515700:515900], color='k')
+        plt.show()
 
         # --- Add to output
-        sda_input.append(np.array(sda_data, dtype=int))
-        sda_pred.append(np.zeros(shape=sda_input[idx0].shape, dtype=bool))
+        sda_input.append(np.array(data_in.reshape((int(data_in.size/slice_size), slice_size)), dtype=int))
+        sda_pred.append(np.array(data_sda.reshape((int(data_sda.size/slice_size), slice_size)), dtype=bool))
 
         # --- Release memory
-        del pipeline
+        del pipeline, data_in, data_sda
 
     # --- Saving results
     create_time = datetime.now().strftime("%Y-%m-%d")
