@@ -1,5 +1,4 @@
 import numpy as np
-from datetime import datetime
 from scipy.io import loadmat
 from torch import is_tensor, Tensor
 from torch.utils.data import Dataset, DataLoader
@@ -14,6 +13,7 @@ class DatasetSDA(Dataset):
         self.frame_slice = np.array(frame, dtype=np.float32)
         self.sda_class = np.array(sda, dtype=bool)
         self.sda_thr = threshold
+        self.sda_dict = ['Non-Spike', 'Spike']
         self.data_type = 'Spike Detection Algorithm'
 
     def __len__(self):
@@ -46,9 +46,6 @@ def prepare_plotting(data_in: DataLoader) -> tuple[np.ndarray, np.ndarray, np.nd
 
 def prepare_training(path: str, settings: Config_PyTorch, threshold: int) -> DatasetSDA:
     """Preparing datasets incl. augmentation for spike-detection-based training (without pre-processing)"""
-    # --- Pre-definitions
-    str_datum = datetime.now().strftime('%Y%m%d %H%M%S')
-    print(f"Running on {str_datum}")
     print("... loading the datasets")
 
     # --- MATLAB reading file

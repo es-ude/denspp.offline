@@ -35,35 +35,12 @@ def plot_boxplot_metric(freq: np.ndarray, metric: list, type_name: str, name: st
         plt.savefig(join(path2save, f"{name}_metric-box_{type_name}.{type}"), format=type)
 
 
-def plot_confusion(true_labels: list | np.ndarray, pred_labels: list | np.ndarray,
-                   path2save="", title='Spike Sorting') -> None:
-    """Plotting the Confusion Matrix"""
-    fig, ax = plt.subplots(figsize=(10, 10))
-    plt.title(title)
-    disp = ConfusionMatrixDisplay.from_predictions(
-        y_true=true_labels, y_pred=pred_labels,
-        cmap=plt.cm.Blues, normalize='pred',
-        colorbar=True, values_format='.2f',
-        text_kw={'fontsize': 7}
-    )
-
-    # Deactivate default colorbar
-    disp.plot(ax=ax, colorbar=False)
-    # Adding custom colorbar
-    cax = fig.add_axes([ax.get_position().x1 + 0.01, ax.get_position().y0, 0.02, ax.get_position().height])
-    plt.colorbar(disp.im_, cax=cax)
-
-    plt.tight_layout()
-    if path2save:
-        save_figure(plt, path2save, f"confusion_matrix")
-
-
 def plot_loss(metric: list, metric_type: str, name='', path2save='') -> None:
     """Plotting the loss of any DNN-based learning method"""
     # --- Pre-Processing
     plot_metrics = np.zeros(shape=(len(metric), 2), dtype=float)
     for idx, val in enumerate(metric):
-        plot_metrics[idx, :] = val[0], val[1]
+        plot_metrics[idx, :] = val
 
     # --- Plotting
     plt.figure()
@@ -78,6 +55,35 @@ def plot_loss(metric: list, metric_type: str, name='', path2save='') -> None:
     plt.tight_layout()
     if path2save:
         save_figure(plt, path2save, f"loss_metric_{metric_type}")
+
+
+def plot_confusion(true_labels: list | np.ndarray, pred_labels: list | np.ndarray,
+                   cl_dict=None, path2save="", title='Spike Sorting',
+                   do_xticks_vertical=False) -> None:
+    """Plotting the Confusion Matrix"""
+    dict_available = isinstance(cl_dict, list)
+
+    fig, ax = plt.subplots(figsize=(10, 10))
+    plt.title(title)
+    if dict_available:
+        ConfusionMatrixDisplay.from_predictions(
+            y_true=true_labels, y_pred=pred_labels,
+            cmap=plt.cm.Blues, normalize='pred',
+            colorbar=False, values_format='.2f',
+            text_kw={'fontsize': 7},
+            display_labels=cl_dict, xticks_rotation=('vertical' if do_xticks_vertical else 'horizontal')
+        )
+    else:
+        ConfusionMatrixDisplay.from_predictions(
+            y_true=true_labels, y_pred=pred_labels,
+            cmap=plt.cm.Blues, normalize='pred',
+            colorbar=False, values_format='.2f',
+            text_kw={'fontsize': 7}
+        )
+
+    plt.tight_layout()
+    if path2save:
+        save_figure(plt, path2save, f"confusion_matrix")
 
 
 def _get_median(parameter: list) -> float:

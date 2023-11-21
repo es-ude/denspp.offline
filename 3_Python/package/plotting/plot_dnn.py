@@ -96,26 +96,25 @@ def results_training(path: str,
     )
 
     # --- Plotting: Feature Space and Metrics
-    plot_statistic_data(cluster, path2save=path)
     plot_autoencoder_snr(snr, path)
     plot_autoencoder_features(cluster_no, mark_feat, [0, 1, 2], path)
 
 
-# TODO: Xticks bei SNR mit boxplot falsch
-def plot_autoencoder_snr(snr: np.ndarray | list, path2save='') -> None:
+def plot_autoencoder_snr(snr: list, path2save='') -> None:
     """"""
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
     plt.rcParams.update({'font.size': 12})
     plt.subplots_adjust(hspace=0, wspace=0.5)
     plt.grid()
 
-    if isinstance(snr, np.ndarray):
-        plt.plot(snr[:, 0], color='k', marker='.', label='min')
-        plt.plot(snr[:, 1], color='r', marker='.', label='mean')
-        plt.plot(snr[:, 2], color='g', marker='.', label='max')
+    if snr[0].size == 3:
+        snr0 = np.array(snr, dtype=float)
+        plt.plot(snr0[:, 0], color='k', marker='.', label='min')
+        plt.plot(snr0[:, 1], color='r', marker='.', label='mean')
+        plt.plot(snr0[:, 2], color='g', marker='.', label='max')
         plt.legend()
-        plt.xticks(np.linspace(0, snr.shape[0], num=7, endpoint=True))
-    elif isinstance(snr, list):
+        plt.xticks(np.linspace(0, snr0.shape[0], num=7, endpoint=True))
+    else:
         plt.boxplot(snr, patch_artist=True, showfliers=False)
         pos = np.linspace(1, len(snr), num=10, endpoint=True)
         plt.xticks(pos)
@@ -162,16 +161,15 @@ def plot_autoencoder_results(mark_feat: list, mark_idx: list,
     col = 3
 
     axs = list()
-    for idx in range(0, row*col):
+    for idx in range(0, row * col):
         axs.append(plt.subplot(row, col, 1+idx))
 
     # Noisy input
     for pos in take_frames:
         axs[0].plot(np.transpose(frames_in[pos, :]), linewidth=0.5)
     axs[0].set_title('Input')
-    axs[0].set_ylabel('Y_in')
     axs[0].set_xlabel('Frame position')
-    axs[0].set_xticks(np.linspace(0, frames_in.shape[1]-1, num=6, endpoint=True))
+    axs[0].set_xticks(np.linspace(0, frames_in.shape[1]-1, num=6, endpoint=True, dtype=int))
 
     # Feature extraction
     for i, id in enumerate(cluster_no):
@@ -187,9 +185,8 @@ def plot_autoencoder_results(mark_feat: list, mark_idx: list,
         for i, id in enumerate(cluster_no):
             axs[2].plot(frames_mean[i, :], color=color[i], linewidth=1.5)
     axs[2].set_title('Output')
-    axs[2].set_ylabel('Y_pred')
     axs[2].set_xlabel('Frame position')
-    axs[2].set_xticks(np.linspace(0, frames_mean.shape[1]-1, num=6, endpoint=True))
+    axs[2].set_xticks(np.linspace(0, frames_mean.shape[1]-1, num=6, endpoint=True, dtype=int))
 
     for ax in axs:
         ax.grid()
@@ -201,9 +198,10 @@ def plot_autoencoder_results(mark_feat: list, mark_idx: list,
         save_figure(plt, path2save, f"ai_training_out{mark_idx[0]}-{mark_idx[1]}")
 
 
-def plot_statistic_data(train_cl: np.ndarray, valid_cl=None, path2save='', cl_dict=[]) -> None:
+def plot_statistic_data(train_cl: np.ndarray | list, valid_cl=None, path2save='', cl_dict=None) -> None:
     """Plotting the statistics of the data"""
-    do_plots_avai = isinstance(valid_cl, np.ndarray)
+    do_plots_avai = isinstance(valid_cl, np.ndarray | list)
+    dict_available = isinstance(cl_dict, list)
 
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
     plt.rcParams.update({'font.size': 12})
@@ -214,13 +212,14 @@ def plot_statistic_data(train_cl: np.ndarray, valid_cl=None, path2save='', cl_di
 
     # Histogram of Training data
     check = np.unique(train_cl, return_counts=True)
-    xbins = [idx for idx in range(0, 1+check[0].max())]
-    axs[0].hist(train_cl, bins=xbins, align='left', stacked=True, rwidth=0.8, color='k')
-    if len(cl_dict) == 0:
-        axs[0].set_xticks(xbins)
-    else:
-        axs[0].set_xticks(xbins, cl_dict)
-    axs[0].set_xlabel("Cluster")
+    xbins = check[0].tolist()
+    xbins.append(check[0].max()+1)
+
+    axs[0].hist(train_cl, bins=xbins, align='left', rwidth=0.8, color='k')
+    axs[0].set_xticks(xbins[:-1])
+    if dict_available:
+        axs[0].set_xticklabels(cl_dict if check[0].size != 1 else [cl_dict[0]])
+
     axs[0].set_ylabel("Bins")
     axs[0].set_ylim([int(0.99*check[1].min()), int(1.01*check[1].max())])
     axs[0].set_title('Training')
@@ -228,18 +227,20 @@ def plot_statistic_data(train_cl: np.ndarray, valid_cl=None, path2save='', cl_di
     # Histogram of Validation data
     if do_plots_avai:
         check = np.unique(valid_cl, return_counts=True)
-        xbins = [idx for idx in range(0, 1 + check[0].max())]
+        xbins = check[0].tolist()
+        xbins.append(check[0].max() + 1)
+
         axs[1].hist(valid_cl, bins=xbins, align='left', stacked=True, rwidth=0.8, color='r')
-        if len(cl_dict) == 0:
-            axs[1].set_xticks(xbins)
-        else:
-            axs[1].set_xticks(xbins, cl_dict)
-        axs[1].set_xlabel("Cluster")
+        axs[1].set_xticks(xbins[:-1])
+        if dict_available:
+            axs[1].set_xticklabels(cl_dict if check[0].size != 1 else [cl_dict[0]])
+
         axs[1].set_ylim([int(0.99 * check[1].min()), int(1.01 * check[1].max())])
         axs[1].set_title('Validation')
 
     for ax in axs:
         ax.grid()
+        ax.set_xlabel("Cluster")
 
     plt.tight_layout(pad=0.5)
     # --- saving plots

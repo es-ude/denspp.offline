@@ -98,34 +98,32 @@ class pytorch_train(training_pytorch):
             else:
                 print(f'\nTraining starts on: {timestamp_string}')
 
-            best_vloss = 1_000_000.
-            loss_train = 1_000_000.
-            loss_valid = 1_000_000.
+            best_loss = np.array((1_000_000., 1_000_000.), dtype=float)
             for epoch in range(0, self.settings.num_epochs):
-                loss_train = self.__do_training_epoch()
-                loss_valid = self.__do_valid_epoch()
+                train_loss = self.__do_training_epoch()
+                valid_loss = self.__do_valid_epoch()
 
                 print(f'... results of epoch {epoch + 1}/{self.settings.num_epochs} [{(epoch + 1) / self.settings.num_epochs * 100:.2f} %]: '
-                      f'train_loss = {loss_train:.5f},'
-                      f'\tvalid_loss = {loss_valid:.5f}')
+                      f'train_loss = {train_loss:.5f},'
+                      f'\tvalid_loss = {valid_loss:.5f}')
 
                 # Log the running loss averaged per batch for both training and validation
-                self._writer.add_scalar('Loss_train', loss_train)
-                self._writer.add_scalar('Loss_valid', loss_valid, epoch+1)
+                self._writer.add_scalar('Loss_train', train_loss)
+                self._writer.add_scalar('Loss_valid', valid_loss, epoch+1)
                 self._writer.flush()
 
                 # Tracking the best performance and saving the model
-                if loss_valid < best_vloss:
-                    best_vloss = loss_valid
+                if valid_loss < best_loss[1]:
+                    best_loss = [train_loss, valid_loss]
                     path2model = join(self._path2log, f'model_fold{fold:03d}_epoch{epoch:04d}.pth')
                     save(self.model, path2model)
 
                 # Saving metrics
-                metrics.append([loss_train, loss_valid])
                 own_metric.append(self.__do_snr_epoch_reduced() if reduced_own_metric else self.__do_snr_epoch())
 
+            metrics.append(best_loss)
             # --- Ausgabe nach Training
-            self._save_train_results(loss_train, loss_valid)
+            self._save_train_results(best_loss[0], best_loss[1], 'Loss')
 
             timestamp_end = datetime.now()
             timestamp_string = timestamp_end.strftime('%H:%M:%S')
