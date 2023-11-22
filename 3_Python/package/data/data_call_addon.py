@@ -62,11 +62,11 @@ class RGC_Cell_Names:
             "Surpressed-by-Contrast": [42, 43, 44, 45, 46, 47]
         }
 
-    def get_id_from_cell_type(self, name) -> int:
+    def get_id_from_cell_type(self, name: str) -> int:
         """Getting the ID from specific cell type"""
         return self.cell_type_to_id.get(name) if name in self.cell_type_to_id else -1
 
-    def get_class_to_id(self, id) -> [int, str]:
+    def get_class_to_id(self, id: int) -> [int, str]:
         """Getting the class of RGC for a given ID"""
         result = ''
         val = 0
@@ -105,11 +105,16 @@ class RGC_ONOFF_FZJ:
             "ON": [3, 4]
         }
 
-    def get_id_from_cell_type(self, name) -> int:
+        self.cell_class_to_type = {
+            "Tran": [1, 4],
+            "Sust": [0, 3]
+        }
+
+    def get_id_from_cell_type(self, name: str) -> int:
         """Getting the ID from specific cell type"""
         return self.cell_type_to_id.get(name) if name in self.cell_type_to_id else -1
 
-    def get_class_to_id(self, id) -> [int, str]:
+    def get_class_to_id(self, id: int) -> [int, str]:
         """Getting the class of RGC for a given ID"""
         result = ''
         val = 0

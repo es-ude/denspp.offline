@@ -1,10 +1,11 @@
 import dataclasses
-from typing import Any
-from os import mkdir
-from os.path import exists, join
-from glob import glob
 import platform
 import numpy as np
+from typing import Any
+from os import mkdir, remove
+from os.path import exists, join
+from shutil import rmtree
+from glob import glob
 from datetime import datetime
 from torch import optim, device, cuda
 from torch.utils.tensorboard import SummaryWriter
@@ -74,7 +75,10 @@ class training_pytorch:
 
         # --- Preparing options
         self._do_kfold = False
+        self._do_shuffle = config_train.data_do_shuffle
         self._run_kfold = 0
+        self._samples_train = list()
+        self._samples_valid = list()
 
         # --- Saving options
         self._index_folder = 'train' if do_train else 'inference'
@@ -83,6 +87,7 @@ class training_pytorch:
         self._model_addon = str()
         self._path2run = 'runs'
         self._path2log = str()
+        self._path2temp = str()
         self._path2config = str()
         self.config_available = False
         self._path2save = str()
@@ -112,44 +117,49 @@ class training_pytorch:
         """Do init of class for training"""
         folder_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{self._index_folder}_{self._model_name}'
         self._path2save = join(self._path2run, folder_name)
+        self._path2temp = join(self._path2save, f'temp')
 
         if not exists(self._path2run):
             mkdir(self._path2run)
 
         mkdir(self._path2save)
+        mkdir(self._path2temp)
 
     def _init_writer(self) -> None:
         """Do init of writer"""
-        self._path2log = join(self._path2save, f'logs_{self._run_kfold:03d}')
-        self._writer = SummaryWriter(self._path2log)
+        self._path2log = join(self._path2save, f'logs')
+        self._writer = SummaryWriter(self._path2log, comment=f"event_log_kfold{self._run_kfold:03d}")
 
     def load_data(self, data_set) -> None:
         """Loading data for training and validation in DataLoader format into class"""
         self._do_kfold = True if self.settings.num_kfold > 1 else False
-        num_samples = len(data_set)
         self._model_addon = data_set.data_type
 
         # --- Preparing datasets
         out_train = list()
         out_valid = list()
         if self._do_kfold:
-            kfold = KFold(n_splits=self.settings.num_kfold, shuffle=True)
-            for fold, (idx_train, idx_valid) in enumerate(kfold.split(np.arange(num_samples))):
+            kfold = KFold(n_splits=self.settings.num_kfold, shuffle=self._do_shuffle)
+            for idx_train, idx_valid in kfold.split(np.arange(len(data_set))):
                 subsamps_train = SubsetRandomSampler(idx_train)
                 subsamps_valid = SubsetRandomSampler(idx_valid)
                 out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train))
                 out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
+                self._samples_train.append(subsamps_train.indices.size)
+                self._samples_valid.append(subsamps_valid.indices.size)
         else:
-            idx = np.arange(num_samples)
-            np.random.shuffle(idx)
-            pos = int(num_samples * (1 - self.settings.data_split_ratio))
-            idx_train = idx[0:pos]
-            idx_valid = idx[pos:]
+            idx = np.arange(len(data_set))
+            if self._do_shuffle:
+                np.random.shuffle(idx)
+            split_pos = int(len(data_set) * (1 - self.settings.data_split_ratio))
+            idx_train = idx[0:split_pos]
+            idx_valid = idx[split_pos:]
             subsamps_train = SubsetRandomSampler(idx_train)
             subsamps_valid = SubsetRandomSampler(idx_valid)
-
             out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train))
             out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
+            self._samples_train.append(subsamps_train.indices.size)
+            self._samples_valid.append(subsamps_valid.indices.size)
 
         # --- Output
         self.train_loader = out_train
@@ -192,9 +202,9 @@ class training_pytorch:
         """Writing some training metrics into txt-file"""
         if self.config_available:
             with open(self._path2config, 'a') as txt_handler:
-                txt_handler.write('\n--- Results of last epoch ---')
+                txt_handler.write(f'\n--- Metrics of last epoch in fold #{self._run_kfold} ---')
                 txt_handler.write(f'\nTraining {type} = {last_metric_train}')
-                txt_handler.write(f'\nValidation {type} = {last_metric_valid}')
+                txt_handler.write(f'\nValidation {type} = {last_metric_valid}\n')
 
     def get_saving_path(self) -> str:
         """Getting the path for saving files in aim folder"""
@@ -204,3 +214,27 @@ class training_pytorch:
         """Getting the path to the best trained model"""
         return glob(join(self._path2save, "*.pth"))
 
+    def _end_training_routine(self, timestamp_start: datetime, do_delete_temps=True) -> None:
+        """Doing the last step of training routine"""
+        timestamp_end = datetime.now()
+        timestamp_string = timestamp_end.strftime('%H:%M:%S')
+        diff_time = timestamp_end - timestamp_start
+        diff_string = diff_time
+
+        print(f'\nTraining ends on: {timestamp_string}')
+        print(f'Training runs: {diff_string}')
+
+        # Delete init model
+        init_model = glob(join(self._path2save, 'model_reset.pth'))
+        for file in init_model:
+            remove(file)
+
+        # Delete log folders
+        if do_delete_temps:
+            folder_logs = glob(join(self._path2save, 'temp*'))
+            for folder in folder_logs:
+                rmtree(folder, ignore_errors=True)
+
+        # Give the option to open TensorBoard
+        print("\nLook data on TensorBoard -> open Terminal")
+        print("Type in: tensorboard serve --logdir ./runs")

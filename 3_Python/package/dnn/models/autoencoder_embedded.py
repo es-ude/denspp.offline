@@ -15,7 +15,7 @@ class dnn_dae_v2(nn.Module):
         self.model_embedded = True
         bits_total = 12
         bits_frac = 9
-        iohiddenlayer = [self.model_shape[1], 20, output_size]
+        iohiddenlayer = [input_size, 20, output_size]
         do_train_bias = True
 
         # --- Encoder Path

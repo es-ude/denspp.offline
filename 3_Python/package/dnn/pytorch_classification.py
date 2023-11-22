@@ -1,10 +1,9 @@
+import numpy as np
 from os import remove
 from os.path import join, exists
 from glob import glob
-import shutil
-import numpy as np
+from shutil import copy
 from datetime import datetime
-
 from torch import load, save
 from package.dnn.pytorch_control import Config_PyTorch, training_pytorch
 
@@ -64,6 +63,7 @@ class pytorch_train(training_pytorch):
         """Start model training incl. validation and custom-own metric calculation"""
         self._init_train()
         self._save_config_txt()
+
         # --- Handling Kfold cross validation training
         if self._do_kfold:
             print(f"Starting Kfold cross validation training in {self.settings.num_kfold} steps")
@@ -73,18 +73,17 @@ class pytorch_train(training_pytorch):
         path2model = str()
         path2model_init = join(self._path2save, f'model_reset.pth')
         save(self.model.state_dict(), path2model_init)
+        timestamp_start = datetime.now()
+        timestamp_string = timestamp_start.strftime('%H:%M:%S')
+
         for fold in np.arange(self.settings.num_kfold):
             # Reseting the model
             self.model.load_state_dict(load(path2model_init))
             self._run_kfold = fold
             self._init_writer()
 
-            timestamp_start = datetime.now()
-            timestamp_string = timestamp_start.strftime('%H:%M:%S')
-            if self._do_kfold:
-                print(f'\nTraining starts on: {timestamp_string} with fold #{fold}')
-            else:
-                print(f'\nTraining starts on: {timestamp_string}')
+            addon = f' with fold #{fold}' if self._do_kfold else ''
+            print(f'\nTraining starts on {timestamp_string}' + addon)
 
             best_loss = [1e6, 1e6]
             best_acc = [0.0, 0.0]
@@ -98,17 +97,17 @@ class pytorch_train(training_pytorch):
                       f'valid_loss = {valid_loss:.5f}, valid_acc = {100 * valid_acc:.2f} %')
 
                 # Log the running loss averaged per batch for both training and validation
-                self._writer.add_scalar('Loss_train', train_loss)
-                self._writer.add_scalar('Loss_valid', valid_loss)
-                self._writer.add_scalar('Acc_train', train_acc)
-                self._writer.add_scalar('Acc_valid', valid_acc, epoch+1)
+                self._writer.add_scalar('Loss_train (CL)', train_loss, epoch+1)
+                self._writer.add_scalar('Loss_valid (CL)', valid_loss, epoch+1)
+                self._writer.add_scalar('Acc_train (CL)', train_acc, epoch+1)
+                self._writer.add_scalar('Acc_valid (CL)', valid_acc, epoch+1)
                 self._writer.flush()
 
                 # Tracking the best performance and saving the model
                 if valid_loss < best_loss[1]:
                     best_loss = [train_loss, valid_loss]
                     best_acc = [train_acc, valid_acc]
-                    path2model = join(self._path2log, f'model_fold{fold:03d}_epoch{epoch:04d}.pth')
+                    path2model = join(self._path2temp, f'model_fold{fold:03d}_epoch{epoch:04d}.pth')
                     save(self.model, path2model)
 
                 # Saving metrics
@@ -116,27 +115,11 @@ class pytorch_train(training_pytorch):
 
             # --- Ausgabe nach Training
             metrics.append(best_loss)
+            copy(path2model, self._path2save)
             self._save_train_results(best_loss[0], best_loss[1], 'Loss')
             self._save_train_results(best_acc[0], best_acc[1], 'Acc.')
 
-            timestamp_end = datetime.now()
-            timestamp_string = timestamp_end.strftime('%H:%M:%S')
-            diff_time = timestamp_end - timestamp_start
-            diff_string = diff_time
-
-            print(f'Training ends on: {timestamp_string}')
-            print(f'Training runs: {diff_string}')
-            print(f'Save best model: {path2model}')
-            shutil.copy(path2model, self._path2save)
-
         # --- Ending of all trainings phases
-        # Delete init model
-        if exists(path2model_init):
-            remove(path2model_init)
-
-        # Delete log folders
-        folder_logs = glob(join(self._path2save, 'logs*'))
-        for folder in folder_logs:
-            shutil.rmtree(folder, ignore_errors=True)
+        self._end_training_routine(timestamp_start)
 
         return metrics, own_metric

@@ -83,6 +83,3 @@ if __name__ == "__main__":
 
     plt.show(block=False)
     plt.close("all")
-
-    print("\nLook data on TensorBoard -> open Terminal")
-    print("Type in: tensorboard serve --logdir ./runs")
