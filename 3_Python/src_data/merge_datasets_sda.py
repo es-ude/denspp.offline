@@ -5,7 +5,7 @@ from datetime import datetime
 from scipy.io import savemat
 from tqdm import tqdm
 
-from package.data.data_call import DataController
+from package.data.data_call_common import DataController
 from src_data.pipeline_data import Settings, Pipeline
 
 
@@ -42,16 +42,9 @@ def prepare_sda_dataset(path2save: str, slice_size=9, process_points=[]) -> None
         # --- Process dataset for SDA
         xpos = pipeline.signals.x_pos
 
-        # TODO: Processing noch richtig ausbauen
         cut_end = (pipeline.signals.x_adc.size % slice_size)
         data0 = pipeline.signals.x_adc if cut_end == 0 else pipeline.signals.x_adc[:-cut_end]
         sda_data = data0.reshape((int(data0.size/slice_size), slice_size))
-        # sds_data = list()
-        # sda_buffer = np.zeros(shape=(slice_size,), dtype=int)
-        #for idx1, val in enumerate(pipeline.signals.x_adc):
-         #   sda_buffer = np.append(val, sda_buffer[0:slice_size-1])
-          #  if idx1 >= slice_size-1:
-           #     sda_data.append(sda_buffer)
 
         # --- Add to output
         sda_input.append(np.array(sda_data, dtype=int))

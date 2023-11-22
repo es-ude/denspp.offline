@@ -5,8 +5,9 @@ import numpy as np
 from datetime import datetime
 from scipy.io import savemat, loadmat
 from tqdm import tqdm
+import platform
 
-from package.data.data_call import DataController
+from package.data.data_call_common import DataController
 from src_data.pipeline_data import Settings, Pipeline
 
 
@@ -26,6 +27,9 @@ def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_po
     print("... loading the datasets")
     path2folder = join(path2save, 'Merging')
 
+    if not exists(path2save):
+        mkdir(path2save)
+
     if not exists(path2folder):
         mkdir(path2folder)
 
@@ -37,7 +41,7 @@ def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_po
     first_run = True
     while first_run or runPoint < endPoint:
         first_run = True
-        timepoint_start = datetime.now()
+        time_start = datetime.now()
 
         frames_in = np.empty(shape=(0, 0), dtype=np.dtype('int16'))
         frames_cluster = np.empty(shape=(0, 0), dtype=np.dtype('uint16'))
@@ -76,14 +80,18 @@ def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_po
             # --- Release memory
             del afe, spike_xpos, cl_in
 
-        print(f"... done after {1e-6 * (datetime.now() - timepoint_start).microseconds: .2f} s")
+        # Calculation of runtime duration
+        time_stop = datetime.now()
+        time_dt = time_stop - time_start
+        print(f"... done after {time_dt.seconds + 1e-6 * time_dt.microseconds: .2f} s")
         # --- Saving data (each run)
         newfile_name = join(path2folder, (create_time + '_Dataset-'
                                           + datahandler.raw_data.data_name
                                           + f'_step{runPoint + 1:03d}'))
         savemat(newfile_name + '.mat', {"frames_in": frames_in,
                    "frames_cluster": frames_cluster,
-                   "create_time": create_time, "settings": settings})
+                   "create_time": create_time, "settings": settings},
+                do_compression=True)
         print('Saving file in: ' + newfile_name + '.mat')
 
         # --- Release memory
@@ -96,17 +104,12 @@ def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_po
     print("... This is the end")
 
 
-def merge_frames_from_dataset() -> None:
-    """Tool for merging all spike frames to one new dataset (Step 2)"""
-    print("\nStart MATLAB script manually: merge/merge_datasets_matlab.m")
-
-
 def merge_data_from_diff_data(path2data: str) -> None:
     folder_content = glob(join(path2data, 'Merging', '*.mat'))
     folder_content.sort()
 
-    frame_in = np.zeros((0,0), dtype='int16')
-    frame_cl = np.zeros((0,0), dtype='uint16')
+    frame_in = np.zeros((0, 0), dtype='int16')
+    frame_cl = np.zeros((0, 0), dtype='uint16')
 
     for idx, file in enumerate(folder_content):
         print(idx, file)
@@ -116,7 +119,7 @@ def merge_data_from_diff_data(path2data: str) -> None:
         frame_cl = data['frames_cluster'] if idx == 0 else np.append(frame_cl, data['frames_cluster'], axis=1)
 
         if idx == 0:
-            file_name = file.split('\\')[-1]
+            file_name = file.split('\\')[-1] if platform.system() == "Windows" else file.split('/')[-1]
             file_name = file_name.split('_step')[0]
             print(file_name)
 
@@ -124,13 +127,17 @@ def merge_data_from_diff_data(path2data: str) -> None:
     frame_in = np.array(frame_in, dtype='int16')
     frame_cl = np.array(frame_cl, dtype='uint16')
     savemat(join(path2data, file_name) + '_Sorted.mat',
-            {"frames_in": frame_in,
-             "frames_cluster": frame_cl,
-             "create_time": data['create_time'],
-             "settings": data['settings']}
+            {"frames_in": frame_in, "frames_cluster": frame_cl,
+             "create_time": data['create_time'], "settings": data['settings']},
+            do_compression=True
     )
 
     # --- Output of clustering
     num_clusters = np.unique(frame_cl, return_counts=True)
     print(f'Type of cluster classes: {num_clusters[0]}\n'
           f'Number of samples: {num_clusters[1]}')
+
+
+def merge_frames_from_dataset() -> None:
+    """Tool for merging all spike frames to one new dataset (Step 2)"""
+    print("\nStart MATLAB script manually: merge/merge_datasets_matlab.m")

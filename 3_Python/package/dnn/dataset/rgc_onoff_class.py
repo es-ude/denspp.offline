@@ -1,51 +1,99 @@
 import numpy as np
-from datetime import datetime
 from scipy.io import loadmat
-from torch import is_tensor, Tensor
+from torch import is_tensor
 from torch.utils.data import Dataset, DataLoader
+from package.data.data_call_addon import RGC_Cell_Names, RGC_ONOFF_FZJ
 from package.dnn.pytorch_control import Config_PyTorch
+from package.dnn.data_augmentation import augmentation_reducing_samples
+from package.dnn.data_preprocessing import data_normalization
 
 
 class DatasetRGC(Dataset):
     """Dataset Loader for Retinal Ganglion Cells ON-/OFF Cell Classification"""
-    def __init__(self, frame: np.ndarray, sda: np.ndarray):
-        self.frame_slice = np.array(frame, dtype=np.float32)
-        self.frame_cellid = np.array(sda, dtype=bool)
+    def __init__(self, frame: np.ndarray, cluster_id: np.ndarray, cluster_dict=None):
+        self.__frame_input = np.array(frame, dtype=np.float32)
+        self.__frame_cellid = np.array(cluster_id, dtype=np.uint8)
+        self.cluster_name_available = isinstance(cluster_dict, list)
+        self.frame_dict = cluster_dict
+        self.data_type = 'RGC Classification'
 
     def __len__(self):
-        return self.frame_slice.shape[0]
+        return self.__frame_input.shape[0]
 
     def __getitem__(self, idx):
         if is_tensor(idx):
             idx = idx.tolist()
 
-        return {'in': self.frame_slice[idx], 'out': self.frame_cellid[idx]}
+        return {'in': self.__frame_input[idx], 'out': self.__frame_cellid[idx]}
 
 
-def prepare_plotting(data_plot: DataLoader) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def prepare_plotting(data_in: DataLoader) -> tuple[np.ndarray, np.ndarray]:
     """Getting data from DataLoader for Plotting Results"""
-    din = []
-    dsda = []
-    dout = []
-    for idx, vdata in enumerate(data_plot):
-        din = vdata['in'] if idx == 0 else np.append(din, vdata['in'], axis=0)
-        dsda = vdata['sda'] if idx == 0 else np.append(dsda, vdata['sda'], axis=0)
-        dout = vdata['out'] if idx == 0 else np.append(dout, vdata['out'], axis=0)
+    din = None
+    dout = None
+    first_run = True
+    for vdata in data_in:
+        for data in vdata:
+            din = data['in'] if first_run else np.append(din, data['in'], axis=0)
+            dout = data['out'] if first_run else np.append(dout, data['out'], axis=0)
+            first_run = False
 
-    return din, dsda, dout
+    return din, dout
 
 
-def prepare_training(path: str, settings: Config_PyTorch) -> DatasetRGC:
+def prepare_training(path: str, settings: Config_PyTorch,
+                     reduce_fzj_data=False, reduce_rgc_data=False) -> DatasetRGC:
     """Preparing datasets incl. augmentation for spike-detection-based training (without pre-processing)"""
-    # --- Pre-definitions
-    str_datum = datetime.now().strftime('%Y%m%d %H%M%S')
-    print(f"Running on {str_datum}")
     print("... loading the datasets")
 
     # --- MATLAB reading file
     npzfile = loadmat(path)
-    frames_in = npzfile["sda_in"]
-    frames_pred = npzfile["sda_pred"]
-    print("... for training are", frames_in.shape[0], "frames with each", frames_in.shape[1], "points available")
+    frames_in = npzfile["frames_in"]
+    frames_cl = npzfile["frames_cluster"].flatten()
+    frames_dict = npzfile['cluster_dict'].tolist()
 
-    return DatasetSDA(frames_in, frames_pred, 3)
+    # --- PART: Exclusion of selected clusters
+    if not len(settings.data_exclude_cluster) == 0:
+        for i, id in enumerate(settings.data_exclude_cluster):
+            selX = np.where(frames_cl != id)
+            frames_in = frames_in[selX[0], :]
+            frames_cl = frames_cl[selX]
+
+    # --- PART: Reducing classes with abort condition
+    if reduce_fzj_data and reduce_rgc_data:
+        raise Exception("\nPlease select only one reducing methode!")
+
+    if reduce_fzj_data or reduce_rgc_data:
+        print("... reducing output classes")
+
+    if reduce_fzj_data:
+        cl_sampler = RGC_ONOFF_FZJ()
+        frames_dict = cl_sampler.get_classes()
+        for idx, cl in enumerate(frames_cl):
+            frames_cl[idx] = cl_sampler.get_class_to_id(cl)[0]
+
+    if reduce_rgc_data:
+        cl_sampler = RGC_Cell_Names()
+        for idx, cl in enumerate(frames_cl):
+            frames_cl[idx] = cl_sampler.get_class_to_id(cl)[0]
+
+    # --- PART: Reducing samples per cluster (if too large)
+    if settings.data_do_reduce_samples_per_cluster:
+        print("... do data augmentation with reducing the samples per cluster")
+        frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
+                                                             settings.data_num_samples_per_cluster,
+                                                             settings.data_do_shuffle)
+
+    # --- PART: Data Normalization
+    if settings.data_do_normalization:
+        frames_in = data_normalization(frames_in)
+
+    # --- Output
+    check = np.unique(frames_cl, return_counts=True)
+    print(f"... for training are {frames_in.shape[0]} frames with each {frames_in.shape[1]} points available")
+    if len(frames_dict) == 0:
+        print(f"... used data points for training: class = {check[0]} and num = {check[1]}")
+    else:
+        print(f"... used data points for training: class = {frames_dict} and num = {check[1]}")
+
+    return DatasetRGC(frames_in, frames_cl, frames_dict)

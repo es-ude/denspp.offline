@@ -8,26 +8,27 @@ from package.plotting.plot_metric import plot_confusion, plot_loss
 from package.plotting.plot_dnn import plot_statistic_data
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.pytorch_classification import *
-from package.dnn.dataset.spike_detection import prepare_plotting, prepare_training
-import package.dnn.models.spike_detection as ai_module
+from package.dnn.dataset.rgc_onoff_class import prepare_plotting, prepare_training
+import package.dnn.models.rgc_onoff_class as ai_module
 
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
-    model=ai_module.dnn_sda_v1(),
+    model=ai_module.dnn_rgc_v1(output_size=2),
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=5,
-    batch_size=256,
+    num_epochs=2,
+    batch_size=128,
     # --- Settings of Datasets
     data_path='data',
-    data_file_name='SDA_Dataset.mat',
+    data_file_name='2023-11-16_rgc_onoff_fzj.mat',
+    # data_file_name='2023-11-17_Dataset-07_RGC_TDB_Sorted.mat',
     data_split_ratio=0.25,
     data_do_shuffle=True,
-    # --- Settings for Data Augmentation
-    data_do_augmentation=False,
-    data_num_augmentation=2000,
+    # --- Data Augmentation
+    data_do_augmentation=True,
+    data_num_augmentation=0,
     data_do_normalization=False,
     data_do_addnoise_cluster=False,
     data_do_reduce_samples_per_cluster=True,
@@ -43,8 +44,9 @@ if __name__ == "__main__":
     print("\nTrain modules of spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
 
     # --- Processing: Loading Data and Do Training
-    dataset = prepare_training(path=config_train.get_path2data(), settings=config_train, threshold=2)
-    dataset_dict = dataset.sda_dict
+    dataset = prepare_training(path=config_train.get_path2data(), settings=config_train,
+                               reduce_fzj_data=True, reduce_rgc_data=False)
+    dataset_dict = dataset.frame_dict if dataset.cluster_name_available else []
     trainhandler = pytorch_train(config_train)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
@@ -52,12 +54,11 @@ if __name__ == "__main__":
     loss, epoch_metric = trainhandler.do_training()
 
     # --- Post-Processing: Getting data from validation set for inference
-    xdata, xsda, xclus = prepare_plotting(trainhandler.train_loader)
-    ydata, ysda, yclus = prepare_plotting(trainhandler.valid_loader)
+    xdata, xclus = prepare_plotting(trainhandler.train_loader)
+    ydata, yclus = prepare_plotting(trainhandler.valid_loader)
     xdata0 = np.append(xdata, ydata, axis=0)
-    xsda0 = np.append(xsda, ysda, axis=0)
     xclus0 = np.append(xclus, yclus, axis=0)
-    del xdata, ydata, xsda, ysda
+    del xdata, ydata
 
     # --- Post-Processing: Do the Inference with Best Model
     print(f"\nDoing the inference with validation data on best model")

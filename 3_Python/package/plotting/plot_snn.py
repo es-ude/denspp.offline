@@ -168,7 +168,6 @@ def loss_acc_nolearn_plot(net, show_reset_line=False, reset_value=False, save_na
         plt.savefig(path + save_name + ".png", dpi=300, bbox_inches='tight')
 
 
-# TODO: create a plot function for a combined tensor
 def plot_SpAIke_paper(spk_out, input, num_steps, num_sempele,target, spk_hidd, save_name=False, show=True ,path=False):
 
     if not path:
@@ -226,7 +225,6 @@ def plot_SpAIke_paper(spk_out, input, num_steps, num_sempele,target, spk_hidd, s
         print(f'saving {save_name}')
         plt.savefig(path + save_name + ".png", figsize=(16,9), dpi=300)
 
-    # TODO: output spikes dastellen mit linien für wechsel der input data
 
 
 def plot_mnist_paper(spk_out, input, num_steps, num_sempele, spk_hidd, save_name=False, show=True ,path=False):
@@ -294,9 +292,6 @@ def plot_mnist_paper(spk_out, input, num_steps, num_sempele, spk_hidd, save_name
     if save_name:
         print(f'saving {save_name}')
         plt.savefig(path + save_name + ".png", figsize=(16,9), dpi=300)
-
-    # TODO: output spikes dastellen mit linien für wechsel der input data
-    # TODO: feuern aller neuronen im netz
 
 
 def output_raster(spike_data_sample, path="", save_name="", show = True):

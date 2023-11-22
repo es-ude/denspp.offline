@@ -3,7 +3,7 @@ import shutil
 import numpy as np
 
 from package.template.pipeline_signals import PipelineSignal
-from package.data.data_call import SettingsDATA
+from package.data.data_call_common import SettingsDATA
 from package.pre_amp.preamp import PreAmp, SettingsAMP
 from package.adc.adc_basic import SettingsADC
 from package.adc.adc_sar import ADC_SAR as ADC0
@@ -14,11 +14,11 @@ from package.dsp.sda import SpikeDetection, SettingsSDA
 class Settings:
     """Settings class for handling the src_neuro setting"""
     SettingsDATA = SettingsDATA(
-        path="C:\\HomeOffice\\Arbeit\\C_MERCUR_SpAIke\\Daten",
-        # path='E:\\0_Invasive',
+        # path="C:\\HomeOffice\\Arbeit\\C_MERCUR_SpAIke\\Daten",
+        path='/media/erbsloeh/ExtremeSSD/0_Invasive',
         data_set=7, data_case=0, data_point=0,
         t_range=[0],
-        ch_sel=[-1],
+        ch_sel=[],
         fs_resample=50e3
     )
     SettingsAMP = SettingsAMP(

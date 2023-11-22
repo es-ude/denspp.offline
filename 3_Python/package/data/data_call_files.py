@@ -1,13 +1,10 @@
-from os import listdir
-from os.path import join, isdir
-from glob import glob
+from os.path import join
 import numpy as np
 from scipy.io import loadmat
 from mat73 import loadmat as loadmat_mat73
-from package.data.data_addon import RGC_Cell_Names
+from package.data.data_call_addon import RGC_Cell_Names
 
 
-# TODO: Device Selection is still missing
 class DataHandler:
     """Class with data and meta information of the used neural dataset"""
     # --- Meta Information
@@ -43,30 +40,6 @@ class DataLoader:
         self.path2file = str()
         self.raw_data = DataHandler()
 
-    def __prepare_access(self, folder_name: str, data_type: str, sel_datapoint: int) -> None:
-        """Getting the file of the corresponding trial"""
-        path = join(self.path2data, folder_name, data_type)
-        folder_content = glob(path)
-        folder_content.sort()
-        self.no_files = len(folder_content)
-        try:
-            file_data = folder_content[sel_datapoint]
-            self.path2file = join(self.path2data, folder_name, file_data)
-        except:
-            print("--- Folder not available - Please check folder name! ---")
-
-    def __prepare_access_subfolder(self, folder_name: str, data_type: str,
-                                   sel_dataset: int, sel_datapoint: int) -> None:
-        """Getting the file structure within cases/experiments in one data set"""
-        path2data = join(self.path2data, folder_name)
-        folder_data = [name for name in listdir(path2data) if isdir(join(path2data, name))]
-        folder_data.sort()
-        file_data = folder_data[sel_dataset]
-
-        path2data = join(path2data, file_data)
-        self.__prepare_access(path2data, data_type, sel_datapoint)
-        self.no_subfolder = len(file_data)
-
     def execute_data_call(self, data_type: int, data_set: int, data_point: int):
         """Loading the dataset"""
         if data_type == 1:
@@ -95,7 +68,7 @@ class DataLoader:
         self.__path2data = self.path2data
         folder_name = "01_SimDaten_Martinez2009"
         data_type = 'simulation_*.mat'
-        self.__prepare_access(folder_name, data_type, point)
+        self._prepare_access_file(folder_name, data_type, point)
 
         loaded_data = loadmat(self.path2file)
         # Input and meta
@@ -117,13 +90,14 @@ class DataLoader:
         # Behaviour
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None
+        del loaded_data
 
     def __load_pedreira2012(self, case: int, point: int) -> None:
         """Loading synthethic files from Quiroga simulator (2012)"""
         self.__path2data = self.path2data
         folder_name = "02_SimDaten_Pedreira2012"
         data_type = 'simulation_*.mat'
-        self.__prepare_access(folder_name, data_type, point)
+        self._prepare_access_file(folder_name, data_type, point)
 
         prep_index = self.path2file.split("_")[-1]
         num_index = int(prep_index[0:2])
@@ -151,13 +125,14 @@ class DataLoader:
         # Behaviour
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None
+        del loaded_data
 
     def __load_quiroga2020(self, case: int, point: int) -> None:
         """Loading synthetic recordings from Quiroga simulator (Common benchmark)"""
         self.__path2data = self.path2data
         folder_name = "03_SimDaten_Quiroga2020"
         data_type = 'C_*.mat'
-        self.__prepare_access_subfolder(folder_name, data_type, case, point)
+        self._prepare_access_folder(folder_name, data_type, case, point)
         loaded_data = loadmat(self.path2file, mat_dtype=True)
 
         # --- Input and meta
@@ -192,13 +167,14 @@ class DataLoader:
         # Behaviour
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None
+        del loaded_data
 
     def __load_seidl2012(self, case: int, point: int) -> None:
         """Loading the recording files from the Freiburg probes from Karsten Seidl from this PhD"""
         self.__path2data = self.path2data
         folder_name = "04_Freiburg_Seidl2014"
         data_type = '*.mat'
-        self.__prepare_access(folder_name, data_type, point)
+        self._prepare_access_file(folder_name, data_type, point)
         loaded_data = loadmat(self.path2file)
 
         # Input and meta
@@ -209,7 +185,7 @@ class DataLoader:
 
         self.raw_data.device_id = [0]
         elec_orig = np.arange(0, loaded_data['raw_data'].shape[0]).tolist()
-        elec_process = self.select_electrodes if not self.select_electrodes[0] == -1 else elec_orig
+        elec_process = self.select_electrodes if not len(self.select_electrodes) == 0 else elec_orig
         for elec in elec_process:
             self.raw_data.data_raw.append(self.raw_data.data_lsb * np.float32(loaded_data['raw_data'][elec]))
 
@@ -222,15 +198,39 @@ class DataLoader:
         # Behaviour
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None
+        del loaded_data
 
     def __load_marre2018(self, case: int, point: int) -> None:
-        self.__path2data = self.path2data
+        # Link to data: https://zenodo.org/record/1205233#.YrBYrOzP1PZ
+        self._path2data = self.path2data
         folder_name = "05_Zenodo_Marre2018"
         data_type = '*.mat'
-        self.__prepare_access(folder_name, data_type, point)
+        self._prepare_access_file(folder_name, data_type, point)
         loaded_data = loadmat(self.path2file)
-        # TODO: Funktionen implementieren
-        print("NOT IMPLEMENTED")
+
+        self.raw_data.data_name = folder_name
+        self.raw_data.data_type = "Intracellular Matching"
+        self.raw_data.data_lsb = float(loaded_data['Gain'][0])
+        self.raw_data.data_fs_orig = int(loaded_data['fs'][0])
+
+        self.raw_data.device_id = [0]
+        # Information for data structure(Channel No = 255: Müll, No = 254: Intracellular response)
+        elec_orig = np.arange(0, loaded_data['juxta_channel'][0]).tolist()
+        elec_process = self.select_electrodes if not len(self.select_electrodes) == 0 else elec_orig
+        for elec in elec_process:
+            self.raw_data.data_raw.append(self.raw_data.data_lsb * (np.float32(loaded_data['data'][:, elec]) - 32767))
+
+        self.raw_data.electrode_id = elec_process
+        self.raw_data.data_time = loaded_data['data'].shape[0] / self.raw_data.data_fs_orig
+
+        # Groundtruth
+        # TODO: Verarbeitung der Intrazellulären Antwort des juxta_channels
+        self.raw_data.label_exist = False
+        self.raw_data.spike_offset_us = [0]
+        # Behaviour
+        self.raw_data.behaviour_exist = False
+        self.raw_data.behaviour = None
+        del loaded_data
 
     def __load_klaes_utah_array(self, case: int, nsp_device: int) -> None:
         """Loading the merged data file (from *.ns6 and *.nev files) from recordings with Utah electrode array
@@ -238,7 +238,7 @@ class DataLoader:
         self.__path2data = self.path2data
         folder_name = "06_Klaes_Caltech"
         data_type = '*_MERGED.mat'
-        self.__prepare_access_subfolder(folder_name, data_type, case, nsp_device)
+        self._prepare_access_folder(folder_name, data_type, case, nsp_device)
         loaded_data = loadmat(self.path2file, mat_dtype=True)
 
         # Input and meta
@@ -261,7 +261,7 @@ class DataLoader:
 
         self.raw_data.device_id = [nsp_device]
         elec_orig = np.arange(0, int(loaded_data['rawdata']['NoElectrodes'][0, 0][0])).tolist()
-        elec_process = self.select_electrodes if not self.select_electrodes[0] == -1 else elec_orig
+        elec_process = self.select_electrodes if not len(self.select_electrodes) == 0 else elec_orig
         # TODO: Daten vom Utah-Array einlesen (Zwei Devices)
         data_raw = np.transpose(loaded_data['rawdata']['spike'][0, 0])
         for elec in elec_process:
@@ -283,13 +283,14 @@ class DataLoader:
         # TODO: Daten vom Utah-Array einlesen (Verhaltensanalyse)
         self.raw_data.behaviour_exist = True
         self.raw_data.behaviour = loaded_data['behaviour']
+        del loaded_data
 
     def __load_rgc_tdb(self, case: int, point: int) -> None:
         """Loading the transient files from the Retinal Ganglian Cell Transient Database (RGC TDB)"""
         self.__path2data = self.path2data
         folder_name = "07_RGC_TDB"
         data_type = '*.mat'
-        self.__prepare_access_subfolder(folder_name, data_type, 0, point)
+        self._prepare_access_file(folder_name, data_type, point)
         loaded_data = loadmat_mat73(self.path2file)
 
         # Pre-Processing: Remove empty entries and runs with only one spike
@@ -304,7 +305,7 @@ class DataLoader:
 
         # Pre-Processing: Getting only the desired channels
         elec_orig = used_ch
-        if not self.select_electrodes[0] == -1:
+        if not len(self.select_electrodes) == 0:
             elec_process = list()
             for elec in self.select_electrodes:
                 elec_process.append(elec_orig[elec])
@@ -336,18 +337,20 @@ class DataLoader:
         for idx, pos_ch in enumerate(elec_process):
             self.raw_data.spike_xpos.append(spike_xpos[idx])
             num_spikes = len(spike_xpos[idx])
-            self.raw_data.cluster_id.append(np.zeros(shape=(num_spikes, ), dtype=int) + rgc_translator.get_id_from_cell_type(loaded_data['sp_trains']['cell_type'][pos_ch][0]))
+            id = rgc_translator.get_id_from_cell_type(loaded_data['sp_trains']['cell_type'][pos_ch][0])
+            self.raw_data.cluster_id.append(np.zeros(shape=(num_spikes, ), dtype=int) + id)
 
         # Behaviour
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None
+        del loaded_data
 
     def __load_fzj_mcs(self, case: int, point: int) -> None:
         """Loading the recording files from MCS setup in FZ Juelich (case = experiment, point = file)"""
         self.__path2data = self.path2data
         folder_name = "08_RGC_FZJuelich"
         data_type = '*_merged.mat'
-        self.__prepare_access_subfolder(folder_name, data_type, case, point)
+        self._prepare_access_folder(folder_name, data_type, case, point)
         loaded_data = loadmat_mat73(self.path2file)
 
         # Input and meta
@@ -358,7 +361,7 @@ class DataLoader:
 
         self.raw_data.device_id = [0]
         elec_orig = np.arange(0, loaded_data['electrode'].shape[1]).tolist()
-        elec_process = self.select_electrodes if not self.select_electrodes[0] == -1 else elec_orig
+        elec_process = self.select_electrodes if not len(self.select_electrodes) == 0 else elec_orig
         for elec in elec_process:
             self.raw_data.data_raw.append(self.raw_data.data_lsb * np.float32(loaded_data['electrode'][:, elec]))
         self.raw_data.data_time = loaded_data['electrode'].shape[0] / self.raw_data.data_fs_orig
@@ -369,14 +372,16 @@ class DataLoader:
         # Behaviour
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None
+        del loaded_data
 
     def __load_musall_neuropixel(self, case: int, point: int) -> None:
         """Loading the files from recordings with NeuroPixel probes"""
         self.__path2data = self.path2data
         folder_name = "07_RGC_TDB"
         data_type = '*.mat'
-        self.__prepare_access_subfolder(folder_name, data_type, case, point)
+        self._prepare_access_folder(folder_name, data_type, case, point)
         loaded_data = loadmat_mat73(self.path2file)
         # TODO: Auswertung von NeuroPixel probes einlesen
+        del loaded_data
 
         print("NOT IMPLEMENTED")
