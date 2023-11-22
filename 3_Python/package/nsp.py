@@ -1,7 +1,6 @@
 import numpy as np
 
 
-# TODO: Weitere Methoden (wie Kreuz- und Autokorrelation einfügen)
 def calc_spiketicks(frames_in: list, do_short=True, out_transient_size=0) -> np.ndarray:
     """Determining spike ticks with cluster results"""
     frames_pos = frames_in[1]

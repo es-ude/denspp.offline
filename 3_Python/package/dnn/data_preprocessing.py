@@ -41,13 +41,30 @@ def calculate_frame_mean(
     NoCluster, NumCluster = np.unique(frames_cl, return_counts=True)
     SizeCluster = np.size(NoCluster)
 
-    frames_mean = np.zeros(shape=(SizeCluster, frames_in.shape[1]), dtype=int)
+    frames_out = np.zeros(shape=(SizeCluster, frames_in.shape[1]))
     for idx0, val in enumerate(NoCluster):
         # --- Mean waveform
         indices = np.argwhere(frames_cl == val).flatten()
-        frames_mean[idx0, :] = np.mean(frames_in[indices, :], axis=0, dtype=int)
+        frames_out[idx0, :] = np.mean(frames_in[indices, :], axis=0)
 
-    return frames_mean
+    return frames_out.astype(int)
+
+
+def calculate_frame_median(
+        frames_in: np.ndarray,
+        frames_cl: np.ndarray
+    ) -> np.ndarray:
+    """Calculating mean waveforms of spike waveforms with median()"""
+    NoCluster, NumCluster = np.unique(frames_cl, return_counts=True)
+    SizeCluster = np.size(NoCluster)
+
+    frames_out = np.zeros(shape=(SizeCluster, frames_in.shape[1]))
+    for idx0, val in enumerate(NoCluster):
+        # --- Mean waveform
+        indices = np.argwhere(frames_cl == val).flatten()
+        frames_out[idx0, :] = np.median(frames_in[indices, :], axis=0)
+
+    return frames_out.astype(int)
 
 
 def calculate_frame_snr(
@@ -74,7 +91,6 @@ def calculate_frame_snr(
     return cluster_snr
 
 
-# TODO: Data Normalization does not work very well
 def data_normalization(
         frames_in: np.ndarray,
         do_bipolar=True,

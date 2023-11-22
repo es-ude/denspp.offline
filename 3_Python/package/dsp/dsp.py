@@ -16,15 +16,12 @@ class SettingsDSP:
     t_dly: float
 
 
-@dataclasses.dataclass
-class RecommendedSettingsDSP(SettingsDSP):
-    def __init__(self):
-        super().__init__(
-            gain=1, fs=20e3,
-            n_order=2, f_filt=[0.1, 100],
-            type='iir', f_type='butter', b_type='bandpass',
-            t_dly=100e-6
-        )
+RecommendedSettingsDSP = SettingsDSP(
+    gain=1, fs=20e3,
+    n_order=2, f_filt=[0.1, 100],
+    type='iir', f_type='butter', b_type='bandpass',
+    t_dly=100e-6
+)
 
 
 class DSP:

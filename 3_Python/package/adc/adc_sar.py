@@ -4,7 +4,7 @@ from package.adc.adc_basic import ADC_Basic, SettingsADC, RecommendedSettingsNon
 class ADC_SAR(ADC_Basic):
     """"Class for applying a Sukzessive Approximation (SAR) Analogue-Digital-Converter (ADC) on the raw data"""
     def __init__(self, setting: SettingsADC):
-        super().__init__(setting, RecommendedSettingsNon())
+        super().__init__(setting, RecommendedSettingsNon)
         self.use_noise = True
         # --- Transfer function
         self.__dv = self.settings.vref[0] - self.settings.vref[1]

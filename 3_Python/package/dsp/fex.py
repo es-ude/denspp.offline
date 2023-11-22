@@ -9,12 +9,9 @@ class SettingsFeature:
     no_features: int
 
 
-class RecommendedSettingsFeature(SettingsFeature):
-    """Recommended values to configure the FEC with standard values"""
-    def __init__(self):
-        super().__init__(
-            no_features=3
-        )
+RecommendedSettingsFeature = SettingsFeature(
+    no_features=3
+)
 
 
 class FeatureExtraction:

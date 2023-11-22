@@ -1,22 +1,28 @@
 import numpy as np
 from scipy.io import loadmat
-from torch import is_tensor
+from torch import is_tensor, randn
 from torch.utils.data import Dataset, DataLoader
 
 from package.dnn.pytorch_control import Config_PyTorch
-from package.dnn.data_preprocessing import change_frame_size, calculate_frame_mean, calculate_frame_snr, generate_zero_frames, data_normalization
+from package.dnn.data_preprocessing import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
+from package.dnn.data_preprocessing import change_frame_size, generate_zero_frames, data_normalization
 from package.dnn.data_augmentation import *
 
 
-# TODO: Add normal training of denoising autoencoder
 class DatasetAE(Dataset):
     """Dataset Preparator for training Autoencoder"""
-    def __init__(self, frames: np.ndarray, index: np.ndarray,
-                 mean_frame: np.ndarray, cluster_dict=None, mode_train=0):
-        self.__frames_orig = np.array(frames, dtype=np.float32)
-        self.__frames_noise = np.array(frames, dtype=np.float32)
-        self.__frames_mean = np.array(mean_frame, dtype=np.float32)
-        self.__cluster = index
+    def __init__(self, frames_raw: np.ndarray, cluster_id: np.ndarray,
+                 frames_cluster_me: np.ndarray, cluster_dict=None,
+                 noise_std=0.1, do_classification=False, mode_train=0):
+        # --- Input Parameters
+        self.__frames_orig = np.array(frames_raw, dtype=np.float32)
+        self.__frames_size = frames_raw.shape[1]
+        self.__cluster_id = cluster_id
+        self.frames_me = np.array(frames_cluster_me, dtype=np.float32)
+        # --- Parameters for Denoising Autoencoder
+        self.__frames_noise_std = noise_std
+        self.__do_classification = do_classification
+        # --- Parameters for Confusion Matrix for Classification
         self.cluster_name_available = isinstance(cluster_dict, list)
         self.frame_dict = cluster_dict
 
@@ -28,30 +34,31 @@ class DatasetAE(Dataset):
         else:
             self.data_type = "Autoencoder"
 
+        if do_classification:
+            self.data_type += " for Classification"
+
     def __len__(self):
-        return self.__cluster.shape[0]
+        return self.__cluster_id.shape[0]
 
     def __getitem__(self, idx):
         if is_tensor(idx):
             idx = idx.tolist()
 
-        cluster_id = self.__cluster[idx]
-        frame_mean = self.__frames_mean[cluster_id, :]
-
+        cluster_id = self.__cluster_id[idx]
         if self.mode_train == 1:
             # Denoising Autoencoder Training with mean
             frame_in = self.__frames_orig[idx, :]
-            frame_out = self.__frames_mean[cluster_id, :]
+            frame_out = self.frames_me[cluster_id, :] if not self.__do_classification else cluster_id
         elif self.mode_train == 2:
             # Denoising Autoencoder Training with adding noise on input
-            frame_in = self.__frames_noise[idx, :]
-            frame_out = self.__frames_orig[idx, :]
+            frame_in = self.__frames_orig[idx, :] + np.array(self.__frames_noise_std * np.random.randn(self.__frames_size), dtype=np.float32)
+            frame_out = self.__frames_orig[idx, :] if not self.__do_classification else cluster_id
         else:
             # Normal Autoencoder Training
             frame_in = self.__frames_orig[idx, :]
-            frame_out = self.__frames_orig[idx, :]
+            frame_out = self.__frames_orig[idx, :] if not self.__do_classification else cluster_id
 
-        return {'in': frame_in, 'out': frame_out, 'cluster': cluster_id, 'mean': frame_mean}
+        return {'in': frame_in, 'out': frame_out, 'cluster': cluster_id, 'mean': self.frames_me[cluster_id, :]}
 
 
 def prepare_plotting(data_in: DataLoader) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -59,20 +66,21 @@ def prepare_plotting(data_in: DataLoader) -> tuple[np.ndarray, np.ndarray, np.nd
     din = None
     dout = None
     did = None
-    dmean = None
+    dme = None
     first_run = True
     for vdata in data_in:
-        for data in vdata:
-            din = data['in'] if first_run else np.append(din, data['in'], axis=0)
-            dout = data['out'] if first_run else np.append(dout, data['out'], axis=0)
-            dmean = data['mean'] if first_run else np.append(dmean, data['mean'], axis=0)
-            did = data['cluster'] if first_run else np.append(did, data['cluster'])
-            first_run = False
+        din = vdata['in'] if first_run else np.append(din, vdata['in'], axis=0)
+        dout = vdata['out'] if first_run else np.append(dout, vdata['out'], axis=0)
+        dme = vdata['mean'] if first_run else np.append(dme, vdata['mean'], axis=0)
+        did = vdata['cluster'] if first_run else np.append(did, vdata['cluster'])
+        first_run = False
 
-    return din, dout, did, dmean
+    return din, dout, did, dme
 
 
-def prepare_training(path: str, settings: Config_PyTorch, mode_train_ae=0) -> DatasetAE:
+def prepare_training(path: str, settings: Config_PyTorch,
+                     mode_train_ae=0, do_classification=False,
+                     noise_std=0.1) -> DatasetAE:
     """Preparing datasets incl. augmentation for spike-frame based training (without pre-processing)"""
     print("... loading the datasets")
 
@@ -83,7 +91,8 @@ def prepare_training(path: str, settings: Config_PyTorch, mode_train_ae=0) -> Da
 
     # --- Mean waveform calculation and data augmentation
     frames_in = change_frame_size(frames_in, settings.data_sel_pos)
-    frames_mean = calculate_frame_mean(frames_in, frames_cl)
+    # frames_me = calculate_frame_mean(frames_in, frames_cl)
+    frames_me = calculate_frame_median(frames_in, frames_cl)
 
     # --- PART: Exclusion of selected clusters
     if len(settings.data_exclude_cluster) == 0:
@@ -104,7 +113,7 @@ def prepare_training(path: str, settings: Config_PyTorch, mode_train_ae=0) -> Da
 
     # --- PART: Calculate SNR if desired
     if settings.data_do_augmentation or settings.data_do_addnoise_cluster:
-        snr_mean = calculate_frame_snr(frames_in, frames_cl, frames_mean)
+        snr_mean = calculate_frame_snr(frames_in, frames_cl, frames_me)
     else:
         snr_mean = np.zeros(0, dtype=float)
 
@@ -112,7 +121,7 @@ def prepare_training(path: str, settings: Config_PyTorch, mode_train_ae=0) -> Da
     if settings.data_do_augmentation and not settings.data_do_reduce_samples_per_cluster:
         print("... do data augmentation")
         # new_frames, new_clusters = augmentation_mean_waveform(
-        # frames_mean, frames_cl, snr_mean, settings.data_num_augmentation)
+        # frames_me, frames_cl, snr_mean, settings.data_num_augmentation)
         new_frames, new_clusters = augmentation_change_position(
             frames_in, frames_cl, snr_mean, settings.data_num_augmentation)
         frames_in = np.append(frames_in, new_frames, axis=0)
@@ -120,7 +129,7 @@ def prepare_training(path: str, settings: Config_PyTorch, mode_train_ae=0) -> Da
 
     # --- PART: Generate and add noise cluster
     if settings.data_do_addnoise_cluster:
-        snr_range_zero = [np.mean(snr_mean[:, 0]), np.mean(snr_mean[:, 2])]
+        snr_range_zero = [np.median(snr_mean[:, 0]), np.median(snr_mean[:, 2])]
         info = np.unique(frames_cl, return_counts=True)
         num_cluster = np.max(info[0]) + 1
         num_frames = np.max(info[1])
@@ -129,14 +138,16 @@ def prepare_training(path: str, settings: Config_PyTorch, mode_train_ae=0) -> Da
         new_mean, new_clusters, new_frames = generate_zero_frames(frames_in.shape[1], num_frames, snr_range_zero)
         frames_in = np.append(frames_in, new_frames, axis=0)
         frames_cl = np.append(frames_cl, num_cluster + new_clusters, axis=0)
-        frames_mean = np.vstack([frames_mean, new_mean])
+        frames_me = np.vstack([frames_me, new_mean])
 
     # --- PART: Data Normalization
     if settings.data_do_normalization:
         frames_in = data_normalization(frames_in)
-        frames_mean = data_normalization(frames_mean)
+        frames_me = data_normalization(frames_me)
 
     # --- Output
     check = np.unique(frames_cl, return_counts=True)
     print(f"... used data points for training: class = {check[0]} and num = {check[1]}")
-    return DatasetAE(frames_in, frames_cl, frames_mean, mode_train_ae)
+    return DatasetAE(frames_raw=frames_in, cluster_id=frames_cl, frames_cluster_me=frames_me,
+                     mode_train=mode_train_ae, do_classification=do_classification,
+                     noise_std=noise_std)

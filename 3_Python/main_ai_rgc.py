@@ -18,7 +18,7 @@ config_train = Config_PyTorch(
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=2,
+    num_epochs=1000,
     batch_size=128,
     # --- Settings of Datasets
     data_path='data',
@@ -51,7 +51,7 @@ if __name__ == "__main__":
     trainhandler.load_model()
     trainhandler.load_data(dataset)
     del dataset
-    loss, epoch_metric = trainhandler.do_training()
+    epoch_metric = trainhandler.do_training()[1]
 
     # --- Post-Processing: Getting data from validation set for inference
     xdata, xclus = prepare_plotting(trainhandler.train_loader)
@@ -83,6 +83,3 @@ if __name__ == "__main__":
 
     plt.show(block=False)
     plt.close("all")
-
-    print("\nLook data on TensorBoard -> open Terminal")
-    print("Type in: tensorboard serve --logdir ./runs")

@@ -1,8 +1,9 @@
 import dataclasses
 import numpy as np
 from scipy.signal import savgol_filter, find_peaks, iirfilter, lfilter
-from numpy import hamming, bartlett, kaiser
-
+from numpy import hamming, bartlett, blackman
+from scipy.signal.windows import gaussian
+import matplotlib.pyplot as plt
 
 @dataclasses.dataclass
 class SettingsSDA:
@@ -117,11 +118,6 @@ class SpikeDetection:
         C = self.settings.thr_gain
         return C * savgol_filter(xin, self.frame_length, 3)
 
-    #TODO: Methode aus Paper 10.1088/1741-2552/accece implementieren
-    def thres_firing_rate(self, xin: np.ndarray) -> np.ndarray:
-        """Applying the firing-rate decoding of the threshold methode"""
-        return NotImplementedError
-
     # --------- Spike Detection Algorithm -------------
     def sda_norm(self, xin: np.ndarray) -> np.ndarray:
         """Normal spike detection algorithm"""
@@ -158,28 +154,26 @@ class SpikeDetection:
         x_aso = np.concatenate([x_sda[:ksda0], x_sda], axis=None)
         return x_aso
 
-    def sda_eed(self, xin: np.ndarray, fs: float) -> np.ndarray:
+    def sda_eed(self, xin: np.ndarray, fs: float, f_hp=150.0) -> np.ndarray:
         """Applying the enhanced energy-derivation operator (eED) on input signal"""
-        fhp = 150
         filter = iirfilter(
-            N=2, Wn=2 * fhp / fs, ftype="butter", btype="highpass",
+            N=2, Wn=2 * f_hp / fs, ftype="butter", btype="highpass",
             analog=True, output='ba'
         )
         eed = np.array(lfilter(filter[0], filter[1], xin))
         return np.square(eed)
 
-    # TODO: Implementierung SBP Funktion
-    def sda_spb(self, xin: np.ndarray) -> [np.ndarray, np.ndarray]:
+    def sda_spb(self, xin: np.ndarray, fs: float, f_bp=(100.0, 1000.0)) -> [np.ndarray, np.ndarray]:
         """Performing the spike detection with spike band-power estimation [Nason et al., 2020]"""
-        return NotImplementedError
+        filter = iirfilter(N=2, Wn=2 * np.array(f_bp) / fs, ftype="butter", btype="bandpass", analog=False, output='ba')
+        filt0 = lfilter(filter[0], filter[1], xin)
+        sbp = smoothing_1d(np.abs(filt0), int(1e-3 * fs), 'Gaussian')
 
-    def sda_smooth(self, xin: np.ndarray) -> [np.ndarray, np.ndarray]:
-        """Smoothing the input"""
-        window = hamming(4 * self.settings.dx_sda[0] + 1)
-        gain_window = np.sum(window)
-        gain = 1
-        xout = np.convolve(xin, gain * window/gain_window, mode='same')
-        return xout, window
+        return np.floor(sbp)
+
+    def sda_smooth(self, xin: np.ndarray, window_method='Hamming') -> np.ndarray:
+        """Smoothing the input with defined window ['Hamming', 'Gaussian', 'Flat', 'Bartlett', 'Blackman']"""
+        return smoothing_1d(xin, 4 * self.settings.dx_sda[0] + 1, window_method)
 
     # --------- Frame Generation -------------
     def __gen_findpeaks(self, xtrg: np.ndarray, width: int) -> list:
@@ -364,3 +358,19 @@ class SpikeDetection:
             frame_out[idx, :] = self.__frame_correction(frame0, dxneg, dxpos)
 
         return frame_out
+
+
+def smoothing_1d(xin: np.ndarray, window_size: int, window_method='Hamming') -> np.ndarray:
+    """Smoothing the input"""
+    if window_method == 'Hamming':
+        window = hamming(window_size)
+    elif window_method == 'Gaussian':
+        window = gaussian(window_size, int(0.16 * window_size), sym=True)
+    elif window_method == 'Bartlett':
+        window = bartlett(window_size)
+    elif window_method == 'Blackman':
+        window = blackman(window_size)
+    else:
+        window = np.ones(window_size)
+
+    return np.convolve(xin, window, mode='same') # / np.sum(window), mode='same')

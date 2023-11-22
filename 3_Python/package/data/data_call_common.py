@@ -29,15 +29,12 @@ class SettingsDATA:
     fs_resample: float
 
 
-class RecommendedSettingsDATA(SettingsDATA):
-    """Recommended configuration for testing"""
-    def __init__(self):
-        super().__init__(
-            path="../2_Data",
-            data_set=1, data_case=0, data_point=0,
-            t_range=[0], ch_sel=[],
-            fs_resample=100e3
-        )
+RecommendedSettingsDATA = SettingsDATA(
+    path="../2_Data",
+    data_set=1, data_case=0, data_point=0,
+    t_range=[0], ch_sel=[],
+    fs_resample=100e3
+)
 
 
 # ----- Read Settings -----
@@ -133,7 +130,7 @@ class DataController(DataLoader):
         if do_resampling:
             self.raw_data.data_fs_used = desired_fs
             u_safe = 5e-6
-            (p, q) = Fraction(self.raw_data.data_fs_used / self.raw_data.data_fs_orig).limit_denominator(100).as_integer_ratio()
+            (p, q) = Fraction(self.raw_data.data_fs_used / self.raw_data.data_fs_orig).limit_denominator(10000).as_integer_ratio()
             self.__scaling = p / q
 
             for idx, data_in in enumerate(self.raw_data.data_raw):
