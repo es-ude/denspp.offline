@@ -60,7 +60,6 @@ class cnn_sda_v1(nn.Module):
             nn.MaxPool1d(pool_size[0]),
             nn.Flatten(start_dim=1),
             nn.Linear(lin_size[0], lin_size[1]),
-            nn.BatchNorm1d(lin_size[1], affine=do_train_bias),
             nn.Softmax(dim=0)
         )
 

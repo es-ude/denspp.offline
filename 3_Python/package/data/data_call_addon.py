@@ -1,4 +1,4 @@
-class RGC_Cell_Names:
+class _RGC_TDB:
     """Retinal Ganglion Cell Selection from Schwartz Lab"""
     def __init__(self):
         self.cell_type_to_id = {
@@ -62,34 +62,18 @@ class RGC_Cell_Names:
             "Surpressed-by-Contrast": [42, 43, 44, 45, 46, 47]
         }
 
-    def get_id_from_cell_type(self, name: str) -> int:
-        """Getting the ID from specific cell type"""
-        return self.cell_type_to_id.get(name) if name in self.cell_type_to_id else -1
+        self.cell_class_to_type = {
+            "Transient": [17, 18, 19, 20, 37, 38, 39, 40, 41],
+            "Sustained": [10, 11, 12, 13, 14, 15, 16, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36]
+        }
 
-    def get_class_to_id(self, id: int) -> [int, str]:
-        """Getting the class of RGC for a given ID"""
-        result = ''
-        val = 0
-        for idx, (key, values) in enumerate(self.cell_class_to_id.items()):
-            if id in values:
-                val = idx
-                result = key
-        return val, result
-
-    def get_classes(self) -> list:
-        """Getting the classes as list"""
-        classes = list()
-        for idx, (key, values) in enumerate(self.cell_class_to_id.items()):
-            if idx == 0:
-                classes.append(key)
-            else:
-                for class0 in classes:
-                    if class0 not in key:
-                        classes.append(key)
-        return classes
+        self.cell_class_to_onoff = {
+            "ON": [27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41],
+            "OFF": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+        }
 
 
-class RGC_ONOFF_FZJ:
+class _RGC_ONOFF_FZJ:
     """Retinal Ganglion Cell Selection from Recordings from Research Center Jülich"""
     def __init__(self):
         self.cell_type_to_id = {
@@ -100,25 +84,55 @@ class RGC_ONOFF_FZJ:
             "ON Transient": 4
         }
 
-        self.cell_class_to_id = {
+        self.cell_class_to_onoff = {
             "OFF": [0, 1],
             "ON": [3, 4]
         }
 
         self.cell_class_to_type = {
-            "Tran": [1, 4],
-            "Sust": [0, 3]
+            "Transient": [1, 4],
+            "Sustained": [0, 3]
         }
 
+
+class CellSelector(_RGC_ONOFF_FZJ, _RGC_TDB):
+    """Cell Selection Functions"""
+    cell_type_to_id: dict
+    cell_class_to_id: dict
+    cell_class_to_onoff: dict
+    cell_class_to_type: dict
+    cell_class_used: dict
+
+    def __init__(self, sel_database: int, mode=0):
+        """Sel_databased: 0=RGC FZJ, 1=RGC_TDB,
+        Mode selection: 0=original, 1=Reduced specific, 2= ON/OFF, 3= Sustained/Transient"""
+        if sel_database == 0:
+            _RGC_ONOFF_FZJ.__init__(self)
+        elif sel_database == 1:
+            _RGC_TDB.__init__(self)
+        self.select_mode = 0
+
+        # Mode selection
+        if mode == 0:
+            self.cell_class_used = self.cell_type_to_id
+        elif mode == 1:
+            self.cell_class_used = self.cell_class_to_id
+        elif mode == 2:
+            self.cell_class_used = self.cell_class_to_onoff
+        elif mode == 3:
+            self.cell_class_used = self.cell_class_to_type
+
     def get_id_from_cell_type(self, name: str) -> int:
-        """Getting the ID from specific cell type"""
+        """Getting the ID from a cell type"""
+        self.select_mode = 0
         return self.cell_type_to_id.get(name) if name in self.cell_type_to_id else -1
 
     def get_class_to_id(self, id: int) -> [int, str]:
-        """Getting the class of RGC for a given ID"""
+        """Getting the class for a given ID"""
+        self.select_mode = 1
         result = ''
         val = 0
-        for idx, (key, values) in enumerate(self.cell_class_to_id.items()):
+        for idx, (key, values) in enumerate(self.cell_class_used.items()):
             if id in values:
                 val = idx
                 result = key
@@ -127,7 +141,7 @@ class RGC_ONOFF_FZJ:
     def get_classes(self) -> list:
         """Getting the classes as list"""
         classes = list()
-        for idx, (key, values) in enumerate(self.cell_class_to_id.items()):
+        for idx, (key, values) in enumerate(self.cell_class_used.items()):
             if idx == 0:
                 classes.append(key)
             else:

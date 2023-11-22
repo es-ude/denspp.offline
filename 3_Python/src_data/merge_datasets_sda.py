@@ -62,7 +62,7 @@ def prepare_sda_dataset(path2save: str, slice_size=12, process_points=[]) -> Non
         axs[1].plot(data_sda[515700:515900], color='k')
         plt.show()
 
-        # --- Add to output
+        # --- Slicing the data
         sda_input.append(np.array(data_in.reshape((int(data_in.size/slice_size), slice_size)), dtype=int))
         sda_pred.append(np.array(data_sda.reshape((int(data_sda.size/slice_size), slice_size)), dtype=bool))
 

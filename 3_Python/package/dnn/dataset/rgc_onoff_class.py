@@ -2,7 +2,7 @@ import numpy as np
 from scipy.io import loadmat
 from torch import is_tensor
 from torch.utils.data import Dataset, DataLoader
-from package.data.data_call_addon import RGC_Cell_Names, RGC_ONOFF_FZJ
+from package.data.data_call_addon import CellSelector
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.data_augmentation import augmentation_reducing_samples
 from package.dnn.data_preprocessing import data_normalization
@@ -41,8 +41,7 @@ def prepare_plotting(data_in: DataLoader) -> tuple[np.ndarray, np.ndarray]:
     return din, dout
 
 
-def prepare_training(path: str, settings: Config_PyTorch,
-                     reduce_fzj_data=False, reduce_rgc_data=False) -> DatasetRGC:
+def prepare_training(path: str, settings: Config_PyTorch, reduce_data=False, mode_classes=0) -> DatasetRGC:
     """Preparing datasets incl. augmentation for spike-detection-based training (without pre-processing)"""
     print("... loading the datasets")
 
@@ -59,23 +58,11 @@ def prepare_training(path: str, settings: Config_PyTorch,
             frames_in = frames_in[selX[0], :]
             frames_cl = frames_cl[selX]
 
-    # --- PART: Reducing classes with abort condition
-    if reduce_fzj_data and reduce_rgc_data:
-        raise Exception("\nPlease select only one reducing methode!")
-
-    if reduce_fzj_data or reduce_rgc_data:
-        print("... reducing output classes")
-
-    if reduce_fzj_data:
-        cl_sampler = RGC_ONOFF_FZJ()
-        frames_dict = cl_sampler.get_classes()
-        for idx, cl in enumerate(frames_cl):
-            frames_cl[idx] = cl_sampler.get_class_to_id(cl)[0]
-
-    if reduce_rgc_data:
-        cl_sampler = RGC_Cell_Names()
-        for idx, cl in enumerate(frames_cl):
-            frames_cl[idx] = cl_sampler.get_class_to_id(cl)[0]
+    # --- PART: Reducing classes by given cell bib with abort condition
+    if reduce_data:
+        frames_cl, frames_dict = __reducing_cluster_samples(path, frames_cl, mode_classes)
+    else:
+        raise NotImplementedError
 
     # --- PART: Reducing samples per cluster (if too large)
     if settings.data_do_reduce_samples_per_cluster:
@@ -97,3 +84,28 @@ def prepare_training(path: str, settings: Config_PyTorch,
         print(f"... used data points for training: class = {frames_dict} and num = {check[1]}")
 
     return DatasetRGC(frames_in, frames_cl, frames_dict)
+
+
+def __reducing_cluster_samples(path: str, frames_cl: np.ndarray, sel_mode_classes: int) -> [np.ndarray, dict]:
+    """Function for reducing the samples for a given cell bib"""
+    cell_dict = list()
+    cell_cl = frames_cl
+
+    check_class = ['fzj', 'RGC']
+    check_path = path[:-4].split("_")
+    # --- Check if one is available
+    flag = -1
+    for path0 in check_path:
+        for idx, j in enumerate(check_class):
+            if path0 == j:
+                flag = idx
+                break
+
+    if not flag == -1:
+        print("... reducing output classes")
+        cl_sampler = CellSelector(flag, sel_mode_classes)
+        cell_dict = cl_sampler.get_classes()
+        for idx, cl in enumerate(frames_cl):
+            frames_cl[idx] = cl_sampler.get_class_to_id(cl)[0]
+
+    return cell_cl, cell_dict

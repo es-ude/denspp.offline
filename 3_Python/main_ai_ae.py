@@ -56,7 +56,7 @@ if __name__ == "__main__":
     trainhandler.load_model()
     trainhandler.load_data(dataset)
     del dataset
-    snr_train = trainhandler.do_training()[1]
+    snr_train = trainhandler.do_training()
 
     # --- Post-Processing: Getting data from validation set for inference
     take_fold = 0

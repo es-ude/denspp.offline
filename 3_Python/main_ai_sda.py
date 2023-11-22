@@ -49,7 +49,7 @@ if __name__ == "__main__":
     trainhandler.load_model()
     trainhandler.load_data(dataset)
     del dataset
-    loss, epoch_metric = trainhandler.do_training()
+    epoch_metric = trainhandler.do_training()
 
     # --- Post-Processing: Getting data from validation set for inference
     xdata, _, xclus = prepare_plotting(trainhandler.train_loader)
@@ -75,7 +75,7 @@ if __name__ == "__main__":
             long_field_names=True)
 
     # --- Plotting
-    plot_loss(epoch_metric, 'Acc.', path2save=logsdir)
+    plot_loss(epoch_metric[0], 'Acc.', path2save=logsdir)
     plot_confusion(xclus0, ypred, path2save=logsdir, cl_dict=dataset_dict)
     plot_statistic_data(xclus, yclus, path2save=logsdir, cl_dict=dataset_dict)
 

@@ -3,7 +3,7 @@ from os import mkdir
 from os.path import exists, join
 import matplotlib.pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay
-from package.plotting.plot_common import save_figure
+from package.plotting.plot_common import save_figure, cm_to_inch
 
 
 def plot_boxplot_metric(freq: np.ndarray, metric: list, type_name: str, name: str,
@@ -43,7 +43,7 @@ def plot_loss(metric: list, metric_type: str, name='', path2save='') -> None:
         plot_metrics[idx, :] = np.array(val, dtype=float)
 
     # --- Plotting
-    plt.figure()
+    plt.figure(figsize=(cm_to_inch(10), cm_to_inch(8)))
     plt.title(f"{metric_type} = {plot_metrics.max():.3f}")
     plt.plot(plot_metrics[:, 0], color='k', marker='.', label='Train.')
     plt.plot(plot_metrics[:, 1], color='r', marker='.', label='Valid.')
@@ -63,7 +63,7 @@ def plot_confusion(true_labels: list | np.ndarray, pred_labels: list | np.ndarra
     """Plotting the Confusion Matrix"""
     dict_available = isinstance(cl_dict, list)
 
-    fig, ax = plt.subplots(figsize=(10, 10))
+    plt.figure(figsize=(cm_to_inch(10), cm_to_inch(8)))
     plt.title(title)
     if dict_available:
         ConfusionMatrixDisplay.from_predictions(

@@ -14,20 +14,21 @@ import package.dnn.models.rgc_onoff_class as ai_module
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
-    model=ai_module.dnn_rgc_v1(output_size=2),
+    model=ai_module.dnn_rgc_v1(input_size=32, output_size=2),
     loss_fn=nn.CrossEntropyLoss(),
+    # loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=1000,
+    num_epochs=100,
     batch_size=128,
     # --- Settings of Datasets
     data_path='data',
-    data_file_name='2023-11-16_rgc_onoff_fzj.mat',
-    # data_file_name='2023-11-17_Dataset-07_RGC_TDB_Sorted.mat',
+    # data_file_name='2023-11-16_rgc_onoff_fzj.mat',
+    data_file_name='2023-11-17_Dataset-07_RGC_TDB_Sorted.mat',
     data_split_ratio=0.25,
     data_do_shuffle=True,
     # --- Data Augmentation
-    data_do_augmentation=True,
+    data_do_augmentation=False,
     data_num_augmentation=0,
     data_do_normalization=False,
     data_do_addnoise_cluster=False,
@@ -45,13 +46,13 @@ if __name__ == "__main__":
 
     # --- Processing: Loading Data and Do Training
     dataset = prepare_training(path=config_train.get_path2data(), settings=config_train,
-                               reduce_fzj_data=True, reduce_rgc_data=False)
+                               reduce_data=True, mode_classes=2)
     dataset_dict = dataset.frame_dict if dataset.cluster_name_available else []
     trainhandler = pytorch_train(config_train)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
     del dataset
-    epoch_metric = trainhandler.do_training()[1]
+    epoch_metric = trainhandler.do_training()
 
     # --- Post-Processing: Getting data from validation set for inference
     xdata, xclus = prepare_plotting(trainhandler.train_loader)
@@ -77,7 +78,7 @@ if __name__ == "__main__":
             long_field_names=True)
 
     # --- Plotting
-    plot_loss(epoch_metric, 'Acc.', path2save=logsdir)
+    plot_loss(epoch_metric[0], 'Acc.', path2save=logsdir)
     plot_confusion(xclus0, ypred, path2save=logsdir, cl_dict=dataset_dict)
     plot_statistic_data(xclus, yclus, path2save=logsdir, cl_dict=dataset_dict)
 

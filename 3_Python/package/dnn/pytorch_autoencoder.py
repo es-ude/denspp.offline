@@ -62,7 +62,7 @@ class pytorch_train(training_pytorch):
 
         return snr_out - snr_in
 
-    def do_training(self, reduced_own_metric=True) -> tuple[list, list]:
+    def do_training(self) -> list:
         """Start model training incl. validation and custom-own metric calculation"""
         self._init_train()
         self._save_config_txt()
@@ -70,7 +70,6 @@ class pytorch_train(training_pytorch):
         if self._do_kfold:
             print(f"Starting Kfold cross validation training in {self.settings.num_kfold} steps")
 
-        metrics = list()
         metrics_own = list()
         path2model = str()
         path2model_init = join(self._path2save, f'model_reset.pth')
@@ -114,7 +113,6 @@ class pytorch_train(training_pytorch):
                 epoch_metric.append(self.__do_snr_epoch())
 
             # --- Saving metrics after each fold
-            metrics.append(best_loss)
             metrics_own.append(epoch_metric)
             copy(path2model, self._path2save)
             self._save_train_results(best_loss[0], best_loss[1], 'Loss')
@@ -122,4 +120,4 @@ class pytorch_train(training_pytorch):
         # --- Ending of all trainings phases
         self._end_training_routine(timestamp_start)
 
-        return metrics, metrics_own
+        return metrics_own
