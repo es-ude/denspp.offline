@@ -23,8 +23,8 @@ config_train = Config_PyTorch(
     num_epochs=100,
     batch_size=256,
     # --- Settings of Datasets
-    #data_path='data',
-    #data_file_name='2023-11-16_rgc_onoff_fzj.mat',
+    # data_path='data',
+    # data_file_name='2023-11-16_rgc_onoff_fzj.mat',
     data_path='../2_Data/00_Merged_Datasets',
     data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
     data_split_ratio=0.25,

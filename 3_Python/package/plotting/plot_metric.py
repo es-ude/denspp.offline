@@ -40,7 +40,7 @@ def plot_loss(metric: list, metric_type: str, name='', path2save='') -> None:
     # --- Pre-Processing
     plot_metrics = np.zeros(shape=(len(metric), 2), dtype=float)
     for idx, val in enumerate(metric):
-        plot_metrics[idx, :] = val
+        plot_metrics[idx, :] = np.array(val, dtype=float)
 
     # --- Plotting
     plt.figure()

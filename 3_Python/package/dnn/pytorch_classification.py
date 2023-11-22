@@ -69,24 +69,26 @@ class pytorch_train(training_pytorch):
             print(f"Starting Kfold cross validation training in {self.settings.num_kfold} steps")
 
         metrics = list()
-        own_metric = list()
+        metrics_own = list()
         path2model = str()
         path2model_init = join(self._path2save, f'model_reset.pth')
         save(self.model.state_dict(), path2model_init)
         timestamp_start = datetime.now()
         timestamp_string = timestamp_start.strftime('%H:%M:%S')
+        print(f'\nTraining starts on {timestamp_string}')
 
         for fold in np.arange(self.settings.num_kfold):
-            # Reseting the model
+            best_loss = [1e6, 1e6]
+            best_acc = [0.0, 0.0]
+            # Init fold
+            epoch_metric = list()
             self.model.load_state_dict(load(path2model_init))
             self._run_kfold = fold
             self._init_writer()
 
-            addon = f' with fold #{fold}' if self._do_kfold else ''
-            print(f'\nTraining starts on {timestamp_string}' + addon)
+            if self._do_kfold:
+                print(f'\nStarting with Fold #{fold}')
 
-            best_loss = [1e6, 1e6]
-            best_acc = [0.0, 0.0]
             for epoch in range(0, self.settings.num_epochs):
                 train_loss, train_acc = self.__do_training_epoch()
                 valid_loss, valid_acc = self.__do_valid_epoch()
@@ -110,11 +112,12 @@ class pytorch_train(training_pytorch):
                     path2model = join(self._path2temp, f'model_fold{fold:03d}_epoch{epoch:04d}.pth')
                     save(self.model, path2model)
 
-                # Saving metrics
-                own_metric.append(np.array((train_acc, valid_acc), dtype=float))
+                # Saving metrics after each epoch
+                epoch_metric.append(np.array((train_acc, valid_acc), dtype=float))
 
-            # --- Ausgabe nach Training
+            # --- Saving metrics after each fold
             metrics.append(best_loss)
+            metrics_own.append(epoch_metric)
             copy(path2model, self._path2save)
             self._save_train_results(best_loss[0], best_loss[1], 'Loss')
             self._save_train_results(best_acc[0], best_acc[1], 'Acc.')
@@ -122,4 +125,4 @@ class pytorch_train(training_pytorch):
         # --- Ending of all trainings phases
         self._end_training_routine(timestamp_start)
 
-        return metrics, own_metric
+        return metrics, metrics_own

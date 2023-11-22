@@ -80,6 +80,7 @@ class pytorch_train(training_pytorch):
         print(f'\nTraining starts on {timestamp_string}')
 
         for fold in np.arange(self.settings.num_kfold):
+            best_loss = np.array((1_000_000., 1_000_000.), dtype=float)
             # Init fold
             epoch_metric = list()
             self.model.load_state_dict(load(path2model_init))
@@ -89,12 +90,12 @@ class pytorch_train(training_pytorch):
             if self._do_kfold:
                 print(f'\nStarting with Fold #{fold}')
 
-            best_loss = np.array((1_000_000., 1_000_000.), dtype=float)
             for epoch in range(0, self.settings.num_epochs):
                 train_loss = self.__do_training_epoch()
                 valid_loss = self.__do_valid_epoch()
 
-                print(f'... results of epoch {epoch + 1}/{self.settings.num_epochs} [{(epoch + 1) / self.settings.num_epochs * 100:.2f} %]: '
+                print(f'... results of epoch {epoch + 1}/{self.settings.num_epochs} '
+                      f'[{(epoch + 1) / self.settings.num_epochs * 100:.2f} %]: '
                       f'train_loss = {train_loss:.5f},'
                       f'\tvalid_loss = {valid_loss:.5f}')
 
