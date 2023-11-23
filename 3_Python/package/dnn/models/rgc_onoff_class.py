@@ -11,6 +11,44 @@ class dnn_rgc_v1(nn.Module):
         self.model_shape = (1, input_size)
         self.model_embedded = False
         lin_size = [input_size, 45, 32, 28, 16, output_size]
+        rate_drop = [0.1, 0.1, 0.15, 0.05]
+        do_train_bias = True
+
+        self.classifier = nn.Sequential(
+            nn.Linear(lin_size[0], lin_size[1]),
+            nn.BatchNorm1d(lin_size[1], affine=do_train_bias),
+            nn.Tanh(),
+            nn.Dropout(rate_drop[0]),
+            nn.Linear(lin_size[1], lin_size[2]),
+            nn.BatchNorm1d(lin_size[2], affine=do_train_bias),
+            nn.Tanh(),
+            nn.Dropout(rate_drop[1]),
+            nn.Linear(lin_size[2], lin_size[3]),
+            nn.BatchNorm1d(lin_size[3], affine=do_train_bias),
+            nn.ReLU(),
+            nn.Dropout(rate_drop[2]),
+            nn.Linear(lin_size[3], lin_size[4]),
+            nn.BatchNorm1d(lin_size[4], affine=do_train_bias),
+            nn.ReLU(),
+            nn.Dropout(rate_drop[3]),
+            nn.Linear(lin_size[4], lin_size[5]),
+            nn.Softmax()
+        )
+
+    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+        val = self.classifier(x)
+        return val, argmax(val, dim=1)
+
+
+class dnn_rgc_v2(nn.Module):
+    """Class of an autoencoder with Dense-Layer for feature extraction"""
+    def __init__(self, input_size=40, output_size=5):
+        super().__init__()
+        self.out_modelname = 'rgc_class_v2'
+        self.out_modeltyp = 'Classification'
+        self.model_shape = (1, input_size)
+        self.model_embedded = False
+        lin_size = [input_size, 45, 32, 28, 16, output_size]
         rate_drop = [0.01, 0.01, 0.01, 0.01]
         do_train_bias = True
 

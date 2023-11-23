@@ -172,7 +172,10 @@ def plot_statistic_data(train_cl: np.ndarray | list, valid_cl=None, path2save=''
     axs[0].hist(train_cl, bins=xbins, align='left', rwidth=0.8, color='k')
     axs[0].set_xticks(xbins[:-1])
     if dict_available:
-        axs[0].set_xticklabels(cl_dict if check[0].size != 1 else [cl_dict[0]])
+        use_cl_dict = list()
+        for idx in np.unique(train_cl):
+            use_cl_dict.append(cl_dict[int(idx)])
+        axs[0].set_xticklabels(use_cl_dict if check[0].size != 1 else [use_cl_dict[0]])
 
     axs[0].set_ylabel("Bins")
     axs[0].set_ylim([int(0.99*check[1].min()), int(1.01*check[1].max())])
@@ -187,7 +190,10 @@ def plot_statistic_data(train_cl: np.ndarray | list, valid_cl=None, path2save=''
         axs[1].hist(valid_cl, bins=xbins, align='left', stacked=True, rwidth=0.8, color='r')
         axs[1].set_xticks(xbins[:-1])
         if dict_available:
-            axs[1].set_xticklabels(cl_dict if check[0].size != 1 else [cl_dict[0]])
+            use_cl_dict = list()
+            for idx in np.unique(train_cl):
+                use_cl_dict.append(cl_dict[int(idx)])
+            axs[1].set_xticklabels(use_cl_dict if check[0].size != 1 else [use_cl_dict[0]])
 
         axs[1].set_ylim([int(0.99 * check[1].min()), int(1.01 * check[1].max())])
         axs[1].set_title('Validation')

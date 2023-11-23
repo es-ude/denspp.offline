@@ -5,7 +5,7 @@ from torch.utils.data import Dataset, DataLoader
 
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.data_preprocessing import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
-from package.dnn.data_preprocessing import change_frame_size, reducing_cluster_samples, generate_zero_frames, data_normalization
+from package.dnn.data_preprocessing import change_frame_size, reconfigure_cluster_with_cell_lib, generate_zero_frames, data_normalization
 from package.dnn.data_augmentation import *
 
 
@@ -78,7 +78,7 @@ def prepare_training(path: str, settings: Config_PyTorch,
 
     # --- Using cell_bib for clustering
     if use_cell_bib:
-        frames_cl, frames_dict = reducing_cluster_samples(path, frames_cl, mode_classes)
+        frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(path, mode_classes, frames_in, frames_cl)
 
     # --- Mean waveform calculation and data augmentation
     frames_in = change_frame_size(frames_in, settings.data_sel_pos)

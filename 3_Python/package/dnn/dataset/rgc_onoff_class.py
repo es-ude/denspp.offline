@@ -4,7 +4,7 @@ from torch import is_tensor
 from torch.utils.data import Dataset
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.data_augmentation import augmentation_reducing_samples
-from package.dnn.data_preprocessing import reducing_cluster_samples, data_normalization
+from package.dnn.data_preprocessing import reconfigure_cluster_with_cell_lib, data_normalization
 
 
 class DatasetRGC(Dataset):
@@ -45,7 +45,7 @@ def prepare_training(path: str, settings: Config_PyTorch, use_cell_bib=False, mo
 
     # --- PART: Using a cell bib with option to reduce cluster
     if use_cell_bib:
-        frames_cl, frames_dict = reducing_cluster_samples(path, frames_cl, mode_classes)
+        frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(path, mode_classes, frames_in, frames_cl)
 
     # --- PART: Reducing samples per cluster (if too large)
     if settings.data_do_reduce_samples_per_cluster:
