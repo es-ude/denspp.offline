@@ -15,8 +15,9 @@ from package.dsp.sda import SpikeDetection, SettingsSDA
 class Settings:
     """Settings class for handling the src_neuro setting"""
     SettingsDATA = SettingsDATA(
-        path='../2_Data',
-        data_set=1, data_case=0, data_point=0,
+        #path='../2_Data',
+        path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
+        data_set=7, data_case=0, data_point=0,
         t_range=[0],
         ch_sel=[],
         fs_resample=50e3
@@ -58,6 +59,9 @@ class Pipeline:
         self.__preamp = PreAmp(settings.SettingsAMP)
         self.__adc = ADC0(settings.SettingsADC)
         self.__sda = SpikeDetection(settings.SettingsSDA)
+
+        self.frame_left_windowsize = self.__sda.frame_start + int(self.__sda.offset_frame / 2)
+        self.frame_right_windowsize = self.__sda.frame_ends + int(self.__sda.offset_frame / 2)
 
         self.path2logs = "logs"
         self.path2runs = "runs"
