@@ -57,14 +57,19 @@ def plot_loss(metric: list, metric_type: str, name='', path2save='') -> None:
         save_figure(plt, path2save, f"loss_metric_{metric_type}")
 
 
-def plot_confusion(true_labels: list | np.ndarray, pred_labels: list | np.ndarray,
-                   cl_dict=None, path2save="", title='Spike Sorting',
-                   do_xticks_vertical=False) -> None:
+def plot_confusion(true_labels: list | np.ndarray,
+                   pred_labels: list | np.ndarray,
+                   cl_dict=None, path2save="") -> None:
     """Plotting the Confusion Matrix"""
     dict_available = isinstance(cl_dict, list)
+    length_dict = list()
+    max_key_length = 0
+    if dict_available:
+        for keys in cl_dict:
+            max_key_length = len(keys) if len(keys) > max_key_length else max_key_length
 
-    plt.figure(figsize=(cm_to_inch(10), cm_to_inch(8)))
-    plt.title(title)
+    do_xticks_vertical = bool(max_key_length > 5)
+
     if dict_available:
         ConfusionMatrixDisplay.from_predictions(
             y_true=true_labels, y_pred=pred_labels,
@@ -80,7 +85,7 @@ def plot_confusion(true_labels: list | np.ndarray, pred_labels: list | np.ndarra
             colorbar=False, values_format='.2f',
             text_kw={'fontsize': 7}
         )
-
+    # plt.title(f'Precision = {0.0:.3f} - Recall = {0.0:.3f}')
     plt.tight_layout()
     if path2save:
         save_figure(plt, path2save, f"confusion_matrix")

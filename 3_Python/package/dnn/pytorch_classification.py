@@ -1,10 +1,9 @@
 import numpy as np
-from os import remove
-from os.path import join, exists
-from glob import glob
+from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import load, save
+from torch import load, save, from_numpy
+from scipy.io import savemat
 from package.dnn.pytorch_control import Config_PyTorch, training_pytorch
 
 
@@ -124,3 +123,26 @@ class pytorch_train(training_pytorch):
         self._end_training_routine(timestamp_start)
 
         return metrics_own
+
+    def do_validation_after_training(self, num_output=2) -> dict:
+        """Performing the training with the best model after"""
+        # --- Getting data from validation set for inference
+        data_train = self.get_data_points(num_output, use_train_dataloader=True)
+        data_valid = self.get_data_points(num_output, use_train_dataloader=False)
+
+        # --- Do the Inference with Best Model
+        print(f"\nDoing the inference with validation data on best model")
+        model_inference = load(self.get_best_model()[0])
+        yclus = model_inference(from_numpy(data_valid['in']))[1]
+        yclus = yclus.detach().numpy()
+
+        # --- Producing the output
+        output = dict()
+        output.update({'settings': self.settings, 'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')})
+        output.update({'train_clus': data_train['out'], 'valid_clus': data_valid['out']})
+        output.update({'input': data_valid['in'], 'yclus': yclus})
+
+        # --- Saving dict
+        savemat(join(self.get_saving_path(), 'results.mat'), output,
+                do_compression=True, long_field_names=True)
+        return output

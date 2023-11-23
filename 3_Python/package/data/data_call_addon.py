@@ -106,11 +106,11 @@ class CellSelector(_RGC_ONOFF_FZJ, _RGC_TDB):
     def __init__(self, sel_database: int, mode=0):
         """Sel_databased: 0=RGC FZJ, 1=RGC_TDB,
         Mode selection: 0=original, 1=Reduced specific, 2= ON/OFF, 3= Sustained/Transient"""
+        # Data selection
         if sel_database == 0:
             _RGC_ONOFF_FZJ.__init__(self)
         elif sel_database == 1:
             _RGC_TDB.__init__(self)
-        self.select_mode = 0
 
         # Mode selection
         if mode == 0:
@@ -124,12 +124,10 @@ class CellSelector(_RGC_ONOFF_FZJ, _RGC_TDB):
 
     def get_id_from_cell_type(self, name: str) -> int:
         """Getting the ID from a cell type"""
-        self.select_mode = 0
         return self.cell_type_to_id.get(name) if name in self.cell_type_to_id else -1
 
     def get_class_to_id(self, id: int) -> [int, str]:
         """Getting the class for a given ID"""
-        self.select_mode = 1
         result = ''
         val = 0
         for idx, (key, values) in enumerate(self.cell_class_used.items()):

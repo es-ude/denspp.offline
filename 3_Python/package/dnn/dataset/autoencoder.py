@@ -14,6 +14,8 @@ class DatasetAE(Dataset):
     def __init__(self, frames_raw: np.ndarray, cluster_id: np.ndarray,
                  frames_cluster_me: np.ndarray, cluster_dict=None,
                  noise_std=0.1, do_classification=False, mode_train=0):
+
+        self.size_output = 4
         # --- Input Parameters
         self.__frames_orig = np.array(frames_raw, dtype=np.float32)
         self.__frames_size = frames_raw.shape[1]
@@ -59,23 +61,6 @@ class DatasetAE(Dataset):
             frame_out = self.__frames_orig[idx, :] if not self.__do_classification else cluster_id
 
         return {'in': frame_in, 'out': frame_out, 'cluster': cluster_id, 'mean': self.frames_me[cluster_id, :]}
-
-
-def prepare_plotting(data_in: DataLoader) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Getting data from DataLoader for Plotting Results"""
-    din = None
-    dout = None
-    did = None
-    dme = None
-    first_run = True
-    for vdata in data_in:
-        din = vdata['in'] if first_run else np.append(din, vdata['in'], axis=0)
-        dout = vdata['out'] if first_run else np.append(dout, vdata['out'], axis=0)
-        dme = vdata['mean'] if first_run else np.append(dme, vdata['mean'], axis=0)
-        did = vdata['cluster'] if first_run else np.append(did, vdata['cluster'])
-        first_run = False
-
-    return din, dout, did, dme
 
 
 def prepare_training(path: str, settings: Config_PyTorch,

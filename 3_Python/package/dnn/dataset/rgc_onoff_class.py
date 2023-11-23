@@ -27,21 +27,7 @@ class DatasetRGC(Dataset):
         return {'in': self.__frame_input[idx], 'out': self.__frame_cellid[idx]}
 
 
-def prepare_plotting(data_in: DataLoader) -> tuple[np.ndarray, np.ndarray]:
-    """Getting data from DataLoader for Plotting Results"""
-    din = None
-    dout = None
-    first_run = True
-    for vdata in data_in:
-        for data in vdata:
-            din = data['in'] if first_run else np.append(din, data['in'], axis=0)
-            dout = data['out'] if first_run else np.append(dout, data['out'], axis=0)
-            first_run = False
-
-    return din, dout
-
-
-def prepare_training(path: str, settings: Config_PyTorch, reduce_data=False, mode_classes=0) -> DatasetRGC:
+def prepare_training(path: str, settings: Config_PyTorch, use_cell_bib=False, mode_classes=0) -> DatasetRGC:
     """Preparing datasets incl. augmentation for spike-detection-based training (without pre-processing)"""
     print("... loading the datasets")
 
@@ -58,11 +44,9 @@ def prepare_training(path: str, settings: Config_PyTorch, reduce_data=False, mod
             frames_in = frames_in[selX[0], :]
             frames_cl = frames_cl[selX]
 
-    # --- PART: Reducing classes by given cell bib with abort condition
-    if reduce_data:
+    # --- PART: Using a cell bib with option to reduce cluster
+    if use_cell_bib:
         frames_cl, frames_dict = __reducing_cluster_samples(path, frames_cl, mode_classes)
-    else:
-        raise NotImplementedError
 
     # --- PART: Reducing samples per cluster (if too large)
     if settings.data_do_reduce_samples_per_cluster:
