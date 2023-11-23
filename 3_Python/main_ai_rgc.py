@@ -8,16 +8,16 @@ from package.dnn.dataset.rgc_onoff_class import prepare_training
 import package.dnn.models.rgc_onoff_class as ai_module
 
 
-num_output = 2
+num_output = 4
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
-    model=ai_module.dnn_rgc_v1(input_size=32, output_size=num_output),
+    model=ai_module.dnn_rgc_v2(input_size=32, output_size=num_output),
     loss_fn=nn.CrossEntropyLoss(),
     # loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=200,
+    num_epochs=100,
     batch_size=128,
     # --- Settings of Datasets
     data_path='data',
@@ -31,20 +31,20 @@ config_train = Config_PyTorch(
     data_do_normalization=False,
     data_do_addnoise_cluster=False,
     data_do_reduce_samples_per_cluster=True,
-    data_num_samples_per_cluster=20000,
+    data_num_samples_per_cluster=10000,
     # --- Dataset Preparation
     data_exclude_cluster=[],
     data_sel_pos=[]
 )
 
-# --- Main program
+# --- Main Program
 if __name__ == "__main__":
     plt.close('all')
     print("\nTrain modules of spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
 
     # --- Processing: Loading Data and Do Training
     dataset = prepare_training(path=config_train.get_path2data(), settings=config_train,
-                               use_cell_bib=True, mode_classes=2)
+                               use_cell_bib=True, mode_classes=1)
     dataset_dict = dataset.frame_dict if dataset.cluster_name_available else []
     trainhandler = pytorch_train(config_train)
     trainhandler.load_model()

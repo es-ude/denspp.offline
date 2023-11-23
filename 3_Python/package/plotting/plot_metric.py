@@ -2,7 +2,7 @@ import numpy as np
 from os import mkdir
 from os.path import exists, join
 import matplotlib.pyplot as plt
-from sklearn.metrics import ConfusionMatrixDisplay
+from sklearn.metrics import ConfusionMatrixDisplay, precision_recall_curve, precision_recall_fscore_support
 from package.plotting.plot_common import save_figure, cm_to_inch
 
 
@@ -62,30 +62,34 @@ def plot_confusion(true_labels: list | np.ndarray,
                    cl_dict=None, path2save="") -> None:
     """Plotting the Confusion Matrix"""
     dict_available = isinstance(cl_dict, list)
-    length_dict = list()
     max_key_length = 0
+
     if dict_available:
         for keys in cl_dict:
             max_key_length = len(keys) if len(keys) > max_key_length else max_key_length
+        do_xticks_vertical = bool(max_key_length > 5) and np.unique(true_labels).size > 3
+        use_cl_dict = list()
+        for idx in np.unique(true_labels):
+            use_cl_dict.append(cl_dict[int(idx)])
 
-    do_xticks_vertical = bool(max_key_length > 5)
-
-    if dict_available:
         ConfusionMatrixDisplay.from_predictions(
             y_true=true_labels, y_pred=pred_labels,
             cmap=plt.cm.Blues, normalize='pred',
-            colorbar=False, values_format='.2f',
+            colorbar=False, values_format='.3f',
             text_kw={'fontsize': 7},
-            display_labels=cl_dict, xticks_rotation=('vertical' if do_xticks_vertical else 'horizontal')
+            display_labels=use_cl_dict,
+            xticks_rotation=('vertical' if do_xticks_vertical else 'horizontal')
         )
     else:
         ConfusionMatrixDisplay.from_predictions(
             y_true=true_labels, y_pred=pred_labels,
             cmap=plt.cm.Blues, normalize='pred',
-            colorbar=False, values_format='.2f',
+            colorbar=False, values_format='.3f',
             text_kw={'fontsize': 7}
         )
-    # plt.title(f'Precision = {0.0:.3f} - Recall = {0.0:.3f}')
+    # Determining Recall and Precision
+    precision, recall, fbeta, _ = precision_recall_fscore_support(true_labels, pred_labels, average='weighted')
+    plt.title(f'Precision = {precision:.4f} - Recall = {recall:.4f} - Fbeta = {fbeta:.4f}')
     plt.tight_layout()
     if path2save:
         save_figure(plt, path2save, f"confusion_matrix")

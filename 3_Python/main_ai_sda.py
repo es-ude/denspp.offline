@@ -35,7 +35,7 @@ config_train = Config_PyTorch(
     data_sel_pos=[]
 )
 
-# --- Hauptprogramm
+# --- Main Program
 if __name__ == "__main__":
     plt.close('all')
     print("\nTrain modules of spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")

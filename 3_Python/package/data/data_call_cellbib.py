@@ -1,3 +1,6 @@
+import numpy as np
+
+
 class _RGC_TDB:
     """Retinal Ganglion Cell Selection from Schwartz Lab"""
     def __init__(self):
@@ -53,22 +56,22 @@ class _RGC_TDB:
         }
 
         self.cell_class_to_id = {
-            "Direction Selective": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            # "Direction Selective": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            # "ON-OFF small RF": [21, 22, 23, 24, 25, 26],
+            # "Surpressed-by-Contrast": [42, 43, 44, 45, 46, 47]
             "OFF sustained": [10, 11, 12, 13, 14, 15, 16],
             "OFF transient": [17, 18, 19, 20],
-            "ONOFF small RF": [21, 22, 23, 24, 25, 26],
             "ON sustained": [27, 28, 29, 30, 31, 32, 33, 34, 35, 36],
-            "ON transient": [37, 38, 39, 40, 41],
-            "Surpressed-by-Contrast": [42, 43, 44, 45, 46, 47]
+            "ON transient": [37, 38, 39, 40, 41]
         }
 
         self.cell_class_to_type = {
             "Transient": [17, 18, 19, 20, 37, 38, 39, 40, 41],
-            "Sustained": [10, 11, 12, 13, 14, 15, 16, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36]
+            "Sustained": [10, 11, 12, 13, 14, 15, 16, 29, 30, 31, 32, 33, 34, 35, 36]
         }
 
         self.cell_class_to_onoff = {
-            "ON": [27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41],
+            "ON": [29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 45, 46],
             "OFF": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
         }
 
@@ -126,24 +129,34 @@ class CellSelector(_RGC_ONOFF_FZJ, _RGC_TDB):
         """Getting the ID from a cell type"""
         return self.cell_type_to_id.get(name) if name in self.cell_type_to_id else -1
 
-    def get_class_to_id(self, id: int) -> [int, str]:
+    def get_class_to_id(self, cluster_id: int | np.ndarray) -> int | np.ndarray:
         """Getting the class for a given ID"""
-        result = ''
-        val = 0
-        for idx, (key, values) in enumerate(self.cell_class_used.items()):
-            if id in values:
-                val = idx
-                result = key
-        return val, result
+        default_value = -1
+        if isinstance(cluster_id, int):
+            val = default_value
+            for idx, (_, values) in enumerate(self.cell_class_used.items()):
+                if cluster_id in values:
+                    val = idx
+                    break
+            return val
+        else:
+            val = np.zeros(shape=cluster_id.shape, dtype=np.int16) + default_value
+            for idx, (_, values) in enumerate(self.cell_class_used.items()):
+                for id in values:
+                    pos = np.argwhere(cluster_id == id).flatten()
+                    if pos.size != 0:
+                        val[pos] = idx
+            return val
 
     def get_classes(self) -> list:
         """Getting the classes as list"""
         classes = list()
-        for idx, (key, values) in enumerate(self.cell_class_used.items()):
+        for idx, (key, _) in enumerate(self.cell_class_used.items()):
             if idx == 0:
                 classes.append(key)
             else:
                 for class0 in classes:
                     if class0 not in key:
                         classes.append(key)
+                        break
         return classes

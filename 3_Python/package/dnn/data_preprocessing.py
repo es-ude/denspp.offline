@@ -1,7 +1,8 @@
 import numpy as np
+from tqdm import tqdm
 from package.metric import calculate_snr
 from package.data.process_noise import frame_noise
-from package.data.data_call_addon import CellSelector
+from package.data.data_call_cellbib import CellSelector
 
 
 def change_frame_size(frames_in: np.ndarray, sel_pos: list) -> np.ndarray:
@@ -92,11 +93,9 @@ def calculate_frame_snr(
     return cluster_snr
 
 
-def reducing_cluster_samples(path: str, frames_cl: np.ndarray, sel_mode_classes: int) -> [np.ndarray, dict]:
+def reconfigure_cluster_with_cell_lib(path: str, sel_mode_classes: int,
+                                      frames_in: np.ndarray, frames_cl: np.ndarray) -> [np.ndarray, np.ndarray, dict]:
     """Function for reducing the samples for a given cell bib"""
-    cell_dict = list()
-    cell_cl = frames_cl
-
     check_class = ['fzj', 'RGC']
     check_path = path[:-4].split("_")
     # --- Check if one is available
@@ -108,13 +107,22 @@ def reducing_cluster_samples(path: str, frames_cl: np.ndarray, sel_mode_classes:
                 break
 
     if not flag == -1:
-        print("... reducing output classes")
         cl_sampler = CellSelector(flag, sel_mode_classes)
         cell_dict = cl_sampler.get_classes()
-        for idx, cl in enumerate(frames_cl):
-            frames_cl[idx] = cl_sampler.get_class_to_id(cl)[0]
+        print(f"... Cluster types before reconfiguration: {np.unique(frames_cl)}")
+        cluster = cl_sampler.get_class_to_id(frames_cl)
 
-    return cell_cl, cell_dict
+        # Removing undesired samples
+        pos = np.argwhere(cluster != -1).flatten()
+        print(f"... Cluster types after reconfiguration: {np.unique(cluster)}")
+        cell_frame = frames_in[pos, :]
+        cell_cl = cluster[pos]
+    else:
+        cell_frame = frames_in
+        cell_cl = frames_cl
+        cell_dict = list()
+
+    return cell_frame, cell_cl, cell_dict
 
 
 def data_normalization(
