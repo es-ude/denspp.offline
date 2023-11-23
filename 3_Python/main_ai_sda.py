@@ -1,24 +1,22 @@
-import numpy as np
-from os.path import join
 import matplotlib.pyplot as plt
-from torch import nn, from_numpy, load
-from scipy.io import savemat
-
-from package.plotting.plot_metric import plot_confusion, plot_loss
+from torch import nn
 from package.plotting.plot_dnn import plot_statistic_data
+from package.plotting.plot_metric import plot_confusion, plot_loss
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.pytorch_classification import *
-from package.dnn.dataset.spike_detection import prepare_plotting, prepare_training
+from package.dnn.dataset.spike_detection import prepare_training
 import package.dnn.models.spike_detection as ai_module
 
 
+num_output = 2
+
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
-    model=ai_module.dnn_sda_v1(input_size=12),
+    model=ai_module.dnn_sda_v1(input_size=12, output_size=num_output),
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=100,
+    num_epochs=5,
     batch_size=64,
     # --- Settings of Datasets
     data_path='data',
@@ -43,41 +41,22 @@ if __name__ == "__main__":
     print("\nTrain modules of spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
 
     # --- Processing: Loading Data and Do Training
-    dataset = prepare_training(path=config_train.get_path2data(), settings=config_train, threshold=4)
+    dataset = prepare_training(path=config_train.get_path2data(), settings=config_train,
+                               threshold=4)
     dataset_dict = dataset.sda_dict
     trainhandler = pytorch_train(config_train)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
     del dataset
-    loss, epoch_metric = trainhandler.do_training()
+    epoch_acc = trainhandler.do_training()[0]
 
-    # --- Post-Processing: Getting data from validation set for inference
-    xdata, _, xclus = prepare_plotting(trainhandler.train_loader)
-    ydata, _, yclus = prepare_plotting(trainhandler.valid_loader)
-    xdata0 = np.append(xdata, ydata, axis=0)
-    xclus0 = np.append(xclus, yclus, axis=0)
-    del xdata, ydata
+    # --- Post-Processing: Getting data, save and plot results
+    data_result = trainhandler.do_validation_after_training(3)
 
-    # --- Post-Processing: Do the Inference with Best Model
-    print(f"\nDoing the inference with validation data on best model")
-    model_inference = load(trainhandler.get_best_model()[0])
-    ypred = model_inference(from_numpy(xdata0))[1]
-    ypred = ypred.detach().numpy()
-
-    # --- Saving results
     logsdir = trainhandler.get_saving_path()
-    savemat(join(logsdir, 'results.mat'),
-            {"frames_in": xdata0,
-             "cluster_orig": xclus0,
-             "cluster_pred": ypred,
-             "config": config_train},
-            do_compression=True,
-            long_field_names=True)
-
-    # --- Plotting
-    plot_loss(epoch_metric, 'Acc.', path2save=logsdir)
-    plot_confusion(xclus0, ypred, path2save=logsdir, cl_dict=dataset_dict)
-    plot_statistic_data(xclus, yclus, path2save=logsdir, cl_dict=dataset_dict)
+    plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
+    plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=dataset_dict)
+    plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir, cl_dict=dataset_dict)
 
     plt.show(block=False)
     plt.close("all")

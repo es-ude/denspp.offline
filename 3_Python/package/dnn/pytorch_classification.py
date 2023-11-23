@@ -1,10 +1,9 @@
 import numpy as np
-from os import remove
-from os.path import join, exists
-from glob import glob
+from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import load, save
+from torch import load, save, from_numpy
+from scipy.io import savemat
 from package.dnn.pytorch_control import Config_PyTorch, training_pytorch
 
 
@@ -59,7 +58,7 @@ class pytorch_train(training_pytorch):
 
         return valid_loss, valid_acc
 
-    def do_training(self) -> [list, list]:
+    def do_training(self) -> list:
         """Start model training incl. validation and custom-own metric calculation"""
         self._init_train()
         self._save_config_txt()
@@ -68,7 +67,6 @@ class pytorch_train(training_pytorch):
         if self._do_kfold:
             print(f"Starting Kfold cross validation training in {self.settings.num_kfold} steps")
 
-        metrics = list()
         metrics_own = list()
         path2model = str()
         path2model_init = join(self._path2save, f'model_reset.pth')
@@ -116,7 +114,6 @@ class pytorch_train(training_pytorch):
                 epoch_metric.append(np.array((train_acc, valid_acc), dtype=float))
 
             # --- Saving metrics after each fold
-            metrics.append(best_loss)
             metrics_own.append(epoch_metric)
             copy(path2model, self._path2save)
             self._save_train_results(best_loss[0], best_loss[1], 'Loss')
@@ -125,4 +122,27 @@ class pytorch_train(training_pytorch):
         # --- Ending of all trainings phases
         self._end_training_routine(timestamp_start)
 
-        return metrics, metrics_own
+        return metrics_own
+
+    def do_validation_after_training(self, num_output=2) -> dict:
+        """Performing the training with the best model after"""
+        # --- Getting data from validation set for inference
+        data_train = self.get_data_points(num_output, use_train_dataloader=True)
+        data_valid = self.get_data_points(num_output, use_train_dataloader=False)
+
+        # --- Do the Inference with Best Model
+        print(f"\nDoing the inference with validation data on best model")
+        model_inference = load(self.get_best_model()[0])
+        yclus = model_inference(from_numpy(data_valid['in']))[1]
+        yclus = yclus.detach().numpy()
+
+        # --- Producing the output
+        output = dict()
+        output.update({'settings': self.settings, 'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')})
+        output.update({'train_clus': data_train['out'], 'valid_clus': data_valid['out']})
+        output.update({'input': data_valid['in'], 'yclus': yclus})
+
+        # --- Saving dict
+        savemat(join(self.get_saving_path(), 'results.mat'), output,
+                do_compression=True, long_field_names=True)
+        return output

@@ -1,6 +1,7 @@
 import numpy as np
 from package.metric import calculate_snr
 from package.data.process_noise import frame_noise
+from package.data.data_call_addon import CellSelector
 
 
 def change_frame_size(frames_in: np.ndarray, sel_pos: list) -> np.ndarray:
@@ -89,6 +90,31 @@ def calculate_frame_snr(
         cluster_snr[idx, 3] = i
 
     return cluster_snr
+
+
+def reducing_cluster_samples(path: str, frames_cl: np.ndarray, sel_mode_classes: int) -> [np.ndarray, dict]:
+    """Function for reducing the samples for a given cell bib"""
+    cell_dict = list()
+    cell_cl = frames_cl
+
+    check_class = ['fzj', 'RGC']
+    check_path = path[:-4].split("_")
+    # --- Check if one is available
+    flag = -1
+    for path0 in check_path:
+        for idx, j in enumerate(check_class):
+            if path0 == j:
+                flag = idx
+                break
+
+    if not flag == -1:
+        print("... reducing output classes")
+        cl_sampler = CellSelector(flag, sel_mode_classes)
+        cell_dict = cl_sampler.get_classes()
+        for idx, cl in enumerate(frames_cl):
+            frames_cl[idx] = cl_sampler.get_class_to_id(cl)[0]
+
+    return cell_cl, cell_dict
 
 
 def data_normalization(

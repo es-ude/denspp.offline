@@ -1,11 +1,10 @@
 import numpy as np
 from scipy.io import loadmat
 from torch import is_tensor
-from torch.utils.data import Dataset, DataLoader
-from package.data.data_call_addon import RGC_Cell_Names, RGC_ONOFF_FZJ
+from torch.utils.data import Dataset
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.data_augmentation import augmentation_reducing_samples
-from package.dnn.data_preprocessing import data_normalization
+from package.dnn.data_preprocessing import reducing_cluster_samples, data_normalization
 
 
 class DatasetRGC(Dataset):
@@ -27,22 +26,7 @@ class DatasetRGC(Dataset):
         return {'in': self.__frame_input[idx], 'out': self.__frame_cellid[idx]}
 
 
-def prepare_plotting(data_in: DataLoader) -> tuple[np.ndarray, np.ndarray]:
-    """Getting data from DataLoader for Plotting Results"""
-    din = None
-    dout = None
-    first_run = True
-    for vdata in data_in:
-        for data in vdata:
-            din = data['in'] if first_run else np.append(din, data['in'], axis=0)
-            dout = data['out'] if first_run else np.append(dout, data['out'], axis=0)
-            first_run = False
-
-    return din, dout
-
-
-def prepare_training(path: str, settings: Config_PyTorch,
-                     reduce_fzj_data=False, reduce_rgc_data=False) -> DatasetRGC:
+def prepare_training(path: str, settings: Config_PyTorch, use_cell_bib=False, mode_classes=0) -> DatasetRGC:
     """Preparing datasets incl. augmentation for spike-detection-based training (without pre-processing)"""
     print("... loading the datasets")
 
@@ -59,23 +43,9 @@ def prepare_training(path: str, settings: Config_PyTorch,
             frames_in = frames_in[selX[0], :]
             frames_cl = frames_cl[selX]
 
-    # --- PART: Reducing classes with abort condition
-    if reduce_fzj_data and reduce_rgc_data:
-        raise Exception("\nPlease select only one reducing methode!")
-
-    if reduce_fzj_data or reduce_rgc_data:
-        print("... reducing output classes")
-
-    if reduce_fzj_data:
-        cl_sampler = RGC_ONOFF_FZJ()
-        frames_dict = cl_sampler.get_classes()
-        for idx, cl in enumerate(frames_cl):
-            frames_cl[idx] = cl_sampler.get_class_to_id(cl)[0]
-
-    if reduce_rgc_data:
-        cl_sampler = RGC_Cell_Names()
-        for idx, cl in enumerate(frames_cl):
-            frames_cl[idx] = cl_sampler.get_class_to_id(cl)[0]
+    # --- PART: Using a cell bib with option to reduce cluster
+    if use_cell_bib:
+        frames_cl, frames_dict = reducing_cluster_samples(path, frames_cl, mode_classes)
 
     # --- PART: Reducing samples per cluster (if too large)
     if settings.data_do_reduce_samples_per_cluster:

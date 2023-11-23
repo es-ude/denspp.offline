@@ -1,4 +1,4 @@
-from torch import nn, Tensor, unsqueeze, argmax
+from torch import nn, Tensor, argmax
 from package.dnn.pytorch_control import Config_PyTorch
 
 
@@ -10,24 +10,28 @@ class dnn_rgc_v1(nn.Module):
         self.out_modeltyp = 'Classification'
         self.model_shape = (1, input_size)
         self.model_embedded = False
-        lin_size = [input_size, 60, 40, 24, 10, output_size]
+        lin_size = [input_size, 45, 32, 28, 16, output_size]
+        rate_drop = [0.01, 0.01, 0.01, 0.01]
         do_train_bias = True
 
         self.classifier = nn.Sequential(
             nn.Linear(lin_size[0], lin_size[1]),
             nn.BatchNorm1d(lin_size[1], affine=do_train_bias),
             nn.SiLU(),
+            nn.Dropout(rate_drop[0]),
             nn.Linear(lin_size[1], lin_size[2]),
             nn.BatchNorm1d(lin_size[2], affine=do_train_bias),
             nn.SiLU(),
+            nn.Dropout(rate_drop[1]),
             nn.Linear(lin_size[2], lin_size[3]),
             nn.BatchNorm1d(lin_size[3], affine=do_train_bias),
             nn.SiLU(),
+            nn.Dropout(rate_drop[2]),
             nn.Linear(lin_size[3], lin_size[4]),
             nn.BatchNorm1d(lin_size[4], affine=do_train_bias),
-            nn.SiLU(),
+            nn.ReLU(),
+            nn.Dropout(rate_drop[3]),
             nn.Linear(lin_size[4], lin_size[5]),
-            nn.BatchNorm1d(lin_size[5], affine=do_train_bias),
             nn.Softmax()
         )
 

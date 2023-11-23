@@ -5,16 +5,16 @@ from package.plotting.plot_common import cm_to_inch, save_figure
 
 def results_training(path: str,
                      yin: np.ndarray, ypred: np.ndarray, ymean: np.ndarray,
-                     feat: np.ndarray, cluster: np.ndarray,
+                     feat: np.ndarray, yclus: np.ndarray,
                      snr: list, xframes=50, num_feat=3) -> None:
     data_labeled = True
 
     # --- Pre-Processing
-    cluster_no = np.unique(cluster)
+    cluster_no = np.unique(yclus)
     mark_feat = [[] for idx in range(0, num_feat)]
     take_frames = list()
     for i, id in enumerate(cluster_no):
-        pos = np.where(cluster == id)[0]
+        pos = np.where(yclus == id)[0]
         # Take only X frames per cluster
         np.random.shuffle(pos)
         take_frames.append(pos[:xframes])

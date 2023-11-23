@@ -5,7 +5,7 @@ from torch.utils.data import Dataset, DataLoader
 
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.data_preprocessing import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
-from package.dnn.data_preprocessing import change_frame_size, generate_zero_frames, data_normalization
+from package.dnn.data_preprocessing import change_frame_size, reducing_cluster_samples, generate_zero_frames, data_normalization
 from package.dnn.data_augmentation import *
 
 
@@ -14,6 +14,8 @@ class DatasetAE(Dataset):
     def __init__(self, frames_raw: np.ndarray, cluster_id: np.ndarray,
                  frames_cluster_me: np.ndarray, cluster_dict=None,
                  noise_std=0.1, do_classification=False, mode_train=0):
+
+        self.size_output = 4
         # --- Input Parameters
         self.__frames_orig = np.array(frames_raw, dtype=np.float32)
         self.__frames_size = frames_raw.shape[1]
@@ -61,24 +63,9 @@ class DatasetAE(Dataset):
         return {'in': frame_in, 'out': frame_out, 'cluster': cluster_id, 'mean': self.frames_me[cluster_id, :]}
 
 
-def prepare_plotting(data_in: DataLoader) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Getting data from DataLoader for Plotting Results"""
-    din = None
-    dout = None
-    did = None
-    dme = None
-    first_run = True
-    for vdata in data_in:
-        din = vdata['in'] if first_run else np.append(din, vdata['in'], axis=0)
-        dout = vdata['out'] if first_run else np.append(dout, vdata['out'], axis=0)
-        dme = vdata['mean'] if first_run else np.append(dme, vdata['mean'], axis=0)
-        did = vdata['cluster'] if first_run else np.append(did, vdata['cluster'])
-        first_run = False
-
-    return din, dout, did, dme
-
-
 def prepare_training(path: str, settings: Config_PyTorch,
+                     use_cell_bib=False, mode_classes=2,
+                     use_median_for_mean=True,
                      mode_train_ae=0, do_classification=False,
                      noise_std=0.1) -> DatasetAE:
     """Preparing datasets incl. augmentation for spike-frame based training (without pre-processing)"""
@@ -89,10 +76,16 @@ def prepare_training(path: str, settings: Config_PyTorch,
     frames_cl = npzfile["frames_cluster"].flatten()
     print("... for training are", frames_in.shape[0], "frames with each", frames_in.shape[1], "points available")
 
+    # --- Using cell_bib for clustering
+    if use_cell_bib:
+        frames_cl, frames_dict = reducing_cluster_samples(path, frames_cl, mode_classes)
+
     # --- Mean waveform calculation and data augmentation
     frames_in = change_frame_size(frames_in, settings.data_sel_pos)
-    # frames_me = calculate_frame_mean(frames_in, frames_cl)
-    frames_me = calculate_frame_median(frames_in, frames_cl)
+    if use_median_for_mean:
+        frames_me = calculate_frame_median(frames_in, frames_cl)
+    else:
+        frames_me = calculate_frame_mean(frames_in, frames_cl)
 
     # --- PART: Exclusion of selected clusters
     if len(settings.data_exclude_cluster) == 0:

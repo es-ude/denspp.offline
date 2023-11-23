@@ -2,7 +2,7 @@ from os.path import join
 import numpy as np
 from scipy.io import loadmat
 from mat73 import loadmat as loadmat_mat73
-from package.data.data_call_addon import RGC_Cell_Names
+from package.data.data_call_addon import CellSelector
 
 
 class DataHandler:
@@ -331,7 +331,7 @@ class DataLoader:
         self.raw_data.data_time = self.raw_data.data_raw[0].shape[0] / self.raw_data.data_fs_orig
 
         # Groundtruth
-        rgc_translator = RGC_Cell_Names()
+        rgc_translator = CellSelector(1)
         self.raw_data.label_exist = True
         self.raw_data.spike_offset_us = [-500]
         for idx, pos_ch in enumerate(elec_process):
