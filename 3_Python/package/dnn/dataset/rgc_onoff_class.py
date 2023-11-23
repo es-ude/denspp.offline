@@ -1,11 +1,10 @@
 import numpy as np
 from scipy.io import loadmat
 from torch import is_tensor
-from torch.utils.data import Dataset, DataLoader
-from package.data.data_call_addon import CellSelector
+from torch.utils.data import Dataset
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.data_augmentation import augmentation_reducing_samples
-from package.dnn.data_preprocessing import data_normalization
+from package.dnn.data_preprocessing import reducing_cluster_samples, data_normalization
 
 
 class DatasetRGC(Dataset):
@@ -46,7 +45,7 @@ def prepare_training(path: str, settings: Config_PyTorch, use_cell_bib=False, mo
 
     # --- PART: Using a cell bib with option to reduce cluster
     if use_cell_bib:
-        frames_cl, frames_dict = __reducing_cluster_samples(path, frames_cl, mode_classes)
+        frames_cl, frames_dict = reducing_cluster_samples(path, frames_cl, mode_classes)
 
     # --- PART: Reducing samples per cluster (if too large)
     if settings.data_do_reduce_samples_per_cluster:
@@ -68,28 +67,3 @@ def prepare_training(path: str, settings: Config_PyTorch, use_cell_bib=False, mo
         print(f"... used data points for training: class = {frames_dict} and num = {check[1]}")
 
     return DatasetRGC(frames_in, frames_cl, frames_dict)
-
-
-def __reducing_cluster_samples(path: str, frames_cl: np.ndarray, sel_mode_classes: int) -> [np.ndarray, dict]:
-    """Function for reducing the samples for a given cell bib"""
-    cell_dict = list()
-    cell_cl = frames_cl
-
-    check_class = ['fzj', 'RGC']
-    check_path = path[:-4].split("_")
-    # --- Check if one is available
-    flag = -1
-    for path0 in check_path:
-        for idx, j in enumerate(check_class):
-            if path0 == j:
-                flag = idx
-                break
-
-    if not flag == -1:
-        print("... reducing output classes")
-        cl_sampler = CellSelector(flag, sel_mode_classes)
-        cell_dict = cl_sampler.get_classes()
-        for idx, cl in enumerate(frames_cl):
-            frames_cl[idx] = cl_sampler.get_class_to_id(cl)[0]
-
-    return cell_cl, cell_dict

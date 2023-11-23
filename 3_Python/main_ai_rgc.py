@@ -12,7 +12,7 @@ num_output = 2
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
-    model=ai_module.dnn_rgc_v1(output_size=num_output),
+    model=ai_module.dnn_rgc_v1(input_size=32, output_size=num_output),
     loss_fn=nn.CrossEntropyLoss(),
     # loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
@@ -21,8 +21,8 @@ config_train = Config_PyTorch(
     batch_size=128,
     # --- Settings of Datasets
     data_path='data',
-    data_file_name='2023-11-16_rgc_onoff_fzj.mat',
-    # data_file_name='2023-11-17_Dataset-07_RGC_TDB_Sorted.mat',
+    # data_file_name='2023-11-16_rgc_onoff_fzj.mat',
+    data_file_name='2023-11-17_Dataset-07_RGC_TDB_Sorted.mat',
     data_split_ratio=0.25,
     data_do_shuffle=True,
     # --- Data Augmentation

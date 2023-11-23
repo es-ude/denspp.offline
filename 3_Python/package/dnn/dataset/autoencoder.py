@@ -5,7 +5,7 @@ from torch.utils.data import Dataset, DataLoader
 
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.data_preprocessing import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
-from package.dnn.data_preprocessing import change_frame_size, generate_zero_frames, data_normalization
+from package.dnn.data_preprocessing import change_frame_size, reducing_cluster_samples, generate_zero_frames, data_normalization
 from package.dnn.data_augmentation import *
 
 
@@ -64,6 +64,8 @@ class DatasetAE(Dataset):
 
 
 def prepare_training(path: str, settings: Config_PyTorch,
+                     use_cell_bib=False, mode_classes=2,
+                     use_median_for_mean=True,
                      mode_train_ae=0, do_classification=False,
                      noise_std=0.1) -> DatasetAE:
     """Preparing datasets incl. augmentation for spike-frame based training (without pre-processing)"""
@@ -74,10 +76,16 @@ def prepare_training(path: str, settings: Config_PyTorch,
     frames_cl = npzfile["frames_cluster"].flatten()
     print("... for training are", frames_in.shape[0], "frames with each", frames_in.shape[1], "points available")
 
+    # --- Using cell_bib for clustering
+    if use_cell_bib:
+        frames_cl, frames_dict = reducing_cluster_samples(path, frames_cl, mode_classes)
+
     # --- Mean waveform calculation and data augmentation
     frames_in = change_frame_size(frames_in, settings.data_sel_pos)
-    # frames_me = calculate_frame_mean(frames_in, frames_cl)
-    frames_me = calculate_frame_median(frames_in, frames_cl)
+    if use_median_for_mean:
+        frames_me = calculate_frame_median(frames_in, frames_cl)
+    else:
+        frames_me = calculate_frame_mean(frames_in, frames_cl)
 
     # --- PART: Exclusion of selected clusters
     if len(settings.data_exclude_cluster) == 0:

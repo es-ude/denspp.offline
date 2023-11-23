@@ -45,7 +45,9 @@ if __name__ == "__main__":
 
     # --- Processing: Loading dataset and Do Training
     dataset = prepare_training(path=config_train.get_path2data(), settings=config_train,
-                               mode_train_ae=mode_train, do_classification=False, noise_std=noise_std)
+                               use_cell_bib=False, mode_classes=2,
+                               mode_train_ae=mode_train, do_classification=False,
+                               noise_std=noise_std)
     dataset_dict = dataset.frame_dict
     data_mean = dataset.frames_me
     trainhandler = pytorch_train(config_train)
