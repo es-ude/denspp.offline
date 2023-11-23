@@ -37,6 +37,7 @@ def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_po
     settings = dict()
     runPoint = process_points[0] if len(process_points) > 0 else 0
     endPoint = 0
+    ite_recoverd = 0
 
     first_run = True
     while first_run or runPoint < endPoint:
@@ -53,37 +54,57 @@ def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_po
 
         # --- Taking signals from handler
         for ch in tqdm(datahandler.raw_data.electrode_id, ncols=100, desc="Progress: "):
-            cl_in = datahandler.raw_data.cluster_id[ch]
             spike_xpos = np.floor(datahandler.raw_data.spike_xpos[ch] * fs_adc / fs_ana).astype("int")
             spike_xoff = int(1e-6 * datahandler.raw_data.spike_offset_us[0] * fs_adc)
 
             # --- Processing the analogue input
             afe = Pipeline(afe_set)
             afe.run_input(datahandler.raw_data.data_raw[ch], spike_xpos, spike_xoff)
+            length_data_in = afe.signals.x_adc.size
+
+            frame_new = afe.signals.frames_align
+            frame_cl = datahandler.raw_data.cluster_id[ch]
 
             # --- Post-Processing: Checking if same length
-            if afe.signals.frames_align.shape[0] != spike_xpos.size:
-                continue
+
+            if frame_new.shape[0] != frame_cl.size:
+                ite_recoverd += 1
+                # Check if first or last frame is detect
+                not_use_first_sample = (spike_xpos[0] - afe.frame_left_windowsize) < 0
+                not_use_last_sample = (spike_xpos[-1] + afe.frame_right_windowsize) > length_data_in
+
+                if not_use_first_sample:
+                    frame_cl = frame_cl[1:]
+                    # frame_new = frame_new[1:, ]
+                if not_use_last_sample:
+                    frame_cl = frame_cl[0:-1]
+                    # frame_new = frame_new[0:-1, ]
+                if not not_use_last_sample and not not_use_first_sample:
+                    num_min = np.min((frame_cl.size, frame_new.shape[0]))
+                    frame_cl = frame_cl[0:num_min-1]
+                    frame_new = frame_new[0:num_min-1,]
+                # print(f"Resize = First: {not_use_first_sample} - Last: {not_use_last_sample}")
 
             # --- Processing (Frames and cluster)
             max_cluster_num = 0 if (first_run or cluster_class_avai) else (1 + np.argmax(np.unique(frames_cluster)))
             if first_run:
                 endPoint = process_points[1] if len(process_points) == 2 else datahandler.no_files
                 settings = afe.save_settings()
-                frames_in = afe.signals.frames_align
-                frames_cluster = cl_in + max_cluster_num
+                frames_in = frame_new
+                frames_cluster = frame_cl + max_cluster_num
             else:
-                frames_in = np.concatenate((frames_in, afe.signals.frames_align), axis=0)
-                frames_cluster = np.concatenate((frames_cluster, cl_in + max_cluster_num), axis=0)
+                frames_in = np.concatenate((frames_in, frame_new), axis=0)
+                frames_cluster = np.concatenate((frames_cluster, frame_cl + max_cluster_num), axis=0)
             first_run = False
 
             # --- Release memory
-            del afe, spike_xpos, cl_in
+            del afe, spike_xpos, frame_new, frame_cl
 
         # Calculation of runtime duration
         time_stop = datetime.now()
         time_dt = time_stop - time_start
         print(f"... done after {time_dt.seconds + 1e-6 * time_dt.microseconds: .2f} s")
+        print(f"... recovered {ite_recoverd} samples")
         # --- Saving data (each run)
         newfile_name = join(path2folder, (create_time + '_Dataset-'
                                           + datahandler.raw_data.data_name

@@ -17,7 +17,7 @@ config_train = Config_PyTorch(
     # loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=100,
+    num_epochs=500,
     batch_size=128,
     # --- Settings of Datasets
     data_path='data',
@@ -31,7 +31,7 @@ config_train = Config_PyTorch(
     data_do_normalization=False,
     data_do_addnoise_cluster=False,
     data_do_reduce_samples_per_cluster=True,
-    data_num_samples_per_cluster=10000,
+    data_num_samples_per_cluster=25000,
     # --- Dataset Preparation
     data_exclude_cluster=[],
     data_sel_pos=[]

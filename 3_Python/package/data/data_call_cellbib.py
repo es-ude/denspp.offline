@@ -53,25 +53,28 @@ class _RGC_TDB:
             "ON bursty": 45,
             "ON delayed": 46,
             "ON small OFF large": 47,
+            "ON sustained - subtype unknown": 48,
+            "Motion sensor": 49,
+            "ON DS transient": 50
         }
 
         self.cell_class_to_id = {
-            # "Direction Selective": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            # "Direction Selective": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 50],
             # "ON-OFF small RF": [21, 22, 23, 24, 25, 26],
             # "Surpressed-by-Contrast": [42, 43, 44, 45, 46, 47]
             "OFF sustained": [10, 11, 12, 13, 14, 15, 16],
             "OFF transient": [17, 18, 19, 20],
-            "ON sustained": [27, 28, 29, 30, 31, 32, 33, 34, 35, 36],
+            "ON sustained": [27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 48],
             "ON transient": [37, 38, 39, 40, 41]
         }
 
         self.cell_class_to_type = {
             "Transient": [17, 18, 19, 20, 37, 38, 39, 40, 41],
-            "Sustained": [10, 11, 12, 13, 14, 15, 16, 29, 30, 31, 32, 33, 34, 35, 36]
+            "Sustained": [10, 11, 12, 13, 14, 15, 16, 29, 30, 31, 32, 33, 34, 35, 36, 48]
         }
 
         self.cell_class_to_onoff = {
-            "ON": [29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 45, 46],
+            "ON": [29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 45, 46, 48],
             "OFF": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
         }
 
