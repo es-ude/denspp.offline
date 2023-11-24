@@ -11,7 +11,7 @@ from package.data.data_call_common import DataController
 from src_data.pipeline_data import Settings, Pipeline
 
 
-def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_points=[]) -> None:
+def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_points=None) -> None:
     """
     Tool for loading datasets in order to generate one new dataset (Step 1),
     cluster_class_avai: False = Concatenate the class number with increasing id number (useful for non-biological clusters)
@@ -33,11 +33,21 @@ def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_po
     if not exists(path2folder):
         mkdir(path2folder)
 
-    # --- Calling the data into RAM
-    settings = dict()
-    runPoint = process_points[0] if len(process_points) > 0 else 0
+    # --- Setting the points
+    do_reduced_sample = isinstance(process_points, list)
+    if do_reduced_sample:
+        runPoint = process_points[0]
+        if len(process_points) == 2:
+            use_end_point = process_points[1] if process_points[1] else 0
+        else:
+            use_end_point = 0
+    else:
+        runPoint = 0
+        use_end_point = 0
     endPoint = 0
 
+    # --- Calling the data into RAM
+    settings = dict()
     first_run = True
     while first_run or runPoint < endPoint:
         first_run = True
@@ -100,7 +110,7 @@ def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_po
             # --- Processing (Frames and cluster)
             max_cluster_num = 0 if (first_run or cluster_class_avai) else (1 + np.argmax(np.unique(frames_cluster)))
             if first_run:
-                endPoint = process_points[1] if len(process_points) == 2 else datahandler.no_files
+                endPoint = process_points[1] if use_end_point != 0 else datahandler.no_files
                 settings = afe.save_settings()
                 frames_in = frame_new
                 frames_cluster = frame_cl + max_cluster_num
