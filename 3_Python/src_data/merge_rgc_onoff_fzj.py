@@ -32,8 +32,8 @@ if __name__ == "__main__":
     frames_cl = np.array(frames_cl, dtype=np.uint8)
 
     # --- Saving the data
-    savemat(f'../data/{datetime.now().strftime("%Y-%m-%d")}_rgc_onoff_fzj.mat',
+    savemat(f'../data/{datetime.now().strftime("%Y-%m-%d")}_rgc_onoff_fzj_Merged.mat',
             {"frames_in": frames_in, "frames_cluster": frames_cl, "cluster_dict": cluster_dict,
              "create_time": datetime.now().strftime("%Y-%m-%d"), "fsamp": 25000},
-            do_compression=True)
+            do_compression=True, long_field_names=True)
     print("This is the End!")

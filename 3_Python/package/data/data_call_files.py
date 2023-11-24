@@ -7,38 +7,36 @@ from package.data.data_call_cellbib import CellSelector
 
 class DataHandler:
     """Class with data and meta information of the used neural dataset"""
-    # --- Meta Information
-    data_name = str()
-    data_type = str()
-    data_fs_orig = 0
-    data_fs_used = 0
-    data_lsb = 1.0
-    data_time = 0.0
-    # Num of devices
-    device_id = str()
-    # Num of electrodes per device
-    electrode_id = list()
-    # --- Data
-    data_raw = list()
-
-    # --- GroundTruth: Spike Sorting (per Channel)
-    label_exist = False
-    spike_offset_us = list()
-    spike_ovrlap = list()
-    spike_xpos = list()
-    cluster_id = list()
-    # --- Behaviour (in total of MEA)
-    behaviour_exist = False
-    behaviour = None
+    def __init__(self):
+        # --- Meta Information
+        self.data_name = ''
+        self.data_type = ''
+        self.data_fs_orig = 0
+        self.data_fs_used = 0
+        self.data_lsb = 1.0
+        self.data_time = 0.0
+        # --- Raw data
+        self.device_id = ''
+        self.electrode_id = list()
+        self.data_raw = list()
+        # --- GroundTruth: Spike Sorting (per Channel)
+        self.label_exist = False
+        self.spike_offset_us = list()
+        self.spike_xpos = list()
+        self.cluster_id = list()
+        # --- Behaviour (in total of MEA)
+        self.behaviour_exist = False
+        self.behaviour = None
 
 
 class DataLoader:
     """Class for loading and manipulating the used dataset"""
+    raw_data: DataHandler
+
     def __init__(self) -> None:
         self.select_electrodes = list()
         self.path2data = str()
         self.path2file = str()
-        self.raw_data = DataHandler()
 
     def execute_data_call(self, data_type: int, data_set: int, data_point: int):
         """Loading the dataset"""
@@ -72,6 +70,7 @@ class DataLoader:
 
         loaded_data = loadmat(self.path2file)
         # Input and meta
+        self.raw_data = DataHandler()
         self.raw_data.data_name = folder_name
         self.raw_data.data_type = "Synthetic"
         self.raw_data.data_lsb = 0.5e-6
@@ -107,6 +106,7 @@ class DataLoader:
         ground_truth = loadmat(path2label)
 
         # Input and meta
+        self.raw_data = DataHandler()
         self.raw_data.data_name = folder_name
         self.raw_data.data_type = "Synthetic"
         self.raw_data.data_lsb = 25e-6
@@ -136,6 +136,7 @@ class DataLoader:
         loaded_data = loadmat(self.path2file, mat_dtype=True)
 
         # --- Input and meta
+        self.raw_data = DataHandler()
         self.raw_data.data_name = folder_name
         self.raw_data.data_type = "Synthetic"
         self.raw_data.data_lsb = 100e-6
@@ -178,6 +179,7 @@ class DataLoader:
         loaded_data = loadmat(self.path2file)
 
         # Input and meta
+        self.raw_data = DataHandler()
         self.raw_data.data_name = folder_name
         self.raw_data.data_type = "Penetrating"
         self.raw_data.data_lsb = 1 / loaded_data['GainPre'][0][0]
@@ -208,6 +210,7 @@ class DataLoader:
         self._prepare_access_file(folder_name, data_type, point)
         loaded_data = loadmat(self.path2file)
 
+        self.raw_data = DataHandler()
         self.raw_data.data_name = folder_name
         self.raw_data.data_type = "Intracellular Matching"
         self.raw_data.data_lsb = float(loaded_data['Gain'][0])
@@ -242,6 +245,7 @@ class DataLoader:
         loaded_data = loadmat(self.path2file, mat_dtype=True)
 
         # Input and meta
+        self.raw_data = DataHandler()
         self.raw_data.data_name = folder_name
         self.raw_data.data_type = "Utah"
         gain_str = loaded_data['rawdata']['LSB'][0, 0][0][0:-1].split(" ")
@@ -319,6 +323,7 @@ class DataLoader:
             data_raw.append(loaded_data['sp_trains']['data'][elec][0])
 
         # Input and meta --- This type are no electrode simultanously. It is more the experiment run
+        self.raw_data = DataHandler()
         self.raw_data.data_name = folder_name
         self.raw_data.data_type = "Isolated RGC"
         self.raw_data.data_lsb = 1e-6
@@ -357,6 +362,7 @@ class DataLoader:
         loaded_data = loadmat_mat73(self.path2file)
 
         # Input and meta
+        self.raw_data = DataHandler()
         self.raw_data.data_name = folder_name
         self.raw_data.data_type = "MCS 60MEA"
         self.raw_data.data_lsb = float(loaded_data['gain'])
@@ -384,6 +390,8 @@ class DataLoader:
         data_type = '*.mat'
         self._prepare_access_folder(folder_name, data_type, case, point)
         loaded_data = loadmat_mat73(self.path2file)
+
+        self.raw_data = DataHandler()
         # TODO: Auswertung von NeuroPixel probes einlesen
         del loaded_data
 

@@ -3,9 +3,8 @@ from src_data.merge_datasets_frames import get_frames_from_dataset, merge_frames
 if __name__ == "__main__":
     print("\nPreparing datasets for AI Training in "
           "end-to-end spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
-    path2file = "data"
 
-    # merge_data_from_diff_data(path2file)
+    path2file = "data"
 
     get_frames_from_dataset(
         path2save=path2file,

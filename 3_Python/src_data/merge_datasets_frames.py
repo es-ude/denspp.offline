@@ -35,7 +35,7 @@ def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_po
 
     # --- Setting the points
     do_reduced_sample = isinstance(process_points, list)
-    if do_reduced_sample:
+    if do_reduced_sample and len(process_points) > 0:
         runPoint = process_points[0]
         if len(process_points) == 2:
             use_end_point = process_points[1] if process_points[1] else 0
@@ -55,7 +55,7 @@ def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_po
         time_start = datetime.now()
 
         frames_in = np.empty(shape=(0, 0), dtype=np.dtype('int16'))
-        frames_cluster = np.empty(shape=(0, 0), dtype=np.dtype('uint16'))
+        frames_cl = np.empty(shape=(0, 0), dtype=np.dtype('uint16'))
 
         afe_set.SettingsDATA.data_point = runPoint
         datahandler = DataController(afe_set.SettingsDATA)
@@ -108,18 +108,18 @@ def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_po
                     frame_new = frame_new[0:num_min - 1, ]
 
             # --- Processing (Frames and cluster)
-            max_cluster_num = 0 if (first_run or cluster_class_avai) else (1 + np.argmax(np.unique(frames_cluster)))
+            max_cluster_num = 0 if (first_run or cluster_class_avai) else (1 + np.argmax(np.unique(frames_cl)))
             if first_run:
                 endPoint = process_points[1] if use_end_point != 0 else datahandler.no_files
                 settings = afe.save_settings()
                 frames_in = frame_new
-                frames_cluster = frame_cl + max_cluster_num
+                frames_cl = frame_cl + max_cluster_num
             else:
                 frames_in = np.concatenate((frames_in, frame_new), axis=0)
-                frames_cluster = np.concatenate((frames_cluster, frame_cl + max_cluster_num), axis=0)
+                frames_cl = np.concatenate((frames_cl, frame_cl + max_cluster_num), axis=0)
             first_run = False
 
-            if frames_in.shape[0] != frames_cluster.size:
+            if frames_in.shape[0] != frames_cl.size:
                 print(f'Data merging has an error after channel #{ch}')
 
             # --- Release memory
@@ -128,20 +128,22 @@ def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_po
         # --- Calculation of runtime duration
         time_stop = datetime.now()
         time_dt = time_stop - time_start
-        print(f"... done after {time_dt.seconds + 1e-6 * time_dt.microseconds: .2f} s")
-        print(f"... recovered {ite_recoverd} samples")
+        output = np.unique(frames_cl, return_counts=True)
+        print(f"... done after {time_dt.seconds + 1e-6 * time_dt.microseconds: .2f} s"
+              f" and recovered {ite_recoverd} samples")
+        print(f"... available clusters: {output[0]} with samples: {output[1]}")
 
         # --- Saving data (each run)
         newfile_name = join(path2folder, f"{create_time}_Dataset-{datahandler.raw_data.data_name}_step{runPoint + 1:03d}")
         savemat(f"{newfile_name}.mat",
                 {"frames_in": frames_in,
-                "frames_cluster": frames_cluster,
+                "frames_cl": frames_cl,
                 "create_time": create_time, "settings": settings},
                 do_compression=True, long_field_names=True)
         print(f'Saved file in: {newfile_name}.mat\n')
 
         # --- Release memory
-        del datahandler, frames_in, frames_cluster
+        del datahandler, frames_in, frames_cl
 
         # --- End control routine
         runPoint += 1
@@ -160,15 +162,17 @@ def merge_data_from_diff_data(path2data: str) -> None:
     file_name = file_name.split('_step')[0]
 
     for idx, file in enumerate(folder_content):
-        print(idx, file)
         data = loadmat(file)
         frame_in = data['frames_in'] if idx == 0 else np.append(frame_in, data['frames_in'], axis=0)
         frame_cl = data['frames_cluster'] if idx == 0 else np.append(frame_cl, data['frames_cluster'], axis=1)
+        print(f"Read file: {file} and now cluster = {np.unique(frame_cl)}")
 
     # --- Transfering to mat-file
     frame_in = np.array(frame_in, dtype='int16')
     frame_cl = np.array(frame_cl, dtype='uint16')
-    savemat(join(path2data, file_name) + '_Sorted.mat',
+    output = np.unique(frame_cl, return_counts=True)
+    print(f"... available clusters: {output[0]} with samples: {output[1]}")
+    savemat(join(path2data, file_name) + '_Merged.mat',
             {"frames_in": frame_in, "frames_cluster": frame_cl,
              "create_time": data['create_time'], "settings": data['settings']},
             do_compression=True, long_field_names=True)
