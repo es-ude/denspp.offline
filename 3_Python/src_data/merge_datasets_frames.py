@@ -66,24 +66,36 @@ def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_po
             frame_cl = datahandler.raw_data.cluster_id[ch]
 
             # --- Post-Processing: Checking if same length
-
             if frame_new.shape[0] != frame_cl.size:
                 ite_recoverd += 1
-                # Check if first or last frame is detect
-                not_use_first_sample = (spike_xpos[0] - afe.frame_left_windowsize) < 0
-                not_use_last_sample = (spike_xpos[-1] + afe.frame_right_windowsize) > length_data_in
+                # Check where errors are available
+                sample_first_delete_pos = np.argwhere((spike_xpos - afe.frame_left_windowsize) <= 0).flatten()
+                sample_first_do_delete = sample_first_delete_pos.size > 0
+                sample_last_delete_pos = np.argwhere(((spike_xpos + afe.frame_right_windowsize) >= length_data_in) < 0).flatten()
+                sample_last_do_delete = sample_last_delete_pos.size > 0
 
-                if not_use_first_sample:
-                    frame_cl = frame_cl[1:]
+                if sample_first_do_delete and not sample_last_do_delete:
+                    frame_cl = np.delete(frame_cl, sample_first_delete_pos)
                     # frame_new = frame_new[1:, ]
-                if not_use_last_sample:
-                    frame_cl = frame_cl[0:-1]
+                if not sample_first_do_delete and sample_last_do_delete:
+                    frame_cl = np.delete(frame_cl, sample_last_delete_pos)
                     # frame_new = frame_new[0:-1, ]
-                if not not_use_last_sample and not not_use_first_sample:
+                if sample_first_do_delete and sample_last_do_delete:
+                    frame_cl = np.delete(frame_cl, (sample_first_delete_pos, sample_last_delete_pos))
+                # --- Only suitable for RGC TDB data (unknown error)
+                if not sample_first_do_delete and not sample_last_do_delete:
+                    if np.unique(frame_cl).size == 1:
+                        num_min = np.min((frame_cl.size, frame_new.shape[0]))
+                        frame_cl = frame_cl[0:num_min-1]
+                        frame_new = frame_new[0:num_min-1,]
+                    else:
+                        continue
+
+                # --- Second check
+                if frame_cl.size != frame_new.shape[0]:
                     num_min = np.min((frame_cl.size, frame_new.shape[0]))
-                    frame_cl = frame_cl[0:num_min-1]
-                    frame_new = frame_new[0:num_min-1,]
-                # print(f"Resize = First: {not_use_first_sample} - Last: {not_use_last_sample}")
+                    frame_cl = frame_cl[0:num_min - 1]
+                    frame_new = frame_new[0:num_min - 1, ]
 
             # --- Processing (Frames and cluster)
             max_cluster_num = 0 if (first_run or cluster_class_avai) else (1 + np.argmax(np.unique(frames_cluster)))
@@ -97,14 +109,18 @@ def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_po
                 frames_cluster = np.concatenate((frames_cluster, frame_cl + max_cluster_num), axis=0)
             first_run = False
 
+            if frames_in.shape[0] != frames_cluster.size:
+                print(f'Data merging has an error after channel #{ch}')
+
             # --- Release memory
             del afe, spike_xpos, frame_new, frame_cl
 
-        # Calculation of runtime duration
+        # --- Calculation of runtime duration
         time_stop = datetime.now()
         time_dt = time_stop - time_start
         print(f"... done after {time_dt.seconds + 1e-6 * time_dt.microseconds: .2f} s")
         print(f"... recovered {ite_recoverd} samples")
+
         # --- Saving data (each run)
         newfile_name = join(path2folder, f"{create_time}_Dataset-{datahandler.raw_data.data_name}_step{runPoint + 1:03d}")
         savemat(f"{newfile_name}.mat",
@@ -130,18 +146,14 @@ def merge_data_from_diff_data(path2data: str) -> None:
 
     frame_in = np.zeros((0, 0), dtype='int16')
     frame_cl = np.zeros((0, 0), dtype='uint16')
+    file_name = folder_content[-1].split('\\')[-1] if platform.system() == "Windows" else folder_content[-1].split('/')[-1]
+    file_name = file_name.split('_step')[0]
 
     for idx, file in enumerate(folder_content):
         print(idx, file)
         data = loadmat(file)
-
         frame_in = data['frames_in'] if idx == 0 else np.append(frame_in, data['frames_in'], axis=0)
         frame_cl = data['frames_cluster'] if idx == 0 else np.append(frame_cl, data['frames_cluster'], axis=1)
-
-        if idx == 0:
-            file_name = file.split('\\')[-1] if platform.system() == "Windows" else file.split('/')[-1]
-            file_name = file_name.split('_step')[0]
-            print(file_name)
 
     # --- Transfering to mat-file
     frame_in = np.array(frame_in, dtype='int16')

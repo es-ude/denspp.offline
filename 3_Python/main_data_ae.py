@@ -5,10 +5,12 @@ if __name__ == "__main__":
           "end-to-end spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
     path2file = "data"
 
+    # merge_data_from_diff_data(path2file)
+
     get_frames_from_dataset(
         path2save=path2file,
         cluster_class_avai=True,
-        process_points=[45, 51]
+        process_points=[]
     )
 
     merge_data_from_diff_data(path2file)
