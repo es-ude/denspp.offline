@@ -8,7 +8,7 @@ if __name__ == "__main__":
     get_frames_from_dataset(
         path2save=path2file,
         cluster_class_avai=True,
-        process_points=[]
+        process_points=[45, 51]
     )
 
     merge_data_from_diff_data(path2file)

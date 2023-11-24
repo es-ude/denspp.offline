@@ -37,11 +37,11 @@ def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_po
     settings = dict()
     runPoint = process_points[0] if len(process_points) > 0 else 0
     endPoint = 0
-    ite_recoverd = 0
 
     first_run = True
     while first_run or runPoint < endPoint:
         first_run = True
+        ite_recoverd = 0
         time_start = datetime.now()
 
         frames_in = np.empty(shape=(0, 0), dtype=np.dtype('int16'))
@@ -106,14 +106,13 @@ def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_po
         print(f"... done after {time_dt.seconds + 1e-6 * time_dt.microseconds: .2f} s")
         print(f"... recovered {ite_recoverd} samples")
         # --- Saving data (each run)
-        newfile_name = join(path2folder, (create_time + '_Dataset-'
-                                          + datahandler.raw_data.data_name
-                                          + f'_step{runPoint + 1:03d}'))
-        savemat(newfile_name + '.mat', {"frames_in": frames_in,
-                   "frames_cluster": frames_cluster,
-                   "create_time": create_time, "settings": settings},
-                do_compression=True)
-        print('Saving file in: ' + newfile_name + '.mat')
+        newfile_name = join(path2folder, f"{create_time}_Dataset-{datahandler.raw_data.data_name}_step{runPoint + 1:03d}")
+        savemat(f"{newfile_name}.mat",
+                {"frames_in": frames_in,
+                "frames_cluster": frames_cluster,
+                "create_time": create_time, "settings": settings},
+                do_compression=True, long_field_names=True)
+        print(f'Saved file in: {newfile_name}.mat\n')
 
         # --- Release memory
         del datahandler, frames_in, frames_cluster
@@ -150,8 +149,7 @@ def merge_data_from_diff_data(path2data: str) -> None:
     savemat(join(path2data, file_name) + '_Sorted.mat',
             {"frames_in": frame_in, "frames_cluster": frame_cl,
              "create_time": data['create_time'], "settings": data['settings']},
-            do_compression=True
-    )
+            do_compression=True, long_field_names=True)
 
     # --- Output of clustering
     num_clusters = np.unique(frame_cl, return_counts=True)
