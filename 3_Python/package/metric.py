@@ -18,6 +18,7 @@ def calculate_prd(yin: np.ndarray, ymean: np.ndarray):
 
 
 class Metric:
+    """Class for Determining the Metrics"""
     def __init__(self):
         self.cm = 0.0
         # Metrics

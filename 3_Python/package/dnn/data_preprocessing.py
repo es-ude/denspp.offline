@@ -1,6 +1,8 @@
 import numpy as np
+from tqdm import tqdm
 from package.metric import calculate_snr
 from package.data.process_noise import frame_noise
+from package.data.data_call_cellbib import CellSelector
 
 
 def change_frame_size(frames_in: np.ndarray, sel_pos: list) -> np.ndarray:
@@ -41,13 +43,30 @@ def calculate_frame_mean(
     NoCluster, NumCluster = np.unique(frames_cl, return_counts=True)
     SizeCluster = np.size(NoCluster)
 
-    frames_mean = np.zeros(shape=(SizeCluster, frames_in.shape[1]), dtype=int)
+    frames_out = np.zeros(shape=(SizeCluster, frames_in.shape[1]))
     for idx0, val in enumerate(NoCluster):
         # --- Mean waveform
         indices = np.argwhere(frames_cl == val).flatten()
-        frames_mean[idx0, :] = np.mean(frames_in[indices, :], axis=0, dtype=int)
+        frames_out[idx0, :] = np.mean(frames_in[indices, :], axis=0)
 
-    return frames_mean
+    return frames_out.astype(int)
+
+
+def calculate_frame_median(
+        frames_in: np.ndarray,
+        frames_cl: np.ndarray
+    ) -> np.ndarray:
+    """Calculating mean waveforms of spike waveforms with median()"""
+    NoCluster, NumCluster = np.unique(frames_cl, return_counts=True)
+    SizeCluster = np.size(NoCluster)
+
+    frames_out = np.zeros(shape=(SizeCluster, frames_in.shape[1]))
+    for idx0, val in enumerate(NoCluster):
+        # --- Mean waveform
+        indices = np.argwhere(frames_cl == val).flatten()
+        frames_out[idx0, :] = np.median(frames_in[indices, :], axis=0)
+
+    return frames_out.astype(int)
 
 
 def calculate_frame_snr(
@@ -74,8 +93,39 @@ def calculate_frame_snr(
     return cluster_snr
 
 
-# TODO: Data Normalization does not work very well
-def data_normalization_CPU(
+def reconfigure_cluster_with_cell_lib(path: str, sel_mode_classes: int,
+                                      frames_in: np.ndarray, frames_cl: np.ndarray) -> [np.ndarray, np.ndarray, dict]:
+    """Function for reducing the samples for a given cell bib"""
+    check_class = ['fzj', 'RGC']
+    check_path = path[:-4].split("_")
+    # --- Check if one is available
+    flag = -1
+    for path0 in check_path:
+        for idx, j in enumerate(check_class):
+            if path0 == j:
+                flag = idx
+                break
+
+    if not flag == -1:
+        cl_sampler = CellSelector(flag, sel_mode_classes)
+        cell_dict = cl_sampler.get_classes()
+        print(f"... Cluster types before reconfiguration: {np.unique(frames_cl)}")
+        cluster = cl_sampler.get_class_to_id(frames_cl)
+
+        # Removing undesired samples
+        pos = np.argwhere(cluster != -1).flatten()
+        print(f"... Cluster types after reconfiguration: {np.unique(cluster)}")
+        cell_frame = frames_in[pos, :]
+        cell_cl = cluster[pos]
+    else:
+        cell_frame = frames_in
+        cell_cl = frames_cl
+        cell_dict = list()
+
+    return cell_frame, cell_cl, cell_dict
+
+
+def data_normalization(
         frames_in: np.ndarray,
         do_bipolar=True,
         do_globalmax=False
@@ -92,44 +142,3 @@ def data_normalization_CPU(
         frames_out[i, :] = mean_val + frame / scale
 
     return frames_out
-
-
-def data_normalization_FPGA(
-        frames_in: np.ndarray,
-        do_bipolar=True,
-        do_globalmax=False
-    ) -> np.ndarray:
-    """Data Normalization of input with range setting do_bipolar (False: [0, 1] - True: [-1, +1])"""
-    mean_val = 0 if do_bipolar else 0.5
-    scale_mean = 1 if do_bipolar else 2
-    scale_global = np.max([np.max(frames_in), -np.min(frames_in)]) if do_globalmax else 1
-
-    frames_out = np.zeros(shape=frames_in.shape)
-    for i, frame in enumerate(frames_in):
-        scale_local = np.max([np.max(frame), -np.min(frame)]) if not do_globalmax else 1
-        scale = scale_mean * scale_local * scale_global
-        division_value = 1
-        while (scale > (2**division_value)):
-            division_value += 1
-        print("Division value frame number ", i, ":", 2**division_value)
-        print("Original scale frame number  ", i, ":", scale)
-        frames_out[i, :] = mean_val + frame / (2**division_value)
-
-    return frames_out
-
-
-#---Testing
-if __name__ == "__main__":
-
-    test_array = np.array([[-500, 24, 5, 19], [-32, 23, 8, 51]])
-    #bipolar_out = data_normalization_CPU(test_array, True)
-    #bipolar_globalmax_out = data_normalization_CPU(test_array, True, True)
-    #polar_out = data_normalization_CPU(test_array, False)
-    #polar_globalmax_out = data_normalization_CPU(test_array, False, True)
-    out = data_normalization_FPGA(test_array)
-
-    #print(bipolar_out, "\n")
-    #print(bipolar_globalmax_out, "\n")
-    #print(polar_out, "\n")
-    #print(polar_globalmax_out, "\n")
-    print(out)

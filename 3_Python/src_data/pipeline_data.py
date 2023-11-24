@@ -1,4 +1,5 @@
-import os
+from os import mkdir
+from os.path import exists, join
 import shutil
 import numpy as np
 
@@ -14,9 +15,8 @@ from package.dsp.sda import SpikeDetection, SettingsSDA
 class Settings:
     """Settings class for handling the src_neuro setting"""
     SettingsDATA = SettingsDATA(
-        # path="C:\\HomeOffice\\Arbeit\\C_MERCUR_SpAIke\\Daten",
-        path='/media/erbsloeh/ExtremeSSD/0_Invasive',
-        data_set=7, data_case=0, data_point=0,
+        path='../2_Data',
+        data_set=1, data_case=0, data_point=0,
         t_range=[0],
         ch_sel=[],
         fs_resample=50e3
@@ -64,12 +64,12 @@ class Pipeline:
         self.path2settings = "src_data/pipeline_data.py"
 
     def saving_results(self, name: str) -> str:
-        if not os.path.exists(self.path2runs):
-            os.mkdir(self.path2runs)
+        if not exists(self.path2runs):
+            mkdir(self.path2runs)
 
-        path2figure = os.path.join(self.path2runs, name)
-        if not os.path.exists(path2figure):
-            os.mkdir(path2figure)
+        path2figure = join(self.path2runs, name)
+        if not exists(path2figure):
+            mkdir(path2figure)
 
         # --- Copy settings into this folder
         shutil.copy(src=self.path2settings, dst=path2figure)

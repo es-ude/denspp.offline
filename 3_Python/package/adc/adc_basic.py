@@ -61,27 +61,18 @@ class SettingsNon:
     gain_error: float
 
 
-@dataclasses.dataclass
-class RecommendedSettingsADC(SettingsADC):
-    """Recommended values to configure the ADC with standard values"""
-    def __init__(self):
-        super().__init__(
-            vdd=0.6, vss=-0.6, dvref=0.1,
-            fs_ana=40e3,
-            Nadc=12, fs_dig=20e3, osr=1,
-            type_out="signed"
-        )
+RecommendedSettingsADC = SettingsADC(
+    vdd=0.6, vss=-0.6, dvref=0.1,
+    fs_ana=40e3,
+    Nadc=12, fs_dig=20e3, osr=1,
+    type_out="signed"
+)
 
-
-@dataclasses.dataclass
-class RecommendedSettingsNon(SettingsNon):
-    """"Recommended values to configure the non-linearities of the ADC"""
-    def __init__(self):
-        super().__init__(
-            wgndB=-100,
-            offset=1e-6,
-            gain_error=0.0
-        )
+RecommendedSettingsNon = SettingsNon(
+    wgndB=-100,
+    offset=1e-6,
+    gain_error=0.0
+)
 
 
 class ADC_Basic:
