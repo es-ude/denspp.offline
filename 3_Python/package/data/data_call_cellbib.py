@@ -55,7 +55,8 @@ class _RGC_TDB:
             "ON small OFF large": 47,
             "ON sustained - subtype unknown": 48,
             "Motion sensor": 49,
-            "ON DS transient": 50
+            "ON DS transient": 50,
+            "unknown": 51,
         }
 
         self.cell_class_to_id = {
