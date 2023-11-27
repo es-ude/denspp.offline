@@ -33,7 +33,7 @@ def prepare_training(path: str, settings: Config_PyTorch, use_cell_bib=False, mo
     # --- MATLAB reading file
     npzfile = loadmat(path)
     frames_in = npzfile["frames_in"]
-    frames_cl = npzfile["frames_cluster"].flatten()
+    frames_cl = npzfile["frames_cluster"].flatten() if 'frames_cluster' in npzfile else npzfile["frames_cl"].flatten()
 
     frames_dict = list()
     #frames_dict = npzfile['cluster_dict'].tolist()
