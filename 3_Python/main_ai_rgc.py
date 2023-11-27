@@ -8,7 +8,8 @@ from package.dnn.dataset.rgc_onoff_class import prepare_training
 import package.dnn.models.rgc_onoff_class as ai_module
 
 
-num_output = 4
+num_output = 2
+mode_celllib_dict = 3
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
@@ -17,12 +18,12 @@ config_train = Config_PyTorch(
     # loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=500,
+    num_epochs=200,
     batch_size=128,
     # --- Settings of Datasets
     data_path='data',
     # data_file_name='2023-11-16_rgc_onoff_fzj.mat',
-    data_file_name='2023-11-17_Dataset-07_RGC_TDB_Sorted.mat',
+    data_file_name='2023-11-24_Dataset-07_RGC_TDB_Merged.mat',
     data_split_ratio=0.25,
     data_do_shuffle=True,
     # --- Data Augmentation
@@ -44,7 +45,7 @@ if __name__ == "__main__":
 
     # --- Processing: Loading Data and Do Training
     dataset = prepare_training(path=config_train.get_path2data(), settings=config_train,
-                               use_cell_bib=True, mode_classes=1)
+                               use_cell_bib=True, mode_classes=mode_celllib_dict)
     dataset_dict = dataset.frame_dict if dataset.cluster_name_available else []
     trainhandler = pytorch_train(config_train)
     trainhandler.load_model()

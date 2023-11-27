@@ -87,13 +87,13 @@ def get_frames_from_dataset(path2save: str, cluster_class_avai=False, process_po
                 if sample_first_do_delete and not sample_last_do_delete:
                     frame_cl = np.delete(frame_cl, sample_first_delete_pos)
                     # frame_new = frame_new[1:, ]
-                if not sample_first_do_delete and sample_last_do_delete:
+                elif not sample_first_do_delete and sample_last_do_delete:
                     frame_cl = np.delete(frame_cl, sample_last_delete_pos)
                     # frame_new = frame_new[0:-1, ]
-                if sample_first_do_delete and sample_last_do_delete:
+                elif sample_first_do_delete and sample_last_do_delete:
                     frame_cl = np.delete(frame_cl, (sample_first_delete_pos, sample_last_delete_pos))
                 # --- Only suitable for RGC TDB data (unknown error)
-                if not sample_first_do_delete and not sample_last_do_delete:
+                elif not sample_first_do_delete and not sample_last_do_delete:
                     if np.unique(frame_cl).size == 1:
                         num_min = np.min((frame_cl.size, frame_new.shape[0]))
                         frame_cl = frame_cl[0:num_min-1]

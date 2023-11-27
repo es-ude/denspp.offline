@@ -16,8 +16,8 @@ class Settings:
     """Settings class for handling the src_neuro setting"""
     SettingsDATA = SettingsDATA(
         # path='../2_Data',
-        path='/media/erbsloeh/ExtremeSSD/0_Invasive',
-        # path='C:/HomeOffice/Arbeit/C_MERCUR_SpAIke/Daten',
+        # path='/media/erbsloeh/ExtremeSSD/0_Invasive',
+        path='C:/HomeOffice/Arbeit/C_MERCUR_SpAIke/Daten',
         data_set=7, data_case=0, data_point=0,
         t_range=[0],
         ch_sel=[],
