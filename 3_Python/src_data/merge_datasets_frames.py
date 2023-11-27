@@ -163,8 +163,9 @@ def merge_data_from_diff_data(path2data: str) -> None:
 
     for idx, file in enumerate(folder_content):
         data = loadmat(file)
+        cl_in = data['frames_cl'] if 'frames_cl' in data else data['frames_cluster']
         frame_in = data['frames_in'] if idx == 0 else np.append(frame_in, data['frames_in'], axis=0)
-        frame_cl = data['frames_cluster'] if idx == 0 else np.append(frame_cl, data['frames_cluster'], axis=1)
+        frame_cl = cl_in if idx == 0 else np.append(frame_cl, cl_in, axis=1)
         print(f"Read file: {file} and now cluster = {np.unique(frame_cl)}")
 
     # --- Transfering to mat-file
@@ -173,7 +174,7 @@ def merge_data_from_diff_data(path2data: str) -> None:
     output = np.unique(frame_cl, return_counts=True)
     print(f"... available clusters: {output[0]} with samples: {output[1]}")
     savemat(join(path2data, file_name) + '_Merged.mat',
-            {"frames_in": frame_in, "frames_cluster": frame_cl,
+            {"frames_in": frame_in, "frames_cl": frame_cl,
              "create_time": data['create_time'], "settings": data['settings']},
             do_compression=True, long_field_names=True)
 
