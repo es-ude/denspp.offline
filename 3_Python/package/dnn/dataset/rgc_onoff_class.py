@@ -51,7 +51,12 @@ def prepare_training(path: str, settings: Config_PyTorch, use_cell_bib=False, mo
 
     # --- PART: Reducing samples per cluster (if too large)
     if settings.data_do_reduce_samples_per_cluster:
-        print("... do data augmentation with reducing the samples per cluster")
+        check = np.unique(frames_cl, return_counts=True)
+        if len(frames_dict) == 0:
+            print(f"... having data points before reducing samples: class = {check[0]} and num = {check[1]}")
+        else:
+            print(f"... having data points before reducing samples: class = {frames_dict} and num = {check[1]}")
+
         frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
                                                              settings.data_num_samples_per_cluster,
                                                              settings.data_do_shuffle)
@@ -62,10 +67,10 @@ def prepare_training(path: str, settings: Config_PyTorch, use_cell_bib=False, mo
 
     # --- Output
     check = np.unique(frames_cl, return_counts=True)
-    print(f"... for training are {frames_in.shape[0]} frames with each {frames_in.shape[1]} points available")
     if len(frames_dict) == 0:
         print(f"... used data points for training: class = {check[0]} and num = {check[1]}")
     else:
         print(f"... used data points for training: class = {frames_dict} and num = {check[1]}")
+    print(f"... for training are {frames_in.shape[0]} frames with each {frames_in.shape[1]} points available")
 
     return DatasetRGC(frames_in, frames_cl, frames_dict)
