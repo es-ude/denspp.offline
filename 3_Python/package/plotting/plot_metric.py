@@ -35,7 +35,7 @@ def plot_boxplot_metric(freq: np.ndarray, metric: list, type_name: str, name: st
         plt.savefig(join(path2save, f"{name}_metric-box_{type_name}.{type}"), format=type)
 
 
-def plot_loss(metric: list, metric_type: str, name='', path2save='') -> None:
+def plot_loss(metric: list, metric_type: str, name='', path2save='', epoch_zoom=None) -> None:
     """Plotting the loss of any DNN-based learning method"""
     # --- Pre-Processing
     plot_metrics = np.zeros(shape=(len(metric), 2), dtype=float)
@@ -44,17 +44,41 @@ def plot_loss(metric: list, metric_type: str, name='', path2save='') -> None:
 
     # --- Plotting
     plt.figure(figsize=(cm_to_inch(10), cm_to_inch(8)))
-    plt.title(f"{metric_type} = {plot_metrics.max():.3f}")
-    plt.plot(plot_metrics[:, 0], color='k', marker='.', label='Train.')
-    plt.plot(plot_metrics[:, 1], color='r', marker='.', label='Valid.')
+    axs = list()
+    axs.append(plt.subplot(1, 1, 1))
+    axs[0].plot(plot_metrics[:, 0], color='k', marker='.', label='Train.')
+    axs[0].plot(plot_metrics[:, 1], color='r', marker='.', label='Valid.')
     plt.grid()
     plt.legend()
+    plt.title(f"{metric_type} = {plot_metrics.max():.3f}")
     plt.xlabel('Epoch')
     plt.ylabel(f'{metric_type}')
 
+    # --- Plot zooming component
+    if isinstance(epoch_zoom, list) and len(epoch_zoom) > 0:
+        x0 = int(epoch_zoom[0])
+        x1 = int(epoch_zoom[1]) if len(epoch_zoom) == 2 else int(plot_metrics.shape[0]-1)
+        pos = np.arange(x0, x1)
+        min_value = np.min((plot_metrics[pos, 0], plot_metrics[pos, 1]))
+        max_value = np.max((plot_metrics[pos, 0], plot_metrics[pos, 1]))
+
+        axins0 = axs[0].inset_axes(
+            [0.45, 0.02, 0.5, 0.43],
+            xticklabels=[],
+            # yticklabels=[],
+            xlim=(x0-0.5, x1+0.5), ylim=(0.99 * min_value, 1.01 * max_value))
+        axins0.plot(plot_metrics[:, 0], color='k', marker='.', label='Train.')
+        axins0.plot(plot_metrics[:, 1], color='r', marker='.', label='Valid.')
+        axins0.grid()
+        axs[0].tick_params(direction='in')
+        axs[0].indicate_inset_zoom(axins0, edgecolor="black")
+        addon = '_zoomed'
+    else:
+        addon = ''
+
     plt.tight_layout()
     if path2save:
-        save_figure(plt, path2save, f"loss_metric_{metric_type}")
+        save_figure(plt, path2save, f"loss_metric_{metric_type}"+addon)
 
 
 def plot_confusion(true_labels: list | np.ndarray,

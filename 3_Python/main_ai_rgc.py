@@ -13,12 +13,12 @@ mode_celllib_dict = 3
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
-    model=ai_module.dnn_rgc_v2(input_size=32, output_size=num_output),
+    model=ai_module.cnn_rgc_onoff_v1(input_size=32, output_size=num_output),
     loss_fn=nn.CrossEntropyLoss(),
     # loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=200,
+    num_epochs=500,
     batch_size=128,
     # --- Settings of Datasets
     data_path='data',
@@ -32,7 +32,7 @@ config_train = Config_PyTorch(
     data_do_normalization=False,
     data_do_addnoise_cluster=False,
     data_do_reduce_samples_per_cluster=True,
-    data_num_samples_per_cluster=25000,
+    data_num_samples_per_cluster=200000,
     # --- Dataset Preparation
     data_exclude_cluster=[],
     data_sel_pos=[]
@@ -57,7 +57,7 @@ if __name__ == "__main__":
     data_result = trainhandler.do_validation_after_training(2)
 
     logsdir = trainhandler.get_saving_path()
-    plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
+    plot_loss(epoch_acc, 'Acc.', path2save=logsdir, epoch_zoom=[400, ])
     plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=dataset_dict)
     plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir, cl_dict=dataset_dict)
 

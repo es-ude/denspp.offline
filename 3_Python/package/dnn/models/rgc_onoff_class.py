@@ -1,4 +1,4 @@
-from torch import nn, Tensor, argmax
+from torch import nn, Tensor, argmax, unsqueeze
 from package.dnn.pytorch_control import Config_PyTorch
 
 
@@ -75,6 +75,46 @@ class dnn_rgc_v2(nn.Module):
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
         val = self.classifier(x)
+        return val, argmax(val, dim=1)
+
+
+class cnn_rgc_onoff_v1(nn.Module):
+    """Class of a convolutional autoencoder for classification"""
+    def __init__(self, input_size=32, output_size=4):
+        super().__init__()
+        self.out_modelname = 'cnn_rgc_onoff_v1'
+        self.out_modeltyp = 'Classification'
+        self.model_embedded = False
+        self.model_shape = (1, input_size)
+        kernel_layer = [1, 22, 8]
+        kernel_size = [3, 3, 3]
+        kernel_stride = [1, 1, 1]
+        kernel_padding = [0, 0, 0]
+        lin_size = [16, 10, output_size]
+        do_train_bias = True
+
+        self.classifier = nn.Sequential(
+            nn.Conv1d(kernel_layer[0], kernel_layer[1], kernel_size[0],
+                      stride=kernel_stride[0], padding=kernel_padding[0]),
+            nn.BatchNorm1d(kernel_layer[1], affine=do_train_bias),
+            nn.Tanh(),
+            nn.Conv1d(kernel_layer[1], kernel_layer[2], kernel_size[1],
+                      stride=kernel_stride[1], padding=kernel_padding[1]),
+            nn.BatchNorm1d(kernel_layer[2], affine=do_train_bias),
+            nn.Tanh(),
+            # --- Linear Layer
+            nn.Flatten(start_dim=1),
+            nn.Linear(lin_size[0], lin_size[1], bias=do_train_bias),
+            nn.BatchNorm1d(lin_size[1], affine=do_train_bias),
+            nn.ReLU(),
+            nn.Linear(lin_size[1], lin_size[2], bias=do_train_bias),
+            nn.BatchNorm1d(lin_size[2], affine=do_train_bias),
+            nn.Softmax(dim=0)
+        )
+
+    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+        x0 = unsqueeze(x, dim=1)
+        val = self.classifier(x0)
         return val, argmax(val, dim=1)
 
 
