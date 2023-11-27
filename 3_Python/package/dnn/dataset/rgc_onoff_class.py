@@ -34,7 +34,9 @@ def prepare_training(path: str, settings: Config_PyTorch, use_cell_bib=False, mo
     npzfile = loadmat(path)
     frames_in = npzfile["frames_in"]
     frames_cl = npzfile["frames_cluster"].flatten()
-    frames_dict = npzfile['cluster_dict'].tolist()
+
+    frames_dict = list()
+    #frames_dict = npzfile['cluster_dict'].tolist()
 
     # --- PART: Exclusion of selected clusters
     if not len(settings.data_exclude_cluster) == 0:
