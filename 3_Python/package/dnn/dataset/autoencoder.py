@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.io import loadmat
 from torch import is_tensor, randn
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.data_preprocessing import calculate_frame_snr, calculate_frame_mean, calculate_frame_median

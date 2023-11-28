@@ -133,7 +133,7 @@ class UtahDataHandler:
         return neural_data
 
     def process_label_nev(self, data_dict: dict, sel_file: int) -> dict:
-        # Process '*.nev'-File directly from the Blackrock Neuro-Signal-Prozessor (via Software)
+        """Process '*.nev'-File directly from the Blackrock Neuro-Signal-Prozessor (via Software)"""""
         nev_data = dict()
 
         path2file = data_dict['NEV'][sel_file]
@@ -184,7 +184,7 @@ class UtahDataHandler:
         return nev_data
 
     def process_label_mat(self, data_dict: dict, sel_file: int) -> dict:
-        # Process '#.mat'-File from the experiment in order to extract frames and positions from Blackrock Signal Processor
+        """ Process '#.mat'-File from the experiment in order to extract frames and positions from Blackrock Signal Processor"""
         # (same name like rawdata and not the behaviour content)
         groundtruth_blackrock = dict()
 
@@ -224,6 +224,7 @@ class UtahDataHandler:
         return groundtruth_blackrock
 
     def process_behaviour(self, data_dict: dict) -> dict:
+        """Processing the behaviour task of the experiments"""
         behaviour = dict()
 
         if not data_dict['Exits_BEHV']:
@@ -240,8 +241,7 @@ class UtahDataHandler:
             return behaviour
 
     def save_results(self, name: str, rawdata: dict, label: dict, behaviour: dict):
-        mdic = {'rawdata': rawdata, 'nev_detected': label, 'behaviour': behaviour}
         file_name = os.path.join(self.__path2save, name) + '_MERGED.mat'
 
-        savemat(file_name, mdic)
+        savemat(file_name, {'rawdata': rawdata, 'nev_detected': label, 'behaviour': behaviour})
         print(f"... saved results in: {file_name}")

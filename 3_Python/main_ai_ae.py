@@ -37,6 +37,7 @@ config_train = Config_PyTorch(
     data_exclude_cluster=[4],
     data_sel_pos=[]
 )
+config_train = ai_module.Recommended_Config_PytorchSettings
 
 # --- Main program
 if __name__ == "__main__":
