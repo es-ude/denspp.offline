@@ -98,10 +98,10 @@ class training_pytorch:
         self._path2temp = str()
         self._path2config = str()
 
-    def __setup_device(self) -> None:
+    def __setup_device(self, use_cpu=True) -> None:
         """Setup PyTorch for Training"""
-        device0 = "CUDA" if cuda.is_available() else "CPU"
-        if device0 == "CUDA":
+        device0 = "GPU" if cuda.is_available() and not use_cpu else "CPU"
+        if device0 == "GPU":
             self.used_hw_dev = device("cuda")
         else:
             self.used_hw_dev = device("cpu")
@@ -120,6 +120,9 @@ class training_pytorch:
 
         mkdir(self._path2save)
         mkdir(self._path2temp)
+
+        # --- Sending everything to device
+        self.model.to(device=self.used_hw_dev)
 
     def _init_writer(self) -> None:
         """Do init of writer"""
