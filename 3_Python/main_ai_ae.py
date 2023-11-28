@@ -57,6 +57,8 @@ if __name__ == "__main__":
     snr_train = trainhandler.do_training()
 
     # --- Post-Processing: Getting data, save and plot results
+
+if False:
     data_result = trainhandler.do_validation_after_training()
 
     logsdir = trainhandler.get_saving_path()
