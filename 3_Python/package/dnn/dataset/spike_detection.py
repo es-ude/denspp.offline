@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.io import loadmat
-from torch import is_tensor, Tensor
+from torch import is_tensor
 from torch.utils.data import Dataset, DataLoader
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.data_augmentation import augmentation_reducing_samples

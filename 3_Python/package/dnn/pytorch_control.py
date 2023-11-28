@@ -1,5 +1,6 @@
 import dataclasses
 import platform
+import cpuinfo
 import numpy as np
 from typing import Any
 from os import mkdir, remove
@@ -7,7 +8,7 @@ from os.path import exists, join
 from shutil import rmtree
 from glob import glob
 from datetime import datetime
-from torch import optim, device, cuda
+from torch import optim, device, cuda, backends
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
@@ -68,6 +69,9 @@ class Config_PyTorch:
 class training_pytorch:
     """Class for Handling Training of Deep Neural Networks in PyTorch"""
     used_hw_dev: device
+    used_hw_cpu: str
+    used_hw_gpu: str
+    used_hw_num: int
     train_loader: list
     valid_loader: list
 
@@ -98,13 +102,32 @@ class training_pytorch:
         self._path2temp = str()
         self._path2config = str()
 
-    def __setup_device(self, use_cpu=True) -> None:
+    def __setup_device(self, use_only_cpu=True) -> None:
         """Setup PyTorch for Training"""
-        device0 = "GPU" if cuda.is_available() and not use_cpu else "CPU"
-        if device0 == "GPU":
+        # Using GPU: nVidia or AMD
+        if cuda.is_available() and not use_only_cpu:
+            self.used_hw_gpu = cuda.get_device_name()
+            self.used_hw_cpu = (f"{cpuinfo.get_cpu_info()['brand_raw']} "
+                       f"(@ {1e-9 * cpuinfo.get_cpu_info()['hz_actual'][0]:.3f} GHz)")
             self.used_hw_dev = device("cuda")
+            self.used_hw_num = cuda.device_count()
+            device0 = self.used_hw_gpu
+        # Using Apple M1 Chip
+        elif backends.mps.is_available() and backends.mps.is_built() and self.os_type == "Darwin" and not use_only_cpu:
+            self.used_hw_cpu = "MP1"
+            self.used_hw_gpu = 'None'
+            self.used_hw_num = cuda.device_count()
+            self.used_hw_dev = device("mps")
+            self.used_hw_num = 1
+            device0 = self.used_hw_cpu
+        # Using normal CPU
         else:
+            self.used_hw_cpu = (f"{cpuinfo.get_cpu_info()['brand_raw']} "
+                       f"(@ {1e-9 * cpuinfo.get_cpu_info()['hz_actual'][0]:.3f} GHz)")
+            self.used_hw_gpu = 'None'
             self.used_hw_dev = device("cpu")
+            self.used_hw_num = cpuinfo.get_cpu_info()['count']
+            device0 = self.used_hw_cpu
 
         print(f"... using PyTorch with {device0} device on {self.os_type}")
 
@@ -180,6 +203,8 @@ class training_pytorch:
         with open(self._path2config, 'w') as txt_handler:
             txt_handler.write('--- Configuration of PyTorch Training Routine ---\n')
             txt_handler.write(f'Date: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}\n')
+            txt_handler.write(f'Used CPU: {self.used_hw_cpu}\n')
+            txt_handler.write(f'Used GPU: {self.used_hw_gpu}\n')
             txt_handler.write(f'Used dataset: {self.settings.get_path2data()}\n')
             txt_handler.write(f'AI Topology: {self.settings.get_topology()} ({self._model_addon})\n')
             txt_handler.write(f'Embedded?: {self.model.model_embedded}\n')
