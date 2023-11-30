@@ -104,7 +104,7 @@ class training_pytorch:
 
     def __setup_device(self, use_only_cpu=True) -> None:
         """Setup PyTorch for Training"""
-        # Using GPU: nVidia or AMD
+        # Using GPU
         if cuda.is_available() and not use_only_cpu:
             self.used_hw_gpu = cuda.get_device_name()
             self.used_hw_cpu = (f"{cpuinfo.get_cpu_info()['brand_raw']} "
@@ -220,7 +220,6 @@ class training_pytorch:
             txt_handler.write(f'Do data augmentation?: {self.settings.data_do_augmentation}\n')
             txt_handler.write(f'Do input normalization?: {self.settings.data_do_normalization}\n')
             txt_handler.write(f'Do add noise cluster?: {self.settings.data_do_addnoise_cluster}\n')
-            txt_handler.write(f'Exclude cluster: {self.settings.data_exclude_cluster}\n')
             txt_handler.write(f'Exclude cluster: {self.settings.data_exclude_cluster}\n')
 
     def _save_train_results(self, last_metric_train: float | np.ndarray,

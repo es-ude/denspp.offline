@@ -48,7 +48,7 @@ def calculate_frame_mean(
         indices = np.argwhere(frames_cl == val).flatten()
         frames_out[idx0, :] = np.mean(frames_in[indices, :], axis=0)
 
-    return frames_out.astype(int)
+    return frames_out
 
 
 def calculate_frame_median(
@@ -65,7 +65,7 @@ def calculate_frame_median(
         indices = np.argwhere(frames_cl == val).flatten()
         frames_out[idx0, :] = np.median(frames_in[indices, :], axis=0)
 
-    return frames_out.astype(int)
+    return frames_out
 
 
 def calculate_frame_snr(
@@ -113,9 +113,9 @@ def reconfigure_cluster_with_cell_lib(path: str, sel_mode_classes: int,
 
         # Removing undesired samples
         pos = np.argwhere(cluster != -1).flatten()
-        print(f"... Cluster types after reconfiguration: {np.unique(cluster)}")
         cell_frame = frames_in[pos, :]
         cell_cl = cluster[pos]
+        print(f"... Cluster types after reconfiguration: {np.unique(cluster[pos])}")
     else:
         cell_frame = frames_in
         cell_cl = frames_cl

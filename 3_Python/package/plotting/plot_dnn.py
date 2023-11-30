@@ -1,20 +1,22 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 from package.plotting.plot_common import cm_to_inch, save_figure
 
 
 def results_training(path: str,
                      yin: np.ndarray, ypred: np.ndarray, ymean: np.ndarray,
-                     feat: np.ndarray, yclus: np.ndarray,
-                     snr: list, xframes=50, num_feat=3) -> None:
+                     feat: np.ndarray, yclus: np.ndarray, snr: list,
+                     cl_dict=None, xframes=50, num_feat=3) -> None:
     data_labeled = True
 
     # --- Pre-Processing
-    cluster_no = np.unique(yclus)
+    yclus0 = yclus.flatten() if len(yclus.shape) == 2 else yclus
+    cluster_no = np.unique(yclus0)
     mark_feat = [[] for idx in range(0, num_feat)]
     take_frames = list()
     for i, id in enumerate(cluster_no):
-        pos = np.where(yclus == id)[0]
+        pos = np.where(yclus0 == id)[0]
         # Take only X frames per cluster
         np.random.shuffle(pos)
         take_frames.append(pos[:xframes])
@@ -25,20 +27,20 @@ def results_training(path: str,
     # --- Plotting: Inference model
     plot_autoencoder_run(
         mark_feat, [0, 1], yin, ypred, ymean,
-        cluster_no, take_frames, data_labeled=data_labeled, path2save=path
+        cluster_no, take_frames, data_labeled=data_labeled, data_classname=cl_dict, path2save=path
     )
     plot_autoencoder_run(
         mark_feat, [0, 2], yin, ypred, ymean,
-        cluster_no, take_frames, data_labeled=data_labeled, path2save=path
+        cluster_no, take_frames, data_labeled=data_labeled, data_classname=cl_dict, path2save=path
     )
     plot_autoencoder_run(
         mark_feat, [1, 2], yin, ypred, ymean,
-        cluster_no, take_frames, data_labeled=data_labeled, path2save=path
+        cluster_no, take_frames, data_labeled=data_labeled, data_classname=cl_dict, path2save=path
     )
 
     # --- Plotting: Feature Space and Metrics
     plot_autoencoder_snr(snr, path)
-    plot_autoencoder_features(cluster_no, mark_feat, [0, 1, 2], path)
+    plot_autoencoder_features(cluster_no, mark_feat, [0, 1, 2], data_classname=cl_dict, path2save=path)
 
 
 def plot_autoencoder_snr(snr: list, path2save='', do_boxplot=False) -> None:
@@ -81,12 +83,13 @@ def plot_autoencoder_snr(snr: list, path2save='', do_boxplot=False) -> None:
             save_figure(plt, path2save, f"ai_training_snr_fold{idx:03d}")
 
 
-def plot_autoencoder_features(cluster_no: np.ndarray, mark_feat: list, idx: [0, 1, 2], path2save='') -> None:
+def plot_autoencoder_features(cluster_no: np.ndarray, mark_feat: list, idx: [0, 1, 2], data_classname=None, path2save='') -> None:
     """Plotting the feature space of the autoencoder"""
     color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
 
-    plt.figure(figsize=(cm_to_inch(12), cm_to_inch(9)))
-    plt.rcParams.update({'font.size': 12})
+    fig = plt.figure(figsize=(cm_to_inch(12), cm_to_inch(9)))
+    plt.rcParams.update({'font.size': 6})
+    Axes3D(fig)
     ax = plt.axes(projection='3d')
 
     for i, id in enumerate(cluster_no):
@@ -94,6 +97,8 @@ def plot_autoencoder_features(cluster_no: np.ndarray, mark_feat: list, idx: [0, 
     ax.set_xlabel('Feat[0]')
     ax.set_ylabel('Feat[1]')
     ax.set_zlabel('Feat[2]')
+    if isinstance(data_classname, list):
+        ax.legend(data_classname)
 
     plt.tight_layout(pad=0.5)
     # --- saving plots
@@ -103,12 +108,13 @@ def plot_autoencoder_features(cluster_no: np.ndarray, mark_feat: list, idx: [0, 
 
 def plot_autoencoder_run(mark_feat: list, mark_idx: list,
                          frames_in: np.ndarray, frames_out: np.ndarray, frames_mean: np.ndarray,
-                         cluster_no: np.ndarray, take_frames: list, data_labeled=False, path2save='') -> None:
+                         cluster_no: np.ndarray, take_frames: list,
+                         data_classname=None, data_labeled=False, path2save='') -> None:
     """Plotting the autoencoder in-/output for an inference"""
     color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
 
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
-    plt.rcParams.update({'font.size': 12})
+    plt.rcParams.update({'font.size': 6})
     plt.subplots_adjust(hspace=0, wspace=0.5)
     row = 1
     col = 3
@@ -130,6 +136,8 @@ def plot_autoencoder_run(mark_feat: list, mark_idx: list,
     axs[1].set_title('Feature Space')
     axs[1].set_ylabel(f'Feat[{mark_idx[0]}]')
     axs[1].set_xlabel(f'Feat[{mark_idx[1]}]')
+    if isinstance(data_classname, list):
+        axs[1].legend(data_classname)
 
     # Denoised output
     if data_labeled:

@@ -6,18 +6,22 @@ from package.dnn.pytorch_autoencoder import *
 from package.dnn.dataset.autoencoder import prepare_training
 import package.dnn.models.autoencoder as ai_module
 
+from scipy.io import loadmat
+
 
 noise_std = 1
 # 0 = normal autoencoder, 1 = denoising AE (mean), 2 = denoising AE (more noise input)
-mode_train = 2
+mode_train = 0
+use_cell_bib = True
+mode_cell_bib = 2
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
     model=ai_module.dnn_ae_v2(),
-    loss_fn=nn.MSELoss(),
+    loss_fn=nn.L1Loss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=5,
+    num_epochs=100,
     batch_size=256,
     # --- Settings of Datasets
     # data_path='data',
@@ -27,49 +31,54 @@ config_train = Config_PyTorch(
     data_split_ratio=0.25,
     data_do_shuffle=True,
     # --- Data Augmentation
-    data_do_augmentation=True,
+    data_do_augmentation=False,
     data_num_augmentation=0,
     data_do_normalization=False,
     data_do_addnoise_cluster=False,
     data_do_reduce_samples_per_cluster=False,
     data_num_samples_per_cluster=20000,
     # --- Dataset Preparation
-    data_exclude_cluster=[4],
+    data_exclude_cluster=[],
     data_sel_pos=[]
 )
-config_train = ai_module.Recommended_Config_PytorchSettings
 
 # --- Main program
 if __name__ == "__main__":
+    only_plot = False
+
     plt.close('all')
-    print("\nTrain modules of spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
+    if not only_plot:
+        print("\nTrain modules of spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
 
-    # --- Processing: Loading dataset and Do Training
-    dataset = prepare_training(path=config_train.get_path2data(), settings=config_train,
-                               use_cell_bib=False, mode_classes=2,
-                               mode_train_ae=mode_train, do_classification=False,
-                               noise_std=noise_std)
-    dataset_dict = dataset.frame_dict
-    data_mean = dataset.frames_me
-    trainhandler = pytorch_train(config_train)
-    trainhandler.load_model()
-    trainhandler.load_data(dataset)
-    del dataset
-    snr_train = trainhandler.do_training()
+        # --- Processing: Loading dataset and Do Training
+        dataset = prepare_training(path=config_train.get_path2data(), settings=config_train,
+                                   use_cell_bib=use_cell_bib, mode_classes=mode_cell_bib,
+                                   mode_train_ae=mode_train, do_classification=False,
+                                   noise_std=noise_std)
+        dataset_dict = dataset.frame_dict
+        data_mean = dataset.frames_me
+        trainhandler = pytorch_train(config_train)
+        trainhandler.load_model()
+        trainhandler.load_data(dataset)
+        del dataset
+        snr_train = trainhandler.do_training()
 
-    # --- Post-Processing: Getting data, save and plot results
+        # --- Post-Processing: Getting data, save and plot results
+        data_result = trainhandler.do_validation_after_training()
+        logsdir = trainhandler.get_saving_path()
+    else:
+        logsdir = ''
+        data_result = loadmat('runs/20231130_224524_train_dnn_ae_v2/results.mat')
+        snr_train = list()
+        data_mean = np.zeros(shape=(4,32))
+        dataset_dict = dict()
 
-if False:
-    data_result = trainhandler.do_validation_after_training()
-
-    logsdir = trainhandler.get_saving_path()
+    plt.close("all")
     results_training(
-        path=logsdir, feat=data_result['feat'],
+        path=logsdir, cl_dict=dataset_dict, feat=data_result['feat'],
         yin=data_result['input'], ypred=data_result['pred'], ymean=data_mean,
         yclus=data_result['valid_clus'], snr=snr_train
     )
     plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                         path2save=logsdir, cl_dict=dataset_dict)
-
-    plt.show(block=False)
-    plt.close("all")
+    plt.show(block=True)

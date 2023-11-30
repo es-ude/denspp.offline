@@ -9,11 +9,11 @@ import package.dnn.models.rgc_onoff_class as ai_module
 
 
 num_output = 2
-mode_celllib_dict = 3
+mode_celllib_dict = 2
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
-    model=ai_module.cnn_rgc_onoff_v1(input_size=32, output_size=num_output),
+    model=ai_module.dnn_rgc_v2(input_size=32, output_size=num_output),
     loss_fn=nn.CrossEntropyLoss(),
     # loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
@@ -22,16 +22,17 @@ config_train = Config_PyTorch(
     batch_size=128,
     # --- Settings of Datasets
     data_path='data',
-    # data_file_name='2023-11-16_rgc_onoff_fzj.mat',
     data_file_name='2023-11-24_Dataset-07_RGC_TDB_Merged.mat',
+    # data_path='../2_Data/00_Merged_Datasets',
+    # data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
     data_split_ratio=0.25,
     data_do_shuffle=True,
     # --- Data Augmentation
     data_do_augmentation=False,
     data_num_augmentation=0,
-    data_do_normalization=False,
+    data_do_normalization=True,
     data_do_addnoise_cluster=False,
-    data_do_reduce_samples_per_cluster=True,
+    data_do_reduce_samples_per_cluster=False,
     data_num_samples_per_cluster=200000,
     # --- Dataset Preparation
     data_exclude_cluster=[],
