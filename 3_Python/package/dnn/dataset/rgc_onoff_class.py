@@ -49,6 +49,10 @@ def prepare_training(path: str, settings: Config_PyTorch, use_cell_bib=False, mo
     if use_cell_bib:
         frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(path, mode_classes, frames_in, frames_cl)
 
+        # --- PART: Data Normalization
+    if settings.data_do_normalization:
+        frames_in = data_normalization(frames_in, do_bipolar=True, do_globalmax=False)
+
     # --- PART: Reducing samples per cluster (if too large)
     if settings.data_do_reduce_samples_per_cluster:
         check = np.unique(frames_cl, return_counts=True)
@@ -60,10 +64,6 @@ def prepare_training(path: str, settings: Config_PyTorch, use_cell_bib=False, mo
         frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
                                                              settings.data_num_samples_per_cluster,
                                                              settings.data_do_shuffle)
-
-    # --- PART: Data Normalization
-    if settings.data_do_normalization:
-        frames_in = data_normalization(frames_in)
 
     # --- Output
     check = np.unique(frames_cl, return_counts=True)

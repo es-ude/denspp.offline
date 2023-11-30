@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.io import loadmat
-from torch import is_tensor, randn
+from torch import is_tensor, randn, Tensor
 from torch.utils.data import Dataset
 
 from package.dnn.pytorch_control import Config_PyTorch
@@ -74,13 +74,18 @@ def prepare_training(path: str, settings: Config_PyTorch,
     npzfile = loadmat(path)
     frames_in = npzfile["frames_in"]
     frames_cl = npzfile["frames_cluster"].flatten() if 'frames_cluster' in npzfile else npzfile["frames_cl"].flatten()
+    frames_dict = list()
     print("... for training are", frames_in.shape[0], "frames with each", frames_in.shape[1], "points available")
 
     # --- Using cell_bib for clustering
     if use_cell_bib:
         frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(path, mode_classes, frames_in, frames_cl)
 
-    # --- Mean waveform calculation and data augmentation
+    # --- PART: Data Normalization
+    if settings.data_do_normalization:
+        frames_in = data_normalization(frames_in, do_bipolar=True, do_globalmax=False)
+
+    # --- PART: Mean waveform calculation and data augmentation
     frames_in = change_frame_size(frames_in, settings.data_sel_pos)
     if use_median_for_mean:
         frames_me = calculate_frame_median(frames_in, frames_cl)
@@ -133,14 +138,12 @@ def prepare_training(path: str, settings: Config_PyTorch,
         frames_cl = np.append(frames_cl, num_cluster + new_clusters, axis=0)
         frames_me = np.vstack([frames_me, new_mean])
 
-    # --- PART: Data Normalization
-    if settings.data_do_normalization:
-        frames_in = data_normalization(frames_in)
-        frames_me = data_normalization(frames_me)
-
     # --- Output
     check = np.unique(frames_cl, return_counts=True)
-    print(f"... used data points for training: class = {check[0]} and num = {check[1]}")
+    if len(frames_dict) == 0:
+        print(f"... used data points for training: class = {check[0]} and num = {check[1]}")
+    else:
+        print(f"... used data points for training: class = {frames_dict} and num = {check[1]}")
     return DatasetAE(frames_raw=frames_in, cluster_id=frames_cl, frames_cluster_me=frames_me,
-                     mode_train=mode_train_ae, do_classification=do_classification,
+                     cluster_dict=frames_dict, mode_train=mode_train_ae, do_classification=do_classification,
                      noise_std=noise_std)
