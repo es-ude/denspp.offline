@@ -17,11 +17,11 @@ mode_cell_bib = 2
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
-    model=ai_module.dnn_ae_v2(),
+    model=ai_module.dnn_ae_v2(output_size=6),
     loss_fn=nn.L1Loss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=2,
+    num_epochs=5,
     batch_size=256,
     # --- Settings of Datasets
     data_path='data',
@@ -55,7 +55,6 @@ if __name__ == "__main__":
                                    use_cell_bib=use_cell_bib, mode_classes=mode_cell_bib,
                                    mode_train_ae=mode_train, do_classification=False,
                                    noise_std=noise_std)
-        dataset_dict = dataset.frame_dict
         data_mean = dataset.frames_me
         trainhandler = pytorch_train(config_train)
         trainhandler.load_model()
@@ -70,16 +69,15 @@ if __name__ == "__main__":
         logsdir = ''
         data_result = loadmat('runs/20231130_224524_train_dnn_ae_v2/results.mat')
         snr_train = list()
-        data_mean = np.zeros(shape=(4,32))
-        dataset_dict = dict()
+        data_mean = np.zeros(shape=(4, 32))
 
     results_training(
-        path=logsdir, cl_dict=dataset_dict, feat=data_result['feat'],
+        path=logsdir, cl_dict=data_result['cl_dict'], feat=data_result['feat'],
         yin=data_result['input'], ypred=data_result['pred'], ymean=data_mean,
         yclus=data_result['valid_clus'], snr=snr_train
     )
     plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
-                        path2save=logsdir, cl_dict=dataset_dict)
+                        path2save=logsdir, cl_dict=data_result['cl_dict'])
 
     plt.show(block=True)
     plt.close("all")
