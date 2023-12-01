@@ -16,11 +16,14 @@ if __name__ == "__main__":
     datahand = DataController(settings.SettingsDATA)
     datahand.do_call()
     dataIn = datahand.get_data()
+    elec_id = dataIn.electrode_id
+    del dataIn
     dataWave = datahand.nev_waveform
 
     # --- Processing the data
     SpikeSorting = Pipeline(settings)
     path2save = SpikeSorting.saving_results(folder_name)
+    
     for elec in dataIn.electrode_id:
         SpikeSorting.run(dataWave[elec])
         # --- Plotting
