@@ -187,22 +187,22 @@ class cnn_ae_v2(nn.Module):
         return self.flatten(encoded), self.flatten(decoded)
 
 
-# Anpassungen an fcnn_layer[0] und fcnn_out notwendig, wenn Kernelsize geändert wird
+# Anpassungen an fcnn_layer[0] und fcnn_out notwendig, wenn CNN-Kernel geändert wird
 class cnn_ae_v3(nn.Module):
     """Class of a convolutional autoencoder for feature extraction"""
-    def __init__(self, input_size=32, output_size=8):
+    def __init__(self, input_size=32, output_size=6):
         super().__init__()
         self.out_modelname = 'cnn_ae_v3'
         self.out_modeltyp = 'Autoencoder'
         self.model_embedded = False
         self.model_shape = (1, input_size)
         do_bias_train = True
-        kernel_layer = [1, 32, 22, 8]
+        kernel_layer = [1, 40, 22, 8]
         kernel_size = [3, 3, 3]
         kernel_stride = [2, 2, 2]
         kernel_padding = [0, 0, 0]
         kernel_out = [0, 0, 0]
-        fcnn_layer = [24, 16, output_size]
+        fcnn_layer = [24, 14, output_size]
         fcnn_out = 199
 
         # Encoder setup
@@ -268,6 +268,7 @@ class cnn_ae_v3(nn.Module):
 
 Recommended_Config_PytorchSettings = Config_PyTorch(
     model=dnn_ae_v1(),
+    loss='MSE',
     loss_fn=nn.MSELoss(),
     optimizer='Adam',
     num_kfold=1,

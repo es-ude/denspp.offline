@@ -129,6 +129,7 @@ class cnn_rgc_onoff_v1(nn.Module):
 
 Recommended_Config_PytorchSettings = Config_PyTorch(
     model=dnn_rgc_v1(),
+    loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,

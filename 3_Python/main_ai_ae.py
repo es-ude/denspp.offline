@@ -11,7 +11,7 @@ from scipy.io import loadmat
 
 noise_std = 1
 # 0 = normal autoencoder, 1 = denoising AE (mean), 2 = denoising AE (more noise input)
-mode_train = 1
+mode_train = 0
 use_cell_bib = True
 mode_cell_bib = 0
 
@@ -20,20 +20,21 @@ only_plot = False
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
     model=ai_module.cnn_ae_v3(),
-    loss_fn=nn.L1Loss(),
+    loss='MSE',
+    loss_fn=nn.MSELoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=250,
+    num_epochs=50,
     batch_size=256,
     # --- Settings of Datasets
-    #data_path='data',
-    #data_file_name='2023-11-24_Dataset-07_RGC_TDB_Merged.mat',
-    data_path='../2_Data/00_Merged_Datasets',
-    data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
+    data_path='data',
+    data_file_name='2023-11-24_Dataset-07_RGC_TDB_Merged.mat',
+    #data_path='../2_Data/00_Merged_Datasets',
+    #data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
     data_split_ratio=0.25,
     data_do_shuffle=True,
     # --- Data Augmentation
-    data_do_augmentation=True,
+    data_do_augmentation=False,
     data_num_augmentation=0,
     data_do_normalization=True,
     data_do_addnoise_cluster=False,
