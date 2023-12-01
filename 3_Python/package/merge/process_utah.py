@@ -6,6 +6,7 @@ from scipy.io import savemat
 from scipy.io import loadmat as scipy_loadmat
 from mat73 import loadmat as mat73_loadmat
 
+
 class UtahDataHandler:
     def __init__(self, path: str, folder_name: str):
         self.__path2data = path

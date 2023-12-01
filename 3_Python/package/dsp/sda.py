@@ -1,8 +1,9 @@
 import dataclasses
 import numpy as np
 from scipy.signal import savgol_filter, find_peaks, iirfilter, lfilter
-from numpy import hamming, bartlett, kaiser
-
+from numpy import hamming, bartlett, blackman
+from scipy.signal.windows import gaussian
+import matplotlib.pyplot as plt
 
 @dataclasses.dataclass
 class SettingsSDA:
@@ -117,11 +118,6 @@ class SpikeDetection:
         C = self.settings.thr_gain
         return C * savgol_filter(xin, self.frame_length, 3)
 
-    #TODO: Methode aus Paper 10.1088/1741-2552/accece implementieren
-    def thres_firing_rate(self, xin: np.ndarray) -> np.ndarray:
-        """Applying the firing-rate decoding of the threshold methode"""
-        return NotImplementedError
-
     # --------- Spike Detection Algorithm -------------
     def sda_norm(self, xin: np.ndarray) -> np.ndarray:
         """Normal spike detection algorithm"""
@@ -158,28 +154,26 @@ class SpikeDetection:
         x_aso = np.concatenate([x_sda[:ksda0], x_sda], axis=None)
         return x_aso
 
-    def sda_eed(self, xin: np.ndarray, fs: float) -> np.ndarray:
+    def sda_eed(self, xin: np.ndarray, fs: float, f_hp=150.0) -> np.ndarray:
         """Applying the enhanced energy-derivation operator (eED) on input signal"""
-        fhp = 150
         filter = iirfilter(
-            N=2, Wn=2 * fhp / fs, ftype="butter", btype="highpass",
+            N=2, Wn=2 * f_hp / fs, ftype="butter", btype="highpass",
             analog=True, output='ba'
         )
         eed = np.array(lfilter(filter[0], filter[1], xin))
         return np.square(eed)
 
-    # TODO: Implementierung SBP Funktion
-    def sda_spb(self, xin: np.ndarray) -> [np.ndarray, np.ndarray]:
+    def sda_spb(self, xin: np.ndarray, fs: float, f_bp=(100.0, 1000.0)) -> [np.ndarray, np.ndarray]:
         """Performing the spike detection with spike band-power estimation [Nason et al., 2020]"""
-        return NotImplementedError
+        filter = iirfilter(N=2, Wn=2 * np.array(f_bp) / fs, ftype="butter", btype="bandpass", analog=False, output='ba')
+        filt0 = lfilter(filter[0], filter[1], xin)
+        sbp = smoothing_1d(np.abs(filt0), int(1e-3 * fs), 'Gaussian')
 
-    def sda_smooth(self, xin: np.ndarray) -> [np.ndarray, np.ndarray]:
-        """Smoothing the input"""
-        window = hamming(4 * self.settings.dx_sda[0] + 1)
-        gain_window = np.sum(window)
-        gain = 1
-        xout = np.convolve(xin, gain * window/gain_window, mode='same')
-        return xout, window
+        return np.floor(sbp)
+
+    def sda_smooth(self, xin: np.ndarray, window_method='Hamming') -> np.ndarray:
+        """Smoothing the input with defined window ['Hamming', 'Gaussian', 'Flat', 'Bartlett', 'Blackman']"""
+        return smoothing_1d(xin, 4 * self.settings.dx_sda[0] + 1, window_method)
 
     # --------- Frame Generation -------------
     def __gen_findpeaks(self, xtrg: np.ndarray, width: int) -> list:
@@ -216,13 +210,15 @@ class SpikeDetection:
 
         return xpos_out
 
-    def __frame_extraction(self, xraw: np.ndarray, xpos: np.ndarray, xoffset=0) -> [list, list]:
+    def __frame_extraction(self, xraw: np.ndarray, xpos: np.ndarray, xoffset=0) -> [list, list, list, list]:
         """Extraction of the frames"""
         f0 = self.__offset_frame_neg
         f1 = f0 + int(self.frame_length_total / 2)
 
-        frames_orig = []
-        frames_align = []
+        orig_frames = list()
+        alig_frames = list()
+        orig_xpos = list()
+        alig_xpos = list()
         for idx, pos in enumerate(xpos):
             # --- Original larger frame
             x_neg0 = int(pos - self.__offset_frame_neg + xoffset)
@@ -234,39 +230,43 @@ class SpikeDetection:
             # --- Aligned frame
             x_neg1 = x_neg0 + f0 + self.get_aligning_position(frame0[f0:f1])[0]
             x_pos1 = x_neg1 + self.frame_length
+            x_mid = x_neg0 + self.frame_start
             # Abort condition if values are out of range
             if x_neg1 < 0 or x_pos1 > xraw.size:
                 continue
             frame1 = xraw[x_neg1:x_pos1]
             # --- Add to output
-            frames_orig.append(frame0)
-            frames_align.append(frame1)
+            orig_frames.append(frame0)
+            orig_xpos.append(pos)
+            alig_frames.append(frame1)
+            alig_xpos.append(x_mid)
 
-        return frames_orig, frames_align
+        return orig_frames, orig_xpos, alig_frames, alig_xpos
 
     def frame_generation(self, xraw: np.ndarray, xsda: np.ndarray, xthr: np.ndarray) -> [list, list]:
         """Frame generation of SDA output and threshold"""
         xpos = self.frame_position(xsda, xthr)
-        xpos_aligned = 0 * xpos
-
-        frames_orig, frames_align = self.__frame_extraction(xraw, xpos)
+        frames_orig, frames_xpos0, frames_align, frames_xpos1 = self.__frame_extraction(xraw, xpos)
 
         frames_orig = np.array(frames_orig, dtype=np.dtype('int16'))
+        frames_xpos0 = np.array(frames_xpos0, dtype=np.dtype('uint64'))
         frames_align = np.array(frames_align, dtype=np.dtype('int16'))
-        frames_out0 = [frames_orig, xpos, np.zeros(shape=(xpos.size,), dtype=np.dtype('uint32'))]
-        frames_out1 = [frames_align, xpos_aligned, np.zeros(shape=(xpos_aligned.size, ), dtype=int)]
+        frames_xpos1 = np.array(frames_xpos1, dtype=np.dtype('uint64'))
+
+        frames_out0 = [frames_orig, frames_xpos0, np.zeros(shape=frames_xpos0.shape, dtype=np.dtype('uint8'))]
+        frames_out1 = [frames_align, frames_xpos1, np.zeros(shape=frames_xpos1.size, dtype=np.dtype('uint8'))]
 
         return frames_out0, frames_out1
 
-    def frame_generation_pos(self, xraw:np.ndarray, xpos: np.ndarray, xoffset: int) -> [np.ndarray, np.ndarray, np.ndarray]:
+    def frame_generation_pos(self, xraw: np.ndarray, xpos: np.ndarray, xoffset: int) -> [np.ndarray, np.ndarray, np.ndarray]:
         """Frame generation from already detected positions (in datasets with groundtruth)"""
-        frames_orig, frames_align = self.__frame_extraction(xraw, xpos, xoffset=xoffset)
+        frames_orig, frames_xpos, frames_algn,_ = self.__frame_extraction(xraw, xpos, xoffset=xoffset)
 
         frames_orig = np.array(frames_orig, dtype=np.dtype('int16'))
-        frames_align = np.array(frames_align, dtype=np.dtype('int16'))
-        xpos_out = np.array(xpos, dtype=np.dtype('uint32'))
+        frames_algn = np.array(frames_algn, dtype=np.dtype('int16'))
+        frames_xpos = np.array(frames_xpos, dtype=np.dtype('uint64'))
 
-        return frames_orig, frames_align, xpos_out
+        return frames_orig, frames_algn, frames_xpos
 
     # --------- Frame Aligning -------------
     def __frame_correction(self, frame_in: np.ndarray, dx_neg: int, dx_pos: int) -> np.ndarray:
@@ -358,3 +358,19 @@ class SpikeDetection:
             frame_out[idx, :] = self.__frame_correction(frame0, dxneg, dxpos)
 
         return frame_out
+
+
+def smoothing_1d(xin: np.ndarray, window_size: int, window_method='Hamming') -> np.ndarray:
+    """Smoothing the input"""
+    if window_method == 'Hamming':
+        window = hamming(window_size)
+    elif window_method == 'Gaussian':
+        window = gaussian(window_size, int(0.16 * window_size), sym=True)
+    elif window_method == 'Bartlett':
+        window = bartlett(window_size)
+    elif window_method == 'Blackman':
+        window = blackman(window_size)
+    else:
+        window = np.ones(window_size)
+
+    return np.convolve(xin, window, mode='same') # / np.sum(window), mode='same')

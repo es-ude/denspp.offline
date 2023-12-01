@@ -3,7 +3,6 @@ import numpy as np
 import pandas
 
 
-# TODO: Funktionen nochmals prüfen
 class NeuroPixelHandler:
     def __init__(self, path: str, filename, fs: int):
         self.path2data = path

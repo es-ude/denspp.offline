@@ -1,4 +1,3 @@
-import os
 import numpy as np
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
@@ -18,8 +17,8 @@ def calculate_prd(yin: np.ndarray, ymean: np.ndarray):
     return np.sqrt(a0 / b0) * 100
 
 
-# TODO: Metrik-Klasse ausbauen
 class Metric:
+    """Class for Determining the Metrics"""
     def __init__(self):
         self.cm = 0.0
         # Metrics

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay
 from package.plotting.plot_common import cm_to_inch, save_figure
 
-from package.data.pipeline_signals import PipelineSignal
+from package.template.pipeline_signals import PipelineSignal
 from package.nsp import calc_amplitude, calc_autocorrelogram, calc_firing_rate
 
 
@@ -222,7 +222,6 @@ def results_fec(signals: PipelineSignal, no_electrode: int, path="") -> None:
         save_figure(plt, path, "pipeline_fec_elec" + str(no_electrode))
 
 
-# TODO: ConfusionMatrix erstellen
 def results_confusion(signals: PipelineSignal, no_electrode: int, path="") -> None:
     do_norm = True
     title = "Spike Sorting"

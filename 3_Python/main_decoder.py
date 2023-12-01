@@ -2,7 +2,7 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 
 from src_decoder.pipeline_nev import Settings, Pipeline
-from package.data.data_call import DataController
+from package.data.data_call_common import DataController
 from package.plotting.plot_pipeline import results_fec, results_ivt, results_firing_rate
 
 if __name__ == "__main__":
@@ -23,7 +23,8 @@ if __name__ == "__main__":
     # --- Processing the data
     SpikeSorting = Pipeline(settings)
     path2save = SpikeSorting.saving_results(folder_name)
-    for elec in elec_id:
+    
+    for elec in dataIn.electrode_id:
         SpikeSorting.run(dataWave[elec])
         # --- Plotting
         results_fec(SpikeSorting, elec, path2save)

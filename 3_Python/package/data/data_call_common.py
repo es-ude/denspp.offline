@@ -1,11 +1,12 @@
-import os
 import sys
+from os import listdir
+from os.path import join, exists, isdir
+from glob import glob
 import dataclasses
 import numpy as np
-from typing import Tuple
 from fractions import Fraction
 from scipy.signal import resample_poly
-from package.data.data_load import DataLoader, DataHandler
+from package.data.data_call_files import DataHandler, DataLoader
 
 
 @dataclasses.dataclass
@@ -16,29 +17,24 @@ class SettingsDATA:
     data_set    - Type of dataset
     data_point  - Number within the dataset
     t_range     - List of the given time range for cutting the data [x, y]
-    ch_sel      - List of electrodes to use
+    ch_sel      - List of electrodes to use [empty=all]
     fs_resample - Resampling frequency of the datapoint
     """
     path: str
     data_set: int
     data_case: int
     data_point: int
-    # Angabe des zu betrachteten Zeitfensters [Start, Ende] in sec.
     t_range: list
-    # Auswahl der Elektroden(= -1, ruft alle Daten auf)
     ch_sel: list
     fs_resample: float
 
 
-class RecommendedSettingsDATA(SettingsDATA):
-    """Recommended configuration for testing"""
-    def __init__(self):
-        super().__init__(
-            path="D:\Data",
-            data_set=1, data_case=0, data_point=0,
-            t_range=0, ch_sel=-1,
-            fs_resample=100e3
-        )
+RecommendedSettingsDATA = SettingsDATA(
+    path="../2_Data",
+    data_set=1, data_case=0, data_point=0,
+    t_range=[0], ch_sel=[],
+    fs_resample=100e3
+)
 
 
 # ----- Read Settings -----
@@ -50,13 +46,13 @@ class DataController(DataLoader):
         self.path2data = setting.path
         self.path2file = str()
         self.raw_data = DataHandler()
-        self.fs_input = 10.0
 
         # --- Meta-Information about datasets
         # Information of subfolders and files
         self.no_subfolder = 0
         self.no_files = 0
-        # if used_channel = -1 -> All data
+        # if self.select_electrode = -1 -> All data
+        self.select_electrodes = setting.ch_sel
         self.no_channel = 0
         self.__fill_factor = 1
         self.__scaling = 1
@@ -69,9 +65,7 @@ class DataController(DataLoader):
     def do_call(self) -> None:
         """Loading the dataset"""
         # --- Checking if path is available
-        if os.path.exists(self.settings.path):
-            print(f"... data path {self.settings.path} is available")
-        else:
+        if not exists(self.settings.path):
             print(f"... data path {self.settings.path} is not available! Please check")
             sys.exit()
 
@@ -84,30 +78,7 @@ class DataController(DataLoader):
 
         self.raw_data.data_fs_used = self.raw_data.data_fs_orig
         self.no_channel = len(self.raw_data.electrode_id)
-        self.__do_take_elec()
         print("... using data point:", self.path2file)
-
-    def __do_take_elec(self) -> None:
-        """Taking all electrodes from configuration/settings"""
-        used_ch = self.settings.ch_sel
-        sel_channel = used_ch if not used_ch[0] == -1 else self.raw_data.electrode_id
-
-        rawdata = list()
-        spike_xpos = list()
-        cluster_id = list()
-
-        for idx in sel_channel:
-            rawdata.append(self.raw_data.data_raw[idx])
-
-            if self.raw_data.label_exist:
-                spike_xpos.append(self.raw_data.spike_xpos[idx])
-                cluster_id.append(self.raw_data.cluster_id[idx])
-                self.num_spikes += len(self.raw_data.spike_xpos[idx])
-
-        self.raw_data.electrode_id = sel_channel
-        self.raw_data.data_raw = rawdata
-        self.raw_data.spike_xpos = spike_xpos
-        self.raw_data.cluster_id = cluster_id
 
     def do_cut(self) -> None:
         """Cutting all transient electrode signals in the given range"""
@@ -159,7 +130,7 @@ class DataController(DataLoader):
         if do_resampling:
             self.raw_data.data_fs_used = desired_fs
             u_safe = 5e-6
-            (p, q) = self.__get_resample_ratio(self.raw_data.data_fs_orig, self.raw_data.data_fs_used)
+            (p, q) = Fraction(self.raw_data.data_fs_used / self.raw_data.data_fs_orig).limit_denominator(10000).as_integer_ratio()
             self.__scaling = p / q
 
             for idx, data_in in enumerate(self.raw_data.data_raw):
@@ -193,12 +164,17 @@ class DataController(DataLoader):
 
         if self.raw_data.label_exist:
             cluster_array = None
+            # Extract number of cluster size in all inputs
             for idx, clid in enumerate(self.raw_data.cluster_id):
                 if idx == 0:
                     cluster_array = clid
                 else:
                     cluster_array = np.append(cluster_array, clid)
             cluster_no = np.unique(cluster_array)
+            # Extract number of spikes in all inputs
+            for idx, spk_num in enumerate(self.raw_data.spike_xpos):
+                self.num_spikes += spk_num.size
+
             print(f"... includes labels (noSpikes: {self.num_spikes} - noCluster: {cluster_no.size})")
         else:
             print(f"... excludes labels")
@@ -207,7 +183,25 @@ class DataController(DataLoader):
         """Calling the raw data with groundtruth of the called data"""
         return self.raw_data
 
-    def __get_resample_ratio(self, fin: float, fout: float) -> Tuple[int, int]:
-        calced_fs = fout / fin
-        p, q = Fraction(calced_fs).limit_denominator(100).as_integer_ratio()
-        return p, q
+    def _prepare_access_file(self, folder_name: str, data_type: str, sel_datapoint: int) -> None:
+        """Getting the file of the corresponding trial"""
+        path = join(self.path2data, folder_name, data_type)
+        folder_content = glob(path)
+        folder_content.sort()
+        self.no_files = len(folder_content)
+        try:
+            self.path2file = folder_content[sel_datapoint]
+        except:
+            print("--- Folder not available - Please check folder name! ---")
+
+    def _prepare_access_folder(self, folder_name: str, data_type: str,
+                                   sel_dataset: int, sel_datapoint: int) -> None:
+        """Getting the file structure within cases/experiments in one data set"""
+        path2data = join(self.path2data, folder_name)
+        folder_data = [name for name in listdir(path2data) if isdir(join(path2data, name))]
+        folder_data.sort()
+        file_data = folder_data[sel_dataset]
+
+        path2data = join(path2data, file_data)
+        self._prepare_access_file(path2data, data_type, sel_datapoint)
+        self.no_subfolder = len(file_data)

@@ -4,3 +4,4 @@ __pycache__
 appendix/*
 runs/*
 data/*
+venv/*

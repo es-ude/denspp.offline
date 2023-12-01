@@ -49,27 +49,20 @@ class SettingsNoise:
     slope: float
 
 
-@dataclasses.dataclass
-class RecommenedSettingsAMP(SettingsAMP):
-    """"Recommended values to configure the PreAmp"""
-    def __init__(self):
-        super().__init__(
-            vdd=0.6, vss=0.6,
-            fs_ana=50e3, gain=40,
-            n_filt=1, f_filt=[0.1, 8e3], f_type="bandpass",
-            offset=0e-6, noise=False,
-        )
+RecommendedSettingsAMP = SettingsAMP(
+    vdd=0.6, vss=0.6,
+    fs_ana=50e3, gain=40,
+    n_filt=1, f_filt=[0.1, 8e3], f_type="bandpass",
+    offset=0e-6, noise=False,
+    f_chop=10e3
+)
 
 
-@dataclasses.dataclass
-class RecommendedSettingsNoise(SettingsNoise):
-    """"Recommended values to configure the noise properties of the pre-amp"""
-    def __init__(self):
-        super().__init__(
-            wgndB=-100,
-            Fc=10,
-            slope=0.6
-        )
+RecommendedSettingsNoise = SettingsNoise(
+    wgndB=-100,
+    Fc=10,
+    slope=0.6
+)
 
 
 class PreAmp:
@@ -77,7 +70,7 @@ class PreAmp:
     def __init__(self, setting: SettingsAMP):
         # --- Settings
         self.settings = setting
-        self.settings_noise = RecommendedSettingsNoise()
+        self.settings_noise = RecommendedSettingsNoise
         self.noise_eff_out = 0.0
         self.noise_pp = 0.0
         self.do_output = False

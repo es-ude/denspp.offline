@@ -3,296 +3,206 @@ import matplotlib.pyplot as plt
 from package.plotting.plot_common import cm_to_inch, save_figure
 
 
-def plt_memristor_ref(frames_in: np.ndarray, frames_cluster: np.ndarray, frames_mean: np.ndarray) -> None:
-    """Plotting reference signals for testing with BFO memristor-based calculation"""
-    color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
-    path = 'runs'
-    fig_size =[22, 8]
-    textsize = 12
-    yrange = [-20, 60]
-    error = [-70.3, -111.1, 0.2, 72.85, -119.5]
-
-    use_class = 2
-    sel_pos = np.where(frames_cluster == use_class)
-    frames_input = frames_in[sel_pos[0], :]
-
-    # --- Plot #1
-    plt.figure()
-    plt.rcParams.update({'font.size': textsize})
-    plt.figure(figsize=(cm_to_inch(fig_size[0]), cm_to_inch(fig_size[1]-2)))
-    plt.subplots_adjust(hspace=0, wspace=0.5)
-
-    ax = [plt.subplot(1, 5, i+1) for i in range(5)]
-    ax[0].set_ylabel("U_top (Sample)")
-    for a in ax:
-        a.set_ylim(yrange)
-        a.plot(np.transpose(frames_input), linewidth=1)
-        a.set_xticklabels([])
-        a.set_yticklabels([])
-        a.tick_params(direction='in')
-        a.grid()
-
-    plt.subplots_adjust(wspace=0, hspace=0)
-    plt.tight_layout()
-    if path:
-        save_figure(plt, path, "memristor_input")
-
-    # --- Plot #2
-    plt.figure()
-    plt.rcParams.update({'font.size': textsize})
-    plt.figure(figsize=(cm_to_inch(fig_size[0]), cm_to_inch(fig_size[1])))
-    plt.subplots_adjust(hspace=0, wspace=0.5)
-
-    ax = [plt.subplot(1, 5, i + 1) for i in range(5)]
-    ax[0].set_ylabel("U_bot (Ref.)")
-    for idx, a in enumerate(ax):
-        a.set_ylim(yrange)
-        a.plot(frames_mean[idx, :], color=color[idx], linewidth=2)
-        a.set_xticklabels([])
-        a.set_yticklabels([])
-        a.tick_params(direction='in')
-        a.grid()
-        a.set_title(f'Class {idx}\nDelta = {error[idx]:.1f}')
-
-    plt.subplots_adjust(wspace=0, hspace=0)
-    plt.tight_layout()
-    if path:
-        save_figure(plt, path, "memristor_reference")
-
-    plt.show(block=True)
-
-def test_plot(frames_in, frames_cluster):
-    cluster_no = np.unique(frames_cluster)
-
-    frames_plot = []
-    frames_mean = []
-    for idx, clid in enumerate(cluster_no):
-        xsel = np.where(frames_cluster == clid)
-        frames0 = np.zeros(shape=(len(xsel[0]), frames_in.shape[1]))
-        for i, sel in enumerate(xsel[0]):
-            frames0[i, :] = frames_in[sel, :]
-
-        frames_plot.append(frames0)
-        frames_mean.append(np.mean(frames0, axis=0))
-
-    # --- Plotting
-    plt.figure()
-    for idx, clid in enumerate(cluster_no):
-        # plt.plot(np.transpose(frames_plot[idx]), color='k')
-        plt.plot(frames_mean[idx])
-
-    plt.show(block=True)
-
-
 def results_training(path: str,
                      yin: np.ndarray, ypred: np.ndarray, ymean: np.ndarray,
-                     feat: np.ndarray, cluster: np.ndarray,
-                     snr: np.ndarray) -> None:
-    color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
-    textsize = 12
+                     feat: np.ndarray, yclus: np.ndarray,
+                     snr: list, xframes=50, num_feat=3) -> None:
+    data_labeled = True
 
     # --- Pre-Processing
-    cluster_no = np.unique(cluster)
-
-    mark_pos = []
-    mark_feat0 = []
-    mark_feat1 = []
-    mark_feat2 = []
+    cluster_no = np.unique(yclus)
+    mark_feat = [[] for idx in range(0, num_feat)]
+    take_frames = list()
     for i, id in enumerate(cluster_no):
-        mark_pos.append(np.where(cluster == id))
-        mark_feat0.append(feat[mark_pos[-1], 0])
-        mark_feat1.append(feat[mark_pos[-1], 1])
-        mark_feat2.append(feat[mark_pos[-1], 2])
+        pos = np.where(yclus == id)[0]
+        # Take only X frames per cluster
+        np.random.shuffle(pos)
+        take_frames.append(pos[:xframes])
+        # Separating the features for plotting
+        for idx in range(0, num_feat):
+            mark_feat[idx].append(feat[pos, idx])
 
-    # --- Plotting: Statistics
-    plt.rcParams.update({'font.size': textsize})
-    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
-    plt.subplots_adjust(hspace=0, wspace=0.5)
-    plt.grid(visible=True)
-    ax1 = plt.subplot(121)
-    ax2 = plt.subplot(122)
+    # --- Plotting: Inference model
+    plot_autoencoder_run(
+        mark_feat, [0, 1], yin, ypred, ymean,
+        cluster_no, take_frames, data_labeled=data_labeled, path2save=path
+    )
+    plot_autoencoder_run(
+        mark_feat, [0, 2], yin, ypred, ymean,
+        cluster_no, take_frames, data_labeled=data_labeled, path2save=path
+    )
+    plot_autoencoder_run(
+        mark_feat, [1, 2], yin, ypred, ymean,
+        cluster_no, take_frames, data_labeled=data_labeled, path2save=path
+    )
 
-    ax1.hist(cluster)
-    ax1.set_xticks(range(0, np.max(cluster_no)))
-    ax1.set_xlabel("Cluster")
-    ax1.set_ylabel("Bins")
+    # --- Plotting: Feature Space and Metrics
+    plot_autoencoder_snr(snr, path)
+    plot_autoencoder_features(cluster_no, mark_feat, [0, 1, 2], path)
 
-    ax2.plot(snr[:, 0], color='k')
-    ax2.plot(snr[:, 1], color='r')
-    ax2.plot(snr[:, 2], color='g')
-    ax2.legend(["min", "mean", "max"])
-    ax2.set_xlabel("Epoch")
-    ax2.set_ylabel("Improved SNR (dB)")
 
-    plt.tight_layout(pad=0.5)
-    # --- saving plots
-    if path:
-        save_figure(plt, path, "ai_training_hist")
+def plot_autoencoder_snr(snr: list, path2save='', do_boxplot=False) -> None:
+    """Plotting the Signal-to-Noise Ratio (SNR) over the epochs"""
+    # --- Processing
+    snr_processed = list()
+    for snr_fold in snr:
+        if not do_boxplot:
+            snr0 = np.zeros(shape=(len(snr_fold), 3), dtype=float)
+            for idx, snr_epoch in enumerate(snr_fold):
+                snr0[idx, :] = snr_epoch.min(), np.median(snr_epoch), snr_epoch.max()
+            snr_processed.append(snr0)
+        else:
+            snr_processed.append(snr_fold)
 
-    # --- Plotting: SNR
-    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
-    plt.subplots_adjust(hspace=0, wspace=0.5)
-    plt.grid(visible=True)
+    # --- Plotting
+    for idx, snr0 in enumerate(snr_processed):
+        plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
+        plt.rcParams.update({'font.size': 12})
+        plt.subplots_adjust(hspace=0, wspace=0.5)
+        plt.grid()
 
-    plt.plot(snr[:, 0], color='k')
-    plt.plot(snr[:, 1], color='r')
-    plt.plot(snr[:, 2], color='g')
-    plt.legend(["min", "mean", "max"])
-    plt.xlabel("Epoch")
-    plt.ylabel("Improved SNR (dB)")
+        if not do_boxplot:
+            plt.plot(snr0[:, 0], color='k', marker='.', label='min')
+            plt.plot(snr0[:, 1], color='r', marker='.', label='mean')
+            plt.plot(snr0[:, 2], color='g', marker='.', label='max')
+            plt.legend()
+            pos = np.linspace(0, snr0.shape[0]-1, num=11, endpoint=True, dtype=int)
+        else:
+            plt.boxplot(snr, patch_artist=True, showfliers=False)
+            pos = np.linspace(0, len(snr0)-1, num=11, endpoint=True, dtype=int)
 
-    plt.tight_layout(pad=0.5)
-    # --- saving plots
-    if path:
-        save_figure(plt, path, "ai_training_snr")
+        plt.xticks(pos)
+        plt.xlim([pos[0]-1, pos[-1]+1])
+        plt.xlabel("Epoch")
+        plt.ylabel("Improved SNR (dB)")
 
-    mode = 1
-    # --- Plotting - Feat 0
-    fig = plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
-    plt.subplots_adjust(hspace=0, wspace=0.5)
-    plt.grid(visible=True)
-    row = 1
-    col = 3
+        plt.tight_layout(pad=0.5)
+        if path2save:
+            save_figure(plt, path2save, f"ai_training_snr_fold{idx:03d}")
 
-    ax1 = plt.subplot(row, col, 1)
-    ax1.margins(x=0)
-    ax1.set_xticks([0, 7, 15, 23, 31])
-    ax2 = plt.subplot(row, col, 2)
-    ax2.margins(x=0)
-    ax3 = plt.subplot(row, col, 3, sharex=ax1)
-    ax3.margins(x=0)
 
-    # Noisy input
-    ax1.plot(np.transpose(yin))
-    ax1.set_title('Network Input')
-    ax1.set_ylabel('Y_in')
-    ax1.set_xlabel('Frame position')
+def plot_autoencoder_features(cluster_no: np.ndarray, mark_feat: list, idx: [0, 1, 2], path2save='') -> None:
+    """Plotting the feature space of the autoencoder"""
+    color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
 
-    # Feature extraction
-    if mode == 0:
-        ax2.scatter(feat[:, 0], feat[:, 1])
-    else:
-        for i, id in enumerate(cluster_no):
-            ax2.scatter(mark_feat0[i], mark_feat1[i], color=color[i], marker='.')
-    ax2.set_title('Features')
-    ax2.set_ylabel('Feat[0]')
-    ax2.set_xlabel('Feat[1]')
-
-    # Denoised output
-    ax3.plot(np.transpose(ypred))
-    if mode == 1:
-        for i, id in enumerate(cluster_no):
-            ax3.plot(ymean[i, :], color=color[i], linewidth=1.5)
-    ax3.set_title('Network Output')
-    ax3.set_ylabel('X_pred')
-    ax3.set_xlabel('Frame position')
-
-    plt.tight_layout(pad=0.5)
-    # --- saving plots
-    if path:
-        save_figure(plt, path, "ai_training_out0")
-
-    # --- Plotting - Feat 1
-    fig = plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
-    plt.subplots_adjust(hspace=0, wspace=0.5)
-    plt.grid(visible=True)
-    row = 1
-    col = 3
-
-    ax1 = plt.subplot(row, col, 1)
-    ax1.margins(x=0)
-    ax1.set_xticks([0, 7, 15, 23, 31])
-    ax2 = plt.subplot(row, col, 2)
-    ax2.margins(x=0)
-    ax3 = plt.subplot(row, col, 3, sharex=ax1)
-    ax3.margins(x=0)
-
-    # Noisy input
-    ax1.plot(np.transpose(yin))
-    ax1.set_title('Network Input')
-    ax1.set_ylabel('Y_in')
-    ax1.set_xlabel('Frame position')
-
-    # Feature extraction
-    if mode == 0:
-        ax2.scatter(feat[:, 0], feat[:, 1])
-    else:
-        for i, id in enumerate(cluster_no):
-            ax2.scatter(mark_feat1[i], mark_feat2[i], color=color[i], marker='.')
-    ax2.set_title('Features')
-    ax2.set_ylabel('Feat[1]')
-    ax2.set_xlabel('Feat[2]')
-
-    # Denoised output
-    ax3.plot(np.transpose(ypred))
-    if mode == 1:
-        for i, id in enumerate(cluster_no):
-            ax3.plot(ymean[i, :], color=color[i], linewidth=1.5)
-    ax3.set_title('Network Output')
-    ax3.set_ylabel('X_pred')
-    ax3.set_xlabel('Frame position')
-
-    plt.tight_layout(pad=0.5)
-    # --- saving plots
-    if path:
-        save_figure(plt, path, "ai_training_out1")
-
-    # --- Plotting - Feat 2
-    fig = plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
-    plt.subplots_adjust(hspace=0, wspace=0.5)
-    plt.grid(visible=True)
-    row = 1
-    col = 3
-
-    ax1 = plt.subplot(row, col, 1)
-    ax1.margins(x=0)
-    ax1.set_xticks([0, 7, 15, 23, 31])
-    ax2 = plt.subplot(row, col, 2)
-    ax2.margins(x=0)
-    ax3 = plt.subplot(row, col, 3, sharex=ax1)
-    ax3.margins(x=0)
-
-    # Noisy input
-    ax1.plot(np.transpose(yin))
-    ax1.set_title('Network Input')
-    ax1.set_ylabel('Y_in')
-    ax1.set_xlabel('Frame position')
-
-    # Feature extraction
-    if mode == 0:
-        ax2.scatter(feat[:, 0], feat[:, 1])
-    else:
-        for i, id in enumerate(cluster_no):
-            ax2.scatter(mark_feat0[i], mark_feat2[i], color=color[i], marker='.')
-    ax2.set_title('Features')
-    ax2.set_ylabel('Feat[0]')
-    ax2.set_xlabel('Feat[2]')
-
-    # Denoised output
-    ax3.plot(np.transpose(ypred))
-    if mode == 1:
-        for i, id in enumerate(cluster_no):
-            ax3.plot(ymean[i, :], color=color[i], linewidth=1.5)
-    ax3.set_title('Network Output')
-    ax3.set_ylabel('X_pred')
-    ax3.set_xlabel('Frame position')
-
-    plt.tight_layout(pad=0.5)
-    # --- saving plots
-    if path:
-        save_figure(plt, path, "ai_training_out2")
-
-    # --- Plotting: Feature space
-    plt.figure()
+    plt.figure(figsize=(cm_to_inch(12), cm_to_inch(9)))
+    plt.rcParams.update({'font.size': 12})
     ax = plt.axes(projection='3d')
 
     for i, id in enumerate(cluster_no):
-        ax.scatter3D(mark_feat0[i], mark_feat1[i], mark_feat2[i], color=color[i], marker='.')
+        ax.scatter3D(mark_feat[idx[0]][i], mark_feat[idx[1]][i], mark_feat[idx[2]][i], color=color[i], marker='.')
     ax.set_xlabel('Feat[0]')
     ax.set_ylabel('Feat[1]')
     ax.set_zlabel('Feat[2]')
 
     plt.tight_layout(pad=0.5)
     # --- saving plots
-    if path:
-        save_figure(plt, path, "ai_training_feat")
+    if path2save:
+        save_figure(plt, path2save, "ai_training_feat")
+
+
+def plot_autoencoder_run(mark_feat: list, mark_idx: list,
+                         frames_in: np.ndarray, frames_out: np.ndarray, frames_mean: np.ndarray,
+                         cluster_no: np.ndarray, take_frames: list, data_labeled=False, path2save='') -> None:
+    """Plotting the autoencoder in-/output for an inference"""
+    color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
+
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
+    plt.rcParams.update({'font.size': 12})
+    plt.subplots_adjust(hspace=0, wspace=0.5)
+    row = 1
+    col = 3
+
+    axs = list()
+    for idx in range(0, row * col):
+        axs.append(plt.subplot(row, col, 1+idx))
+
+    # Noisy input
+    for pos in take_frames:
+        axs[0].plot(np.transpose(frames_in[pos, :]), linewidth=0.5)
+    axs[0].set_title('Input')
+    axs[0].set_xlabel('Frame position')
+    axs[0].set_xticks(np.linspace(0, frames_in.shape[1]-1, num=6, endpoint=True, dtype=int))
+
+    # Feature extraction
+    for i, id in enumerate(cluster_no):
+        axs[1].scatter(mark_feat[mark_idx[0]][i], mark_feat[mark_idx[1]][i], color=color[i], marker='.')
+    axs[1].set_title('Feature Space')
+    axs[1].set_ylabel(f'Feat[{mark_idx[0]}]')
+    axs[1].set_xlabel(f'Feat[{mark_idx[1]}]')
+
+    # Denoised output
+    if data_labeled:
+        for i, id in enumerate(cluster_no):
+            axs[2].plot(frames_mean[i, :], color=color[i], linewidth=2)
+    for pos in take_frames:
+        axs[2].plot(np.transpose(frames_out[pos, :]), linewidth=0.5)
+
+    axs[2].set_title('Output')
+    axs[2].set_xlabel('Frame position')
+    axs[2].set_xticks(np.linspace(0, frames_mean.shape[1]-1, num=6, endpoint=True, dtype=int))
+
+    for ax in axs:
+        ax.grid()
+        ax.margins(x=0)
+
+    plt.tight_layout(pad=0.5)
+    # --- Saving plots
+    if path2save:
+        save_figure(plt, path2save, f"ai_training_out{mark_idx[0]}-{mark_idx[1]}")
+
+
+def plot_statistic_data(train_cl: np.ndarray | list, valid_cl=None, path2save='', cl_dict=None) -> None:
+    """Plotting the statistics of the data"""
+    do_plots_avai = isinstance(valid_cl, np.ndarray | list)
+    dict_available = isinstance(cl_dict, list)
+
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
+    plt.rcParams.update({'font.size': 12})
+    plt.subplots_adjust(hspace=0, wspace=0.5)
+    axs = list()
+    for idx in range(0, 1+do_plots_avai):
+        axs.append(plt.subplot(1, 1 + do_plots_avai, 1+idx))
+
+    # Histogram of Training data
+    check = np.unique(train_cl, return_counts=True)
+    xbins = check[0].tolist()
+    xbins.append(check[0].max()+1)
+
+    axs[0].hist(train_cl, bins=xbins, align='left', rwidth=0.8, color='k')
+    axs[0].set_xticks(xbins[:-1])
+    if dict_available:
+        use_cl_dict = list()
+        for idx in np.unique(train_cl):
+            use_cl_dict.append(cl_dict[int(idx)])
+        axs[0].set_xticklabels(use_cl_dict if check[0].size != 1 else [use_cl_dict[0]])
+
+    axs[0].set_ylabel("Bins")
+    axs[0].set_ylim([int(0.99*check[1].min()), int(1.01*check[1].max())])
+    axs[0].set_title('Training')
+
+    # Histogram of Validation data
+    if do_plots_avai:
+        check = np.unique(valid_cl, return_counts=True)
+        xbins = check[0].tolist()
+        xbins.append(check[0].max() + 1)
+
+        axs[1].hist(valid_cl, bins=xbins, align='left', stacked=True, rwidth=0.8, color='r')
+        axs[1].set_xticks(xbins[:-1])
+        if dict_available:
+            use_cl_dict = list()
+            for idx in np.unique(train_cl):
+                use_cl_dict.append(cl_dict[int(idx)])
+            axs[1].set_xticklabels(use_cl_dict if check[0].size != 1 else [use_cl_dict[0]])
+
+        axs[1].set_ylim([int(0.99 * check[1].min()), int(1.01 * check[1].max())])
+        axs[1].set_title('Validation')
+
+    for ax in axs:
+        ax.grid()
+        ax.set_xlabel("Cluster")
+
+    plt.tight_layout(pad=0.5)
+    # --- saving plots
+    if path2save:
+        save_figure(plt, path2save, "ai_training_histdata")
