@@ -17,11 +17,11 @@ mode_cell_bib = 2
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
-    model=ai_module.dnn_ae_v2(),
+    model=ai_module.dnn_ae_v2(output_size=6),
     loss_fn=nn.L1Loss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=2,
+    num_epochs=5,
     batch_size=256,
     # --- Settings of Datasets
     data_path='data',
@@ -46,7 +46,6 @@ config_train = Config_PyTorch(
 if __name__ == "__main__":
     only_plot = False
 
-    plt.close('all')
     if not only_plot:
         print("\nTrain modules of spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
 

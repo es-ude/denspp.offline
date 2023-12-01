@@ -141,6 +141,7 @@ class pytorch_train(training_pytorch):
         output.update({'settings': self.settings, 'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')})
         output.update({'train_clus': data_train['out'], 'valid_clus': data_valid['out']})
         output.update({'input': data_valid['in'], 'yclus': yclus})
+        output.update({'cl_dict': self.cell_classes})
 
         # --- Saving dict
         savemat(join(self.get_saving_path(), 'results.mat'), output,

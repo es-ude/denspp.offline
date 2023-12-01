@@ -38,7 +38,7 @@ config_train = Config_PyTorch(
 # --- Main Program
 if __name__ == "__main__":
     plt.close('all')
-    print("\nTrain modules of spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
+    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
 
     # --- Processing: Loading Data and Do Training
     dataset = prepare_training(path=config_train.get_path2data(), settings=config_train,
