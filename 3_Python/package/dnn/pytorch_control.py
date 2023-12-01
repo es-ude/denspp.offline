@@ -74,6 +74,7 @@ class training_pytorch:
     used_hw_num: int
     train_loader: list
     valid_loader: list
+    cell_classes: list
 
     def __init__(self, config_train: Config_PyTorch, do_train=True) -> None:
         self.os_type = platform.system()
@@ -156,6 +157,7 @@ class training_pytorch:
         """Loading data for training and validation in DataLoader format into class"""
         self._do_kfold = True if self.settings.num_kfold > 1 else False
         self._model_addon = data_set.data_type
+        self.cell_classes = data_set.frame_dict
 
         # --- Preparing datasets
         out_train = list()
