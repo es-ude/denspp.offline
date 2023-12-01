@@ -156,7 +156,7 @@ class pytorch_train(training_pytorch):
         # --- Producing the output
         output = dict()
         output.update({'settings': self.settings, 'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')})
-        output.update({'train_clus': data_train['cluster'], 'valid_clus': data_valid['cluster']})
+        output.update({'train_clus': data_train['class'], 'valid_clus': data_valid['class']})
         output.update({'input': data_valid['in'], 'feat': feat_out, 'pred': pred_out})
         output.update({'cl_dict': self.cell_classes})
 

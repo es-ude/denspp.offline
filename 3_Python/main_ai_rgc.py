@@ -42,12 +42,11 @@ config_train = Config_PyTorch(
 # --- Main Program
 if __name__ == "__main__":
     plt.close('all')
-    print("\nTrain modules of spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
+    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
 
     # --- Processing: Loading Data and Do Training
     dataset = prepare_training(path=config_train.get_path2data(), settings=config_train,
                                use_cell_bib=True, mode_classes=mode_celllib_dict)
-    dataset_dict = dataset.frame_dict if dataset.cluster_name_available else []
     trainhandler = pytorch_train(config_train)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
@@ -58,9 +57,12 @@ if __name__ == "__main__":
     data_result = trainhandler.do_validation_after_training(2)
 
     logsdir = trainhandler.get_saving_path()
-    plot_loss(epoch_acc, 'Acc.', path2save=logsdir, epoch_zoom=[400, ])
-    plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=dataset_dict)
-    plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir, cl_dict=dataset_dict)
+    plot_loss(epoch_acc, 'Acc.',
+              path2save=logsdir, epoch_zoom=[400, ])
+    plot_confusion(data_result['valid_clus'], data_result['yclus'],
+                   path2save=logsdir, cl_dict=data_result['cl_dict'])
+    plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
+                        path2save=logsdir, cl_dict=data_result['cl_dict'])
 
     plt.show(block=False)
     plt.close("all")

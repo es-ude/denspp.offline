@@ -157,7 +157,7 @@ class training_pytorch:
         """Loading data for training and validation in DataLoader format into class"""
         self._do_kfold = True if self.settings.num_kfold > 1 else False
         self._model_addon = data_set.data_type
-        self.cell_classes = data_set.frame_dict
+        self.cell_classes = data_set.frame_dict if data_set.cluster_name_available else []
 
         # --- Preparing datasets
         out_train = list()

@@ -29,7 +29,7 @@ if __name__ == "__main__":
         cluster_dict.append(folder.split('_')[-1][:-4])
 
     frames_in = np.array(frames_in, dtype=np.float16)
-    frames_cl = np.array(frames_cl, dtype=np.uint8)
+    frames_cl = np.array(frames_cl, dtype=np.int16)
 
     # --- Saving the data
     savemat(f'../data/{datetime.now().strftime("%Y-%m-%d")}_rgc_onoff_fzj_Merged.mat',

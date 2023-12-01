@@ -157,7 +157,7 @@ def merge_data_from_diff_data(path2data: str) -> None:
     folder_content.sort()
 
     frame_in = np.zeros((0, 0), dtype='int16')
-    frame_cl = np.zeros((0, 0), dtype='uint16')
+    frame_cl = np.zeros((0, 0), dtype='int16')
     file_name = folder_content[-1].split('\\')[-1] if platform.system() == "Windows" else folder_content[-1].split('/')[-1]
     file_name = file_name.split('_step')[0]
 
