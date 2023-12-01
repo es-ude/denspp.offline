@@ -120,6 +120,7 @@ class dnn_ae_rgc_tdb_v1(nn.Module):
 Recommended_Config_PytorchSettings = Config_PyTorch(
     model=dnn_ae_rgc_tdb_v1(),
     loss_fn=nn.MSELoss(),
+    loss='MSE',
     optimizer='Adam',
     num_kfold=1,
     num_epochs=40,

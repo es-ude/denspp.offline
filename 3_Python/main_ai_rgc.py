@@ -14,8 +14,8 @@ mode_celllib_dict = 2
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
     model=ai_module.dnn_rgc_v2(input_size=32, output_size=num_output),
+    loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
-    # loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
     num_epochs=500,

@@ -13,6 +13,7 @@ num_output = 2
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
     model=ai_module.dnn_sda_v1(input_size=12, output_size=num_output),
+    loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,

@@ -22,6 +22,7 @@ class Config_PyTorch:
     model: Any
     loss_fn: Any
     optimizer: str
+    loss: str
     num_kfold: int
     num_epochs: int
     batch_size: int
@@ -46,6 +47,7 @@ class Config_PyTorch:
         return join(self.data_path, self.data_file_name)
 
     def get_topology(self) -> str:
+        """Getting the model name defined in models"""
         return self.model.out_modeltyp
 
     def load_optimizer(self, learn_rate=0.1) -> Any:
@@ -212,6 +214,7 @@ class training_pytorch:
             txt_handler.write(f'Embedded?: {self.model.model_embedded}\n')
             txt_handler.write('\n')
             txt_handler.write(f'Used Optimizer: {self.settings.optimizer}\n')
+            txt_handler.write(f'Used Loss Function: {self.settings.loss}\n')
             txt_handler.write(f'Batchsize: {self.settings.batch_size}\n')
             txt_handler.write(f'Num. of epochs: {self.settings.num_epochs}\n')
             txt_handler.write(f'Splitting ratio (Training/Validation): '

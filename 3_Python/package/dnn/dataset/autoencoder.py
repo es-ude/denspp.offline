@@ -73,7 +73,7 @@ def prepare_training(path: str, settings: Config_PyTorch,
     npzfile = loadmat(path)
     frames_in = npzfile["frames_in"]
     frames_cl = npzfile["frames_cluster"].flatten() if 'frames_cluster' in npzfile else npzfile["frames_cl"].flatten()
-    frames_dict = list()
+    frames_dict = None
 
     # --- Using cell_bib for clustering
     if use_cell_bib:
