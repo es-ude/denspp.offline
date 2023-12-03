@@ -343,7 +343,7 @@ class DataLoader:
             self.raw_data.spike_xpos.append(spike_xpos[idx])
             num_spikes = len(spike_xpos[idx])
             type = loaded_data['sp_trains']['cell_type'][pos_ch][0]
-            id = rgc_translator.get_id_from_cell_type(type)
+            id = rgc_translator.get_id_from_celltype(type)
             if id == -1:
                 print(f"Missing type: {type}")
             self.raw_data.cluster_id.append(np.zeros(shape=(num_spikes, ), dtype=int) + id)

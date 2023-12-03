@@ -93,7 +93,7 @@ def plot_autoencoder_features(cluster_no: np.ndarray, mark_feat: list, idx: [0, 
     ax = plt.axes(projection='3d')
 
     for i, id in enumerate(cluster_no):
-        ax.scatter3D(mark_feat[idx[0]][i], mark_feat[idx[1]][i], mark_feat[idx[2]][i], color=color[i], marker='.')
+        ax.scatter3D(mark_feat[idx[0]][i], mark_feat[idx[1]][i], mark_feat[idx[2]][i], color=color[i % 7], marker='.')
     ax.set_xlabel('Feat[0]')
     ax.set_ylabel('Feat[1]')
     ax.set_zlabel('Feat[2]')
@@ -126,14 +126,14 @@ def plot_autoencoder_run(mark_feat: list, mark_idx: list,
 
     # Noisy input
     for pos in take_frames:
-        axs[0].plot(np.transpose(frames_in[pos, :]), linewidth=0.5)
+        axs[0].plot(np.transpose(frames_in[pos, :]), linewidth=0.5, drawstyle='steps-post')
     axs[0].set_title('Input')
     axs[0].set_xlabel('Frame position')
     axs[0].set_xticks(np.linspace(0, frames_in.shape[1]-1, num=6, endpoint=True, dtype=int))
 
     # Feature extraction
     for i, id in enumerate(cluster_no):
-        axs[1].scatter(mark_feat[mark_idx[0]][i], mark_feat[mark_idx[1]][i], color=color[i], marker='.')
+        axs[1].scatter(mark_feat[mark_idx[0]][i], mark_feat[mark_idx[1]][i], color=color[i % 7], marker='.')
     axs[1].set_title('Feature Space')
     axs[1].set_ylabel(f'Feat[{mark_idx[0]}]')
     axs[1].set_xlabel(f'Feat[{mark_idx[1]}]')
@@ -144,9 +144,9 @@ def plot_autoencoder_run(mark_feat: list, mark_idx: list,
     # Denoised output
     if data_labeled:
         for i, id in enumerate(cluster_no):
-            axs[2].plot(frames_mean[i, :], color=color[i], linewidth=2)
+            axs[2].plot(frames_mean[id, :], color=color[i % 7], linewidth=2, drawstyle='steps-post')
     for pos in take_frames:
-        axs[2].plot(np.transpose(frames_out[pos, :]), linewidth=0.5)
+        axs[2].plot(np.transpose(frames_out[pos, :]), linewidth=0.5, drawstyle='steps-post')
 
     axs[2].set_title('Output')
     axs[2].set_xlabel('Frame position')
@@ -165,7 +165,16 @@ def plot_autoencoder_run(mark_feat: list, mark_idx: list,
 def plot_statistic_data(train_cl: np.ndarray | list, valid_cl=None, path2save='', cl_dict=None) -> None:
     """Plotting the statistics of the data"""
     do_plots_avai = isinstance(valid_cl, np.ndarray | list)
-    dict_available = isinstance(cl_dict, list)
+    dict_available = isinstance(cl_dict, np.ndarray | list)
+    use_cl_dict = list()
+    if dict_available:
+        if not isinstance(cl_dict, list):
+            cl_dict0 = cl_dict.tolist()
+        else:
+            cl_dict0 = cl_dict
+        xtick_text = 'vertical' if len(cl_dict0) > 3 else 'horizontal'
+    else:
+        xtick_text = 'horizontal'
 
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
     plt.rcParams.update({'font.size': 12})
@@ -176,17 +185,13 @@ def plot_statistic_data(train_cl: np.ndarray | list, valid_cl=None, path2save=''
 
     # Histogram of Training data
     check = np.unique(train_cl, return_counts=True)
-    xbins = check[0].tolist()
-    xbins.append(check[0].max()+1)
-
-    axs[0].hist(train_cl, bins=xbins, align='left', rwidth=0.8, color='k')
-    axs[0].set_xticks(xbins[:-1])
+    axs[0].bar(check[0], check[1], color='k', width=0.8)
     if dict_available:
         if not len(cl_dict) == 0:
-            use_cl_dict = list()
             for idx in np.unique(train_cl):
                 use_cl_dict.append(cl_dict[int(idx)])
-            axs[0].set_xticklabels(use_cl_dict if check[0].size != 1 else [use_cl_dict[0]])
+            axs[0].set_xticks(check[0], (use_cl_dict if check[0].size != 1 else [use_cl_dict[0]]),
+                              rotation=xtick_text)
 
     axs[0].set_ylabel("Bins")
     axs[0].set_ylim([int(0.99*check[1].min()), int(1.01*check[1].max())])
@@ -195,17 +200,11 @@ def plot_statistic_data(train_cl: np.ndarray | list, valid_cl=None, path2save=''
     # Histogram of Validation data
     if do_plots_avai:
         check = np.unique(valid_cl, return_counts=True)
-        xbins = check[0].tolist()
-        xbins.append(check[0].max() + 1)
-
-        axs[1].hist(valid_cl, bins=xbins, align='left', stacked=True, rwidth=0.8, color='r')
-        axs[1].set_xticks(xbins[:-1])
+        axs[1].bar(check[0], check[1], color='k', width=0.8)
         if dict_available:
             if not len(cl_dict) == 0:
-                use_cl_dict = list()
-                for idx in np.unique(train_cl):
-                    use_cl_dict.append(cl_dict[int(idx)])
-                axs[1].set_xticklabels(use_cl_dict if check[0].size != 1 else [use_cl_dict[0]])
+                axs[1].set_xticks(check[0], (use_cl_dict if check[0].size != 1 else [use_cl_dict[0]]),
+                                  rotation=xtick_text)
 
         axs[1].set_ylim([int(0.99 * check[1].min()), int(1.01 * check[1].max())])
         axs[1].set_title('Validation')

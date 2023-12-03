@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from torch import nn
+from scipy.io import loadmat
 from package.plotting.plot_dnn import results_training, plot_statistic_data
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.pytorch_autoencoder import *
@@ -11,44 +12,44 @@ from scipy.io import loadmat
 
 noise_std = 1
 # 0 = normal autoencoder, 1 = denoising AE (mean), 2 = denoising AE (more noise input)
-mode_train = 1
+mode_train = 0
 use_cell_bib = True
-mode_cell_bib = 2
+mode_cell_bib = 0
+
+only_plot = False
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
     model=ai_module.cnn_ae_v3(),
-    loss_fn=nn.L1Loss(),
+    loss='MSE',
+    loss_fn=nn.MSELoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=250,
+    num_epochs=50,
     batch_size=256,
     # --- Settings of Datasets
-    #data_path='data',
-    #data_file_name='2023-11-24_Dataset-07_RGC_TDB_Merged.mat',
-    data_path='../2_Data/00_Merged_Datasets',
-    data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
+    data_path='data',
+    data_file_name='2023-11-24_Dataset-07_RGC_TDB_Merged.mat',
+    #data_path='../2_Data/00_Merged_Datasets',
+    #data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
     data_split_ratio=0.25,
     data_do_shuffle=True,
     # --- Data Augmentation
-    data_do_augmentation=True,
+    data_do_augmentation=False,
     data_num_augmentation=0,
     data_do_normalization=True,
     data_do_addnoise_cluster=False,
-    data_do_reduce_samples_per_cluster=False,
-    data_num_samples_per_cluster=100_000,
-    # --- Dataset Preparation
+    # --- Dataset Reduction
+    data_do_reduce_samples_per_cluster=True,
+    data_num_samples_per_cluster=50_000,
     data_exclude_cluster=[],
     data_sel_pos=[]
 )
 
 # --- Main program
 if __name__ == "__main__":
-    only_plot = False
-
     if not only_plot:
-        print("\nTrain modules of spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
-
+        print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
         # --- Processing: Loading dataset and Do Training
         dataset = prepare_training(path=config_train.get_path2data(), settings=config_train,
                                    use_cell_bib=use_cell_bib, mode_classes=mode_cell_bib,
@@ -67,8 +68,9 @@ if __name__ == "__main__":
         logsdir = trainhandler.get_saving_path()
     else:
         logsdir = ''
-        data_result = loadmat('runs/20231130_224524_train_dnn_ae_v2/results.mat')
+        data_result = loadmat('runs/20231201_165901_train_cnn_ae_v3/results.mat')
         snr_train = list()
+        data_mean = np.zeros(shape=(52, 32))
         data_mean = np.zeros(shape=(4,32))
         dataset_dict = dict()
 
@@ -81,3 +83,4 @@ if __name__ == "__main__":
     plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                         path2save=logsdir, cl_dict=dataset_dict)
     plt.show(block=True)
+
