@@ -110,7 +110,7 @@ class pytorch_train(training_pytorch):
                     save(self.model, path2model)
 
                 # Saving metrics after each epoch
-                #epoch_metric.append(self.__do_snr_epoch())
+                epoch_metric.append(self.__do_snr_epoch())
 
             # --- Saving metrics after each fold
             metrics_own.append(epoch_metric)

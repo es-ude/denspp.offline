@@ -198,8 +198,8 @@ class cnn_ae_v3(nn.Module):
         self.model_shape = (1, input_size)
         do_bias_train = True
         kernel_layer = [1, 40, 22, 8]
-        kernel_size = [3, 3, 3]
-        kernel_stride = [2, 2, 2]
+        kernel_size = [4, 3, 3]
+        kernel_stride = [1, 2, 2]
         kernel_padding = [0, 0, 0]
         kernel_out = [0, 0, 0]
         fcnn_layer = [24, 14, output_size]
@@ -225,12 +225,12 @@ class cnn_ae_v3(nn.Module):
             nn.Linear(fcnn_layer[0], fcnn_layer[1], bias=do_bias_train),
             nn.BatchNorm1d(fcnn_layer[1], affine=do_bias_train),
             nn.Tanh(),
-            nn.Linear(fcnn_layer[1], fcnn_layer[2], bias=do_bias_train),
-            nn.BatchNorm1d(fcnn_layer[2], affine=do_bias_train)
+            nn.Linear(fcnn_layer[1], fcnn_layer[2], bias=do_bias_train)
         )
         self.flatten = nn.Flatten(start_dim=1)
         # Decoder setup
         self.decoder_linear = nn.Sequential(
+            nn.BatchNorm1d(fcnn_layer[2], affine=do_bias_train),
             nn.Tanh(),
             nn.Linear(fcnn_layer[2], fcnn_layer[1], bias=do_bias_train),
             nn.BatchNorm1d(fcnn_layer[1], affine=do_bias_train),

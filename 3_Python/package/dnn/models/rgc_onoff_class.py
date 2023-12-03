@@ -3,7 +3,7 @@ from package.dnn.pytorch_control import Config_PyTorch
 
 
 class dnn_rgc_v1(nn.Module):
-    """Class of an autoencoder with Dense-Layer for feature extraction"""
+    """Classification model"""
     def __init__(self, input_size=40, output_size=5):
         super().__init__()
         self.out_modelname = 'rgc_class_v1'
@@ -32,7 +32,7 @@ class dnn_rgc_v1(nn.Module):
             nn.ReLU(),
             nn.Dropout(rate_drop[3]),
             nn.Linear(lin_size[4], lin_size[5]),
-            nn.Softmax()
+            nn.Softmax(dim=1)
         )
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
@@ -41,15 +41,50 @@ class dnn_rgc_v1(nn.Module):
 
 
 class dnn_rgc_v2(nn.Module):
-    """Class of an autoencoder with Dense-Layer for feature extraction"""
-    def __init__(self, input_size=40, output_size=5):
+    """Classification model"""
+    def __init__(self, input_size=40, output_size=4):
         super().__init__()
         self.out_modelname = 'rgc_class_v2'
         self.out_modeltyp = 'Classification'
         self.model_shape = (1, input_size)
         self.model_embedded = False
-        lin_size = [input_size, 45, 32, 28, 16, output_size]
-        rate_drop = [0.01, 0.01, 0.01, 0.01]
+        lin_size = [input_size, 30, 18, 10, output_size]
+        rate_drop = [0.0, 0.0, 0.1]
+        do_train_bias = True
+
+        self.classifier = nn.Sequential(
+            nn.Linear(lin_size[0], lin_size[1], bias=do_train_bias),
+            nn.BatchNorm1d(lin_size[1], affine=do_train_bias),
+            nn.SiLU(),
+            nn.Dropout(rate_drop[0]),
+            nn.Linear(lin_size[1], lin_size[2], bias=do_train_bias),
+            nn.BatchNorm1d(lin_size[2], affine=do_train_bias),
+            nn.SiLU(),
+            nn.Dropout(rate_drop[1]),
+            nn.Linear(lin_size[2], lin_size[3], bias=do_train_bias),
+            nn.BatchNorm1d(lin_size[3], affine=do_train_bias),
+            nn.SiLU(),
+            nn.Dropout(rate_drop[2]),
+            nn.Linear(lin_size[3], lin_size[4], bias=do_train_bias),
+            nn.BatchNorm1d(lin_size[4], affine=do_train_bias),
+            nn.Softmax(dim=1)
+        )
+
+    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+        val = self.classifier(x)
+        return val, argmax(val, dim=1)
+
+
+class dnn_rgc_v3(nn.Module):
+    """Classification model"""
+    def __init__(self, input_size=40, output_size=4):
+        super().__init__()
+        self.out_modelname = 'rgc_class_v3'
+        self.out_modeltyp = 'Classification'
+        self.model_shape = (1, input_size)
+        self.model_embedded = False
+        lin_size = [input_size, 36, 28, 10, output_size]
+        rate_drop = [0.01, 0.01, 0.01]
         do_train_bias = True
 
         self.classifier = nn.Sequential(
@@ -67,10 +102,7 @@ class dnn_rgc_v2(nn.Module):
             nn.Dropout(rate_drop[2]),
             nn.Linear(lin_size[3], lin_size[4]),
             nn.BatchNorm1d(lin_size[4], affine=do_train_bias),
-            nn.ReLU(),
-            nn.Dropout(rate_drop[3]),
-            nn.Linear(lin_size[4], lin_size[5]),
-            nn.Softmax()
+            nn.Softmax(dim=1)
         )
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
@@ -79,18 +111,19 @@ class dnn_rgc_v2(nn.Module):
 
 
 class cnn_rgc_onoff_v1(nn.Module):
-    """Class of a convolutional autoencoder for classification"""
+    """Classification model"""
     def __init__(self, input_size=32, output_size=4):
         super().__init__()
         self.out_modelname = 'cnn_rgc_onoff_v1'
         self.out_modeltyp = 'Classification'
         self.model_embedded = False
         self.model_shape = (1, input_size)
-        kernel_layer = [1, 6, 8]
-        kernel_size = [3, 3, 3]
-        kernel_stride = [1, 1, 1]
-        kernel_padding = [0, 0, 0]
-        lin_size = [224, 140, 90, 30, output_size]
+        kernel_layer = [1, 32, 25, 20]
+        kernel_size = [3, 3, 3, 3]
+        kernel_stride = [1, 1, 1, 1]
+        kernel_padding = [0, 0, 0, 0]
+        pool_size = [2, 2, 2]
+        lin_size = [40, 16, output_size]
         do_train_bias = True
 
         self.cnn = nn.Sequential(
@@ -98,11 +131,17 @@ class cnn_rgc_onoff_v1(nn.Module):
                       stride=kernel_stride[0], padding=kernel_padding[0]),
             nn.BatchNorm1d(kernel_layer[1], affine=do_train_bias),
             nn.SiLU(),
+            nn.MaxPool1d(pool_size[0]),
             nn.Conv1d(kernel_layer[1], kernel_layer[2], kernel_size[1],
                       stride=kernel_stride[1], padding=kernel_padding[1]),
             nn.BatchNorm1d(kernel_layer[2], affine=do_train_bias),
             nn.SiLU(),
-            # --- Linear Layer
+            nn.MaxPool1d(pool_size[1]),
+            nn.Conv1d(kernel_layer[2], kernel_layer[3], kernel_size[2],
+                      stride=kernel_stride[2], padding=kernel_padding[2]),
+            nn.BatchNorm1d(kernel_layer[3], affine=do_train_bias),
+            nn.SiLU(),
+            nn.MaxPool1d(pool_size[2]),
             nn.Flatten(start_dim=1)
         )
         self.classifier = nn.Sequential(
@@ -111,13 +150,7 @@ class cnn_rgc_onoff_v1(nn.Module):
             nn.ReLU(),
             nn.Linear(lin_size[1], lin_size[2], bias=do_train_bias),
             nn.BatchNorm1d(lin_size[2], affine=do_train_bias),
-            nn.ReLU(),
-            nn.Linear(lin_size[2], lin_size[3], bias=do_train_bias),
-            nn.BatchNorm1d(lin_size[3], affine=do_train_bias),
-            nn.ReLU(),
-            nn.Linear(lin_size[3], lin_size[4], bias=do_train_bias),
-            nn.BatchNorm1d(lin_size[4], affine=do_train_bias),
-            nn.Softmax(dim=0)
+            nn.Softmax(dim=1)
         )
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:

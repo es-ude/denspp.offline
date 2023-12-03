@@ -126,7 +126,7 @@ class CellSelector(_RGC_ONOFF_FZJ, _RGC_TDB):
         elif mode == 3:
             self.cell_class_used = self.cell_class_to_type
 
-    def get_id_from_cell_type(self, name: str) -> int:
+    def get_id_from_celltype(self, name: str) -> int:
         """Getting the ID from a cell type"""
         return self.cell_type_to_id.get(name) if name in self.cell_type_to_id else -1
 
@@ -149,7 +149,16 @@ class CellSelector(_RGC_ONOFF_FZJ, _RGC_TDB):
                         val[pos] = idx
             return val
 
-    def get_classes(self) -> list:
+    def get_celltype_name_from_id(self, cluster_id: int | np.ndarray) -> str:
+        """Getting the name of the cell type of a given cluster ID/class"""
+        cell_name = ''
+        for idx, (key, values) in enumerate(self.cell_class_used.items()):
+            if cluster_id == values:
+                cell_name = key
+                break
+        return cell_name
+
+    def get_celltype_names(self) -> list:
         """Getting the classes as list"""
         classes = list()
         for idx, (key, _) in enumerate(self.cell_class_used.items()):

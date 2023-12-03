@@ -101,7 +101,7 @@ def reconfigure_cluster_with_cell_lib(path: str, sel_mode_classes: int,
 
     if not flag == -1:
         cl_sampler = CellSelector(flag, sel_mode_classes)
-        cell_dict = cl_sampler.get_classes()
+        cell_dict = cl_sampler.get_celltype_names()
         if not sel_mode_classes == 0:
             cluster = cl_sampler.get_class_to_id(frames_cl)
 

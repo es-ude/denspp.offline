@@ -29,9 +29,9 @@ config_train = Config_PyTorch(
     data_num_augmentation=2000,
     data_do_normalization=False,
     data_do_addnoise_cluster=False,
+    # --- Dataset Reduction
     data_do_reduce_samples_per_cluster=True,
     data_num_samples_per_cluster=5000,
-    # --- Dataset Preparation
     data_exclude_cluster=[],
     data_sel_pos=[]
 )
