@@ -274,8 +274,8 @@ class class_autoencoder_v1(nn.Module):
         self.out_modeltyp = 'Classification'
         self.model_shape = (1, input_size)
         self.model_embedded = False
-        lin_size = [input_size, 10, 10, output_size]
-        lin_drop = [0.1, 0.1, 0.15, 0.05]
+        lin_size = [input_size, 16, 12, output_size]
+        lin_drop = [0.0, 0.0]
         do_train_bias = True
 
         self.classifier = nn.Sequential(
