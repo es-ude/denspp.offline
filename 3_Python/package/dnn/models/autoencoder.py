@@ -1,4 +1,4 @@
-from torch import nn, Tensor, unsqueeze
+from torch import nn, Tensor, unsqueeze, argmax
 from package.dnn.pytorch_control import Config_PyTorch
 
 
@@ -202,8 +202,8 @@ class cnn_ae_v3(nn.Module):
         kernel_stride = [1, 2, 2]
         kernel_padding = [0, 0, 0]
         kernel_out = [0, 0, 0]
-        fcnn_layer = [24, 14, output_size]
-        fcnn_out = 199
+        fcnn_layer = [48, 20, output_size]
+        fcnn_out = 198
 
         # Encoder setup
         self.encoder = nn.Sequential(
@@ -264,6 +264,38 @@ class cnn_ae_v3(nn.Module):
         decoded = self.decoder(decoded0)
 
         return encoded, self.flatten(decoded)
+
+
+class class_autoencoder_v1(nn.Module):
+    """Classification model of autoencoder output"""
+    def __init__(self, input_size=6, output_size=5):
+        super().__init__()
+        self.out_modelname = 'ae_class_v1'
+        self.out_modeltyp = 'Classification'
+        self.model_shape = (1, input_size)
+        self.model_embedded = False
+        lin_size = [input_size, 10, 10, output_size]
+        lin_drop = [0.1, 0.1, 0.15, 0.05]
+        do_train_bias = True
+
+        self.classifier = nn.Sequential(
+            nn.Dropout(0.0),
+            nn.Linear(lin_size[0], lin_size[1]),
+            nn.BatchNorm1d(lin_size[1], affine=do_train_bias),
+            nn.ReLU(),
+            nn.Dropout(lin_drop[0]),
+            nn.Linear(lin_size[1], lin_size[2]),
+            nn.BatchNorm1d(lin_size[2], affine=do_train_bias),
+            nn.ReLU(),
+            nn.Dropout(lin_drop[1]),
+            nn.Linear(lin_size[2], lin_size[3]),
+            nn.BatchNorm1d(lin_size[3], affine=do_train_bias),
+            nn.Softmax(dim=1)
+        )
+
+    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+        val = self.classifier(x)
+        return val, argmax(val, dim=1)
 
 
 Recommended_Config_PytorchSettings = Config_PyTorch(

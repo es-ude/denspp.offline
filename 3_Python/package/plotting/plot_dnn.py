@@ -126,7 +126,7 @@ def plot_autoencoder_run(mark_feat: list, mark_idx: list,
 
     # Noisy input
     for pos in take_frames:
-        axs[0].plot(np.transpose(frames_in[pos, :]), linewidth=0.5, drawstyle='steps-post')
+        axs[0].plot(np.transpose(frames_in[pos, :]), linewidth=0.5)
     axs[0].set_title('Input')
     axs[0].set_xlabel('Frame position')
     axs[0].set_xticks(np.linspace(0, frames_in.shape[1]-1, num=6, endpoint=True, dtype=int))
@@ -144,9 +144,9 @@ def plot_autoencoder_run(mark_feat: list, mark_idx: list,
     # Denoised output
     if data_labeled:
         for i, id in enumerate(cluster_no):
-            axs[2].plot(frames_mean[id, :], color=color[i % 7], linewidth=2, drawstyle='steps-post')
+            axs[2].plot(frames_mean[id, :], color=color[i % 7], linewidth=2)
     for pos in take_frames:
-        axs[2].plot(np.transpose(frames_out[pos, :]), linewidth=0.5, drawstyle='steps-post')
+        axs[2].plot(np.transpose(frames_out[pos, :]), linewidth=0.5)
 
     axs[2].set_title('Output')
     axs[2].set_xlabel('Frame position')
@@ -192,6 +192,8 @@ def plot_statistic_data(train_cl: np.ndarray | list, valid_cl=None, path2save=''
                 use_cl_dict.append(cl_dict[int(idx)])
             axs[0].set_xticks(check[0], (use_cl_dict if check[0].size != 1 else [use_cl_dict[0]]),
                               rotation=xtick_text)
+    else:
+        axs[0].set_xticks(check[0])
 
     axs[0].set_ylabel("Bins")
     axs[0].set_ylim([int(0.99*check[1].min()), int(1.01*check[1].max())])
@@ -205,6 +207,8 @@ def plot_statistic_data(train_cl: np.ndarray | list, valid_cl=None, path2save=''
             if not len(cl_dict) == 0:
                 axs[1].set_xticks(check[0], (use_cl_dict if check[0].size != 1 else [use_cl_dict[0]]),
                                   rotation=xtick_text)
+        else:
+            axs[0].set_xticks(check[0])
 
         axs[1].set_ylim([int(0.99 * check[1].min()), int(1.01 * check[1].max())])
         axs[1].set_title('Validation')

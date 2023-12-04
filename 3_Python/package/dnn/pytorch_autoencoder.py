@@ -2,10 +2,10 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import Tensor, load, save, from_numpy, tensor
+from torch import Tensor, load, save, from_numpy, tensor, max, min, log10
 from scipy.io import savemat
 from package.dnn.pytorch_control import Config_PyTorch, training_pytorch
-from package.metric import calculate_snr_tensor, calculate_snr
+from package.metric import calculate_snr
 
 
 class pytorch_train(training_pytorch):
@@ -56,11 +56,16 @@ class pytorch_train(training_pytorch):
             data_mean = vdata['mean'].to(self.used_hw_dev)
             pred_out = self.model(vdata['in'].to(self.used_hw_dev))[1]
             for idx, data in enumerate(vdata['in'].to(self.used_hw_dev)):
-                snr0 = calculate_snr_tensor(data, data_mean[idx, :])
-                snr1 = calculate_snr_tensor(pred_out[idx, :], data_mean[idx, :])
+                snr0 = self.__calculate_snr(data, data_mean[idx, :])
+                snr1 = self.__calculate_snr(pred_out[idx, :], data_mean[idx, :])
                 inc_snr.append(snr1 - snr0)
-
         return tensor(inc_snr)
+
+    def __calculate_snr(self, yin: Tensor, ymean: Tensor) -> Tensor:
+        """Calculating the signal-to-noise ratio [dB] of the input signal compared to mean waveform"""
+        a0 = (max(ymean) - min(ymean)) ** 2
+        b0 = sum((yin - ymean) ** 2)
+        return 10 * log10(a0 / b0)
 
     def do_training(self) -> list:
         """Start model training incl. validation and custom-own metric calculation"""
