@@ -2,10 +2,11 @@ import matplotlib.pyplot as plt
 from torch import nn
 from os.path import join
 from scipy.io import loadmat
-from package.plotting.plot_dnn import results_training, plot_statistic_data
+from package.plotting.plot_dnn import plot_statistic_data
+from package.plotting.plot_metric import plot_loss, plot_confusion
 from package.dnn.pytorch_control import Config_PyTorch
-from package.dnn.pytorch_autoencoder import *
-from package.dnn.dataset.autoencoder import prepare_training
+from package.dnn.pytorch_classification import *
+from package.dnn.dataset.autoencoder_class import prepare_training
 import package.dnn.models.autoencoder as ai_module
 
 
@@ -18,9 +19,9 @@ only_plot = False
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
-    model=ai_module.cnn_ae_v3(),
-    loss='MSE',
-    loss_fn=nn.MSELoss(),
+    model=ai_module.class_autoencoder_v1(),
+    loss='Cross Entropy',
+    loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
     num_epochs=100,
@@ -49,32 +50,30 @@ if __name__ == "__main__":
     if not only_plot:
         print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
         # --- Processing: Loading dataset and Do Training
-        dataset = prepare_training(path=config_train.get_path2data(), settings=config_train,
-                                   use_cell_bib=use_cell_bib, mode_classes=mode_cell_bib,
-                                   mode_train_ae=mode_train, do_classification=False,
-                                   noise_std=noise_std)
+        dataset = prepare_training(path2data=config_train.get_path2data(), settings=config_train,
+                                   path2model='runs/20231204_152721_train_cnn_ae_v3',
+                                   use_cell_bib=use_cell_bib, mode_classes=mode_cell_bib, noise_std=noise_std)
         data_mean = dataset.frames_me
         trainhandler = pytorch_train(config_train)
         trainhandler.load_model()
         trainhandler.load_data(dataset)
         del dataset
 
-        snr_train = trainhandler.do_training()
+        epoch_acc = trainhandler.do_training()[0]
         logsdir = trainhandler.get_saving_path()
         data_result = trainhandler.do_validation_after_training()
     else:
-        snr_train = list()
-        logsdir = 'runs/20231201_165901_train_cnn_ae_v3/'
+        epoch_acc = list()
+        logsdir = 'runs/20231204_152721_train_cnn_ae_v3/'
         data_result = loadmat(join(logsdir, 'results.mat'))
         data_mean = np.zeros(shape=(52, 32))
 
-    plt.close("all")
-    results_training(
-        path=logsdir, cl_dict=data_result['cl_dict'], feat=data_result['feat'],
-        yin=data_result['input'], ypred=data_result['pred'], ymean=data_mean,
-        yclus=data_result['valid_clus'], snr=snr_train
-    )
+    plt.close('all')
+    # plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
+    plot_loss(epoch_acc, 'Acc.', path2save=logsdir, epoch_zoom=[80, ])
+    plot_confusion(data_result['valid_clus'], data_result['yclus'],
+                   path2save=logsdir, cl_dict=data_result['cl_dict'])
     plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                         path2save=logsdir, cl_dict=data_result['cl_dict'])
 
-    plt.show(block=True)
+    plt.show(block=False)

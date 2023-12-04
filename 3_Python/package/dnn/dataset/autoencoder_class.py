@@ -1,6 +1,8 @@
 import numpy as np
+from os.path import join
+from glob import glob
 from scipy.io import loadmat
-from torch import is_tensor, randn, Tensor
+from torch import is_tensor, randn, Tensor, load, from_numpy
 from torch.utils.data import Dataset
 
 from package.dnn.pytorch_control import Config_PyTorch
@@ -9,35 +11,23 @@ from package.dnn.data_preprocessing import change_frame_size, reconfigure_cluste
 from package.dnn.data_augmentation import *
 
 
-class DatasetAE(Dataset):
-    """Dataset Preparation for training Autoencoders"""
-    def __init__(self, frames_raw: np.ndarray, cluster_id: np.ndarray,
-                 frames_cluster_me: np.ndarray, cluster_dict=None,
-                 noise_std=0.1, do_classification=False, mode_train=0):
-
+class DatasetAE_Class(Dataset):
+    """Dataset Preparation for training autoencoder-based classifications"""
+    def __init__(self, frames_raw: np.ndarray, frames_feat: np.ndarray,
+                 cluster_id: np.ndarray, frames_cluster_me: np.ndarray,
+                 cluster_dict=None, noise_std=0.1):
         self.size_output = 4
         # --- Input Parameters
-        self.__frames_orig = np.array(frames_raw, dtype=np.float32)
-        self.__frames_size = frames_raw.shape[1]
+        self.__frames_raw = np.array(frames_raw, dtype=np.float32)
+        self.__frames_feat = np.array(frames_feat, dtype=np.float32)
         self.__cluster_id = np.array(cluster_id, dtype=np.uint8)
         self.frames_me = np.array(frames_cluster_me, dtype=np.float32)
         # --- Parameters for Denoising Autoencoder
         self.__frames_noise_std = noise_std
-        self.__do_classification = do_classification
         # --- Parameters for Confusion Matrix for Classification
         self.cluster_name_available = isinstance(cluster_dict, list)
         self.frame_dict = cluster_dict
-
-        self.mode_train = mode_train
-        if mode_train == 1:
-            self.data_type = "Denoising Autoencoder (mean)"
-        elif mode_train == 2:
-            self.data_type = "Denoising Autoencoder (Add noise)"
-        else:
-            self.data_type = "Autoencoder"
-
-        if do_classification:
-            self.data_type += " for Classification"
+        self.data_type = "Autoencoder-based Classification"
 
     def __len__(self):
         return self.__cluster_id.shape[0]
@@ -46,40 +36,23 @@ class DatasetAE(Dataset):
         if is_tensor(idx):
             idx = idx.tolist()
 
-        cluster_id = self.__cluster_id[idx]
-        if self.mode_train == 1:
-            # Denoising Autoencoder Training with mean
-            frame_in = self.__frames_orig[idx, :]
-            frame_out = self.frames_me[cluster_id, :] if not self.__do_classification else cluster_id
-        elif self.mode_train == 2:
-            # Denoising Autoencoder Training with adding noise on input
-            frame_in = (self.__frames_orig[idx, :] +
-                        np.array(self.__frames_noise_std * np.random.randn(self.__frames_size), dtype=np.float32))
-            frame_out = self.__frames_orig[idx, :] if not self.__do_classification else cluster_id
-        else:
-            # Normal Autoencoder Training
-            frame_in = self.__frames_orig[idx, :]
-            frame_out = self.__frames_orig[idx, :] if not self.__do_classification else cluster_id
-
-        return {'in': frame_in, 'out': frame_out, 'class': cluster_id,
-                'mean': self.frames_me[cluster_id, :]}
+        return {'in': self.__frames_feat[idx, :],
+                'out': self.__cluster_id[idx]}
 
 
-def prepare_training(path: str, settings: Config_PyTorch,
+def prepare_training(path2data: str, settings: Config_PyTorch, path2model: str,
                      use_cell_bib=False, mode_classes=2,
-                     use_median_for_mean=True,
-                     mode_train_ae=0, do_classification=False,
-                     noise_std=0.1) -> DatasetAE:
+                     use_median_for_mean=True, noise_std=0.1) -> DatasetAE_Class:
     """Preparing dataset incl. augmentation for spike-frame based training"""
     print("... loading and processing the dataset")
-    npzfile = loadmat(path)
+    npzfile = loadmat(path2data)
     frames_in = npzfile["frames_in"]
     frames_cl = npzfile["frames_cluster"].flatten() if 'frames_cluster' in npzfile else npzfile["frames_cl"].flatten()
     frames_dict = None
 
     # --- Using cell_bib for clustering
     if use_cell_bib:
-        frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(path, mode_classes, frames_in, frames_cl)
+        frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(path2data, mode_classes, frames_in, frames_cl)
 
     # --- PART: Data Normalization
     if settings.data_do_normalization:
@@ -139,6 +112,12 @@ def prepare_training(path: str, settings: Config_PyTorch,
         frames_cl = np.append(frames_cl, num_cluster + new_clusters, axis=0)
         frames_me = np.vstack([frames_me, new_mean])
 
+    # --- PART: Calculating the features with given Autoencoder model
+    overview_model = glob(join(path2model, '*.pth'))
+    model_ae = load(overview_model[0])
+    feat = model_ae(from_numpy(frames_in))[0]
+    frames_feat = feat.detach().numpy()
+
     # --- Output
     check = np.unique(frames_cl, return_counts=True)
     print("... for training are", frames_in.shape[0], "frames with each", frames_in.shape[1], "points available")
@@ -147,6 +126,5 @@ def prepare_training(path: str, settings: Config_PyTorch,
         addon = f'' if not isinstance(frames_dict, list | np.ndarray) else f' ({frames_dict[id]})'
         print(f"\tclass {id}{addon} --> {check[1][idx]} samples")
 
-    return DatasetAE(frames_raw=frames_in, cluster_id=frames_cl, frames_cluster_me=frames_me,
-                     cluster_dict=frames_dict, mode_train=mode_train_ae, do_classification=do_classification,
-                     noise_std=noise_std)
+    return DatasetAE_Class(frames_raw=frames_in, frames_feat=frames_feat, cluster_id=frames_cl,
+                           frames_cluster_me=frames_me, cluster_dict=frames_dict)

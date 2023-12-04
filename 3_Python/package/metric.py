@@ -12,13 +12,6 @@ def calculate_snr(yin: np.ndarray, ymean: np.ndarray) -> np.ndarray:
     return 10 * np.log10(a0 / b0)
 
 
-def calculate_snr_tensor(yin: Tensor, ymean: Tensor) -> Tensor:
-    """Calculating the signal-to-noise ratio [dB] of the input signal compared to mean waveform"""
-    a0 = (torch.max(ymean) - torch.min(ymean)) ** 2
-    b0 = torch.sum((yin - ymean) ** 2)
-    return 10 * torch.log10(a0 / b0)
-
-
 def calculate_prd(yin: np.ndarray, ymean: np.ndarray):
     """Calculating the root-mean-square difference in percentage (PRD)"""
     a0 = np.sum(np.square(yin - ymean))
