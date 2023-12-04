@@ -90,7 +90,12 @@ def plot_confusion(true_labels: list | np.ndarray,
         cl_used = cl_dict.tolist()
     else:
         cl_used = cl_dict
-    dict_available = isinstance(cl_used, list)
+
+    if isinstance(cl_dict, list):
+        dict_available = not len(cl_dict) == 0
+    else:
+        dict_available = False
+
     max_key_length = 0
 
     precision, recall, fbeta, _ = precision_recall_fscore_support(true_labels, pred_labels, average='weighted')
