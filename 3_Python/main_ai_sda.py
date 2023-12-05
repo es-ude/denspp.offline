@@ -13,6 +13,7 @@ num_output = 2
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
     model=ai_module.dnn_sda_v1(input_size=12, output_size=num_output),
+    loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
@@ -28,9 +29,9 @@ config_train = Config_PyTorch(
     data_num_augmentation=2000,
     data_do_normalization=False,
     data_do_addnoise_cluster=False,
+    # --- Dataset Reduction
     data_do_reduce_samples_per_cluster=True,
     data_num_samples_per_cluster=5000,
-    # --- Dataset Preparation
     data_exclude_cluster=[],
     data_sel_pos=[]
 )
@@ -38,7 +39,7 @@ config_train = Config_PyTorch(
 # --- Main Program
 if __name__ == "__main__":
     plt.close('all')
-    print("\nTrain modules of spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
+    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
 
     # --- Processing: Loading Data and Do Training
     dataset = prepare_training(path=config_train.get_path2data(), settings=config_train,

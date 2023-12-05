@@ -1,9 +1,11 @@
 import numpy as np
+import torch
+from torch import Tensor
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 
 
-def calculate_snr(yin: np.ndarray, ymean: np.ndarray):
+def calculate_snr(yin: np.ndarray, ymean: np.ndarray) -> np.ndarray:
     """Calculating the signal-to-noise ratio [dB] of the input signal compared to mean waveform"""
     a0 = (np.max(ymean) - np.min(ymean)) ** 2
     b0 = np.sum((yin - ymean) ** 2)

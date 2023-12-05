@@ -49,30 +49,30 @@ class _RGC_TDB:
             "ON transient - subtype unknown": 41,
             "Sustained suppressed-by-contrast strong surround EW28": 42,
             "Sustained suppressed-by-contrast no surround EW27": 43,
-            'Bursty suppressed by contrast': 44,
+            "Bursty suppressed by contrast": 44,
             "ON bursty": 45,
             "ON delayed": 46,
             "ON small OFF large": 47,
+            "ON sustained - subtype unknown": 48,
+            "Motion sensor": 49,
+            "ON DS transient": 50,
+            "unknown": 51,
         }
 
+        # Abgeglichen mit Functional classes of rgctypes.org
         self.cell_class_to_id = {
-            # "Direction Selective": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-            # "ON-OFF small RF": [21, 22, 23, 24, 25, 26],
-            # "Surpressed-by-Contrast": [42, 43, 44, 45, 46, 47]
-            "OFF sustained": [10, 11, 12, 13, 14, 15, 16],
+            "OFF sustained": [10, 11, 12, 13, 14, 15],
             "OFF transient": [17, 18, 19, 20],
-            "ON sustained": [27, 28, 29, 30, 31, 32, 33, 34, 35, 36],
-            "ON transient": [37, 38, 39, 40, 41]
+            "ON sustained": [27, 28, 29, 30, 48],
+            "ON transient": [38, 39, 40]
         }
-
         self.cell_class_to_type = {
-            "Transient": [17, 18, 19, 20, 37, 38, 39, 40, 41],
-            "Sustained": [10, 11, 12, 13, 14, 15, 16, 29, 30, 31, 32, 33, 34, 35, 36]
+            "Transient": [17, 18, 19, 20, 38, 39, 40],
+            "Sustained": [10, 11, 12, 13, 14, 15, 27, 28, 29, 30, 48]
         }
-
         self.cell_class_to_onoff = {
-            "ON": [29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 45, 46],
-            "OFF": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+            "ON": [27, 28, 29, 30, 48, 38, 39, 40],
+            "OFF": [10, 11, 12, 13, 14, 15, 17, 18, 19, 20]
         }
 
 
@@ -86,12 +86,10 @@ class _RGC_ONOFF_FZJ:
             "ON Sustained": 3,
             "ON Transient": 4
         }
-
         self.cell_class_to_onoff = {
             "OFF": [0, 1],
             "ON": [3, 4]
         }
-
         self.cell_class_to_type = {
             "Transient": [1, 4],
             "Sustained": [0, 3]
@@ -125,7 +123,7 @@ class CellSelector(_RGC_ONOFF_FZJ, _RGC_TDB):
         elif mode == 3:
             self.cell_class_used = self.cell_class_to_type
 
-    def get_id_from_cell_type(self, name: str) -> int:
+    def get_id_from_celltype(self, name: str) -> int:
         """Getting the ID from a cell type"""
         return self.cell_type_to_id.get(name) if name in self.cell_type_to_id else -1
 
@@ -148,7 +146,16 @@ class CellSelector(_RGC_ONOFF_FZJ, _RGC_TDB):
                         val[pos] = idx
             return val
 
-    def get_classes(self) -> list:
+    def get_celltype_name_from_id(self, cluster_id: int | np.ndarray) -> str:
+        """Getting the name of the cell type of a given cluster ID/class"""
+        cell_name = ''
+        for idx, (key, values) in enumerate(self.cell_class_used.items()):
+            if cluster_id == values:
+                cell_name = key
+                break
+        return cell_name
+
+    def get_celltype_names(self) -> list:
         """Getting the classes as list"""
         classes = list()
         for idx, (key, _) in enumerate(self.cell_class_used.items()):
