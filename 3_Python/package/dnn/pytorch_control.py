@@ -84,6 +84,7 @@ class training_pytorch:
         self.model = None
         self.loss_fn = None
         self.optimizer = None
+        self.data_set = None
 
         # --- Preparing options
         self.config_available = False
@@ -156,10 +157,12 @@ class training_pytorch:
         self._writer = SummaryWriter(self._path2log, comment=f"event_log_kfold{self._run_kfold:03d}")
 
     def load_data(self, data_set) -> None:
+        self._init_train()
         """Loading data for training and validation in DataLoader format into class"""
         self._do_kfold = True if self.settings.num_kfold > 1 else False
         self._model_addon = data_set.data_type
         self.cell_classes = data_set.frame_dict if data_set.cluster_name_available else []
+        use_not_cpu = False
 
         # --- Preparing datasets
         out_train = list()
@@ -169,8 +172,10 @@ class training_pytorch:
             for idx_train, idx_valid in kfold.split(np.arange(len(data_set))):
                 subsamps_train = SubsetRandomSampler(idx_train)
                 subsamps_valid = SubsetRandomSampler(idx_valid)
-                out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train))
-                out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
+                out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train,
+                                            pin_memory=use_not_cpu, pin_memory_device=self.used_hw_dev.type))
+                out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid,
+                                            pin_memory=use_not_cpu, pin_memory_device=self.used_hw_dev.type))
                 self._samples_train.append(subsamps_train.indices.size)
                 self._samples_valid.append(subsamps_valid.indices.size)
         else:
@@ -182,8 +187,10 @@ class training_pytorch:
             idx_valid = idx[split_pos:]
             subsamps_train = SubsetRandomSampler(idx_train)
             subsamps_valid = SubsetRandomSampler(idx_valid)
-            out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train))
-            out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
+            out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train,
+                                        pin_memory=use_not_cpu, pin_memory_device=self.used_hw_dev.type))
+            out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid,
+                                        pin_memory=use_not_cpu, pin_memory_device=self.used_hw_dev.type))
             self._samples_train.append(subsamps_train.indices.size)
             self._samples_valid.append(subsamps_valid.indices.size)
 
