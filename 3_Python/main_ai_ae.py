@@ -18,7 +18,7 @@ only_plot = False
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
-    model=ai_module.cnn_ae_v3(),
+    model=ai_module.dnn_ae_v2(),
     loss='MSE',
     loss_fn=nn.MSELoss(),
     optimizer='Adam',
@@ -34,7 +34,7 @@ config_train = Config_PyTorch(
     data_do_shuffle=True,
     # --- Data Augmentation
     data_do_augmentation=True,
-    data_num_augmentation=5000,
+    data_num_augmentation=0,
     data_do_normalization=True,
     data_do_addnoise_cluster=False,
     # --- Dataset Reduction
