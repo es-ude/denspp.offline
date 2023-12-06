@@ -4,6 +4,7 @@ from os.path import exists, join
 import matplotlib.pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay, precision_recall_curve, precision_recall_fscore_support
 from package.plotting.plot_common import save_figure, cm_to_inch
+from package.metric import compare_timestamps
 
 
 def plot_boxplot_metric(freq: np.ndarray, metric: list, type_name: str, name: str,
@@ -57,9 +58,12 @@ def plot_loss(metric: list, metric_type: str, name='', path2save='') -> None:
         save_figure(plt, path2save, f"loss_metric_{metric_type}")
 
 
-def plot_confusion(true_labels: list | np.ndarray,
+def plot_confusion_classes(true_labels: list | np.ndarray,
                    pred_labels: list | np.ndarray,
-                   cl_dict=None, path2save="") -> None:
+                   mode="training",
+                   cl_dict=None, path2save="", window=2) -> None:
+    if mode == "pipeline":
+        _, _, _, _,_, true_labels, pred_labels = compare_timestamps(true_labels, pred_labels, window)
     """Plotting the Confusion Matrix"""
     dict_available = isinstance(cl_dict, list)
     max_key_length = 0
@@ -92,7 +96,28 @@ def plot_confusion(true_labels: list | np.ndarray,
     plt.title(f'Precision = {precision:.4f} - Recall = {recall:.4f} - Fbeta = {fbeta:.4f}')
     plt.tight_layout()
     if path2save:
-        save_figure(plt, path2save, f"confusion_matrix")
+        save_figure(plt, path2save, f"confusion_matrix_classes")
+
+
+def plot_confusion_timestamps(true_labels: list, pred_labels: list, show_accuracy=False, path2save="", window=2):
+    TP, FP, FN, f1_score, accuracy, _, _ = compare_timestamps(true_labels, pred_labels, window)
+    result = np.array([[TP, FP], [0, FN]])
+
+    plt.imshow(result, cmap=plt.cm.Blues, interpolation='nearest')
+    for i in range(result.shape[0]):
+        for j in range(result.shape[1]):
+            plt.text(j, i, f'{result[i, j]:.2f}', ha='center', va='center', color='white')
+    xtick_labels = ['true', 'false']
+    plt.xticks(np.arange(2), xtick_labels)
+    ytick_labels = ['positive', 'negative']
+    plt.yticks(np.arange(2), ytick_labels)
+    if show_accuracy:
+        plt.title(f'F1-Score = {f1_score:.4f} - Accuracy = {accuracy:.4f}')
+    else:
+        plt.title(f'F1-Score = {f1_score:.4f}')
+    plt.tight_layout()
+    if path2save:
+        save_figure(plt, path2save, f"confusion_matrix_timestamps")
 
 
 def _get_median(parameter: list) -> float:
