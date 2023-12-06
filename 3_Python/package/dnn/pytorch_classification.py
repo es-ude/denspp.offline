@@ -7,7 +7,7 @@ from scipy.io import savemat
 from package.dnn.pytorch_control import Config_PyTorch, training_pytorch
 
 
-class pytorch_train(training_pytorch):
+class train_nn_classification(training_pytorch):
     """Class for Handling the Training of Classifiers"""
     def __init__(self, config_train: Config_PyTorch, do_train=True) -> None:
         training_pytorch.__init__(self, config_train, do_train)

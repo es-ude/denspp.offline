@@ -1,0 +1,160 @@
+import matplotlib.pyplot as plt
+import numpy as np
+from os.path import join, exists
+from shutil import copy
+from scipy.io import loadmat
+from package.plotting.plot_dnn import results_training, plot_statistic_data
+from package.plotting.plot_metric import plot_confusion, plot_loss
+
+from settings_ai import config_train
+from package.dnn.pytorch_control import Config_PyTorch
+from package.dnn.pytorch_autoencoder import train_nn_autoencoder
+from package.dnn.dataset.autoencoder import prepare_training as get_dataset_ae
+from package.dnn.pytorch_classification import train_nn_classification
+from package.dnn.dataset.classification import prepare_training as get_dataset_class
+from package.dnn.dataset.spike_detection import prepare_training as get_dataset_sda
+
+
+def __dnn_train_autoencoder(mode: int, noise_std=0.05, mode_cell_bib=0, only_plot_results=False) -> None:
+    """Training routine for Autoencoders
+    Args:
+        mode_ae: Selected model of the Autoencoder (0: normal, 1: Denoising (mean), 2: Denoising (input)) [default:0]
+        noise_std: Std of the additional noise added to the input [default: 0.05]
+        mode_cell_bib: If the dataset contains a cell library then the mode can be choicen (0: Deactivated, 1: All, 2-...: Reduced) [default: 0]
+        only_plot_results: Plotting the results of a already trained model [default: False]
+    """
+    use_cell_bib = not mode_cell_bib == 0
+
+    if not only_plot_results:
+        print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
+        # --- Processing: Loading dataset and Do Training
+        dataset = get_dataset_ae(path=config_train.get_path2data(), settings=config_train,
+                                 use_cell_bib=use_cell_bib, mode_classes=mode_cell_bib,
+                                 mode_train_ae=mode, do_classification=False,
+                                 noise_std=noise_std)
+        data_mean = dataset.frames_me
+        trainhandler = train_nn_autoencoder(config_train)
+        trainhandler.load_model()
+        trainhandler.load_data(dataset)
+        del dataset
+
+        snr_train = trainhandler.do_training()
+        logsdir = trainhandler.get_saving_path()
+        data_result = trainhandler.do_validation_after_training()
+    else:
+        print(f"Plot results of already trained model")
+        snr_train = list()
+        logsdir = 'runs/20231201_165901_train_cnn_ae_v3/'
+        data_result = loadmat(join(logsdir, 'results.mat'))
+        data_mean = np.zeros(shape=(52, 32))
+
+    plt.close("all")
+    results_training(
+        path=logsdir, cl_dict=data_result['cl_dict'], feat=data_result['feat'],
+        yin=data_result['input'], ypred=data_result['pred'], ymean=data_mean,
+        yclus=data_result['valid_clus'], snr=snr_train
+    )
+    plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
+                        path2save=logsdir, cl_dict=data_result['cl_dict'])
+    plt.show(block=True)
+
+
+def __dnn_train_classification(mode_cell_bib=0, only_plot_results=False) -> None:
+    """Training routine for Classification
+        Args:
+            mode_cell_bib: If the dataset contains a cell library then the mode can be choicen (0: Deactivated, 1: All, 2-...: Reduced) [default: 0]
+            only_plot_results: Plotting the results of a already trained model [default: False]
+    """
+    if not only_plot_results:
+        print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
+        # ---Loading Data, Do Training and getting the results
+        dataset = get_dataset_class(path=config_train.get_path2data(), settings=config_train,
+                                   use_cell_bib=True, mode_classes=mode_cell_bib)
+        trainhandler = train_nn_classification(config_train)
+        trainhandler.load_model()
+        trainhandler.load_data(dataset)
+        del dataset, config_train
+
+        epoch_acc = trainhandler.do_training()[0]
+        logsdir = trainhandler.get_saving_path()
+        data_result = trainhandler.do_validation_after_training(2)
+    else:
+        epoch_acc = list()
+        logsdir = 'runs/20231204_004158_train_rgc_class_v2/'
+        data_result = loadmat(join(logsdir, 'results.mat'))
+
+    plt.close('all')
+    # plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
+    plot_loss(epoch_acc, 'Acc.', path2save=logsdir, epoch_zoom=[500, ])
+    plot_confusion(data_result['valid_clus'], data_result['yclus'],
+                   path2save=logsdir, cl_dict=data_result['cl_dict'])
+    plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
+                        path2save=logsdir, cl_dict=data_result['cl_dict'])
+
+    plt.show(block=False)
+
+
+def __dnn_train_spike_detection(only_plot_results=False) -> None:
+    """Training routine for Spike Detection
+    Args:
+        only_plot_results: Plotting the results of a already trained model [default: False]
+    """
+    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
+    # --- Processing: Loading Data and Do Training
+    dataset = get_dataset_sda(path=config_train.get_path2data(), settings=config_train, threshold=4)
+    dataset_dict = dataset.sda_dict
+    trainhandler = train_nn_classification(config_train)
+    trainhandler.load_model()
+    trainhandler.load_data(dataset)
+    del dataset
+    epoch_acc = trainhandler.do_training()[0]
+
+    # --- Post-Processing: Getting data, save and plot results
+    data_result = trainhandler.do_validation_after_training(3)
+
+    logsdir = trainhandler.get_saving_path()
+
+    plt.close("all")
+    plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
+    plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=dataset_dict)
+    plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir, cl_dict=dataset_dict)
+    plt.show(block=False)
+
+
+def __check_settings_file() -> None:
+    if not exists("settings_ai_.py"):
+        copy("package/dnn/dnn_settings_template.py", "settings_ai.py")
+        print("A template configuration file is copied into main folder. Please check the content and restart!")
+
+
+def do_train_dnn(mode_train: int, noise_std_ae=0.05, mode_cell_bib=0, only_plot_results=False, path2model='') -> None:
+    """Do the Training of Deep Neural Network Topoliges
+    Args:
+        mode_train: 0: Autoencoder, 1: Denoising Autoencoder (Use mean as output), 2: Denoising Autoencoder (More noise on input)
+        noise_std_ae: Std of gaussian noise distribution [Default: 0.05]
+        mode_cell_bib: Mode for using a cell bibliography [Default: 0]
+        only_plot_results: Mode for only plotting the results of already trained model
+        path2model: Path to already trained model
+    """
+    __check_settings_file()
+
+    match mode_train:
+        case 0:
+            __dnn_train_autoencoder(0, noise_std=noise_std_ae,
+                                    mode_cell_bib=mode_cell_bib,
+                                    only_plot_results=only_plot_results)
+        case 1:
+            __dnn_train_autoencoder(1, noise_std=noise_std_ae,
+                                    mode_cell_bib=mode_cell_bib,
+                                    only_plot_results=only_plot_results)
+        case 2:
+            __dnn_train_autoencoder(2, noise_std=noise_std_ae,
+                                    mode_cell_bib=mode_cell_bib,
+                                    only_plot_results=only_plot_results)
+        case 3:
+            __dnn_train_classification(mode_cell_bib=mode_cell_bib,
+                                       only_plot_results=only_plot_results)
+        case 4:
+            __dnn_train_spike_detection(only_plot_results=only_plot_results)
+        case other:
+            print("Wrong model!")
