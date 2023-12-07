@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from torch import nn
 from scipy.io import loadmat
 from package.plotting.plot_dnn import plot_statistic_data
-from package.plotting.plot_metric import plot_confusion, plot_loss
+from package.plotting.plot_metric import plot_loss, plot_confusion_classes
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.pytorch_classification import *
 from package.dnn.dataset.rgc_onoff_class import prepare_training
@@ -17,10 +17,10 @@ config_train = Config_PyTorch(
     model=ai_module.dnn_rgc_v2(input_size=32, output_size=num_output),
     loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
-    #loss='Neg. Like-Lihood',
-    #loss_fn=nn.NLLLoss(),
-    #loss='KLDiv',
-    #loss_fn=nn.KLDivLoss(reduction='batchmean'),
+    # loss='Neg. Like-Lihood',
+    # loss_fn=nn.NLLLoss(),
+    # loss='KLDiv',
+    # loss_fn=nn.KLDivLoss(reduction='batchmean'),
     optimizer='Adam',
     num_kfold=1,
     num_epochs=300,
@@ -67,8 +67,8 @@ if __name__ == "__main__":
     plt.close('all')
     # plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
     plot_loss(epoch_acc, 'Acc.', path2save=logsdir, epoch_zoom=[500, ])
-    plot_confusion(data_result['valid_clus'], data_result['yclus'],
-                   path2save=logsdir, cl_dict=data_result['cl_dict'])
+    plot_confusion_classes(data_result['valid_clus'], data_result['yclus'],
+                           path2save=logsdir, cl_dict=data_result['cl_dict'])
     plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                         path2save=logsdir, cl_dict=data_result['cl_dict'])
 

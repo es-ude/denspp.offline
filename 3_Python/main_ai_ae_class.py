@@ -3,12 +3,11 @@ from torch import nn
 from os.path import join
 from scipy.io import loadmat
 from package.plotting.plot_dnn import plot_statistic_data
-from package.plotting.plot_metric import plot_loss, plot_confusion
+from package.plotting.plot_metric import plot_loss, plot_confusion_classes
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.pytorch_classification import *
 from package.dnn.dataset.autoencoder_class import prepare_training
 import package.dnn.models.autoencoder as ai_module
-
 
 noise_std = 1
 # 0 = normal autoencoder, 1 = denoising AE (mean), 2 = denoising AE (more noise input)
@@ -71,8 +70,8 @@ if __name__ == "__main__":
     plt.close('all')
     # plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
     plot_loss(epoch_acc, 'Acc.', path2save=logsdir, epoch_zoom=[80, ])
-    plot_confusion(data_result['valid_clus'], data_result['yclus'],
-                   path2save=logsdir, cl_dict=data_result['cl_dict'])
+    plot_confusion_classes(data_result['valid_clus'], data_result['yclus'],
+                           path2save=logsdir, cl_dict=data_result['cl_dict'])
     plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                         path2save=logsdir, cl_dict=data_result['cl_dict'])
 

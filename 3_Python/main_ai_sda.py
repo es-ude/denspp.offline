@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 from torch import nn
 from package.plotting.plot_dnn import plot_statistic_data
-from package.plotting.plot_metric import plot_confusion, plot_loss
+from package.plotting.plot_metric import plot_loss, plot_confusion_classes
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.pytorch_classification import *
 from package.dnn.dataset.spike_detection import prepare_training
@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
     logsdir = trainhandler.get_saving_path()
     plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
-    plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=dataset_dict)
+    plot_confusion_classes(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=dataset_dict)
     plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir, cl_dict=dataset_dict)
 
     plt.show(block=False)
