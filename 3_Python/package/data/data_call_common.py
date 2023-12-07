@@ -40,12 +40,13 @@ RecommendedSettingsDATA = SettingsDATA(
 # ----- Read Settings -----
 class DataController(DataLoader):
     """Class for loading and manipulating the used dataset"""
+    raw_data: DataHandler
+
     def __init__(self, setting: SettingsDATA) -> None:
         DataLoader.__init__(self)
         self.settings = setting
         self.path2data = setting.path
         self.path2file = str()
-        self.raw_data = DataHandler()
 
         # --- Meta-Information about datasets
         # Information of subfolders and files

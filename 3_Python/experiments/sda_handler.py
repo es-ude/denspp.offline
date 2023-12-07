@@ -46,11 +46,11 @@ def characterize_sda_output(spk_pos_can: np.ndarray, spk_pos_true: np.ndarray,
 
 
 def do_single_run(pipeline, data,
-                  spk_amp: float, spk_period: float, spk_fr: float, spk_snr: float,
+                  spk_amp: float, spk_period: float, spk_firing_rate: float, spk_snr_in: float,
                   mode_sda: int, mode_thr: int,
                   path2save="", use_smoothing=False) -> None:
     """Function to perform a single run for spike-detection and frame generation"""
-    spk_signal, spk_pos_true, spk_pos_may = data.gen_spike_activity(spk_amp, spk_period, spk_fr, spk_snr)
+    spk_signal, spk_pos_true, spk_pos_may = data.gen_spike_activity(spk_amp, spk_period, spk_firing_rate, spk_snr_in)
     pipeline.define_sda(mode_sda, mode_thr)
     pipeline.run_preprocess(spk_signal, do_smooth=use_smoothing)
 
@@ -130,5 +130,20 @@ def do_method_sweep(pipeline, data, spk_amp: float, spk_period: float,
             plot_results_sweep(spk_firing_rate, snr_in, acc, tpr, fpr, pipeline.used_methods, path2save)
 
 
-def do_calc_roc():
-    print("TEST")
+# TODO: ROC Methode implementieren
+def do_calc_roc(pipeline, data, spk_amp: float, spk_period: float,
+                spk_firing_rate: np.ndarray, spk_snr_in: np.ndarray,
+                mode_sda: list, mode_thr: list,
+                path2save="", use_smoothing=False, num_repeat=2) -> None:
+    """Determining the Receiver Operating Characteristic (ROC) curve with sweeping the classification threshold
+    (More informations in https://www.iguazio.com/glossary/classification-threshold/)"""
+    spk_signal, spk_pos_true, spk_pos_may = data.gen_spike_activity(spk_amp, spk_period, spk_firing_rate, spk_snr_in)
+    pipeline.define_sda(mode_sda, mode_thr)
+    pipeline.run_preprocess(spk_signal, do_smooth=use_smoothing)
+
+    spk_sda = pipeline.x_sda
+    spk_thr = pipeline.x_thr
+    spk_in_frames = data.cut_frames(spk_signal, spk_pos_true, spk_period)
+    spk_in_mean = np.mean(spk_in_frames, axis=0)
+    spk_out_frames = data.cut_frames(pipeline.x_adc, spk_pos_true, spk_period)
+    spk_out_mean = np.mean(spk_out_frames, axis=0)

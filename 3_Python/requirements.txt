@@ -11,6 +11,7 @@ neo
 scipy
 scikit-learn
 torch
+pynvml
 torchinfo
 torchvision
 tensorboard

@@ -4,7 +4,7 @@ from torch import is_tensor
 from torch.utils.data import Dataset
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.data_augmentation import augmentation_reducing_samples
-from package.dnn.data_preprocessing import reconfigure_cluster_with_cell_lib, data_normalization
+from package.dnn.data_preprocessing import reconfigure_cluster_with_cell_lib, data_normalization_minmax
 
 
 class DatasetRGC(Dataset):
@@ -27,14 +27,12 @@ class DatasetRGC(Dataset):
 
 
 def prepare_training(path: str, settings: Config_PyTorch, use_cell_bib=False, mode_classes=0) -> DatasetRGC:
-    """Preparing datasets incl. augmentation for spike-detection-based training (without pre-processing)"""
-    print("... loading the datasets")
-
-    # --- MATLAB reading file
+    """Preparing dataset incl. augmentation for spike-detection-based training"""
+    print("... loading and processing the dataset")
     npzfile = loadmat(path)
     frames_in = npzfile["frames_in"]
-    frames_cl = npzfile["frames_cluster"].flatten()
-    frames_dict = npzfile['cluster_dict'].tolist()
+    frames_cl = npzfile["frames_cluster"].flatten() if 'frames_cluster' in npzfile else npzfile["frames_cl"].flatten()
+    frames_dict = None
 
     # --- PART: Exclusion of selected clusters
     if not len(settings.data_exclude_cluster) == 0:
@@ -47,23 +45,24 @@ def prepare_training(path: str, settings: Config_PyTorch, use_cell_bib=False, mo
     if use_cell_bib:
         frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(path, mode_classes, frames_in, frames_cl)
 
+        # --- PART: Data Normalization
+    if settings.data_do_normalization:
+        print(f"... do data normalization")
+        frames_in = data_normalization_minmax(frames_in, do_bipolar=True, do_globalmax=False)
+
     # --- PART: Reducing samples per cluster (if too large)
     if settings.data_do_reduce_samples_per_cluster:
-        print("... do data augmentation with reducing the samples per cluster")
+        print("... reducing the samples per cluster (for pre-training on dedicated hardware)")
         frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
                                                              settings.data_num_samples_per_cluster,
                                                              settings.data_do_shuffle)
 
-    # --- PART: Data Normalization
-    if settings.data_do_normalization:
-        frames_in = data_normalization(frames_in)
-
     # --- Output
     check = np.unique(frames_cl, return_counts=True)
-    print(f"... for training are {frames_in.shape[0]} frames with each {frames_in.shape[1]} points available")
-    if len(frames_dict) == 0:
-        print(f"... used data points for training: class = {check[0]} and num = {check[1]}")
-    else:
-        print(f"... used data points for training: class = {frames_dict} and num = {check[1]}")
+    print("... for training are", frames_in.shape[0], "frames with each", frames_in.shape[1], "points available")
+    print(f"... used data points for training: in total {check[0].size} classes with {np.sum(check[1])} samples")
+    for idx, id in enumerate(check[0]):
+        addon = f'' if len(frames_dict) == 0 else f' ({frames_dict[id]})'
+        print(f"\tclass {id}{addon} --> {check[1][idx]} samples")
 
     return DatasetRGC(frames_in, frames_cl, frames_dict)
