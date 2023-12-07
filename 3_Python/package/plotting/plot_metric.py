@@ -85,7 +85,8 @@ def plot_loss(metric: list, metric_type: str, path2save='', epoch_zoom=None) -> 
 def plot_confusion_classes(true_labels: list | np.ndarray,
                            pred_labels: list | np.ndarray,
                            mode="training", cl_dict=None,
-                           path2save="", window=2) -> None:
+                           path2save="", name_addon="",
+                           window=2) -> None:
     if mode == "pipeline":
         _, _, _, _, _, true_labels, pred_labels = compare_timestamps(true_labels, pred_labels, window)
     """Plotting the Confusion Matrix"""
@@ -129,7 +130,7 @@ def plot_confusion_classes(true_labels: list | np.ndarray,
     print(f'... Fbeta score is {100*fbeta:.2f}%')
     plt.tight_layout()
     if path2save:
-        save_figure(plt, path2save, f"confusion_matrix_classes")
+        save_figure(plt, path2save, f"confusion_matrix_classes{name_addon}")
 
 
 def plot_confusion_timestamps(true_labels: list, pred_labels: list, show_accuracy=False, path2save="", window=2):
