@@ -6,7 +6,6 @@ from scipy.io import loadmat
 from package.plotting.plot_dnn import results_training, plot_statistic_data
 from package.plotting.plot_metric import plot_confusion, plot_loss
 
-from settings_ai import config_train
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.pytorch_autoencoder import train_nn_autoencoder
 from package.dnn.dataset.autoencoder import prepare_training as get_dataset_ae
@@ -15,7 +14,8 @@ from package.dnn.dataset.classification import prepare_training as get_dataset_c
 from package.dnn.dataset.spike_detection import prepare_training as get_dataset_sda
 
 
-def __dnn_train_autoencoder(mode: int, noise_std=0.05, mode_cell_bib=0, only_plot_results=False) -> None:
+def __dnn_train_autoencoder(config_train: Config_PyTorch, mode: int, noise_std=0.05,
+                            mode_cell_bib=0, only_plot_results=False) -> None:
     """Training routine for Autoencoders
     Args:
         mode_ae: Selected model of the Autoencoder (0: normal, 1: Denoising (mean), 2: Denoising (input)) [default:0]
@@ -59,7 +59,7 @@ def __dnn_train_autoencoder(mode: int, noise_std=0.05, mode_cell_bib=0, only_plo
     plt.show(block=True)
 
 
-def __dnn_train_classification(mode_cell_bib=0, only_plot_results=False) -> None:
+def __dnn_train_classification(config_train: Config_PyTorch, mode_cell_bib=0, only_plot_results=False) -> None:
     """Training routine for Classification
         Args:
             mode_cell_bib: If the dataset contains a cell library then the mode can be choicen (0: Deactivated, 1: All, 2-...: Reduced) [default: 0]
@@ -94,7 +94,7 @@ def __dnn_train_classification(mode_cell_bib=0, only_plot_results=False) -> None
     plt.show(block=False)
 
 
-def __dnn_train_spike_detection(only_plot_results=False) -> None:
+def __dnn_train_spike_detection(config_train: Config_PyTorch, only_plot_results=False) -> None:
     """Training routine for Spike Detection
     Args:
         only_plot_results: Plotting the results of a already trained model [default: False]
@@ -121,7 +121,7 @@ def __dnn_train_spike_detection(only_plot_results=False) -> None:
     plt.show(block=False)
 
 
-def __check_settings_file() -> None:
+def check_settings_file() -> None:
     if not exists("settings_ai_.py"):
         copy("package/dnn/dnn_settings_template.py", "settings_ai.py")
         print("A template configuration file is copied into main folder. Please check the content and restart!")
@@ -136,25 +136,25 @@ def do_train_dnn(mode_train: int, noise_std_ae=0.05, mode_cell_bib=0, only_plot_
         only_plot_results: Mode for only plotting the results of already trained model
         path2model: Path to already trained model
     """
-    __check_settings_file()
-
+    from settings_ai import config_train
     match mode_train:
         case 0:
-            __dnn_train_autoencoder(0, noise_std=noise_std_ae,
+            __dnn_train_autoencoder(config_train, mode=0, noise_std=noise_std_ae,
                                     mode_cell_bib=mode_cell_bib,
                                     only_plot_results=only_plot_results)
         case 1:
-            __dnn_train_autoencoder(1, noise_std=noise_std_ae,
+            __dnn_train_autoencoder(config_train, mode=1, noise_std=noise_std_ae,
                                     mode_cell_bib=mode_cell_bib,
                                     only_plot_results=only_plot_results)
         case 2:
-            __dnn_train_autoencoder(2, noise_std=noise_std_ae,
+            __dnn_train_autoencoder(config_train, mode=2, noise_std=noise_std_ae,
                                     mode_cell_bib=mode_cell_bib,
                                     only_plot_results=only_plot_results)
         case 3:
-            __dnn_train_classification(mode_cell_bib=mode_cell_bib,
+            __dnn_train_classification(config_train, mode_cell_bib=mode_cell_bib,
                                        only_plot_results=only_plot_results)
         case 4:
-            __dnn_train_spike_detection(only_plot_results=only_plot_results)
+            __dnn_train_spike_detection(config_train,
+                                        only_plot_results=only_plot_results)
         case other:
             print("Wrong model!")

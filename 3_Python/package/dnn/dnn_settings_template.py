@@ -1,11 +1,13 @@
 from torch import nn
 from package.dnn.pytorch_control import Config_PyTorch
-import package.dnn.models.autoencoder as ai_module
+import package.dnn.models.autoencoder as ae_models
+import package.dnn.models.rgc_onoff_class as rgc_class_models
+import package.dnn.models.spike_detection as sda_modes
 
 
-config_train_ae = Config_PyTorch(
+config_train = Config_PyTorch(
     # --- Settings of Models/Training
-    model=ai_module.dnn_ae_v2(),
+    model=ae_models.dnn_ae_v2(),
     loss='MSE',
     loss_fn=nn.MSELoss(),
     optimizer='Adam',

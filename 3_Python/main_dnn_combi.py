@@ -4,8 +4,8 @@ from os.path import join
 from scipy.io import loadmat
 from package.plotting.plot_dnn import plot_statistic_data
 from package.plotting.plot_metric import plot_loss, plot_confusion
-from settings_ai import config_train_class as config_train
-from package.dnn.pytorch_classification import pytorch_train
+from settings_ai import config_train
+from package.dnn.pytorch_classification import train_nn_classification
 from package.dnn.dataset.autoencoder_class import prepare_training
 
 
@@ -25,7 +25,7 @@ if __name__ == "__main__":
                                    path2model='runs/20231204_152721_train_cnn_ae_v3',
                                    use_cell_bib=use_cell_bib, mode_classes=mode_cell_bib, noise_std=noise_std)
         data_mean = dataset.frames_me
-        trainhandler = pytorch_train(config_train)
+        trainhandler = train_nn_classification(config_train)
         trainhandler.load_model()
         trainhandler.load_data(dataset)
         del dataset
