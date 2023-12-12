@@ -2,19 +2,13 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 authors:
 - family-names: "Erbslöh"
-  given-names: "Andraes"
+  given-names: "Andreas"
   orcid: "https://orcid.org/0000-0001-6702-892X"
 - family-names: "Buron"
   given-names: "Leo"
-- family-names: "Ur-Rehman"
-  given-names: "Zia"
-- family-names: "Klaes"
-  given-names: "Christian"
-- family-names: "Seidl"
-  given-names: "Karsten"
 - family-names: "Schiele"
   given-names: "Gregor"
-title: "My Research Software"
+title: "AI-enhanced End-To-End Neural Signal Processing Python API"
 version: 2.0.4
 doi: 10.1515/cdbme-2023-1118
 date-released: 2023-10-20
