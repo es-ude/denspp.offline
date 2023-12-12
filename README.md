@@ -27,13 +27,6 @@ The Python folder contains the following folder structure:
 - _src_emg_: Pipeline and necessary functions for analysing EMG signals
 - _src_neuro_: Pipeline and necesary functions for analysing action potentials from invasive microelectrode arrays
 
-
-## Collaborate with your team
-Responsible persons:
-- *Analogue front-end*: Andreas Erbslöh - Email: andreas.erbsloeh@uni-due.de
-- *Digital front-end*: Leo Buron - Email: leo.buron@uni-due.de
-- *Neural Decoder*: Zia Ur Rehman - Email: ing.zia@yahoo.com
-
 ## Usage
 For starting the software framework in your branch, please start Python script ...
 - "main.py" for normal pipeline processing
