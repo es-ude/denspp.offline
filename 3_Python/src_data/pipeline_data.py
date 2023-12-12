@@ -15,10 +15,10 @@ from package.dsp.sda import SpikeDetection, SettingsSDA
 class Settings:
     """Settings class for handling the src_neuro setting"""
     SettingsDATA = SettingsDATA(
-        # path='../2_Data',
-        path='/media/erbsloeh/ExtremeSSD/0_Invasive',
+        path='../2_Data',
+        # path='/media/erbsloeh/ExtremeSSD/0_Invasive',
         # path='C:/HomeOffice/Arbeit/C_MERCUR_SpAIke/Daten',
-        data_set=7, data_case=0, data_point=0,
+        data_set=1, data_case=0, data_point=0,
         t_range=[0],
         ch_sel=[],
         fs_resample=50e3
@@ -93,13 +93,26 @@ class Pipeline:
         return mdict
 
     def run_input(self, uin: np.ndarray, spike_xpos: np.ndarray, spike_xoffset: int) -> None:
+        """Processing the raw data for frame generation
+        Args:
+            uin: Array of the 1D-transient signal
+            spike_xpos: List of all spike positions from groundtruth
+            spike_xoffset: Time delay between spike_xpos and real spike
+        """
+        self.run_minimal(uin)
+
+        self.signals.frames_align, self.signals.x_pos = self.__sda.frame_generation_pos(
+            self.signals.x_adc, spike_xpos, spike_xoffset
+        )[1:]
+
+    def run_minimal(self, uin: np.ndarray) -> None:
+        """Processing the input for getting the reshaped digital datastream
+        Args:
+            uin: Array of the 1D-transient signal
+        """
         self.signals.u_in = uin
         u_inn = np.array(self.__preamp.settings.vcm)
         # --- Analogue Frontend
         self.signals.u_pre, _ = self.__preamp.pre_amp_chopper(self.signals.u_in, u_inn)
         # self.u_pre = self.preamp0.pre_amp(self.u_in, self.preamp0.settings.vcm)
         self.signals.x_adc = self.__adc.adc_ideal(self.signals.u_pre)[0]
-
-        self.signals.frames_align, self.signals.x_pos = self.__sda.frame_generation_pos(
-            self.signals.x_adc, spike_xpos, spike_xoffset
-        )[1:]

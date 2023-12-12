@@ -122,7 +122,7 @@ def __dnn_train_spike_detection(config_train: Config_PyTorch, only_plot_results=
 
 
 def check_settings_file() -> None:
-    if not exists("settings_ai_.py"):
+    if not exists("settings_ai.py"):
         copy("package/dnn/dnn_settings_template.py", "settings_ai.py")
         print("A template configuration file is copied into main folder. Please check the content and restart!")
 

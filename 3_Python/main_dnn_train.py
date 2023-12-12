@@ -4,8 +4,8 @@ if __name__ == "__main__":
     check_settings_file()
 
     do_train_dnn(
-        mode_train=0,
-        noise_std_ae=0.05,
+        mode_train=2,
+        noise_std_ae=0.25,
         mode_cell_bib=0,
         only_plot_results=False
     )

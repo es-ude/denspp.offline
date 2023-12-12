@@ -115,7 +115,7 @@ def plot_autoencoder_run(mark_feat: list, mark_idx: list,
     color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
 
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
-    plt.rcParams.update({'font.size': 6})
+    plt.rcParams.update({'font.size': 10})
     plt.subplots_adjust(hspace=0, wspace=0.5)
     row = 1
     col = 3
