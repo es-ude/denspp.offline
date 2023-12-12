@@ -30,7 +30,7 @@ The Python folder contains the following folder structure:
 ## Usage
 For starting the software framework in your branch, please start Python script ...
 - "main.py" for normal pipeline processing
-- "main_ai_autoencoder.py" for AI training of the deep learning structure of Autoencoders
+- "main_train.py" for starting AI training of the deep learning structure, like Autoencoder and Classifier
 - "main_data.py" for merging of given datasets
 - "main_decoder.py" for decoding data from Utah electrode arrays
 - "main_fpga.py" for processing data using in Xilinx simulation environment and transfer the weights of a trained model in memory file 
