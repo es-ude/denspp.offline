@@ -49,7 +49,8 @@ class _RGC_TDB:
             "ON transient - subtype unknown": 41,
             "Sustained suppressed-by-contrast strong surround EW28": 42,
             "Sustained suppressed-by-contrast no surround EW27": 43,
-            "Bursty suppressed by contrast": 44,
+            "Bursty suppressed by contrast"
+            : 44,
             "ON bursty": 45,
             "ON delayed": 46,
             "ON small OFF large": 47,

@@ -6,3 +6,4 @@ runs/*
 data/*
 experiments/runs/*
 venv/*
+settings_ai.py

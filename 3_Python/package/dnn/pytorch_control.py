@@ -1,5 +1,7 @@
 import dataclasses
 import platform
+import shutil
+
 import cpuinfo
 import numpy as np
 from typing import Any
@@ -17,7 +19,7 @@ from sklearn.model_selection import KFold
 
 @dataclasses.dataclass(frozen=True)
 class Config_PyTorch:
-    """Template for configurating pytorch for training a model"""
+    """Class for handling the PyTorch training/inference routing"""
     # --- Settings of Models/Training
     model: Any
     loss_fn: Any
@@ -69,7 +71,11 @@ class Config_PyTorch:
 
 
 class training_pytorch:
-    """Class for Handling Training of Deep Neural Networks in PyTorch"""
+    """Class for Handling Training of Deep Neural Networks in PyTorch
+    Args:
+        config_train: Configuration settings for the PyTorch Training
+        do_train: Mention if training should be used (default = True)
+    """
     used_hw_dev: device
     used_hw_cpu: str
     used_hw_gpu: str
@@ -107,7 +113,11 @@ class training_pytorch:
         self._path2config = str()
 
     def __setup_device(self, use_only_cpu=True) -> None:
-        """Setup PyTorch for Training"""
+        """Setup PyTorch for Training
+
+        Args:
+            use_only_cpu: Set if in the training oly the CPU should be used
+            """
         # Using GPU
         if cuda.is_available() and not use_only_cpu:
             self.used_hw_gpu = cuda.get_device_name()
@@ -135,9 +145,12 @@ class training_pytorch:
 
         print(f"... using PyTorch with {device0} device on {self.os_type}")
 
+    def _check_user_config(self) -> None:
+        if not exists("settings_ai"):
+            shutil.copy()
+
     def _init_train(self) -> None:
         """Do init of class for training"""
-        self.__setup_device()
         folder_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{self._index_folder}_{self._model_name}'
         self._path2save = join(self._path2run, folder_name)
         self._path2temp = join(self._path2save, f'temp')
@@ -150,19 +163,19 @@ class training_pytorch:
 
         # --- Sending everything to device
         self.model.to(device=self.used_hw_dev)
+        # self.loss_fn.to(devive=self.used_hw_dev)
 
     def _init_writer(self) -> None:
         """Do init of writer"""
         self._path2log = join(self._path2save, f'logs')
         self._writer = SummaryWriter(self._path2log, comment=f"event_log_kfold{self._run_kfold:03d}")
 
-    def load_data(self, data_set) -> None:
-        self._init_train()
+    def load_data(self, data_set, use_not_cpu=False) -> None:
+        self.__setup_device()
         """Loading data for training and validation in DataLoader format into class"""
         self._do_kfold = True if self.settings.num_kfold > 1 else False
         self._model_addon = data_set.data_type
         self.cell_classes = data_set.frame_dict if data_set.cluster_name_available else []
-        use_not_cpu = False
 
         # --- Preparing datasets
         out_train = list()
