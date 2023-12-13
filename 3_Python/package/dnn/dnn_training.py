@@ -151,9 +151,11 @@ def do_train_dnn(mode_train: int, noise_std_ae=0.05, mode_cell_bib=0, only_plot_
                                     mode_cell_bib=mode_cell_bib,
                                     only_plot_results=only_plot_results)
         case 3:
+            return NotImplementedError
+        case 4:
             __dnn_train_classification(config_train, mode_cell_bib=mode_cell_bib,
                                        only_plot_results=only_plot_results)
-        case 4:
+        case 5:
             __dnn_train_spike_detection(config_train,
                                         only_plot_results=only_plot_results)
         case other:

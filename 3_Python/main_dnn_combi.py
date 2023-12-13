@@ -4,14 +4,12 @@ from os.path import join
 from scipy.io import loadmat
 from package.plotting.plot_dnn import plot_statistic_data
 from package.plotting.plot_metric import plot_loss, plot_confusion
-from settings_ai import config_train
+from settings_ai import config_train_class as config_train
 from package.dnn.pytorch_classification import train_nn_classification
 from package.dnn.dataset.autoencoder_class import prepare_training
 
 
 noise_std = 1
-# 0 = normal autoencoder, 1 = denoising AE (mean), 2 = denoising AE (more noise input)
-mode_train = 1
 use_cell_bib = False
 mode_cell_bib = 0
 only_plot = False
@@ -22,8 +20,9 @@ if __name__ == "__main__":
         print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
         # --- Processing: Loading dataset and Do Training
         dataset = prepare_training(path2data=config_train.get_path2data(), settings=config_train,
-                                   path2model='runs/20231204_152721_train_cnn_ae_v3',
-                                   use_cell_bib=use_cell_bib, mode_classes=mode_cell_bib, noise_std=noise_std)
+                                   path2model='runs/20231213_171117_train_cnn_ae_v4',
+                                   use_cell_bib=use_cell_bib, mode_classes=mode_cell_bib,
+                                   noise_std=noise_std)
         data_mean = dataset.frames_me
         trainhandler = train_nn_classification(config_train)
         trainhandler.load_model()
