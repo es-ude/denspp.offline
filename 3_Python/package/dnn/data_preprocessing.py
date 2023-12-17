@@ -7,7 +7,11 @@ from package.data.data_call_cellbib import CellSelector
 
 
 def change_frame_size(frames_in: np.ndarray, sel_pos: list) -> np.ndarray:
-    """Reducing the frame size of input frames to specific values"""
+    """Reducing the frame size of input frames to specific values
+
+    Args:
+        frames_in: input_values
+    """
     if len(sel_pos) != 2:
         # Alle Werte übernehmen
         frames_out = frames_in
@@ -126,7 +130,26 @@ def reconfigure_cluster_with_cell_lib(path: str, sel_mode_classes: int,
     return cell_frame, cell_cl, cell_dict
 
 
-class DataNormalization:  # mode="CPU", method="minmax", do_bipolar=False, do_global=False):
+class DataNormalization:
+    """Normalizing the input data to enhance classification performance.
+
+    Args:
+        frames_in (numpy.ndarray): Input data to be normalized.
+        mode (str): The processing mode, can be one of "CPU", "GPU", or "FPGA".
+        method (str): The normalization method, can be one of "minmax", "binary", "norm", "zscore", "medianmad", or "meanmad".
+        do_bipolar (bool): Boolean indicating whether to use bipolar normalization.
+        do_global (bool): Boolean indicating whether to use global normalization.
+
+    Methods:
+        normalize(): Normalize the input data based on the selected mode and method.
+
+    Examples:
+        # Create an instance of DataNormalization
+        data_normalizer = DataNormalization(frames_in, mode="GPU", method="minmax", do_bipolar=True, do_global=False)
+
+        # Normalize the data
+        normalized_frames = data_normalizer.normalize()
+    """
     def __init__(self, frames_in, mode, method, do_bipolar, do_global):
         self.mode = mode
         self.method = method
@@ -146,49 +169,50 @@ class DataNormalization:  # mode="CPU", method="minmax", do_bipolar=False, do_gl
 
         frames_out = np.zeros(shape=self.frames_in.shape)
 
-        if self.method == "minmax":
-            for i, frame in enumerate(self.frames_in):
-                scale_local = np.max([np.max(frame), -np.min(frame)]) if not self.do_global else 1
-                scale = scale_mean * scale_local * scale_global
-                frames_out[i, :] = mean_val + frame / scale
+        match self.method:
+            case "minmax":
+                for i, frame in enumerate(self.frames_in):
+                    scale_local = np.max([np.max(frame), -np.min(frame)]) if not self.do_global else 1
+                    scale = scale_mean * scale_local * scale_global
+                    frames_out[i, :] = mean_val + frame / scale
 
-        elif self.method == "binary":
-            for i, frame in enumerate(self.frames_in):
-                scale_local = np.max([np.max(frame), -np.min(frame)]) if not self.do_global else 1
-                scale = scale_mean * scale_local * scale_global
-                division_value = 0
-                while scale > (2 ** division_value):
-                    division_value += 1
-                frames_out[i, :] = mean_val + frame / (2 ** division_value)
+            case "binary":
+                for i, frame in enumerate(self.frames_in):
+                    scale_local = np.max([np.max(frame), -np.min(frame)]) if not self.do_global else 1
+                    scale = scale_mean * scale_local * scale_global
+                    division_value = 0
+                    while scale > (2 ** division_value):
+                        division_value += 1
+                    frames_out[i, :] = mean_val + frame / (2 ** division_value)
 
-        elif self.method == "norm":
-            for i, frame in enumerate(self.frames_in):
-                scale = np.linalg.norm(frame)
-                frames_out[i, :] = frame / scale
+            case "norm":
+                for i, frame in enumerate(self.frames_in):
+                    scale = np.linalg.norm(frame)
+                    frames_out[i, :] = frame / scale
 
-        elif self.method == "zscore":
-            for i, frame in enumerate(self.frames_in):
-                std_local = np.std(frame) if not self.do_global else 1
-                mean_local = np.mean(frame) if not self.do_global else 1
-                mean = mean_local * mean_global
-                std = std_local * std_global
-                frames_out[i, :] = (frame - mean) / std
+            case "zscore":
+                for i, frame in enumerate(self.frames_in):
+                    std_local = np.std(frame) if not self.do_global else 1
+                    mean_local = np.mean(frame) if not self.do_global else 1
+                    mean = mean_local * mean_global
+                    std = std_local * std_global
+                    frames_out[i, :] = (frame - mean) / std
 
-        elif self.method == "medianmad":
-            for i, frame in enumerate(self.frames_in):
-                median_local = np.median(frame) if not self.do_global else 1
-                mad_local = np.median(np.absolute(frame - np.median(frame))) if not self.do_global else 1
-                median = median_local * median_global
-                mad = mad_local * mad_global
-                frames_out[i, :] = (frame - median) / mad
+            case "medianmad":
+                for i, frame in enumerate(self.frames_in):
+                    median_local = np.median(frame) if not self.do_global else 1
+                    mad_local = np.median(np.absolute(frame - np.median(frame))) if not self.do_global else 1
+                    median = median_local * median_global
+                    mad = mad_local * mad_global
+                    frames_out[i, :] = (frame - median) / mad
 
-        elif self.method == "meanmad":
-            for i, frame in enumerate(self.frames_in):
-                mean_local = np.mean(frame) if not self.do_global else 1
-                mad_local = np.mean(np.absolute(frame - np.mean(frame))) if not self.do_global else 1
-                mean = mean_local * mean_global
-                mad = mad_local * mad_global
-                frames_out[i, :] = (frame - mean) / mad
+            case "meanmad":
+                for i, frame in enumerate(self.frames_in):
+                    mean_local = np.mean(frame) if not self.do_global else 1
+                    mad_local = np.mean(np.absolute(frame - np.mean(frame))) if not self.do_global else 1
+                    mean = mean_local * mean_global
+                    mad = mad_local * mad_global
+                    frames_out[i, :] = (frame - mean) / mad
 
         return frames_out
 
@@ -200,53 +224,55 @@ class DataNormalization:  # mode="CPU", method="minmax", do_bipolar=False, do_gl
         std_global = torch.std(self.frames_in).item() if self.do_global else 1
         mean_global = torch.mean(self.frames_in).item() if self.do_global else 1
         median_global = torch.median(self.frames_in).item() if self.do_global else 1
-        mad_global = torch.median(torch.abs(self.frames_in - torch.median(self.frames_in))).item() if self.do_global else 1
+        mad_global = torch.median(
+            torch.abs(self.frames_in - torch.median(self.frames_in))).item() if self.do_global else 1
 
         frames_out = torch.zeros_like(self.frames_in)
 
-        if self.method == "minmax":
-            for i, frame in enumerate(self.frames_in):
-                scale_local = torch.max(torch.abs(frame)).item() if not self.do_global else 1
-                scale = scale_mean * scale_local * scale_global
-                frames_out[i, :] = mean_val + frame / scale
+        match self.method:
+            case "minmax":
+                for i, frame in enumerate(self.frames_in):
+                    scale_local = torch.max(torch.abs(frame)).item() if not self.do_global else 1
+                    scale = scale_mean * scale_local * scale_global
+                    frames_out[i, :] = mean_val + frame / scale
 
-        elif self.method == "binary":
-            for i, frame in enumerate(self.frames_in):
-                scale_local = torch.max(torch.abs(frame)).item() if not self.do_global else 1
-                scale = scale_mean * scale_local * scale_global
-                division_value = 0
-                while scale > (2 ** division_value):
-                    division_value += 1
-                frames_out[i, :] = mean_val + frame / (2 ** division_value)
+            case "binary":
+                for i, frame in enumerate(self.frames_in):
+                    scale_local = torch.max(torch.abs(frame)).item() if not self.do_global else 1
+                    scale = scale_mean * scale_local * scale_global
+                    division_value = 0
+                    while scale > (2 ** division_value):
+                        division_value += 1
+                    frames_out[i, :] = mean_val + frame / (2 ** division_value)
 
-        elif self.method == "norm":
-            for i, frame in enumerate(self.frames_in):
-                scale = torch.norm(frame)
-                frames_out[i, :] = frame / scale
+            case "norm":
+                for i, frame in enumerate(self.frames_in):
+                    scale = torch.norm(frame)
+                    frames_out[i, :] = frame / scale
 
-        elif self.method == "zscore":
-            for i, frame in enumerate(self.frames_in):
-                std_local = torch.std(frame) if not self.do_global else 1
-                mean_local = torch.mean(frame) if not self.do_global else 1
-                mean = mean_local * mean_global
-                std = std_local * std_global
-                frames_out[i, :] = (frame - mean) / std
+            case "zscore":
+                for i, frame in enumerate(self.frames_in):
+                    std_local = torch.std(frame) if not self.do_global else 1
+                    mean_local = torch.mean(frame) if not self.do_global else 1
+                    mean = mean_local * mean_global
+                    std = std_local * std_global
+                    frames_out[i, :] = (frame - mean) / std
 
-        elif self.method == "medianmad":
-            for i, frame in enumerate(self.frames_in):
-                median_local = torch.median(frame) if not self.do_global else 1
-                mad_local = torch.median(torch.abs(frame - torch.median(frame))) if not self.do_global else 1
-                median = median_local * median_global
-                mad = mad_local * mad_global
-                frames_out[i, :] = (frame - median) / mad
+            case "medianmad":
+                for i, frame in enumerate(self.frames_in):
+                    median_local = torch.median(frame) if not self.do_global else 1
+                    mad_local = torch.median(torch.abs(frame - torch.median(frame))) if not self.do_global else 1
+                    median = median_local * median_global
+                    mad = mad_local * mad_global
+                    frames_out[i, :] = (frame - median) / mad
 
-        elif self.method == "meanmad":
-            for i, frame in enumerate(self.frames_in):
-                mean_local = torch.mean(frame) if not self.do_global else 1
-                mad_local = torch.mean(torch.abs(frame - torch.mean(frame))) if not self.do_global else 1
-                mean = mean_local * mean_global
-                mad = mad_local * mad_global
-                frames_out[i, :] = (frame - mean) / mad
+            case "meanmad":
+                for i, frame in enumerate(self.frames_in):
+                    mean_local = torch.mean(frame) if not self.do_global else 1
+                    mad_local = torch.mean(torch.abs(frame - torch.mean(frame))) if not self.do_global else 1
+                    mean = mean_local * mean_global
+                    mad = mad_local * mad_global
+                    frames_out[i, :] = (frame - mean) / mad
 
         return frames_out
 
@@ -256,26 +282,30 @@ class DataNormalization:  # mode="CPU", method="minmax", do_bipolar=False, do_gl
         scale_global = np.max([np.max(self.frames_in), -np.min(self.frames_in)]) if self.do_global else 1
 
         frames_out = np.zeros(shape=self.frames_in.shape)
+
         for i, frame in enumerate(self.frames_in):
             scale_local = np.max([np.max(frame), -np.min(frame)]) if not self.do_global else 1
             scale = scale_mean * scale_local * scale_global
             division_value = 1
+
             while scale > (2 ** division_value):
                 division_value += 1
+
             frames_out[i, :] = mean_val + frame / (2 ** division_value)
 
         return frames_out
 
-    def normalizing(self):
-        if self.mode == "CPU":
-            frames_out = self._normalize_cpu()
-        elif self.mode == "GPU":
-            self.frames_in = torch.from_numpy(self.frames_in)
-            frames_out = self._normalize_gpu()
-        elif self.mode == "FPGA":
-            frames_out = self._normalize_fpga()
-        else:
-            print("Selected mode is not available.")
-            return 0
-        return frames_out
+    def normalize(self):
+        match self.mode:
+            case "CPU":
+                frames_out = self._normalize_cpu()
+            case "GPU":
+                self.frames_in = torch.from_numpy(self.frames_in)
+                frames_out = self._normalize_gpu()
+            case "FPGA":
+                frames_out = self._normalize_fpga()
+            case _:
+                print("Selected mode is not available.")
+                return 0
 
+        return frames_out
