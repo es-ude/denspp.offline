@@ -134,7 +134,7 @@ class DataNormalization:
     """Normalizing the input data to enhance classification performance.
 
     Args:
-        frames_in (numpy.ndarray): Input data to be normalized.
+        frames_in: Input data to be normalized.
         mode (str): The processing mode, can be one of "CPU", "GPU", or "FPGA".
         method (str): The normalization method, can be one of "minmax", "binary", "norm", "zscore", "medianmad", or "meanmad".
         do_bipolar (bool): Boolean indicating whether to use bipolar normalization.
