@@ -27,17 +27,10 @@ The Python folder contains the following folder structure:
 - _src_emg_: Pipeline and necessary functions for analysing EMG signals
 - _src_neuro_: Pipeline and necesary functions for analysing action potentials from invasive microelectrode arrays
 
-
-## Collaborate with your team
-Responsible persons:
-- *Analogue front-end*: Andreas Erbslöh - Email: andreas.erbsloeh@uni-due.de
-- *Digital front-end*: Leo Buron - Email: leo.buron@uni-due.de
-- *Neural Decoder*: Zia Ur Rehman - Email: ing.zia@yahoo.com
-
 ## Usage
 For starting the software framework in your branch, please start Python script ...
 - "main.py" for normal pipeline processing
-- "main_ai_autoencoder.py" for AI training of the deep learning structure of Autoencoders
+- "main_train.py" for starting AI training of the deep learning structure, like Autoencoder and Classifier
 - "main_data.py" for merging of given datasets
 - "main_decoder.py" for decoding data from Utah electrode arrays
 - "main_fpga.py" for processing data using in Xilinx simulation environment and transfer the weights of a trained model in memory file 

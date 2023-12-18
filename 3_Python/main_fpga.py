@@ -24,9 +24,8 @@ def do_data_transfer_timeseries_vivado(path: str) -> None:
     datahandler.do_cut()
     datahandler.do_resample()
     data = datahandler.get_data()
-    afe.run_input(data.data_raw[0])
-
-    u_in = afe.x_adc
+    afe.run_minimal(data.data_raw[0])
+    u_in = afe.signals.x_adc
 
     # --- Transfer to verilog files
     if not os.path.exists(path):
@@ -56,7 +55,6 @@ def do_data_transfer_timeseries_cadence(path: str) -> None:
     # --- Loading the src_neuro
     afe_set = Settings()
     afe_set.SettingsDATA.t_range = [10, 12]
-    afe = Pipeline(afe_set)
     # ------ Loading Data: Getting the data
     print("... loading the datasets")
     datahandler = DataController(afe_set.SettingsDATA)
@@ -64,9 +62,7 @@ def do_data_transfer_timeseries_cadence(path: str) -> None:
     datahandler.do_cut()
     datahandler.do_resample()
     data = datahandler.get_data()
-    afe.run_input(data.data_raw[0])
-
-    u_in = afe.u_in
+    u_in = data.data_raw[0]
 
     if not os.path.exists(path):
         os.mkdir(path)
@@ -83,7 +79,7 @@ def do_read_frames(path: str) -> None:
     print("Do read frames from")
 
     # --- Reading data
-    data_frames = loadmat('../data/2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat')
+    data_frames = loadmat('data/2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat')
     frames_in = data_frames['frames_in']
     frames_cl = data_frames['frames_cluster']
 
@@ -108,7 +104,7 @@ def do_read_dnn_weights() -> None:
 
 
 if __name__ == "__main__":
-    # do_data_transfer_timeseries_vivado('data')
+    do_data_transfer_timeseries_vivado('data')
     # do_data_transfer_timeseries_cadence('data')
     # do_read_frames('data')
-    do_read_dnn_weights()
+    # do_read_dnn_weights()
