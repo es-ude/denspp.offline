@@ -8,7 +8,7 @@ from package.dnn.pytorch_control import Config_PyTorch, training_pytorch
 from package.metric import calculate_snr
 
 
-class pytorch_train(training_pytorch):
+class train_nn_autoencoder(training_pytorch):
     """Class for Handling Training of Autoencoders"""
     def __init__(self, config_train: Config_PyTorch, do_train=True) -> None:
         training_pytorch.__init__(self, config_train, do_train)
@@ -67,10 +67,11 @@ class pytorch_train(training_pytorch):
         b0 = sum((yin - ymean) ** 2)
         return 10 * log10(a0 / b0)
 
-    def do_training(self) -> list:
+    def do_training(self, do_init=True) -> list:
         """Start model training incl. validation and custom-own metric calculation"""
-        self._init_train()
-        self._save_config_txt()
+        if do_init:
+            self._init_train()
+            self._save_config_txt()
         # --- Handling Kfold cross validation training
         if self._do_kfold:
             print(f"Starting Kfold cross validation training in {self.settings.num_kfold} steps")
