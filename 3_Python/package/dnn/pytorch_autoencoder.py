@@ -2,9 +2,7 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-
-import torch
-from torch import load, save, from_numpy
+from torch import load, save, from_numpy, inference_mode
 from scipy.io import savemat
 from package.dnn.pytorch_control import Config_PyTorch, training_pytorch
 from package.metric import calculate_snr
@@ -40,7 +38,7 @@ class pytorch_train(training_pytorch):
         valid_loss = 0.0
 
         self.model.eval()
-        with torch.inference_mode():
+        with inference_mode():
             for vdata in self.valid_loader[self._run_kfold]:
                 pred_out = self.model( vdata['in'])[1]
                 valid_loss += self.loss_fn(pred_out, vdata['out']).item()
