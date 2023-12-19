@@ -2,6 +2,8 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
+
+import torch
 from torch import load, save, from_numpy
 from scipy.io import savemat
 from package.dnn.pytorch_control import Config_PyTorch, training_pytorch
@@ -38,10 +40,11 @@ class pytorch_train(training_pytorch):
         valid_loss = 0.0
 
         self.model.eval()
-        for vdata in self.valid_loader[self._run_kfold]:
-            pred_out = self.model( vdata['in'])[1]
-            valid_loss += self.loss_fn(pred_out, vdata['out']).item()
-            total_batches += 1
+        with torch.inference_mode():
+            for vdata in self.valid_loader[self._run_kfold]:
+                pred_out = self.model( vdata['in'])[1]
+                valid_loss += self.loss_fn(pred_out, vdata['out']).item()
+                total_batches += 1
 
         valid_loss = valid_loss / total_batches
         return valid_loss
