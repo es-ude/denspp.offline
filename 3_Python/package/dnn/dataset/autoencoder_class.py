@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.data_preprocessing import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
-from package.dnn.data_preprocessing import change_frame_size, reconfigure_cluster_with_cell_lib, generate_zero_frames, data_normalization_minmax
+from package.dnn.data_preprocessing import change_frame_size, reconfigure_cluster_with_cell_lib, generate_zero_frames, DataNormalization
 from package.dnn.data_augmentation import *
 
 
@@ -57,7 +57,8 @@ def prepare_training(path2data: str, settings: Config_PyTorch, path2model: str,
     # --- PART: Data Normalization
     if settings.data_do_normalization:
         print(f"... do data normalization")
-        frames_in = data_normalization_minmax(frames_in, do_bipolar=True, do_globalmax=False)
+        data_class_normalization = DataNormalization(frames_in, "CPU", "minmax", do_bipolar=True, do_global=False)
+        frames_in = data_class_normalization.normalize()
 
     # --- PART: Mean waveform calculation and data augmentation
     frames_in = change_frame_size(frames_in, settings.data_sel_pos)

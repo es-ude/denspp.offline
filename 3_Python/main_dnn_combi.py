@@ -3,7 +3,7 @@ import numpy as np
 from os.path import join
 from scipy.io import loadmat
 from package.plotting.plot_dnn import plot_statistic_data
-from package.plotting.plot_metric import plot_loss, plot_confusion
+from package.plotting.plot_metric import plot_loss, prep_confusion
 from settings_ai import config_train_class as config_train
 from package.dnn.pytorch_classification import train_nn_classification
 from package.dnn.dataset.autoencoder_class import prepare_training
@@ -41,8 +41,8 @@ if __name__ == "__main__":
     plt.close('all')
     # plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
     plot_loss(epoch_acc, 'Acc.', path2save=logsdir, epoch_zoom=[80, ])
-    plot_confusion(data_result['valid_clus'], data_result['yclus'],
-                   path2save=logsdir, cl_dict=data_result['cl_dict'])
+    prep_confusion(data_result['valid_clus'], data_result['yclus'], "training", "both", False,
+                   cl_dict=data_result['cl_dict'], path2save=logsdir)
     plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                         path2save=logsdir, cl_dict=data_result['cl_dict'])
 
