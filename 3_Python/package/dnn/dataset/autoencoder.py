@@ -5,7 +5,7 @@ from torch.utils.data import Dataset, DataLoader
 
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.data_preprocessing import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
-from package.dnn.data_preprocessing import change_frame_size, reconfigure_cluster_with_cell_lib, generate_zero_frames, data_normalization
+from package.dnn.data_preprocessing import change_frame_size, reconfigure_cluster_with_cell_lib, generate_zero_frames, DataNormalization
 from package.dnn.data_augmentation import *
 
 
@@ -135,8 +135,10 @@ def prepare_training(path: str, settings: Config_PyTorch,
 
     # --- PART: Data Normalization
     if settings.data_do_normalization:
-        frames_in = data_normalization(frames_in)
-        frames_me = data_normalization(frames_me)
+        data_class_frames_in = DataNormalization(frames_in, mode="CPU", method = "minmax",  do_bipolar=False, do_global=False)
+        data_class_frames_me = DataNormalization(frames_me, mode="CPU", method = "minmax",  do_bipolar=False, do_global=False)
+        frames_in = data_class_frames_in.normalize()
+        frames_me = data_class_frames_me.normalize()
 
     # --- Output
     check = np.unique(frames_cl, return_counts=True)
