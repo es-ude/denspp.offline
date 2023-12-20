@@ -4,7 +4,7 @@ from os.path import join, exists
 from shutil import copy
 from scipy.io import loadmat
 from package.plotting.plot_dnn import results_training, plot_statistic_data
-from package.plotting.plot_metric import plot_confusion, plot_loss
+from package.plotting.plot_metric import prep_confusion, plot_loss
 
 from package.dnn.pytorch_control import Config_PyTorch
 from package.dnn.pytorch_autoencoder import train_nn_autoencoder
@@ -86,7 +86,7 @@ def __dnn_train_classification(config_train: Config_PyTorch, mode_cell_bib=0, on
     plt.close('all')
     # plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
     plot_loss(epoch_acc, 'Acc.', path2save=logsdir, epoch_zoom=[500, ])
-    plot_confusion(data_result['valid_clus'], data_result['yclus'],
+    prep_confusion(data_result['valid_clus'], data_result['yclus'],
                    path2save=logsdir, cl_dict=data_result['cl_dict'])
     plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                         path2save=logsdir, cl_dict=data_result['cl_dict'])

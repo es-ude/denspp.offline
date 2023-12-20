@@ -291,7 +291,12 @@ class DataNormalization:
             while scale > (2 ** division_value):
                 division_value += 1
 
-            frames_out[i, :] = mean_val + frame / (2 ** division_value)
+
+            max = scale_global if self.do_global else scale_local
+            adding = 2**(division_value-1) - max
+            print(2**division_value, max, adding)
+
+            frames_out[i, :] = mean_val + (frame + adding) / (2 ** division_value)
 
         return frames_out
 
