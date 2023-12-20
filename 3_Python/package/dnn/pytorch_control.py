@@ -28,25 +28,8 @@ class Config_PyTorch:
     num_kfold: int
     num_epochs: int
     batch_size: int
-    # --- Settings of Datasets
-    data_path: str
-    data_file_name: str
     data_split_ratio: float
     data_do_shuffle: bool
-    # --- Data Augmentation
-    data_do_augmentation: bool
-    data_num_augmentation: int
-    data_do_normalization: bool
-    data_do_addnoise_cluster: bool
-    data_do_reduce_samples_per_cluster: bool
-    data_num_samples_per_cluster: int
-    # --- Dataset Preparation
-    data_exclude_cluster: list
-    data_sel_pos: list
-
-    def get_path2data(self) -> str:
-        """Getting the path name to the file"""
-        return join(self.data_path, self.data_file_name)
 
     def get_topology(self) -> str:
         """Getting the model name defined in models"""
@@ -70,6 +53,28 @@ class Config_PyTorch:
         return optim.SGD(self.model.parameters(), lr=learn_rate)
 
 
+@dataclasses.dataclass(frozen=True)
+class Config_Dataset:
+    """Class for handling the pre-processing and generating the training dataset"""
+    # --- Settings of Datasets
+    data_path: str
+    data_file_name: str
+    # --- Data Augmentation
+    data_do_augmentation: bool
+    data_num_augmentation: int
+    data_do_normalization: bool
+    data_do_addnoise_cluster: bool
+    data_do_reduce_samples_per_cluster: bool
+    data_num_samples_per_cluster: int
+    # --- Dataset Preparation
+    data_exclude_cluster: list
+    data_sel_pos: list
+
+    def get_path2data(self) -> str:
+        """Getting the path name to the file"""
+        return join(self.data_path, self.data_file_name)
+
+
 class training_pytorch:
     """Class for Handling Training of Deep Neural Networks in PyTorch
     Args:
@@ -84,7 +89,7 @@ class training_pytorch:
     valid_loader: list
     cell_classes: list
 
-    def __init__(self, config_train: Config_PyTorch, do_train=True) -> None:
+    def __init__(self, config_train: Config_PyTorch, config_dataset: Config_Dataset, do_train=True) -> None:
         self.os_type = platform.system()
         self._writer = None
         self.model = None
@@ -102,6 +107,7 @@ class training_pytorch:
 
         # --- Saving options
         self.settings = config_train
+        self.settings_data = config_dataset
         self._index_folder = 'train' if do_train else 'inference'
         self._aitype = config_train.model.out_modeltyp
         self._model_name = config_train.model.out_modelname
@@ -161,9 +167,7 @@ class training_pytorch:
         mkdir(self._path2save)
         mkdir(self._path2temp)
 
-        # --- Sending everything to device
         self.model.to(device=self.used_hw_dev)
-        # self.loss_fn.to(devive=self.used_hw_dev)
 
     def _init_writer(self) -> None:
         """Do init of writer"""
@@ -229,7 +233,7 @@ class training_pytorch:
             txt_handler.write(f'Date: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}\n')
             txt_handler.write(f'Used CPU: {self.used_hw_cpu}\n')
             txt_handler.write(f'Used GPU: {self.used_hw_gpu}\n')
-            txt_handler.write(f'Used dataset: {self.settings.get_path2data()}\n')
+            txt_handler.write(f'Used dataset: {self.settings_data.get_path2data()}\n')
             txt_handler.write(f'AI Topology: {self.settings.get_topology()} ({self._model_addon})\n')
             txt_handler.write(f'Embedded?: {self.model.model_embedded}\n')
             txt_handler.write('\n')
@@ -242,10 +246,10 @@ class training_pytorch:
             txt_handler.write(f'Do KFold cross validation?: {self._do_kfold},\n'
                               f'Number of KFold steps: {self.settings.num_kfold}\n')
             txt_handler.write(f'Do shuffle?: {self.settings.data_do_shuffle}\n')
-            txt_handler.write(f'Do data augmentation?: {self.settings.data_do_augmentation}\n')
-            txt_handler.write(f'Do input normalization?: {self.settings.data_do_normalization}\n')
-            txt_handler.write(f'Do add noise cluster?: {self.settings.data_do_addnoise_cluster}\n')
-            txt_handler.write(f'Exclude cluster: {self.settings.data_exclude_cluster}\n')
+            txt_handler.write(f'Do data augmentation?: {self.settings_data.data_do_augmentation}\n')
+            txt_handler.write(f'Do input normalization?: {self.settings_data.data_do_normalization}\n')
+            txt_handler.write(f'Do add noise cluster?: {self.settings_data.data_do_addnoise_cluster}\n')
+            txt_handler.write(f'Exclude cluster: {self.settings_data.data_exclude_cluster}\n')
 
     def _save_train_results(self, last_metric_train: float | np.ndarray,
                             last_metric_valid: float | np.ndarray, type='Loss') -> None:

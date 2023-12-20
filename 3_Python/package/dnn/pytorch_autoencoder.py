@@ -3,15 +3,16 @@ from os.path import join
 from shutil import copy
 from datetime import datetime
 from torch import Tensor, load, save, from_numpy, tensor, max, min, log10
+import torch
 from scipy.io import savemat
-from package.dnn.pytorch_control import Config_PyTorch, training_pytorch
+from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset, training_pytorch
 from package.metric import calculate_snr
 
 
 class train_nn_autoencoder(training_pytorch):
     """Class for Handling Training of Autoencoders"""
-    def __init__(self, config_train: Config_PyTorch, do_train=True) -> None:
-        training_pytorch.__init__(self, config_train, do_train)
+    def __init__(self, config_train: Config_PyTorch, config_data: Config_Dataset, do_train=True) -> None:
+        training_pytorch.__init__(self, config_train, config_data, do_train)
 
     def __do_training_epoch(self) -> float:
         """Do training during epoch of training"""
@@ -64,7 +65,7 @@ class train_nn_autoencoder(training_pytorch):
     def __calculate_snr(self, yin: Tensor, ymean: Tensor) -> Tensor:
         """Calculating the signal-to-noise ratio [dB] of the input signal compared to mean waveform"""
         a0 = (max(ymean) - min(ymean)) ** 2
-        b0 = sum((yin - ymean) ** 2)
+        b0 = torch.sum((yin - ymean) ** 2)
         return 10 * log10(a0 / b0)
 
     def do_training(self, do_init=True) -> list:

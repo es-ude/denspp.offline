@@ -4,13 +4,13 @@ from shutil import copy
 from datetime import datetime
 from torch import load, save, from_numpy
 from scipy.io import savemat
-from package.dnn.pytorch_control import Config_PyTorch, training_pytorch
+from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset, training_pytorch
 
 
 class train_nn_classification(training_pytorch):
     """Class for Handling the Training of Classifiers"""
-    def __init__(self, config_train: Config_PyTorch, do_train=True) -> None:
-        training_pytorch.__init__(self, config_train, do_train)
+    def __init__(self, config_train: Config_PyTorch, config_data: Config_Dataset, do_train=True) -> None:
+        training_pytorch.__init__(self, config_train, config_data, do_train)
 
     def __do_training_epoch(self) -> [float, float]:
         """Do training during epoch of training"""

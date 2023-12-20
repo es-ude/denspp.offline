@@ -3,7 +3,7 @@ from scipy.io import loadmat
 from torch import is_tensor, randn, Tensor
 from torch.utils.data import Dataset
 
-from package.dnn.pytorch_control import Config_PyTorch
+from package.dnn.pytorch_control import Config_Dataset
 from package.dnn.data_preprocessing import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
 from package.dnn.data_preprocessing import change_frame_size, reconfigure_cluster_with_cell_lib, generate_zero_frames, data_normalization_minmax
 from package.dnn.data_augmentation import *
@@ -65,21 +65,22 @@ class DatasetAE(Dataset):
                 'mean': self.frames_me[cluster_id, :]}
 
 
-def prepare_training(path: str, settings: Config_PyTorch,
+def prepare_training(settings: Config_Dataset,
                      use_cell_bib=False, mode_classes=2,
                      use_median_for_mean=True,
                      mode_train_ae=0, do_classification=False,
                      noise_std=0.1) -> DatasetAE:
     """Preparing dataset incl. augmentation for spike-frame based training"""
     print("... loading and processing the dataset")
-    npzfile = loadmat(path)
+    npzfile = loadmat(settings.get_path2data())
     frames_in = npzfile["frames_in"]
     frames_cl = npzfile["frames_cluster"].flatten() if 'frames_cluster' in npzfile else npzfile["frames_cl"].flatten()
     frames_dict = None
 
     # --- Using cell_bib for clustering
     if use_cell_bib:
-        frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(path, mode_classes, frames_in, frames_cl)
+        frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(settings.get_path2data(),
+                                                                              mode_classes, frames_in, frames_cl)
 
     # --- PART: Data Normalization
     if settings.data_do_normalization:
@@ -107,8 +108,7 @@ def prepare_training(path: str, settings: Config_PyTorch,
     if settings.data_do_reduce_samples_per_cluster:
         print("... reducing the samples per cluster (for pre-training on dedicated hardware)")
         frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
-                                                             settings.data_num_samples_per_cluster,
-                                                             settings.data_do_shuffle)
+                                                             settings.data_num_samples_per_cluster)
 
     # --- PART: Calculate SNR if desired
     if settings.data_do_augmentation or settings.data_do_addnoise_cluster:

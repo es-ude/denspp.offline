@@ -1,7 +1,7 @@
 import os, shutil
 import numpy as np
 
-from package.template.pipeline_signals import PipelineSignal
+from package.pipeline_signals import PipelineSignal
 from package.data.data_call_common import SettingsDATA
 from package.pre_amp.preamp import PreAmp, SettingsAMP
 from package.adc.adc_basic import SettingsADC
