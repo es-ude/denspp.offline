@@ -19,3 +19,4 @@ elasticai-creator
 
 # Libs for neuromorphic training of Spiking Neural Networks
 # snntorch
+py-cpuinfo
