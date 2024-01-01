@@ -2,9 +2,9 @@ import numpy as np
 from scipy.io import loadmat
 from torch import is_tensor
 from torch.utils.data import Dataset
-from package.dnn.pytorch_control import Config_PyTorch
+from package.dnn.pytorch_control import Config_Dataset
 from package.dnn.data_augmentation import augmentation_reducing_samples
-from package.dnn.data_preprocessing import reconfigure_cluster_with_cell_lib, data_normalization_minmax
+from package.dnn.data_preprocessing import reconfigure_cluster_with_cell_lib, DataNormalization
 
 
 class DatasetRGC(Dataset):
@@ -26,7 +26,7 @@ class DatasetRGC(Dataset):
         return {'in': self.__frame_input[idx], 'out': self.__frame_cellid[idx]}
 
 
-def prepare_training(path: str, settings: Config_PyTorch, use_cell_bib=False, mode_classes=0) -> DatasetRGC:
+def prepare_training(path: str, settings: Config_Dataset, use_cell_bib=False, mode_classes=0) -> DatasetRGC:
     """Preparing dataset incl. augmentation for spike-detection-based training"""
     print("... loading and processing the dataset")
     npzfile = loadmat(path)
@@ -48,7 +48,8 @@ def prepare_training(path: str, settings: Config_PyTorch, use_cell_bib=False, mo
         # --- PART: Data Normalization
     if settings.data_do_normalization:
         print(f"... do data normalization")
-        frames_in = data_normalization_minmax(frames_in, do_bipolar=True, do_globalmax=False)
+        data_class_frames_in = DataNormalization(mode="CPU", method="minmax", do_global=False)
+        frames_in = data_class_frames_in.normalize(frames_in)
 
     # --- PART: Reducing samples per cluster (if too large)
     if settings.data_do_reduce_samples_per_cluster:

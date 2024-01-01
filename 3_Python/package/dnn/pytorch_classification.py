@@ -4,13 +4,13 @@ from shutil import copy
 from datetime import datetime
 from torch import load, save, from_numpy
 from scipy.io import savemat
-from package.dnn.pytorch_control import Config_PyTorch, training_pytorch
+from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset, training_pytorch
 
 
 class train_nn_classification(training_pytorch):
     """Class for Handling the Training of Classifiers"""
-    def __init__(self, config_train: Config_PyTorch, do_train=True) -> None:
-        training_pytorch.__init__(self, config_train, do_train)
+    def __init__(self, config_train: Config_PyTorch, config_dataset=Config_Dataset, do_train=True) -> None:
+        training_pytorch.__init__(self, config_train, config_dataset, do_train)
 
     def __do_training_epoch(self) -> [float, float]:
         """Do training during epoch of training"""
@@ -58,10 +58,10 @@ class train_nn_classification(training_pytorch):
 
         return valid_loss, valid_acc
 
-    def do_training(self) -> list:
+    def do_training(self, path2save='') -> list:
         """Start model training incl. validation and custom-own metric calculation"""
-        self._init_train()
-        self._save_config_txt()
+        self._init_train(path2save=path2save)
+        self._save_config_txt('_class')
 
         # --- Handling Kfold cross validation training
         if self._do_kfold:

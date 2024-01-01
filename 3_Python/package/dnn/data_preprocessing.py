@@ -134,7 +134,6 @@ class DataNormalization:
     """Normalizing the input data to enhance classification performance.
 
     Args:
-        frames_in: Input data to be normalized.
         mode (str): The processing mode, can be one of "CPU", "GPU", or "FPGA".
         method (str): The normalization method, can be one of "minmax", "binary", "norm", "zscore", "medianmad", or "meanmad".
         do_bipolar (bool): Boolean indicating whether to use bipolar normalization.
@@ -148,36 +147,36 @@ class DataNormalization:
         data_normalizer = DataNormalization(frames_in, mode="GPU", method="minmax", do_bipolar=True, do_global=False)
 
         # Normalize the data
-        normalized_frames = data_normalizer.normalize()
+        normalized_frames = data_normalizer.normalize(frames_in: np.ndarray)
+            frames_in: Input data to be normalized.
     """
-    def __init__(self, frames_in, mode, method, do_bipolar, do_global):
+    def __init__(self, mode, method, do_bipolar, do_global):
         self.mode = mode
         self.method = method
         self.do_bipolar = do_bipolar
         self.do_global = do_global
-        self.frames_in = frames_in
 
-    def _normalize_cpu(self):
+    def _normalize_cpu(self, frames_in: np.ndarray):
         mean_val = 0 if self.do_bipolar else 0.5
         scale_mean = 1 if self.do_bipolar else 2
-        scale_global = np.max([np.max(self.frames_in), -np.min(self.frames_in)]) if self.do_global else 1
+        scale_global = np.max([np.max(frames_in), -np.min(frames_in)]) if self.do_global else 1
 
-        std_global = np.std(self.frames_in) if self.do_global else 1
-        mean_global = np.mean(self.frames_in) if self.do_global else 1
-        median_global = np.median(self.frames_in) if self.do_global else 1
-        mad_global = np.median(np.absolute(self.frames_in - np.median(self.frames_in))) if self.do_global else 1
+        std_global = np.std(frames_in) if self.do_global else 1
+        mean_global = np.mean(frames_in) if self.do_global else 1
+        median_global = np.median(frames_in) if self.do_global else 1
+        mad_global = np.median(np.absolute(frames_in - np.median(frames_in))) if self.do_global else 1
 
-        frames_out = np.zeros(shape=self.frames_in.shape)
+        frames_out = np.zeros(shape=frames_in.shape)
 
         match self.method:
             case "minmax":
-                for i, frame in enumerate(self.frames_in):
+                for i, frame in enumerate(frames_in):
                     scale_local = np.max([np.max(frame), -np.min(frame)]) if not self.do_global else 1
                     scale = scale_mean * scale_local * scale_global
                     frames_out[i, :] = mean_val + frame / scale
 
             case "binary":
-                for i, frame in enumerate(self.frames_in):
+                for i, frame in enumerate(frames_in):
                     scale_local = np.max([np.max(frame), -np.min(frame)]) if not self.do_global else 1
                     scale = scale_mean * scale_local * scale_global
                     division_value = 0
@@ -186,12 +185,12 @@ class DataNormalization:
                     frames_out[i, :] = mean_val + frame / (2 ** division_value)
 
             case "norm":
-                for i, frame in enumerate(self.frames_in):
+                for i, frame in enumerate(frames_in):
                     scale = np.linalg.norm(frame)
                     frames_out[i, :] = frame / scale
 
             case "zscore":
-                for i, frame in enumerate(self.frames_in):
+                for i, frame in enumerate(frames_in):
                     std_local = np.std(frame) if not self.do_global else 1
                     mean_local = np.mean(frame) if not self.do_global else 1
                     mean = mean_local * mean_global
@@ -199,7 +198,7 @@ class DataNormalization:
                     frames_out[i, :] = (frame - mean) / std
 
             case "medianmad":
-                for i, frame in enumerate(self.frames_in):
+                for i, frame in enumerate(frames_in):
                     median_local = np.median(frame) if not self.do_global else 1
                     mad_local = np.median(np.absolute(frame - np.median(frame))) if not self.do_global else 1
                     median = median_local * median_global
@@ -207,7 +206,7 @@ class DataNormalization:
                     frames_out[i, :] = (frame - median) / mad
 
             case "meanmad":
-                for i, frame in enumerate(self.frames_in):
+                for i, frame in enumerate(frames_in):
                     mean_local = np.mean(frame) if not self.do_global else 1
                     mad_local = np.mean(np.absolute(frame - np.mean(frame))) if not self.do_global else 1
                     mean = mean_local * mean_global
@@ -216,28 +215,28 @@ class DataNormalization:
 
         return frames_out
 
-    def _normalize_gpu(self):
+    def _normalize_gpu(self, frames_in: torch.Tensor):
         mean_val = 0 if self.do_bipolar else 0.5
         scale_mean = 1 if self.do_bipolar else 2
-        scale_global = torch.max(torch.abs(self.frames_in)).item() if self.do_global else 1
+        scale_global = torch.max(torch.abs(frames_in)).item() if self.do_global else 1
 
-        std_global = torch.std(self.frames_in).item() if self.do_global else 1
-        mean_global = torch.mean(self.frames_in).item() if self.do_global else 1
-        median_global = torch.median(self.frames_in).item() if self.do_global else 1
+        std_global = torch.std(frames_in).item() if self.do_global else 1
+        mean_global = torch.mean(frames_in).item() if self.do_global else 1
+        median_global = torch.median(frames_in).item() if self.do_global else 1
         mad_global = torch.median(
-            torch.abs(self.frames_in - torch.median(self.frames_in))).item() if self.do_global else 1
+            torch.abs(frames_in - torch.median(frames_in))).item() if self.do_global else 1
 
-        frames_out = torch.zeros_like(self.frames_in)
+        frames_out = torch.zeros_like(frames_in)
 
         match self.method:
             case "minmax":
-                for i, frame in enumerate(self.frames_in):
+                for i, frame in enumerate(frames_in):
                     scale_local = torch.max(torch.abs(frame)).item() if not self.do_global else 1
                     scale = scale_mean * scale_local * scale_global
                     frames_out[i, :] = mean_val + frame / scale
 
             case "binary":
-                for i, frame in enumerate(self.frames_in):
+                for i, frame in enumerate(frames_in):
                     scale_local = torch.max(torch.abs(frame)).item() if not self.do_global else 1
                     scale = scale_mean * scale_local * scale_global
                     division_value = 0
@@ -246,12 +245,12 @@ class DataNormalization:
                     frames_out[i, :] = mean_val + frame / (2 ** division_value)
 
             case "norm":
-                for i, frame in enumerate(self.frames_in):
+                for i, frame in enumerate(frames_in):
                     scale = torch.norm(frame)
                     frames_out[i, :] = frame / scale
 
             case "zscore":
-                for i, frame in enumerate(self.frames_in):
+                for i, frame in enumerate(frames_in):
                     std_local = torch.std(frame) if not self.do_global else 1
                     mean_local = torch.mean(frame) if not self.do_global else 1
                     mean = mean_local * mean_global
@@ -259,7 +258,7 @@ class DataNormalization:
                     frames_out[i, :] = (frame - mean) / std
 
             case "medianmad":
-                for i, frame in enumerate(self.frames_in):
+                for i, frame in enumerate(frames_in):
                     median_local = torch.median(frame) if not self.do_global else 1
                     mad_local = torch.median(torch.abs(frame - torch.median(frame))) if not self.do_global else 1
                     median = median_local * median_global
@@ -267,7 +266,7 @@ class DataNormalization:
                     frames_out[i, :] = (frame - median) / mad
 
             case "meanmad":
-                for i, frame in enumerate(self.frames_in):
+                for i, frame in enumerate(frames_in):
                     mean_local = torch.mean(frame) if not self.do_global else 1
                     mad_local = torch.mean(torch.abs(frame - torch.mean(frame))) if not self.do_global else 1
                     mean = mean_local * mean_global
@@ -276,14 +275,14 @@ class DataNormalization:
 
         return frames_out
 
-    def _normalize_fpga(self) -> np.ndarray:
+    def _normalize_fpga(self, frames_in: np.ndarray) -> np.ndarray:
         mean_val = 0 if self.do_bipolar else 0.5
         scale_mean = 1 if self.do_bipolar else 2
-        scale_global = np.max([np.max(self.frames_in), -np.min(self.frames_in)]) if self.do_global else 1
+        scale_global = np.max([np.max(frames_in), -np.min(frames_in)]) if self.do_global else 1
 
-        frames_out = np.zeros(shape=self.frames_in.shape)
+        frames_out = np.zeros(shape=frames_in.shape)
 
-        for i, frame in enumerate(self.frames_in):
+        for i, frame in enumerate(frames_in):
             scale_local = np.max([np.max(frame), -np.min(frame)]) if not self.do_global else 1
             scale = scale_mean * scale_local * scale_global
             division_value = 1
@@ -291,24 +290,23 @@ class DataNormalization:
             while scale > (2 ** division_value):
                 division_value += 1
 
-
-            max = scale_global if self.do_global else scale_local
-            adding = 2**(division_value-1) - max
+            maximum = scale_global if self.do_global else scale_local
+            adding = 2**(division_value-1) - maximum
             print(2**division_value, max, adding)
 
             frames_out[i, :] = mean_val + (frame + adding) / (2 ** division_value)
 
         return frames_out
 
-    def normalize(self):
+    def normalize(self, frames_in: np.ndarray):
         match self.mode:
             case "CPU":
-                frames_out = self._normalize_cpu()
+                frames_out = self._normalize_cpu(frames_in)
             case "GPU":
-                self.frames_in = torch.from_numpy(self.frames_in)
-                frames_out = self._normalize_gpu()
+                frames_in = torch.from_numpy(frames_in)
+                frames_out = self._normalize_gpu(frames_in)
             case "FPGA":
-                frames_out = self._normalize_fpga()
+                frames_out = self._normalize_fpga(frames_in)
             case _:
                 print("Selected mode is not available.")
                 return 0

@@ -4,14 +4,14 @@ from shutil import copy
 from datetime import datetime
 from torch import Tensor, load, save, from_numpy, tensor, max, min, log10
 from scipy.io import savemat
-from package.dnn.pytorch_control import Config_PyTorch, training_pytorch
+from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset,  training_pytorch
 from package.metric import calculate_snr
 
 
 class train_nn_autoencoder(training_pytorch):
     """Class for Handling Training of Autoencoders"""
-    def __init__(self, config_train: Config_PyTorch, do_train=True) -> None:
-        training_pytorch.__init__(self, config_train, do_train)
+    def __init__(self, config_train: Config_PyTorch, config_dataset=Config_Dataset, do_train=True) -> None:
+        training_pytorch.__init__(self, config_train, config_dataset, do_train)
 
     def __do_training_epoch(self) -> float:
         """Do training during epoch of training"""
@@ -67,11 +67,11 @@ class train_nn_autoencoder(training_pytorch):
         b0 = sum((yin - ymean) ** 2)
         return 10 * log10(a0 / b0)
 
-    def do_training(self, do_init=True) -> list:
+    def do_training(self, path2save='') -> list:
         """Start model training incl. validation and custom-own metric calculation"""
-        if do_init:
-            self._init_train()
-            self._save_config_txt()
+        self._init_train(path2save=path2save)
+        self._save_config_txt('_ae')
+
         # --- Handling Kfold cross validation training
         if self._do_kfold:
             print(f"Starting Kfold cross validation training in {self.settings.num_kfold} steps")
@@ -162,7 +162,7 @@ class train_nn_autoencoder(training_pytorch):
         # --- Producing the output
         output = dict()
         output.update({'settings': self.settings, 'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')})
-        output.update({'train_clus': data_train['class'], 'valid_clus': data_valid['class']})
+        output.update({'train_clus': data_train['out'], 'valid_clus': data_valid['out']})
         output.update({'input': data_valid['in'], 'feat': feat_out, 'pred': pred_out})
         output.update({'cl_dict': self.cell_classes})
 

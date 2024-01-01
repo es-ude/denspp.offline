@@ -2,9 +2,9 @@ import numpy as np
 from scipy.io import loadmat
 from torch import is_tensor
 from torch.utils.data import Dataset, DataLoader
-from package.dnn.pytorch_control import Config_PyTorch
+from package.dnn.pytorch_control import Config_Dataset
 from package.dnn.data_augmentation import augmentation_reducing_samples
-from package.dnn.data_preprocessing import data_normalization_minmax
+from package.dnn.data_preprocessing import DataNormalization
 
 
 class DatasetSDA(Dataset):
@@ -44,7 +44,7 @@ def prepare_plotting(data_in: DataLoader) -> tuple[np.ndarray, np.ndarray, np.nd
     return din, dsda, dout
 
 
-def prepare_training(path: str, settings: Config_PyTorch, threshold: int) -> DatasetSDA:
+def prepare_training(path: str, settings: Config_Dataset, threshold: int) -> DatasetSDA:
     """Preparing datasets incl. augmentation for spike-detection-based training (without pre-processing)"""
     print("... loading the datasets")
 
@@ -69,7 +69,8 @@ def prepare_training(path: str, settings: Config_PyTorch, threshold: int) -> Dat
 
     # --- PART: Data Normalization
     if settings.data_do_normalization:
-        frames_in = data_normalization_minmax(frames_in)
+        data_class_frames_in = DataNormalization(mode="CPU", method="minmax", do_global=False)
+        frames_in = data_class_frames_in.normalize(frames_in)
 
     # --- Output
     check = np.unique(frames_cl, return_counts=True)

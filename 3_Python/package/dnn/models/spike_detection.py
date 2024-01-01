@@ -1,5 +1,5 @@
 from torch import nn, Tensor, unsqueeze, argmax
-from package.dnn.pytorch_control import Config_PyTorch
+from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset
 
 
 class dnn_sda_v1(nn.Module):
@@ -77,11 +77,14 @@ Recommended_Config_PytorchSettings = Config_PyTorch(
     num_kfold=1,
     num_epochs=40,
     batch_size=256,
+    data_split_ratio=0.25,
+    data_do_shuffle=True
+)
+
+Recommended_Config_DatasetSettings = Config_Dataset(
     # --- Settings of Datasets
     data_path='../2_Data/00_Merged_Datasets',
     data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
-    data_split_ratio=0.25,
-    data_do_shuffle=True,
     # --- Data Augmentation
     data_do_augmentation=False,
     data_num_augmentation=0,

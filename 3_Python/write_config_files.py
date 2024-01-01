@@ -3,7 +3,7 @@ from package.dnn.pytorch_autoencoder import *
 
 import package.dnn.models.autoencoder as ai_module
 
-config_loss_dict = {'Autoencoder': 'MSE', 'Classification': 'CrossEntropy'}
+config_loss_dict = {'Autoencoder': 'MSE', 'Classification': 'Cross Entropy'}
 config_loss_fn_dict = {'Autoencoder': nn.MSELoss(), 'Classification': nn.CrossEntropyLoss()}
 
 

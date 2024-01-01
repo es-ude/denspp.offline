@@ -4,39 +4,50 @@ from os.path import join
 from scipy.io import loadmat
 from package.plotting.plot_dnn import plot_statistic_data
 from package.plotting.plot_metric import plot_loss, prep_confusion
-from settings_ai import config_train_class as config_train
+from settings_ai import config_train_class_pytorch, config_train_ae_pytorch, config_train_class_dataset, config_train_ae_dataset
 from package.dnn.pytorch_classification import train_nn_classification
-from package.dnn.dataset.autoencoder_class import prepare_training
+from package.dnn.pytorch_autoencoder import train_nn_autoencoder
+from package.dnn.dataset.autoencoder_class import prepare_training as prepare_training_class
+from package.dnn.dataset.autoencoder import prepare_training as prepare_training_ae
 
 
 noise_std = 1
 use_cell_bib = False
 mode_cell_bib = 0
-only_plot = False
 
 # --- Main program
 if __name__ == "__main__":
-    if not only_plot:
-        print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
-        # --- Processing: Loading dataset and Do Training
-        dataset = prepare_training(path2data=config_train.get_path2data(), settings=config_train,
-                                   path2model='runs/20231213_171117_train_cnn_ae_v4',
-                                   use_cell_bib=use_cell_bib, mode_classes=mode_cell_bib,
-                                   noise_std=noise_std)
-        data_mean = dataset.frames_me
-        trainhandler = train_nn_classification(config_train)
-        trainhandler.load_model()
-        trainhandler.load_data(dataset)
-        del dataset
+    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
+    print("Training Autoencoder started")
+    # --- Processing: Loading dataset and Do Autoencoder Training
+    dataset = prepare_training_ae(path2data=config_train_ae_dataset.get_path2data(), data_settings=config_train_ae_dataset,
+                                  use_cell_bib=use_cell_bib, mode_classes=mode_cell_bib,
+                                  noise_std=noise_std)
+    data_mean = dataset.frames_me
+    trainhandler = train_nn_autoencoder(config_train=config_train_ae_pytorch, config_dataset=config_train_ae_dataset)
+    trainhandler.load_model()
+    trainhandler.load_data(dataset)
+    snr = trainhandler.do_training()
+    data_result_ae = trainhandler.do_validation_after_training()
+    path2model = trainhandler.get_saving_path()
+    print("Training Autoencoder ended")
+    del dataset, data_mean, trainhandler
 
-        epoch_acc = trainhandler.do_training()[0]
-        logsdir = trainhandler.get_saving_path()
-        data_result = trainhandler.do_validation_after_training()
-    else:
-        epoch_acc = list()
-        logsdir = 'runs/20231204_152721_train_cnn_ae_v3/'
-        data_result = loadmat(join(logsdir, 'results.mat'))
-        data_mean = np.zeros(shape=(52, 32))
+    # --- Processing: Loading dataset and Do Classification
+    dataset = prepare_training_class(path2data=config_train_class_dataset.get_path2data(), data_settings=config_train_class_dataset,
+                                     path2model=path2model,
+                                     use_cell_bib=use_cell_bib, mode_classes=mode_cell_bib,
+                                     noise_std=noise_std)
+    data_mean = dataset.frames_me
+    trainhandler = train_nn_classification(config_train=config_train_class_pytorch, config_dataset=config_train_class_dataset)
+    trainhandler.load_model()
+    trainhandler.load_data(dataset)
+
+    epoch_acc = trainhandler.do_training()[0]
+    logsdir = trainhandler.get_saving_path()
+    data_result = trainhandler.do_validation_after_training()
+
+    del dataset
 
     plt.close('all')
     # plot_loss(epoch_acc, 'Acc.', path2save=logsdir)

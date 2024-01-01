@@ -5,7 +5,7 @@ from scipy.io import loadmat
 from torch import is_tensor, randn, Tensor, load, from_numpy
 from torch.utils.data import Dataset
 
-from package.dnn.pytorch_control import Config_PyTorch
+from package.dnn.pytorch_control import Config_Dataset
 from package.dnn.data_preprocessing import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
 from package.dnn.data_preprocessing import change_frame_size, reconfigure_cluster_with_cell_lib, generate_zero_frames, DataNormalization
 from package.dnn.data_augmentation import *
@@ -40,7 +40,7 @@ class DatasetAE_Class(Dataset):
                 'out': self.__cluster_id[idx]}
 
 
-def prepare_training(path2data: str, settings: Config_PyTorch, path2model: str,
+def prepare_training(path2data: str, data_settings: Config_Dataset, path2model: str,
                      use_cell_bib=False, mode_classes=2,
                      use_median_for_mean=True, noise_std=0.1) -> DatasetAE_Class:
     """Preparing dataset incl. augmentation for spike-frame based training"""
@@ -55,53 +55,53 @@ def prepare_training(path2data: str, settings: Config_PyTorch, path2model: str,
         frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(path2data, mode_classes, frames_in, frames_cl)
 
     # --- PART: Data Normalization
-    if settings.data_do_normalization:
+    if data_settings.data_do_normalization:
         print(f"... do data normalization")
-        data_class_normalization = DataNormalization(frames_in, "CPU", "minmax", do_bipolar=True, do_global=False)
-        frames_in = data_class_normalization.normalize()
+        data_class_frames_in = DataNormalization(mode="CPU", method="minmax", do_bipolar=False, do_global=False)
+        frames_in = data_class_frames_in.normalize(frames_in)
 
     # --- PART: Mean waveform calculation and data augmentation
-    frames_in = change_frame_size(frames_in, settings.data_sel_pos)
+    frames_in = change_frame_size(frames_in, data_settings.data_sel_pos)
     if use_median_for_mean:
         frames_me = calculate_frame_median(frames_in, frames_cl)
     else:
         frames_me = calculate_frame_mean(frames_in, frames_cl)
 
     # --- PART: Exclusion of selected clusters
-    if len(settings.data_exclude_cluster) == 0:
+    if len(data_settings.data_exclude_cluster) == 0:
         frames_in = frames_in
         frames_cl = frames_cl
     else:
-        for i, id in enumerate(settings.data_exclude_cluster):
+        for i, id in enumerate(data_settings.data_exclude_cluster):
             selX = np.where(frames_cl != id)
             frames_in = frames_in[selX[0], :]
             frames_cl = frames_cl[selX]
 
     # --- PART: Reducing samples per cluster (if too large)
-    if settings.data_do_reduce_samples_per_cluster:
+    if data_settings.data_do_reduce_samples_per_cluster:
         print("... reducing the samples per cluster (for pre-training on dedicated hardware)")
         frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
-                                                             settings.data_num_samples_per_cluster,
-                                                             settings.data_do_shuffle)
+                                                             data_settings.data_num_samples_per_cluster,
+                                                             data_settings.data_do_shuffle)
 
     # --- PART: Calculate SNR if desired
-    if settings.data_do_augmentation or settings.data_do_addnoise_cluster:
+    if data_settings.data_do_augmentation or data_settings.data_do_addnoise_cluster:
         snr_mean = calculate_frame_snr(frames_in, frames_cl, frames_me)
     else:
         snr_mean = np.zeros(0, dtype=float)
 
     # --- PART: Data Augmentation
-    if settings.data_do_augmentation and not settings.data_do_reduce_samples_per_cluster:
+    if data_settings.data_do_augmentation and not data_settings.data_do_reduce_samples_per_cluster:
         print("... do data augmentation")
         # new_frames, new_clusters = augmentation_mean_waveform(
         # frames_me, frames_cl, snr_mean, settings.data_num_augmentation)
         new_frames, new_clusters = augmentation_change_position(
-            frames_in, frames_cl, snr_mean, settings.data_num_augmentation)
+            frames_in, frames_cl, snr_mean, data_settings.data_num_augmentation)
         frames_in = np.append(frames_in, new_frames, axis=0)
         frames_cl = np.append(frames_cl, new_clusters, axis=0)
 
     # --- PART: Generate and add noise cluster
-    if settings.data_do_addnoise_cluster:
+    if data_settings.data_do_addnoise_cluster:
         snr_range_zero = [np.median(snr_mean[:, 0]), np.median(snr_mean[:, 2])]
         info = np.unique(frames_cl, return_counts=True)
         num_cluster = np.max(info[0]) + 1
