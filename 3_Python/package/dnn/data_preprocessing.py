@@ -291,11 +291,15 @@ class DataNormalization:
                 division_value += 1
 
             maximum = scale_global if self.do_global else scale_local
-            adding = 2**(division_value-1) - maximum
-            print(2**division_value, max, adding)
+            adjust_maximum = maximum
+            divider = 2**division_value if self.do_bipolar else 2 ** (division_value - 1)
+            coeff = [0, 0, 0, 0]
+            for j in range(1, 5):
+                if adjust_maximum + adjust_maximum / (2 ** j) <= divider:
+                    adjust_maximum = adjust_maximum + adjust_maximum / (2**j)
+                    coeff[j - 1] = 1
 
-            frames_out[i, :] = mean_val + (frame + adding) / (2 ** division_value)
-
+            frames_out[i, :] = mean_val + (frame + coeff[0]*frame/2**1 + coeff[1]*frame/2**2 + coeff[2]*frame/2**3 + coeff[3]*frame/2**4) / (2 ** division_value)
         return frames_out
 
     def normalize(self, frames_in: np.ndarray):
