@@ -77,7 +77,7 @@ class train_nn_autoencoder(training_pytorch):
         if self._do_kfold:
             print(f"Starting Kfold cross validation training in {self.settings.num_kfold} steps")
 
-        metrics_own = list()
+        run_metric = list()
         path2model = str()
         path2model_init = join(self._path2save, f'model_reset.pth')
         save(self.model.state_dict(), path2model_init)
@@ -88,6 +88,7 @@ class train_nn_autoencoder(training_pytorch):
         for fold in np.arange(self.settings.num_kfold):
             best_loss = np.array((1_000_000., 1_000_000.), dtype=float)
             # Init fold
+            epoch_loss = list()
             epoch_metric = list()
             self.model.load_state_dict(load(path2model_init))
             self._run_kfold = fold
@@ -117,17 +118,18 @@ class train_nn_autoencoder(training_pytorch):
                     save(self.model, path2model)
 
                 # Saving metrics after each epoch
+                epoch_loss.append((train_loss, valid_loss))
                 epoch_metric.append(self.__do_snr_epoch())
 
             # --- Saving metrics after each fold
-            metrics_own.append(epoch_metric)
+            run_metric.append((epoch_loss, epoch_metric))
             copy(path2model, self._path2save)
             self._save_train_results(best_loss[0], best_loss[1], 'Loss')
 
         # --- Ending of all trainings phases
         self._end_training_routine(timestamp_start)
 
-        return metrics_own
+        return run_metric
 
     def do_validation_after_training(self, num_output=4) -> dict:
         """Performing the validation with the best model after training for plotting and saving results"""
