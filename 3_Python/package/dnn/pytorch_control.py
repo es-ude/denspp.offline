@@ -75,8 +75,6 @@ class Config_Dataset:
         return join(self.data_path, self.data_file_name)
 
 
-
-
 class training_pytorch:
     """Class for Handling Training of Deep Neural Networks in PyTorch
     Args:

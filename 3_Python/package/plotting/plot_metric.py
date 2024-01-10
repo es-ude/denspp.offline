@@ -82,7 +82,7 @@ def plot_loss(metric: list, metric_type: str, path2save='', epoch_zoom=None) -> 
         save_figure(plt, path2save, f"loss_metric_{metric_type}" + addon)
 
 
-def _plot_confusion(true_labels: list | np.ndarray,
+def plot_confusion(true_labels: list | np.ndarray,
                     pred_labels: list | np.ndarray,
                     timestamps_result,
                     timestamps_f1, timestamps_accuracy,
@@ -162,13 +162,9 @@ def prep_confusion(true_labels: list, pred_labels: list, mode="training", plots=
     if mode == "pipeline":
         TP, FP, FN, f1_score, accuracy, true_labels, pred_labels = compare_timestamps(true_labels, pred_labels, window)
         result = np.array([[TP, FP], [0, FN]])
-        _plot_confusion(true_labels, pred_labels, result, f1_score, accuracy, plots, show_accuracy, cl_dict, path2save)
+        plot_confusion(true_labels, pred_labels, result, f1_score, accuracy, plots, show_accuracy, cl_dict, path2save)
     else:
-        _plot_confusion(true_labels, pred_labels, None, None, None, "class", False, cl_dict, path2save)
-
-
-
-
+        plot_confusion(true_labels, pred_labels, None, None, None, "class", False, cl_dict, path2save)
 
 
 def _get_median(parameter: list) -> float:

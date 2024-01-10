@@ -15,7 +15,7 @@ def calculate_snr(yin: np.ndarray, ymean: np.ndarray) -> np.ndarray:
 def calculate_prd(yin: np.ndarray, ymean: np.ndarray):
     """Calculating the root-mean-square difference in percentage (PRD)"""
     a0 = np.sum(np.square(yin - ymean))
-    b0 = np.sum(np.squre(yin))
+    b0 = np.sum(np.square(yin))
     return np.sqrt(a0 / b0) * 100
 
 # This function compares the timestamps of the predicted classes and the true classes and returns TP, FP, FN and
