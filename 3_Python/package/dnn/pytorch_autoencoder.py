@@ -3,15 +3,16 @@ from os.path import join
 from shutil import copy
 from datetime import datetime
 from torch import Tensor, load, save, from_numpy, tensor, max, min, log10
+import torch
 from scipy.io import savemat
-from package.dnn.pytorch_control import Config_PyTorch, training_pytorch
+from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset, training_pytorch
 from package.metric import calculate_snr
 
 
 class train_nn_autoencoder(training_pytorch):
     """Class for Handling Training of Autoencoders"""
-    def __init__(self, config_train: Config_PyTorch, do_train=True) -> None:
-        training_pytorch.__init__(self, config_train, do_train)
+    def __init__(self, config_train: Config_PyTorch, config_data: Config_Dataset, do_train=True) -> None:
+        training_pytorch.__init__(self, config_train, config_data, do_train)
 
     def __do_training_epoch(self) -> float:
         """Do training during epoch of training"""
@@ -64,7 +65,7 @@ class train_nn_autoencoder(training_pytorch):
     def __calculate_snr(self, yin: Tensor, ymean: Tensor) -> Tensor:
         """Calculating the signal-to-noise ratio [dB] of the input signal compared to mean waveform"""
         a0 = (max(ymean) - min(ymean)) ** 2
-        b0 = sum((yin - ymean) ** 2)
+        b0 = torch.sum((yin - ymean) ** 2)
         return 10 * log10(a0 / b0)
 
     def do_training(self, do_init=True) -> list:
@@ -76,7 +77,7 @@ class train_nn_autoencoder(training_pytorch):
         if self._do_kfold:
             print(f"Starting Kfold cross validation training in {self.settings.num_kfold} steps")
 
-        metrics_own = list()
+        run_metric = list()
         path2model = str()
         path2model_init = join(self._path2save, f'model_reset.pth')
         save(self.model.state_dict(), path2model_init)
@@ -87,6 +88,7 @@ class train_nn_autoencoder(training_pytorch):
         for fold in np.arange(self.settings.num_kfold):
             best_loss = np.array((1_000_000., 1_000_000.), dtype=float)
             # Init fold
+            epoch_loss = list()
             epoch_metric = list()
             self.model.load_state_dict(load(path2model_init))
             self._run_kfold = fold
@@ -116,17 +118,18 @@ class train_nn_autoencoder(training_pytorch):
                     save(self.model, path2model)
 
                 # Saving metrics after each epoch
+                epoch_loss.append((train_loss, valid_loss))
                 epoch_metric.append(self.__do_snr_epoch())
 
             # --- Saving metrics after each fold
-            metrics_own.append(epoch_metric)
+            run_metric.append((epoch_loss, epoch_metric))
             copy(path2model, self._path2save)
             self._save_train_results(best_loss[0], best_loss[1], 'Loss')
 
         # --- Ending of all trainings phases
         self._end_training_routine(timestamp_start)
 
-        return metrics_own
+        return run_metric
 
     def do_validation_after_training(self, num_output=4) -> dict:
         """Performing the validation with the best model after training for plotting and saving results"""

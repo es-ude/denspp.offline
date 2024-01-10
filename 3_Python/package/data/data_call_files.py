@@ -40,26 +40,27 @@ class DataLoader:
 
     def execute_data_call(self, data_type: int, data_set: int, data_point: int):
         """Loading the dataset"""
-        if data_type == 1:
-            self.__load_martinez2009(data_set, data_point)
-        elif data_type == 2:
-            self.__load_pedreira2012(data_set, data_point)
-        elif data_type == 3:
-            self.__load_quiroga2020(data_set, data_point)
-        elif data_type == 4:
-            self.__load_seidl2012(data_set, data_point)
-        elif data_type == 5:
-            self.__load_marre2018(data_set, data_point)
-        elif data_type == 6:
-            self.__load_klaes_utah_array(data_set, data_point)
-        elif data_type == 7:
-            self.__load_rgc_tdb(data_set, data_point)
-        elif data_type == 8:
-            self.__load_fzj_mcs(data_set, data_point)
-        elif data_type == 9:
-            self.__load_musall_neuropixel(data_set, data_point)
-        else:
-            print("\nPlease select new input for data_type! -> [1, 9]")
+        match data_type:
+            case 1:
+                self.__load_martinez2009(data_set, data_point)
+            case 2:
+                self.__load_pedreira2012(data_set, data_point)
+            case 3:
+                self.__load_quiroga2020(data_set, data_point)
+            case 4:
+                self.__load_seidl2012(data_set, data_point)
+            case 5:
+                self.__load_marre2018(data_set, data_point)
+            case 6:
+                self.__load_klaes_utah_array(data_set, data_point)
+            case 7:
+                self.__load_rgc_tdb(data_set, data_point)
+            case 8:
+                self.__load_fzj_mcs(data_set, data_point)
+            case 9:
+                self.__load_musall_neuropixel(data_set, data_point)
+            case other:
+                print("\nPlease select new input for data_type! -> [1, 9]")
 
     def __load_martinez2009(self, case: int, point: int) -> None:
         """Loading synthethic files from Quiroga simulation (2009)"""

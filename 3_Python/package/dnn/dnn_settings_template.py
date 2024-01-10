@@ -1,5 +1,5 @@
 from torch import nn
-from package.dnn.pytorch_control import Config_PyTorch
+from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset
 import package.dnn.models.autoencoder as ae_models
 import package.dnn.models.rgc_onoff_class as rgc_class_models
 import package.dnn.models.spike_detection as sda_modes
@@ -14,11 +14,15 @@ config_train = Config_PyTorch(
     num_kfold=1,
     num_epochs=100,
     batch_size=256,
+    data_split_ratio=0.25,
+    data_do_shuffle=True
+)
+
+config_data = Config_Dataset(
     # --- Settings of Datasets
     data_path='../2_Data/00_Merged_Datasets',
     data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
-    data_split_ratio=0.25,
-    data_do_shuffle=True,
+    #data_file_name='2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted',
     # --- Data Augmentation
     data_do_augmentation=False,
     data_num_augmentation=0,
@@ -30,3 +34,4 @@ config_train = Config_PyTorch(
     data_exclude_cluster=[],
     data_sel_pos=[]
 )
+
