@@ -138,6 +138,15 @@ def __dnn_train_spike_detection(config_train: Config_PyTorch, config_data: Confi
     plt.show(block=False)
 
 
+def __dnn_train_decoder(config_train: Config_PyTorch, config_data: Config_Dataset,
+                        path2model="") -> None:
+    """Training routine for Spike Detection
+        Args:
+            path2model: Path to an already trained model for plotting results [default: ""]
+    """
+    #TODO: Pipeline aufbauen
+
+
 def check_settings_file() -> None:
     if not exists("settings_ai.py"):
         copy("package/dnn/dnn_settings_template.py", "settings_ai.py")
@@ -170,5 +179,8 @@ def do_train_dnn(mode_train: int, noise_std_ae=0.05, mode_cell_bib=0, path2train
         case 5:
             __dnn_train_spike_detection(config_train_class, config_data,
                                         path2model=path2trained_model)
+        case 6:
+            __dnn_train_decoder(config_train_class, config_data,
+                                path2model=path2trained_model)
         case other:
             print("Wrong model!")
