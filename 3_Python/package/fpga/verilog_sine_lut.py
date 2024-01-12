@@ -135,7 +135,7 @@ def generate_sinelut(output_bitsize: int,
         if do_optimized:
             v_handler.write(f'reg [1:0] cnt_phase;\n')
         v_handler.write(f'reg [{size_cnt_sine-1}:0] cnt_sine;\n')
-        v_handler.write(f'reg [{size_cnt_wait-1}:0] cnt_wait;\n')
+        v_handler.write(f'reg [CNT_VAL_SIZE-\'d1:0] cnt_wait;\n')
 
         # Output declaration
         if out_signed:
@@ -157,19 +157,19 @@ def generate_sinelut(output_bitsize: int,
         if do_optimized:
             v_handler.write(f'\t\tcnt_phase <= 2\'d0;\n')
         v_handler.write(f'\t\tcnt_sine <= {size_cnt_sine}\'d0;\n')
-        v_handler.write(f'\t\tcnt_wait <= {size_cnt_wait}\'d0;\n')
+        v_handler.write(f'\t\tcnt_wait <= \'d0;\n')
         v_handler.write(f'\tend else begin\n')
         v_handler.write(f'\t\tif(cnt_wait == CNT_VAL) begin\n')
         if do_optimized:
             v_handler.write(
                 f'\t\t\tcnt_phase <= cnt_phase + ((cnt_sine == {size_cnt_sine}\'d{sine_lut.size - 1}) ? 2\'d1 : 2\'d0);\n')
         v_handler.write(f'\t\t\tcnt_sine <= (cnt_sine == {size_cnt_sine}\'d{sine_lut.size-1}) ? {size_cnt_sine}\'d1 : cnt_sine + {size_cnt_sine}\'d1;\n')
-        v_handler.write(f'\t\t\tcnt_wait <= {size_cnt_wait}\'d0;\n')
+        v_handler.write(f'\t\t\tcnt_wait <= \'d0;\n')
         v_handler.write(f'\t\tend else begin\n')
         if do_optimized:
             v_handler.write(f'\t\t\tcnt_phase <= cnt_phase;\n')
         v_handler.write(f'\t\t\tcnt_sine <= cnt_sine;\n')
-        v_handler.write(f'\t\t\tcnt_wait <= cnt_wait + {size_cnt_wait}\'d1;\n')
+        v_handler.write(f'\t\t\tcnt_wait <= cnt_wait + \'d1;\n')
         v_handler.write(f'\t\tend\n')
         v_handler.write(f'\tend\n')
         v_handler.write(f'end\n\n')
@@ -189,9 +189,9 @@ def generate_sinelut(output_bitsize: int,
 
 if __name__ == '__main__':
     path2save = 'C://Users//erbsloeh//Desktop'
-    n_bit = 8
+    n_bit = 7
     f_sys = 100e6
-    f_rpt = 100e3
+    f_rpt = 200e3
     f_sine = 1e3
     create_testbench(n_bit, f_sys, f_rpt, f_sine, path2save)
-    generate_sinelut(n_bit, f_sys, f_rpt, f_sine, path2save, do_optimized=False)
+    generate_sinelut(n_bit, f_sys, f_rpt, f_sine, path2save, do_optimized=True)
