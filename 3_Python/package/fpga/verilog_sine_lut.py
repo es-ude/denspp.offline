@@ -142,11 +142,11 @@ def generate_sinelut(output_bitsize: int,
             v_handler.write(f'wire signed [{size_ram}:0] sine_lutram [{sine_lut.size-1}:0];\n')
         else:
             v_handler.write(f'wire [{size_ram}:0] sine_lutram [{sine_lut.size - 1}:0];\n')
-        if do_optimized:
+        if do_optimized and not out_signed:
             v_handler.write('assign SINE = (cnt_phase == 2\'d0) ? {1\'d1, sine_lutram[cnt_sine]} : \n')
             v_handler.write('\t\t\t (cnt_phase == 2\'d1) ? {1\'d1, sine_lutram[SIZE_SINE_LUT-cnt_sine-\'d1]} : \n')
-            v_handler.write('\t\t\t (cnt_phase == 2\'d2) ? {1\'d1, {(' + str(output_bitsize-1) + '){1\'d0}}} - sine_lutram[cnt_sine] : \n'
-                            '\t\t\t {1\'d1, {(' + str(output_bitsize-1) + '){1\'d0}}} - sine_lutram[SIZE_SINE_LUT-cnt_sine-\'d1];\n\n')
+            v_handler.write('\t\t\t (cnt_phase == 2\'d2) ? {1\'d0, {(' + str(output_bitsize-1) + '){1\'d1}}} - sine_lutram[cnt_sine] : \n'
+                            '\t\t\t {1\'d0, {(' + str(output_bitsize-1) + '){1\'d1}}} - sine_lutram[SIZE_SINE_LUT-cnt_sine-\'d1];\n\n')
         else:
             v_handler.write(f'assign SINE = sine_lutram[cnt_sine];\n\n')
 
@@ -189,7 +189,7 @@ def generate_sinelut(output_bitsize: int,
 
 if __name__ == '__main__':
     path2save = 'C://Users//erbsloeh//Desktop'
-    n_bit = 7
+    n_bit = 8
     f_sys = 100e6
     f_rpt = 200e3
     f_sine = 1e3
