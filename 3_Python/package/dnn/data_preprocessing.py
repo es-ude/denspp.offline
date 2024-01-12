@@ -275,7 +275,7 @@ class DataNormalization:
 
         return frames_out
 
-    def _normalize_fpga(self, frames_in: np.ndarray) -> np.ndarray:
+    def _normalize_fpga(self, frames_in: np.ndarray, simple_method=False) -> np.ndarray:
         mean_val = 0 if self.do_bipolar else 0.5
         scale_mean = 1 if self.do_bipolar else 2
         scale_global = np.max([np.max(frames_in), -np.min(frames_in)]) if self.do_global else 1
@@ -298,8 +298,10 @@ class DataNormalization:
                 if adjust_maximum + adjust_maximum / (2 ** j) <= divider:
                     adjust_maximum = adjust_maximum + adjust_maximum / (2**j)
                     coeff[j - 1] = 1
-
-            frames_out[i, :] = mean_val + (frame + coeff[0]*frame/2**1 + coeff[1]*frame/2**2 + coeff[2]*frame/2**3 + coeff[3]*frame/2**4) / (2 ** division_value)
+            if simple_method:
+                frames_out[i, :] = mean_val + frame / (2 ** division_value)
+            else:
+                frames_out[i, :] = mean_val + (frame + coeff[0]*frame/2**1 + coeff[1]*frame/2**2 + coeff[2]*frame/2**3 + coeff[3]*frame/2**4) / (2 ** division_value)
         return frames_out
 
     def normalize(self, frames_in: np.ndarray):
