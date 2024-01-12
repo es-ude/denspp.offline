@@ -8,10 +8,10 @@ from package.dnn.dataset.autoencoder_class import prepare_training as prepare_tr
 from package.dnn.dataset.autoencoder import prepare_training as prepare_training_ae
 
 
-noise_std = 1
+noise_std = 0
 use_cell_bib = False
 mode_cell_bib = 0
-do_plot = False
+do_plot = True
 
 # --- Main program
 if __name__ == "__main__":
@@ -31,6 +31,7 @@ if __name__ == "__main__":
     trainhandler.load_data(dataset)
     loss_ae, snr_ae = trainhandler.do_training()[-1]
     path2model = trainhandler.get_saving_path()
+    path2save_first = trainhandler.get_saving_path()
 
     if do_plot:
         logsdir = trainhandler.get_saving_path()
@@ -58,14 +59,13 @@ if __name__ == "__main__":
     trainhandler = train_nn_classification(config_train=config_train_class, config_dataset=config_dataset)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
-    acc_class = trainhandler.do_training()[-1]
+    acc_class = trainhandler.do_training(path2save=path2save_first)[-1]
 
     if do_plot:
         logsdir = trainhandler.get_saving_path()
         data_result = trainhandler.do_validation_after_training()
 
         plot_loss(acc_class, 'Acc.', path2save=logsdir)
-        plot_loss(acc_class, 'Acc.', path2save=logsdir, epoch_zoom=[80, ])
         prep_confusion(data_result['valid_clus'], data_result['yclus'], "training", "both", False,
                        cl_dict=data_result['cl_dict'], path2save=logsdir)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
