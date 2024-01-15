@@ -142,11 +142,11 @@ class training_pytorch:
             device0 = self.used_hw_cpu
         # Using normal CPU
         else:
-            self.used_hw_cpu = (f"{cpuinfo.get_cpu_info()['brand_raw']} "
-                       f"(@ {1e-9 * cpuinfo.get_cpu_info()['hz_actual'][0]:.3f} GHz)")
+            self.used_hw_cpu = "CPU" #(f"{cpuinfo.get_cpu_info()['brand_raw']} "
+                       #f"(@ {1e-9 * cpuinfo.get_cpu_info()['hz_actual'][0]:.3f} GHz)")
             self.used_hw_gpu = 'None'
             self.used_hw_dev = device("cpu")
-            self.used_hw_num = cpuinfo.get_cpu_info()['count']
+            self.used_hw_num = 1 #cpuinfo.get_cpu_info()['count']
             device0 = self.used_hw_cpu
 
         print(f"... using PyTorch with {device0} device on {self.os_type}")
@@ -271,9 +271,9 @@ class training_pytorch:
         """Getting the path for saving files in aim folder"""
         return self._path2save
 
-    def get_best_model(self) -> list:
+    def get_best_model(self, type_model: str) -> list:
         """Getting the path to the best trained model"""
-        return glob(join(self._path2save, "*.pth"))
+        return glob(join(self._path2save, f"*{type_model}*.pth"))
 
     def _end_training_routine(self, timestamp_start: datetime, do_delete_temps=True) -> None:
         """Doing the last step of training routine"""
@@ -286,7 +286,7 @@ class training_pytorch:
         print(f'Training runs: {diff_string}')
 
         # Delete init model
-        init_model = glob(join(self._path2save, 'model_reset.pth'))
+        init_model = glob(join(self._path2save, '*_reset.pth'))
         for file in init_model:
             remove(file)
 

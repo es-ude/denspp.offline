@@ -79,7 +79,7 @@ class train_nn_autoencoder(training_pytorch):
         run_metric = list()
 
         path2model = str()
-        path2model_init = join(self._path2save, f'model_reset.pth')
+        path2model_init = join(self._path2save, f'model_ae_reset.pth')
         save(self.model.state_dict(), path2model_init)
         timestamp_start = datetime.now()
         timestamp_string = timestamp_start.strftime('%H:%M:%S')
@@ -114,7 +114,7 @@ class train_nn_autoencoder(training_pytorch):
                 # Tracking the best performance and saving the model
                 if valid_loss < best_loss[1]:
                     best_loss = [train_loss, valid_loss]
-                    path2model = join(self._path2temp, f'model_fold{fold:03d}_epoch{epoch:04d}.pth')
+                    path2model = join(self._path2temp, f'model_ae_fold{fold:03d}_epoch{epoch:04d}.pth')
                     save(self.model, path2model)
 
                 # Saving metrics after each epoch
@@ -140,7 +140,7 @@ class train_nn_autoencoder(training_pytorch):
 
         # --- Do the Inference with Best Model
         print(f"\nDoing the inference with validation data on best model")
-        model_test = load(self.get_best_model()[0])
+        model_test = load(self.get_best_model('ae')[0])
         feat_out, pred_out = model_test(from_numpy(data_valid['in']))
         feat_out = feat_out.detach().numpy()
         pred_out = pred_out.detach().numpy()
@@ -165,11 +165,11 @@ class train_nn_autoencoder(training_pytorch):
         # --- Producing the output
         output = dict()
         output.update({'settings': self.settings, 'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')})
-        output.update({'train_clus': data_train['out'], 'valid_clus': data_valid['out']})
+        output.update({'train_clus': data_train['cluster'], 'valid_clus': data_valid['cluster']})
         output.update({'input': data_valid['in'], 'feat': feat_out, 'pred': pred_out})
         output.update({'cl_dict': self.cell_classes})
 
         # --- Saving dict
-        savemat(join(self.get_saving_path(), 'results.mat'), output,
+        savemat(join(self.get_saving_path(), 'results_ae.mat'), output,
                 do_compression=True, long_field_names=True)
         return output

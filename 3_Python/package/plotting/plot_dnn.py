@@ -11,7 +11,7 @@ def results_training(path: str,
     data_labeled = True
 
     # --- Pre-Processing
-    yclus0 = yclus.flatten() if len(yclus.shape) == 2 else yclus
+    yclus0 = yclus
     cluster_no = np.unique(yclus0)
     mark_feat = [[] for idx in range(0, num_feat)]
     take_frames = list()
@@ -47,14 +47,14 @@ def plot_autoencoder_snr(snr: list, path2save='', do_boxplot=False) -> None:
     """Plotting the Signal-to-Noise Ratio (SNR) over the epochs"""
     # --- Processing
     snr_processed = list()
-    for snr_fold in snr:
-        if not do_boxplot:
-            snr0 = np.zeros(shape=(len(snr_fold), 3), dtype=float)
-            for idx, snr_epoch in enumerate(snr_fold):
-                snr0[idx, :] = snr_epoch.min(), np.median(snr_epoch), snr_epoch.max()
-            snr_processed.append(snr0)
-        else:
-            snr_processed.append(snr_fold)
+
+    if not do_boxplot:
+        snr0 = np.zeros(shape=(len(snr), 3), dtype=float)
+        for idx, snr_epoch in enumerate(snr):
+            snr0[idx, :] = snr_epoch.min(), np.median(snr_epoch), snr_epoch.max()
+        snr_processed.append(snr0)
+    else:
+        snr_processed.append(snr)
 
     # --- Plotting
     for idx, snr0 in enumerate(snr_processed):
