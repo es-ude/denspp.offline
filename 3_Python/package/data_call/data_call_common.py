@@ -6,7 +6,7 @@ import dataclasses
 import numpy as np
 from fractions import Fraction
 from scipy.signal import resample_poly
-from package.data.data_call_files import DataHandler, DataLoader
+from package.data_call.data_call_files import DataHandler, DataLoader
 
 
 @dataclasses.dataclass

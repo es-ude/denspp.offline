@@ -1,5 +1,5 @@
 import numpy as np
-from package.adc.adc_basic import ADC_Basic, SettingsADC, SettingsNon, RecommendedSettingsADC, RecommendedSettingsNon
+from package.analog.adc_basic import ADC_Basic, SettingsADC, SettingsNon, RecommendedSettingsADC, RecommendedSettingsNon
 
 class ADC_DeltaSigma(ADC_Basic):
     """Class for using Continuous Time Delta Sigma ADC"""

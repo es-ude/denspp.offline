@@ -3,7 +3,7 @@ from os import mkdir
 from os.path import exists, join
 import matplotlib.pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay, precision_recall_curve, precision_recall_fscore_support
-from package.plotting.plot_common import save_figure, cm_to_inch
+from package.plot.plot_common import save_figure, cm_to_inch
 
 
 def plot_boxplot_metric(freq: np.ndarray, metric: list, type_name: str, name: str,

@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from package.plotting.plot_common import cm_to_inch, save_figure
+from package.plot.plot_common import cm_to_inch, save_figure
 
 
 def results_training(path: str,

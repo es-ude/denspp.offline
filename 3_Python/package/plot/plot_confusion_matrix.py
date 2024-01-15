@@ -1,5 +1,5 @@
 
-from package.plotting.plot_pipeline import results_confusion
+from package.plot.plot_pipeline import results_confusion
 
 #---Start to plot the confusion matrix for two random arrays
 

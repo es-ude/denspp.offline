@@ -2,10 +2,10 @@ import os, shutil
 import numpy as np
 
 from package.pipeline_signals import PipelineSignal
-from package.data.data_call_common import SettingsDATA
-from package.dsp.sda import SpikeDetection, SettingsSDA
-from package.dsp.fex import FeatureExtraction, SettingsFeature
-from package.dsp.cluster import Clustering, SettingsCluster
+from package.data_call.data_call_common import SettingsDATA
+from package.digital.sda import SpikeDetection, SettingsSDA
+from package.digital.fex import FeatureExtraction, SettingsFeature
+from package.digital.cluster import Clustering, SettingsCluster
 from package.nsp import calc_spiketicks
 
 

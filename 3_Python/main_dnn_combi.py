@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
-from package.plotting.plot_dnn import plot_statistic_data, results_training
-from package.plotting.plot_metric import plot_loss, plot_confusion
+from package.plot.plot_dnn import plot_statistic_data, results_training
+from package.plot.plot_metric import plot_loss, plot_confusion
 from settings_ai import config_train_class, config_train_ae, config_data
 from package.dnn.pytorch_classification import train_nn_classification
 from package.dnn.pytorch_autoencoder import train_nn_autoencoder

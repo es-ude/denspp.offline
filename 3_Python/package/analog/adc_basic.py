@@ -2,7 +2,7 @@ import dataclasses
 import numpy as np
 from fractions import Fraction
 from scipy.signal import square, resample_poly
-from package.data.process_noise import noise_awgn
+from package.data_call.process_noise import noise_awgn
 
 
 @dataclasses.dataclass

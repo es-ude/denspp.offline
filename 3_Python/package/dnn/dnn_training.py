@@ -3,8 +3,8 @@ import numpy as np
 from os.path import join, exists
 from shutil import copy
 from scipy.io import loadmat
-from package.plotting.plot_dnn import results_training, plot_statistic_data
-from package.plotting.plot_metric import plot_confusion, plot_loss
+from package.plot.plot_dnn import results_training, plot_statistic_data
+from package.plot.plot_metric import plot_confusion, plot_loss
 
 from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset
 from package.dnn.pytorch_autoencoder import train_nn_autoencoder
