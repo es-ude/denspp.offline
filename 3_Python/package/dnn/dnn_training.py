@@ -163,5 +163,5 @@ def do_train_dnn(mode_train: int, noise_std_ae=0.05, mode_cell_bib=0, only_plot_
         case 5:
             __dnn_train_spike_detection(config_dataset, config_train_class,
                                         only_plot_results=only_plot_results)
-        case other:
+        case _:
             print("Wrong model!")

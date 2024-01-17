@@ -1,3 +1,4 @@
+from numpy import median
 import matplotlib.pyplot as plt
 import csv, os
 from package.plotting.plot_dnn import plot_statistic_data, results_training
@@ -12,7 +13,7 @@ from package.dnn.dataset.autoencoder import prepare_training as prepare_training
 noise_std = 0
 use_cell_bib = False
 mode_cell_bib = 0
-do_plot = True
+do_plot = False
 
 # --- Main program
 if __name__ == "__main__":
@@ -32,7 +33,10 @@ if __name__ == "__main__":
     trainhandler.load_data(dataset)
     loss_ae, snr_ae = trainhandler.do_training()[-1]
     path2model = trainhandler.get_saving_path()
-    path2save_first = trainhandler.get_saving_path()
+    # --- Reducing
+    used_loss = loss_ae[-1]
+    used_snr = snr_ae.detach().numpy()
+    used_snr = (used_snr.min(), median(used_snr), used_snr.max())
 
     if do_plot:
         logsdir = trainhandler.get_saving_path()
@@ -60,7 +64,9 @@ if __name__ == "__main__":
     trainhandler = train_nn_classification(config_train=config_train_class, config_dataset=config_dataset)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
-    acc_class = trainhandler.do_training(path2save=path2save_first)[-1]
+    acc_class = trainhandler.do_training(path2save=path2model)[-1]
+    # --- Reducing
+    used_acc = acc_class[-1]
 
     if do_plot:
         logsdir = trainhandler.get_saving_path()
@@ -74,7 +80,7 @@ if __name__ == "__main__":
         plt.show(block=False)
     else:
         # --- Übergabe next run
-        metric_snr_run.append((loss_ae, snr_ae, acc_class))
+        metric_snr_run.append((used_loss, used_snr, used_acc))
 
     del dataset, trainhandler
 
