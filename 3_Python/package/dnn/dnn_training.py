@@ -1,22 +1,22 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from os.path import join, exists
+from os.path import exists
 from shutil import copy
-from scipy.io import loadmat
 from package.plot.plot_dnn import results_training, plot_statistic_data
 from package.plot.plot_metric import plot_confusion, plot_loss
 
 from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset
 from package.dnn.pytorch_autoencoder import train_nn_autoencoder
-from package.dnn.dataset.autoencoder import prepare_training as get_dataset_ae
 from package.dnn.pytorch_classification import train_nn_classification
-from package.dnn.dataset.classification import prepare_training as get_dataset_class
+
+from package.dnn.dataset.autoencoder import prepare_training as get_dataset_ae
+from package.dnn.dataset.autoencoder_class import prepare_training as get_dataset_ae_class
+from package.dnn.dataset.classification import prepare_training as get_dataset_rgc
 from package.dnn.dataset.spike_detection import prepare_training as get_dataset_sda
 
 
 def __dnn_train_ae(config_train: Config_PyTorch, config_data: Config_Dataset,
-                   mode: int, noise_std=0.05, mode_cell_bib=0, path2model="",
-                   do_plot=True, block_plot=True) -> None:
+                   mode_ae: int, noise_std=0.05, mode_cell_bib=0, do_plot=True, block_plot=True) -> None:
     """Training routine for Autoencoders
     Args:
         config_train: Settings for PyTorch Training
@@ -24,37 +24,29 @@ def __dnn_train_ae(config_train: Config_PyTorch, config_data: Config_Dataset,
         mode_ae: Selected model of the Autoencoder (0: normal, 1: Denoising (mean), 2: Denoising (input)) [default:0]
         noise_std: Std of the additional noise added to the input [default: 0.05]
         mode_cell_bib: If the dataset contains a cell library then the mode can be choicen (0: Deactivated, 1: All, 2-...: Reduced) [default: 0]
-        path2model: Path to an already trained model for plotting results [default: ""]
+        do_plot: Doing the plots during the training routine
+        block_plot: Blocking the plot outputs if do_plot is active
     """
-
-    only_plot_results = (path2model != "")
     use_cell_bib = not (mode_cell_bib == 0)
     use_cell_mode = 0 if not use_cell_bib else mode_cell_bib - 1
 
-    if not only_plot_results:
-        print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
-        # --- Processing: Loading dataset and Do Training
-        dataset = get_dataset_ae(settings=config_data,
-                                 use_cell_bib=use_cell_bib, mode_classes=use_cell_mode,
-                                 mode_train_ae=mode, do_classification=False,
-                                 noise_std=noise_std)
-        data_mean = dataset.frames_me
-        trainhandler = train_nn_autoencoder(config_train, config_data)
-        trainhandler.load_model()
-        trainhandler.load_data(dataset)
-        del dataset
+    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
+    # --- Processing: Loading dataset and Do Training
+    dataset = get_dataset_ae(settings=config_data,
+                             use_cell_bib=use_cell_bib, mode_classes=use_cell_mode,
+                             mode_train_ae=mode_ae, do_classification=False,
+                             noise_std=noise_std)
+    data_mean = dataset.frames_me
+    trainhandler = train_nn_autoencoder(config_train, config_data)
+    trainhandler.load_model()
+    trainhandler.load_data(dataset)
+    del dataset
 
-        loss_ae, snr_train = trainhandler.do_training()[-1]
-        logsdir = trainhandler.get_saving_path()
-        data_result = trainhandler.do_validation_after_training()
-    else:
-        print(f"Plot results of already trained model")
-        snr_train = list()
-        logsdir = path2model
-        data_result = loadmat(join(logsdir, 'results.mat'))
-        data_mean = np.zeros(shape=(52, 32))
+    loss_ae, snr_train = trainhandler.do_training()[-1]
+    logsdir = trainhandler.get_saving_path()
+    data_result = trainhandler.do_validation_after_training()
 
-    if do_plot or only_plot_results:
+    if do_plot:
         plt.close("all")
         results_training(
             path=logsdir, cl_dict=data_result['cl_dict'], feat=data_result['feat'],
@@ -67,8 +59,8 @@ def __dnn_train_ae(config_train: Config_PyTorch, config_data: Config_Dataset,
 
 
 def __dnn_train_ae_class(config_train_ae: Config_PyTorch, config_train_class: Config_PyTorch,
-                         config_data: Config_Dataset, mode: int, noise_std=0.05,
-                         mode_cell_bib=0, path2model="", do_plot=False, block_plot=False) -> None:
+                         config_data: Config_Dataset, mode_ae: int, noise_std=0.05,
+                         mode_cell_bib=0, do_plot=False, block_plot=False) -> None:
     """Training routine for Autoencoders
         Args:
             config_train_ae: Settings for PyTorch Training the autoencoder model
@@ -77,7 +69,8 @@ def __dnn_train_ae_class(config_train_ae: Config_PyTorch, config_train_class: Co
             mode_ae: Selected model of the Autoencoder (0: normal, 1: Denoising (mean), 2: Denoising (input)) [default:0]
             noise_std: Std of the additional noise added to the input [default: 0.05]
             mode_cell_bib: If the dataset contains a cell library then the mode can be choicen (0: Deactivated, 1: All, 2-...: Reduced) [default: 0]
-            path2model: Path to an already trained model for plotting results [default: ""]
+            do_plot: Doing the plots during the training routine
+            block_plot: Blocking the plot outputs if do_plot is active
     """
     use_cell_bib = not (mode_cell_bib == 0)
     use_cell_mode = 0 if not use_cell_bib else mode_cell_bib - 1
@@ -87,7 +80,7 @@ def __dnn_train_ae_class(config_train_ae: Config_PyTorch, config_train_class: Co
     # ----------- Step #1: TRAINING AUTOENCODER
     # --- Processing: Loading dataset and Do Autoencoder Training
     dataset = get_dataset_ae(settings=config_data, use_cell_bib=use_cell_bib, mode_classes=use_cell_mode,
-                             mode_train_ae=mode, noise_std=noise_std)
+                             mode_train_ae=mode_ae, noise_std=noise_std)
 
     trainhandler = train_nn_autoencoder(config_train=config_train_ae, config_data=config_data)
     trainhandler.load_model()
@@ -112,10 +105,9 @@ def __dnn_train_ae_class(config_train_ae: Config_PyTorch, config_train_class: Co
 
     # ----------- Step #2: TRAINING CLASSIFIER
     # --- Processing: Loading dataset and Do Classification
-    dataset = get_dataset_class(settings=config_data, path2model=path2model,
-                                use_cell_bib=use_cell_bib, mode_classes=mode_cell_bib,
-                                noise_std=noise_std)
-    trainhandler = train_nn_classification(config_train=config_train_class, config_dataset=config_data)
+    dataset = get_dataset_ae_class(settings=config_data, path2model=path2model,
+                                   use_cell_bib=use_cell_bib, mode_classes=mode_cell_bib)
+    trainhandler = train_nn_classification(config_train=config_train_class, config_data=config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
     acc_class = trainhandler.do_training()[-1]
@@ -144,40 +136,32 @@ def __dnn_train_ae_class(config_train_ae: Config_PyTorch, config_train_class: Co
     print("ENDE")
 
 
-def __dnn_train_class(config_train: Config_PyTorch, config_data: Config_Dataset,
-                      mode_cell_bib=0, path2model="", do_plot=True, block_plot=True) -> None:
+def __dnn_train_rgc_class(config_train: Config_PyTorch, config_data: Config_Dataset,
+                      mode_cell_bib=0, do_plot=True, block_plot=True) -> None:
     """Training routine for Classification
         Args:
             config_train: Configuration for training the classifier
             config_data: Configuration of preparing the dataset for train the model
             mode_cell_bib: If the dataset contains a cell library then the mode can be choicen (0: Deactivated, 1: All, 2-...: Reduced) [default: 0]
-            path2model: Path to an already trained model for plotting results [default: ""]
+            do_plot: Doing the plots during the training routine
+            block_plot: Blocking the plot outputs if do_plot is active
     """
-
-    only_plot_results = (path2model != "")
     use_cell_bib = not (mode_cell_bib == 0)
     use_cell_mode = 0 if not use_cell_bib else mode_cell_bib-1
 
-    if not only_plot_results:
-        print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
-        # ---Loading Data, Do Training and getting the results
-        dataset = get_dataset_class(settings=config_data,
-                                    use_cell_bib=use_cell_bib, mode_classes=use_cell_mode)
-        trainhandler = train_nn_classification(config_train, config_data)
-        trainhandler.load_model()
-        trainhandler.load_data(dataset)
-        del dataset, config_train
+    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
+    # ---Loading Data, Do Training and getting the results
+    dataset = get_dataset_rgc(settings=config_data, use_cell_bib=use_cell_bib, mode_classes=use_cell_mode)
+    trainhandler = train_nn_classification(config_train, config_data)
+    trainhandler.load_model()
+    trainhandler.load_data(dataset)
+    del dataset, config_train
 
-        epoch_acc = trainhandler.do_training()[-1]
-        logsdir = trainhandler.get_saving_path()
-        data_result = trainhandler.do_validation_after_training(2)
-    else:
-        print(f"Plot results of already trained model")
-        epoch_acc = list()
-        logsdir = path2model
-        data_result = loadmat(join(logsdir, 'results.mat'))
+    epoch_acc = trainhandler.do_training()[-1]
+    logsdir = trainhandler.get_saving_path()
+    data_result = trainhandler.do_validation_after_training(2)
 
-    if do_plot or only_plot_results:
+    if do_plot:
         plt.close('all')
         # plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir, epoch_zoom=[500, ])
@@ -190,34 +174,30 @@ def __dnn_train_class(config_train: Config_PyTorch, config_data: Config_Dataset,
 
 
 def __dnn_train_sda(config_train: Config_PyTorch, config_data: Config_Dataset,
-                    path2model="", do_plot=True, block_plot=True) -> None:
+                    do_plot=True, block_plot=True) -> None:
     """Training routine for Spike Detection
     Args:
-        path2model: Path to an already trained model for plotting results [default: ""]
+        config_train: Settings for PyTorch Training
+        config_data: Settings for Dataset Generation
+        do_plot: Doing the plots during the training routine
+        block_plot: Blocking the plot outputs if do_plot is active
     """
-    only_plot_results = (path2model != "")
 
-    if not only_plot_results:
-        print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
-        # --- Processing: Loading Data and Do Training
-        dataset = get_dataset_sda(settings=config_data, threshold=4)
-        dataset_dict = dataset.sda_dict
-        trainhandler = train_nn_classification(config_train, config_data)
-        trainhandler.load_model()
-        trainhandler.load_data(dataset)
-        del dataset
-        epoch_acc = trainhandler.do_training()[-1]
+    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
+    # --- Processing: Loading Data and Do Training
+    dataset = get_dataset_sda(settings=config_data, threshold=4)
+    dataset_dict = dataset.sda_dict
+    trainhandler = train_nn_classification(config_train, config_data)
+    trainhandler.load_model()
+    trainhandler.load_data(dataset)
+    del dataset
+    epoch_acc = trainhandler.do_training()[-1]
 
-        # --- Post-Processing: Getting data, save and plot results
-        data_result = trainhandler.do_validation_after_training(3)
-        logsdir = trainhandler.get_saving_path()
-    else:
-        print(f"Plot results of already trained model")
-        epoch_acc = list()
-        logsdir = path2model
-        data_result = loadmat(join(logsdir, 'results.mat'))
+    # --- Post-Processing: Getting data, save and plot results
+    data_result = trainhandler.do_validation_after_training(3)
+    logsdir = trainhandler.get_saving_path()
 
-    if do_plot or only_plot_results:
+    if do_plot:
         plt.close("all")
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=dataset_dict)
@@ -225,11 +205,13 @@ def __dnn_train_sda(config_train: Config_PyTorch, config_data: Config_Dataset,
         plt.show(block=block_plot)
 
 
-def __dnn_train_decoder(config_train: Config_PyTorch, config_data: Config_Dataset,
-                        path2model="", do_plot=True, block_plot=True) -> None:
+def __dnn_train_decoder(config_train: Config_PyTorch, config_data: Config_Dataset, do_plot=True, block_plot=True) -> None:
     """Training routine for Spike Detection
-        Args:
-            path2model: Path to an already trained model for plotting results [default: ""]
+       Args:
+           config_train: Settings for PyTorch Training
+           config_data: Settings for Dataset Generation
+           do_plot: Doing the plots during the training routine
+           block_plot: Blocking the plot outputs if do_plot is active
     """
     #TODO: Pipeline aufbauen
 
@@ -240,15 +222,13 @@ def check_settings_file() -> None:
         print("A template configuration file is copied into main folder. Please check the content and restart!")
 
 
-def do_train_dnn(mode_train: int, noise_std_ae=0.05, mode_cell_bib=0, path2trained_model="",
-                 do_plot=True, block_plot=True) -> None:
-    """Do the Training of Deep Neural Network Topoliges
+def do_train_dnn(mode_train: int, noise_std_ae=0.05, mode_cell_bib=0, do_plot=True, block_plot=True) -> None:
+    """Do the Training of Deep Neural Networks
     Args:
         mode_train: 0: Autoencoder, 1: Denoising Autoencoder (Using mean), 2: Denoising Autoencoder (Adding noise),
                     3: AE+Classifier, 4: Classification, 5: Spike Detection, 6: Neural Decoder
         noise_std_ae: Std of gaussian noise distribution [Default: 0.05]
         mode_cell_bib: Mode for using a cell bibliography [Default: 0]
-        path2trained_model: Path to an already trained model for plotting results
         do_plot: Doing the plots during the training routine
         block_plot: Blocking the plot outputs if do_plot is active
     """
@@ -256,29 +236,25 @@ def do_train_dnn(mode_train: int, noise_std_ae=0.05, mode_cell_bib=0, path2train
     match mode_train:
         case 0:
             __dnn_train_ae(config_train_ae, config_data, mode=0, noise_std=noise_std_ae,
-                           mode_cell_bib=mode_cell_bib, path2model=path2trained_model,
-                           do_plot=do_plot, block_plot=block_plot)
+                           mode_cell_bib=mode_cell_bib, do_plot=do_plot, block_plot=block_plot)
         case 1:
             __dnn_train_ae(config_train_ae, config_data, mode=1, noise_std=noise_std_ae,
-                           mode_cell_bib=mode_cell_bib, path2model=path2trained_model,
-                           do_plot=do_plot, block_plot=block_plot)
+                           mode_cell_bib=mode_cell_bib, do_plot=do_plot, block_plot=block_plot)
         case 2:
             __dnn_train_ae(config_train_ae, config_data, mode=2, noise_std=noise_std_ae,
-                           mode_cell_bib=mode_cell_bib, path2model=path2trained_model,
-                           do_plot=do_plot, block_plot=block_plot)
+                           mode_cell_bib=mode_cell_bib, do_plot=do_plot, block_plot=block_plot)
         case 3:
             __dnn_train_ae_class(config_train_ae, config_train_class, config_data, mode=0,
                                  noise_std=noise_std_ae, mode_cell_bib=mode_cell_bib,
-                                 path2model=path2trained_model,
                                  do_plot=do_plot, block_plot=block_plot)
         case 4:
-            __dnn_train_class(config_train_class, config_data, mode_cell_bib=mode_cell_bib,
-                              path2model=path2trained_model, do_plot=do_plot, block_plot=block_plot)
+            __dnn_train_rgc_class(config_train_class, config_data, mode_cell_bib=mode_cell_bib,
+                                  do_plot=do_plot, block_plot=block_plot)
         case 5:
-            __dnn_train_sda(config_train_class, config_data, path2model=path2trained_model,
+            __dnn_train_sda(config_train_class, config_data,
                             do_plot=do_plot, block_plot=block_plot)
         case 6:
-            __dnn_train_decoder(config_train_class, config_data, path2model=path2trained_model,
-                                 do_plot=do_plot, block_plot=block_plot)
+            __dnn_train_decoder(config_train_class, config_data,
+                                do_plot=do_plot, block_plot=block_plot)
         case _:
             print("Wrong model!")

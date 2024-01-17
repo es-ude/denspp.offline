@@ -15,15 +15,13 @@ class DatasetAE_Class(Dataset):
     """Dataset Preparation for training autoencoder-based classifications"""
     def __init__(self, frames_raw: np.ndarray, frames_feat: np.ndarray,
                  cluster_id: np.ndarray, frames_cluster_me: np.ndarray,
-                 cluster_dict=None, noise_std=0.1):
+                 cluster_dict=None):
         self.size_output = 4
         # --- Input Parameters
         self.__frames_raw = np.array(frames_raw, dtype=np.float32)
         self.__frames_feat = np.array(frames_feat, dtype=np.float32)
         self.__cluster_id = np.array(cluster_id, dtype=np.uint8)
         self.frames_me = np.array(frames_cluster_me, dtype=np.float32)
-        # --- Parameters for Denoising Autoencoder
-        self.__frames_noise_std = noise_std
         # --- Parameters for Confusion Matrix for Classification
         self.cluster_name_available = isinstance(cluster_dict, list)
         self.frame_dict = cluster_dict
@@ -42,7 +40,7 @@ class DatasetAE_Class(Dataset):
 
 def prepare_training(settings: Config_Dataset, path2model: str,
                      use_cell_bib=False, mode_classes=2,
-                     use_median_for_mean=True, noise_std=0.1) -> DatasetAE_Class:
+                     use_median_for_mean=True) -> DatasetAE_Class:
     """Preparing dataset incl. augmentation for spike-frame based training"""
     print("... loading and processing the dataset")
     npzfile = loadmat(settings.get_path2data())
