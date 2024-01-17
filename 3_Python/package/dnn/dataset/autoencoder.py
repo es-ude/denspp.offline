@@ -4,9 +4,9 @@ from torch import is_tensor, randn, Tensor
 from torch.utils.data import Dataset
 
 from package.dnn.pytorch_control import Config_Dataset
-from package.dnn.data_preprocessing import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
-from package.dnn.data_preprocessing import change_frame_size, reconfigure_cluster_with_cell_lib, generate_zero_frames, data_normalization_minmax
-from package.dnn.data_augmentation import *
+from package.dnn.data_preprocessing_frames import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
+from package.dnn.data_preprocessing_frames import change_frame_size, reconfigure_cluster_with_cell_lib, generate_zero_frames, data_normalization_minmax
+from package.dnn.data_augmentation_frames import *
 
 
 class DatasetAE(Dataset):
