@@ -235,16 +235,16 @@ def do_train_dnn(mode_train: int, noise_std_ae=0.05, mode_cell_bib=0, do_plot=Tr
     from settings_ai import config_train_ae, config_train_class, config_data
     match mode_train:
         case 0:
-            __dnn_train_ae(config_train_ae, config_data, mode=0, noise_std=noise_std_ae,
+            __dnn_train_ae(config_train_ae, config_data, mode_ae=0, noise_std=noise_std_ae,
                            mode_cell_bib=mode_cell_bib, do_plot=do_plot, block_plot=block_plot)
         case 1:
-            __dnn_train_ae(config_train_ae, config_data, mode=1, noise_std=noise_std_ae,
+            __dnn_train_ae(config_train_ae, config_data, mode_ae=1, noise_std=noise_std_ae,
                            mode_cell_bib=mode_cell_bib, do_plot=do_plot, block_plot=block_plot)
         case 2:
-            __dnn_train_ae(config_train_ae, config_data, mode=2, noise_std=noise_std_ae,
+            __dnn_train_ae(config_train_ae, config_data, mode_ae=2, noise_std=noise_std_ae,
                            mode_cell_bib=mode_cell_bib, do_plot=do_plot, block_plot=block_plot)
         case 3:
-            __dnn_train_ae_class(config_train_ae, config_train_class, config_data, mode=0,
+            __dnn_train_ae_class(config_train_ae, config_train_class, config_data, mode_ae=0,
                                  noise_std=noise_std_ae, mode_cell_bib=mode_cell_bib,
                                  do_plot=do_plot, block_plot=block_plot)
         case 4:
