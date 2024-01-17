@@ -4,7 +4,7 @@ import numpy as np
 
 from package.pipeline_signals import PipelineSignal
 from package.data_call.data_call_common import SettingsDATA
-from package.analog.preamp import PreAmp, SettingsAMP
+from package.analog.pre_amp import PreAmp, SettingsAMP
 from package.analog.adc_basic import SettingsADC
 from package.analog.adc_sar import ADC_SAR as ADC0
 from package.digital.dsp import DSP, SettingsDSP

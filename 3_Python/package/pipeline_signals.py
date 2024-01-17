@@ -1,9 +1,18 @@
-class PipelineSignal:
-    def __init__(self, fs_ana: float, fs_adc: float, osr: int) -> None:
+class PipelineSignal_Analog:
+    def __init__(self) -> None:
         self.u_in = None            # Input voltage
         self.u_pre = None           # Output of pre-amp
         self.u_spk = None           # Output of analogue filtering - spike acitivity
         self.u_lfp = None           # Output of analogue filtering - lfp
+        self.x_adc = None           # ADC output
+        self.fs_ana = 0.0           # "Sampling rate"
+
+    def init_analog(self, fs_ana: float) -> None:
+        self.fs_ana = fs_ana
+
+
+class PipelineSignal_Digital:
+    def __init__(self) -> None:
         self.x_adc = None           # ADC output
         self.x_spk = None           # Output of digital filtering - spike
         self.x_lfp = None           # Output of digital filtering - lfp
@@ -16,7 +25,23 @@ class PipelineSignal:
         self.cluster_id = None      # Clustered events
         self.spike_ticks = None     # Spike Ticks
         self.nsp_post = dict()      # Adding some parameters after calculating some neural signal processing methods
+        self.fs_adc = 0.0           # Sampling rate of the ADC incl. oversampling
+        self.fs_dig = 0.0           # Processing rate of the digital part
 
+    def init_digital(self, fs_adc: float, osr: int) -> None:
+        self.fs_adc = osr * fs_adc
+        self.fs_dig = fs_adc
+
+
+class PipelineSignal_NSP:
+    def __init__(self) -> None:
+        self.spike_ticks = None     # Spike Ticks
+        self.nsp_post = dict()      # Adding some parameters after calculating some neural signal processing methods
+
+
+class PipelineSignal(PipelineSignal_Analog, PipelineSignal_Digital, PipelineSignal_NSP):
+    def __init__(self, fs_ana: float, fs_adc: float, osr: int) -> None:
+        super().__init__()
         self.fs_ana = fs_ana
         self.fs_adc = osr * fs_adc
         self.fs_dig = fs_adc
