@@ -13,7 +13,7 @@ class DatasetAE(Dataset):
     """Dataset Preparator for training Autoencoder"""
     def __init__(self, frames_raw: np.ndarray, cluster_id: np.ndarray,
                  frames_cluster_me: np.ndarray, cluster_dict=None,
-                 noise_std=0.1, do_classification=False, mode_train=0):
+                 noise_std=1.0, do_classification=False, mode_train=0):
 
         self.size_output = 4
         # --- Input Parameters
@@ -32,7 +32,9 @@ class DatasetAE(Dataset):
         if mode_train == 1:
             self.data_type = "Denoising Autoencoder (mean)"
         elif mode_train == 2:
-            self.data_type = "Denoising Autoencoder (Add noise)"
+            self.data_type = "Denoising Autoencoder (Add random noise)"
+        elif mode_train == 3:
+            self.data_type = "Denoising Autoencoder (Add gaussian noise)"
         else:
             self.data_type = "Autoencoder"
 
@@ -52,9 +54,14 @@ class DatasetAE(Dataset):
             frame_in = self.__frames_orig[idx, :]
             frame_out = self.frames_me[cluster_id, :] if not self.__do_classification else cluster_id
         elif self.mode_train == 2:
-            # Denoising Autoencoder Training with adding noise on input
+            # Denoising Autoencoder Training with adding random noise on input
             frame_in = self.__frames_orig[idx, :] + np.array(self.__frames_noise_std * np.random.randn(self.__frames_size), dtype=np.float32)
             frame_out = self.__frames_orig[idx, :] if not self.__do_classification else cluster_id
+
+        elif self.mode_train == 3:
+            # Denoising Autoencoder Training with adding gaussian noise on input
+            frame_out = self.__frames_orig[idx, :] if not self.__do_classification else cluster_id
+            frame_in = self.__frames_orig[idx, :] + np.array(self.__frames_noise_std * np.random.normal(size=self.__frames_size), dtype=np.float32)
         else:
             # Normal Autoencoder Training
             frame_in = self.__frames_orig[idx, :]

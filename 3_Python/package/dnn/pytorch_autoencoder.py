@@ -169,6 +169,12 @@ class train_nn_autoencoder(training_pytorch):
         output.update({'input': data_valid['in'], 'feat': feat_out, 'pred': pred_out})
         output.update({'cl_dict': self.cell_classes})
 
+        # ADD sn to output (Arya)
+
+        output.update({'median_SNR_inc': np.median(snr_inc)})
+        output.update({'median_SNR_in': np.median(snr_in)})
+        output.update({'median_SNR_out': np.median(snr_out)})
+
         # --- Saving dict
         savemat(join(self.get_saving_path(), 'results_ae.mat'), output,
                 do_compression=True, long_field_names=True)
