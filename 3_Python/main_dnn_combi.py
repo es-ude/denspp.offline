@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import csv, os
 from package.plotting.plot_dnn import plot_statistic_data, results_training
 from package.plotting.plot_metric import plot_loss, prep_confusion
 from settings_ai import config_train_class, config_train_ae, config_dataset
@@ -76,4 +77,25 @@ if __name__ == "__main__":
         metric_snr_run.append((loss_ae, snr_ae, acc_class))
 
     del dataset, trainhandler
+
+    # Specify the folder and file name
+    folder_path = logsdir
+    file_name = "Results_Loss_SNR_Acc.csv"
+
+    # Create the folder if it doesn't exist
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
+    # Specify the complete file path
+    csv_file_path = os.path.join(folder_path, file_name)
+
+    # Writing to the CSV file
+    with open(csv_file_path, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow("Loss")
+        writer.writerows(loss_ae)
+        writer.writerow("SNR")
+        writer.writerows(snr_ae)
+        writer.writerow("Accuracy")
+        writer.writerows(acc_class)
     print("ENDE")
