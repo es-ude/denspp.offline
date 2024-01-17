@@ -15,6 +15,17 @@ do_plot = False
 noise_std_increasing_step = 1.0
 STD_SNR_ratio_plotting_data = []
 
+
+def generate_dataset_snr(dataset):
+    print("Test")
+    frames_mean = dataset.frames_me
+
+    for val in dataset:
+        print(val)
+
+    return dataset
+
+
 def prepare_dataset_snr(dataset):
     return dataset
 
@@ -25,6 +36,8 @@ if __name__ == "__main__":
     dataset = prepare_training_ae(path2data=config_dataset.get_path2data(), data_settings=config_dataset,
                                   use_cell_bib=use_cell_bib, mode_classes=mode_cell_bib,
                                   noise_std=noise_std)
+    dataset_zero = generate_dataset_snr(dataset)
+
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
     metric_snr_run = list()
     # --- Run with increasing SNR
