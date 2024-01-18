@@ -13,13 +13,12 @@ class DatasetAE(Dataset):
     """Dataset Preparator for training Autoencoder"""
     def __init__(self, frames_raw: np.ndarray, cluster_id: np.ndarray,
                  frames_cluster_me: np.ndarray, cluster_dict=None,
-                 noise_std=1.0, do_classification=False, mode_train=0):
+                 noise_std=0.0, do_classification=False, mode_train=0):
 
-        self.size_output = 4
         # --- Input Parameters
         self.__frames_orig = np.array(frames_raw, dtype=np.float32)
         self.__frames_size = frames_raw.shape[1]
-        self.__cluster_id = cluster_id
+        self.cluster_id = cluster_id
         self.frames_me = np.array(frames_cluster_me, dtype=np.float32)
         # --- Parameters for Denoising Autoencoder
         self.__frames_noise_std = noise_std
@@ -42,13 +41,13 @@ class DatasetAE(Dataset):
             self.data_type += " for Classification"
 
     def __len__(self):
-        return self.__cluster_id.shape[0]
+        return self.cluster_id.shape[0]
 
     def __getitem__(self, idx):
         if is_tensor(idx):
             idx = idx.tolist()
 
-        cluster_id = self.__cluster_id[idx]
+        cluster_id = self.cluster_id[idx]
         if self.mode_train == 1:
             # Denoising Autoencoder Training with mean
             frame_in = self.__frames_orig[idx, :]

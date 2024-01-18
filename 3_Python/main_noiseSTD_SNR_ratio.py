@@ -1,33 +1,47 @@
 import matplotlib.pyplot as plt
-import csv, os
-from package.plotting.plot_dnn import plot_statistic_data, results_training
+import numpy as np
+
 from settings_ai import config_train_class, config_train_ae, config_dataset
 from package.dnn.pytorch_autoencoder import train_nn_autoencoder
-from package.dnn.pytorch_control import Config_PyTorch
-from package.dnn.dataset.autoencoder_class import prepare_training as prepare_training_class
-from package.dnn.dataset.autoencoder import prepare_training as prepare_training_ae
+from package.dnn.dataset.autoencoder import prepare_training as prepare_training_ae, DatasetAE
+
+from package.metric import calculate_snr
 
 
 noise_std = 0
 use_cell_bib = False
 mode_cell_bib = 0
 do_plot = False
+
+snr_soll = np.linspace(-10, 10, 21, endpoint=True)
 noise_std_increasing_step = 1.0
 STD_SNR_ratio_plotting_data = []
 
 
-def generate_dataset_snr(dataset):
-    print("Test")
+def calculate_dataset_snr(dataset: DatasetAE) -> [list, list]:
+    snr0 = [[] for _ in np.unique(dataset.cluster_id)]
+    for data in dataset:
+        snr0[data["cluster"]].append(calculate_snr(data["in"], data["mean"]))
+
+    snr1 = list()
+    for snr_val in snr0:
+        snr_id = np.array(snr_val)
+        snr1.append((snr_id.min(), np.median(snr_id), snr_id.max()))
+
+    return snr0, snr1
+
+
+def prepare_dataset_snr(dataset: DatasetAE, snr_in: float) -> DatasetAE:
+    """Generating a new dataset with mean waveform"""
     frames_mean = dataset.frames_me
+    cluster_sel = dataset.cluster_id
 
-    for val in dataset:
-        print(val)
+    frames_new = np.zeros((cluster_sel.size, frames_mean.shape[1]))
+    for idx, id in enumerate(cluster_sel):
+        frames_new[idx, :] = frames_mean[id, :]
 
-    return dataset
-
-
-def prepare_dataset_snr(dataset):
-    return dataset
+    return DatasetAE(frames_new, cluster_sel, frames_mean,
+                     cluster_dict=dataset.frame_dict, mode_train=dataset.mode_train)
 
 
 if __name__ == "__main__":
@@ -36,13 +50,13 @@ if __name__ == "__main__":
     dataset = prepare_training_ae(path2data=config_dataset.get_path2data(), data_settings=config_dataset,
                                   use_cell_bib=use_cell_bib, mode_classes=mode_cell_bib,
                                   noise_std=noise_std)
-    dataset_zero = generate_dataset_snr(dataset)
+    snr_in_raw, snr_in_val = calculate_dataset_snr(dataset)
 
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
     metric_snr_run = list()
     # --- Run with increasing SNR
-    for i in range(10):
-        print(f"... training Autoencoder: Run {i} started")
+    for run_id, snr in enumerate(snr_soll):
+        print(f"... training Autoencoder: Run {run_id} started")
         # ----------- Step #1: TRAINING AUTOENCODER
         # --- Processing: Loading dataset
         dataset_used = prepare_dataset_snr(dataset)
@@ -62,9 +76,6 @@ if __name__ == "__main__":
         STD_SNR_ratio_plotting_data.append(
             (data_result.get('median_SNR_in', None), data_result.get('median_SNR_inc', None))
         )
-
-        # Loop control
-        noise_std = noise_std + noise_std_increasing_step
 
     # --- Plotting the results
     plt.plot(*zip(*STD_SNR_ratio_plotting_data), marker='o')

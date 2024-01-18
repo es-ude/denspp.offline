@@ -48,7 +48,7 @@ class train_nn_autoencoder(training_pytorch):
         valid_loss = valid_loss / total_batches
         return valid_loss
 
-    def __do_snr_epoch(self) -> Tensor:
+    def __do_snr_epoch(self) -> np.ndarray:
         """Do metric calculation during validation step of training"""
         self.model.eval()
         inc_snr = list()
@@ -58,8 +58,9 @@ class train_nn_autoencoder(training_pytorch):
             for idx, data in enumerate(vdata['in'].to(self.used_hw_dev)):
                 snr0 = self.__calculate_snr(data, data_mean[idx, :])
                 snr1 = self.__calculate_snr(pred_out[idx, :], data_mean[idx, :])
-                inc_snr.append(snr1 - snr0)
-        return tensor(inc_snr)
+                inc_snr.append((snr1 - snr0).detach().numpy())
+
+        return np.array(inc_snr)
 
     def __calculate_snr(self, yin: Tensor, ymean: Tensor) -> Tensor:
         """Calculating the signal-to-noise ratio [dB] of the input signal compared to mean waveform"""

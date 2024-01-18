@@ -35,7 +35,7 @@ if __name__ == "__main__":
     path2model = trainhandler.get_saving_path()
     # --- Reducing
     used_loss = loss_ae[-1]
-    used_snr = snr_ae[-1].detach().numpy()
+    used_snr = snr_ae[-1]
     used_snr = (used_snr.min(), median(used_snr), used_snr.max())
 
     if do_plot:
