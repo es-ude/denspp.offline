@@ -2,8 +2,7 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import Tensor, load, save, from_numpy, tensor, max, min, log10
-import torch
+from torch import Tensor, load, save, from_numpy, tensor, max, min, log10, sum, inference_mode
 from scipy.io import savemat
 from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset, training_pytorch
 from package.metric import calculate_snr
@@ -39,36 +38,40 @@ class train_nn_autoencoder(training_pytorch):
         valid_loss = 0.0
 
         self.model.eval()
-        for vdata in self.valid_loader[self._run_kfold]:
-            pred_out = self.model(vdata['in'].to(self.used_hw_dev))[1]
-            valid_loss += self.loss_fn(pred_out, vdata['out'].to(self.used_hw_dev)).item()
-            pred_out = self.model(vdata['in'].to(self.used_hw_dev))[1]
-            valid_loss += self.loss_fn(pred_out, vdata['out'].to(self.used_hw_dev)).item()
-            total_batches += 1
+        with inference_mode():
+            for vdata in self.valid_loader[self._run_kfold]:
+                pred_out = self.model(vdata['in'].to(self.used_hw_dev))[1]
+                valid_loss += self.loss_fn(pred_out, vdata['out'].to(self.used_hw_dev)).item()
+                pred_out = self.model(vdata['in'].to(self.used_hw_dev))[1]
+                valid_loss += self.loss_fn(pred_out, vdata['out'].to(self.used_hw_dev)).item()
+                total_batches += 1
 
         valid_loss = valid_loss / total_batches
         return valid_loss
 
-    def __do_snr_epoch(self) -> np.ndarray:
+    def __do_snr_epoch(self) -> Tensor:
         """Do metric calculation during validation step of training"""
         self.model.eval()
         inc_snr = list()
-        for vdata in self.valid_loader[self._run_kfold]:
-            data_mean = vdata['mean'].to(self.used_hw_dev)
-            pred_out = self.model(vdata['in'].to(self.used_hw_dev))[1]
+        with inference_mode():
+            for vdata in self.valid_loader[self._run_kfold]:
+                data_mean = vdata['mean'].to(self.used_hw_dev)
+                data_in = vdata['in'].to(self.used_hw_dev)
+                pred_out = self.model(vdata['in'].to(self.used_hw_dev))[1]
+                snr0_0 = self.__calculate_snr(data_in, data_mean)
+                snr1_0 = self.__calculate_snr(pred_out, data_mean)
+                inc_snr.extend((snr1_0 - snr0_0))
 
-            for idx, data in enumerate(vdata['in'].to(self.used_hw_dev)):
-                snr0 = self.__calculate_snr(data, data_mean[idx, :])
-                snr1 = self.__calculate_snr(pred_out[idx, :], data_mean[idx, :])
-                inc_snr.append((snr1 - snr0).detach().numpy())
+        return tensor(inc_snr)
 
-        return np.array(inc_snr)
-
-    def __calculate_snr(self, yin: Tensor, ymean: Tensor) -> Tensor:
-        """Calculating the signal-to-noise ratio [dB] of the input signal compared to mean waveform"""
-        a0 = (max(ymean) - min(ymean)) ** 2
-        b0 = torch.sum((yin - ymean) ** 2)
-        return 10 * log10(a0 / b0)
+    def __calculate_snr(self, vdata_in: Tensor, vdata_mean: Tensor) -> Tensor:
+        """a0 = ((max(ymean) - min(ymean))**2"""
+        max_values, _ = max(vdata_mean, dim=1)
+        min_values, _ = min(vdata_mean, dim=1)
+        a0 = (max_values - min_values) ** 2
+        b0 = sum((vdata_in - vdata_mean) ** 2, dim=1)
+        result = 10 * log10(a0 / b0)
+        return result
 
     def do_training(self, do_init=True) -> list:
         """Start model training incl. validation and custom-own metric calculation"""
