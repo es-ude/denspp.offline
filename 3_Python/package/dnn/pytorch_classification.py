@@ -4,13 +4,13 @@ from shutil import copy
 from datetime import datetime
 from torch import load, save, from_numpy
 from scipy.io import savemat
-from package.dnn.pytorch_control import Config_PyTorch, training_pytorch
+from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset, training_pytorch
 
 
-class pytorch_train(training_pytorch):
+class train_nn_classification(training_pytorch):
     """Class for Handling the Training of Classifiers"""
-    def __init__(self, config_train: Config_PyTorch, do_train=True) -> None:
-        training_pytorch.__init__(self, config_train, do_train)
+    def __init__(self, config_train: Config_PyTorch, config_data: Config_Dataset, do_train=True) -> None:
+        training_pytorch.__init__(self, config_train, config_data, do_train)
 
     def __do_training_epoch(self) -> [float, float]:
         """Do training during epoch of training"""
@@ -22,8 +22,8 @@ class pytorch_train(training_pytorch):
         self.model.train(True)
         for tdata in self.train_loader[self._run_kfold]:
             self.optimizer.zero_grad()
-            pred_cl, dec_cl = self.model(tdata['in'])
-            loss = self.loss_fn(pred_cl, tdata['out'])
+            pred_cl, dec_cl = self.model(tdata['in'].to(self.used_hw_dev))
+            loss = self.loss_fn(pred_cl, tdata['out'].to(self.used_hw_dev))
             loss.backward()
             self.optimizer.step()
 
@@ -46,9 +46,9 @@ class pytorch_train(training_pytorch):
 
         self.model.eval()
         for vdata in self.valid_loader[self._run_kfold]:
-            pred_cl, dec_cl = self.model(vdata['in'])
+            pred_cl, dec_cl = self.model(vdata['in'].to(self.used_hw_dev))
 
-            valid_loss += self.loss_fn(pred_cl, vdata['out']).item()
+            valid_loss += self.loss_fn(pred_cl, vdata['out'].to(self.used_hw_dev)).item()
             total_batches += 1
             total_correct += int(sum(dec_cl == vdata['out']))
             total_samples += len(vdata['in'])
@@ -141,6 +141,7 @@ class pytorch_train(training_pytorch):
         output.update({'settings': self.settings, 'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')})
         output.update({'train_clus': data_train['out'], 'valid_clus': data_valid['out']})
         output.update({'input': data_valid['in'], 'yclus': yclus})
+        output.update({'cl_dict': self.cell_classes})
 
         # --- Saving dict
         savemat(join(self.get_saving_path(), 'results.mat'), output,

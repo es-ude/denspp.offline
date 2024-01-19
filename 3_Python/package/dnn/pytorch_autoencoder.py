@@ -2,16 +2,17 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import load, save, from_numpy, inference_mode
+from torch import Tensor, load, save, from_numpy, tensor, max, min, log10
+import torch
 from scipy.io import savemat
-from package.dnn.pytorch_control import Config_PyTorch, training_pytorch
+from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset, training_pytorch
 from package.metric import calculate_snr
 
 
-class pytorch_train(training_pytorch):
+class train_nn_autoencoder(training_pytorch):
     """Class for Handling Training of Autoencoders"""
-    def __init__(self, config_train: Config_PyTorch, do_train=True) -> None:
-        training_pytorch.__init__(self, config_train, do_train)
+    def __init__(self, config_train: Config_PyTorch, config_data: Config_Dataset, do_train=True) -> None:
+        training_pytorch.__init__(self, config_train, config_data, do_train)
 
     def __do_training_epoch(self) -> float:
         """Do training during epoch of training"""
@@ -21,8 +22,8 @@ class pytorch_train(training_pytorch):
         self.model.train(True)
         for tdata in self.train_loader[self._run_kfold]:
             self.optimizer.zero_grad()
-            pred_out = self.model(tdata['in'])[1]
-            loss = self.loss_fn(pred_out, tdata['out'])
+            pred_out = self.model(tdata['in'].to(self.used_hw_dev))[1]
+            loss = self.loss_fn(pred_out, tdata['out'].to(self.used_hw_dev))
             loss.backward()
             self.optimizer.step()
 
@@ -38,11 +39,12 @@ class pytorch_train(training_pytorch):
         valid_loss = 0.0
 
         self.model.eval()
-        with inference_mode():
-            for vdata in self.valid_loader[self._run_kfold]:
-                pred_out = self.model( vdata['in'])[1]
-                valid_loss += self.loss_fn(pred_out, vdata['out']).item()
-                total_batches += 1
+        for vdata in self.valid_loader[self._run_kfold]:
+            pred_out = self.model(vdata['in'].to(self.used_hw_dev))[1]
+            valid_loss += self.loss_fn(pred_out, vdata['out'].to(self.used_hw_dev)).item()
+            pred_out = self.model(vdata['in'].to(self.used_hw_dev))[1]
+            valid_loss += self.loss_fn(pred_out, vdata['out'].to(self.used_hw_dev)).item()
+            total_batches += 1
 
         valid_loss = valid_loss / total_batches
         return valid_loss
@@ -50,29 +52,34 @@ class pytorch_train(training_pytorch):
     def __do_snr_epoch(self) -> np.ndarray:
         """Do metric calculation during validation step of training"""
         self.model.eval()
-        snr_in = np.zeros(shape=(self._samples_valid[self._run_kfold], ), dtype=float)
-        snr_out = np.zeros(shape=(self._samples_valid[self._run_kfold], ), dtype=float)
-        run_idx = 0
+        inc_snr = list()
         for vdata in self.valid_loader[self._run_kfold]:
-            data_mean = vdata['mean'].detach().numpy()
-            pred_out = self.model(vdata['in'])[1].detach().numpy()
+            data_mean = vdata['mean'].to(self.used_hw_dev)
+            pred_out = self.model(vdata['in'].to(self.used_hw_dev))[1]
 
-            for idx, data in enumerate(vdata['in'].detach().numpy()):
-                snr_in[run_idx] = calculate_snr(data, data_mean[idx, :])
-                snr_out[run_idx] = calculate_snr(pred_out[idx, :], data_mean[idx, :])
-                run_idx += 1
+            for idx, data in enumerate(vdata['in'].to(self.used_hw_dev)):
+                snr0 = self.__calculate_snr(data, data_mean[idx, :])
+                snr1 = self.__calculate_snr(pred_out[idx, :], data_mean[idx, :])
+                inc_snr.append((snr1 - snr0).detach().numpy())
 
-        return snr_out - snr_in
+        return np.array(inc_snr)
 
-    def do_training(self) -> list:
+    def __calculate_snr(self, yin: Tensor, ymean: Tensor) -> Tensor:
+        """Calculating the signal-to-noise ratio [dB] of the input signal compared to mean waveform"""
+        a0 = (max(ymean) - min(ymean)) ** 2
+        b0 = torch.sum((yin - ymean) ** 2)
+        return 10 * log10(a0 / b0)
+
+    def do_training(self, do_init=True) -> list:
         """Start model training incl. validation and custom-own metric calculation"""
-        self._init_train()
-        self._save_config_txt()
+        if do_init:
+            self._init_train()
+            self._save_config_txt()
         # --- Handling Kfold cross validation training
         if self._do_kfold:
             print(f"Starting Kfold cross validation training in {self.settings.num_kfold} steps")
 
-        metrics_own = list()
+        run_metric = list()
         path2model = str()
         path2model_init = join(self._path2save, f'model_reset.pth')
         save(self.model.state_dict(), path2model_init)
@@ -83,6 +90,7 @@ class pytorch_train(training_pytorch):
         for fold in np.arange(self.settings.num_kfold):
             best_loss = np.array((1_000_000., 1_000_000.), dtype=float)
             # Init fold
+            epoch_loss = list()
             epoch_metric = list()
             self.model.load_state_dict(load(path2model_init))
             self._run_kfold = fold
@@ -112,17 +120,18 @@ class pytorch_train(training_pytorch):
                     save(self.model, path2model)
 
                 # Saving metrics after each epoch
+                epoch_loss.append((train_loss, valid_loss))
                 epoch_metric.append(self.__do_snr_epoch())
 
             # --- Saving metrics after each fold
-            metrics_own.append(epoch_metric)
+            run_metric.append((epoch_loss, epoch_metric))
             copy(path2model, self._path2save)
             self._save_train_results(best_loss[0], best_loss[1], 'Loss')
 
         # --- Ending of all trainings phases
         self._end_training_routine(timestamp_start)
 
-        return metrics_own
+        return run_metric
 
     def do_validation_after_training(self, num_output=4) -> dict:
         """Performing the validation with the best model after training for plotting and saving results"""
@@ -158,8 +167,9 @@ class pytorch_train(training_pytorch):
         # --- Producing the output
         output = dict()
         output.update({'settings': self.settings, 'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')})
-        output.update({'train_clus': data_train['cluster'], 'valid_clus': data_valid['cluster']})
+        output.update({'train_clus': data_train['class'], 'valid_clus': data_valid['class']})
         output.update({'input': data_valid['in'], 'feat': feat_out, 'pred': pred_out})
+        output.update({'cl_dict': self.cell_classes})
 
         # --- Saving dict
         savemat(join(self.get_saving_path(), 'results.mat'), output,

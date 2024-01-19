@@ -3,12 +3,12 @@ from os.path import exists, join
 import shutil
 import numpy as np
 
-from package.template.pipeline_signals import PipelineSignal
-from package.data.data_call_common import SettingsDATA
-from package.pre_amp.preamp import PreAmp, SettingsAMP
-from package.adc.adc_basic import SettingsADC
-from package.adc.adc_sar import ADC_SAR as ADC0
-from package.dsp.sda import SpikeDetection, SettingsSDA
+from package.pipeline_signals import PipelineSignal
+from package.data_call.data_call_common import SettingsDATA
+from package.analog.pre_amp import PreAmp, SettingsAMP
+from package.analog.adc_basic import SettingsADC
+from package.analog.adc_sar import ADC_SAR as ADC0
+from package.digital.sda import SpikeDetection, SettingsSDA
 
 
 # --- Configuring the src_neuro
@@ -16,6 +16,8 @@ class Settings:
     """Settings class for handling the src_neuro setting"""
     SettingsDATA = SettingsDATA(
         path='../2_Data',
+        # path='/media/erbsloeh/ExtremeSSD/0_Invasive',
+        # path='C:/HomeOffice/Arbeit/C_MERCUR_SpAIke/Daten',
         data_set=1, data_case=0, data_point=0,
         t_range=[0],
         ch_sel=[],
@@ -59,6 +61,9 @@ class Pipeline:
         self.__adc = ADC0(settings.SettingsADC)
         self.__sda = SpikeDetection(settings.SettingsSDA)
 
+        self.frame_left_windowsize = self.__sda.frame_start + int(self.__sda.offset_frame / 2)
+        self.frame_right_windowsize = self.__sda.frame_ends + int(self.__sda.offset_frame / 2)
+
         self.path2logs = "logs"
         self.path2runs = "runs"
         self.path2settings = "src_data/pipeline_data.py"
@@ -88,13 +93,26 @@ class Pipeline:
         return mdict
 
     def run_input(self, uin: np.ndarray, spike_xpos: np.ndarray, spike_xoffset: int) -> None:
+        """Processing the raw data for frame generation
+        Args:
+            uin: Array of the 1D-transient signal
+            spike_xpos: List of all spike positions from groundtruth
+            spike_xoffset: Time delay between spike_xpos and real spike
+        """
+        self.run_minimal(uin)
+
+        self.signals.frames_align, self.signals.x_pos = self.__sda.frame_generation_pos(
+            self.signals.x_adc, spike_xpos, spike_xoffset
+        )[1:]
+
+    def run_minimal(self, uin: np.ndarray) -> None:
+        """Processing the input for getting the reshaped digital datastream
+        Args:
+            uin: Array of the 1D-transient signal
+        """
         self.signals.u_in = uin
         u_inn = np.array(self.__preamp.settings.vcm)
         # --- Analogue Frontend
         self.signals.u_pre, _ = self.__preamp.pre_amp_chopper(self.signals.u_in, u_inn)
         # self.u_pre = self.preamp0.pre_amp(self.u_in, self.preamp0.settings.vcm)
         self.signals.x_adc = self.__adc.adc_ideal(self.signals.u_pre)[0]
-
-        self.signals.frames_align, self.signals.x_pos = self.__sda.frame_generation_pos(
-            self.signals.x_adc, spike_xpos, spike_xoffset
-        )[1:]

@@ -1,13 +1,13 @@
 import os, shutil
 import numpy as np
 
-from package.template.pipeline_signals import PipelineSignal
-from package.data.data_call_common import SettingsDATA
-from package.pre_amp.preamp import PreAmp, SettingsAMP
-from package.adc.adc_basic import SettingsADC
-from package.adc.adc_sar import ADC_SAR as ADC0
-from package.dsp.dsp import DSP, SettingsDSP
-from package.dsp.sda import SpikeDetection, SettingsSDA
+from package.pipeline_signals import PipelineSignal
+from package.data_call.data_call_common import SettingsDATA
+from package.analog.pre_amp import PreAmp, SettingsAMP
+from package.analog.adc_basic import SettingsADC
+from package.analog.adc_sar import ADC_SAR as ADC0
+from package.digital.dsp import DSP, SettingsDSP
+from package.digital.sda import SpikeDetection, SettingsSDA
 
 # --- Configuring the src_neuro
 class Settings:

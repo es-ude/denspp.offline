@@ -1,10 +1,10 @@
 import numpy as np
 from scipy.io import loadmat
-from torch import is_tensor, Tensor
+from torch import is_tensor
 from torch.utils.data import Dataset, DataLoader
-from package.dnn.pytorch_control import Config_PyTorch
-from package.dnn.data_augmentation import augmentation_reducing_samples
-from package.dnn.data_preprocessing import data_normalization
+from package.dnn.pytorch_control import Config_Dataset
+from package.dnn.data_augmentation_frames import augmentation_reducing_samples
+from package.dnn.data_preprocessing_frames import data_normalization_minmax
 
 
 class DatasetSDA(Dataset):
@@ -44,12 +44,12 @@ def prepare_plotting(data_in: DataLoader) -> tuple[np.ndarray, np.ndarray, np.nd
     return din, dsda, dout
 
 
-def prepare_training(path: str, settings: Config_PyTorch, threshold: int) -> DatasetSDA:
+def prepare_training(settings: Config_Dataset, threshold: int) -> DatasetSDA:
     """Preparing datasets incl. augmentation for spike-detection-based training (without pre-processing)"""
     print("... loading the datasets")
 
     # --- MATLAB reading file
-    npzfile = loadmat(path)
+    npzfile = loadmat(settings.get_path2data())
     frames_in = npzfile["sda_in"]
     frames_cl = npzfile["sda_pred"]
 
@@ -64,12 +64,11 @@ def prepare_training(path: str, settings: Config_PyTorch, threshold: int) -> Dat
     if settings.data_do_reduce_samples_per_cluster:
         print("... do data augmentation with reducing the samples per cluster")
         frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
-                                                             settings.data_num_samples_per_cluster,
-                                                             settings.data_do_shuffle)
+                                                             settings.data_num_samples_per_cluster)
 
     # --- PART: Data Normalization
     if settings.data_do_normalization:
-        frames_in = data_normalization(frames_in)
+        frames_in = data_normalization_minmax(frames_in)
 
     # --- Output
     check = np.unique(frames_cl, return_counts=True)
