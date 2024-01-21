@@ -137,7 +137,7 @@ def do_train_dnn(mode_train: int, noise_std_ae=0.05, mode_cell_bib=0, only_plot_
         only_plot_results: Mode for only plotting the results of already trained model
         path2model: Path to already trained model
     """
-    from settings_ai import config_dataset, config_train_ae, config_train_class
+    from settings_ai import config_dataset, config_train_ae, config_train_class, config_train_rgc
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
     match mode_train:
         case 0:
@@ -155,7 +155,7 @@ def do_train_dnn(mode_train: int, noise_std_ae=0.05, mode_cell_bib=0, only_plot_
         case 3:
             return NotImplementedError
         case 4:
-            __dnn_train_classification(config_dataset, config_train_class,
+            __dnn_train_classification(config_dataset, config_train_rgc,
                                        mode_cell_bib=mode_cell_bib,
                                        only_plot_results=only_plot_results)
         case 5:

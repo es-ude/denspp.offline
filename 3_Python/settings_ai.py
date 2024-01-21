@@ -37,6 +37,19 @@ config_train_ae = Config_PyTorch(
 )
 config_train_class = Config_PyTorch(
     # --- Settings of Models/Training
+    model=ae_models.classifier_ae_v1(6, 5),
+    loss='Cross Entropy',
+    loss_fn=nn.CrossEntropyLoss(),
+    optimizer='Adam',
+    num_kfold=1,
+    num_epochs=10,
+    batch_size=512,
+    data_split_ratio=0.25,
+    data_do_shuffle=True
+)
+
+config_train_rgc = Config_PyTorch(
+    # --- Settings of Models/Training
     model=rgc_class_models.dnn_rgc_v1(32, 4),
     loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
