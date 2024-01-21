@@ -6,8 +6,10 @@ import package.dnn.models.spike_detection as sda_modes
 
 config_dataset = Config_Dataset(
     # --- Settings of Datasets
-    data_path='../2_Data/00_Merged_Datasets',
-    data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
+    #data_path='../2_Data/00_Merged_Datasets',
+    #data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
+    data_path="data",
+    data_file_name="2023-11-24_Dataset-07_RGC_TDB_Merged",
     # --- Data Augmentation
     data_do_augmentation=True,
     data_num_augmentation=100,
@@ -35,7 +37,7 @@ config_train_ae = Config_PyTorch(
 )
 config_train_class = Config_PyTorch(
     # --- Settings of Models/Training
-    model=ae_models.classifier_ae_v1(6, 5),
+    model=rgc_class_models.dnn_rgc_v1(32, 4),
     loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',

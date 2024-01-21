@@ -28,7 +28,6 @@ def __dnn_train_autoencoder(config_data: Config_Dataset,
     use_cell_bib = not mode_cell_bib == 0
 
     if not only_plot_results:
-        print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
         # --- Processing: Loading dataset and Do Training
         dataset = get_dataset_ae(path2data=config_data.get_path2data(), data_settings=config_data,
                                  use_cell_bib=use_cell_bib, mode_classes=mode_cell_bib,
@@ -69,7 +68,6 @@ def __dnn_train_classification(config_data: Config_Dataset, config_train: Config
             only_plot_results: Plotting the results of a already trained model [default: False]
     """
     if not only_plot_results:
-        print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
         # ---Loading Data, Do Training and getting the results
         dataset = get_dataset_class(path=config_data.get_path2data(), settings=config_data,
                                    use_cell_bib=True, mode_classes=mode_cell_bib)
@@ -103,7 +101,6 @@ def __dnn_train_spike_detection(config_data: Config_Dataset, config_train: Confi
     Args:
         only_plot_results: Plotting the results of a already trained model [default: False]
     """
-    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
     # --- Processing: Loading Data and Do Training
     dataset = get_dataset_sda(path=config_data.get_path2data(), settings=config_data, threshold=4)
     dataset_dict = dataset.sda_dict
@@ -141,6 +138,7 @@ def do_train_dnn(mode_train: int, noise_std_ae=0.05, mode_cell_bib=0, only_plot_
         path2model: Path to already trained model
     """
     from settings_ai import config_dataset, config_train_ae, config_train_class
+    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
     match mode_train:
         case 0:
             __dnn_train_autoencoder(config_dataset, config_train_ae, mode=0, noise_std=noise_std_ae,

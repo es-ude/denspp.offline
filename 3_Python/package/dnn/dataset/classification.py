@@ -48,7 +48,7 @@ def prepare_training(path: str, settings: Config_Dataset, use_cell_bib=False, mo
         # --- PART: Data Normalization
     if settings.data_do_normalization:
         print(f"... do data normalization")
-        data_class_frames_in = DataNormalization(mode="CPU", method="minmax", do_global=False)
+        data_class_frames_in = DataNormalization(mode="CPU", method="minmax", do_bipolar=False, do_global=False)
         frames_in = data_class_frames_in.normalize(frames_in)
 
     # --- PART: Reducing samples per cluster (if too large)
@@ -56,7 +56,7 @@ def prepare_training(path: str, settings: Config_Dataset, use_cell_bib=False, mo
         print("... reducing the samples per cluster (for pre-training on dedicated hardware)")
         frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
                                                              settings.data_num_samples_per_cluster,
-                                                             settings.data_do_shuffle)
+                                                             False)
 
     # --- Output
     check = np.unique(frames_cl, return_counts=True)
