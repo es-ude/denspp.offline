@@ -1,14 +1,15 @@
 import os, shutil
 import numpy as np
 
-from package.data.pipeline_signals import PipelineSignal
-from package.data.data_call import SettingsDATA
-from package.dsp.sda import SpikeDetection, SettingsSDA
-from package.dsp.fex import FeatureExtraction, SettingsFeature
-from package.dsp.cluster import Clustering, SettingsCluster
-from package.nsp import calc_spiketicks, calc_interval_timing, calc_firing_rate
+from package.pipeline_signals import PipelineSignal
+from package.data_call.data_call_common import SettingsDATA
+from package.digital.sda import SpikeDetection, SettingsSDA
+from package.digital.fex import FeatureExtraction, SettingsFeature
+from package.digital.cluster import Clustering, SettingsCluster
+from package.nsp import calc_spiketicks
 
-# --- Configuring the src_neuro
+
+# --- Configuring the src_decoder
 class Settings:
     """Settings class for handling the src_neuro setting"""
     SettingsDATA = SettingsDATA(
@@ -36,7 +37,8 @@ class Settings:
         no_cluster=3
     )
 
-# --- Setting the src_neuro
+
+# --- Setting the src_decoder
 class Pipeline(PipelineSignal):
     def __init__(self, settings: Settings):
         PipelineSignal.__init__(self, settings.SettingsDATA.fs_resample, settings.SettingsDATA.fs_resample, 1)

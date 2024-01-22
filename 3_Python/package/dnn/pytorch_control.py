@@ -1,311 +1,314 @@
 import dataclasses
-import os.path
-from glob import glob
+import platform
 import shutil
+
+import cpuinfo
 import numpy as np
+from typing import Any
+from os import mkdir, remove
+from os.path import exists, join
+from shutil import rmtree
+from glob import glob
 from datetime import datetime
-import torch
+from torch import optim, device, cuda, backends
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
 from sklearn.model_selection import KFold
-from package.metric import calculate_snr
 
 
+@dataclasses.dataclass(frozen=True)
 class Config_PyTorch:
-    """Template for configurating pytorch for training a model"""
-    def __init__(self):
-        # Settings of Models/Training
-        self.model = "model name"   # example: ai_module.cnn_ae_v1
-        self.is_embedded = False
-        self.loss_fn = torch.nn.MSELoss()
-        self.num_kfold = 1
-        self.num_epochs = 1000
-        self.batch_size = 512
-        # Settings of Datasets
-        self.data_path = 'data'
-        self.data_file_name = '2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted'
-        self.data_split_ratio = 0.2
-        self.data_do_shuffle = True
-        self.data_do_augmentation = True
-        self.data_num_augmentation = 2000
-        self.data_do_normalization = False
-        self.data_do_addnoise_cluster = False
-        # Dataset Preparation
-        self.data_exclude_cluster = [1]
-        self.data_sel_pos = []
+    """Class for handling the PyTorch training/inference routing"""
+    # --- Settings of Models/Training
+    model: Any
+    loss_fn: Any
+    optimizer: str
+    loss: str
+    num_kfold: int
+    num_epochs: int
+    batch_size: int
+    data_split_ratio: float
+    data_do_shuffle: bool
 
-    def set_optimizer(self, model):
-        return torch.optim.Adam(model.parameters())
+    def get_topology(self) -> str:
+        """Getting the model name defined in models"""
+        return self.model.out_modeltyp
 
-    def get_topology(self, model) -> str:
-        return model.out_modeltyp
+    def load_optimizer(self, learn_rate=0.1) -> Any:
+        """Loading the optimizer function"""
+        if self.optimizer == 'Adam':
+            return self.__set_optimizer_adam()
+        elif self.optimizer == 'SGD':
+            return self.__set_optimizer_sgd(learn_rate=learn_rate)
+        else:
+            return -1
+
+    def __set_optimizer_adam(self):
+        """Using the Adam Optimizer"""
+        return optim.Adam(self.model.parameters())
+
+    def __set_optimizer_sgd(self, learn_rate=0.1):
+        """Using the SGD as Optimizer"""
+        return optim.SGD(self.model.parameters(), lr=learn_rate)
+
+
+@dataclasses.dataclass(frozen=True)
+class Config_Dataset:
+    """Class for handling the pre-processing and generating the training dataset"""
+    # --- Settings of Datasets
+    data_path: str
+    data_file_name: str
+    # --- Data Augmentation
+    data_do_augmentation: bool
+    data_num_augmentation: int
+    data_do_normalization: bool
+    data_do_addnoise_cluster: bool
+    data_do_reduce_samples_per_cluster: bool
+    data_num_samples_per_cluster: int
+    # --- Dataset Preparation
+    data_exclude_cluster: list
+    data_sel_pos: list
+
+    def get_path2data(self) -> str:
+        """Getting the path name to the file"""
+        return join(self.data_path, self.data_file_name)
 
 
 class training_pytorch:
-    """Class for Handling Training of Deep Neural Networks in PyTorch"""
-    def __init__(self, type: str, model_name: str, config_train: Config_PyTorch, do_train=True) -> None:
-        self.device = None
-        self.os_type = None
-        self.__setup_device()
+    """Class for Handling Training of Deep Neural Networks in PyTorch
+    Args:
+        config_train: Configuration settings for the PyTorch Training
+        do_train: Mention if training should be used (default = True)
+    """
+    used_hw_dev: device
+    used_hw_cpu: str
+    used_hw_gpu: str
+    used_hw_num: int
+    train_loader: list
+    valid_loader: list
+    cell_classes: list
 
-        # --- Preparing options
-        self.do_kfold = False
-        self.run_kfold = 0
-
-        # --- Saving options
-        self.index_folder = 'train' if do_train else 'inference'
-        self.aitype = type
-        self.model_name = model_name
-        self.model_addon = str()
-        self.__path2run = 'runs'
-        self.__path2log = str()
-        self.path2config = str()
-        self.config_available = False
-        self.path2save = str()
-
-        # --- Training input
-        self.settings = config_train
+    def __init__(self, config_train: Config_PyTorch, config_dataset: Config_Dataset, do_train=True) -> None:
+        self.os_type = platform.system()
+        self._writer = None
         self.model = None
-        self.used_model = None
         self.loss_fn = None
         self.optimizer = None
-        self.train_loader = None
-        self.valid_loader = None
+        self.data_set = None
 
-    def __setup_device(self) -> None:
-        """Setup PyTorch for Training"""
-        os_type0 = os.name
-        device0 = "CUDA" if torch.cuda.is_available() else "CPU"
-        if device0 == "CUDA":
-            self.device = torch.device("cuda")
-        else:
-            self.device = torch.device("cpu")
+        # --- Preparing options
+        self.config_available = False
+        self._do_kfold = False
+        self._do_shuffle = config_train.data_do_shuffle
+        self._run_kfold = 0
+        self._samples_train = list()
+        self._samples_valid = list()
 
-        if os_type0 == 'nt':
-            self.os_type = 'Windows'
-        elif os_type0 == 'posix':
-            self.os_type = 'Linux'
+        # --- Saving options
+        self.settings = config_train
+        self.settings_data = config_dataset
+        self._index_folder = 'train' if do_train else 'inference'
+        self._aitype = config_train.model.out_modeltyp
+        self._model_name = config_train.model.out_modelname
+        self._model_addon = str()
+        self._path2run = 'runs'
+        self._path2save = str()
+        self._path2log = str()
+        self._path2temp = str()
+        self._path2config = str()
+
+    def __setup_device(self, use_only_cpu=True) -> None:
+        """Setup PyTorch for Training
+
+        Args:
+            use_only_cpu: Set if in the training oly the CPU should be used
+            """
+        # Using GPU
+        if cuda.is_available() and not use_only_cpu:
+            self.used_hw_gpu = cuda.get_device_name()
+            self.used_hw_cpu = (f"{cpuinfo.get_cpu_info()['brand_raw']} "
+                       f"(@ {1e-9 * cpuinfo.get_cpu_info()['hz_actual'][0]:.3f} GHz)")
+            self.used_hw_dev = device("cuda")
+            self.used_hw_num = cuda.device_count()
+            device0 = self.used_hw_gpu
+        # Using Apple M1 Chip
+        elif backends.mps.is_available() and backends.mps.is_built() and self.os_type == "Darwin" and not use_only_cpu:
+            self.used_hw_cpu = "MP1"
+            self.used_hw_gpu = 'None'
+            self.used_hw_num = cuda.device_count()
+            self.used_hw_dev = device("mps")
+            self.used_hw_num = 1
+            device0 = self.used_hw_cpu
+        # Using normal CPU
         else:
-            self.os_type = 'Mac'
+            self.used_hw_cpu = (f"{cpuinfo.get_cpu_info()['brand_raw']} "
+                       f"(@ {1e-9 * cpuinfo.get_cpu_info()['hz_actual'][0]:.3f} GHz)")
+            self.used_hw_gpu = 'None'
+            self.used_hw_dev = device("cpu")
+            self.used_hw_num = cpuinfo.get_cpu_info()['count']
+            device0 = self.used_hw_cpu
 
         print(f"... using PyTorch with {device0} device on {self.os_type}")
 
-    def __init_train(self) -> None:
+    def _check_user_config(self) -> None:
+        if not exists("settings_ai"):
+            shutil.copy()
+
+    def _init_train(self) -> None:
         """Do init of class for training"""
-        folder_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{self.index_folder}_{self.model_name}'
-        self.path2save = os.path.join(self.__path2run, folder_name)
-        os.mkdir(self.path2save)
+        folder_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{self._index_folder}_{self._model_name}'
+        self._path2save = join(self._path2run, folder_name)
+        self._path2temp = join(self._path2save, f'temp')
 
-    def __init_writer(self) -> None:
+        if not exists(self._path2run):
+            mkdir(self._path2run)
+
+        mkdir(self._path2save)
+        mkdir(self._path2temp)
+
+        self.model.to(device=self.used_hw_dev)
+
+    def _init_writer(self) -> None:
         """Do init of writer"""
-        self.__path2log = os.path.join(self.path2save, f'logs_{self.run_kfold: 03d}')
-        self.__writer = SummaryWriter(self.__path2log)
+        self._path2log = join(self._path2save, f'logs')
+        self._writer = SummaryWriter(self._path2log, comment=f"event_log_kfold{self._run_kfold:03d}")
 
-    def load_data(self, data_set) -> None:
+    def load_data(self, data_set, use_not_cpu=False) -> None:
+        self.__setup_device()
         """Loading data for training and validation in DataLoader format into class"""
-        self.__preparing_data(data_set)
-
-    def __preparing_data(self, data_set) -> None:
-        self.do_kfold = True if self.settings.num_kfold > 1 else False
-        num_samples = len(data_set)
+        self._do_kfold = True if self.settings.num_kfold > 1 else False
+        self._model_addon = data_set.data_type
+        self.cell_classes = data_set.frame_dict if data_set.cluster_name_available else []
 
         # --- Preparing datasets
         out_train = list()
         out_valid = list()
-        if self.do_kfold:
-            kfold = KFold(n_splits=self.settings.num_kfold, shuffle=True)
-            for fold, (idx_train, idx_valid) in enumerate(kfold.split(np.arange(num_samples))):
+        if self._do_kfold:
+            kfold = KFold(n_splits=self.settings.num_kfold, shuffle=self._do_shuffle)
+            for idx_train, idx_valid in kfold.split(np.arange(len(data_set))):
                 subsamps_train = SubsetRandomSampler(idx_train)
                 subsamps_valid = SubsetRandomSampler(idx_valid)
-                out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train))
-                out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
+                out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train,
+                                            pin_memory=use_not_cpu, pin_memory_device=self.used_hw_dev.type))
+                out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid,
+                                            pin_memory=use_not_cpu, pin_memory_device=self.used_hw_dev.type))
+                self._samples_train.append(subsamps_train.indices.size)
+                self._samples_valid.append(subsamps_valid.indices.size)
         else:
-            idx = np.arange(num_samples)
-            np.random.shuffle(idx)
-            pos = int(num_samples * (1 - self.settings.data_split_ratio))
-            idx_train = idx[0:pos]
-            idx_valid = idx[pos:]
+            idx = np.arange(len(data_set))
+            if self._do_shuffle:
+                np.random.shuffle(idx)
+            split_pos = int(len(data_set) * (1 - self.settings.data_split_ratio))
+            idx_train = idx[0:split_pos]
+            idx_valid = idx[split_pos:]
             subsamps_train = SubsetRandomSampler(idx_train)
             subsamps_valid = SubsetRandomSampler(idx_valid)
-
-            out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train))
-            out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
+            out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train,
+                                        pin_memory=use_not_cpu, pin_memory_device=self.used_hw_dev.type))
+            out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid,
+                                        pin_memory=use_not_cpu, pin_memory_device=self.used_hw_dev.type))
+            self._samples_train.append(subsamps_train.indices.size)
+            self._samples_valid.append(subsamps_valid.indices.size)
 
         # --- Output
         self.train_loader = out_train
         self.valid_loader = out_valid
 
-    def load_model(self, model: torch.nn.Module, optimizer, print_model=True) -> None:
-        """Loading model, optimizer, loss_fn into class"""
-        self.model = model
-        self.optimizer = optimizer
+    def load_model(self, learn_rate=0.1, print_model=True) -> None:
+        """Loading optimizer, loss_fn into class"""
+        self.model = self.settings.model
+        self.optimizer = self.settings.load_optimizer(learn_rate=learn_rate)
         self.loss_fn = self.settings.loss_fn
         if print_model:
             summary(self.model, input_size=self.model.model_shape)
 
-    def __save_config_txt(self) -> None:
+    def _save_config_txt(self) -> None:
         """Writing the content of the configuration class in *.txt-file"""
-        config_handler = self.settings
-        self.path2config = os.path.join(self.path2save, 'config.txt')
+        self._path2config = join(self._path2save, 'config.txt')
         self.config_available = True
 
-        with open(self.path2config, 'w') as txt_handler:
+        with open(self._path2config, 'w') as txt_handler:
             txt_handler.write('--- Configuration of PyTorch Training Routine ---\n')
             txt_handler.write(f'Date: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}\n')
-            txt_handler.write(f'AI Topology: {config_handler.get_topology(self.model) + self.model_addon}\n')
+            txt_handler.write(f'Used CPU: {self.used_hw_cpu}\n')
+            txt_handler.write(f'Used GPU: {self.used_hw_gpu}\n')
+            txt_handler.write(f'Used dataset: {self.settings_data.get_path2data()}\n')
+            txt_handler.write(f'AI Topology: {self.settings.get_topology()} ({self._model_addon})\n')
             txt_handler.write(f'Embedded?: {self.model.model_embedded}\n')
             txt_handler.write('\n')
-            txt_handler.write(f'Batchsize: {config_handler.batch_size}\n')
-            txt_handler.write(f'Num. of epochs: {config_handler.num_epochs}\n')
-            txt_handler.write(f'Splitting ratio (Training/Validation): {1-config_handler.data_split_ratio}/{config_handler.data_split_ratio}\n')
-            txt_handler.write(f'Do kfold cross validation?: {self.do_kfold}, Number of steps: {self.settings.num_kfold}\n')
-            txt_handler.write(f'Do shuffle?: {config_handler.data_do_shuffle}\n')
-            txt_handler.write(f'Do data augmentation?: {config_handler.data_do_augmentation}\n')
-            txt_handler.write(f'Do input normalization?: {config_handler.data_do_normalization}\n')
-            txt_handler.write(f'Do add noise cluster?: {config_handler.data_do_addnoise_cluster}\n')
-            txt_handler.write(f'Exclude cluster: {config_handler.data_exclude_cluster}\n')
+            txt_handler.write(f'Used Optimizer: {self.settings.optimizer}\n')
+            txt_handler.write(f'Used Loss Function: {self.settings.loss}\n')
+            txt_handler.write(f'Batchsize: {self.settings.batch_size}\n')
+            txt_handler.write(f'Num. of epochs: {self.settings.num_epochs}\n')
+            txt_handler.write(f'Splitting ratio (Training/Validation): '
+                              f'{1-self.settings.data_split_ratio}/{self.settings.data_split_ratio}\n')
+            txt_handler.write(f'Do KFold cross validation?: {self._do_kfold},\n'
+                              f'Number of KFold steps: {self.settings.num_kfold}\n')
+            txt_handler.write(f'Do shuffle?: {self.settings.data_do_shuffle}\n')
+            txt_handler.write(f'Do data augmentation?: {self.settings_data.data_do_augmentation}\n')
+            txt_handler.write(f'Do input normalization?: {self.settings_data.data_do_normalization}\n')
+            txt_handler.write(f'Do add noise cluster?: {self.settings_data.data_do_addnoise_cluster}\n')
+            txt_handler.write(f'Exclude cluster: {self.settings_data.data_exclude_cluster}\n')
 
-    def __save_train_results(self, last_loss_train: float, last_loss_valid: float) -> None:
+    def _save_train_results(self, last_metric_train: float | np.ndarray,
+                            last_metric_valid: float | np.ndarray, type='Loss') -> None:
+        """Writing some training metrics into txt-file"""
         if self.config_available:
-            with open(self.path2config, 'a') as txt_handler:
-                txt_handler.write('\n--- Results of last epoch ---')
-                txt_handler.write(f'\nTraining Loss = {last_loss_train}')
-                txt_handler.write(f'\nValidation Loss = {last_loss_valid}')
+            with open(self._path2config, 'a') as txt_handler:
+                txt_handler.write(f'\n--- Metrics of last epoch in fold #{self._run_kfold} ---')
+                txt_handler.write(f'\nTraining {type} = {last_metric_train}')
+                txt_handler.write(f'\nValidation {type} = {last_metric_valid}\n')
 
-    def __do_training_epoch(self) -> float:
-        """Do training during epoch of training"""
-        train_loss = 0.0
-        total_batches = 0
+    def get_saving_path(self) -> str:
+        """Getting the path for saving files in aim folder"""
+        return self._path2save
 
-        self.model.train(True)
-        for tdata in self.train_loader[self.run_kfold]:
-            self.optimizer.zero_grad()
-            data_in = tdata['in']
-            data_out = tdata['out']
-            _, pred_out = self.model(data_in)
-            loss = self.loss_fn(pred_out, data_out)
-            loss.backward()
-            self.optimizer.step()
+    def get_best_model(self) -> list:
+        """Getting the path to the best trained model"""
+        return glob(join(self._path2save, "*.pth"))
 
-            train_loss += loss.item()
-            total_batches += 1
+    def _end_training_routine(self, timestamp_start: datetime, do_delete_temps=True) -> None:
+        """Doing the last step of training routine"""
+        timestamp_end = datetime.now()
+        timestamp_string = timestamp_end.strftime('%H:%M:%S')
+        diff_time = timestamp_end - timestamp_start
+        diff_string = diff_time
 
-        train_loss = train_loss / total_batches
+        print(f'\nTraining ends on: {timestamp_string}')
+        print(f'Training runs: {diff_string}')
 
-        return train_loss
-
-    def __do_valid_epoch(self) -> float:
-        """Do validation during epoch of training"""
-        total_batches = 0
-        valid_loss = 0.0
-
-        self.model.eval()
-        for vdata in self.valid_loader[self.run_kfold]:
-            data_in = vdata['in']
-            data_out = vdata['out']
-            _, pred_out = self.model(data_in)
-            valid_loss += self.loss_fn(pred_out, data_out)
-            total_batches += 1
-
-        valid_loss = valid_loss / total_batches
-
-        return valid_loss
-
-    def __do_snr_epoch(self) -> list:
-        """Do metric calculation during validation step of training"""
-        metric_epoch = []
-        self.model.eval()
-        for vdata in self.valid_loader[self.run_kfold]:
-            data_in = vdata['in']
-            data_mean = vdata['mean'].detach().numpy()
-            _, pred_out = self.model(data_in)
-
-            snr_in = calculate_snr(data_in.detach().numpy(), data_mean)
-            snr_out = calculate_snr(pred_out.detach().numpy(), data_mean)
-            metric_epoch.append([snr_out - snr_in])
-
-        metric_epoch = np.array(metric_epoch)
-        return [np.min(metric_epoch), np.mean(metric_epoch), np.max(metric_epoch)]
-
-    def do_training(self):
-        """Start model training incl. validation and custom-own metric calculation"""
-
-        self.__init_train()
-        self.__save_config_txt()
-        # --- Handling Kfold cross validation training
-        if self.do_kfold:
-            print(f"Starting Kfold cross validation training in {self.settings.num_kfold} steps")
-
-        metrics = list()
-        own_metric = list()
-        path2model = str()
-        path2model_init = os.path.join(self.path2save, f'model_reset.pth')
-        torch.save(self.model.state_dict(), path2model_init)
-        for fold in np.arange(self.settings.num_kfold):
-            best_vloss = 1_000_000.
-            loss_train = 1_000_000.
-            loss_valid = 1_000_000.
-            own_metric = []
-
-            # - Reset of model
-            self.model.load_state_dict(torch.load(path2model_init))
-            self.run_kfold = fold
-            self.__init_writer()
-
-            timestamp_start = datetime.now()
-            timestamp_string = timestamp_start.strftime('%H:%M:%S.%f')
-            if self.do_kfold:
-                print(f'\nTraining starts on: {timestamp_string} with fold #{fold}')
-            else:
-                print(f'\nTraining starts on: {timestamp_string}')
-
-            for epoch in range(0, self.settings.num_epochs):
-                loss_train = self.__do_training_epoch()
-                loss_valid = self.__do_valid_epoch()
-
-                print(f'... results of epoch {epoch + 1}/{self.settings.num_epochs} [{(epoch + 1) / self.settings.num_epochs * 100:.2f} %]: '
-                      f'train_loss = {loss_train:.5f},'
-                      f'\tvalid_loss = {loss_valid:.5f}')
-
-                # Log the running loss averaged per batch for both training and validation
-                self.__writer.add_scalar('Loss_train', loss_train)
-                self.__writer.add_scalar('Loss_valid', loss_valid, epoch+1)
-                self.__writer.flush()
-
-                # Tracking the best performance and saving the model
-                if loss_valid < best_vloss:
-                    best_vloss = loss_valid
-                    path2model = os.path.join(self.__path2log, f'model_fold{fold:03d}_epoch{epoch:04d}.pth')
-                    torch.save(self.model, path2model)
-
-                # Calculation of custom metrics
-                own_metric.append(self.__do_snr_epoch())
-
-            # --- Ausgabe nach Training
-            self.__save_train_results(loss_train, loss_valid)
-            # TODO: Metrikgeschiebe anpassen
-            own_metric = np.array(own_metric)
-            metrics.append([loss_train, loss_valid])
-
-            timestamp_end = datetime.now()
-            timestamp_string = timestamp_end.strftime('%H:%M:%S.%f')
-            diff_time = timestamp_end - timestamp_start
-            diff_string = diff_time
-
-            print(f'Training ends on: {timestamp_string}')
-            print(f'Training runs: {diff_string}')
-            print(f'Save best model: {path2model}')
-            shutil.copy(path2model, self.path2save)
-
-        # --- Ending of all trainings phases
         # Delete init model
-        if os.path.exists(path2model_init):
-            os.remove(path2model_init)
+        init_model = glob(join(self._path2save, 'model_reset.pth'))
+        for file in init_model:
+            remove(file)
 
         # Delete log folders
-        folder_logs = glob(os.path.join(self.path2save, 'logs*'))
-        for folder in folder_logs:
-            shutil.rmtree(folder, ignore_errors=True)
+        if do_delete_temps:
+            folder_logs = glob(join(self._path2save, 'temp*'))
+            for folder in folder_logs:
+                rmtree(folder, ignore_errors=True)
 
-        return metrics, own_metric
+        # Give the option to open TensorBoard
+        print("\nLook data on TensorBoard -> open Terminal")
+        print("Type in: tensorboard serve --logdir ./runs")
+
+    def get_data_points(self, num_output=4, use_train_dataloader=False) -> dict:
+        """Getting data from DataLoader for Plotting Results"""
+        output = [[] for _ in range(num_output)]
+        keys = []
+        mdict = dict()
+
+        first_run = True
+        for data_fold in (self.train_loader if use_train_dataloader else self.valid_loader):
+            for vdata in data_fold:
+                for idx, (key, value) in enumerate(vdata.items()):
+                    output[idx] = value if first_run else np.append(output[idx], value, axis=0)
+                    if key not in keys:
+                        keys.append(key)
+                first_run = False
+
+        for key, value in zip(keys, output):
+            mdict.update([(key, value)])
+
+        return mdict

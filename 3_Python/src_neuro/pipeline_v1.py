@@ -2,15 +2,15 @@ import os
 import shutil
 import numpy as np
 
-from package.data.pipeline_signals import PipelineSignal
-from package.data.data_call import SettingsDATA
-from package.pre_amp.preamp import PreAmp, SettingsAMP
-from package.adc.adc_basic import SettingsADC
-from package.adc.adc_sar import ADC_SAR as ADC0
-from package.dsp.dsp import DSP, SettingsDSP
-from package.dsp.sda import SpikeDetection, SettingsSDA
-from package.dsp.fex import FeatureExtraction, SettingsFeature
-from package.dsp.cluster import Clustering, SettingsCluster
+from package.pipeline_signals import PipelineSignal
+from package.data_call.data_call_common import SettingsDATA
+from package.analog.pre_amp import PreAmp, SettingsAMP
+from package.analog.adc_basic import SettingsADC
+from package.analog.adc_sar import ADC_SAR as ADC0
+from package.digital.dsp import DSP, SettingsDSP
+from package.digital.sda import SpikeDetection, SettingsSDA
+from package.digital.fex import FeatureExtraction, SettingsFeature
+from package.digital.cluster import Clustering, SettingsCluster
 from package.nsp import calc_spiketicks
 
 
@@ -18,13 +18,13 @@ from package.nsp import calc_spiketicks
 class Settings:
     """Settings class for handling the src_neuro setting"""
     SettingsDATA = SettingsDATA(
-        path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
-        # path='C:\GitHub\spaike_project\\2_Data',
-        data_set=7,
+        # path='C:/HomeOffice/Arbeit/C_MERCUR_SpAIke/Daten',
+        path='../2_Data',
+        data_set=1,
         data_case=0,
         data_point=0,
         t_range=[0],
-        ch_sel=[-1],
+        ch_sel=[],
         fs_resample=100e3
     )
 
@@ -44,8 +44,6 @@ class Settings:
         fs_ana=SettingsDATA.fs_resample,
         fs_dig=20e3, osr=1, Nadc=12
     )
-    # 20e3 für 40 samples per frame
-    # 32e3 for 64 samples per frame
 
     # --- Digital filtering for ADC output and CIC
     SettingsDSP_LFP = SettingsDSP(
@@ -87,18 +85,19 @@ class Pipeline:
     """Processing Pipeline for analysing invasive neural activities"""
     def __init__(self, settings: Settings):
         self.settings = settings
-        self.preamp0 = PreAmp(settings.SettingsAMP)
-        self.adc = ADC0(settings.SettingsADC)
-        self.dsp0 = DSP(settings.SettingsDSP_LFP)
-        self.dsp1 = DSP(settings.SettingsDSP_SPK)
-        self.sda = SpikeDetection(settings.SettingsSDA)
-        self.fe = FeatureExtraction(settings.SettingsFE)
-        self.cl = Clustering(settings.SettingsCL)
         self.signals = PipelineSignal(
             fs_ana=settings.SettingsDATA.fs_resample,
             fs_adc=settings.SettingsADC.fs_adc,
             osr=settings.SettingsADC.osr
         )
+
+        self.__preamp0 = PreAmp(settings.SettingsAMP)
+        self.__adc = ADC0(settings.SettingsADC)
+        self.__dsp0 = DSP(settings.SettingsDSP_LFP)
+        self.__dsp1 = DSP(settings.SettingsDSP_SPK)
+        self.__sda = SpikeDetection(settings.SettingsSDA)
+        self.__fe = FeatureExtraction(settings.SettingsFE)
+        self.__cl = Clustering(settings.SettingsCL)
 
         self.path2runs = "runs"
         self.path2figure = str()
@@ -126,26 +125,30 @@ class Pipeline:
 
     def run(self, uinp: np.ndarray) -> None:
         self.signals.u_in = uinp
-        u_inn = np.array(self.preamp0.settings.vcm)
         # ---- Analogue Front End Module ----
-        self.signals.u_pre, _ = self.preamp0.pre_amp_chopper(uinp, u_inn)
-        self.signals.x_adc, _, self.signals.u_quant = self.adc.adc_ideal(self.signals.u_pre)
+        self.signals.u_pre, _ = self.__preamp0.pre_amp_chopper(uinp, np.array(self.__preamp0.settings.vcm))
+        self.signals.x_adc, _, self.signals.u_quant = self.__adc.adc_ideal(self.signals.u_pre)
         # ---- Digital Pre-processing ----
-        self.signals.x_lfp = self.dsp0.filter(self.signals.x_adc)
-        self.signals.x_spk = self.dsp1.filter(self.signals.x_adc)
+        self.signals.x_lfp = self.__dsp0.filter(self.signals.x_adc)
+        self.signals.x_spk = self.__dsp1.filter(self.signals.x_adc)
         # ---- Spike detection incl. thresholding ----
-        self.signals.x_dly = self.sda.time_delay(self.signals.x_spk)
+        x_dly = self.__sda.time_delay(self.signals.x_spk)
         # self.x_sda = self.sda.sda_neo(self.x_spk)
-        self.signals.x_sda, _ = self.sda.sda_smooth(self.sda.sda_neo(self.signals.x_spk))
-        self.signals.x_thr = self.sda.thres_blackrock(self.signals.x_sda)
-        (self.signals.frames_orig, self.signals.frames_align) = self.sda.frame_generation(
-            self.signals.x_dly, self.signals.x_sda, self.signals.x_thr
+        self.signals.x_sda = self.__sda.sda_spb(self.signals.x_spk, self.signals.fs_dig, [200, 2e3])
+        # self.signals.x_sda = self.__sda.sda_smooth(self.__sda.sda_neo(self.signals.x_spk))
+        self.signals.x_thr = self.__sda.thres_blackrock(self.signals.x_sda)
+        self.signals.frames_orig, self.signals.frames_align = self.__sda.frame_generation(
+            x_dly, self.signals.x_sda, self.signals.x_thr
         )
+
         # ---- Feature Extraction  ----
-        self.signals.features = self.fe.fe_pca(self.signals.frames_align[0])
-        # ---- Clustering | Classification ----
-        (self.signals.frames_align[2]) = self.cl.cluster_kmeans(self.signals.features)
-        self.signals.spike_ticks = calc_spiketicks(self.signals.frames_align)
+        if not self.signals.frames_align[1].size == 0:
+            self.signals.features = self.__fe.fe_pca(self.signals.frames_align[0])
+            # ---- Clustering | Classification ----
+            (self.signals.frames_align[2]) = self.__cl.cluster_kmeans(self.signals.features)
+            self.signals.spike_ticks = calc_spiketicks(self.signals.frames_align)
+        else:
+            print("No frames available!")
 
     def run_nsp(self) -> None:
         print("NO FURTHER PROCESSING IS INCLUDED")
