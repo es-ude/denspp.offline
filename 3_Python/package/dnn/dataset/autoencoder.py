@@ -18,7 +18,7 @@ class DatasetAE(Dataset):
         # --- Input Parameters
         self.__frames_orig = np.array(frames_raw, dtype=np.float32)
         self.__frames_size = frames_raw.shape[1]
-        self.cluster_id = cluster_id
+        self.cluster_id = np.array(cluster_id, dtype=np.uint8)
         self.frames_me = np.array(frames_cluster_me, dtype=np.float32)
         # --- Parameters for Denoising Autoencoder
         self.__frames_noise_std = noise_std
@@ -70,7 +70,7 @@ class DatasetAE(Dataset):
 
 
 def prepare_training(path2data: str, data_settings: Config_Dataset,
-                     use_cell_bib=False, mode_classes=2,
+                     use_cell_bib=False, mode_classes=0,
                      use_median_for_mean=True,
                      mode_train_ae=0, do_classification=False,
                      noise_std=0.1) -> DatasetAE:
@@ -85,6 +85,26 @@ def prepare_training(path2data: str, data_settings: Config_Dataset,
     # --- Using cell_bib for clustering
     if use_cell_bib:
         frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(path2data, mode_classes, frames_in, frames_cl)
+
+    # --- PART: Data Normalization
+    if data_settings.data_do_normalization:
+        if data_settings.data_normalization_setting == 'bipolar':
+            do_bipolar = True
+            do_global = False
+        elif data_settings.data_normalization_setting == 'global':
+            do_bipolar = False
+            do_global = True
+        elif data_settings.data_normalization_setting == 'combined':
+            do_bipolar = True
+            do_global = True
+        else:
+            do_bipolar = False
+            do_global = False
+        print(f"... do data normalization")
+        data_class_frames_in = DataNormalization(mode=data_settings.data_normalization_mode,
+                                                 method=data_settings.data_normalization_method,
+                                                 do_bipolar=do_bipolar, do_global=do_global)
+        frames_in = data_class_frames_in.normalize(frames_in)
 
     # --- Mean waveform calculation and data augmentation
     frames_in = change_frame_size(frames_in, data_settings.data_sel_pos)
@@ -107,8 +127,8 @@ def prepare_training(path2data: str, data_settings: Config_Dataset,
     if data_settings.data_do_reduce_samples_per_cluster:
         print("... do data augmentation with reducing the samples per cluster")
         frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
-                                                             data_settings.data_num_samples_per_cluster,
-                                                             data_settings.data_do_shuffle)
+                                                             data_settings.data_num_samples_per_cluster, False)
+        # data_settings.data_do_shuffle)
 
     # --- PART: Calculate SNR if desired
     if data_settings.data_do_augmentation or data_settings.data_do_addnoise_cluster:
@@ -138,13 +158,6 @@ def prepare_training(path2data: str, data_settings: Config_Dataset,
         frames_in = np.append(frames_in, new_frames, axis=0)
         frames_cl = np.append(frames_cl, num_cluster + new_clusters, axis=0)
         frames_me = np.vstack([frames_me, new_mean])
-
-    # --- PART: Data Normalization
-    if data_settings.data_do_normalization:
-        data_class_frames_in = DataNormalization(mode="CPU", method = "minmax",  do_bipolar=False, do_global=False)
-        data_class_frames_me = DataNormalization(mode="CPU", method = "minmax",  do_bipolar=False, do_global=False)
-        frames_in = data_class_frames_in.normalize(frames_in)
-        frames_me = data_class_frames_me.normalize(frames_me)
 
     # --- Output
     check = np.unique(frames_cl, return_counts=True)

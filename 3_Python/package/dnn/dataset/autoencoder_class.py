@@ -7,12 +7,14 @@ from torch.utils.data import Dataset
 
 from package.dnn.pytorch_control import Config_Dataset
 from package.dnn.data_preprocessing import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
-from package.dnn.data_preprocessing import change_frame_size, reconfigure_cluster_with_cell_lib, generate_zero_frames, DataNormalization
+from package.dnn.data_preprocessing import change_frame_size, reconfigure_cluster_with_cell_lib, generate_zero_frames, \
+    DataNormalization
 from package.dnn.data_augmentation import *
 
 
 class DatasetAE_Class(Dataset):
     """Dataset Preparation for training autoencoder-based classifications"""
+
     def __init__(self, frames_raw: np.ndarray, frames_feat: np.ndarray,
                  cluster_id: np.ndarray, frames_cluster_me: np.ndarray,
                  cluster_dict=None, noise_std=0.1):
@@ -41,7 +43,7 @@ class DatasetAE_Class(Dataset):
 
 
 def prepare_training(path2data: str, data_settings: Config_Dataset, path2model: str,
-                     use_cell_bib=False, mode_classes=2,
+                     use_cell_bib=True, mode_classes=0,
                      use_median_for_mean=True, noise_std=0.1) -> DatasetAE_Class:
     """Preparing dataset incl. augmentation for spike-frame based training"""
     print("... loading and processing the dataset")
@@ -52,12 +54,27 @@ def prepare_training(path2data: str, data_settings: Config_Dataset, path2model: 
 
     # --- Using cell_bib for clustering
     if use_cell_bib:
-        frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(path2data, mode_classes, frames_in, frames_cl)
+        frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(path2data, mode_classes, frames_in,
+                                                                              frames_cl)
 
     # --- PART: Data Normalization
     if data_settings.data_do_normalization:
+        if data_settings.data_normalization_setting == 'bipolar':
+            do_bipolar = True
+            do_global = False
+        elif data_settings.data_normalization_setting == 'global':
+            do_bipolar = False
+            do_global = True
+        elif data_settings.data_normalization_setting == 'combined':
+            do_bipolar = True
+            do_global = True
+        else:
+            do_bipolar = False
+            do_global = False
         print(f"... do data normalization")
-        data_class_frames_in = DataNormalization(mode="CPU", method="minmax", do_bipolar=False, do_global=False)
+        data_class_frames_in = DataNormalization(mode=data_settings.data_normalization_mode,
+                                                 method=data_settings.data_normalization_method,
+                                                 do_bipolar=do_bipolar, do_global=do_global)
         frames_in = data_class_frames_in.normalize(frames_in)
 
     # --- PART: Mean waveform calculation and data augmentation
@@ -73,7 +90,7 @@ def prepare_training(path2data: str, data_settings: Config_Dataset, path2model: 
         frames_cl = frames_cl
     else:
         for i, id in enumerate(data_settings.data_exclude_cluster):
-            selX = np.where(frames_cl != id)
+            selX = np.where(frames_cl != i)
             frames_in = frames_in[selX[0], :]
             frames_cl = frames_cl[selX]
 
@@ -82,7 +99,7 @@ def prepare_training(path2data: str, data_settings: Config_Dataset, path2model: 
         print("... reducing the samples per cluster (for pre-training on dedicated hardware)")
         frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
                                                              data_settings.data_num_samples_per_cluster,
-                                                             data_settings.data_do_shuffle)
+                                                             do_shuffle=False)
 
     # --- PART: Calculate SNR if desired
     if data_settings.data_do_augmentation or data_settings.data_do_addnoise_cluster:

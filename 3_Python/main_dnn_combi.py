@@ -13,7 +13,7 @@ from package.dnn.dataset.autoencoder import prepare_training as prepare_training
 noise_std = 0
 use_cell_bib = False
 mode_cell_bib = 0
-do_plot = False
+do_plot = True
 
 # --- Main program
 if __name__ == "__main__":
@@ -82,10 +82,11 @@ if __name__ == "__main__":
         # --- Übergabe next run
         metric_snr_run.append((used_loss, used_snr, used_acc))
 
+    logsdirect = trainhandler.get_saving_path()
     del dataset, trainhandler
 
     # Specify the folder and file name
-    folder_path = logsdir
+    folder_path = logsdirect
     file_name = "Results_Loss_SNR_Acc.csv"
 
     # Create the folder if it doesn't exist
@@ -99,9 +100,9 @@ if __name__ == "__main__":
     with open(csv_file_path, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow("Loss")
-        writer.writerows(loss_ae)
+        writer.writerow(used_loss)
         writer.writerow("SNR")
-        writer.writerows(snr_ae)
+        writer.writerow(used_snr)
         writer.writerow("Accuracy")
-        writer.writerows(acc_class)
+        writer.writerow(used_acc)
     print("ENDE")

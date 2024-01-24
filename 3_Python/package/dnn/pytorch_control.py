@@ -63,6 +63,9 @@ class Config_Dataset:
     data_do_augmentation: bool
     data_num_augmentation: int
     data_do_normalization: bool
+    data_normalization_mode: str
+    data_normalization_method: str
+    data_normalization_setting: str
     data_do_addnoise_cluster: bool
     data_do_reduce_samples_per_cluster: bool
     data_num_samples_per_cluster: int
