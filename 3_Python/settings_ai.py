@@ -7,7 +7,7 @@ import package.dnn.models.spike_detection as sda_modes
 config_dataset = Config_Dataset(
     # --- Settings of Datasets
     data_path='../2_Data/00_Merged_Datasets',
-    data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted - Kopie.mat',  # settings here!
+    data_file_name='2023-11-24_Dataset-07_RGC_TDB_Merged.mat',  # settings here!
     # --- Data Augmentation
     data_do_augmentation=True,
     data_num_augmentation=100,
@@ -17,7 +17,7 @@ config_dataset = Config_Dataset(
     data_normalization_setting='combined',  # 'bipolar', 'global', ''
     data_do_addnoise_cluster=False,
     # --- Dataset Reduction
-    data_do_reduce_samples_per_cluster=False,
+    data_do_reduce_samples_per_cluster=True,
     data_num_samples_per_cluster=50_000,
     data_exclude_cluster=[],
     data_sel_pos=[]

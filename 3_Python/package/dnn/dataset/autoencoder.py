@@ -70,7 +70,7 @@ class DatasetAE(Dataset):
 
 
 def prepare_training(path2data: str, data_settings: Config_Dataset,
-                     use_cell_bib=False, mode_classes=0,
+                     use_cell_bib=True, mode_classes=1,
                      use_median_for_mean=True,
                      mode_train_ae=0, do_classification=False,
                      noise_std=0.1) -> DatasetAE:
@@ -85,6 +85,13 @@ def prepare_training(path2data: str, data_settings: Config_Dataset,
     # --- Using cell_bib for clustering
     if use_cell_bib:
         frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(path2data, mode_classes, frames_in, frames_cl)
+
+    # --- PART: Reducing samples per cluster (if too large)
+    if data_settings.data_do_reduce_samples_per_cluster:
+        print("... do data augmentation with reducing the samples per cluster")
+        frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
+                                                             data_settings.data_num_samples_per_cluster, False)
+        # data_settings.data_do_shuffle)
 
     # --- PART: Data Normalization
     if data_settings.data_do_normalization:
@@ -122,13 +129,6 @@ def prepare_training(path2data: str, data_settings: Config_Dataset,
             selX = np.where(frames_cl != id)
             frames_in = frames_in[selX[0], :]
             frames_cl = frames_cl[selX]
-
-    # --- PART: Reducing samples per cluster (if too large)
-    if data_settings.data_do_reduce_samples_per_cluster:
-        print("... do data augmentation with reducing the samples per cluster")
-        frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
-                                                             data_settings.data_num_samples_per_cluster, False)
-        # data_settings.data_do_shuffle)
 
     # --- PART: Calculate SNR if desired
     if data_settings.data_do_augmentation or data_settings.data_do_addnoise_cluster:

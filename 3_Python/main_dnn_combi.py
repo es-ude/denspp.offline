@@ -11,8 +11,8 @@ from package.dnn.dataset.autoencoder import prepare_training as prepare_training
 
 
 noise_std = 0
-use_cell_bib = False
-mode_cell_bib = 0
+use_cell_bib = True
+mode_cell_bib = 1
 do_plot = True
 
 # --- Main program

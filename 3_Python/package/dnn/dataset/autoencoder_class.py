@@ -43,7 +43,7 @@ class DatasetAE_Class(Dataset):
 
 
 def prepare_training(path2data: str, data_settings: Config_Dataset, path2model: str,
-                     use_cell_bib=True, mode_classes=0,
+                     use_cell_bib=True, mode_classes=1,
                      use_median_for_mean=True, noise_std=0.1) -> DatasetAE_Class:
     """Preparing dataset incl. augmentation for spike-frame based training"""
     print("... loading and processing the dataset")
@@ -56,6 +56,12 @@ def prepare_training(path2data: str, data_settings: Config_Dataset, path2model: 
     if use_cell_bib:
         frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(path2data, mode_classes, frames_in,
                                                                               frames_cl)
+    # --- PART: Reducing samples per cluster (if too large)
+    if data_settings.data_do_reduce_samples_per_cluster:
+        print("... reducing the samples per cluster (for pre-training on dedicated hardware)")
+        frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
+                                                             data_settings.data_num_samples_per_cluster,
+                                                             do_shuffle=False)
 
     # --- PART: Data Normalization
     if data_settings.data_do_normalization:
@@ -93,13 +99,6 @@ def prepare_training(path2data: str, data_settings: Config_Dataset, path2model: 
             selX = np.where(frames_cl != i)
             frames_in = frames_in[selX[0], :]
             frames_cl = frames_cl[selX]
-
-    # --- PART: Reducing samples per cluster (if too large)
-    if data_settings.data_do_reduce_samples_per_cluster:
-        print("... reducing the samples per cluster (for pre-training on dedicated hardware)")
-        frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
-                                                             data_settings.data_num_samples_per_cluster,
-                                                             do_shuffle=False)
 
     # --- PART: Calculate SNR if desired
     if data_settings.data_do_augmentation or data_settings.data_do_addnoise_cluster:
