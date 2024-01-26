@@ -117,15 +117,13 @@ class training_pytorch:
         self._path2log = str()
         self._path2temp = str()
         self._path2config = str()
+        self.use_only_cpu = False
 
-    def __setup_device(self, use_only_cpu=True) -> None:
-        """Setup PyTorch for Training
+    def __setup_device(self) -> None:
+        """Setup PyTorch for Training"""
 
-        Args:
-            use_only_cpu: Set if in the training oly the CPU should be used
-            """
         # Using GPU
-        if cuda.is_available() and not use_only_cpu:
+        if cuda.is_available() and not self.use_only_cpu:
             self.used_hw_gpu = cuda.get_device_name()
             self.used_hw_cpu = (f"{cpuinfo.get_cpu_info()['brand_raw']} "
                        f"(@ {1e-9 * cpuinfo.get_cpu_info()['hz_actual'][0]:.3f} GHz)")
@@ -133,7 +131,7 @@ class training_pytorch:
             self.used_hw_num = cuda.device_count()
             device0 = self.used_hw_gpu
         # Using Apple M1 Chip
-        elif backends.mps.is_available() and backends.mps.is_built() and self.os_type == "Darwin" and not use_only_cpu:
+        elif backends.mps.is_available() and backends.mps.is_built() and self.os_type == "Darwin" and not self.use_only_cpu:
             self.used_hw_cpu = "MP1"
             self.used_hw_gpu = 'None'
             self.used_hw_num = cuda.device_count()
@@ -174,13 +172,13 @@ class training_pytorch:
         self._path2log = join(self._path2save, f'logs')
         self._writer = SummaryWriter(self._path2log, comment=f"event_log_kfold{self._run_kfold:03d}")
 
-    def load_data(self, data_set, use_not_cpu=False) -> None:
+    def load_data(self, data_set) -> None:
         self.__setup_device()
         """Loading data for training and validation in DataLoader format into class"""
         self._do_kfold = True if self.settings.num_kfold > 1 else False
         self._model_addon = data_set.data_type
         self.cell_classes = data_set.frame_dict if data_set.cluster_name_available else []
-
+        num_workers = 0
         # --- Preparing datasets
         out_train = list()
         out_valid = list()
@@ -190,9 +188,9 @@ class training_pytorch:
                 subsamps_train = SubsetRandomSampler(idx_train)
                 subsamps_valid = SubsetRandomSampler(idx_valid)
                 out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train,
-                                            pin_memory=use_not_cpu, pin_memory_device=self.used_hw_dev.type))
+                                            pin_memory=not self.use_only_cpu,num_workers=num_workers, pin_memory_device=self.used_hw_dev.type))
                 out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid,
-                                            pin_memory=use_not_cpu, pin_memory_device=self.used_hw_dev.type))
+                                            pin_memory=not self.use_only_cpu,num_workers=num_workers ,pin_memory_device=self.used_hw_dev.type))
                 self._samples_train.append(subsamps_train.indices.size)
                 self._samples_valid.append(subsamps_valid.indices.size)
         else:
@@ -205,9 +203,9 @@ class training_pytorch:
             subsamps_train = SubsetRandomSampler(idx_train)
             subsamps_valid = SubsetRandomSampler(idx_valid)
             out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train,
-                                        pin_memory=use_not_cpu, pin_memory_device=self.used_hw_dev.type))
+                                        pin_memory=not self.use_only_cpu,num_workers=num_workers ,pin_memory_device=self.used_hw_dev.type))
             out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid,
-                                        pin_memory=use_not_cpu, pin_memory_device=self.used_hw_dev.type))
+                                        pin_memory=not self.use_only_cpu,num_workers=num_workers ,pin_memory_device=self.used_hw_dev.type))
             self._samples_train.append(subsamps_train.indices.size)
             self._samples_valid.append(subsamps_valid.indices.size)
 
