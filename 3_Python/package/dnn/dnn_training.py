@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import csv, os
 from os.path import join, exists
 from shutil import copy
 from scipy.io import loadmat
@@ -11,6 +12,7 @@ from package.dnn.pytorch_autoencoder import train_nn_autoencoder
 from package.dnn.dataset.autoencoder import prepare_training as get_dataset_ae
 from package.dnn.pytorch_classification import train_nn_classification
 from package.dnn.dataset.classification import prepare_training as get_dataset_class
+from package.dnn.dataset.autoencoder_class import prepare_training as get_dataset_ae_class
 from package.dnn.dataset.spike_detection import prepare_training as get_dataset_sda
 
 
@@ -58,6 +60,98 @@ def __dnn_train_autoencoder(config_data: Config_Dataset,
     plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                         path2save=logsdir, cl_dict=data_result['cl_dict'])
     plt.show(block=True)
+
+
+def __dnn_train_combi(config_dataset: Config_Dataset, config_train_ae: Config_PyTorch, config_train_class: Config_PyTorch,
+                      noise_std: 0.00, use_cell_bib=True, mode_cell_bib=1,  do_plot=True):
+    plt.close("all")
+    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
+    print("Training Autoencoder started")
+
+    metric_snr_run = list()
+    # ----------- Step #1: TRAINING AUTOENCODER
+    # --- Processing: Loading dataset and Do Autoencoder Training
+    dataset = get_dataset_ae(path2data=config_dataset.get_path2data(), data_settings=config_dataset,
+                             use_cell_bib=use_cell_bib, mode_classes=mode_cell_bib, noise_std=noise_std)
+
+    trainhandler = train_nn_autoencoder(config_train=config_train_ae, config_dataset=config_dataset)
+    trainhandler.load_model()
+    trainhandler.load_data(dataset)
+    loss_ae, snr_ae = trainhandler.do_training()[-1]
+    path2model = trainhandler.get_saving_path()
+    # --- Reducing
+    used_loss = loss_ae[-1]
+    used_snr = snr_ae[-1]
+    used_snr = (used_snr.min(), np.median(used_snr), used_snr.max())
+
+    if do_plot:
+        logsdir = trainhandler.get_saving_path()
+        data_result = trainhandler.do_validation_after_training()
+        data_mean = dataset.frames_me
+
+        results_training(
+            path=logsdir, cl_dict=data_result['cl_dict'], feat=data_result['feat'],
+            yin=data_result['input'], ypred=data_result['pred'], ymean=data_mean,
+            yclus=data_result['valid_clus'], snr=snr_ae
+        )
+        plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
+                            path2save=logsdir, cl_dict=data_result['cl_dict'])
+        plt.show(block=True)
+
+    del dataset, trainhandler
+    print("Training Autoencoder ended")
+
+    # ----------- Step #2: TRAINING CLASSIFIER
+    # --- Processing: Loading dataset and Do Classification
+    dataset = get_dataset_ae_class(path2data=config_dataset.get_path2data(), data_settings=config_dataset,
+                                   path2model=path2model,
+                                   use_cell_bib=use_cell_bib, mode_classes=mode_cell_bib,
+                                   noise_std=noise_std)
+    trainhandler = train_nn_classification(config_train=config_train_class, config_dataset=config_dataset)
+    trainhandler.load_model()
+    trainhandler.load_data(dataset)
+    acc_class = trainhandler.do_training(path2save=path2model)[-1]
+    # --- Reducing
+    used_acc = acc_class[-1]
+
+    if do_plot:
+        logsdir = trainhandler.get_saving_path()
+        data_result = trainhandler.do_validation_after_training()
+
+        plot_loss(acc_class, 'Acc.', path2save=logsdir)
+        prep_confusion(data_result['valid_clus'], data_result['yclus'], "training", "both", False,
+                       cl_dict=data_result['cl_dict'], path2save=logsdir)
+        plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
+                            path2save=logsdir, cl_dict=data_result['cl_dict'])
+        plt.show(block=False)
+    else:
+        # --- Übergabe next run
+        metric_snr_run.append((used_loss, used_snr, used_acc))
+
+    logsdirect = trainhandler.get_saving_path()
+    del dataset, trainhandler
+
+    # Specify the folder and file name
+    folder_path = logsdirect
+    file_name = "Results_Loss_SNR_Acc.csv"
+
+    # Create the folder if it doesn't exist
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
+    # Specify the complete file path
+    csv_file_path = os.path.join(folder_path, file_name)
+
+    # Writing to the CSV file
+    with open(csv_file_path, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow("Loss")
+        writer.writerow(used_loss)
+        writer.writerow("SNR")
+        writer.writerow(used_snr)
+        writer.writerow("Accuracy")
+        writer.writerow(used_acc)
+    print("ENDE")
 
 
 def __dnn_train_classification(config_data: Config_Dataset, config_train: Config_PyTorch,
@@ -153,7 +247,9 @@ def do_train_dnn(mode_train: int, noise_std_ae=0.05, mode_cell_bib=0, only_plot_
                                     mode_cell_bib=mode_cell_bib,
                                     only_plot_results=only_plot_results)
         case 3:
-            return NotImplementedError
+            __dnn_train_combi(config_dataset, config_train_ae, config_train_class,
+                              use_cell_bib=True, mode_cell_bib=mode_cell_bib, noise_std=noise_std_ae, do_plot=True)
+
         case 4:
             __dnn_train_classification(config_dataset, config_train_rgc,
                                        mode_cell_bib=mode_cell_bib,
