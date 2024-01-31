@@ -31,13 +31,15 @@ config_train_class = Config_PyTorch(
 
 config_data = Config_Dataset(
     # --- Settings of Datasets
-    data_path='../2_Data/00_Merged_Datasets',
+    #data_path='../2_Data/00_Merged_Datasets',
     #data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
-    data_file_name='2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted',
+    #data_file_name='2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted',
+    data_path='data',
+    data_file_name='2024-01-31_Dataset_Utah_Decoding_RPS_v1.mat',
     # --- Data Augmentation
-    data_do_augmentation=True,
+    data_do_augmentation=False,
     data_num_augmentation=10000,
-    data_do_normalization=True,
+    data_do_normalization=False,
     data_do_addnoise_cluster=False,
     # --- Dataset Reduction
     data_do_reduce_samples_per_cluster=False,
