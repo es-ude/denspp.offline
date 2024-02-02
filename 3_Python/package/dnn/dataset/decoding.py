@@ -36,8 +36,8 @@ def prepare_training(settings: Config_Dataset,
                      use_cell_bib=False, mode_classes=2) -> DatasetDecoder:
     """Preparing dataset incl. augmentation for spike-frame based training"""
     print("... loading and processing the dataset")
-    rawdata = loadmat(settings.get_path2data())
-    data_exp = rawdata['EXP_01']
+    rawdata = np.load(settings.get_path2data(), allow_pickle=True).item()
+    data_exp = rawdata['exp_000']
     print('TEST')
 
     # --- Output

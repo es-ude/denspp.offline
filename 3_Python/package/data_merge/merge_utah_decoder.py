@@ -1,5 +1,5 @@
 import os
-
+from datetime import datetime
 import numpy
 import pandas as pd
 import scipy.io
@@ -13,9 +13,11 @@ class DatasetDecoder:
     def __init__(self, path2save: str):
         self.folder_name = "06_Klaes_Caltech"
         self.data_type = '-NSP1-001_MERGED.mat'
-        self.name_for_saving = "Training_Dataset"
         self.path2save = path2save
         self._num_channels = 96
+
+        create_time = datetime.now().strftime("%Y-%m-%d")
+        self.name_for_saving = f"{create_time}_Dataset-KlaesNeuralDecoding"
 
     def generateDataset(self, path2folder: str) -> None:
         """Function for Generating Training from Human Brain Recordings (by using Utah array)
