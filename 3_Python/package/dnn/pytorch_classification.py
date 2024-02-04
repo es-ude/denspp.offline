@@ -2,7 +2,7 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import load, save, from_numpy
+from torch import load, save, from_numpy, inference_mode
 from scipy.io import savemat
 from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset, training_pytorch
 
@@ -22,14 +22,15 @@ class train_nn_classification(training_pytorch):
         self.model.train(True)
         for tdata in self.train_loader[self._run_kfold]:
             self.optimizer.zero_grad()
+            tdata_out = tdata['out'].to(self.used_hw_dev)
             pred_cl, dec_cl = self.model(tdata['in'].to(self.used_hw_dev))
-            loss = self.loss_fn(pred_cl, tdata['out'].to(self.used_hw_dev))
+            loss = self.loss_fn(pred_cl, tdata_out)
             loss.backward()
             self.optimizer.step()
 
             train_loss += loss.item()
             total_batches += 1
-            total_correct += int(sum(dec_cl == tdata['out']))
+            total_correct += int(sum(dec_cl == tdata_out))
             total_samples += len(tdata['in'])
 
         train_acc = total_correct / total_samples
@@ -45,13 +46,14 @@ class train_nn_classification(training_pytorch):
         total_samples = 0
 
         self.model.eval()
-        for vdata in self.valid_loader[self._run_kfold]:
-            pred_cl, dec_cl = self.model(vdata['in'].to(self.used_hw_dev))
+        with inference_mode():
+            for vdata in self.valid_loader[self._run_kfold]:
+                pred_cl, dec_cl = self.model(vdata['in'].to(self.used_hw_dev))
 
-            valid_loss += self.loss_fn(pred_cl, vdata['out'].to(self.used_hw_dev)).item()
-            total_batches += 1
-            total_correct += int(sum(dec_cl == vdata['out']))
-            total_samples += len(vdata['in'])
+                valid_loss += self.loss_fn(pred_cl, vdata['out'].to(self.used_hw_dev)).item()
+                total_batches += 1
+                total_correct += int(sum(dec_cl == vdata['out'].to(self.used_hw_dev)))
+                total_samples += len(vdata['in'])
 
         valid_acc = total_correct / total_samples
         valid_loss = valid_loss / total_batches
@@ -132,7 +134,7 @@ class train_nn_classification(training_pytorch):
 
         # --- Do the Inference with Best Model
         print(f"\nDoing the inference with validation data on best model")
-        model_inference = load(self.get_best_model()[0])
+        model_inference = load(self.get_best_model()[0]).to('cpu')
         yclus = model_inference(from_numpy(data_valid['in']))[1]
         yclus = yclus.detach().numpy()
 
