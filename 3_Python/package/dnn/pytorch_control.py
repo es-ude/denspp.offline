@@ -117,7 +117,7 @@ class training_pytorch:
         self._path2log = str()
         self._path2temp = str()
         self._path2config = str()
-        self.use_only_cpu = True
+        self.use_only_cpu = False
 
     def __setup_device(self) -> None:
         """Setup PyTorch for Training"""
