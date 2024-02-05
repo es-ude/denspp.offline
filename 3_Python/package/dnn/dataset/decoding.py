@@ -41,27 +41,36 @@ def prepare_training(settings: Config_Dataset,
     # --- Translating rawdata into stream data for dataset
     dataset_timestamps = list()
     dataset_decision = list()
-    for key, data_exp in data_raw.items():
-        for _, data_trial in data_exp.items():
-            events = data_trial['timestamps']
-            cluster = data_trial['cluster']
+    for _, data_exp in data_raw.items():
+        for key, data_trial in data_exp.items():
+            if 'trial_' in key:
+                events = data_trial['timestamps']
+                cluster = data_trial['cluster']
 
-            # --- Step #1: Generating empty transient array
-            length_time_window = np.zeros((len(events, )), dtype=np.uint32)
-            num_clusters = np.zeros((len(events, )), dtype=np.uint32)
-            for idx, event_ch in enumerate(events):
-                length_time_window[idx] = 0 if len(event_ch) == 0 else event_ch[-1]
-                num_clusters[idx] = 0 if len(event_ch) == 0 else np.unique(np.array(cluster[idx])).size
+                # --- Step #1: Generating empty transient array
+                length_time_window = np.zeros((len(events, )), dtype=np.uint32)
+                num_clusters = np.zeros((len(events, )), dtype=np.uint32)
+                for idx, event_ch in enumerate(events):
+                    length_time_window[idx] = 0 if len(event_ch) == 0 else event_ch[-1]
+                    num_clusters[idx] = 0 if len(event_ch) == 0 else np.unique(np.array(cluster[idx])).size
 
-            dt_time_window = int(1e-3 * data_trial['samplingrate'] * length_time_window_ms)
-            data_stream = np.zeros((len(events), num_clusters.max() if use_cluster else 1, int(1 + np.ceil(length_time_window.max()/dt_time_window))), dtype=np.uint16)
+                dt_time_window = int(1e-3 * data_trial['samplingrate'] * length_time_window_ms)
+                num_windows = int(1 + np.ceil(length_time_window.max()/dt_time_window))
+                data_stream = np.zeros((len(events), num_clusters.max() if use_cluster else 1, num_windows), dtype=np.uint16)
 
-            # --- Step #2: Generating transient signal of firing rate (Pre-Processing)
-            print("Test")
+                # --- Step #2: Generating transient signal of firing rate (Pre-Processing)
+                for idx, event_ch in enumerate(events):
+                    if len(event_ch) == 0:
+                        # Skip due to empty electrode events
+                        continue
+                    else:
+                        # "Slicing" the timestamps of choicen electrode
+                        event_ch0 = np.array(np.floor(np.array(event_ch) / dt_time_window), dtype=int)
+                        data_stream[idx, 0, event_ch0] += 1
 
-            # --- Step #3: Transfer result to output
-            dataset_timestamps.append(data_stream)
-            dataset_decision.append(data_trial['label'])
+                # --- Step #3: Transfer result to output
+                dataset_timestamps.append(data_stream)
+                dataset_decision.append(data_trial['label'])
 
     # --- Output
     return DatasetDecoder()

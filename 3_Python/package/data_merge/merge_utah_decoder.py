@@ -82,7 +82,8 @@ class DatasetDecoder:
 
     def __process_trial_data(self, loaded_nev_file, loaded_behaviour_file, trial_number: int, sampling_rate: int) -> dict:
         # --- Preparing data structure
-        data_event = [[] for _ in range(0, self._num_channels)]
+        data_event_used = [[] for _ in range(0, self._num_channels)]
+        data_event_orig = [[] for _ in range(0, self._num_channels)]
         data_cluster = [[] for _ in range(0, self._num_channels)]
         data_waveform = [[] for _ in range(0, self._num_channels)]
         data_behav = {'exp_says': loaded_behaviour_file['Trials']['ActionType'][0, trial_number][0],
@@ -108,21 +109,25 @@ class DatasetDecoder:
 
                 # --- Transfer to output
                 if not idx_true.size == 0:
-                    timestamps_used = timestamps[idx_true].tolist()
+                    timestamps_orig = timestamps[idx_true].tolist()
+                    timestamps_used = (timestamps[idx_true]-trial_start_time).tolist()
                     cluster_used = cluster[idx_true].tolist()
                     waveform_used = waveform[idx_true].tolist()
                 else:
+                    timestamps_orig = []
                     timestamps_used = []
                     cluster_used = []
                     waveform_used = []
 
                 num_electrode = int(electrode.split('Elec')[1]) - 1
-                data_event[num_electrode] = timestamps_used
+                data_event_orig[num_electrode] = timestamps_orig
+                data_event_used[num_electrode] = timestamps_used
                 data_cluster[num_electrode] = cluster_used
                 data_waveform[num_electrode] = waveform_used
 
         data_out = {
-            'timestamps': data_event,
+            'timestamps': data_event_used,
+            'timestamps_raw': data_event_orig,
             'cluster': data_cluster,
             'waveforms': data_waveform,
             'label': data_behav,
