@@ -1,3 +1,9 @@
 .idea/
 *.asv
 .DS_Store/
+
+3_Python/settings_ai.py
+3_Python/.idea
+3_Python/data
+3_Python/__pycache__
+3_Python/runs

@@ -110,7 +110,7 @@ class DatasetDecoder:
                 # --- Transfer to output
                 if not idx_true.size == 0:
                     timestamps_orig = timestamps[idx_true].tolist()
-                    timestamps_used = (timestamps[idx_true]-trial_start_time).tolist()
+                    timestamps_used = (timestamps[idx_true] - int(trial_start_time * sampling_rate)).tolist()
                     cluster_used = cluster[idx_true].tolist()
                     waveform_used = waveform[idx_true].tolist()
                 else:
