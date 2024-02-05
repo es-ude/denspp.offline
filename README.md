@@ -1,4 +1,4 @@
-# End-To-End Deep Neural Signal Pre-Processing (DeNSSP)
+# End-To-End Deep Neural Signal Pre-Processing (DeNSPP)
 This Python package is developed in the research project Sp:AI:ke, funded by MERCUR (Germany). This software framework enables a AI-enhanced developing of hardware accelerator in end-to-end neural signal processing pipelines for future neural devices (Brain-Computer Interfaces, retinal implants, ...).
 Actually, this framework supports the data analysis of invasive device which requires a processing of action potentials.
 
