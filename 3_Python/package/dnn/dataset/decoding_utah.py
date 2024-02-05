@@ -1,35 +1,38 @@
 import numpy as np
-from scipy.io import loadmat
 from torch import is_tensor, randn, Tensor
 from torch.utils.data import Dataset
 
 from package.dnn.pytorch_control import Config_Dataset
-from package.dnn.data_preprocessing_frames import reconfigure_cluster_with_cell_lib
 from package.dnn.data_augmentation_frames import *
 
 
 class DatasetDecoder(Dataset):
-    """Dataset Preparation for training Autoencoders"""
-    def __init__(self, spike_train: np.ndarray, classification: np.ndarray, cluster_dict=None):
-
-        self.size_output = 4
-        # --- Input Parameters
-        self.__input = np.array(spike_train, dtype=np.float32)
-        self.__output = np.array(classification, dtype=np.float32)
-        self.cluster_name_available = isinstance(cluster_dict, list)
-        self.frame_dict = cluster_dict
+    """Dataset Preparation for Training Neural Decoder"""
+    def __init__(self, spike_train: list, classification: list,
+                 cluster_dict: dict, use_patient_dec=True):
+        self.__input = spike_train
+        self.__output = classification
+        self.decoder_dict = cluster_dict
+        self.__use_patient_dec = use_patient_dec
 
     def __len__(self):
-        return self.__output.shape[0]
+        return len(self.__input)
 
     def __getitem__(self, idx):
         if is_tensor(idx):
             idx = idx.tolist()
 
-        cluster_id = self.__output[idx]
-        return {'in': self.__input[idx, :],
-                'out': self.__output[idx, :],
-                'class': cluster_id}
+        if self.__use_patient_dec:
+            decision = self.__output[idx]['patient_says']
+        else:
+            decision = self.__output[idx]['exp_says']
+
+        output = -1
+        for key in self.decoder_dict.keys():
+            if key in decision:
+                output = self.decoder_dict.get(decision)
+
+        return {'in': np.array(self.__input[idx], dtype=np.float32), 'out': output}
 
 
 def __generate_stream_empty_array(events: list, cluster: list,
@@ -89,6 +92,10 @@ def __determine_firing_rate(events: list, cluster: list, samples_time_window: in
     return data_stream0
 
 
+def translate_datastream_into_picture(data_raw: list, configuration: list) -> list:
+    return data_raw
+
+
 def prepare_training(settings: Config_Dataset,
                      length_time_window_ms=500, use_cluster=True,
                      use_cell_bib=False, mode_classes=2) -> DatasetDecoder:
@@ -96,29 +103,61 @@ def prepare_training(settings: Config_Dataset,
     print("... loading and processing the dataset")
     data_raw = np.load(settings.get_path2data(), allow_pickle=True).item()
 
-    # --- Pre-Processing: Do spike sorting (future content)
-    data_sorted = data_raw
-
     # --- Pre-Processing: Event -> Transient signal transformation
+    electrode_mapping = None
     dataset_timestamps = list()
     dataset_decision = list()
     dataset_waveform = list()
-    for _, data_exp in data_sorted.items():
+
+    for _, data_exp in data_raw.items():
+        if electrode_mapping is None:
+            electrode_mapping = data_exp['orientation']
+
         for key, data_trial in data_exp.items():
             if 'trial_' in key:
                 events = data_trial['timestamps']
                 cluster = data_trial['cluster']
                 samples_time_window = int(1e-3 * data_trial['samplingrate'] * length_time_window_ms)
+
                 data_stream = __determine_firing_rate(events, cluster, samples_time_window, use_cluster)
 
-                # --- Step #3: Transfer result to output
                 dataset_timestamps.append(data_stream)
                 dataset_decision.append(data_trial['label'])
                 dataset_waveform.append(data_trial['waveforms'])
-
-    # ---
+    del data_exp, data_trial, data_stream, key, events, cluster, samples_time_window
 
     # --- Pre-Processing: Mapping electrode to 2D-placement
+    dataset_timestamps0 = translate_datastream_into_picture(dataset_timestamps, electrode_mapping)
+    dataset_waveform0 = translate_datastream_into_picture(dataset_waveform, electrode_mapping)
+
+    # --- Creating dictionary with numbers
+    label_dict = dict()
+    num_label_types = 0
+    for label in dataset_decision:
+        used_label = label['patient_says']
+        if isinstance(used_label, str):
+            if used_label not in label_dict.keys():
+                label_dict.update({used_label: num_label_types})
+                num_label_types += 1
+    del num_label_types, label, used_label
+
+    # --- Counting dataset
+    label_count_label_free = [0 for _ in label_dict]
+    label_count_label_made = [0 for _ in label_dict]
+    for label in dataset_decision:
+        used_label = label['patient_says']
+        if isinstance(used_label, str):
+            idx = label_dict.get(used_label)
+            if label['decision'] == 'freeChoice':
+                label_count_label_free[idx] += 1
+            else:
+                label_count_label_made[idx] += 1
 
     # --- Output
-    return DatasetDecoder()
+    num_samples = sum(label_count_label_free) + sum(label_count_label_made)
+    print(f'... for training are in total {len(label_dict)} classes with {num_samples} samples available')
+    for idx, label in enumerate(label_dict):
+        print(f"\t class {idx} ({label}) --> {label_count_label_made[idx] + label_count_label_free[idx]} samples")
+
+    return DatasetDecoder(spike_train=dataset_timestamps0, classification=dataset_decision,
+                          cluster_dict=label_dict, use_patient_dec=True)

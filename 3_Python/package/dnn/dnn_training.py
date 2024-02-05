@@ -13,7 +13,7 @@ from package.dnn.dataset.autoencoder import prepare_training as get_dataset_ae
 from package.dnn.dataset.autoencoder_class import prepare_training as get_dataset_ae_class
 from package.dnn.dataset.classification import prepare_training as get_dataset_rgc
 from package.dnn.dataset.spike_detection import prepare_training as get_dataset_sda
-from package.dnn.dataset.decoding import prepare_training as get_dataset_decoder
+from package.dnn.dataset.decoding_utah import prepare_training as get_dataset_decoder
 
 
 def __dnn_train_ae(config_train: Config_PyTorch, config_data: Config_Dataset,
@@ -201,7 +201,7 @@ def __dnn_train_sda(config_train: Config_PyTorch, config_data: Config_Dataset,
 
 
 def __dnn_train_decoder(config_train: Config_PyTorch, config_data: Config_Dataset, do_plot=True, block_plot=True) -> None:
-    """Training routine for Spike Detection
+    """Training routine for Neural Decoding
        Args:
            config_train: Settings for PyTorch Training
            config_data: Settings for Dataset Generation
@@ -209,8 +209,23 @@ def __dnn_train_decoder(config_train: Config_PyTorch, config_data: Config_Datase
            block_plot: Blocking the plot outputs if do_plot is active
     """
     dataset_decoder = get_dataset_decoder(config_data)
-    print('Test')
-    #TODO: Pipeline aufbauen
+    dataset_dict = dataset_decoder.decoder_dict
+    trainhandler = train_nn_classification(config_train, config_data)
+    trainhandler.load_model()
+    trainhandler.load_data(dataset_decoder)
+    del dataset_decoder
+    epoch_acc = trainhandler.do_training()[-1]
+
+    # --- Post-Processing: Getting data, save and plot results
+    data_result = trainhandler.do_validation_after_training(3)
+    logsdir = trainhandler.get_saving_path()
+
+    if do_plot:
+        plt.close("all")
+        plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
+        plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=dataset_dict)
+        plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir, cl_dict=dataset_dict)
+        plt.show(block=block_plot)
 
 
 def check_settings_file() -> None:

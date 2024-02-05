@@ -87,8 +87,8 @@ class DatasetDecoder:
         data_cluster = [[] for _ in range(0, self._num_channels)]
         data_waveform = [[] for _ in range(0, self._num_channels)]
         data_behav = {'decision': loaded_behaviour_file['Trials']['Effector'][0, trial_number][0],
-                      'exp_says': loaded_behaviour_file['Trials']['ButtonPressed'][0, trial_number][0],
-                      'patient_says': loaded_behaviour_file['Trials']['ActionType'][0, trial_number][0]}
+                      'exp_says': loaded_behaviour_file['Trials']['ActionType'][0, trial_number][0],
+                      'patient_says': loaded_behaviour_file['Trials']['ButtonPressed'][0, trial_number][0]}
 
         # --- Loading data from experiment
         for electrode in loaded_nev_file.dtype.names:
