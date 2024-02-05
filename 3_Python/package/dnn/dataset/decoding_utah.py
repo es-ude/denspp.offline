@@ -12,8 +12,11 @@ class DatasetDecoder(Dataset):
                  cluster_dict: dict, use_patient_dec=True):
         self.__input = spike_train
         self.__output = classification
-        self.decoder_dict = cluster_dict
         self.__use_patient_dec = use_patient_dec
+
+        self.data_type = "Neural Decoder (Utah)"
+        self.cluster_name_available = True
+        self.frame_dict = cluster_dict
 
     def __len__(self):
         return len(self.__input)
@@ -28,9 +31,9 @@ class DatasetDecoder(Dataset):
             decision = self.__output[idx]['exp_says']
 
         output = -1
-        for key in self.decoder_dict.keys():
+        for key in self.frame_dict.keys():
             if key in decision:
-                output = self.decoder_dict.get(decision)
+                output = self.frame_dict.get(decision)
 
         return {'in': np.array(self.__input[idx], dtype=np.float32), 'out': output}
 

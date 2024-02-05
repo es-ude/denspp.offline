@@ -18,7 +18,7 @@ config_train_ae = Config_PyTorch(
 
 config_train_class = Config_PyTorch(
     # --- Settings of Models/Training
-    model=models_class.classifier_ae_v1(8, 6),
+    model=models_class.classifier_ae_v1(12, 3),
     loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
