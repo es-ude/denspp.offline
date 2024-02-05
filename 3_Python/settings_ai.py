@@ -34,7 +34,7 @@ config_data = Config_Dataset(
     #data_path='../2_Data/00_Merged_Datasets',
     #data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
     #data_file_name='2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted',
-    data_path='data',
+    data_path='C:/HomeOffice/Data_Neurosignal/00_Merged',
     data_file_name='2024-02-02_Dataset-KlaesNeuralDecoding.npy',
     # --- Data Augmentation
     data_do_augmentation=False,

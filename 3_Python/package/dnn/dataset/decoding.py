@@ -33,12 +33,35 @@ class DatasetDecoder(Dataset):
 
 
 def prepare_training(settings: Config_Dataset,
-                     use_cell_bib=False, mode_classes=2) -> DatasetDecoder:
+                     use_cell_bib=False, mode_classes=2, length_time_window_ms=10, use_cluster=False) -> DatasetDecoder:
     """Preparing dataset incl. augmentation for spike-frame based training"""
     print("... loading and processing the dataset")
-    rawdata = np.load(settings.get_path2data(), allow_pickle=True).item()
-    data_exp = rawdata['exp_000']
-    print('TEST')
+    data_raw = np.load(settings.get_path2data(), allow_pickle=True).item()
+
+    # --- Translating rawdata into stream data for dataset
+    dataset_timestamps = list()
+    dataset_decision = list()
+    for key, data_exp in data_raw.items():
+        for _, data_trial in data_exp.items():
+            events = data_trial['timestamps']
+            cluster = data_trial['cluster']
+
+            # --- Step #1: Generating empty transient array
+            length_time_window = np.zeros((len(events, )), dtype=np.uint32)
+            num_clusters = np.zeros((len(events, )), dtype=np.uint32)
+            for idx, event_ch in enumerate(events):
+                length_time_window[idx] = 0 if len(event_ch) == 0 else event_ch[-1]
+                num_clusters[idx] = 0 if len(event_ch) == 0 else np.unique(np.array(cluster[idx])).size
+
+            dt_time_window = int(1e-3 * data_trial['samplingrate'] * length_time_window_ms)
+            data_stream = np.zeros((len(events), num_clusters.max() if use_cluster else 1, int(1 + np.ceil(length_time_window.max()/dt_time_window))), dtype=np.uint16)
+
+            # --- Step #2: Generating transient signal of firing rate (Pre-Processing)
+            print("Test")
+
+            # --- Step #3: Transfer result to output
+            dataset_timestamps.append(data_stream)
+            dataset_decision.append(data_trial['label'])
 
     # --- Output
     return DatasetDecoder()
