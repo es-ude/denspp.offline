@@ -2,7 +2,7 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import load, save, from_numpy, inference_mode
+from torch import load, save, from_numpy, inference_mode, sum
 from scipy.io import savemat
 from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset, training_pytorch
 
@@ -30,10 +30,10 @@ class train_nn_classification(training_pytorch):
 
             train_loss += loss.item()
             total_batches += 1
-            total_correct += int(sum(dec_cl == tdata_out))
+            total_correct += sum(dec_cl == tdata_out)  #hier optimieren
             total_samples += len(tdata['in'])
 
-        train_acc = total_correct / total_samples
+        train_acc = int(total_correct) / total_samples
         train_loss = train_loss / total_batches
 
         return train_loss, train_acc
@@ -52,7 +52,7 @@ class train_nn_classification(training_pytorch):
 
                 valid_loss += self.loss_fn(pred_cl, vdata['out'].to(self.used_hw_dev)).item()
                 total_batches += 1
-                total_correct += int(sum(dec_cl == vdata['out'].to(self.used_hw_dev)))
+                total_correct += int(sum(dec_cl == vdata['out'].to(self.used_hw_dev)))  # hier optimieren
                 total_samples += len(vdata['in'])
 
         valid_acc = total_correct / total_samples
