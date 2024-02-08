@@ -1,3 +1,4 @@
+import numpy
 import numpy as np
 from torch import is_tensor, randn, Tensor
 from torch.utils.data import Dataset
@@ -95,8 +96,31 @@ def __determine_firing_rate(events: list, cluster: list, samples_time_window: in
     return data_stream0
 
 
-def translate_datastream_into_picture(data_raw: list, configuration: list) -> list:
-    return data_raw
+def translate_datastream_into_picture(data_raw: list, configuration: dict) -> list:
+    """ Translate data stream into picture format """
+    picture_data_raw = []
+    picture_data_point = None
+    labels = configuration['label']
+
+    for data_point in data_raw:
+        for elecID, data in enumerate(data_point):
+
+
+            """this is the case where we have shape 96,2,12 electrodes,clusters and spikes"""
+            if picture_data_point is None:
+                """we do this because some data points have a shape of (2,11) instead of (2,12)"""
+                picture_data_point = np.zeros((10, 10, data.shape[0], data.shape[1]), dtype=np.uint16)
+
+            for label in labels:
+                if f"elec{elecID + 1}" == label:
+                    row = configuration['row'][95 - elecID]  # TODO: magic number loswerden
+                    col = configuration['col'][95 - elecID]
+                    picture_data_point[col, row] = data
+
+        picture_data_raw.append(picture_data_point)
+        picture_data_point = None
+
+    return picture_data_raw
 
 
 def prepare_training(settings: Config_Dataset,
@@ -131,7 +155,7 @@ def prepare_training(settings: Config_Dataset,
 
     # --- Pre-Processing: Mapping electrode to 2D-placement
     dataset_timestamps0 = translate_datastream_into_picture(dataset_timestamps, electrode_mapping)
-    dataset_waveform0 = translate_datastream_into_picture(dataset_waveform, electrode_mapping)
+    # dataset_waveform0 = translate_datastream_into_picture(dataset_waveform, electrode_mapping)
 
     # --- Creating dictionary with numbers
     label_dict = dict()
