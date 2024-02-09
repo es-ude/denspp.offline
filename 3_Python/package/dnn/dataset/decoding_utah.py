@@ -96,24 +96,20 @@ def __determine_firing_rate(events: list, cluster: list, samples_time_window: in
     return data_stream0
 
 
-def translate_datastream_into_picture(data_raw: list, configuration: dict) -> list:
-    """ Translate data stream into picture format """
+def translate_ts_datastream_into_picture(data_raw: list, configuration: dict) -> list:
+    """ Translate timestamp data stream into picture format """
     picture_data_raw = []
     picture_data_point = None
     labels = configuration['label']
 
     for data_point in data_raw:
         for elecID, data in enumerate(data_point):
-
-
-            """this is the case where we have shape 96,2,12 electrodes,clusters and spikes"""
             if picture_data_point is None:
-                """we do this because some data points have a shape of (2,11) instead of (2,12)"""
                 picture_data_point = np.zeros((10, 10, data.shape[0], data.shape[1]), dtype=np.uint16)
 
             for label in labels:
                 if f"elec{elecID + 1}" == label:
-                    row = configuration['row'][95 - elecID]  # TODO: magic number loswerden
+                    row = configuration['row'][95 - elecID]
                     col = configuration['col'][95 - elecID]
                     picture_data_point[col, row] = data
 
@@ -122,6 +118,24 @@ def translate_datastream_into_picture(data_raw: list, configuration: dict) -> li
 
     return picture_data_raw
 
+def translate_wf_datastream_into_picture(data_raw: list, configuration: dict) -> list:
+    """ Translate waveform data stream into picture format """
+    picture_data_raw = []
+    labels = configuration['label']
+    picture_data_point = [[[] for _ in range(10)] for _ in range(10)]  # array of empty lists
+
+    for data_point in data_raw:
+        for elecID, data in enumerate(data_point):
+            for label in labels:
+                if f"elec{elecID + 1}" == label:  # electrodes from data start at 0, but in mapping at 1.
+                    row = configuration['row'][95 - elecID] # col, row range from 0-9 and point to the "correct" label from the mapping file
+                    col = configuration['col'][95 - elecID]
+                    picture_data_point[col][row] = data  # set list of lists as our list at col,row
+
+        picture_data_raw.append(picture_data_point)
+        picture_data_point = [[[] for _ in range(10)] for _ in range(10)]  # after each picture_data_point has been added reset array
+
+    return picture_data_raw
 
 def prepare_training(settings: Config_Dataset,
                      length_time_window_ms=500, use_cluster=True,
@@ -154,8 +168,8 @@ def prepare_training(settings: Config_Dataset,
     del data_exp, data_trial, data_stream, key, events, cluster, samples_time_window
 
     # --- Pre-Processing: Mapping electrode to 2D-placement
-    dataset_timestamps0 = translate_datastream_into_picture(dataset_timestamps, electrode_mapping)
-    # dataset_waveform0 = translate_datastream_into_picture(dataset_waveform, electrode_mapping)
+    dataset_timestamps0 = translate_ts_datastream_into_picture(dataset_timestamps, electrode_mapping)
+    dataset_waveform0 = translate_wf_datastream_into_picture(dataset_waveform, electrode_mapping)
 
     # --- Creating dictionary with numbers
     label_dict = dict()
