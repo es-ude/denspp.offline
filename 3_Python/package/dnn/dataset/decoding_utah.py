@@ -59,7 +59,6 @@ def __generate_stream_empty_array(events: list, cluster: list,
     num_windows = int(1 + np.ceil(length_time_window.max() / samples_time_window))
     return np.zeros((len(events), num_clusters.max() if use_cluster else 1, num_windows), dtype=np.uint16)
 
-
 def __determine_firing_rate(events: list, cluster: list, samples_time_window: int, use_cluster=False) -> np.ndarray:
     """Pre-Processing Method: Calculating the firing rate for specific
     Args:
@@ -118,6 +117,7 @@ def translate_ts_datastream_into_picture(data_raw: list, configuration: dict) ->
 
     return picture_data_raw
 
+
 def translate_wf_datastream_into_picture(data_raw: list, configuration: dict) -> list:
     """ Translate waveform data stream into picture format """
     picture_data_raw = []
@@ -136,6 +136,7 @@ def translate_wf_datastream_into_picture(data_raw: list, configuration: dict) ->
         picture_data_point = [[[] for _ in range(10)] for _ in range(10)]  # after each picture_data_point has been added reset array
 
     return picture_data_raw
+
 
 def prepare_training(settings: Config_Dataset,
                      length_time_window_ms=500, use_cluster=True,
@@ -200,5 +201,6 @@ def prepare_training(settings: Config_Dataset,
     for idx, label in enumerate(label_dict):
         print(f"\t class {idx} ({label}) --> {label_count_label_made[idx] + label_count_label_free[idx]} samples")
 
+    print("TEST")
     return DatasetDecoder(spike_train=dataset_timestamps0, classification=dataset_decision,
                           cluster_dict=label_dict, use_patient_dec=True)
