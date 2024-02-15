@@ -2,10 +2,11 @@ from torch import nn
 from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset
 import package.dnn.models.autoencoder_cnn as models_ae
 import package.dnn.models.autoencoder_class as models_class
+import package.dnn.models.autoencoder_embedded as models_ae_embedded
 
 config_train_ae = Config_PyTorch(
     # --- Settings of Models/Training
-    model=models_ae.cnn_ae_v4(32, 8),
+    model=models_ae_embedded.dnn_ae_v2(32, 8),
     loss='MSE',
     loss_fn=nn.MSELoss(),
     optimizer='Adam',
