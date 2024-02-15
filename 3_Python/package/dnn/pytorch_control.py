@@ -95,7 +95,6 @@ class training_pytorch:
         self.model = None
         self.loss_fn = None
         self.optimizer = None
-        self.data_set = None
 
         # --- Preparing options
         self.config_available = False
