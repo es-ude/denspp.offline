@@ -6,35 +6,33 @@ from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset
 class cnn_lstm_dec_v1(nn.Module):
     """Class of a convolutional Decoding for feature extraction"""
 
-    def __init__(self):
+    def __init__(self, num_clusters=1):
         super().__init__()
         self.out_modelname = 'cnn_lstm_dec_v1'
         self.out_modeltyp = 'Decoder'
         self.model_embedded = False
-        self.model_shape = (10, 10, 2)
+        self.model_shape = (10, 10, num_clusters)
         do_bias_train = True
-        kernel_layer = [2, 10 , 32, 1]
+        kernel_layer = [num_clusters, 10, 32, 1]
 
         kernel_stride = [2, 2, 1]
         kernel_padding = [0, 0, 0]
         kernel_out = [0, 0, 0]
 
         self.cnn_1 = nn.Sequential(
-
-            nn.Conv2d(kernel_layer[0], kernel_layer[1], kernel_size=(3,3) ,stride=kernel_stride[0], padding=kernel_padding[0]),
+            nn.Conv2d(kernel_layer[0], kernel_layer[1], kernel_size=(3,3),
+                      stride=kernel_stride[0], padding=kernel_padding[0]),
             nn.ReLU(),
-
-            nn.Conv2d(kernel_layer[1], kernel_layer[2],(3,3),stride=kernel_stride[0], padding=kernel_padding[0]),
-            nn.ReLU(),
-
+            nn.Conv2d(kernel_layer[1], kernel_layer[2],(3,3),
+                      stride=kernel_stride[0], padding=kernel_padding[0]),
+            nn.ReLU()
         )
 
         self.flatten = nn.Flatten(start_dim=1)
-
         self.lstm_decoder = nn.Sequential(
-
         #nn.LSTMCell()
         )
+
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
         #x0 = unsqueeze(x, dim=1)
         cnnFeatuers = self.cnn_1(x)
@@ -43,7 +41,7 @@ class cnn_lstm_dec_v1(nn.Module):
         #decoded0 = unsqueeze(decoded0, dim=1)
         #decoded = self.decoder(decoded0)
 
-        return self.flatten(cnnFeatuers)
+        return self.flatten(cnnFeatuers), self.flatten(cnnFeatuers)
 
 
 config_train_dec = Config_PyTorch(
