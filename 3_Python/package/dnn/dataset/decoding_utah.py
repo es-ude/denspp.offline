@@ -164,6 +164,23 @@ def prepare_training(settings: Config_Dataset,
 
                 samples_time_window = int(1e-3 * data_trial['samplingrate'] * length_time_window_ms)
 
+                maxAmuountElement = 0
+                indexOfMaxAmountList = None
+                listWithMaxAmountElement = None
+                for indexList, List in enumerate(events):
+                    amountOfElement = len(List)
+                    if amountOfElement > maxAmuountElement:
+                        maxAmuountElement = amountOfElement
+                        listWithMaxAmountElement = List
+                        indexOfMaxAmountList = indexList
+                listWithMaxAmountElement
+                print("Test")
+                #for indexList in events
+
+
+
+
+
                 data_stream = __determine_firing_rate(events, cluster, samples_time_window, use_cluster)
 
                 dataset_timestamps.append(data_stream)
