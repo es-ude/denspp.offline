@@ -47,7 +47,7 @@ config_data = Config_Dataset(
     #data_path='../2_Data/00_Merged_Datasets',
     #data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
     #data_file_name='2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted',
-    data_path='C:/Users/Muskelgurke/Downloads/',
+    data_path='C:/spaikeDenSppDataset/',
     data_file_name='2024-02-05_Dataset-KlaesNeuralDecoding.npy',
     # --- Data Augmentation
     data_do_augmentation=False,
@@ -56,7 +56,7 @@ config_data = Config_Dataset(
     data_do_addnoise_cluster=False,
     # --- Dataset Reduction
     data_do_reduce_samples_per_cluster=False,
-    data_num_samples_per_cluster= 0,
+    data_num_samples_per_cluster=0,
     data_exclude_cluster=[],
     data_sel_pos=[]
 )

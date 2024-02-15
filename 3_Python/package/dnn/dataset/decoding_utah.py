@@ -83,10 +83,12 @@ def __determine_firing_rate(events: list, cluster: list, samples_time_window: in
                 for cluster_num in np.unique(ch_cluster):
                     sel_event0 = np.argwhere(ch_cluster == cluster_num).flatten()
                     event_ch0 = np.array(np.floor(ch_event0[sel_event0] / samples_time_window), dtype=int)
+
                     event_val = np.unique(event_ch0, return_counts=True)
                     for idy, pos in enumerate(event_val[0]):
                         data_stream0[idx, cluster_num, pos] += event_val[1][idy]
             else:
+
                 event_ch0 = np.array(np.floor(ch_event0 / samples_time_window), dtype=int)
                 event_val = np.unique(event_ch0, return_counts=True)
                 for idy, pos in enumerate(event_val[0]):
@@ -139,7 +141,7 @@ def translate_wf_datastream_into_picture(data_raw: list, configuration: dict) ->
 
 
 def prepare_training(settings: Config_Dataset,
-                     length_time_window_ms=500, use_cluster=True,
+                     length_time_window_ms=500, use_cluster=False,
                      use_cell_bib=False, mode_classes=2) -> DatasetDecoder:
     """Preparing dataset incl. augmentation for spike-frame based training"""
     print("... loading and processing the dataset")
@@ -159,6 +161,7 @@ def prepare_training(settings: Config_Dataset,
             if 'trial_' in key:
                 events = data_trial['timestamps']
                 cluster = data_trial['cluster']
+
                 samples_time_window = int(1e-3 * data_trial['samplingrate'] * length_time_window_ms)
 
                 data_stream = __determine_firing_rate(events, cluster, samples_time_window, use_cluster)
@@ -166,6 +169,7 @@ def prepare_training(settings: Config_Dataset,
                 dataset_timestamps.append(data_stream)
                 dataset_decision.append(data_trial['label'])
                 dataset_waveform.append(data_trial['waveforms'])
+
     del data_exp, data_trial, data_stream, key, events, cluster, samples_time_window
 
     # --- Pre-Processing: Mapping electrode to 2D-placement
