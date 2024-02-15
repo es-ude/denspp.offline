@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset
 # Using Elastic-AI.creator version: 0.57.1
-from elasticai-creator.nn import Sequential
-from elasticai-creator.nn.fixed_point import Linear, BatchNormedLinear, HardTanh
+from elasticai.creator.nn import Sequential
+from elasticai.creator.nn.fixed_point import Linear, BatchNormedLinear, HardTanh
 
 
 class dnn_ae_v2(nn.Module):
