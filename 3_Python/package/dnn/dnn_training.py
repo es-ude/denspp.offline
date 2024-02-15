@@ -30,7 +30,6 @@ def __dnn_train_ae(config_train: Config_PyTorch, config_data: Config_Dataset,
     use_cell_bib = not (mode_cell_bib == 0)
     use_cell_mode = 0 if not use_cell_bib else mode_cell_bib - 1
 
-    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
     # --- Processing: Loading dataset and Do Training
     dataset = get_dataset_ae(settings=config_data,
                              use_cell_bib=use_cell_bib, mode_classes=use_cell_mode,
@@ -76,7 +75,6 @@ def __dnn_train_ae_class(config_train_ae: Config_PyTorch, config_train_class: Co
     use_cell_mode = 0 if not use_cell_bib else mode_cell_bib - 1
 
     metric_snr_run = list()
-    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
     # ----------- Step #1: TRAINING AUTOENCODER
     # --- Processing: Loading dataset and Do Autoencoder Training
     dataset = get_dataset_ae(settings=config_data, use_cell_bib=use_cell_bib, mode_classes=use_cell_mode,
@@ -133,7 +131,6 @@ def __dnn_train_ae_class(config_train_ae: Config_PyTorch, config_train_class: Co
         metric_snr_run.append((last_loss, last_snr, last_class))
 
     del dataset, trainhandler
-    print("ENDE")
 
 
 def __dnn_train_rgc_class(config_train: Config_PyTorch, config_data: Config_Dataset,
@@ -149,7 +146,6 @@ def __dnn_train_rgc_class(config_train: Config_PyTorch, config_data: Config_Data
     use_cell_bib = not (mode_cell_bib == 0)
     use_cell_mode = 0 if not use_cell_bib else mode_cell_bib-1
 
-    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
     # ---Loading Data, Do Training and getting the results
     dataset = get_dataset_rgc(settings=config_data, use_cell_bib=use_cell_bib, mode_classes=use_cell_mode)
     trainhandler = train_nn_classification(config_train, config_data)
@@ -183,7 +179,6 @@ def __dnn_train_sda(config_train: Config_PyTorch, config_data: Config_Dataset,
         block_plot: Blocking the plot outputs if do_plot is active
     """
 
-    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
     # --- Processing: Loading Data and Do Training
     dataset = get_dataset_sda(settings=config_data, threshold=4)
     dataset_dict = dataset.sda_dict
@@ -233,6 +228,8 @@ def do_train_dnn(mode_train: int, noise_std_ae=0.05, mode_cell_bib=0, do_plot=Tr
         block_plot: Blocking the plot outputs if do_plot is active
     """
     from settings_ai import config_train_ae, config_train_class, config_data
+
+    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
     match mode_train:
         case 0:
             __dnn_train_ae(config_train_ae, config_data, mode_ae=0, noise_std=noise_std_ae,
@@ -258,3 +255,5 @@ def do_train_dnn(mode_train: int, noise_std_ae=0.05, mode_cell_bib=0, do_plot=Tr
                                 do_plot=do_plot, block_plot=block_plot)
         case _:
             print("Wrong model!")
+
+    print("\nThe End")
