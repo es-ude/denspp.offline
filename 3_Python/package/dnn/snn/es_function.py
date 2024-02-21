@@ -10,7 +10,7 @@ class early_stoping:
         self.best_model = None
         self.counter = 0
 
-    def __call__(self, net, valid_loss, stop = False):
+    def __call__(self, net, valid_loss, stop=False):
         done = stop
         # generate initial state
         if self.best_loss == None:
@@ -36,4 +36,3 @@ class early_stoping:
             return True
 
         return False
-

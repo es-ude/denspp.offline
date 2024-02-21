@@ -5,8 +5,8 @@
 from snntorch import functional as SF
 from snntorch import utils
 #from snntorch import spikeplot as splt
-import package.neuromorph.neuro_snn.scr.nn_snntorch as Network
-import package.neuromorph.neuro_snn.scr.net_utility as nutil
+import package.dnn.snn.pytorch_snn_control as Network
+import package.dnn.snn.net_utility as nutil
 
 import torch
 #import torch.nn as nn
@@ -14,7 +14,7 @@ import torch
 #from torchvision import datasets, transforms
 #import torch.nn.functional as F
 
-import scr.plot_snn as show
+import package.dnn.snn.plot_snn as show
 
 import matplotlib.pyplot as plt
 from scipy.io import savemat
