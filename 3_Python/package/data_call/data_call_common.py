@@ -112,7 +112,7 @@ class DataController(DataLoader):
                     idx2 = 0
                     idx3 = -1
 
-                spike_xout.append(spikepos_in[idx][idx2:idx3])
+                spike_xout.append(spikepos_in[idx][idx2:idx3] - idx0)
                 spike_cout.append(cluster_in[idx][idx2:idx3])
 
             # Übergabe

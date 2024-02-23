@@ -15,7 +15,7 @@ def do_data_transfer_timeseries_vivado(path: str) -> None:
     print('\nTransfering time series signal (raw data) from neural datasets into Vivado testbenches')
     # --- Loading the src_neuro
     afe_set = Settings()
-    afe_set.SettingsDATA.t_range = [10, 12]
+    afe_set.SettingsDATA.t_range = [0.93, 1.63]
     afe = Pipeline(afe_set)
     # ------ Loading Data: Getting the data
     print("... loading the datasets")
@@ -25,7 +25,8 @@ def do_data_transfer_timeseries_vivado(path: str) -> None:
     datahandler.do_resample()
     data = datahandler.get_data()
     afe.run_minimal(data.data_raw[0])
-    u_in = afe.signals.x_adc
+
+    trgg = 0
 
     # --- Transfer to verilog files
     if not os.path.exists(path):
@@ -37,11 +38,12 @@ def do_data_transfer_timeseries_vivado(path: str) -> None:
     verilog_time.create_testbench(
         path2save=path2save,
         output_bitsize=bit_size,
-        use_trigger=False,
+        use_trigger=True,
         fs=sampling_rate
     )
     verilog_time.translate_data_memory(
-        raw_data=u_in,
+        raw_data=afe.signals.x_adc,
+        trigger= (data.spike_xpos[0] - data.spike_offset_us[0] * data.data_fs_used * 1e6) / data.data_fs_used * afe.signals.fs_dig,
         path2save=path2save,
         output_bitsize=bit_size,
         fs=sampling_rate

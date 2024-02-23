@@ -15,9 +15,9 @@ from package.digital.sda import SpikeDetection, SettingsSDA
 class Settings:
     """Settings class for handling the src_neuro setting"""
     SettingsDATA = SettingsDATA(
-        path='../2_Data',
+        # path='../2_Data',
         # path='/media/erbsloeh/ExtremeSSD/0_Invasive',
-        # path='C:/HomeOffice/Arbeit/C_MERCUR_SpAIke/Daten',
+        path='C:/HomeOffice/Data_Neurosignal',
         data_set=1, data_case=0, data_point=0,
         t_range=[0],
         ch_sel=[],
@@ -26,10 +26,10 @@ class Settings:
     SettingsAMP = SettingsAMP(
         vss=-0.6, vdd=0.6,
         fs_ana=SettingsDATA.fs_resample,
-        gain=40,
-        n_filt=2, f_filt=[200, 4.5e3], f_type="band",
+        gain=100,
+        n_filt=2, f_filt=[200, 8e3], f_type="band",
         offset=0e-6, noise=False,
-        f_chop=10e3
+        f_chop=20e3
     )
     SettingsADC = SettingsADC(
         vdd=0.6, vss=-0.6,
@@ -113,6 +113,6 @@ class Pipeline:
         self.signals.u_in = uin
         u_inn = np.array(self.__preamp.settings.vcm)
         # --- Analogue Frontend
-        self.signals.u_pre, _ = self.__preamp.pre_amp_chopper(self.signals.u_in, u_inn)
-        # self.u_pre = self.preamp0.pre_amp(self.u_in, self.preamp0.settings.vcm)
+        # self.signals.u_pre, _ = self.__preamp.pre_amp_chopper(self.signals.u_in, u_inn)
+        self.signals.u_pre = self.__preamp.pre_amp(self.signals.u_in, u_inn)
         self.signals.x_adc = self.__adc.adc_ideal(self.signals.u_pre)[0]
