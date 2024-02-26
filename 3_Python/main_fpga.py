@@ -1,4 +1,6 @@
 import os
+
+import numpy as np
 from scipy.io import loadmat
 
 from package.data_call.data_call_common import DataController
@@ -7,6 +9,11 @@ import package.fpga.verilog_translate_frames as verilog_frame
 import package.fpga.verilog_translate_timeseries_1ch as verilog_time
 import package.fpga.veriloga_translate_timeseries_1ch as veriloga_time
 from package.fpga.verilog_translate_weights import read_model_weights
+
+
+def generate_xpos_label(xpos_in: np.ndarray, dx_us: int, fs_orig: float, fs_used: float) -> np.ndarray:
+    """Generating label ticks"""
+    return (xpos_in - int(1e-6 * dx_us * fs_orig)) / fs_orig * fs_used
 
 
 def do_data_transfer_timeseries_vivado(path: str) -> None:
@@ -41,9 +48,10 @@ def do_data_transfer_timeseries_vivado(path: str) -> None:
         use_trigger=True,
         fs=sampling_rate
     )
+    xpos = generate_xpos_label(data.spike_xpos[0], data.spike_offset_us[0], data.data_fs_used, afe.signals.fs_dig)
     verilog_time.translate_data_memory(
         raw_data=afe.signals.x_adc,
-        trigger= (data.spike_xpos[0] - data.spike_offset_us[0] * data.data_fs_used * 1e6) / data.data_fs_used * afe.signals.fs_dig,
+        trigger=xpos,
         path2save=path2save,
         output_bitsize=bit_size,
         fs=sampling_rate
