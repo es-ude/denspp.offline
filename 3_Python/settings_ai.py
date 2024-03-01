@@ -6,12 +6,12 @@ import package.dnn.models.autoencoder_embedded as models_ae_embedded
 
 config_train_ae = Config_PyTorch(
     # --- Settings of Models/Training
-    model=models_ae_embedded.dnn_ae_v2(32, 8),
+    model=models_ae.cnn_ae_v4(32, 8),
     loss='MSE',
     loss_fn=nn.MSELoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=10,
+    num_epochs=2,
     batch_size=512,
     data_split_ratio=0.25,
     data_do_shuffle=True
@@ -24,7 +24,7 @@ config_train_class = Config_PyTorch(
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=10,
+    num_epochs=2,
     batch_size=512,
     data_split_ratio=0.25,
     data_do_shuffle=True
