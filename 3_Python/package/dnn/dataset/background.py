@@ -24,3 +24,5 @@ class DatasetBAE(Dataset):
         spk_type = self.__spk_type[idx]
         cluster = self.__cluster[idx]
         return {'frame': frame, 'type': spk_type, 'cluster': cluster}
+
+
