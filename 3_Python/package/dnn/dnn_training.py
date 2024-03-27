@@ -212,7 +212,7 @@ def __dnn_train_decoder(config_train: Config_PyTorch, config_data: Config_Datase
     dataset_decoder = get_dataset_decoder(config_data)
     dataset_dict = dataset_decoder.frame_dict
     trainhandler = train_nn_rnn_classification(config_train, config_data)
-    trainhandler.load_model(print_model=False)
+    trainhandler.load_model()
     trainhandler.load_data(dataset_decoder)
     del dataset_decoder
     epoch_acc = trainhandler.do_training()[-1]

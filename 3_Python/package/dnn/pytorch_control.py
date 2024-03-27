@@ -201,10 +201,12 @@ class training_pytorch:
             idx_valid = idx[split_pos:]
             subsamps_train = SubsetRandomSampler(idx_train)
             subsamps_valid = SubsetRandomSampler(idx_valid)
-            out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train,
-                                        pin_memory=not self.use_only_cpu,num_workers=num_workers ,pin_memory_device=self.used_hw_dev.type))
-            out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid,
-                                        pin_memory=not self.use_only_cpu,num_workers=num_workers ,pin_memory_device=self.used_hw_dev.type))
+            out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train))
+                                        #pin_memory=not self.use_only_cpu, num_workers=num_workers,
+                                        #pin_memory_device=self.used_hw_dev.type))
+            out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
+                                        #pin_memory=not self.use_only_cpu, num_workers=num_workers,
+                                        #pin_memory_device=self.used_hw_dev.type))
             self._samples_train.append(subsamps_train.indices.size)
             self._samples_valid.append(subsamps_valid.indices.size)
 

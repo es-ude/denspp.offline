@@ -22,14 +22,15 @@ class train_nn_rnn_classification(training_pytorch):
         self.model.train(True)
         for tdata in self.train_loader[self._run_kfold]:
             self.optimizer.zero_grad()
-            pred_cl, dec_cl = self.model(tdata['in'].to(self.used_hw_dev))
-            loss = self.loss_fn(pred_cl, tdata['out'].to(self.used_hw_dev))
+            pred_con, pred_cl = self.model(tdata['in'].to(self.used_hw_dev))
+
+            loss = self.loss_fn(pred_con, tdata['out'].to(self.used_hw_dev))
             loss.backward()
             self.optimizer.step()
 
             train_loss += loss.item()
             total_batches += 1
-            total_correct += int(sum(dec_cl == tdata['out']))
+            total_correct += int(sum(pred_cl == tdata['out']))
             total_samples += len(tdata['in'])
 
         train_acc = total_correct / total_samples
@@ -125,7 +126,7 @@ class train_nn_rnn_classification(training_pytorch):
         return metrics_own
 
     def do_validation_after_training(self, num_output=2) -> dict:
-        """Performing the training with the best model after"""
+        """Performing the validation with the best model after training"""
         # --- Getting data from validation set for inference
         data_train = self.get_data_points(num_output, use_train_dataloader=True)
         data_valid = self.get_data_points(num_output, use_train_dataloader=False)
@@ -133,7 +134,8 @@ class train_nn_rnn_classification(training_pytorch):
         # --- Do the Inference with Best Model
         print(f"\nDoing the inference with validation data on best model")
         model_inference = load(self.get_best_model()[0])
-        yclus = model_inference(from_numpy(data_valid['in']))[1]
+        data_input = from_numpy(data_valid['in'])
+        yclus = model_inference(data_input)[1]
         yclus = yclus.detach().numpy()
 
         # --- Producing the output

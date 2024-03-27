@@ -16,19 +16,6 @@ config_train_ae = Config_PyTorch(
     data_split_ratio=0.25,
     data_do_shuffle=True
 )
-config_train_dec = Config_PyTorch(
-    # --- Settings of Models/Training
-    model= models_dec.cnn_lstm_dec_v1(),
-    loss='MSE',
-    loss_fn=nn.MSELoss(),
-    optimizer='Adam',
-    num_kfold=1,
-    num_epochs=10,
-    batch_size=512,
-    data_split_ratio=0.25,
-    data_do_shuffle=True
-)
-
 config_train_class = Config_PyTorch(
     # --- Settings of Models/Training
     model=models_class.classifier_ae_v1(12, 3),
@@ -42,16 +29,30 @@ config_train_class = Config_PyTorch(
     data_do_shuffle=True
 )
 
+config_train_dec = Config_PyTorch(
+    # --- Settings of Models/Training
+    model=models_dec.cnn_lstm_dec_v1(),
+    loss='Cross Entropy',
+    loss_fn=nn.CrossEntropyLoss(),
+    optimizer='Adam',
+    num_kfold=1,
+    num_epochs=20,
+    batch_size=20,
+    data_split_ratio=0.25,
+    data_do_shuffle=True
+)
+
 config_data = Config_Dataset(
     # --- Settings of Datasets
     #data_path='../2_Data/00_Merged_Datasets',
     #data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
     #data_file_name='2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted',
-    data_path='C:/spaikeDenSppDataset/',
+    #data_path='C:/spaikeDenSppDataset/',
+    data_path="C:\HomeOffice\Data_Neurosignal/00_Merged",
     data_file_name='2024-02-05_Dataset-KlaesNeuralDecoding.npy',
     # --- Data Augmentation
     data_do_augmentation=False,
-    data_num_augmentation= 0,
+    data_num_augmentation=0,
     data_do_normalization=False,
     data_do_addnoise_cluster=False,
     # --- Dataset Reduction

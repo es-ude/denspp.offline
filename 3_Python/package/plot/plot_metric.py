@@ -93,6 +93,8 @@ def plot_confusion(true_labels: list | np.ndarray,
 
     if isinstance(cl_dict, list):
         dict_available = not len(cl_dict) == 0
+    elif isinstance(cl_dict, dict):
+        dict_available = not len(cl_dict) == 0
     else:
         dict_available = False
 
@@ -104,8 +106,12 @@ def plot_confusion(true_labels: list | np.ndarray,
             max_key_length = len(keys) if len(keys) > max_key_length else max_key_length
         do_xticks_vertical = bool(max_key_length > 5) and np.unique(true_labels).size > 3
         use_cl_dict = list()
-        for idx in np.unique(true_labels):
-            use_cl_dict.append(cl_used[int(idx)])
+        if isinstance(cl_dict, dict):
+            for key in cl_dict.keys():
+                use_cl_dict.append(key)
+        else:
+            for idx in np.unique(true_labels):
+                use_cl_dict.append(cl_used[int(idx)])
 
         cmp = ConfusionMatrixDisplay.from_predictions(
             y_true=true_labels, y_pred=pred_labels, normalize='pred', display_labels=use_cl_dict
