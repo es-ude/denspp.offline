@@ -164,10 +164,10 @@ def plot_autoencoder_run(mark_feat: list, mark_idx: list,
 def plot_statistic_data(train_cl: np.ndarray | list, valid_cl=None, path2save='', cl_dict=None) -> None:
     """Plotting the statistics of the data"""
     do_plots_avai = isinstance(valid_cl, np.ndarray | list)
-    dict_available = isinstance(cl_dict, np.ndarray | list)
+    dict_available = isinstance(cl_dict, np.ndarray | list | dict)
     use_cl_dict = list()
     if dict_available:
-        if not isinstance(cl_dict, list):
+        if isinstance(cl_dict, np.ndarray):
             cl_dict0 = cl_dict.tolist()
         else:
             cl_dict0 = cl_dict
@@ -187,8 +187,12 @@ def plot_statistic_data(train_cl: np.ndarray | list, valid_cl=None, path2save=''
     axs[0].bar(check[0], check[1], color='k', width=0.8)
     if dict_available:
         if not len(cl_dict) == 0:
-            for idx in np.unique(train_cl):
-                use_cl_dict.append(cl_dict[int(idx)])
+            if isinstance(cl_dict, dict):
+                for key in cl_dict.keys():
+                    use_cl_dict.append(key)
+            else:
+                for idx in np.unique(train_cl):
+                    use_cl_dict.append(cl_dict[int(idx)])
             axs[0].set_xticks(check[0], (use_cl_dict if check[0].size != 1 else [use_cl_dict[0]]),
                               rotation=xtick_text)
     else:

@@ -1,9 +1,0 @@
-__pycache__
-.DS_Store
-
-appendix/*
-runs/*
-data/*
-experiments/runs/*
-venv/*
-settings_ai.py

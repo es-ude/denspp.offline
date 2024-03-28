@@ -31,6 +31,7 @@ class cnn_ae_v1(nn.Module):
             nn.BatchNorm1d(kernel_layer[3], affine=do_bias_train)
         )
         self.flatten = nn.Flatten(start_dim=1)
+
         self.decoder = nn.Sequential(
             nn.Tanh(),
             nn.ConvTranspose1d(kernel_layer[3], kernel_layer[2], kernel_size[2], stride=kernel_stride[2],
