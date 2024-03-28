@@ -49,7 +49,8 @@ def prepare_training(settings: Config_Dataset, use_cell_bib=False, mode_classes=
         # --- PART: Data Normalization
     if settings.data_do_normalization:
         print(f"... do data normalization")
-        frames_in = data_normalization_minmax(frames_in, do_bipolar=True, do_globalmax=False)
+        data_class_frames_in = DataNormalization(mode="CPU", method="minmax", do_bipolar=False, do_global=False)
+        frames_in = data_class_frames_in.normalize(frames_in)
 
     # --- PART: Reducing samples per cluster (if too large)
     if settings.data_do_reduce_samples_per_cluster:

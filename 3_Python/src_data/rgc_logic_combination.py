@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 from package.plot.plot_metric import plot_confusion
 
 
-def logic_combination(true_labels: np.ndarray, pred_labels: np.ndarray, translate_dict: list) -> [np.ndarray, np.ndarray]:
+def logic_combination(true_labels: np.ndarray, pred_labels: np.ndarray, translate_dict: list) -> [np.ndarray,
+                                                                                                  np.ndarray]:
     true_labels_new = np.zeros(shape=true_labels.shape, dtype=np.uint8)
     pred_labels_new = np.zeros(shape=pred_labels.shape, dtype=np.uint8)
 
@@ -34,12 +35,12 @@ if __name__ == '__main__':
     cell_dict_onoff = ['OFF', 'ON']
     translate_dict = [[0, 1], [2, 3]]
     true_labels_onoff, pred_labels_onoff = logic_combination(true_labels_orig, pred_labels_orig, translate_dict)
-    plot_confusion(true_labels_onoff, pred_labels_onoff, cell_dict_onoff, path2save, '_logic_on-off')
+    plot_confusion(true_labels_onoff, pred_labels_onoff, 'training', cell_dict_onoff, path2save, '_logic_on-off')
 
     # --- Logical combination for ON/OFF
     cell_dict_transus = ['Sustained', 'Transient']
     translate_dict = [[0, 2], [1, 3]]
     true_labels_transus, pred_labels_transus = logic_combination(true_labels_orig, pred_labels_orig, translate_dict)
-    plot_confusion(true_labels_transus, pred_labels_transus, cell_dict_transus, path2save, '_logic_transient-sustained')
+    plot_confusion(true_labels_transus, pred_labels_transus, 'training', cell_dict_transus, path2save, '_logic_transient-sustained')
 
     plt.show(block=True)

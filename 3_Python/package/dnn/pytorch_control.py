@@ -55,7 +55,7 @@ class Config_PyTorch:
 
 @dataclasses.dataclass(frozen=True)
 class Config_Dataset:
-    """Class for handling the pre-processing and generating the training dataset"""
+    """Class for handling preparation of dataset"""
     # --- Settings of Datasets
     data_path: str
     data_file_name: str
@@ -63,6 +63,9 @@ class Config_Dataset:
     data_do_augmentation: bool
     data_num_augmentation: int
     data_do_normalization: bool
+    data_normalization_mode: str
+    data_normalization_method: str
+    data_normalization_setting: str
     data_do_addnoise_cluster: bool
     data_do_reduce_samples_per_cluster: bool
     data_num_samples_per_cluster: int
@@ -155,16 +158,21 @@ class training_pytorch:
         if not exists("settings_ai"):
             shutil.copy()
 
-    def _init_train(self) -> None:
+    def _init_train(self, path2save='') -> None:
         """Do init of class for training"""
-        folder_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{self._index_folder}_{self._model_name}'
-        self._path2save = join(self._path2run, folder_name)
-        self._path2temp = join(self._path2save, f'temp')
-
         if not exists(self._path2run):
             mkdir(self._path2run)
 
-        mkdir(self._path2save)
+        if not path2save:
+            folder_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{self._index_folder}_{self._model_name}'
+            self._path2save = join(self._path2run, folder_name)
+        else:
+            self._path2save = path2save
+
+        if not exists(self._path2save):
+            mkdir(self._path2save)
+
+        self._path2temp = join(self._path2save, f'temp')
         mkdir(self._path2temp)
 
         self.model.to(device=self.used_hw_dev)
@@ -223,9 +231,9 @@ class training_pytorch:
         if print_model:
             summary(self.model, input_size=self.model.model_shape)
 
-    def _save_config_txt(self) -> None:
+    def _save_config_txt(self, addon='') -> None:
         """Writing the content of the configuration class in *.txt-file"""
-        self._path2config = join(self._path2save, 'config.txt')
+        self._path2config = join(self._path2save, f'config{addon}.txt')
         self.config_available = True
 
         with open(self._path2config, 'w') as txt_handler:
@@ -264,9 +272,9 @@ class training_pytorch:
         """Getting the path for saving files in aim folder"""
         return self._path2save
 
-    def get_best_model(self) -> list:
+    def get_best_model(self, type_model: str) -> list:
         """Getting the path to the best trained model"""
-        return glob(join(self._path2save, "*.pth"))
+        return glob(join(self._path2save, f"*{type_model}*.pth"))
 
     def _end_training_routine(self, timestamp_start: datetime, do_delete_temps=True) -> None:
         """Doing the last step of training routine"""
@@ -279,7 +287,7 @@ class training_pytorch:
         print(f'Training runs: {diff_string}')
 
         # Delete init model
-        init_model = glob(join(self._path2save, 'model_reset.pth'))
+        init_model = glob(join(self._path2save, '*_reset.pth'))
         for file in init_model:
             remove(file)
 

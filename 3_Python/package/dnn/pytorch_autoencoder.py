@@ -49,7 +49,7 @@ class train_nn_autoencoder(training_pytorch):
         valid_loss = valid_loss / total_batches
         return valid_loss
 
-    def __do_snr_epoch(self) -> np.ndarray:
+    def __do_snr_epoch(self) -> Tensor:
         """Do metric calculation during validation step of training"""
         self.model.eval()
         inc_snr = list()
@@ -60,9 +60,8 @@ class train_nn_autoencoder(training_pytorch):
             for idx, data in enumerate(vdata['in'].to(self.used_hw_dev)):
                 snr0 = self.__calculate_snr(data, data_mean[idx, :])
                 snr1 = self.__calculate_snr(pred_out[idx, :], data_mean[idx, :])
-                inc_snr.append((snr1 - snr0).detach().numpy())
-
-        return np.array(inc_snr)
+                inc_snr.append(snr1 - snr0)
+        return tensor(inc_snr)
 
     def __calculate_snr(self, yin: Tensor, ymean: Tensor) -> Tensor:
         """Calculating the signal-to-noise ratio [dB] of the input signal compared to mean waveform"""
@@ -70,18 +69,18 @@ class train_nn_autoencoder(training_pytorch):
         b0 = torch.sum((yin - ymean) ** 2)
         return 10 * log10(a0 / b0)
 
-    def do_training(self, do_init=True) -> list:
+    def do_training(self, path2save='') -> list:
         """Start model training incl. validation and custom-own metric calculation"""
-        if do_init:
-            self._init_train()
-            self._save_config_txt()
+        self._init_train(path2save=path2save)
+        self._save_config_txt('_ae')
+
         # --- Handling Kfold cross validation training
         if self._do_kfold:
             print(f"Starting Kfold cross validation training in {self.settings.num_kfold} steps")
 
         run_metric = list()
         path2model = str()
-        path2model_init = join(self._path2save, f'model_reset.pth')
+        path2model_init = join(self._path2save, f'model_ae_reset.pth')
         save(self.model.state_dict(), path2model_init)
         timestamp_start = datetime.now()
         timestamp_string = timestamp_start.strftime('%H:%M:%S')
@@ -116,7 +115,7 @@ class train_nn_autoencoder(training_pytorch):
                 # Tracking the best performance and saving the model
                 if valid_loss < best_loss[1]:
                     best_loss = [train_loss, valid_loss]
-                    path2model = join(self._path2temp, f'model_fold{fold:03d}_epoch{epoch:04d}.pth')
+                    path2model = join(self._path2temp, f'model_ae_fold{fold:03d}_epoch{epoch:04d}.pth')
                     save(self.model, path2model)
 
                 # Saving metrics after each epoch
@@ -142,7 +141,7 @@ class train_nn_autoencoder(training_pytorch):
 
         # --- Do the Inference with Best Model
         print(f"\nDoing the inference with validation data on best model")
-        model_test = load(self.get_best_model()[0])
+        model_test = load(self.get_best_model('ae')[0])
         feat_out, pred_out = model_test(from_numpy(data_valid['in']))
         feat_out = feat_out.detach().numpy()
         pred_out = pred_out.detach().numpy()
@@ -167,11 +166,11 @@ class train_nn_autoencoder(training_pytorch):
         # --- Producing the output
         output = dict()
         output.update({'settings': self.settings, 'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')})
-        output.update({'train_clus': data_train['class'], 'valid_clus': data_valid['class']})
+        output.update({'train_clus': data_train['cluster'], 'valid_clus': data_valid['cluster']})
         output.update({'input': data_valid['in'], 'feat': feat_out, 'pred': pred_out})
         output.update({'cl_dict': self.cell_classes})
 
         # --- Saving dict
-        savemat(join(self.get_saving_path(), 'results.mat'), output,
+        savemat(join(self.get_saving_path(), 'results_ae.mat'), output,
                 do_compression=True, long_field_names=True)
         return output

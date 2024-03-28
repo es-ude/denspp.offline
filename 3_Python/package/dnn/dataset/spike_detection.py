@@ -4,7 +4,7 @@ from torch import is_tensor
 from torch.utils.data import Dataset, DataLoader
 from package.dnn.pytorch_control import Config_Dataset
 from package.dnn.data_augmentation_frames import augmentation_reducing_samples
-from package.dnn.data_preprocessing_frames import data_normalization_minmax
+from package.dnn.data_preprocessing_frames import DataNormalization
 
 
 class DatasetSDA(Dataset):
@@ -68,7 +68,8 @@ def prepare_training(settings: Config_Dataset, threshold: int) -> DatasetSDA:
 
     # --- PART: Data Normalization
     if settings.data_do_normalization:
-        frames_in = data_normalization_minmax(frames_in)
+        data_class_frames_in = DataNormalization(mode="CPU", method="minmax", do_global=False)
+        frames_in = data_class_frames_in.normalize(frames_in)
 
     # --- Output
     check = np.unique(frames_cl, return_counts=True)
