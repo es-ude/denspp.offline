@@ -59,10 +59,10 @@ class train_nn_rnn_classification(training_pytorch):
 
         return valid_loss, valid_acc
 
-    def do_training(self) -> list:
+    def do_training(self, path2save='') -> list:
         """Start model training incl. validation and custom-own metric calculation"""
-        self._init_train()
-        self._save_config_txt()
+        self._init_train(path2save)
+        self._save_config_txt('_rnn')
 
         # --- Handling Kfold cross validation training
         if self._do_kfold:
@@ -70,7 +70,7 @@ class train_nn_rnn_classification(training_pytorch):
 
         metrics_own = list()
         path2model = str()
-        path2model_init = join(self._path2save, f'model_reset.pth')
+        path2model_init = join(self._path2save, f'model_rnn_reset.pth')
         save(self.model.state_dict(), path2model_init)
         timestamp_start = datetime.now()
         timestamp_string = timestamp_start.strftime('%H:%M:%S')
@@ -108,7 +108,7 @@ class train_nn_rnn_classification(training_pytorch):
                 if valid_loss < best_loss[1]:
                     best_loss = [train_loss, valid_loss]
                     best_acc = [train_acc, valid_acc]
-                    path2model = join(self._path2temp, f'model_fold{fold:03d}_epoch{epoch:04d}.pth')
+                    path2model = join(self._path2temp, f'model_rnn_fold{fold:03d}_epoch{epoch:04d}.pth')
                     save(self.model, path2model)
 
                 # Saving metrics after each epoch
@@ -133,7 +133,7 @@ class train_nn_rnn_classification(training_pytorch):
 
         # --- Do the Inference with Best Model
         print(f"\nDoing the inference with validation data on best model")
-        model_inference = load(self.get_best_model()[0])
+        model_inference = load(self.get_best_model('rnn')[0])
         data_input = from_numpy(data_valid['in'])
         yclus = model_inference(data_input)[1]
         yclus = yclus.detach().numpy()

@@ -5,7 +5,6 @@ from datetime import datetime
 from torch import Tensor, load, save, from_numpy, tensor, max, min, log10, sum, inference_mode
 from scipy.io import savemat
 from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset, training_pytorch
-from package.metric import calculate_snr
 
 
 class train_nn_autoencoder(training_pytorch):
@@ -150,27 +149,10 @@ class train_nn_autoencoder(training_pytorch):
         feat_out = feat_out.detach().numpy()
         pred_out = pred_out.detach().numpy()
 
-        # --- Calculating the improved SNR
-        snr_in = []
-        snr_out = []
-        for idx, _ in enumerate(pred_out):
-            snr_in.append(calculate_snr(data_valid['in'][idx, :], data_valid['mean'][idx, :]))
-            snr_out.append(calculate_snr(pred_out[idx, :], data_valid['mean'][idx, :]))
-
-        snr_in = np.array(snr_in)
-        snr_out = np.array(snr_out)
-        snr_inc = snr_out - snr_in
-
-        print(f"\nCalcuted SNR values from inference on validated datas")
-        print(f"- SNR_in: {np.median(snr_in):.2f} (median) | {np.max(snr_in):.2f} (max) | {np.min(snr_in):.2f} (min)")
-        print(
-            f"- SNR_out: {np.median(snr_out):.2f} (median) | {np.max(snr_out):.2f} (max) | {np.min(snr_out):.2f} (min)")
-        print(f"- SNR_inc: {np.median(snr_inc): .2f} (median)")
-
         # --- Producing the output
         output = dict()
         output.update({'settings': self.settings, 'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')})
-        output.update({'train_clus': data_train['cluster'], 'valid_clus': data_valid['cluster']})
+        output.update({'train_clus': data_train['class'], 'valid_clus': data_valid['class']})
         output.update({'input': data_valid['in'], 'feat': feat_out, 'pred': pred_out})
         output.update({'cl_dict': self.cell_classes})
 

@@ -12,7 +12,7 @@ from package.dnn.pytorch_rnn_class import train_nn_rnn_classification
 
 from package.dnn.dataset.autoencoder import prepare_training as get_dataset_ae
 from package.dnn.dataset.autoencoder_class import prepare_training as get_dataset_ae_class
-from package.dnn.dataset.classification import prepare_training as get_dataset_rgc
+from package.dnn.dataset.rgc_classification import prepare_training as get_dataset_rgc
 from package.dnn.dataset.spike_detection import prepare_training as get_dataset_sda
 from package.dnn.dataset.decoding_utah import prepare_training as get_dataset_decoder
 
@@ -80,8 +80,7 @@ def __dnn_train_ae_class(config_train_ae: Config_PyTorch, config_train_class: Co
     # ----------- Step #1: TRAINING AUTOENCODER
     # --- Processing: Loading dataset and Do Autoencoder Training
     dataset = get_dataset_ae(settings=config_data, use_cell_bib=use_cell_bib, mode_classes=use_cell_mode,
-                             mode_train_ae=mode_ae, noise_std=noise_std)
-
+                             mode_train_ae=mode_ae, noise_std=noise_std, do_classification=False)
     trainhandler = train_nn_autoencoder(config_train=config_train_ae, config_data=config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
@@ -136,7 +135,7 @@ def __dnn_train_ae_class(config_train_ae: Config_PyTorch, config_train_class: Co
 
 
 def __dnn_train_rgc_class(config_train: Config_PyTorch, config_data: Config_Dataset,
-                      mode_cell_bib=0, do_plot=True, block_plot=True) -> None:
+                          mode_cell_bib=0, do_plot=True, block_plot=True) -> None:
     """Training routine for Classification
         Args:
             config_train: Configuration for training the classifier
@@ -246,31 +245,31 @@ def do_train_dnn(mode_train: int, noise_std_ae=0.05, mode_cell_bib=0, do_plot=Tr
         do_plot: Doing the plots during the training routine
         block_plot: Blocking the plot outputs if do_plot is active
     """
-    from settings_ai import config_train_ae, config_train_class, config_train_dec, config_data
+    from settings_ai import config_train_ae, config_train_class, config_train_dec, config_dataset
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
 
     match mode_train:
         case 0:
-            __dnn_train_ae(config_train_ae, config_data, mode_ae=0, noise_std=noise_std_ae,
+            __dnn_train_ae(config_train_ae, config_dataset, mode_ae=0, noise_std=noise_std_ae,
                            mode_cell_bib=mode_cell_bib, do_plot=do_plot, block_plot=block_plot)
         case 1:
-            __dnn_train_ae(config_train_ae, config_data, mode_ae=1, noise_std=noise_std_ae,
+            __dnn_train_ae(config_train_ae, config_dataset, mode_ae=1, noise_std=noise_std_ae,
                            mode_cell_bib=mode_cell_bib, do_plot=do_plot, block_plot=block_plot)
         case 2:
-            __dnn_train_ae(config_train_ae, config_data, mode_ae=2, noise_std=noise_std_ae,
+            __dnn_train_ae(config_train_ae, config_dataset, mode_ae=2, noise_std=noise_std_ae,
                            mode_cell_bib=mode_cell_bib, do_plot=do_plot, block_plot=block_plot)
         case 3:
-            __dnn_train_ae_class(config_train_ae, config_train_class, config_data, mode_ae=0,
+            __dnn_train_ae_class(config_train_ae, config_train_class, config_dataset, mode_ae=0,
                                  noise_std=noise_std_ae, mode_cell_bib=mode_cell_bib,
                                  do_plot=do_plot, block_plot=block_plot)
         case 4:
-            __dnn_train_rgc_class(config_train_class, config_data, mode_cell_bib=mode_cell_bib,
+            __dnn_train_rgc_class(config_train_class, config_dataset, mode_cell_bib=mode_cell_bib,
                                   do_plot=do_plot, block_plot=block_plot)
         case 5:
-            __dnn_train_sda(config_train_class, config_data,
+            __dnn_train_sda(config_train_class, config_dataset,
                             do_plot=do_plot, block_plot=block_plot)
         case 6:
-            __dnn_train_decoder(config_train_dec, config_data,
+            __dnn_train_decoder(config_train_dec, config_dataset,
                                 do_plot=do_plot, block_plot=block_plot)
         case _:
             print("Wrong model!")

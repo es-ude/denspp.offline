@@ -1,5 +1,7 @@
 from src_data.merge_datasets_frames import get_frames_from_dataset, merge_frames_from_dataset, merge_data_from_diff_data
 from package.data_merge.merge_utah_decoder import DatasetDecoder
+from src_data.merge_datasets_sda import prepare_sda_dataset
+from src_data.merge_datasets_frames import merge_frames_from_dataset
 
 
 if __name__ == "__main__":
@@ -26,3 +28,12 @@ if __name__ == "__main__":
             # Decoding datset
             merge_handler = DatasetDecoder(path2file)
             merge_handler.generateDataset('./../..')
+        case 2:
+            # Spike Detection Algorithm
+            prepare_sda_dataset(
+                path2save=path2file,
+                process_points=[]
+            )
+            # --- Merging the frames to new cluster device
+            merge_frames_from_dataset()
+

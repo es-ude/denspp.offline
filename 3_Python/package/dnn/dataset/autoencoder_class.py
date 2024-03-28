@@ -144,25 +144,3 @@ def prepare_training(settings: Config_Dataset, path2model: str,
 
     return DatasetAE_Class(frames_raw=frames_in, frames_feat=frames_feat, cluster_id=frames_cl,
                            frames_cluster_me=frames_me, cluster_dict=frames_dict)
-
-
-if __name__ == "__main__":
-    config_data = Config_Dataset(
-        # --- Settings of Datasets
-        data_path='../2_Data/00_Merged_Datasets',
-        data_file_name='2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted',
-        # --- Data Augmentation
-        data_do_augmentation=False,
-        data_num_augmentation=0,
-        data_do_normalization=True,
-        data_do_addnoise_cluster=False,
-        # --- Dataset Reduction
-        data_do_reduce_samples_per_cluster=False,
-        data_num_samples_per_cluster=0,
-        data_exclude_cluster=[],
-        data_sel_pos=[]
-    )
-    dataset = prepare_training(config_data,
-                               do_classification=True,
-                               mode_train_ae=0)
-    print("Done")

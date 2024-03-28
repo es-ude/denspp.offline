@@ -77,12 +77,15 @@ Recommended_Config_PytorchSettings = Config_PyTorch(
 
 Recommended_Config_DatasetSettings = Config_Dataset(
     # --- Settings of Datasets
-    data_path='C:/Users/Muskelgurke/Downloads/',
-    data_file_name='2024-02-05_Dataset-KlaesNeuralDecoding.npy',
+    data_path='../2_Data/00_Merged_Datasets',
+    data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
     # --- Data Augmentation
     data_do_augmentation=False,
     data_num_augmentation=0,
     data_do_normalization=False,
+    data_normalization_mode='',
+    data_normalization_method='',
+    data_normalization_setting='',
     data_do_addnoise_cluster=False,
     data_do_reduce_samples_per_cluster=False,
     data_num_samples_per_cluster=0,
