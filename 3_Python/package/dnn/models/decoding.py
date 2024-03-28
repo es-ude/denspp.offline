@@ -1,4 +1,4 @@
-from torch import nn, Tensor, unsqueeze, argmax
+from torch import nn, Tensor, unsqueeze, argmax, squeeze
 from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset
 
 
@@ -6,44 +6,49 @@ from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset
 class cnn_lstm_dec_v1(nn.Module):
     """Class of a convolutional Decoding for feature extraction"""
 
-    def __init__(self):
+    def __init__(self, num_clusters=1, input_samples=12, output_sampes=3):
         super().__init__()
         self.out_modelname = 'cnn_lstm_dec_v1'
         self.out_modeltyp = 'Decoder'
         self.model_embedded = False
-        self.model_shape = (10, 10, 2)
+        self.model_shape = (1, num_clusters, 10, 10, input_samples)
         do_bias_train = True
-        kernel_layer = [2, 10 , 32, 1]
-
-        kernel_stride = [2, 2, 1]
+        # --- Settings for CNN
+        kernel_layer = [num_clusters, 10, 20]
+        kernel_stride = [3, 3, 2]
         kernel_padding = [0, 0, 0]
-        kernel_out = [0, 0, 0]
+        # --- Settings for DNN/LSTM
+        dense_layer_size = [40, 32, output_sampes]
 
         self.cnn_1 = nn.Sequential(
-
-            nn.Conv2d(kernel_layer[0], kernel_layer[1], kernel_size=(3,3) ,stride=kernel_stride[0], padding=kernel_padding[0]),
+            nn.Conv3d(kernel_layer[0], kernel_layer[1], kernel_size=(3, 3, 1),
+                      stride=kernel_stride[0], padding=kernel_padding[0]),
+            nn.BatchNorm3d(kernel_layer[1]),
             nn.ReLU(),
-
-            nn.Conv2d(kernel_layer[1], kernel_layer[2],(3,3),stride=kernel_stride[0], padding=kernel_padding[0]),
+            nn.Conv3d(kernel_layer[1], kernel_layer[2], kernel_size=(3, 3, 1),
+                      stride=kernel_stride[1], padding=kernel_padding[1]),
+            nn.BatchNorm3d(kernel_layer[2]),
+            nn.ReLU()
+        )
+        self.dnn_1 = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(dense_layer_size[0], dense_layer_size[1], bias=do_bias_train),
+            nn.BatchNorm1d(dense_layer_size[1]),
             nn.ReLU(),
-
+            nn.Linear(dense_layer_size[1], dense_layer_size[2], bias=do_bias_train),
+            nn.BatchNorm1d(dense_layer_size[2]),
+            nn.Softmax()
         )
 
-        self.flatten = nn.Flatten(start_dim=1)
-
+        self.flatten = nn.Flatten(start_dim=0)
         self.lstm_decoder = nn.Sequential(
-
-        #nn.LSTMCell()
+            #nn.LSTMCell()
         )
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
-        #x0 = unsqueeze(x, dim=1)
-        cnnFeatuers = self.cnn_1(x)
-        #encoded = self.encoder_linear(x0)
-        #decoded0 = self.decoder_linear(encoded)
-        #decoded0 = unsqueeze(decoded0, dim=1)
-        #decoded = self.decoder(decoded0)
 
-        return self.flatten(cnnFeatuers)
+    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+        cnn_feat = self.cnn_1(x)
+        pred_con = self.dnn_1(cnn_feat)
+        return pred_con, argmax(pred_con, 1)
 
 
 config_train_dec = Config_PyTorch(

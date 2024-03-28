@@ -2,13 +2,13 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import load, save, from_numpy, inference_mode, sum
+from torch import load, save, from_numpy
 from scipy.io import savemat
 from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset, training_pytorch
 
 
-class train_nn_classification(training_pytorch):
-    """Class for Handling the Training of Classifiers"""
+class train_nn_rnn_classification(training_pytorch):
+    """Class for Handling the Training of Classifiers within Recurrent Neural Networks"""
     def __init__(self, config_train: Config_PyTorch, config_data: Config_Dataset, do_train=True) -> None:
         training_pytorch.__init__(self, config_train, config_data, do_train)
 
@@ -22,18 +22,18 @@ class train_nn_classification(training_pytorch):
         self.model.train(True)
         for tdata in self.train_loader[self._run_kfold]:
             self.optimizer.zero_grad()
-            tdata_out = tdata['out'].to(self.used_hw_dev)
-            pred_cl, dec_cl = self.model(tdata['in'].to(self.used_hw_dev))
-            loss = self.loss_fn(pred_cl, tdata_out)
+            pred_con, pred_cl = self.model(tdata['in'].to(self.used_hw_dev))
+
+            loss = self.loss_fn(pred_con, tdata['out'].to(self.used_hw_dev))
             loss.backward()
             self.optimizer.step()
 
             train_loss += loss.item()
             total_batches += 1
-            total_correct += sum(dec_cl == tdata_out)  #hier optimieren
+            total_correct += int(sum(pred_cl == tdata['out']))
             total_samples += len(tdata['in'])
 
-        train_acc = int(total_correct) / total_samples
+        train_acc = total_correct / total_samples
         train_loss = train_loss / total_batches
 
         return train_loss, train_acc
@@ -46,14 +46,13 @@ class train_nn_classification(training_pytorch):
         total_samples = 0
 
         self.model.eval()
-        with inference_mode():
-            for vdata in self.valid_loader[self._run_kfold]:
-                pred_cl, dec_cl = self.model(vdata['in'].to(self.used_hw_dev))
+        for vdata in self.valid_loader[self._run_kfold]:
+            pred_cl, dec_cl = self.model(vdata['in'].to(self.used_hw_dev))
 
-                valid_loss += self.loss_fn(pred_cl, vdata['out'].to(self.used_hw_dev)).item()
-                total_batches += 1
-                total_correct += int(sum(dec_cl == vdata['out'].to(self.used_hw_dev)))  # hier optimieren
-                total_samples += len(vdata['in'])
+            valid_loss += self.loss_fn(pred_cl, vdata['out'].to(self.used_hw_dev)).item()
+            total_batches += 1
+            total_correct += int(sum(dec_cl == vdata['out']))
+            total_samples += len(vdata['in'])
 
         valid_acc = total_correct / total_samples
         valid_loss = valid_loss / total_batches
@@ -127,15 +126,16 @@ class train_nn_classification(training_pytorch):
         return metrics_own
 
     def do_validation_after_training(self, num_output=2) -> dict:
-        """Performing the training with the best model after"""
+        """Performing the validation with the best model after training"""
         # --- Getting data from validation set for inference
         data_train = self.get_data_points(num_output, use_train_dataloader=True)
         data_valid = self.get_data_points(num_output, use_train_dataloader=False)
 
         # --- Do the Inference with Best Model
         print(f"\nDoing the inference with validation data on best model")
-        model_inference = load(self.get_best_model()[0]).to('cpu')
-        yclus = model_inference(from_numpy(data_valid['in']))[1]
+        model_inference = load(self.get_best_model()[0])
+        data_input = from_numpy(data_valid['in'])
+        yclus = model_inference(data_input)[1]
         yclus = yclus.detach().numpy()
 
         # --- Producing the output

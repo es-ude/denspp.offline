@@ -8,6 +8,7 @@ from package.plot.plot_metric import plot_confusion, plot_loss
 from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset
 from package.dnn.pytorch_autoencoder import train_nn_autoencoder
 from package.dnn.pytorch_classification import train_nn_classification
+from package.dnn.pytorch_rnn_class import train_nn_rnn_classification
 
 from package.dnn.dataset.autoencoder import prepare_training as get_dataset_ae
 from package.dnn.dataset.autoencoder_class import prepare_training as get_dataset_ae_class
@@ -210,7 +211,7 @@ def __dnn_train_decoder(config_train: Config_PyTorch, config_data: Config_Datase
     """
     dataset_decoder = get_dataset_decoder(config_data)
     dataset_dict = dataset_decoder.frame_dict
-    trainhandler = train_nn_classification(config_train, config_data)
+    trainhandler = train_nn_rnn_classification(config_train, config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset_decoder)
     del dataset_decoder
@@ -244,7 +245,7 @@ def do_train_dnn(mode_train: int, noise_std_ae=0.05, mode_cell_bib=0, do_plot=Tr
         do_plot: Doing the plots during the training routine
         block_plot: Blocking the plot outputs if do_plot is active
     """
-    from settings_ai import config_train_ae, config_train_class, config_data
+    from settings_ai import config_train_ae, config_train_class, config_train_dec, config_data
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
 
     match mode_train:
@@ -268,7 +269,7 @@ def do_train_dnn(mode_train: int, noise_std_ae=0.05, mode_cell_bib=0, do_plot=Tr
             __dnn_train_sda(config_train_class, config_data,
                             do_plot=do_plot, block_plot=block_plot)
         case 6:
-            __dnn_train_decoder(config_train_class, config_data,
+            __dnn_train_decoder(config_train_dec, config_data,
                                 do_plot=do_plot, block_plot=block_plot)
         case _:
             print("Wrong model!")
