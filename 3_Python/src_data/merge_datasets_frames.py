@@ -7,7 +7,7 @@ from scipy.io import savemat, loadmat
 from tqdm import tqdm
 import platform
 
-from package.data.data_call_common import DataController
+from package.data_call.data_call_common import DataController
 from src_data.pipeline_data import Settings, Pipeline
 
 

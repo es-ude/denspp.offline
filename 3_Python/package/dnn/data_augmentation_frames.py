@@ -1,5 +1,5 @@
 import numpy as np
-from package.dnn.data_preprocessing import generate_frames
+from package.dnn.data_preprocessing_frames import generate_frames
 
 
 def augmentation_mean_waveform(
@@ -66,7 +66,7 @@ def augmentation_reducing_samples(
         frames_in: np.ndarray,
         frames_cl: np.ndarray,
         num_frames: int,
-        do_shuffle: bool) -> tuple[np.ndarray, np.ndarray]:
+        do_shuffle=True) -> tuple[np.ndarray, np.ndarray]:
     """Tool for Data Augmentation in which the data points per samples will be reduced"""
     cluster_no = np.unique(frames_cl)
     frames_out = np.zeros(1)

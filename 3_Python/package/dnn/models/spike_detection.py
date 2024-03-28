@@ -77,8 +77,8 @@ Recommended_Config_PytorchSettings = Config_PyTorch(
     num_kfold=1,
     num_epochs=40,
     batch_size=256,
-    data_split_ratio=0.25,
-    data_do_shuffle=True
+    data_do_shuffle=True,
+    data_split_ratio=0.25
 )
 
 Recommended_Config_DatasetSettings = Config_Dataset(

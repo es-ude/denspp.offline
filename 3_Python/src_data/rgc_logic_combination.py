@@ -3,7 +3,7 @@ from os import mkdir
 from os.path import join, exists
 from scipy.io import loadmat
 import matplotlib.pyplot as plt
-from package.plotting.plot_metric import plot_confusion
+from package.plot.plot_metric import plot_confusion
 
 
 def logic_combination(true_labels: np.ndarray, pred_labels: np.ndarray, translate_dict: list) -> [np.ndarray,

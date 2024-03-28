@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from package.plotting.plot_common import cm_to_inch, save_figure
+from package.plot.plot_common import cm_to_inch, save_figure
 
 
 def results_training(path: str,
@@ -11,7 +11,7 @@ def results_training(path: str,
     data_labeled = True
 
     # --- Pre-Processing
-    yclus0 = yclus
+    yclus0 = yclus.flatten() if len(yclus.shape) == 2 else yclus
     cluster_no = np.unique(yclus0)
     mark_feat = [[] for idx in range(0, num_feat)]
     take_frames = list()
@@ -47,7 +47,6 @@ def plot_autoencoder_snr(snr: list, path2save='', do_boxplot=False) -> None:
     """Plotting the Signal-to-Noise Ratio (SNR) over the epochs"""
     # --- Processing
     snr_processed = list()
-
     if not do_boxplot:
         snr0 = np.zeros(shape=(len(snr), 3), dtype=float)
         for idx, snr_epoch in enumerate(snr):

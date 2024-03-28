@@ -92,7 +92,7 @@ class training_pytorch:
     valid_loader: list
     cell_classes: list
 
-    def __init__(self, config_train: Config_PyTorch, config_dataset=Config_Dataset, do_train=True) -> None:
+    def __init__(self, config_train: Config_PyTorch, config_dataset: Config_Dataset, do_train=True) -> None:
         self.os_type = platform.system()
         self._writer = None
         self.model = None
@@ -110,7 +110,7 @@ class training_pytorch:
 
         # --- Saving options
         self.settings = config_train
-        self.data_settings = config_dataset
+        self.settings_data = config_dataset
         self._index_folder = 'train' if do_train else 'inference'
         self._aitype = config_train.model.out_modeltyp
         self._model_name = config_train.model.out_modelname
@@ -145,11 +145,11 @@ class training_pytorch:
             device0 = self.used_hw_cpu
         # Using normal CPU
         else:
-            self.used_hw_cpu = "CPU" #(f"{cpuinfo.get_cpu_info()['brand_raw']} "
-                       #f"(@ {1e-9 * cpuinfo.get_cpu_info()['hz_actual'][0]:.3f} GHz)")
+            self.used_hw_cpu = (f"{cpuinfo.get_cpu_info()['brand_raw']} "
+                       f"(@ {1e-9 * cpuinfo.get_cpu_info()['hz_actual'][0]:.3f} GHz)")
             self.used_hw_gpu = 'None'
             self.used_hw_dev = device("cpu")
-            self.used_hw_num = 1 #cpuinfo.get_cpu_info()['count']
+            self.used_hw_num = cpuinfo.get_cpu_info()['count']
             device0 = self.used_hw_cpu
 
         print(f"... using PyTorch with {device0} device on {self.os_type}")
@@ -175,9 +175,7 @@ class training_pytorch:
         self._path2temp = join(self._path2save, f'temp')
         mkdir(self._path2temp)
 
-        # --- Sending everything to device
         self.model.to(device=self.used_hw_dev)
-        # self.loss_fn.to(devive=self.used_hw_dev)
 
     def _init_writer(self) -> None:
         """Do init of writer"""
@@ -243,7 +241,7 @@ class training_pytorch:
             txt_handler.write(f'Date: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}\n')
             txt_handler.write(f'Used CPU: {self.used_hw_cpu}\n')
             txt_handler.write(f'Used GPU: {self.used_hw_gpu}\n')
-            txt_handler.write(f'Used dataset: {self.data_settings.get_path2data()}\n')
+            txt_handler.write(f'Used dataset: {self.settings_data.get_path2data()}\n')
             txt_handler.write(f'AI Topology: {self.settings.get_topology()} ({self._model_addon})\n')
             txt_handler.write(f'Embedded?: {self.model.model_embedded}\n')
             txt_handler.write('\n')
@@ -256,10 +254,10 @@ class training_pytorch:
             txt_handler.write(f'Do KFold cross validation?: {self._do_kfold},\n'
                               f'Number of KFold steps: {self.settings.num_kfold}\n')
             txt_handler.write(f'Do shuffle?: {self.settings.data_do_shuffle}\n')
-            txt_handler.write(f'Do data augmentation?: {self.data_settings.data_do_augmentation}\n')
-            txt_handler.write(f'Do input normalization?: {self.data_settings.data_do_normalization}\n')
-            txt_handler.write(f'Do add noise cluster?: {self.data_settings.data_do_addnoise_cluster}\n')
-            txt_handler.write(f'Exclude cluster: {self.data_settings.data_exclude_cluster}\n')
+            txt_handler.write(f'Do data augmentation?: {self.settings_data.data_do_augmentation}\n')
+            txt_handler.write(f'Do input normalization?: {self.settings_data.data_do_normalization}\n')
+            txt_handler.write(f'Do add noise cluster?: {self.settings_data.data_do_addnoise_cluster}\n')
+            txt_handler.write(f'Exclude cluster: {self.settings_data.data_exclude_cluster}\n')
 
     def _save_train_results(self, last_metric_train: float | np.ndarray,
                             last_metric_valid: float | np.ndarray, type='Loss') -> None:

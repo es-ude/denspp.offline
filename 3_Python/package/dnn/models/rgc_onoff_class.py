@@ -142,10 +142,10 @@ Recommended_Config_PytorchSettings = Config_PyTorch(
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=10,
+    num_epochs=40,
     batch_size=256,
-    data_split_ratio=0.25,
-    data_do_shuffle=True
+    data_do_shuffle=True,
+    data_split_ratio=0.25
 )
 
 Recommended_Config_DatasetSettings = Config_Dataset(
@@ -164,5 +164,5 @@ Recommended_Config_DatasetSettings = Config_Dataset(
     data_num_samples_per_cluster=0,
     # --- Dataset Preparation
     data_exclude_cluster=[],
-    data_sel_pos=[],
+    data_sel_pos=[]
 )

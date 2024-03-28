@@ -2,9 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 
-from package.plotting.plot_common import save_figure, cm_to_inch
-from package.data.data_call_common import DataController
-from package.data.data_call_cellbib import CellSelector
+from package.plot.plot_common import save_figure, cm_to_inch
+from package.data_call.data_call_common import DataController
+from package.data_call.data_call_cellbib import CellSelector
 from src_data.pipeline_data import Settings, Pipeline
 
 

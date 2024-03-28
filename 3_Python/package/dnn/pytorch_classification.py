@@ -9,8 +9,8 @@ from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset, training
 
 class train_nn_classification(training_pytorch):
     """Class for Handling the Training of Classifiers"""
-    def __init__(self, config_train: Config_PyTorch, config_dataset: Config_Dataset, do_train=True) -> None:
-        training_pytorch.__init__(self, config_train, config_dataset, do_train)
+    def __init__(self, config_train: Config_PyTorch, config_data: Config_Dataset, do_train=True) -> None:
+        training_pytorch.__init__(self, config_train, config_data, do_train)
 
     def __do_training_epoch(self) -> [float, float]:
         """Do training during epoch of training"""

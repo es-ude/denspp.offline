@@ -2,8 +2,8 @@ import numpy as np
 import torch
 from tqdm import tqdm
 from package.metric import calculate_snr
-from package.data.process_noise import frame_noise
-from package.data.data_call_cellbib import CellSelector
+from package.data_call.process_noise import frame_noise
+from package.data_call.data_call_cellbib import CellSelector
 
 
 def change_frame_size(frames_in: np.ndarray, sel_pos: list) -> np.ndarray:

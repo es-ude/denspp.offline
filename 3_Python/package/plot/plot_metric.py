@@ -3,7 +3,7 @@ from os import mkdir
 from os.path import exists, join
 import matplotlib.pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay, precision_recall_curve, precision_recall_fscore_support
-from package.plotting.plot_common import save_figure, cm_to_inch
+from package.plot.plot_common import save_figure, cm_to_inch
 from package.metric import compare_timestamps
 
 
@@ -58,7 +58,7 @@ def plot_loss(metric: list, metric_type: str, path2save='', epoch_zoom=None) -> 
     # --- Plot zooming component
     if isinstance(epoch_zoom, list) and len(epoch_zoom) > 0:
         x0 = int(epoch_zoom[0])
-        x1 = int(epoch_zoom[1]) if len(epoch_zoom) == 2 else int(plot_metrics.shape[0] - 1)
+        x1 = int(epoch_zoom[1]) if len(epoch_zoom) == 2 else int(plot_metrics.shape[0]-1)
         pos = np.arange(x0, x1)
         min_value = np.min((plot_metrics[pos, 0], plot_metrics[pos, 1]))
         max_value = np.max((plot_metrics[pos, 0], plot_metrics[pos, 1]))
@@ -67,7 +67,7 @@ def plot_loss(metric: list, metric_type: str, path2save='', epoch_zoom=None) -> 
             [0.45, 0.02, 0.5, 0.43],
             xticklabels=[],
             # yticklabels=[],
-            xlim=(x0 - 0.5, x1 + 0.5), ylim=(0.99 * min_value, 1.01 * max_value))
+            xlim=(x0-0.5, x1+0.5), ylim=(0.99 * min_value, 1.01 * max_value))
         axins0.plot(plot_metrics[:, 0], color='k', marker='.', label='Train.')
         axins0.plot(plot_metrics[:, 1], color='r', marker='.', label='Valid.')
         axins0.grid()
@@ -79,7 +79,7 @@ def plot_loss(metric: list, metric_type: str, path2save='', epoch_zoom=None) -> 
 
     plt.tight_layout()
     if path2save:
-        save_figure(plt, path2save, f"loss_metric_{metric_type}" + addon)
+        save_figure(plt, path2save, f"loss_metric_{metric_type}"+addon)
 
 
 def plot_confusion(true_labels: list | np.ndarray,

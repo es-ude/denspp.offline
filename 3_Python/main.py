@@ -9,8 +9,8 @@ from tqdm import tqdm
 
 from src_neuro.pipeline_v1 import Settings, Pipeline
 from package.metric import Metric
-from package.data.data_call_common import DataController
-from package.plotting.plot_pipeline import results_afe1, results_afe2, results_fec
+from package.data_call.data_call_common import DataController
+from package.plot.plot_pipeline import results_afe1, results_afe2, results_fec
 
 
 class CustomThread(Thread):

@@ -6,7 +6,7 @@ import dataclasses
 import numpy as np
 from fractions import Fraction
 from scipy.signal import resample_poly
-from package.data.data_call_files import DataHandler, DataLoader
+from package.data_call.data_call_files import DataHandler, DataLoader
 
 
 @dataclasses.dataclass
@@ -112,7 +112,7 @@ class DataController(DataLoader):
                     idx2 = 0
                     idx3 = -1
 
-                spike_xout.append(spikepos_in[idx][idx2:idx3])
+                spike_xout.append(spikepos_in[idx][idx2:idx3] - idx0)
                 spike_cout.append(cluster_in[idx][idx2:idx3])
 
             # Übergabe

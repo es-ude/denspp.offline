@@ -1,5 +1,5 @@
 import numpy as np
-from package.adc.adc_basic import ADC_Basic, SettingsADC, SettingsNon, RecommendedSettingsNon
+from package.analog.adc_basic import ADC_Basic, SettingsADC, SettingsNon, RecommendedSettingsNon
 
 class ADC_Nyquist(ADC_Basic):
     """Class for applying a Nyquist Analogue-Digital-Converter (ADC) on the raw data"""

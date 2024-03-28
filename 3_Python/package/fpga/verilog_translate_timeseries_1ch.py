@@ -77,9 +77,9 @@ def create_testbench(path2save='data/fpga_sim', filename_tb='TB_NeuralSim',
 
 
 def translate_data_memory(raw_data: np.ndarray, output_bitsize: int,
-                          path2save='data\\fpga_sim', filename_mod='test_mem',
+                          path2save='data/fpga_sim', filename_mod='test_mem',
                           filename_raw='data_raw', filename_trg='data_trg',
-                          trigger=np.zeros(shape=(1,), dtype=int),
+                          trigger=(),
                           fs=20e3, output_signed=True) -> None:
     """Translating raw_data and trigger signals (opt.) from Python to Verilog module for testbenches"""
     trigger_avaible = True if trigger.size != 1 else False
@@ -94,7 +94,12 @@ def translate_data_memory(raw_data: np.ndarray, output_bitsize: int,
     size_cnt = int(np.ceil(np.log2(size_input)))
 
     raw_data0 = np.array(raw_data, dtype=int)
-    trgg0 = np.array(trigger, dtype=int)
+    trgg0 = np.zeros(raw_data0.shape, dtype=int)
+
+    if isinstance(trigger, np.ndarray):
+        window_size = int(1.6e-3 * fs)
+        for val in trigger:
+            trgg0[int(val):int(val)+window_size] = 1
 
     # --- First file for testbench file
     print('... create verilog file for handling data (*.v)')
@@ -107,6 +112,7 @@ def translate_data_memory(raw_data: np.ndarray, output_bitsize: int,
         v_handler.write(f'// Generate file on: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}\n')
         v_handler.write(f'// Original sampling rate fs = {fs / 1e3: .2f} kHz\n')
         v_handler.write(f'// Size of input array: {size_input}\n')
+        v_handler.write(f'// IMPORTANT: Add *.mem files into project\n')
         v_handler.write(f'// ---------------------------------------------------\n')
         # --- Header 2: Example for using in testbench
         v_handler.write(f'// Code Example for Implementation in Testbench:\n//\n')

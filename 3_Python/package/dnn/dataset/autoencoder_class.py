@@ -6,10 +6,9 @@ from torch import is_tensor, randn, Tensor, load, from_numpy
 from torch.utils.data import Dataset
 
 from package.dnn.pytorch_control import Config_Dataset
-from package.dnn.data_preprocessing import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
-from package.dnn.data_preprocessing import change_frame_size, reconfigure_cluster_with_cell_lib, generate_zero_frames, \
-    DataNormalization
-from package.dnn.data_augmentation import *
+from package.dnn.data_preprocessing_frames import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
+from package.dnn.data_preprocessing_frames import change_frame_size, reconfigure_cluster_with_cell_lib, generate_zero_frames, DataNormalization
+from package.dnn.data_augmentation_frames import *
 
 
 class DatasetAE_Class(Dataset):
@@ -17,15 +16,13 @@ class DatasetAE_Class(Dataset):
 
     def __init__(self, frames_raw: np.ndarray, frames_feat: np.ndarray,
                  cluster_id: np.ndarray, frames_cluster_me: np.ndarray,
-                 cluster_dict=None, noise_std=0.1):
+                 cluster_dict=None):
         self.size_output = 4
         # --- Input Parameters
         self.__frames_raw = np.array(frames_raw, dtype=np.float32)
         self.__frames_feat = np.array(frames_feat, dtype=np.float32)
         self.__cluster_id = np.array(cluster_id, dtype=np.uint8)
         self.frames_me = np.array(frames_cluster_me, dtype=np.float32)
-        # --- Parameters for Denoising Autoencoder
-        self.__frames_noise_std = noise_std
         # --- Parameters for Confusion Matrix for Classification
         self.cluster_name_available = isinstance(cluster_dict, list)
         self.frame_dict = cluster_dict
@@ -42,82 +39,83 @@ class DatasetAE_Class(Dataset):
                 'out': self.__cluster_id[idx]}
 
 
-def prepare_training(path2data: str, data_settings: Config_Dataset, path2model: str,
-                     use_cell_bib=True, mode_classes=1,
-                     use_median_for_mean=True, noise_std=0.1) -> DatasetAE_Class:
+def prepare_training(settings: Config_Dataset, path2model: str,
+                     use_cell_bib=False, mode_classes=2,
+                     use_median_for_mean=True) -> DatasetAE_Class:
     """Preparing dataset incl. augmentation for spike-frame based training"""
     print("... loading and processing the dataset")
-    npzfile = loadmat(path2data)
+    npzfile = loadmat(settings.get_path2data())
     frames_in = npzfile["frames_in"]
     frames_cl = npzfile["frames_cluster"].flatten() if 'frames_cluster' in npzfile else npzfile["frames_cl"].flatten()
     frames_dict = None
 
     # --- Using cell_bib for clustering
     if use_cell_bib:
-        frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(path2data, mode_classes, frames_in,
-                                                                              frames_cl)
+        frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(settings.get_path2data(),
+                                                                              mode_classes, frames_in, frames_cl)
+
     # --- PART: Reducing samples per cluster (if too large)
-    if data_settings.data_do_reduce_samples_per_cluster:
+    if settings.data_do_reduce_samples_per_cluster:
         print("... reducing the samples per cluster (for pre-training on dedicated hardware)")
         frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
-                                                             data_settings.data_num_samples_per_cluster,
+                                                             settings.data_num_samples_per_cluster,
                                                              do_shuffle=False)
 
     # --- PART: Data Normalization
-    if data_settings.data_do_normalization:
-        if data_settings.data_normalization_setting == 'bipolar':
+    if settings.data_do_normalization:
+        if settings.data_normalization_setting == 'bipolar':
             do_bipolar = True
             do_global = False
-        elif data_settings.data_normalization_setting == 'global':
+        elif settings.data_normalization_setting == 'global':
             do_bipolar = False
             do_global = True
-        elif data_settings.data_normalization_setting == 'combined':
+        elif settings.data_normalization_setting == 'combined':
             do_bipolar = True
             do_global = True
         else:
             do_bipolar = False
             do_global = False
         print(f"... do data normalization")
-        data_class_frames_in = DataNormalization(mode=data_settings.data_normalization_mode,
-                                                 method=data_settings.data_normalization_method,
+        data_class_frames_in = DataNormalization(mode=settings.data_normalization_mode,
+                                                 method=settings.data_normalization_method,
                                                  do_bipolar=do_bipolar, do_global=do_global)
         frames_in = data_class_frames_in.normalize(frames_in)
 
     # --- PART: Mean waveform calculation and data augmentation
-    frames_in = change_frame_size(frames_in, data_settings.data_sel_pos)
+    frames_in = change_frame_size(frames_in, settings.data_sel_pos)
     if use_median_for_mean:
         frames_me = calculate_frame_median(frames_in, frames_cl)
     else:
         frames_me = calculate_frame_mean(frames_in, frames_cl)
 
     # --- PART: Exclusion of selected clusters
-    if len(data_settings.data_exclude_cluster) == 0:
+    if len(settings.data_exclude_cluster) == 0:
         frames_in = frames_in
         frames_cl = frames_cl
     else:
-        for i, id in enumerate(data_settings.data_exclude_cluster):
-            selX = np.where(frames_cl != i)
+        for i, id in enumerate(settings.data_exclude_cluster):
+            selX = np.where(frames_cl != id)
             frames_in = frames_in[selX[0], :]
             frames_cl = frames_cl[selX]
 
     # --- PART: Calculate SNR if desired
-    if data_settings.data_do_augmentation or data_settings.data_do_addnoise_cluster:
+    if settings.data_do_augmentation or settings.data_do_addnoise_cluster:
         snr_mean = calculate_frame_snr(frames_in, frames_cl, frames_me)
     else:
         snr_mean = np.zeros(0, dtype=float)
 
     # --- PART: Data Augmentation
-    if data_settings.data_do_augmentation and not data_settings.data_do_reduce_samples_per_cluster:
+    if settings.data_do_augmentation and not settings.data_do_reduce_samples_per_cluster:
         print("... do data augmentation")
         # new_frames, new_clusters = augmentation_mean_waveform(
         # frames_me, frames_cl, snr_mean, settings.data_num_augmentation)
         new_frames, new_clusters = augmentation_change_position(
-            frames_in, frames_cl, snr_mean, data_settings.data_num_augmentation)
+            frames_in, frames_cl, snr_mean, settings.data_num_augmentation)
         frames_in = np.append(frames_in, new_frames, axis=0)
         frames_cl = np.append(frames_cl, new_clusters, axis=0)
 
     # --- PART: Generate and add noise cluster
-    if data_settings.data_do_addnoise_cluster:
+    if settings.data_do_addnoise_cluster:
         snr_range_zero = [np.median(snr_mean[:, 0]), np.median(snr_mean[:, 2])]
         info = np.unique(frames_cl, return_counts=True)
         num_cluster = np.max(info[0]) + 1
@@ -145,3 +143,25 @@ def prepare_training(path2data: str, data_settings: Config_Dataset, path2model: 
 
     return DatasetAE_Class(frames_raw=frames_in, frames_feat=frames_feat, cluster_id=frames_cl,
                            frames_cluster_me=frames_me, cluster_dict=frames_dict)
+
+
+if __name__ == "__main__":
+    config_data = Config_Dataset(
+        # --- Settings of Datasets
+        data_path='../2_Data/00_Merged_Datasets',
+        data_file_name='2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted',
+        # --- Data Augmentation
+        data_do_augmentation=False,
+        data_num_augmentation=0,
+        data_do_normalization=True,
+        data_do_addnoise_cluster=False,
+        # --- Dataset Reduction
+        data_do_reduce_samples_per_cluster=False,
+        data_num_samples_per_cluster=0,
+        data_exclude_cluster=[],
+        data_sel_pos=[]
+    )
+    dataset = prepare_training(config_data,
+                               do_classification=True,
+                               mode_train_ae=0)
+    print("Done")

@@ -1,9 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.metrics import ConfusionMatrixDisplay
-from package.plotting.plot_common import cm_to_inch, save_figure
+from package.plot.plot_common import cm_to_inch, save_figure
 
-from package.template.pipeline_signals import PipelineSignal
+from package.pipeline_signals import PipelineSignal
 from package.nsp import calc_amplitude, calc_autocorrelogram, calc_firing_rate
 
 
