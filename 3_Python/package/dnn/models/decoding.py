@@ -11,7 +11,7 @@ class cnn_lstm_dec_v1(nn.Module):
         self.out_modelname = 'cnn_lstm_dec_v1'
         self.out_modeltyp = 'Decoder'
         self.model_embedded = False
-        self.model_shape = (num_clusters, 10, 10, input_samples)
+        self.model_shape = (1, num_clusters, 10, 10, input_samples)
         do_bias_train = True
         # --- Settings for CNN
         kernel_layer = [num_clusters, 10, 20]
@@ -46,13 +46,8 @@ class cnn_lstm_dec_v1(nn.Module):
         )
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
-        #x0 = unsqueeze(x, dim=1)
-        x0 = squeeze(x, dim=3)
-        x0 = unsqueeze(x0, dim=1)
-        #x0 = x
-        cnn_feat = self.cnn_1(x0)
+        cnn_feat = self.cnn_1(x)
         pred_con = self.dnn_1(cnn_feat)
-
         return pred_con, argmax(pred_con, 1)
 
 

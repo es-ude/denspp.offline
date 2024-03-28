@@ -115,13 +115,13 @@ def translate_ts_datastream_into_picture(data_raw: list, configuration: dict) ->
     for data_point in data_raw:
         for elecID, data in enumerate(data_point):
             if picture_data_point is None:
-                picture_data_point = np.zeros((10, 10, data.shape[0], data.shape[1]), dtype=np.uint16)
+                picture_data_point = np.zeros((data.shape[0], 10, 10, data.shape[1]), dtype=np.uint16)
 
             for label in labels:
                 if f"elec{elecID + 1}" == label:
                     row = configuration['row'][95 - elecID]
                     col = configuration['col'][95 - elecID]
-                    picture_data_point[col, row] = data
+                    picture_data_point[:, col, row, :] = data
 
         picture_data_raw.append(picture_data_point)
         picture_data_point = None
