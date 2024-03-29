@@ -267,7 +267,6 @@ class DataLoader:
         self.raw_data.device_id = [nsp_device]
         elec_orig = np.arange(0, int(loaded_data['rawdata']['NoElectrodes'][0, 0][0])).tolist()
         elec_process = self.select_electrodes if not len(self.select_electrodes) == 0 else elec_orig
-        # TODO: Daten vom Utah-Array einlesen (Zwei Devices)
         data_raw = np.transpose(loaded_data['rawdata']['spike'][0, 0])
         for elec in elec_process:
             self.raw_data.data_raw.append(self.raw_data.data_lsb * np.float32(data_raw[elec]))
@@ -285,7 +284,6 @@ class DataLoader:
             self.nev_waveform.append(self.raw_data.data_lsb * loaded_data['nev_detected'][f'Elec{1+elec}'][0, 0]['waveform'][0, 0])
 
         # --- Behaviour
-        # TODO: Daten vom Utah-Array einlesen (Verhaltensanalyse)
         self.raw_data.behaviour_exist = True
         self.raw_data.behaviour = loaded_data['behaviour']
         del loaded_data
