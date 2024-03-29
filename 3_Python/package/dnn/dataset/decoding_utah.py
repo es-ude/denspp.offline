@@ -1,9 +1,7 @@
-import numpy
-import numpy as np
-from torch import is_tensor, randn, Tensor
+from torch import is_tensor
 from torch.utils.data import Dataset
 
-from package.dnn.pytorch_control import Config_Dataset
+from package.dnn.pytorch.handler import Config_Dataset
 from package.dnn.data_augmentation_frames import *
 
 

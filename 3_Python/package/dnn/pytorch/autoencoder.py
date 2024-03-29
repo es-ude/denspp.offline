@@ -4,10 +4,10 @@ from shutil import copy
 from datetime import datetime
 from torch import Tensor, load, save, from_numpy, tensor, max, min, log10, sum, inference_mode
 from scipy.io import savemat
-from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset, training_pytorch
+from package.dnn.pytorch.handler import Config_PyTorch, Config_Dataset, training_pytorch
 
 
-class train_nn_autoencoder(training_pytorch):
+class train_nn(training_pytorch):
     """Class for Handling Training of Autoencoders"""
     def __init__(self, config_train: Config_PyTorch, config_data: Config_Dataset, do_train=True) -> None:
         training_pytorch.__init__(self, config_train, config_data, do_train)

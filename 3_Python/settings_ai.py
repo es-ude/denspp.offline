@@ -1,12 +1,14 @@
 from torch import nn
-from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch.handler import Config_PyTorch, Config_Dataset
+
+import package.dnn.models.spike_detection as models_sda
 import package.dnn.models.autoencoder_cnn as models_ae
 import package.dnn.models.autoencoder_class as models_class
+import package.dnn.models.rgc_onoff_class as models_rgc_class
 import package.dnn.models.decoding_utah as models_dec
-import package.dnn.models.autoencoder_embedded as models_ae_embedded
 
 
-config_dataset = Config_Dataset(
+config_data = Config_Dataset(
     # --- Settings of Datasets
     data_path='C:\HomeOffice\Data_Neurosignal\\00_Merged',
     #data_path='../2_Data/00_Merged_Datasets',
@@ -29,6 +31,19 @@ config_dataset = Config_Dataset(
     data_sel_pos=[]
 )
 
+config_train_sda = Config_PyTorch(
+    # --- Settings of Models/Training
+    model=models_sda.dnn_sda_v1(16, 5),
+    loss='Cross Entropy',
+    loss_fn=nn.CrossEntropyLoss(),
+    optimizer='Adam',
+    num_kfold=1,
+    num_epochs=2,
+    batch_size=512,
+    data_split_ratio=0.25,
+    data_do_shuffle=True
+)
+
 config_train_ae = Config_PyTorch(
     # --- Settings of Models/Training
     model=models_ae.cnn_ae_v4(32, 8),
@@ -42,9 +57,22 @@ config_train_ae = Config_PyTorch(
     data_do_shuffle=True
 )
 
-config_train_class = Config_PyTorch(
+config_train_ae_class = Config_PyTorch(
     # --- Settings of Models/Training
     model=models_class.classifier_ae_v1(8, 5),
+    loss='Cross Entropy',
+    loss_fn=nn.CrossEntropyLoss(),
+    optimizer='Adam',
+    num_kfold=1,
+    num_epochs=2,
+    batch_size=512,
+    data_split_ratio=0.25,
+    data_do_shuffle=True
+)
+
+config_train_rgc = Config_PyTorch(
+    # --- Settings of Models/Training
+    model=models_rgc_class.dnn_rgc_v2(32, 5),
     loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',

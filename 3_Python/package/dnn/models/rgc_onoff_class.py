@@ -1,5 +1,5 @@
 from torch import nn, Tensor, argmax, unsqueeze
-from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch.handler import Config_PyTorch, Config_Dataset
 
 
 class dnn_rgc_v1(nn.Module):

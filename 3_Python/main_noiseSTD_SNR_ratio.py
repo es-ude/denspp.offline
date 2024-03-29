@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from settings_ai import config_train_class, config_train_ae, config_dataset
-from package.dnn.pytorch_autoencoder import train_nn_autoencoder
+from settings_ai import config_train_ae, config_dataset
+from package.dnn.pytorch.autoencoder import train_nn
 from package.dnn.dataset.autoencoder import prepare_training as prepare_training_ae, DatasetAE
 
 from package.metric import calculate_snr
@@ -62,7 +62,7 @@ if __name__ == "__main__":
         dataset_used = prepare_dataset_snr(dataset)
 
         # --- Do Autoencoder Training
-        trainhandler = train_nn_autoencoder(config_train=config_train_ae, config_dataset=config_dataset)
+        trainhandler = train_nn(config_train=config_train_ae, config_dataset=config_dataset)
         logsdir = trainhandler.get_saving_path()
         trainhandler.load_model()
         trainhandler.load_data(dataset_used)

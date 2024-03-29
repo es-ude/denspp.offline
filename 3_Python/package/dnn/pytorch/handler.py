@@ -77,6 +77,14 @@ class Config_Dataset:
         return join(self.data_path, self.data_file_name)
 
 
+#TODO: Template nicht mehr richtig!
+def check_settings_file() -> None:
+    """"""
+    if not exists("settings_ai.py"):
+        copy("package/dnn/dnn_settings_template.py", "settings_ai.py")
+        print("A template configuration file is copied into main folder. Please check the content and restart!")
+
+
 class training_pytorch:
     """Class for Handling Training of Deep Neural Networks in PyTorch
     Args:

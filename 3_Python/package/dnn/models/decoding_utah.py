@@ -1,5 +1,5 @@
-from torch import nn, Tensor, unsqueeze, argmax, squeeze
-from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset
+from torch import nn, Tensor, argmax
+from package.dnn.pytorch.handler import Config_PyTorch, Config_Dataset
 
 
 # TODO: Modelle implementieren

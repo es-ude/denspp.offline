@@ -4,10 +4,10 @@ from shutil import copy
 from datetime import datetime
 from torch import load, save, from_numpy, inference_mode, sum
 from scipy.io import savemat
-from package.dnn.pytorch_control import Config_PyTorch, Config_Dataset, training_pytorch
+from package.dnn.pytorch.handler import Config_PyTorch, Config_Dataset, training_pytorch
 
 
-class train_nn_classification(training_pytorch):
+class train_nn(training_pytorch):
     """Class for Handling the Training of Classifiers"""
     def __init__(self, config_train: Config_PyTorch, config_data: Config_Dataset, do_train=True) -> None:
         training_pytorch.__init__(self, config_train, config_data, do_train)
