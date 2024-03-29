@@ -126,7 +126,7 @@ class train_nn(training_pytorch):
 
         return metrics_own
 
-    def do_validation_after_training(self, num_output=2) -> dict:
+    def do_validation_after_training(self, num_output: int) -> dict:
         """Performing the training with the best model after"""
         # --- Getting data from validation set for inference
         data_train = self.get_data_points(num_output, use_train_dataloader=True)

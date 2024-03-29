@@ -15,9 +15,9 @@ config_data = Config_Dataset(
     data_do_addnoise_cluster=False,
     # --- Data Normalization
     data_do_normalization=False,
-    data_normalization_mode='',
-    data_normalization_method='',
-    data_normalization_setting='',
+    data_normalization_mode='CPU',
+    data_normalization_method='minmax',
+    data_normalization_setting='bipolar',
     # --- Dataset Reduction
     data_do_reduce_samples_per_cluster=False,
     data_num_samples_per_cluster=50_000,

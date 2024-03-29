@@ -2,7 +2,7 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import load, save, from_numpy
+from torch import Tensor, load, save, from_numpy
 from scipy.io import savemat
 from package.dnn.pytorch.handler import Config_PyTorch, Config_Dataset, training_pytorch
 
@@ -125,7 +125,7 @@ class train_nn(training_pytorch):
 
         return metrics_own
 
-    def do_validation_after_training(self, num_output=2) -> dict:
+    def do_validation_after_training(self, num_output: int) -> dict:
         """Performing the validation with the best model after training"""
         # --- Getting data from validation set for inference
         data_train = self.get_data_points(num_output, use_train_dataloader=True)
@@ -134,15 +134,23 @@ class train_nn(training_pytorch):
         # --- Do the Inference with Best Model
         print(f"\nDoing the inference with validation data on best model")
         model_inference = load(self.get_best_model('rnn')[0])
-        data_input = from_numpy(data_valid['in'])
+        if not isinstance(data_valid['in'], Tensor):
+            data_train = from_numpy(data_train['out'])
+            data_input = from_numpy(data_valid['in'])
+            data_output = from_numpy(data_valid['out'])
+        else:
+            data_train = data_train['out']
+            data_input = data_valid['in']
+            data_output = data_valid['out']
+
         yclus = model_inference(data_input)[1]
         yclus = yclus.detach().numpy()
 
         # --- Producing the output
         output = dict()
         output.update({'settings': self.settings, 'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')})
-        output.update({'train_clus': data_train['out'], 'valid_clus': data_valid['out']})
-        output.update({'input': data_valid['in'], 'yclus': yclus})
+        output.update({'train_clus': data_train, 'valid_clus': data_output})
+        output.update({'input': data_input, 'yclus': yclus})
         output.update({'cl_dict': self.cell_classes})
 
         # --- Saving dict

@@ -1,14 +1,16 @@
 from torch import nn
 import matplotlib.pyplot as plt
 from package.dnn.pytorch.handler import Config_PyTorch, Config_Dataset
-import package.dnn.models.autoencoder_class as models
+import package.dnn.models.rgc_onoff_class as models_rgc
 
 
 config_data = Config_Dataset(
     # --- Settings of Datasets
-    data_path='../../../2_Data/00_Merged_Datasets',
-    data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
+    #data_path='../2_Data/00_Merged_Datasets',
+    data_path='C:\HomeOffice\Data_Neurosignal\\00_Merged',
+    #data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
     #data_file_name='2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted',
+    data_file_name='2023-11-24_Dataset-07_RGC_TDB_Merged.mat',
     # --- Data Augmentation
     data_do_augmentation=False,
     data_num_augmentation=0,
@@ -27,7 +29,7 @@ config_data = Config_Dataset(
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
-    model=models.classifier_ae_v1(32, 5),
+    model=models_rgc.dnn_rgc_v2(32, 52),
     loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
@@ -39,14 +41,14 @@ config_train = Config_PyTorch(
 )
 
 
-def do_train_classifier(num_output=5, mode_cell_bib=0, do_plot=True, block_plot=True) -> None:
-    """Training routine for Autoencoders
+def do_train_rgc_class(mode_cell_bib=0, do_plot=True, block_plot=True) -> None:
+    """Training routine for classifying RGC ON/OFF and Transient/Sustained Types (Classification)
     Args:
         mode_cell_bib: If the dataset contains a cell library then the mode can be choicen (0: Deactivated, 1: All, 2-...: Reduced) [default: 0]
         do_plot: Doing the plots during the training routine
         block_plot: Blocking the plot outputs if do_plot is active
     """
-    from package.dnn.dataset.autoencoder import prepare_training
+    from package.dnn.dataset.rgc_classification import prepare_training
     from package.dnn.pytorch.classifier import train_nn
     from package.plot.plot_dnn import plot_statistic_data
     from package.plot.plot_metric import plot_confusion, plot_loss
@@ -56,7 +58,9 @@ def do_train_classifier(num_output=5, mode_cell_bib=0, do_plot=True, block_plot=
     use_cell_mode = 0 if not use_cell_bib else mode_cell_bib - 1
 
     # ---Loading Data, Do Training and getting the results
-    dataset = prepare_training(config_data, use_cell_bib=use_cell_bib, mode_classes=use_cell_mode, do_classification=True)
+    dataset = prepare_training(config_data, use_cell_bib=use_cell_bib, mode_classes=use_cell_mode)
+    frame_dict = dataset.frame_dict
+    num_output = len(frame_dict)
     trainhandler = train_nn(config_train, config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
@@ -71,16 +75,15 @@ def do_train_classifier(num_output=5, mode_cell_bib=0, do_plot=True, block_plot=
     # --- Plotting
     if do_plot:
         plt.close('all')
-        # plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'],
-                       path2save=logsdir, cl_dict=data_result['cl_dict'])
+                       path2save=logsdir, cl_dict=frame_dict)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
-                            path2save=logsdir, cl_dict=data_result['cl_dict'])
+                            path2save=logsdir, cl_dict=frame_dict)
 
         plt.show(block=block_plot)
-    print("The End")
+    print("\nThe End")
 
 
 if __name__ == "__main__":
-    do_train_classifier()
+    do_train_rgc_class(2)

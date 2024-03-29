@@ -135,7 +135,7 @@ class train_nn(training_pytorch):
 
         return run_metric
 
-    def do_validation_after_training(self, num_output=4) -> dict:
+    def do_validation_after_training(self, num_output: int) -> dict:
         """Performing the validation with the best model after training for plotting and saving results"""
 
         # --- Getting data from validation set for inference

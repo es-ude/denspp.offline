@@ -2,7 +2,6 @@ from torch import nn, Tensor, argmax
 from package.dnn.pytorch.handler import Config_PyTorch, Config_Dataset
 
 
-# TODO: Modelle implementieren
 class cnn_lstm_dec_v1(nn.Module):
     """Class of a convolutional Decoding for feature extraction"""
 
@@ -51,7 +50,7 @@ class cnn_lstm_dec_v1(nn.Module):
         return pred_con, argmax(pred_con, 1)
 
 
-config_train_dec = Config_PyTorch(
+Recommended_Config_PytorchSettings = Config_PyTorch(
     # --- Settings of Models/Training
     model=cnn_lstm_dec_v1(),
     loss='MSE',
@@ -62,17 +61,6 @@ config_train_dec = Config_PyTorch(
     batch_size=512,
     data_split_ratio=0.25,
     data_do_shuffle=True
-)
-Recommended_Config_PytorchSettings = Config_PyTorch(
-    model=None,
-    loss='MSE',
-    loss_fn=nn.MSELoss(),
-    optimizer='Adam',
-    num_kfold=1,
-    num_epochs=40,
-    batch_size=256,
-    data_do_shuffle=True,
-    data_split_ratio=0.25
 )
 
 Recommended_Config_DatasetSettings = Config_Dataset(

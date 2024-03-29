@@ -32,7 +32,7 @@ def prepare_training(settings: Config_Dataset, use_cell_bib=False, mode_classes=
     npzfile = loadmat(settings.get_path2data())
     frames_in = npzfile["frames_in"]
     frames_cl = npzfile["frames_cluster"].flatten() if 'frames_cluster' in npzfile else npzfile["frames_cl"].flatten()
-    frames_dict = None
+    frames_dict = dict()
 
     # --- PART: Exclusion of selected clusters
     if not len(settings.data_exclude_cluster) == 0:
