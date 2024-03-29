@@ -1,4 +1,5 @@
 import dataclasses
+import os
 import platform
 import shutil
 import cpuinfo
@@ -77,12 +78,16 @@ class Config_Dataset:
         return join(self.data_path, self.data_file_name)
 
 
-#TODO: Template nicht mehr richtig!
-def check_settings_file() -> None:
-    """"""
-    if not exists("settings_ai.py"):
-        copy("package/dnn/dnn_settings_template.py", "settings_ai.py")
-        print("A template configuration file is copied into main folder. Please check the content and restart!")
+def copy_handler_dummy(path2dnn='src_dnn') -> None:
+    """Generating a handler dummy for training neural networks"""
+    # --- Checking if path to local training handler exists
+    if not exists(path2dnn):
+        os.mkdir(path2dnn)
+
+    # --- Copy process
+    shutil.copy("package/dnn/train_ae_template.py", f"{path2dnn}/dnn_autoencoder_dummy.py")
+    shutil.copy("package/dnn/train_cl_template.py", f"{path2dnn}/dnn_classifier_dummy.py")
+    print("A template of training handler is copied into train folder. Please check the content and restart!")
 
 
 class training_pytorch:

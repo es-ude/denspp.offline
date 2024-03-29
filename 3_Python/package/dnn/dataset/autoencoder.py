@@ -71,7 +71,7 @@ class DatasetAE(Dataset):
 
 def prepare_training(settings: Config_Dataset,
                      use_cell_bib=False, mode_classes=2,
-                     use_median_for_mean=True,
+                     use_median=True,
                      mode_train_ae=0, do_classification=False,
                      noise_std=0.1) -> DatasetAE:
     """Preparing dataset incl. augmentation for spike-frame based training"""
@@ -114,7 +114,7 @@ def prepare_training(settings: Config_Dataset,
 
     # --- PART: Mean waveform calculation and data augmentation
     frames_in = change_frame_size(frames_in, settings.data_sel_pos)
-    if use_median_for_mean:
+    if use_median:
         frames_me = calculate_frame_median(frames_in, frames_cl)
     else:
         frames_me = calculate_frame_mean(frames_in, frames_cl)
