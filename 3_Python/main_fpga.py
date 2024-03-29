@@ -3,7 +3,7 @@ import os
 import numpy as np
 from scipy.io import loadmat
 
-from package.data_call.data_call_common import DataController
+from package.data_call.call_handler import DataController
 from src_neuro.pipeline_data import Settings, Pipeline
 import package.fpga.verilog_translate_frames as verilog_frame
 import package.fpga.verilog_translate_timeseries_1ch as verilog_time

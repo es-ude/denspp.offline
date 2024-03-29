@@ -27,5 +27,4 @@ def load_mnist(data_path: str):
     data_train = datasets.MNIST(data_path, train=True, download=do_download, transform=transform)
     data_valid = datasets.MNIST(data_path, train=True, download=do_download, transform=transform)
     data_set = ConcatDataset([data_train, data_valid])
-
     return data_set

@@ -2,7 +2,7 @@ from os.path import join
 import numpy as np
 from scipy.io import loadmat
 from mat73 import loadmat as loadmat_mat73
-from package.data_call.data_call_cellbib import CellSelector
+from package.data_call.call_cellbib import CellSelector
 
 
 class DataHandler:

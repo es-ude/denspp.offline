@@ -1,7 +1,7 @@
 import dataclasses
 import numpy as np
 from scipy.signal import butter, lfilter, square
-from package.data_call.process_noise import noise_real
+from package.data_process.process_noise import noise_real
 
 
 @dataclasses.dataclass

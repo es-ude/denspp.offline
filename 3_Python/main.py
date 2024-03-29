@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from src_neuro.pipeline_v1 import Settings, Pipeline
 from package.metric import Metric
-from package.data_call.data_call_common import DataController
+from package.data_call.call_handler import DataController
 from package.plot.plot_pipeline import results_afe1, results_afe2, results_fec
 
 

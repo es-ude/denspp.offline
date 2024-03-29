@@ -7,7 +7,7 @@ from scipy.io import savemat, loadmat
 from tqdm import tqdm
 import platform
 
-from package.data_call.data_call_common import DataController
+from package.data_call.call_handler import DataController
 from src_neuro.pipeline_data import Settings, Pipeline
 
 

@@ -2,7 +2,7 @@ import os, shutil
 import numpy as np
 
 from package.pipeline_signals import PipelineSignal
-from package.data_call.data_call_common import SettingsDATA
+from package.data_call.call_handler import SettingsDATA
 from package.digital.sda import SpikeDetection, SettingsSDA
 from package.digital.fex import FeatureExtraction, SettingsFeature
 from package.digital.cluster import Clustering, SettingsCluster

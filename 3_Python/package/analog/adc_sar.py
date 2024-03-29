@@ -137,7 +137,7 @@ class ADC_SAR(ADC_Basic):
         return xout, uout, uerr
 
 # ------------ TEST ROUTINE -------------
-from package.data_call.process_noise import noise_real, do_fft
+from package.data_process.process_noise import noise_real, do_fft
 import matplotlib.pyplot as plt
 if __name__ == "__main__":
     set_adc = SettingsADC(

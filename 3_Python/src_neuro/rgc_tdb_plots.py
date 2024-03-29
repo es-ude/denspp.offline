@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 
 from package.plot.plot_common import save_figure, cm_to_inch
-from package.data_call.data_call_common import DataController
-from package.data_call.data_call_cellbib import CellSelector
+from package.data_call.call_handler import DataController
+from package.data_call.call_cellbib import CellSelector
 from src_neuro.pipeline_data import Settings, Pipeline
 
 
