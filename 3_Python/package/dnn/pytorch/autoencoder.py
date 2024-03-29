@@ -135,12 +135,12 @@ class train_nn(training_pytorch):
 
         return run_metric
 
-    def do_validation_after_training(self, num_output: int) -> dict:
+    def do_validation_after_training(self) -> dict:
         """Performing the validation with the best model after training for plotting and saving results"""
 
         # --- Getting data from validation set for inference
-        data_valid = self.get_data_points(num_output, use_train_dataloader=False)
-        data_train = self.get_data_points(num_output, use_train_dataloader=True)
+        data_valid = self.get_data_points(use_train_dataloader=False)
+        data_train = self.get_data_points(use_train_dataloader=True)
 
         # --- Do the Inference with Best Model
         print(f"\nDoing the inference with validation data on best model")
