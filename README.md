@@ -23,14 +23,14 @@ The Python folder contains the following folder structure:
 - _experiments_: Custom-made functions for characterizing pipeline segments (e.g. spike detection)
 - _package_: All functions in order to setup the pipeline with (i) analogue, (ii) digital, (iii) neural signal processing and (iv) handler for train Autoencoders
 - _runs_: Temporary folder which saves the results of each run
-- _src_decoder_: Pipeline and necessary functions decoding informations from recordings with Utah electrode arrays
+- _src_dnn_: Training handlers for different ML models
 - _src_emg_: Pipeline and necessary functions for analysing EMG signals
 - _src_neuro_: Pipeline and necesary functions for analysing action potentials from invasive microelectrode arrays
 
 ## Usage
 For starting the software framework in your branch, please start Python script ...
-- "main.py" for normal pipeline processing
-- "main_train.py" for starting AI training of the deep learning structure, like Autoencoder and Classifier
-- "main_data.py" for merging of given datasets
-- "main_decoder.py" for decoding data from Utah electrode arrays
-- "main_fpga.py" for processing data using in Xilinx simulation environment and transfer the weights of a trained model in memory file 
+- _main.py_: For normal pipeline processing
+- _main_data_merge.py_: For merging of given datasets
+- _main_dnn_train.py_: For training ML models, like Autoencoder and Classifier
+- _main_emg.py_: For processing EMG signals
+- _main_fpga.py_: For processing data using in Xilinx simulation environment and transfer the weights of a trained model in memory file 
