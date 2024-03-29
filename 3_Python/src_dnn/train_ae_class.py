@@ -104,6 +104,7 @@ def do_train_ae_classifier(num_output: int, mode_ae: int, noise_std=0.05, mode_c
     # --- Processing: Loading dataset and Do Classification
     dataset = get_dataset_class(settings=config_data, path2model=path2model,
                                 use_cell_bib=use_cell_bib, mode_classes=mode_cell_bib)
+    num_output = dataset.frames_me.shape[0]
     trainhandler = train_classifier(config_train=config_train_cl, config_data=config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
@@ -111,7 +112,7 @@ def do_train_ae_classifier(num_output: int, mode_ae: int, noise_std=0.05, mode_c
 
     if do_plot:
         logsdir = trainhandler.get_saving_path()
-        data_result = trainhandler.do_validation_after_training()
+        data_result = trainhandler.do_validation_after_training(num_output)
 
         plot_loss(acc_class, 'Acc.', path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'],
