@@ -1,4 +1,4 @@
-from package.dnn.dnn_training import do_train_dnn, check_settings_file
+from src_neuro.dnn_training import do_train_dnn, check_settings_file
 
 if __name__ == "__main__":
     check_settings_file()

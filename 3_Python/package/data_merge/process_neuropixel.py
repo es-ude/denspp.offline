@@ -201,6 +201,7 @@ class NeuroPixelHandler:
 
         return in1
 
+
 if __name__ == "__main__":
     DataPathIn = "D:/0A_UCL_CortexLab_SingleProbe2017/Data"
     FileNameIn = "spike_times"

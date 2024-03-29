@@ -1,7 +1,6 @@
 import dataclasses
 import platform
 import shutil
-
 import cpuinfo
 import numpy as np
 from typing import Any

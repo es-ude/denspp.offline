@@ -136,14 +136,15 @@ Recommended_Config_DatasetSettings = Config_Dataset(
     # --- Data Augmentation
     data_do_augmentation=False,
     data_num_augmentation=0,
+    data_do_addnoise_cluster=False,
+    # --- Data Normalization
     data_do_normalization=False,
     data_normalization_mode='',
     data_normalization_method='',
     data_normalization_setting='',
-    data_do_addnoise_cluster=False,
+    # --- Dataset Preparation
     data_do_reduce_samples_per_cluster=False,
     data_num_samples_per_cluster=0,
-    # --- Dataset Preparation
     data_exclude_cluster=[],
     data_sel_pos=[]
 )

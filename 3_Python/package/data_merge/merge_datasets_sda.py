@@ -7,7 +7,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 from package.data_call.data_call_common import DataController
-from src_data.pipeline_data import Settings, Pipeline
+from src_neuro.pipeline_data import Settings, Pipeline
 
 
 def prepare_sda_dataset(path2save: str, slice_size=12, process_points=[]) -> None:

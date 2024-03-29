@@ -5,7 +5,7 @@ from matplotlib.ticker import AutoMinorLocator
 from package.plot.plot_common import save_figure, cm_to_inch
 from package.data_call.data_call_common import DataController
 from package.data_call.data_call_cellbib import CellSelector
-from src_data.pipeline_data import Settings, Pipeline
+from src_neuro.pipeline_data import Settings, Pipeline
 
 
 if __name__ == "__main__":

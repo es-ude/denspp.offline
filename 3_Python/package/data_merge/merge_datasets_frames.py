@@ -8,7 +8,7 @@ from tqdm import tqdm
 import platform
 
 from package.data_call.data_call_common import DataController
-from src_data.pipeline_data import Settings, Pipeline
+from src_neuro.pipeline_data import Settings, Pipeline
 
 
 class MergeDatasets:

@@ -8,6 +8,7 @@ from package.plot.plot_metric import plot_confusion
 
 def logic_combination(true_labels: np.ndarray, pred_labels: np.ndarray, translate_dict: list) -> [np.ndarray,
                                                                                                   np.ndarray]:
+    """Combination of logic"""
     true_labels_new = np.zeros(shape=true_labels.shape, dtype=np.uint8)
     pred_labels_new = np.zeros(shape=pred_labels.shape, dtype=np.uint8)
 
