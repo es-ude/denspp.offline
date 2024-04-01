@@ -1,5 +1,5 @@
 from torch import nn, Tensor
-from package.dnn.pytorch.handler import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 
 
 class dnn_ae_rgc_fzj_v1(nn.Module):

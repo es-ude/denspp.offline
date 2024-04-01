@@ -1,12 +1,12 @@
 from torch import nn
 import matplotlib.pyplot as plt
-from package.dnn.pytorch.handler import Config_PyTorch, Config_Dataset
-import package.dnn.models.autoencoder_dnn as models
+from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
+import package.dnn.models.autoencoder_class as models
 
 
 config_data = Config_Dataset(
     # --- Settings of Datasets
-    data_path='../2_Data/00_Merged_Datasets',
+    data_path='../../../../2_Data/00_Merged_Datasets',
     data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
     #data_file_name='2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted',
     # --- Data Augmentation
@@ -27,9 +27,9 @@ config_data = Config_Dataset(
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
-    model=models.dnn_ae_v2(),
-    loss='MSE',
-    loss_fn=nn.MSELoss(),
+    model=models.classifier_ae_v1(32, 5),
+    loss='Cross Entropy',
+    loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
     num_epochs=100,
@@ -39,52 +39,48 @@ config_train = Config_PyTorch(
 )
 
 
-def do_train_ae(mode_ae: int, noise_std=0.05, mode_cell_bib=0, do_plot=True, block_plot=True) -> None:
+def do_train_classifier(num_output=5, mode_cell_bib=0, do_plot=True, block_plot=True) -> None:
     """Training routine for Autoencoders
     Args:
-        mode_ae: Selected model of the Autoencoder (0: normal, 1: Denoising (mean), 2: Denoising (input)) [default:0]
-        noise_std: Std of the additional noise added to the input [default: 0.05]
         mode_cell_bib: If the dataset contains a cell library then the mode can be choicen (0: Deactivated, 1: All, 2-...: Reduced) [default: 0]
         do_plot: Doing the plots during the training routine
         block_plot: Blocking the plot outputs if do_plot is active
     """
     from package.dnn.dataset.autoencoder import prepare_training
-    from package.dnn.pytorch.autoencoder import train_nn
-    from package.plot.plot_dnn import results_training, plot_statistic_data
+    from package.dnn.pytorch.classifier import train_nn
+    from package.plot.plot_dnn import plot_statistic_data
+    from package.plot.plot_metric import plot_confusion, plot_loss
 
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
     use_cell_bib = not (mode_cell_bib == 0)
     use_cell_mode = 0 if not use_cell_bib else mode_cell_bib - 1
 
-    # --- Processing: Loading dataset and Do Training
-    dataset = prepare_training(settings=config_data,
-                               use_cell_bib=use_cell_bib, mode_classes=use_cell_mode,
-                               mode_train_ae=mode_ae, do_classification=False,
-                               noise_std=noise_std)
-    data_mean = dataset.frames_me
+    # ---Loading Data, Do Training and getting the results
+    dataset = prepare_training(config_data, use_cell_bib=use_cell_bib, mode_classes=use_cell_mode, do_classification=True)
     trainhandler = train_nn(config_train, config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
     del dataset
-    loss_ae, snr_train = trainhandler.do_training()[-1]
+    epoch_acc = trainhandler.do_training()[-1]
 
-    # --- Post-Processing: Validation after training
+    # --- Post-Processing: Getting data, save and plot results
     logsdir = trainhandler.get_saving_path()
-    data_result = trainhandler.do_validation_after_training()
+    data_result = trainhandler.do_validation_after_training(num_output)
+    del trainhandler
 
-    # --- Plotting and Ending
+    # --- Plotting
     if do_plot:
-        plt.close("all")
-        results_training(
-            path=logsdir, cl_dict=data_result['cl_dict'], feat=data_result['feat'],
-            yin=data_result['input'], ypred=data_result['pred'], ymean=data_mean,
-            yclus=data_result['valid_clus'], snr=snr_train
-        )
+        plt.close('all')
+        # plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
+        plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
+        plot_confusion(data_result['valid_clus'], data_result['yclus'],
+                       path2save=logsdir, cl_dict=data_result['cl_dict'])
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                             path2save=logsdir, cl_dict=data_result['cl_dict'])
+
         plt.show(block=block_plot)
-    print("\nThe End")
+    print("The End")
 
 
 if __name__ == "__main__":
-    do_train_ae(0)
+    do_train_classifier()

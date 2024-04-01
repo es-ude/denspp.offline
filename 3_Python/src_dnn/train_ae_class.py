@@ -1,7 +1,7 @@
 import numpy as np
 from torch import nn
 import matplotlib.pyplot as plt
-from package.dnn.pytorch.handler import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 import package.dnn.models.autoencoder_cnn as models_ae
 import package.dnn.models.autoencoder_class as models_class
 

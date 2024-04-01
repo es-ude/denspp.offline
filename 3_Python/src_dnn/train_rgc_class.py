@@ -1,6 +1,6 @@
 from torch import nn
 import matplotlib.pyplot as plt
-from package.dnn.pytorch.handler import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 import package.dnn.models.rgc_onoff_class as models_rgc
 
 

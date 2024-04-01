@@ -1,6 +1,6 @@
 from torch import nn
 import matplotlib.pyplot as plt
-from package.dnn.pytorch.handler import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 import package.dnn.models.spike_detection as models_sda
 
 

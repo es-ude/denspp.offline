@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from package.dnn.pytorch.handler import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 from elasticai.creator.nn import Sequential
 from elasticai.creator.nn.fixed_point import BatchNormedLinear, HardTanh
 

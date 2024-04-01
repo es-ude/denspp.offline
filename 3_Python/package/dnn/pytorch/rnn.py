@@ -4,7 +4,7 @@ from shutil import copy
 from datetime import datetime
 from torch import Tensor, load, save, from_numpy
 from scipy.io import savemat
-from package.dnn.pytorch.handler import Config_PyTorch, Config_Dataset, training_pytorch
+from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
 
 
 class train_nn(training_pytorch):

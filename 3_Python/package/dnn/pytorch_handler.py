@@ -78,21 +78,28 @@ class Config_Dataset:
         return join(self.data_path, self.data_file_name)
 
 
-def copy_handler_dummy(only_dummy: bool, path2dnn='src_dnn') -> None:
+def copy_handler_dummy() -> None:
     """Generating a handler dummy for training neural networks"""
+    path2dst = 'src_dnn'
     # --- Checking if path to local training handler exists
-    if not exists(path2dnn):
-        os.mkdir(path2dnn)
-    if not exists(join(path2dnn, 'models')):
-        os.mkdir(join(path2dnn, 'models'))
-    if not exists(join(path2dnn, 'dataset')):
-        os.mkdir(join(path2dnn, 'dataset'))
+    if not exists(path2dst):
+        os.mkdir(path2dst)
+    if not exists(join(path2dst, 'models')):
+        os.mkdir(join(path2dst, 'models'))
+    if not exists(join(path2dst, 'dataset')):
+        os.mkdir(join(path2dst, 'dataset'))
 
     # --- Copy process
-    if only_dummy:
-        shutil.copy("package/dnn/train_ae_template.py", f"{path2dnn}/dnn_autoencoder_dummy.py")
-        shutil.copy("package/dnn/train_cl_template.py", f"{path2dnn}/dnn_classifier_dummy.py")
-        print("A template of training handler is copied into train folder. Please check the content and restart!")
+    if not exists(path2dst):
+        path2src = 'package/dnn/template'
+        print("\nGenerating a template for ML training")
+        for file in glob(join(path2src, "*.py")):
+            print(f"... copied: {file}")
+            if "main" in file:
+                shutil.copy(file, f"")
+            else:
+                shutil.copy(file, f"{path2dst}/")
+        print("Please restart the training routine!")
 
 
 class training_pytorch:

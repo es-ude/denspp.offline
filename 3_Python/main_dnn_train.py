@@ -1,4 +1,4 @@
-from package.dnn.pytorch.handler import copy_handler_dummy
+from package.dnn.pytorch_handler import copy_handler_dummy
 
 # TODO: Handler for Training implementieren (Line 7-13)
 # TODO: Remove output estimation (getting the information from model)
@@ -13,7 +13,7 @@ if __name__ == "__main__":
     do_block = True
 
     # --- Generate templates
-    copy_handler_dummy(False)
+    copy_handler_dummy()
     # --- Selecting model for train
     match mode_dnn_train:
         case 0:
