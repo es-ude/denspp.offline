@@ -10,11 +10,6 @@ import package.fpga.veriloga_translate_timeseries_1ch as veriloga_time
 from package.fpga.verilog_translate_weights import read_model_weights
 
 
-def generate_xpos_label(xpos_in: np.ndarray, dx_us: int, fs_orig: float, fs_used: float) -> np.ndarray:
-    """Generating label ticks"""
-    return (xpos_in - int(1e-6 * dx_us * fs_orig)) / fs_orig * fs_used
-
-
 def do_data_transfer_timeseries_vivado(path: str) -> None:
     """Routine for transfering neural rawdata for Vivado simulations
     (mode = 'Vivado' or 'Cadence')"""
@@ -30,9 +25,9 @@ def do_data_transfer_timeseries_vivado(path: str) -> None:
     datahandler.do_cut()
     datahandler.do_resample()
     data = datahandler.get_data()
+    
+    xpos = datahandler.generate_xpos_label(0)
     afe.run_minimal(data.data_raw[0])
-
-    trgg = 0
 
     # --- Transfer to verilog files
     if not os.path.exists(path):
@@ -47,7 +42,7 @@ def do_data_transfer_timeseries_vivado(path: str) -> None:
         use_trigger=True,
         fs=sampling_rate
     )
-    xpos = generate_xpos_label(data.spike_xpos[0], data.spike_offset_us[0], data.data_fs_used, afe.signals.fs_dig)
+    
     verilog_time.translate_data_memory(
         raw_data=afe.signals.x_adc,
         trigger=xpos,

@@ -183,6 +183,29 @@ class DataController(DataLoader):
     def get_data(self) -> DataHandler:
         """Calling the raw data with groundtruth of the called data"""
         return self.raw_data
+        
+    def generate_xpos_label(self, used_channel: int) -> np.ndarray:
+        """Generating label ticks"""
+        fs_used = self.raw_data.data_fs_used
+        fs_orig = self.raw_data.data_fs_orig
+        dx_us = self.raw_data.spike_offset_us[used_channel]
+        xpos_in = self.raw_data.spike_xpos[used_channel]
+        return (xpos_in - int(1e-6 * dx_us * fs_orig)) / fs_orig * fs_used
+        
+    def generate_label_stream_channel(self, used_channel: int, window_time=1.6e-3) -> np.ndarray:
+        """"""
+        window_size = int(window_time * self.raw_data.data_fs_used)
+        trgg0 = np.zeros(self.raw_data.data_raw[used_channel], dtype=int)
+        for val in self.generate_xpos_label(used_channel):
+            trgg0[int(val):int(val) + window_size] = 1
+        return trgg0
+
+    def generate_label_stream(self, window_time=1.6e-3) -> list:
+        """"""
+        trgg_out = list()
+        for ch_used, trgg_used in enumerate(self.raw_data.spike_xpos):
+            trgg_out.append(self.generate_label_stream_channel(ch_used, window_time))
+        return trgg_out
 
     def _prepare_access_file(self, folder_name: str, data_type: str, sel_datapoint: int) -> None:
         """Getting the file of the corresponding trial"""
