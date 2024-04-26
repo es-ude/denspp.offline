@@ -1,5 +1,6 @@
 from torch import nn
 import matplotlib.pyplot as plt
+from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 import package.dnn.models.decoding_utah as models_dec
 
@@ -41,12 +42,11 @@ config_train = Config_PyTorch(
 )
 
 
-def do_train_decoder_utah(length_window_ms=500, do_plot=True, block_plot=True) -> None:
+def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> None:
     """Training routine for Neural Decoding of recordings from Utah array (KlaesLab)
     Args:
+        dnn_handler: Handler for configurating the routine selection for train deep neural networks
         length_window_ms: Size of the time window for segmenting the tick interval into firing events
-        do_plot: Doing the plots during the training routine
-        block_plot: Blocking the plot outputs if do_plot is active
     """
     from package.dnn.dataset.decoding_utah import prepare_training
     from package.dnn.pytorch.rnn import train_nn
@@ -70,15 +70,12 @@ def do_train_decoder_utah(length_window_ms=500, do_plot=True, block_plot=True) -
     del trainhandler
 
     # --- Plotting and Ending
-    if do_plot:
+    if dnn_handler.do_plot:
         plt.close("all")
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=data_dict)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir, cl_dict=data_dict)
-        plt.show(block=block_plot)
+
+        plt.show(block=dnn_handler.do_block)
 
     print("\nThe End")
-
-
-if __name__ == "__main__":
-    do_train_decoder_utah(500)

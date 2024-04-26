@@ -1,14 +1,14 @@
 from torch import nn
 import matplotlib.pyplot as plt
+from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 import package.dnn.models.autoencoder_class as models
 
 
 config_data = Config_Dataset(
     # --- Settings of Datasets
-    data_path='../../../../2_Data/00_Merged_Datasets',
+    data_path='../2_Data/00_Merged_Datasets',
     data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
-    #data_file_name='2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted',
     # --- Data Augmentation
     data_do_augmentation=False,
     data_num_augmentation=0,
@@ -39,9 +39,10 @@ config_train = Config_PyTorch(
 )
 
 
-def do_train_classifier(num_output=5, mode_cell_bib=0, do_plot=True, block_plot=True) -> None:
+def do_train_classifier(dnn_handler: dnn_handler, num_output=5) -> None:
     """Training routine for Autoencoders
     Args:
+        dnn_handler: Handler for configurating the routine selection for train deep neural networks
         mode_cell_bib: If the dataset contains a cell library then the mode can be choicen (0: Deactivated, 1: All, 2-...: Reduced) [default: 0]
         do_plot: Doing the plots during the training routine
         block_plot: Blocking the plot outputs if do_plot is active
@@ -52,11 +53,12 @@ def do_train_classifier(num_output=5, mode_cell_bib=0, do_plot=True, block_plot=
     from package.plot.plot_metric import plot_confusion, plot_loss
 
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
-    use_cell_bib = not (mode_cell_bib == 0)
-    use_cell_mode = 0 if not use_cell_bib else mode_cell_bib - 1
+    use_cell_bib = not (dnn_handler.mode_cell_bib == 0)
+    use_cell_mode = 0 if not use_cell_bib else dnn_handler.mode_cell_bib - 1
 
     # ---Loading Data, Do Training and getting the results
-    dataset = prepare_training(config_data, use_cell_bib=use_cell_bib, mode_classes=use_cell_mode, do_classification=True)
+    dataset = prepare_training(config_data, use_cell_bib=use_cell_bib, mode_classes=use_cell_mode,
+                               do_classification=True)
     trainhandler = train_nn(config_train, config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
@@ -69,7 +71,7 @@ def do_train_classifier(num_output=5, mode_cell_bib=0, do_plot=True, block_plot=
     del trainhandler
 
     # --- Plotting
-    if do_plot:
+    if dnn_handler.do_plot:
         plt.close('all')
         # plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
@@ -78,7 +80,7 @@ def do_train_classifier(num_output=5, mode_cell_bib=0, do_plot=True, block_plot=
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                             path2save=logsdir, cl_dict=data_result['cl_dict'])
 
-        plt.show(block=block_plot)
+        plt.show(block=dnn_handler.do_block)
     print("The End")
 
 

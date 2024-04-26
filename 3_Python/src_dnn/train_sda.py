@@ -1,10 +1,10 @@
 from torch import nn
 import matplotlib.pyplot as plt
+from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 import package.dnn.models.spike_detection as models_sda
 
 
-# TODO: Data for training SDA is missing!
 config_data = Config_Dataset(
     # --- Settings of Datasets
     data_path='../2_Data/00_Merged_Datasets',
@@ -40,12 +40,11 @@ config_train_sda = Config_PyTorch(
 )
 
 
-def dnn_train_sda(sda_threshold: int, do_plot=True, block_plot=True) -> None:
+def dnn_train_sda(dnn_handler: dnn_handler, sda_threshold: int) -> None:
     """Training routine for Spike Detection
     Args:
+        dnn_handler: Handler for configurating the routine selection for train deep neural networks
         sda_threshold: Threshold value for identifying a spike event
-        do_plot: Doing the plots during the training routine
-        block_plot: Blocking the plot outputs if do_plot is active
     """
     from package.dnn.dataset.spike_detection import prepare_training
     from package.dnn.pytorch.classifier import train_nn
@@ -68,14 +67,11 @@ def dnn_train_sda(sda_threshold: int, do_plot=True, block_plot=True) -> None:
     del trainhandler
 
     # --- Plotting
-    if do_plot:
+    if dnn_handler.do_plot:
         plt.close("all")
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=data_dict)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir, cl_dict=data_dict)
-        plt.show(block=block_plot)
+
+        plt.show(block=dnn_handler.do_block)
     print("\nThe End")
-
-
-if __name__ == "__main__":
-    dnn_train_sda(4)

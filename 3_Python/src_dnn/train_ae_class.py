@@ -1,6 +1,7 @@
 import numpy as np
 from torch import nn
 import matplotlib.pyplot as plt
+from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 import package.dnn.models.autoencoder_cnn as models_ae
 import package.dnn.models.autoencoder_class as models_class
@@ -53,15 +54,12 @@ config_train_cl = Config_PyTorch(
 )
 
 
-def do_train_ae_classifier(num_output: int, mode_ae: int, noise_std=0.05, mode_cell_bib=0,
-                           do_plot=True, block_plot=True) -> None:
+def do_train_ae_classifier(dnn_handler: dnn_handler, num_output: int, mode_ae: int, noise_std=0.05) -> None:
     """Training routine for Autoencoders and Classification after Encoder
     Args:
+        dnn_handler: Handler for configurating the routine selection for train deep neural networks
         mode_ae: Selected model of the Autoencoder (0: normal, 1: Denoising (mean), 2: Denoising (input)) [default:0]
         noise_std: Std of the additional noise added to the input [default: 0.05]
-        mode_cell_bib: If the dataset contains a cell library then the mode can be choicen (0: Deactivated, 1: All, 2-...: Reduced) [default: 0]
-        do_plot: Doing the plots during the training routine
-        block_plot: Blocking the plot outputs if do_plot is active
     """
     from package.dnn.dataset.autoencoder import prepare_training as get_dataset_ae
     from package.dnn.dataset.autoencoder_class import prepare_training as get_dataset_class
@@ -71,8 +69,8 @@ def do_train_ae_classifier(num_output: int, mode_ae: int, noise_std=0.05, mode_c
     from package.plot.plot_metric import plot_confusion, plot_loss
 
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
-    use_cell_bib = not (mode_cell_bib == 0)
-    use_cell_mode = 0 if not use_cell_bib else mode_cell_bib - 1
+    use_cell_bib = not (dnn_handler.mode_cell_bib == 0)
+    use_cell_mode = 0 if not use_cell_bib else dnn_handler.mode_cell_bib - 1
 
     metric_snr_run = list()
     # ----------- Step #1: TRAINING AUTOENCODER
@@ -85,7 +83,7 @@ def do_train_ae_classifier(num_output: int, mode_ae: int, noise_std=0.05, mode_c
     loss_ae, snr_ae = trainhandler.do_training()[-1]
     path2model = trainhandler.get_saving_path()
 
-    if do_plot:
+    if dnn_handler.do_plot:
         logsdir = trainhandler.get_saving_path()
         data_result = trainhandler.do_validation_after_training(num_output)
         data_mean = dataset.frames_me
@@ -110,7 +108,7 @@ def do_train_ae_classifier(num_output: int, mode_ae: int, noise_std=0.05, mode_c
     trainhandler.load_data(dataset)
     acc_class = trainhandler.do_training()[-1]
 
-    if do_plot:
+    if dnn_handler.do_plot:
         logsdir = trainhandler.get_saving_path()
         data_result = trainhandler.do_validation_after_training(num_output)
 
@@ -120,7 +118,8 @@ def do_train_ae_classifier(num_output: int, mode_ae: int, noise_std=0.05, mode_c
                        name_addon="training")
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                             path2save=logsdir, cl_dict=data_result['cl_dict'])
-        plt.show(block=block_plot)
+
+        plt.show(block=dnn_handler.do_block)
     else:
         # --- Übergabe next run (Taking best results
         last_loss = loss_ae[-1]
@@ -132,7 +131,3 @@ def do_train_ae_classifier(num_output: int, mode_ae: int, noise_std=0.05, mode_c
 
     del dataset, trainhandler
     print("\nThe End")
-
-
-if __name__ == "__main__":
-    do_train_ae_classifier(5, 0)

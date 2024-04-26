@@ -1,5 +1,6 @@
 from torch import nn
 import matplotlib.pyplot as plt
+from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 import package.dnn.models.autoencoder_dnn as models
 
@@ -8,7 +9,6 @@ config_data = Config_Dataset(
     # --- Settings of Datasets
     data_path='../2_Data/00_Merged_Datasets',
     data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
-    #data_file_name='2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted',
     # --- Data Augmentation
     data_do_augmentation=False,
     data_num_augmentation=0,
@@ -39,22 +39,20 @@ config_train = Config_PyTorch(
 )
 
 
-def do_train_ae(mode_ae: int, noise_std=0.05, mode_cell_bib=0, do_plot=True, block_plot=True) -> None:
+def do_train_ae(dnn_handler: dnn_handler, mode_ae: int, noise_std=0.05) -> None:
     """Training routine for Autoencoders
     Args:
+        dnn_handler: Handler for configurating the routine selection for train deep neural networks
         mode_ae: Selected model of the Autoencoder (0: normal, 1: Denoising (mean), 2: Denoising (input)) [default:0]
         noise_std: Std of the additional noise added to the input [default: 0.05]
-        mode_cell_bib: If the dataset contains a cell library then the mode can be choicen (0: Deactivated, 1: All, 2-...: Reduced) [default: 0]
-        do_plot: Doing the plots during the training routine
-        block_plot: Blocking the plot outputs if do_plot is active
     """
     from package.dnn.dataset.autoencoder import prepare_training
     from package.dnn.pytorch.autoencoder import train_nn
     from package.plot.plot_dnn import results_training, plot_statistic_data
 
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
-    use_cell_bib = not (mode_cell_bib == 0)
-    use_cell_mode = 0 if not use_cell_bib else mode_cell_bib - 1
+    use_cell_bib = not (dnn_handler.mode_cell_bib == 0)
+    use_cell_mode = 0 if not use_cell_bib else dnn_handler.mode_cell_bib - 1
 
     # --- Processing: Loading dataset and Do Training
     dataset = prepare_training(settings=config_data,
@@ -73,7 +71,7 @@ def do_train_ae(mode_ae: int, noise_std=0.05, mode_cell_bib=0, do_plot=True, blo
     data_result = trainhandler.do_validation_after_training()
 
     # --- Plotting and Ending
-    if do_plot:
+    if dnn_handler.do_plot:
         plt.close("all")
         results_training(
             path=logsdir, cl_dict=data_result['cl_dict'], feat=data_result['feat'],
@@ -82,7 +80,8 @@ def do_train_ae(mode_ae: int, noise_std=0.05, mode_cell_bib=0, do_plot=True, blo
         )
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                             path2save=logsdir, cl_dict=data_result['cl_dict'])
-        plt.show(block=block_plot)
+
+        plt.show(block=dnn_handler.do_block)
     print("\nThe End")
 
 

@@ -6,6 +6,7 @@ from package.data_call.call_cellbib import logic_combination
 
 from torch import nn
 import matplotlib.pyplot as plt
+from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 import package.dnn.models.rgc_onoff_class as models_rgc
 
@@ -75,12 +76,10 @@ def rgc_logic_combination(logsdir: str, valid_file_name='results_class.mat') -> 
                    name_addon='_logic_transient-sustained')
 
 
-def do_train_rgc_class(mode_cell_bib=0, do_plot=True, block_plot=True) -> None:
+def do_train_rgc_class(dnn_handler: dnn_handler) -> None:
     """Training routine for classifying RGC ON/OFF and Transient/Sustained Types (Classification)
     Args:
-        mode_cell_bib: If the dataset contains a cell library then the mode can be choicen (0: Deactivated, 1: All, 2-...: Reduced) [default: 0]
-        do_plot: Doing the plots during the training routine
-        block_plot: Blocking the plot outputs if do_plot is active
+        dnn_handler: Handler for configurating the routine selection for train deep neural networks
     """
     from package.dnn.dataset.rgc_classification import prepare_training
     from package.dnn.pytorch.classifier import train_nn
@@ -88,8 +87,8 @@ def do_train_rgc_class(mode_cell_bib=0, do_plot=True, block_plot=True) -> None:
     from package.plot.plot_metric import plot_confusion, plot_loss
 
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
-    use_cell_bib = not (mode_cell_bib == 0)
-    use_cell_mode = 0 if not use_cell_bib else mode_cell_bib - 1
+    use_cell_bib = not (dnn_handler.mode_cell_bib == 0)
+    use_cell_mode = 0 if not use_cell_bib else dnn_handler.mode_cell_bib - 1
 
     # ---Loading Data, Do Training and getting the results
     dataset = prepare_training(config_data, use_cell_bib=use_cell_bib, mode_classes=use_cell_mode)
@@ -107,7 +106,7 @@ def do_train_rgc_class(mode_cell_bib=0, do_plot=True, block_plot=True) -> None:
     del trainhandler
 
     # --- Plotting
-    if do_plot:
+    if dnn_handler.do_plot:
         plt.close('all')
         # --- Plotting full model
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
@@ -119,9 +118,5 @@ def do_train_rgc_class(mode_cell_bib=0, do_plot=True, block_plot=True) -> None:
         # --- Plotting reduced model (ON/OFF and Transient/Sustained)
         rgc_logic_combination(logsdir)
 
-        plt.show(block=block_plot)
+        plt.show(block=dnn_handler.do_block)
     print("\nThe End")
-
-
-if __name__ == "__main__":
-    do_train_rgc_class(mode_cell_bib=2)

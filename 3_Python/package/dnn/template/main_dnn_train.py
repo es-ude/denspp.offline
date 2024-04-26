@@ -1,28 +1,27 @@
-from package.dnn.pytorch_handler import copy_handler_dummy
+from package.dnn.dnn_handler import dnn_handler
 
-# TODO: Handler for Training implementieren (Line 7-13)
-# TODO: Remove output estimation (getting the information from model)
+dnn_handler = dnn_handler(
+    mode_dnn=0,
+    mode_cellbib=0,
+    do_plot=True,
+    do_block=True
+)
+
+
 if __name__ == "__main__":
-    # --- Configs
-    mode_dnn_train = 0
-    mode_cell_bib = 0
+    # --- Configs (AE)
     mode_ae = 0
     noise_std_ae = 0.01
-    num_output = 5
-    do_plot = True
-    do_block = True
 
-    # --- Generate templates
-    copy_handler_dummy()
     # --- Selecting model for train
-    match mode_dnn_train:
+    match dnn_handler.mode_train_dnn:
         case 0:
             # --- Autoencoder
             from src_dnn.train_ae import do_train_ae
-            do_train_ae(mode_ae, noise_std_ae, mode_cell_bib, do_plot, do_block)
+            do_train_ae(mode_ae, noise_std_ae, dnn_handler)
         case 1:
             # --- Classifier
             from src_dnn.train_cl import do_train_cl
-            do_train_cl(num_output, mode_cell_bib, do_plot, do_block)
+            do_train_cl(dnn_handler)
         case _:
             print("Wrong model! Please select right model!")
