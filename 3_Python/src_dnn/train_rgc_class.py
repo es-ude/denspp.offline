@@ -1,3 +1,9 @@
+from os import mkdir
+from os.path import join, exists
+from scipy.io import loadmat
+from package.plot.plot_metric import plot_confusion
+from package.data_call.call_cellbib import logic_combination
+
 from torch import nn
 import matplotlib.pyplot as plt
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
@@ -16,12 +22,12 @@ config_data = Config_Dataset(
     data_num_augmentation=0,
     data_do_addnoise_cluster=False,
     # --- Data Normalization
-    data_do_normalization=False,
+    data_do_normalization=True,
     data_normalization_mode='CPU',
     data_normalization_method='minmax',
     data_normalization_setting='bipolar',
     # --- Dataset Reduction
-    data_do_reduce_samples_per_cluster=False,
+    data_do_reduce_samples_per_cluster=True,
     data_num_samples_per_cluster=50_000,
     data_exclude_cluster=[],
     data_sel_pos=[]
@@ -29,16 +35,44 @@ config_data = Config_Dataset(
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
-    model=models_rgc.dnn_rgc_v2(32, 52),
+    model=models_rgc.dnn_rgc_v2(32, 4),
     loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=100,
+    num_epochs=10,
     batch_size=256,
     data_split_ratio=0.25,
     data_do_shuffle=True
 )
+
+
+def rgc_logic_combination(logsdir: str, valid_file_name='results_class.mat') -> None:
+    """"""
+    data_result = loadmat(join(logsdir, valid_file_name))
+    path2save = join(logsdir, 'logic_comb')
+    if not exists(path2save):
+        mkdir(path2save)
+
+    cell_dict_orig = data_result['cl_dict'].tolist()
+    true_labels_orig = data_result['valid_clus'].flatten()
+    pred_labels_orig = data_result['yclus'].flatten()
+
+    # --- Logical combination for ON/OFF
+    cell_dict_onoff = ['OFF', 'ON']
+    translate_dict = [[0, 1], [2, 3]]
+    true_labels_onoff, pred_labels_onoff = logic_combination(true_labels_orig, pred_labels_orig, translate_dict)
+    plot_confusion(true_labels_onoff, pred_labels_onoff, 'class',
+                   cl_dict=cell_dict_onoff, path2save=path2save,
+                   name_addon='_logic_on-off')
+
+    # --- Logical combination for ON/OFF
+    cell_dict_transus = ['Sustained', 'Transient']
+    translate_dict = [[0, 2], [1, 3]]
+    true_labels_transus, pred_labels_transus = logic_combination(true_labels_orig, pred_labels_orig, translate_dict)
+    plot_confusion(true_labels_transus, pred_labels_transus, 'class',
+                   cl_dict=cell_dict_transus, path2save=path2save,
+                   name_addon='_logic_transient-sustained')
 
 
 def do_train_rgc_class(mode_cell_bib=0, do_plot=True, block_plot=True) -> None:
@@ -75,15 +109,19 @@ def do_train_rgc_class(mode_cell_bib=0, do_plot=True, block_plot=True) -> None:
     # --- Plotting
     if do_plot:
         plt.close('all')
+        # --- Plotting full model
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'],
                        path2save=logsdir, cl_dict=frame_dict)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                             path2save=logsdir, cl_dict=frame_dict)
 
+        # --- Plotting reduced model (ON/OFF and Transient/Sustained)
+        rgc_logic_combination(logsdir)
+
         plt.show(block=block_plot)
     print("\nThe End")
 
 
 if __name__ == "__main__":
-    do_train_rgc_class(2)
+    do_train_rgc_class(mode_cell_bib=2)

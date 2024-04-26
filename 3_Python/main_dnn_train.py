@@ -4,8 +4,8 @@ from package.dnn.pytorch_handler import copy_handler_dummy
 # TODO: Remove output estimation (getting the information from model)
 if __name__ == "__main__":
     # --- Configs
-    mode_dnn_train = 1
-    mode_cell_bib = 0
+    mode_dnn_train = 3
+    mode_cell_bib = 2
     mode_ae = 0
     noise_std_ae = 0.01
     num_output = 5

@@ -97,6 +97,21 @@ class _RGC_ONOFF_FZJ:
         }
 
 
+def logic_combination(true_labels: np.ndarray, pred_labels: np.ndarray, translate_dict: list) -> [np.ndarray,
+                                                                                                  np.ndarray]:
+    """Combination of logic for Reducing Label Classes"""
+    true_labels_new = np.zeros(shape=true_labels.shape, dtype=np.uint8)
+    pred_labels_new = np.zeros(shape=pred_labels.shape, dtype=np.uint8)
+
+    for idx, cluster in enumerate(translate_dict):
+        for id in cluster:
+            pos = np.argwhere(true_labels == id).flatten()
+            true_labels_new[pos] = idx
+            pos = np.argwhere(pred_labels == id).flatten()
+            pred_labels_new[pos] = idx
+    return true_labels_new, pred_labels_new
+
+
 class CellSelector(_RGC_ONOFF_FZJ, _RGC_TDB):
     """Cell Selection Functions"""
     cell_type_to_id: dict
