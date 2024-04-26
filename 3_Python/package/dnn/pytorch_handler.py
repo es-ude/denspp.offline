@@ -143,13 +143,12 @@ class training_pytorch:
         self._path2log = str()
         self._path2temp = str()
         self._path2config = str()
-        self.use_only_cpu = False
 
     def __setup_device(self) -> None:
         """Setup PyTorch for Training"""
 
         # Using GPU
-        if cuda.is_available() and not self.use_only_cpu:
+        if cuda.is_available():
             self.used_hw_gpu = cuda.get_device_name()
             self.used_hw_cpu = (f"{cpuinfo.get_cpu_info()['brand_raw']} "
                        f"(@ {1e-9 * cpuinfo.get_cpu_info()['hz_actual'][0]:.3f} GHz)")
@@ -203,13 +202,13 @@ class training_pytorch:
         self._path2log = join(self._path2save, f'logs')
         self._writer = SummaryWriter(self._path2log, comment=f"event_log_kfold{self._run_kfold:03d}")
 
-    def load_data(self, data_set) -> None:
-        self.__setup_device()
+    def load_data(self, data_set, num_workers=0) -> None:
         """Loading data for training and validation in DataLoader format into class"""
+        self.__setup_device()
         self._do_kfold = True if self.settings.num_kfold > 1 else False
         self._model_addon = data_set.data_type
         self.cell_classes = data_set.frame_dict if data_set.cluster_name_available else []
-        num_workers = 0
+
         # --- Preparing datasets
         out_train = list()
         out_valid = list()
@@ -218,10 +217,8 @@ class training_pytorch:
             for idx_train, idx_valid in kfold.split(np.arange(len(data_set))):
                 subsamps_train = SubsetRandomSampler(idx_train)
                 subsamps_valid = SubsetRandomSampler(idx_valid)
-                out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train,
-                                            pin_memory=not self.use_only_cpu,num_workers=num_workers, pin_memory_device=self.used_hw_dev.type))
-                out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid,
-                                            pin_memory=not self.use_only_cpu,num_workers=num_workers ,pin_memory_device=self.used_hw_dev.type))
+                out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train))
+                out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
                 self._samples_train.append(subsamps_train.indices.size)
                 self._samples_valid.append(subsamps_valid.indices.size)
         else:
@@ -234,13 +231,20 @@ class training_pytorch:
             subsamps_train = SubsetRandomSampler(idx_train)
             subsamps_valid = SubsetRandomSampler(idx_valid)
             out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train))
-                                        #pin_memory=not self.use_only_cpu, num_workers=num_workers,
-                                        #pin_memory_device=self.used_hw_dev.type))
             out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
-                                        #pin_memory=not self.use_only_cpu, num_workers=num_workers,
-                                        #pin_memory_device=self.used_hw_dev.type))
+
             self._samples_train.append(subsamps_train.indices.size)
             self._samples_valid.append(subsamps_valid.indices.size)
+
+        # --- CUDA support for dataset
+        if cuda.is_available():
+            for idx, dataset in enumerate(out_train):
+                out_train[idx].pin_memory = True
+                out_train[idx].pin_memory_device = self.used_hw_dev.type
+                out_train[idx].num_workers = num_workers
+                out_valid[idx].pin_memory = True
+                out_valid[idx].pin_memory_device = self.used_hw_dev.type
+                out_valid[idx].num_workers = num_workers
 
         # --- Output
         self.train_loader = out_train
