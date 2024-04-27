@@ -7,7 +7,7 @@ from scipy.io import savemat, loadmat
 from tqdm import tqdm
 import platform
 
-from package.data_call.call_handler import DataController
+from package.data_call.call_spike_files import DataLoader
 from src_neuro.pipeline_data import Settings, Pipeline
 
 
@@ -66,18 +66,16 @@ class MergeDatasets:
             frames_cl = np.empty(shape=(0, 0), dtype=np.dtype('uint16'))
 
             afe_set.SettingsDATA.data_point = runPoint
-            datahandler = DataController(afe_set.SettingsDATA)
+            datahandler = DataLoader(afe_set.SettingsDATA)
             datahandler.do_call()
             datahandler.do_resample()
 
             # --- Taking signals from handler
             for ch in tqdm(datahandler.raw_data.electrode_id, ncols=100, desc="Progress: "):
                 spike_xpos = np.floor(datahandler.raw_data.evnt_xpos[ch] * fs_adc / fs_ana).astype("int")
-                spike_xoff = int(1e-6 * datahandler.raw_data.spike_offset_us[0] * fs_adc)
-
                 # --- Processing the analogue input
                 afe = Pipeline(afe_set)
-                afe.run_input(datahandler.raw_data.data_raw[ch], spike_xpos, spike_xoff)
+                afe.run_input(datahandler.raw_data.data_raw[ch], spike_xpos)
                 length_data_in = afe.signals.x_adc.size
 
                 frame_new = afe.signals.frames_align
