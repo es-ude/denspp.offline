@@ -35,9 +35,9 @@ def prepare_sda_dataset(path2save: str, slice_size=12, process_points=[]) -> Non
     xpos = None
     for idx0, elec in enumerate(tqdm(data.electrode_id, ncols=100, desc='Progress:')):
         window = [-16, 40]
-        spike_clus = data.cluster_id[elec]
+        spike_clus = data.evnt_cluster_id[elec]
         pos = np.argwhere(spike_clus != 0)
-        spike_xpos = np.floor(data.spike_xpos[elec][pos].flatten() * fs_adc / fs_ana).astype("int")
+        spike_xpos = np.floor(data.evnt_xpos[elec][pos].flatten() * fs_adc / fs_ana).astype("int")
         spike_xoff = int(1e-6 * data.spike_offset_us[0] * fs_adc)
 
         pipeline = Pipeline(afe_set)

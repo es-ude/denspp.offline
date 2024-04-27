@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from src_neuro.pipeline_v1 import Settings, Pipeline
 from package.metric import Metric
-from package.data_call.call_handler import DataController
+from package.data_call.call_spike_files import DataLoader
 from package.plot.plot_pipeline import results_afe1, results_afe2, results_fec
 
 
@@ -77,7 +77,7 @@ if __name__ == "__main__":
 
     # ----- Preparation: Module calling -----
     settings = Settings()
-    datahand = DataController(settings.SettingsDATA)
+    datahand = DataLoader(settings.SettingsDATA)
     datahand.do_call()
     datahand.do_cut()
     datahand.do_resample()

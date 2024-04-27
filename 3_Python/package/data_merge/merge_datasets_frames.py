@@ -72,7 +72,7 @@ class MergeDatasets:
 
             # --- Taking signals from handler
             for ch in tqdm(datahandler.raw_data.electrode_id, ncols=100, desc="Progress: "):
-                spike_xpos = np.floor(datahandler.raw_data.spike_xpos[ch] * fs_adc / fs_ana).astype("int")
+                spike_xpos = np.floor(datahandler.raw_data.evnt_xpos[ch] * fs_adc / fs_ana).astype("int")
                 spike_xoff = int(1e-6 * datahandler.raw_data.spike_offset_us[0] * fs_adc)
 
                 # --- Processing the analogue input
@@ -81,7 +81,7 @@ class MergeDatasets:
                 length_data_in = afe.signals.x_adc.size
 
                 frame_new = afe.signals.frames_align
-                frame_cl = datahandler.raw_data.cluster_id[ch]
+                frame_cl = datahandler.raw_data.evnt_cluster_id[ch]
 
                 # --- Post-Processing: Checking if same length
                 if frame_new.shape[0] != frame_cl.size:

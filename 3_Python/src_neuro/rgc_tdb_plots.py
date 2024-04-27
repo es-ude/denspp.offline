@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 
 from package.plot.plot_common import save_figure, cm_to_inch
-from package.data_call.call_handler import DataController
+from package.data_call.call_spike_files import DataLoader
 from package.data_call.call_cellbib import CellSelector
 from src_neuro.pipeline_data import Settings, Pipeline
 
@@ -32,26 +32,25 @@ if __name__ == "__main__":
 
         # --- Getting the Data
         afe_set.SettingsDATA.data_point = file
-        datahandler = DataController(afe_set.SettingsDATA)
+        datahandler = DataLoader(afe_set.SettingsDATA)
         datahandler.do_call()
         datahandler.do_resample()
 
-        spike_xpos = np.floor(datahandler.raw_data.spike_xpos[ch] * fs_adc / fs_ana).astype("int")
-        spike_xoff = int(1e-6 * datahandler.raw_data.spike_offset_us[0] * fs_adc)
+        spike_xpos = np.floor(datahandler.raw_data.evnt_xpos[ch] * fs_adc / fs_ana).astype("int")
 
         # --- Processing the analogue input (channel specific)
         afe = Pipeline(afe_set)
-        afe.run_input(datahandler.raw_data.data_raw[ch], spike_xpos, spike_xoff)
+        afe.run_input(datahandler.raw_data.data_raw[ch], spike_xpos)
         adc_lsb = afe_set.SettingsADC.lsb
 
         # --- Getting the results
         rawdata.append(adc_lsb * afe.signals.x_adc)
         frames.append(adc_lsb * afe.signals.frames_align)
-        for id in np.unique(datahandler.raw_data.cluster_id[ch]):
+        for id in np.unique(datahandler.raw_data.evnt_cluster_id[ch]):
             cell_name.append(cell_bib.get_celltype_name_from_id(int(id)))
 
     # Delete after runs
-    del spike_xpos, spike_xoff, datahandler, afe, afe_set, idx, ch, file,
+    del spike_xpos, datahandler, afe, afe_set, idx, ch, file,
 
     # --- Plotting the results
     fig, axs = plt.subplots(2, 2, sharex='col', sharey='row', figsize=(cm_to_inch(14), cm_to_inch(16)))
