@@ -79,8 +79,9 @@ class DataLoader(DataController):
         data.data_type = "Synthetic"
         data.noChannel = data_used.shape[0]
         data.gain = 1
-        data.fs_orig = int(1 / 1000)
+        data.data_fs_orig = int(1000)
         data.raw_data = [data.gain * data_used[idx, :] for idx in range(num_channels)]
+        data.data_time = data.raw_data[0].shape[0] / data.data_fs_orig
         # Behaviour
         data.behaviour_exist = False
         # Groundtruth

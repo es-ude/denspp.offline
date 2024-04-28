@@ -18,8 +18,8 @@ def save_figure(fig, path: str, name: str):
         fig.savefig(file_name, format=form)
 
 
-def results_input(signals: list) -> None:
-    tA = np.linspace(0, 1, signals[-1].shape[0])
+def results_input(signals: list, fs: float | int) -> None:
+    tA = np.linspace(0, signals[-1].shape[0] / fs, signals[-1].shape[0])
 
     # --- Plot afe
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(21)))

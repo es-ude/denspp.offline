@@ -130,8 +130,9 @@ class DataController:
         """Print some meta information into the console"""
         print(f"... using data set of: {self.raw_data.data_name}")
         print("... using data point:", self.path2file)
-        print(f"... original sampling rate of {int(1e-3 * self.raw_data.data_fs_orig)} kHz "
-              f"(resampling to {int(1e-3 * self.raw_data.data_fs_used)} kHz)")
+        print(f"... original sampling rate of {int(1e-3 * self.raw_data.data_fs_orig)} kHz ")
+        if not self.raw_data.data_fs_used == 0 and not self.raw_data.data_fs_used == self.raw_data.data_fs_orig:
+            print(f"\t(resampling to {int(1e-3 * self.raw_data.data_fs_used)} kHz)")
         print(f"... using {self.__fill_factor * 100:.2f}% of the data "
               f"(time length of {self.raw_data.data_time / self.__fill_factor:.2f} s)")
         # print(f"... data includes {self.no_channel} number of electrode ({self.raw_data.data_type})")

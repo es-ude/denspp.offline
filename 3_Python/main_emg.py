@@ -15,8 +15,8 @@ if __name__ == "__main__":
     datahand = DataLoader(settings.SettingsDATA)
     datahand.do_call()
     #datahand.do_cut()
-    #datahand.do_resample()
-    #datahand.output_meta()
+    datahand.do_resample()
+    datahand.output_meta()
     dataIn = datahand.get_data()
     del datahand
     num_channels = len(dataIn.raw_data)
@@ -24,14 +24,14 @@ if __name__ == "__main__":
     # --- Pipeline
     pipe_emg = Pipeline(settings)
 
-    signals_out = [np.zeros((100,), dtype=float) for idx in range(num_channels)]
+    signals_out = [np.zeros((1,), dtype=float) for idx in range(num_channels)]
     for idx, thr in enumerate(tqdm(dataIn.raw_data, ncols=100, desc='Progress: ')):
         pipe_emg.run(thr)
         signals_out[idx] = pipe_emg.x_spk
 
     # ----- Plotting
-    results_input(dataIn.raw_data)
-    results_input(signals_out)
+    results_input(dataIn.raw_data, dataIn.data_fs_orig)
+    results_input(signals_out, dataIn.data_fs_orig)
     plt.show()
 
     # ----- Ending -----

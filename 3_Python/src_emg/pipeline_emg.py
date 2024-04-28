@@ -19,27 +19,27 @@ class Settings:
         data_point=1,
         t_range=[0],
         ch_sel=[-1],
-        fs_resample=100e3
+        fs_resample=2e3
     )
     SettingsAMP = SettingsAMP(
         vss=-0.6, vdd=0.6,
         fs_ana=SettingsDATA.fs_resample,
         gain=40,
-        n_filt=1, f_filt=[0.001, 2e3], f_type="band",
+        n_filt=2, f_filt=[0.1, 0.8e3], f_type="band",
         offset=1e-6, noise=True,
         f_chop=10e3
     )
     SettingsADC = SettingsADC(
         vdd=0.6, vss=-0.6,
         type_out="signed",
-        dvref=0.1,
+        dvref=0.5,
         fs_ana=SettingsDATA.fs_resample,
-        fs_dig=20e3, osr=1, Nadc=12
+        fs_dig=1e3, osr=1, Nadc=16
     )
     SettingsDSP_SPK = SettingsDSP(
         gain=1,
         fs=SettingsADC.fs_adc,
-        n_order=4, f_filt=[200, 6e3],
+        n_order=4, f_filt=[0.1, 0.45e3],
         type='iir', f_type='butter', b_type='bandpass',
         t_dly=0
     )
@@ -81,7 +81,7 @@ class Pipeline(PipelineSignal):
         self.u_in = uin
         u_inn = np.array(self.preamp0.settings.vcm)
         # ---- Analogue Front End Module ----
-        self.u_pre = self.preamp0.pre_amp_chopper(self.u_in, u_inn)[0]
+        self.u_pre = self.preamp0.pre_amp(self.u_in, u_inn)
         self.x_adc = self.adc.adc_ideal(self.u_pre)[0]
         # ---- Digital Pre-processing ----
         self.x_spk = self.dsp0.filter(self.x_adc)
