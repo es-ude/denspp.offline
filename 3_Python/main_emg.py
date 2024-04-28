@@ -19,18 +19,18 @@ if __name__ == "__main__":
     datahand.output_meta()
     dataIn = datahand.get_data()
     del datahand
-    num_channels = len(dataIn.raw_data)
+    num_channels = len(dataIn.data_raw)
 
     # --- Pipeline
     pipe_emg = Pipeline(settings)
 
     signals_out = [np.zeros((1,), dtype=float) for idx in range(num_channels)]
-    for idx, thr in enumerate(tqdm(dataIn.raw_data, ncols=100, desc='Progress: ')):
+    for idx, thr in enumerate(tqdm(dataIn.data_raw, ncols=100, desc='Progress: ')):
         pipe_emg.run(thr)
         signals_out[idx] = pipe_emg.x_spk
 
     # ----- Plotting
-    results_input(dataIn.raw_data, dataIn.data_fs_orig)
+    results_input(dataIn.data_raw, dataIn.data_fs_orig)
     results_input(signals_out, dataIn.data_fs_orig)
     plt.show()
 

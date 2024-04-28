@@ -27,7 +27,7 @@ def results_input(signals: list, fs: float | int) -> None:
 
     # Plot definition
     axs = list()
-    for idx in range(len(signals)-1):
+    for idx in range(len(signals)):
         if idx == 0:
             axs.append(plt.subplot(3, 3, idx+1))
         else:

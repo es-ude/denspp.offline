@@ -47,6 +47,7 @@ class DataLoader(DataController):
         data_set = self.settings.data_case
         data_point = self.settings.data_point
 
+        # --- Data Source Selection
         match self.settings.data_set:
             case 1:
                 self.__load_martinez2009(data_set, data_point)
@@ -69,6 +70,9 @@ class DataLoader(DataController):
             case _:
                 print("\nPlease select new input for data_type!")
 
+        # --- Post-Processing
+        self._transform_rawdata_to_numpy()
+
     def __load_martinez2009(self, case: int, point: int) -> None:
         """Loading synthethic files from Quiroga simulation (2009)"""
         folder_name = "01_SimDaten_Martinez2009"
@@ -90,7 +94,6 @@ class DataLoader(DataController):
         # Groundtruth
         spike_xoffset = int(-0.1e-3 * self.raw_data.data_fs_orig)
         self.raw_data.label_exist = True
-        self.raw_data.spike_ovrlap = list()
         self.raw_data.evnt_xpos = [(loaded_data["spike_times"][0][0][0] - spike_xoffset)]
         self.raw_data.evnt_cluster_id = [(loaded_data["spike_class"][0][0][0])]
         # Behaviour
@@ -125,7 +128,6 @@ class DataLoader(DataController):
         # Groundtruth
         spike_xoffset = int(-0.1e-6 * self.raw_data.data_fs_orig)
         self.raw_data.label_exist = True
-        self.raw_data.spike_ovrlap = list()
         self.raw_data.evnt_xpos = [(ground_truth["spike_first_sample"][0][num_index - 1][0] - spike_xoffset)]
         self.raw_data.evnt_cluster_id = [(ground_truth["spike_classes"][0][num_index - 1][0])]
         # Behaviour

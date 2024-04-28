@@ -37,7 +37,12 @@ class DataLoader(DataController):
     def do_call(self):
         """"""
         self._prepare_call()
+        # --- Data Source Selection
         self.__load_Kirchner2023(0, 0)
+
+        # --- Post-Processing
+        self._transform_rawdata_to_numpy()
+        self._transform_rawdata_mapping(True, [])
 
     def __load_Kirchner2023(self, case: int, point: int) -> None:
         """Loading EMG recording files from Kirchner (2023)"""
@@ -80,10 +85,9 @@ class DataLoader(DataController):
         data.noChannel = data_used.shape[0]
         data.gain = 1
         data.data_fs_orig = int(1000)
-        data.raw_data = [data.gain * data_used[idx, :] for idx in range(num_channels)]
-        data.data_time = data.raw_data[0].shape[0] / data.data_fs_orig
-        # Behaviour
-        data.behaviour_exist = False
+        data.data_raw = [data.gain * data_used[idx, :] for idx in range(num_channels-1)]
+        data.data_time = data.data_raw[0].shape[0] / data.data_fs_orig
+        data.data_mapping_avai = False
         # Groundtruth
         data.label_exist = False
         # Return

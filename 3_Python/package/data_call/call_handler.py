@@ -210,3 +210,29 @@ class DataController:
         path2data = join(path2data, file_data)
         self._prepare_access_file(path2data, data_type, sel_datapoint)
         self._no_subfolder = len(file_data)
+
+    def _transform_rawdata_to_numpy(self) -> None:
+        """Transforming the initial raw data from list to numpy array"""
+        if isinstance(self.raw_data.data_raw, list):
+            num_channels = len(self.raw_data.data_raw)
+            num_samples = np.zeros((num_channels, ), dtype=int)
+            for idx, data in enumerate(self.raw_data.data_raw):
+                num_samples[idx] = data.shape[0]
+
+            data_out = np.zeros((num_channels, num_samples.min()), dtype=float)
+            for idx, data in enumerate(self.raw_data.data_raw):
+                data_out[idx, :] = data[0:num_samples.min()]
+
+            self.raw_data.data_raw = data_out
+        else:
+            print("\t transformation may be already done - Please check!")
+
+    def _transform_rawdata_mapping(self, do_mapping: bool, mapping: list) -> None:
+        """Transforming the numpy array input to 2D array with electrode mapping configuration"""
+        data_in = self.raw_data.data_raw
+        if isinstance(data_in, np.ndarray) and do_mapping:
+            if len(data_in.shape) == 2:
+                data_out = np.zeros((3, 3, data_in.shape[-1]), dtype=data_in.dtype)
+                print("2D transformation will be done")
+            elif len(data_in.shape) == 3:
+                print("2D transformation is available")
