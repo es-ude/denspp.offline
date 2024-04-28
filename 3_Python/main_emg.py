@@ -1,14 +1,13 @@
-from datetime import datetime
+import numpy as np
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
-from src_emg.pipeline_emg import Settings
+from src_emg.pipeline_emg import Settings, Pipeline
 from src_emg.call_emg import DataLoader
 from src_emg.plotting_emg import results_input
 
 if __name__ == "__main__":
     plt.close('all')
-    str_datum = datetime.now().strftime('%Y%m%d_%H%M%S')
-    folder_name = '{}_pipeline'.format(str_datum)
     print("\nRunning EMG detection")
 
     # ----- Preparation: Module calling -----
@@ -19,11 +18,20 @@ if __name__ == "__main__":
     #datahand.do_resample()
     #datahand.output_meta()
     dataIn = datahand.get_data()
+    del datahand
+    num_channels = len(dataIn.raw_data)
 
-    # ----- Module declaration & Channel Calculation -----
+    # --- Pipeline
+    pipe_emg = Pipeline(settings)
+
+    signals_out = [np.zeros((100,), dtype=float) for idx in range(num_channels)]
+    for idx, thr in enumerate(tqdm(dataIn.raw_data, ncols=100, desc='Progress: ')):
+        pipe_emg.run(thr)
+        signals_out[idx] = pipe_emg.x_spk
 
     # ----- Plotting
     results_input(dataIn.raw_data)
+    results_input(signals_out)
     plt.show()
 
     # ----- Ending -----

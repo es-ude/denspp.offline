@@ -41,32 +41,46 @@ class DataLoader(DataController):
 
     def __load_Kirchner2023(self, case: int, point: int) -> None:
         """Loading EMG recording files from Kirchner (2023)"""
-        folder_name = "E0_Kirchner2023"
+        folder_name = "01_Kirchner2023"
         meta_type = 'Metadata_*.txt'
         makrer_type = 'Markerfile_*.txt'
         data_type = '*set*.txt'
         self._prepare_access_file(folder_name, data_type, 0)
 
-        # Read textfile and convert
+        # --- Read textfile and convert
+        num_channels = 10
+        loaded_data = [[] for idx in range(num_channels)]
+
         file = open(self.path2file, 'r')
-        loaded_data = list()
         for line in file:
             input = line.split(" ")
-            data0 = list()
+            sel_list = 0
             for val in input:
                 if val:
-                    data0.append(float(val))
-            loaded_data.append(data0)
+                    loaded_data[sel_list].append(float(val))
+                    sel_list += 1
+        del file, input, sel_list
 
-        loaded_data = np.array(loaded_data[:-1])
+        # --- Bringing data into right format
+        num_channels = len(loaded_data)
+        num_samples = np.zeros((num_channels,), dtype=int)
+        for idx, data0 in enumerate(loaded_data):
+            num_samples[idx] = len(data0)
+
+        data_used = np.zeros((num_channels, num_samples.min()), dtype=float)
+        for idx, data0 in enumerate(loaded_data):
+            data_used[idx, :] = np.array(data0[0:num_samples.min()])
+        del loaded_data, data0
+
+        # --- Processing data
         data = DataHandler()
         # Input and meta
         data.data_name = folder_name
         data.data_type = "Synthetic"
-        data.noChannel = loaded_data.shape[1]
+        data.noChannel = data_used.shape[0]
         data.gain = 1
         data.fs_orig = int(1 / 1000)
-        data.raw_data = [(data.gain * loaded_data)]
+        data.raw_data = [data.gain * data_used[idx, :] for idx in range(num_channels)]
         # Behaviour
         data.behaviour_exist = False
         # Groundtruth
