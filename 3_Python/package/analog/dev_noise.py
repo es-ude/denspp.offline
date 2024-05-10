@@ -151,34 +151,10 @@ def noise_real(tsize: int, fs: float, wgndBW: float, Fc: float, alpha: float) ->
     return Unoise, noise_eff, noise_pp
 
 
-def do_fft(y: np.ndarray, fs: float) -> [np.ndarray, np.ndarray]:
-    """Performing the Discrete Fast Fourier Transformation
-    input:
-    y   - transient input signal
-    fs  - sampling rate
-
-    output:
-    freq    - Frequency
-    Y       - Discrete output
-    """
-    window = np.hanning(y.size)
-    fft_in = window * y
-    # ---
-    N = y.size // 2
-    fft_out = 2 / N * np.abs(np.fft.fft(fft_in))
-    fft_out[0] = fft_out[0] / 2
-    freq = fs * np.fft.fftfreq(fft_out.size)
-    # Taking positive range
-    xsel = np.where(freq >= 0)
-    fft_out = fft_out[xsel]
-    freq = freq[xsel]
-
-    return freq, fft_out
-
-
 # -------- TEST ROUTINE ------------
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
+    from package.signal_analyse import do_fft
 
     fs = 2e3
     t = np.arange(0, 2e6, 1) / fs
