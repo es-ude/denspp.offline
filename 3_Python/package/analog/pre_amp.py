@@ -1,12 +1,12 @@
 import dataclasses
 import numpy as np
 from scipy.signal import butter, lfilter, square
-from package.analog.noise import ProcessNoise, SettingsNoise, RecommendedSettingsNoise
+from package.analog.dev_noise import ProcessNoise, SettingsNoise, RecommendedSettingsNoise
 
 
 @dataclasses.dataclass
 class SettingsAMP:
-    """"Individual data class to configure the PreAmp
+    """Individual data class to configure the PreAmp
 
     Args:
         vdd:        Positive supply voltage [V]
@@ -48,10 +48,12 @@ RecommendedSettingsAMP = SettingsAMP(
 
 class PreAmp(ProcessNoise):
     """Class for emulating an analogue pre-amplifier"""
+    _settings_noise: SettingsNoise
+    __print_device = "pre-amplifier"
+
     def __init__(self, settings_amp: SettingsAMP, settings_noise=RecommendedSettingsNoise):
         super().__init__(settings_noise, settings_amp.fs_ana)
         # --- Settings
-        self.__print_device = "pre-amplifier"
         self._settings_dev = settings_amp
         self.vcm = self._settings_dev.vcm
 

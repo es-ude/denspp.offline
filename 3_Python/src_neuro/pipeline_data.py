@@ -28,7 +28,7 @@ class Settings:
         fs_ana=SettingsDATA.fs_resample,
         gain=100,
         n_filt=2, f_filt=[200, 8e3], f_type="band",
-        offset=0e-6, noise=False,
+        offset=0e-6, noise_en=False,
         f_chop=20e3
     )
     SettingsADC = SettingsADC(
@@ -84,9 +84,9 @@ class Pipeline:
 
     def save_settings(self) -> dict:
         mdict = {"fs_adc": self.__adc.settings.fs_adc,
-                 "v_pre": self.__preamp.settings.gain,
-                 "f_filt": self.__preamp.settings.f_filt,
-                 "n_filt": self.__preamp.settings.n_filt,
+                 "v_pre": self.__preamp._settings_dev.gain,
+                 "f_filt": self.__preamp._settings_dev.f_filt,
+                 "n_filt": self.__preamp._settings_dev.n_filt,
                  "u_lsb": self.__adc.settings.lsb,
                  "n_bit": self.__adc.settings.Nadc
         }
@@ -111,7 +111,7 @@ class Pipeline:
             uin: Array of the 1D-transient signal
         """
         self.signals.u_in = uin
-        u_inn = np.array(self.__preamp.settings.vcm)
+        u_inn = np.array(self.__preamp.vcm)
         # --- Analogue Frontend
         # self.signals.u_pre, _ = self.__preamp.pre_amp_chopper(self.signals.u_in, u_inn)
         self.signals.u_pre = self.__preamp.pre_amp(self.signals.u_in, u_inn)

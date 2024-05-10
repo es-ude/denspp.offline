@@ -2,7 +2,7 @@ from torch import is_tensor
 from torch.utils.data import Dataset
 
 from package.dnn.pytorch_handler import Config_Dataset
-from package.dnn.data_augmentation_frames import *
+from package.data_process.frame_augmentation import *
 
 
 class DatasetDecoder(Dataset):
