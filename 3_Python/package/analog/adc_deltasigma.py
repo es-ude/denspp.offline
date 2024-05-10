@@ -1,10 +1,11 @@
 import numpy as np
-from package.analog.adc_basic import ADC_Basic, SettingsADC, SettingsNon, RecommendedSettingsADC, RecommendedSettingsNon
+from package.analog.adc_basic import adc_basic, SettingsADC, SettingsNon, RecommendedSettingsNon
 
-class ADC_DeltaSigma(ADC_Basic):
+
+class ADC_DeltaSigma(adc_basic):
     """Class for using Continuous Time Delta Sigma ADC"""
-    def __init__(self, setting: SettingsADC):
-        super().__init__(setting, RecommendedSettingsNon())
+    def __init__(self, settings_adc: SettingsADC, settings_non=RecommendedSettingsNon()):
+        super().__init__(settings_adc, settings_non)
         # --- Internal variables
         self.use_noise = False
         self.__dac_order = 2
@@ -16,6 +17,7 @@ class ADC_DeltaSigma(ADC_Basic):
         # --- Variables for post-processing (noise-shaping)
         self.__stage_one_dly = self.settings.vcm
         self.__stage_two_dly = self.settings.vcm
+
     def __ds_modulator(self, uin: np.ndarray, ufb: np.ndarray) -> np.ndarray:
         """Performing first order delta sigma modulator
         inputs:
@@ -84,7 +86,8 @@ class ADC_DeltaSigma(ADC_Basic):
         # Resampling the input to sampling frequency of ADC with oversampling
         uin_adc = self.clipping_voltage(uin)
         uin0 = self.do_resample(uin_adc)
-        unoise = self.gen_noise(uin0.size) if self.use_noise == True else np.zeros(shape=uin0.shape)
+        unoise = self.gen_noise(uin0.size) if self.use_noise else np.zeros(shape=uin0.shape)
+
         # Running the delta sigma modulator
         xout_hs = np.zeros(shape=uin0.shape)
         xbit = np.zeros(shape=uin0.shape)
@@ -97,12 +100,14 @@ class ADC_DeltaSigma(ADC_Basic):
             umod_two += self.__ds_modulator(umod_one, self.settings.vcm)
             xbit[idx], ufb0 = self.__comp_1bit(umod_two)
             xout_hs[idx] = self.__stream_converter(xbit[idx])
+
         # --- Downsampling
         xout0 = self.do_decimation_polyphase_order_two(xout_hs)
         xout1 = self.do_decimation_polyphase_order_two(xout0)
         xout2 = self.do_decimation_polyphase_order_two(xout1)
         xout3 = self.do_decimation_polyphase_order_two(xout2)
         xout4 = self.do_decimation_polyphase_order_two(xout3)
+
         # --- Correction and output
         xout = xout4
         xout -= 2 ** (self.settings.Nadc - 1) if self.settings.type_out == "signed" else 0

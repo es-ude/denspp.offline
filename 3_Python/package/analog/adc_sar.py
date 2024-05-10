@@ -1,10 +1,11 @@
 import numpy as np
-from package.analog.adc_basic import ADC_Basic, SettingsADC, RecommendedSettingsNon
+from package.analog.adc_basic import adc_basic, SettingsADC, SettingsNon, RecommendedSettingsNon
 
-class ADC_SAR(ADC_Basic):
+
+class ADC_SAR(adc_basic):
     """"Class for applying a Sukzessive Approximation (SAR) Analogue-Digital-Converter (ADC) on the raw data"""
-    def __init__(self, setting: SettingsADC):
-        super().__init__(setting, RecommendedSettingsNon)
+    def __init__(self, settings_adc: SettingsADC, settings_non=RecommendedSettingsNon()):
+        super().__init__(settings_adc, settings_non)
         self.use_noise = True
         # --- Transfer function
         self.__dv = self.settings.vref[0] - self.settings.vref[1]
