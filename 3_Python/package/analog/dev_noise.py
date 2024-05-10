@@ -19,69 +19,72 @@ class SettingsNoise:
 
 
 RecommendedSettingsNoise = SettingsNoise(
-    wgn_dB=-100,
+    wgn_dB=-200,
     Fc=10,
     slope=0.6,
-    do_print=False
+    do_print=True
 )
 
 
 class ProcessNoise:
     """Processing analog noise for transient signals of electrical devices"""
-    __print_device: str
+    __print_device=""
 
     def __init__(self, settings: SettingsNoise, fs_ana: float):
         self.__settings_noise = settings
         self.__noise_sampling_rate = fs_ana
 
-    def _gen_noise_real(self, size: int) -> np.ndarray:
+    def _calculate_params(self, noise_in: np.ndarray) -> [float, float]:
+        """Calculating the parameters of effective input and std"""
+        noise_eff = np.std(noise_in)
+        noise_pp = np.max(noise_in) - np.min(noise_in)
+        return noise_eff, noise_pp
+
+    def _do_print(self, noise_in: np.ndarray, volt_output=True) -> None:
+        """Printing output from noise analysis"""
+        if self.__settings_noise.do_print:
+            unit_text = "µV" if volt_output else "nA"
+            unit_scale = 1e6 if volt_output else 1e9
+            addon = f"" if len(self.__print_device) == 0 else f" ({self.__print_device})"
+
+            noise_eff, noise_pp = self._calculate_params(noise_in)
+            print(f"... effective input noise{addon}: {unit_scale * noise_eff:.4f} {unit_text}")
+            print(f"... effective peak-to-peak noise{addon}: {unit_scale * noise_pp:.4f} {unit_text}")
+
+    def _gen_noise_real(self, size: int, volt_output=True) -> np.ndarray:
         """Generating transient noise (real)"""
-        # --- Generating noise
-        u_noise, noise_eff_out, noise_pp = noise_real(
+        u_noise = noise_real(
             tsize=size, fs=self.__noise_sampling_rate,
             wgndBW=self.__settings_noise.wgn_dB,
             Fc=self.__settings_noise.Fc,
             alpha=self.__settings_noise.slope
         )
-        # --- Print output
-        if self.__settings_noise.do_print:
-            addon = f"" if len(self.__print_device) == 0 else f" ({self.__print_device})"
-            print(f"... effective input noise{addon}: {1e6 * noise_eff_out:.4f} µV")
-            print(f"... effective peak-to-peak noise{addon}: {1e6 * noise_pp:.4f} µV")
+        self._do_print(u_noise, volt_output)
 
         return u_noise
 
-    def _gen_noise_awgn(self, size: int) -> np.ndarray:
+    def _gen_noise_awgn(self, size: int, volt_output=True) -> np.ndarray:
         """Generating transient noise ()"""
-        # --- Generating noise
-        u_noise, noise_eff_out, noise_pp = noise_awgn(
+        u_noise = noise_awgn(
             size=size, fs=self.__noise_sampling_rate,
             wgndBW=self.__settings_noise.wgn_dB
         )
-        # --- Print output
-        if self.__settings_noise.do_print:
-            addon = f"" if len(self.__print_device) == 0 else f" ({self.__print_device})"
-            print(f"... effective input noise{addon}: {1e6 * noise_eff_out:.4f} µV")
-            print(f"... effective peak-to-peak noise{addon}: {1e6 * noise_pp:.4f} µV")
+        self._do_print(u_noise, volt_output)
 
         return u_noise
 
-    def _gen_noise_flicker(self, size: int) -> np.ndarray:
+    def _gen_noise_flicker(self, size: int, volt_output=True) -> np.ndarray:
         """Generating transient noise (flicker)"""
         # --- Generating noise
-        u_noise, noise_eff_out, noise_pp = noise_flicker(
+        u_noise = noise_flicker(
             size=size, alpha=self.__settings_noise.slope
         )
-        # --- Print output
-        if self.__settings_noise.do_print:
-            addon = f"" if len(self.__print_device) == 0 else f" ({self.__print_device})"
-            print(f"... effective input noise{addon}: {1e6 * noise_eff_out:.4f} µV")
-            print(f"... effective peak-to-peak noise{addon}: {1e6 * noise_pp:.4f} µV")
+        self._do_print(u_noise, volt_output)
 
         return u_noise
 
 
-def noise_awgn(size: int, fs: float, wgndBW: float) -> [np.ndarray, np.ndarray]:
+def noise_awgn(size: int, fs: float, wgndBW: float) -> np.ndarray:
     """Generation of transient noise signal with noise power [dB]
     input:
     wgndB   - spectral noise density [dBW/SQRT(Hz)]
@@ -94,11 +97,7 @@ def noise_awgn(size: int, fs: float, wgndBW: float) -> [np.ndarray, np.ndarray]:
     rho = 10 ** (wgndBW / 10)
     sigma = rho * np.sqrt(fs / 2)
     noise = np.random.randn(size) * sigma
-
-    # Calculation of effective noise
-    noise_eff = np.std(noise)
-    noise_pp = np.max(noise) - np.min(noise)
-    return noise, noise_eff
+    return noise
 
 
 def noise_flicker(size: int, alpha: float) -> np.ndarray:
@@ -125,10 +124,10 @@ def noise_flicker(size: int, alpha: float) -> np.ndarray:
     return Upink
 
 
-def noise_real(tsize: int, fs: float, wgndBW: float, Fc: float, alpha: float) -> [np.ndarray, np.ndarray, np.ndarray]:
+def noise_real(tsize: int, fs: float, wgndBW: float, Fc: float, alpha: float) -> np.ndarray:
     """Generation of real noise signal with specific noise power [dBW], corner frequency Fc, and slope of 1/f noise"""
     # --- Generate noise components and match
-    Uwhite, _ = noise_awgn(tsize, fs, wgndBW)
+    Uwhite = noise_awgn(tsize, fs, wgndBW)
     Upink = noise_flicker(tsize, alpha)
 
     # --- Adapting the amplitude
@@ -145,10 +144,7 @@ def noise_real(tsize: int, fs: float, wgndBW: float, Fc: float, alpha: float) ->
 
     # --- Generate output noise
     Unoise = scalef * Upink + Uwhite
-    noise_eff = np.std(Unoise)
-    noise_pp = np.max(Unoise) - np.min(Unoise)
-
-    return Unoise, noise_eff, noise_pp
+    return Unoise
 
 
 # -------- TEST ROUTINE ------------
@@ -160,9 +156,9 @@ if __name__ == "__main__":
     t = np.arange(0, 2e6, 1) / fs
 
     # Real Noise
-    noise_pink = noise_awgn(t.size, fs, -130)[0]
+    noise_pink = noise_awgn(t.size, fs, -130)
     noise_f = noise_flicker(t.size, 1)
-    noise_out = noise_real(t.size, fs, -130, 1, 0.9)[0]
+    noise_out = noise_real(t.size, fs, -130, 1, 0.9)
     freq1, psd_real = do_fft(noise_out, fs)
 
     scale = 1e3
