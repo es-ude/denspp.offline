@@ -2,7 +2,7 @@ from torch import nn
 import matplotlib.pyplot as plt
 from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
-import package.dnn.models.models_gki as ae_models
+import package.dnn.models.gki as ae_models
 
 
 config_data = Config_Dataset(
