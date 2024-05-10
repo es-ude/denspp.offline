@@ -140,48 +140,50 @@ class ADC_SAR(adc_basic):
 
 # ------------ TEST ROUTINE -------------
 if __name__ == "__main__":
-    from package.data_process.process_noise import noise_real, do_fft
+    from package.analog.dev_noise import noise_real
+    from package.signal_analyse import do_fft
     import matplotlib.pyplot as plt
-    if __name__ == "__main__":
-        set_adc = SettingsADC(
-            vdd=0.6, vss=-0.6,
-            fs_ana=200e3, fs_dig=20e3, osr=10,
-            dvref=0.1, Nadc=12,
-            type_out="signed"
-        )
-        adc0 = ADC_SAR(set_adc)
 
-        t_end = 1
-        tA = np.arange(0, t_end, 1/set_adc.fs_ana)
-        tD = np.arange(0, t_end, 1/set_adc.fs_dig)
-        # --- Input signal
-        upp = 0.8 * set_adc.dvref
-        fsine = 100
-        uin = upp * np.sin(2 * np.pi * tA * fsine)
-        uin += noise_real(tA.size, tA.size, -120, 1, 0.6)[0]
-        # --- ADC output
-        uadc_hs = adc0.adc_sar_ns_order_one(uin)[0]
-        uadc = adc0.do_downsample(uadc_hs)
-        freq, Yadc = do_fft(uadc_hs, set_adc.fs_adc)
+    set_adc = SettingsADC(
+        vdd=0.6, vss=-0.6,
+        fs_ana=200e3, fs_dig=20e3, osr=10,
+        dvref=0.1, Nadc=12,
+        type_out="signed"
+    )
 
-        # --- Plotting results
-        plt.figure()
-        ax1 = plt.subplot(311)
-        ax2 = plt.subplot(312, sharex=ax1)
-        ax3 = plt.subplot(313)
+    adc0 = ADC_SAR(set_adc)
 
-        vscale = 1e3
-        ax1.plot(tA, vscale * uin)
-        ax1.set_ylabel('U_in [mV]')
-        ax1.set_xlim([100e-3, 150e-3])
+    t_end = 1
+    tA = np.arange(0, t_end, 1/set_adc.fs_ana)
+    tD = np.arange(0, t_end, 1/set_adc.fs_dig)
+    # --- Input signal
+    upp = 0.8 * set_adc.dvref
+    fsine = 100
+    uin = upp * np.sin(2 * np.pi * tA * fsine)
+    uin += noise_real(tA.size, tA.size, -120, 1, 0.6)[0]
+    # --- ADC output
+    uadc_hs = adc0.adc_sar_ns_order_one(uin)[0]
+    uadc = adc0.do_downsample(uadc_hs)
+    freq, Yadc = do_fft(uadc_hs, set_adc.fs_adc)
 
-        ax2.plot(tD, uadc)
-        ax2.set_ylabel('X_adc []')
-        ax2.set_xlabel('Time t [s]')
+    # --- Plotting results
+    plt.figure()
+    ax1 = plt.subplot(311)
+    ax2 = plt.subplot(312, sharex=ax1)
+    ax3 = plt.subplot(313)
 
-        ax3.semilogx(freq, 20 * np.log10(Yadc))
-        ax3.set_ylabel('X_adc []')
-        ax3.set_xlabel('Frequency f [Hz]')
+    vscale = 1e3
+    ax1.plot(tA, vscale * uin)
+    ax1.set_ylabel('U_in [mV]')
+    ax1.set_xlim([100e-3, 150e-3])
 
-        plt.tight_layout()
-        plt.show(block=True)
+    ax2.plot(tD, uadc)
+    ax2.set_ylabel('X_adc []')
+    ax2.set_xlabel('Time t [s]')
+
+    ax3.semilogx(freq, 20 * np.log10(Yadc))
+    ax3.set_ylabel('X_adc []')
+    ax3.set_xlabel('Frequency f [Hz]')
+
+    plt.tight_layout()
+    plt.show(block=True)

@@ -2,7 +2,7 @@ import dataclasses
 import numpy as np
 from fractions import Fraction
 from scipy.signal import square, resample_poly
-from package.data_process.process_noise import noise_awgn
+from package.analog.dev_noise import noise_awgn
 
 
 @dataclasses.dataclass
@@ -138,7 +138,7 @@ class adc_basic:
 
     def gen_noise(self, size: int) -> np.ndarray:
         """Generate the transient input noise of the amplifier"""
-        unoise, self.noise_eff_out = noise_awgn(
+        unoise = noise_awgn(
             size=size,
             fs=self.settings.fs_ana,
             wgndBW=-self.__snr_ideal

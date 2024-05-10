@@ -1,5 +1,6 @@
 import dataclasses
 import numpy as np
+from package.signal_analyse import do_fft
 
 
 @dataclasses.dataclass
