@@ -2,11 +2,11 @@ from torch import nn, Tensor, argmax
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 
 
-class dnn_class_v1(nn.Module):
+class mlp_cl_v1(nn.Module):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
     def __init__(self, input_size=32, output_size=5):
         super().__init__()
-        self.out_modelname = 'dnn_class_v1'
+        self.out_modelname = 'mlp_class_v1'
         self.out_modeltyp = 'Classifier'
         self.model_shape = (1, input_size)
         self.model_embedded = False
@@ -20,7 +20,7 @@ class dnn_class_v1(nn.Module):
         for idx, layer_size in enumerate(config_network[1:], start=1):
             self.model.add_module(f"linear_{idx:02d}", nn.Linear(in_features=config_network[idx-1], out_features=layer_size, bias=do_train_bias))
             self.model.add_module(f"batch1d_{idx:02d}", nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch))
-            if idx == len(config_network)-1:
+            if not idx == len(config_network)-1:
                 self.model.add_module(f"act_{idx:02d}", nn.Tanh())
             else:
                 self.model.add_module(f"soft", nn.Softmax())
@@ -30,11 +30,11 @@ class dnn_class_v1(nn.Module):
         return prob, argmax(prob, 1)
 
 
-class dnn_ae_v1(nn.Module):
+class mlp_ae_v1(nn.Module):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
     def __init__(self, input_size=32, hidden_size=5):
         super().__init__()
-        self.out_modelname = 'dnn_ae_v1'
+        self.out_modelname = 'mlp_ae_v1'
         self.out_modeltyp = 'Autoencoder'
         self.model_shape = (1, input_size)
         self.model_embedded = False
@@ -68,7 +68,7 @@ class dnn_ae_v1(nn.Module):
 
 # --- Recommended Configurations for Training
 Recommended_Config_Autoencoder = Config_PyTorch(
-    model=dnn_ae_v1(),
+    model=mlp_ae_v1(),
     loss='MSE',
     loss_fn=nn.MSELoss(),
     optimizer='Adam',
@@ -80,7 +80,7 @@ Recommended_Config_Autoencoder = Config_PyTorch(
 )
 
 Recommended_Config_Classifier = Config_PyTorch(
-    model=dnn_class_v1(),
+    model=mlp_cl_v1(),
     loss='Cross Entropy Loss',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
