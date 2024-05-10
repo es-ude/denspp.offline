@@ -6,7 +6,7 @@ from package.data_process.process_noise import noise_real
 
 @dataclasses.dataclass
 class SettingsAMP:
-    """"Individuall data class to configure the PreAmp
+    """"Individual data class to configure the PreAmp
     inputs:
     vdd     - Positive supply voltage [V]
     vss     - Negative supply voltage [V]
@@ -38,7 +38,7 @@ class SettingsAMP:
 
 @dataclasses.dataclass
 class SettingsNoise:
-    """Settings for configuring the parasitics of the pre-amp
+    """Settings for configuring the pre-amp parasitics
     inputs:
     wgndB  - effective spectral input noise power [dBW/sqrt(Hz)]
     Fc     - Corner frequency of the flicker (1/f) noise [Hz]
@@ -107,8 +107,13 @@ class PreAmp:
 
     def pre_amp(self, uinp: np.ndarray, uinn: np.ndarray) -> np.ndarray:
         """Performs the pre-amplification (single, normal) with input signal
-        uinp    - Positive input voltage [V]
-        uinn    - Negative input voltage [V]
+
+        Args:
+            uinp    - Positive input voltage [V]
+            uinn    - Negative input voltage [V]
+
+        Returns:
+            Test signal
         """
         du = uinp - uinn
         u_out = self.settings.gain * lfilter(b=self.__b_iir_spk, a=self.__a_iir_spk, x=du)
@@ -122,8 +127,10 @@ class PreAmp:
 
     def pre_amp_chopper(self, uinp: np.ndarray, uinn: np.ndarray) -> [np.ndarray, np.ndarray]:
         """Performs the pre-amplification (single, chopper) with input signal
-        uinp    - Positive input voltage
-        uinn    - Negative input voltage
+
+        Args:
+            uinp    - Positive input voltage
+            uinn    - Negative input voltage
         """
         du = uinp - uinn
         clk_chop = self.__gen_chop(du.size)

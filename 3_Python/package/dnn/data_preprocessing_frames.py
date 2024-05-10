@@ -10,6 +10,8 @@ def change_frame_size(frames_in: np.ndarray, sel_pos: list) -> np.ndarray:
 
     Args:
         frames_in: input_values
+    Returns:
+        frames with reduced size
     """
     if len(sel_pos) != 2:
         # Alle Werte übernehmen

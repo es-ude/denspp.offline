@@ -85,4 +85,11 @@ def do_train_classifier(dnn_handler: dnn_handler, num_output=5) -> None:
 
 
 if __name__ == "__main__":
-    do_train_classifier()
+    dnn_handler = dnn_handler(
+        mode_dnn=1,
+        mode_cellbib=0,
+        do_plot=True,
+        do_block=True
+    )
+
+    do_train_classifier(dnn_handler)

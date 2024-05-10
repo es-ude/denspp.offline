@@ -86,4 +86,11 @@ def do_train_ae(dnn_handler: dnn_handler, mode_ae: int, noise_std=0.05) -> None:
 
 
 if __name__ == "__main__":
-    do_train_ae(0)
+    dnn_handler = dnn_handler(
+        mode_dnn=1,
+        mode_cellbib=0,
+        do_plot=True,
+        do_block=True
+    )
+
+    do_train_ae(dnn_handler, 0, 0)
