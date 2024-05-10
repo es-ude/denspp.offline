@@ -2,7 +2,7 @@ from torch import nn
 import matplotlib.pyplot as plt
 from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
-import package.dnn.models.autoencoder_dnn as models
+import package.dnn.models.template as models
 
 
 config_data = Config_Dataset(
@@ -27,7 +27,7 @@ config_data = Config_Dataset(
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
-    model=models.dnn_ae_v2(),
+    model=models.mlp_cl_v1(),
     loss='MSE',
     loss_fn=nn.MSELoss(),
     optimizer='Adam',
