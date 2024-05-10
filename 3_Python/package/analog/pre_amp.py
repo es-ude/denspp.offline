@@ -48,11 +48,12 @@ RecommendedSettingsAMP = SettingsAMP(
 
 class PreAmp(ProcessNoise):
     """Class for emulating an analogue pre-amplifier"""
-    def __init__(self, settings_amp: SettingsAMP, settings_noise=RecommendedSettingsNoise()):
-        super().__init__(settings_noise)
+    def __init__(self, settings_amp: SettingsAMP, settings_noise=RecommendedSettingsNoise):
+        super().__init__(settings_noise, settings_amp.fs_ana)
         # --- Settings
         self.__print_device = "pre-amplifier"
         self._settings_dev = settings_amp
+        self.vcm = self._settings_dev.vcm
 
         # --- Filter properties
         self.f_filt = np.array(self._settings_dev.f_filt)
@@ -88,7 +89,7 @@ class PreAmp(ProcessNoise):
 
         # Adding noise
         if self._settings_dev.noise_en:
-            u_out += self._settings_dev.gain * self.__gen_noise(du.size, self._settings_dev.fs_ana)
+            u_out += self._settings_dev.gain * self._gen_noise_real(du.size)
         return self.__voltage_clipping(u_out)
 
     def pre_amp_chopper(self, uinp: np.ndarray, uinn: np.ndarray) -> [np.ndarray, np.ndarray]:
@@ -105,7 +106,7 @@ class PreAmp(ProcessNoise):
         uchp_in = self._settings_dev.vcm + self._settings_dev.gain * du
         # --- Adding noise
         if self._settings_dev.noise_en:
-            uchp_in += self._settings_dev.gain * self.__gen_noise(du.size, self._settings_dev.fs_ana)
+            uchp_in += self._settings_dev.gain * self._gen_noise_real(du.size)
         # --- Back chopping and Filtering
         u_filt = uchp_in * clk_chop
         u_out = lfilter(self.__b_iir_spk, self.__a_iir_spk, u_filt)

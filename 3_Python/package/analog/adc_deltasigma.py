@@ -4,8 +4,8 @@ from package.analog.adc_basic import adc_basic, SettingsADC, SettingsNon, Recomm
 
 class ADC_DeltaSigma(adc_basic):
     """Class for using Continuous Time Delta Sigma ADC"""
-    def __init__(self, settings_adc: SettingsADC, settings_non=RecommendedSettingsNon()):
-        super().__init__(settings_adc, settings_non)
+    def __init__(self, settings_adc: SettingsADC, settings_non=RecommendedSettingsNon):
+        super().__init__(settings_adc)
         # --- Internal variables
         self.use_noise = False
         self.__dac_order = 2

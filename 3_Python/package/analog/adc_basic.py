@@ -76,10 +76,10 @@ RecommendedSettingsNon = SettingsNon(
 
 class adc_basic:
     """"Basic class for applying an Analogue-Digital-Converter (ADC) on the raw data"""
-    def __init__(self, settings_adc: SettingsADC, settings_non: SettingsNon):
+    def __init__(self, settings_adc: SettingsADC):
         # --- Settings
         self.settings = settings_adc
-        self.settings_non = settings_non
+
         # --- Internal characteristic
         self.noise_eff_out = 0.0
         self.__dvrange = self.settings.vref[0] - self.settings.vref[1]
