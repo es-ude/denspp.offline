@@ -1,5 +1,6 @@
 import dataclasses
 import numpy as np
+from tqdm import tqdm
 from package.analog.dev_noise import ProcessNoise, SettingsNoise, RecommendedSettingsNoise
 from scipy.integrate import cumtrapz
 from scipy.constants import Boltzmann, elementary_charge
@@ -29,6 +30,42 @@ RecommendedSettingsDEV = SettingsDEV(
 )
 
 
+def _error_mbe(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
+    """Calculating the distance-based metric with mean bias error"""
+    if isinstance(y_true, np.ndarray):
+        error = float(np.sum(y_pred - y_true) / y_pred.size)
+    else:
+        error = y_pred - y_true
+    return error
+
+
+def _error_mae(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
+    """Calculating the distance-based metric with mean absolute error"""
+    if isinstance(y_true, np.ndarray):
+        error = float(np.sum(np.abs(y_pred - y_true)) / y_pred.size)
+    else:
+        error = float(np.abs(y_pred - y_true))
+    return error
+
+
+def _error_mse(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
+    """Calculating the distance-based metric with mean squared error"""
+    if isinstance(y_true, np.ndarray):
+        error = float(np.sum((y_pred - y_true) ** 2) / y_pred.size)
+    else:
+        error = float(y_pred - y_true) ** 2
+    return error
+
+
+def _error_tanh(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
+    """Calculating the distance-based metric with tanh"""
+    if isinstance(y_true, np.ndarray):
+        error = float(np.tanh(np.sum(y_pred - y_true) / y_pred.size))
+    else:
+        error = float(np.tanh(y_pred - y_true))
+    return error
+
+
 class ElectricalLoad(ProcessNoise):
     """Class for emulating an electrical device"""
     _settings_noise: SettingsNoise
@@ -38,6 +75,65 @@ class ElectricalLoad(ProcessNoise):
     def __init__(self, settings_dev: SettingsDEV, settings_noise=RecommendedSettingsNoise):
         super().__init__(settings_noise, settings_dev.fs_ana)
         self._settings = settings_dev
+
+    def __dut(self, u_top: np.ndarray | float, u_bottom: float, device_sel: int) -> float:
+        """"""
+        match device_sel:
+            case 0:
+                i1 = self.resistor(u_top, u_bottom)
+            case 2:
+                i1 = self.diode_single_barrier(u_top, u_bottom)
+            case 3:
+                i1 = self.diode_double_barrier(u_top, u_bottom)
+            case _:
+                i1 = 0.0
+        return i1
+
+    def get_voltage_response(self, i_in: np.ndarray, u_inn: np.ndarray | float, device_sel: int) -> np.ndarray:
+        """Getting the voltage response from current input of selected electrical device
+
+        Args:
+            i_in:   Applied current input [A]
+            u_inn:  Negative input | bottom electrode | reference voltage [V]
+            device_sel: Selected electrical device [0: resistor, 1: ...]
+        Returns:
+            Corresponding voltage response
+        """
+        u_applied_grob = np.linspace(-2, 2, 21, endpoint=True)
+
+        u_response = np.zeros(i_in.shape)
+        idx = 0
+        for i0 in tqdm(i_in, ncols=100, desc="Progress: "):
+            # --- Step #1: Find minimum (grobe Suche)
+            error_step0 = list()
+            for u_top in u_applied_grob:
+                i1 = self.__dut(u_top, u_inn if isinstance(u_inn, float) else u_inn[idx], device_sel)
+                error_step0.append(_error_mse(i1, i0))
+
+            error0 = np.array(error_step0)
+            x0 = np.argwhere(error0 == error0.min())
+            del error0
+
+            # --- Step #2: Find minimum in range [x0-1, x0+1]
+            u_applied_fine = np.linspace(u_applied_grob[x0[0]-1], u_applied_grob[x0[0]+1], 1001, endpoint=True)
+            error_step1 = list()
+            for u_top in u_applied_fine:
+                i1 = self.__dut(u_top, u_inn if isinstance(u_inn, float) else u_inn[idx], device_sel)
+                error_step1.append(_error_mae(i1, i0))
+
+            error0 = np.array(error_step1)
+            x0 = np.argwhere(error0 == error0.min())
+
+            #plt.figure()
+            #plt.plot(u_applied_fine, error0)
+            #plt.tight_layout()
+            #plt.show()
+
+            # --- Update
+            u_response[idx] = u_applied_fine[x0[0]]
+            idx += 1
+
+        return u_response
 
     def resistor(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
         """Performing the behaviour of an electrical resistor
@@ -139,9 +235,9 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     settings = SettingsDEV(
         fs_ana=50e3,
-        noise_en=True,
+        noise_en=False,
         para_en=False,
-        value=1e-15
+        value=10e3
     )
 
     dev = ElectricalLoad(settings)
@@ -149,13 +245,17 @@ if __name__ == "__main__":
     # --- Declaration of input
     t_end = 0.1
     t0 = np.linspace(0, 0.0001, num=int(t_end * settings.fs_ana))
-    uinp = 100e-3 * np.sin(2 * np.pi * t0 * 10e3)
+    uinp = 1 * np.sin(2 * np.pi * t0 * 10e3)
     uinn = 0.0
-    iout = dev.diode_double_barrier(uinp, uinn)
+    iout = dev.resistor(uinp, uinn)
+
+    iin = 1e-6 * uinp
+    uout = dev.get_voltage_response(iin, uinn, 1)
 
     # --- Plotting
     plt.figure()
-    axs = [plt.subplot(2, 1, idx+1) for idx in range(2)]
+    num_rows = 2
+    axs = [plt.subplot(num_rows, 1, idx + 1) for idx in range(num_rows)]
 
     axs[0].set_xlim(t0[0], t0[-1])
     twin1 = axs[0].twinx()
@@ -167,7 +267,28 @@ if __name__ == "__main__":
     axs[0].grid()
     axs[0].legend()
 
-    axs[1].plot(uinp-uinn, 1e3 * iout, 'k')
+    axs[1].plot(uinp - uinn, 1e3 * iout, 'k')
+    axs[1].grid()
+    axs[1].set_xlabel('Voltage U_x [V]')
+    axs[1].set_ylabel('Current I_x [mA]')
+    plt.tight_layout()
+
+    # --- Plotting
+    plt.figure()
+    num_rows = 2
+    axs = [plt.subplot(num_rows, 1, idx + 1) for idx in range(num_rows)]
+
+    axs[0].set_xlim(t0[0], t0[-1])
+    twin1 = axs[0].twinx()
+    axs[0].plot(t0, 1e3 * iin, 'k', label='i_in')
+    axs[0].set_ylabel('Current I_x [mA]')
+    axs[0].set_xlabel('Time t [s]')
+    twin1.plot(t0, uout, 'r', label='i_out')
+    twin1.set_ylabel('Voltage U_x [V]')
+    axs[0].grid()
+    axs[0].legend()
+
+    axs[1].plot(uout, 1e3 * iin, 'k')
     axs[1].grid()
     axs[1].set_xlabel('Voltage U_x [V]')
     axs[1].set_ylabel('Current I_x [mA]')
