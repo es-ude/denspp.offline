@@ -236,3 +236,22 @@ class DataController:
                 print("2D transformation will be done")
             elif len(data_in.shape) == 3:
                 print("2D transformation is available")
+
+
+if __name__ == "__main__":
+    from package.data_call.call_spike_files import DataLoader, SettingsDATA
+
+    settings = SettingsDATA(
+        #path="../../../2_Data",
+        path="D:/0_Invasive",
+        data_set=8, data_case=1, data_point=0,
+        t_range=[], ch_sel=[-1], fs_resample=20e3
+    )
+    data_loader = DataLoader(settings)
+    data_loader.do_call()
+    data_loader.do_cut()
+    data_loader.do_resample()
+    data = data_loader.get_data()
+    del data_loader
+
+    print(data)

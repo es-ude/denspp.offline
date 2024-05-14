@@ -4,7 +4,6 @@ from time import time_ns
 from datetime import datetime
 from scipy.io import savemat
 from tqdm import tqdm
-import matplotlib.pyplot as plt
 
 from package.data_call.call_handler import DataController
 from src_neuro.pipeline_data import Settings, Pipeline
@@ -51,16 +50,6 @@ def prepare_sda_dataset(path2save: str, slice_size=12, process_points=[]) -> Non
         for xpos in (spike_xpos + spike_xoff + 25):
             for dx in range(window[0], window[1]):
                 data_sda[int(xpos+dx)] = True
-
-        # --- Plotting
-        plt.figure()
-        axs = list()
-        axs.append(plt.subplot(2, 1, 1))
-        axs.append(plt.subplot(2, 1, 2))
-
-        axs[0].plot(data_in[515700:515900], color='r')
-        axs[1].plot(data_sda[515700:515900], color='k')
-        plt.show()
 
         # --- Slicing the data
         sda_input.append(np.array(data_in.reshape((int(data_in.size/slice_size), slice_size)), dtype=int))
