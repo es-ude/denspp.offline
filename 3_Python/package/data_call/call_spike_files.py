@@ -345,8 +345,9 @@ class DataLoader(DataController):
     def __load_fzj_mcs(self, case: int, point: int) -> None:
         """Loading the recording files from MCS setup in FZ Juelich (case = experiment, point = file)"""
         folder_name = "08_RGC_FZJuelich"
-        data_type = '*_merged.mat'
+        data_type = '*.mat'
         self._prepare_access_folder(folder_name, data_type, case, point)
+        #loaded_data = loadmat(self.path2file)
         loaded_data = loadmat_mat73(self.path2file)
 
         # Input and meta
