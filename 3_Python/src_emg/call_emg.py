@@ -1,4 +1,7 @@
+import glob
+
 import numpy as np
+from os.path import join
 from package.data_call.call_handler import DataController, SettingsDATA
 
 
@@ -19,6 +22,7 @@ class DataHandler:
         self.label_exist = False
         self.evnt_xpos = list()
         self.evnt_cluster_id = list()
+        self.evnt_dict = list()
 
 
 # ----- Read Settings -----
@@ -47,8 +51,7 @@ class DataLoader(DataController):
     def __load_Kirchner2023(self, case: int, point: int) -> None:
         """Loading EMG recording files from Kirchner (2023)"""
         folder_name = "01_Kirchner2023"
-        meta_type = 'Metadata_*.txt'
-        makrer_type = 'Markerfile_*.txt'
+        marker_type = 'Markerfile_*.txt'
         data_type = '*set*.txt'
         self._prepare_access_file(folder_name, data_type, 0)
 
@@ -66,6 +69,32 @@ class DataLoader(DataController):
                     sel_list += 1
         del file, input, sel_list
 
+        # --- Read markerfile
+        path2data = join(self.settings.path, folder_name, marker_type)
+        list_marker = glob.glob(path2data)
+        loaded_marker = list()
+        loaded_type = list()
+        file = open(list_marker[0], 'r')
+        for idx, line in enumerate(file):
+            if idx > 6:
+                input = line.split(",")
+                loaded_marker.append(int(input[1][:-1]))
+                match input[0]:
+                    case "S 64":
+                        id = 0
+                    case "S 32":
+                        id = 1
+                    case "S 48":
+                        id = 2
+                    case "S 96":
+                        id = 3
+                    case "S 80":
+                        id = 4
+                    case _:
+                        id = -1
+                loaded_type.append(id)
+        del input
+
         # --- Bringing data into right format
         num_channels = len(loaded_data)
         num_samples = np.zeros((num_channels,), dtype=int)
@@ -81,7 +110,7 @@ class DataLoader(DataController):
         data = DataHandler()
         # Input and meta
         data.data_name = folder_name
-        data.data_type = "Synthetic"
+        data.data_type = "Orthese"
         data.noChannel = data_used.shape[0]
         data.gain = 1
         data.data_fs_orig = int(1000)
@@ -89,6 +118,9 @@ class DataLoader(DataController):
         data.data_time = data.data_raw[0].shape[0] / data.data_fs_orig
         data.data_mapping_avai = False
         # Groundtruth
-        data.label_exist = False
+        data.label_exist = True
+        data.evnt_xpos = [np.array(loaded_marker)-data_used[-1, 0] for idx in range(num_channels-1)]
+        data.evnt_cluster_id = loaded_type
+        data.evnt_dict = ["S64", "S32", "S48", "S96", "S80"]
         # Return
         self.raw_data = data

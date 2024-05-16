@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     # ----- Plotting
     results_input(dataIn.data_raw, dataIn.data_fs_orig)
-    results_input(signals_out, dataIn.data_fs_orig)
+    results_input(signals_out, dataIn.data_fs_orig, dataIn.evnt_xpos, dataIn.evnt_cluster_id)
     plt.show()
 
     # ----- Ending -----
