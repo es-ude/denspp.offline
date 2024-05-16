@@ -115,7 +115,7 @@ class ElectricalLoad(ProcessNoise):
             del error0
 
             # --- Step #2: Find minimum in range [x0-1, x0+1]
-            u_applied_fine = np.linspace(u_applied_grob[x0[0]-1], u_applied_grob[x0[0]+1], 1001, endpoint=True)
+            u_applied_fine = np.linspace(u_applied_grob[x0[0] - 1], u_applied_grob[x0[0] + 1], 1001, endpoint=True)
             error_step1 = list()
             for u_top in u_applied_fine:
                 i1 = self.__dut(u_top, u_inn if isinstance(u_inn, float) else u_inn[idx], device_sel)
@@ -124,13 +124,79 @@ class ElectricalLoad(ProcessNoise):
             error0 = np.array(error_step1)
             x0 = np.argwhere(error0 == error0.min())
 
-            #plt.figure()
-            #plt.plot(u_applied_fine, error0)
-            #plt.tight_layout()
-            #plt.show()
-
             # --- Update
             u_response[idx] = u_applied_fine[x0[0]]
+            idx += 1
+
+        return u_response
+
+    def get_voltage_response_v2(self, i_in: np.ndarray, u_inn: np.ndarray | float, device_sel: int, start_step=1e-3, take_last_value=True) -> np.ndarray:
+        """Getting the voltage response from current input of selected electrical device
+
+        Args:
+            i_in:   Applied current input [A]
+            u_inn:  Negative input | bottom electrode | reference voltage [V]
+            device_sel: Selected electrical device [0: resistor, 1: ...]
+        Returns:
+            Corresponding voltage response
+        """
+        u_response = np.zeros(i_in.shape)
+        idx = 0
+        for i0 in tqdm(i_in, ncols=100, desc="Progress: "):
+            u_bottom = u_inn if isinstance(u_inn, float) else u_inn[idx]
+            derror = []
+            error = []
+            error_sign = []
+
+            # First Step Test (Direction)
+            initial_value = u_bottom if idx == 0 and not take_last_value else u_response[idx-1]
+            test_value = list()
+            test_value.append(initial_value - start_step * (float(np.random.random(1) + 0.5)))
+            test_value.append(initial_value - 0.5 * start_step * (float(np.random.random(1) - 0.5)))
+            test_value.append(initial_value + 0.5 * start_step * (float(np.random.random(1) - 0.5)))
+            test_value.append(initial_value + start_step * (float(np.random.random(1) + 0.5)))
+
+            error0 = list()
+            for u_top in test_value:
+                i1 = self.__dut(u_top, u_bottom, device_sel)
+                error0.append(_error_mse(i1, i0))
+
+            error0 = np.array(error0)
+            error0_sign = np.sign(np.diff(error0))
+            direction = np.sign(np.sum(error0_sign))
+            del error0, error0_sign
+
+            # --- Iteration
+            u_top = u_bottom if idx == 0 and not take_last_value else u_response[idx-1]
+            step_size = start_step
+            step_ite = 0
+            do_calc = True
+            while do_calc:
+                i1 = self.__dut(u_top, u_bottom, device_sel)
+
+                # Error Logging
+                error.append(_error_mse(i1, i0))
+                if len(error) > 1:
+                    derror.append(error[-1] - error[-2])
+                    error_sign.append(np.sign(derror[-1]) == -1.0)
+
+                # Final Decision (with hyper-parameter)
+                if np.abs(error[-1]) >= 1e-24 and step_ite < 8:
+                    u_top -= direction * step_size
+                    do_calc = True
+                else:
+                    do_calc = False
+
+                # Logarithmic Updating Mechanism
+                if len(error) > 1:
+                    if not error_sign[-1]:
+                        u_top += 3 * direction * step_size
+                        step_size = 0.1 * step_size
+                        step_ite += 1
+                        direction = -direction
+
+            # --- Update
+            u_response[idx] = u_top
             idx += 1
 
         return u_response
@@ -247,10 +313,10 @@ if __name__ == "__main__":
     t0 = np.linspace(0, 0.0001, num=int(t_end * settings.fs_ana))
     uinp = 1 * np.sin(2 * np.pi * t0 * 10e3)
     uinn = 0.0
-    iout = dev.resistor(uinp, uinn)
+    iout = dev.diode_single_barrier(uinp, uinn)
 
     iin = 1e-6 * uinp
-    uout = dev.get_voltage_response(iin, uinn, 1)
+    uout = dev.get_voltage_response_v2(iin, uinn, 2)
 
     # --- Plotting
     plt.figure()
