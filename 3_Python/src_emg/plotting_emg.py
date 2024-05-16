@@ -19,12 +19,9 @@ def save_figure(fig, path: str, name: str):
 
 
 def results_input(signals: list, fs: float | int, label_xpos=(), label_id=()) -> None:
-    tA = np.linspace(0, signals[-1].shape[0], signals[-1].shape[0]) / fs
-
-    # --- Plot AFE
+    """"""
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(21)))
     plt.subplots_adjust(hspace=0)
-
     label_avai = not len(label_xpos) == 0
 
     # Plot definition
@@ -44,6 +41,7 @@ def results_input(signals: list, fs: float | int, label_xpos=(), label_id=()) ->
                     ylabel = 100 + np.ones(xpos_sel.shape)
                     ax.plot(label_xpos[idx][xpos_sel] / fs, ylabel, marker=".", markersize=12,
                             linestyle="None", color=color_label[id])
+        tA = np.linspace(0, signals[idx].shape[0], signals[idx].shape[0]) / fs
         ax.plot(tA, signals[idx], 'k')
 
     axs[7].set_xlabel("Time t (s)")

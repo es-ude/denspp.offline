@@ -10,6 +10,17 @@ from package.digital.dsp import DSP, SettingsDSP
 from package.digital.sda import SpikeDetection, SettingsSDA
 
 
+def get_envelope(signal: np.ndarray, size_envelope: int) -> np.ndarray:
+    """"""
+    out = np.zeros(signal.shape)
+    for idx in range(signal.size-size_envelope):
+        xdata = signal[idx:idx+size_envelope]
+        data_max = xdata.max()
+        out[idx:idx+size_envelope] = data_max
+
+    return out
+
+
 class Settings:
     """Settings class for handling the src_neuro setting"""
     SettingsDATA = SettingsDATA(
@@ -86,4 +97,4 @@ class Pipeline(PipelineSignal):
         # ---- Digital Pre-processing ----
         x_filt = self.dsp0.filter(self.x_adc)
         self.x_spk = np.abs(x_filt)
-        # TODO: Envelope integrierten
+        self.x_env = get_envelope(self.x_spk, 200)
