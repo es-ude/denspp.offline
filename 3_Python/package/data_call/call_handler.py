@@ -191,7 +191,14 @@ class DataController:
 
     def _prepare_access_file(self, folder_name: str, data_type: str, sel_datapoint: int) -> None:
         """Getting the file of the corresponding trial"""
-        path = join(self.settings.path, folder_name, data_type)
+        # Checking for folder
+        folder_content = glob(join(self.settings.path, "*"))
+        folder_content.sort()
+        path = ""
+        for folder in folder_content:
+            if folder_name[1:] in folder:
+                path = join(folder, data_type)
+
         folder_content = glob(path)
         folder_content.sort()
         self._no_files = len(folder_content)
@@ -210,6 +217,39 @@ class DataController:
         path2data = join(path2data, file_data)
         self._prepare_access_file(path2data, data_type, sel_datapoint)
         self._no_subfolder = len(file_data)
+
+    def _read_csv_file(self, path2csv: str, num_channels: int, split_option: str) -> list:
+        """"""
+        loaded_data = [[] for idx in range(num_channels)]
+        file = open(path2csv, 'r')
+
+        for line in file:
+            input = line.split(split_option)
+            sel_list = 0
+            for val in input:
+                if val:
+                    loaded_data[sel_list].append(val)
+                    sel_list += 1
+        return loaded_data
+
+    def _transform_rawdata_from_csv_to_numpy(self, data: list) -> np.ndarray:
+        """"""
+        # --- Getting meta information
+        num_samples = list()
+        for idx, data0 in enumerate(data):
+            num_samples.append(len(data0))
+        num_samples = np.array(num_samples)
+        num_channels = idx + 1
+
+        # --- Getting data in right format
+        data_used = np.zeros((num_channels, num_samples.min()), dtype=float)
+        for idx, data_ch in enumerate(data):
+            data_ch0 = list()
+            for value in data_ch:
+                data_ch0.append(float(value))
+            data_used[idx, :] = np.array(data_ch0[0:num_samples.min()])
+
+        return data_used
 
     def _transform_rawdata_to_numpy(self) -> None:
         """Transforming the initial raw data from list to numpy array"""
