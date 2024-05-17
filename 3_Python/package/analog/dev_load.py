@@ -130,13 +130,16 @@ class ElectricalLoad(ProcessNoise):
 
         return u_response
 
-    def get_voltage_response_v2(self, i_in: np.ndarray, u_inn: np.ndarray | float, device_sel: int, start_step=1e-3, take_last_value=True) -> np.ndarray:
+    def get_voltage_response_v2(self, i_in: np.ndarray, u_inn: np.ndarray | float,
+                                device_sel: int, start_step=1e-3, take_last_value=True) -> np.ndarray:
         """Getting the voltage response from current input of selected electrical device
 
         Args:
-            i_in:   Applied current input [A]
-            u_inn:  Negative input | bottom electrode | reference voltage [V]
-            device_sel: Selected electrical device [0: resistor, 1: ...]
+            i_in:               Applied current input [A]
+            u_inn:              Negative input | bottom electrode | reference voltage [V]
+            device_sel:         Selected electrical device [0: resistor, 1: ...]
+            start_step:         Start precision voltage to start iterating the top electrode voltage
+            take_last_value:    Option to take the voltage value from last sample (faster)
         Returns:
             Corresponding voltage response
         """
@@ -311,14 +314,19 @@ if __name__ == "__main__":
     # --- Declaration of input
     t_end = 0.1
     t0 = np.linspace(0, 0.0001, num=int(t_end * settings.fs_ana))
-    uinp = 1 * np.sin(2 * np.pi * t0 * 10e3)
+
+    u_off = 0.0
+    u_pp = 1.0
+    uinp = u_off + u_pp * np.sin(2 * np.pi * t0 * 10e3)
     uinn = 0.0
-    iout = dev.diode_single_barrier(uinp, uinn)
 
-    iin = 1e-6 * uinp
-    uout = dev.get_voltage_response_v2(iin, uinn, 2)
+    # --- Model declaration
+    iout = dev.diode_double_barrier(uinp, uinn)
 
-    # --- Plotting
+    iin = 1e-4 * uinp
+    uout = dev.get_voltage_response_v2(iin, uinn, 3, 1e-2)
+
+    # --- Plotting: Current response
     plt.figure()
     num_rows = 2
     axs = [plt.subplot(num_rows, 1, idx + 1) for idx in range(num_rows)]
@@ -338,8 +346,9 @@ if __name__ == "__main__":
     axs[1].set_xlabel('Voltage U_x [V]')
     axs[1].set_ylabel('Current I_x [mA]')
     plt.tight_layout()
+    del axs
 
-    # --- Plotting
+    # --- Plotting: Voltage response
     plt.figure()
     num_rows = 2
     axs = [plt.subplot(num_rows, 1, idx + 1) for idx in range(num_rows)]
@@ -358,6 +367,7 @@ if __name__ == "__main__":
     axs[1].grid()
     axs[1].set_xlabel('Voltage U_x [V]')
     axs[1].set_ylabel('Current I_x [mA]')
-
     plt.tight_layout()
+
+    # --- Do Plot
     plt.show()
