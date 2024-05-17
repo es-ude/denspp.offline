@@ -25,7 +25,7 @@ class Settings:
     """Settings class for handling the src_neuro setting"""
     SettingsDATA = SettingsDATA(
         path='C:/HomeOffice/Data_EMG',
-        data_set=0,
+        data_set=1,
         data_case=0,
         data_point=1,
         t_range=[0],
