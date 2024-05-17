@@ -1,6 +1,6 @@
 from package.dnn.dnn_handler import dnn_handler
 
-# TODO: Remove output estimation (getting the information from model)
+
 if __name__ == "__main__":
     dnn_handler = dnn_handler(
         mode_dnn=2,
@@ -12,7 +12,8 @@ if __name__ == "__main__":
     # --- Configs (AE)
     mode_ae = 0
     noise_std_ae = 0.01
-    num_output = 5
+    num_hiddenlayer = 5
+    num_output = 6
 
     # --- Selecting model for train
     match dnn_handler.mode_train_dnn:
@@ -31,7 +32,7 @@ if __name__ == "__main__":
         case 3:
             # --- Autoencoder + Classifier
             from src_dnn.train_ae_class import do_train_ae_classifier
-            do_train_ae_classifier(dnn_handler, num_output, mode_ae, noise_std_ae)
+            do_train_ae_classifier(dnn_handler, num_hiddenlayer, num_output, mode_ae, noise_std_ae)
         case 4:
             # --- RGC ON/OFF Classifier
             from src_dnn.train_rgc_class import do_train_rgc_class
