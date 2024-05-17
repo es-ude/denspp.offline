@@ -40,10 +40,8 @@ def generate_zero_frames(frame_size: int, num_frames: int, noise_range: list) ->
     return out, cluster, np.round(frames-mean)
 
 
-def calculate_frame_mean(
-        frames_in: np.ndarray,
-        frames_cl: np.ndarray
-    ) -> np.ndarray:
+def calculate_frame_mean(frames_in: np.ndarray, frames_cl: np.ndarray,
+                         do_integer_output=False) -> np.ndarray:
     """Calculating mean waveforms of spike waveforms"""
     NoCluster, NumCluster = np.unique(frames_cl, return_counts=True)
     SizeCluster = np.size(NoCluster)
@@ -54,13 +52,11 @@ def calculate_frame_mean(
         indices = np.argwhere(frames_cl == val).flatten()
         frames_out[idx0, :] = np.mean(frames_in[indices, :], axis=0)
 
-    return frames_out.astype(int)
+    return frames_out.astype(int) if do_integer_output else frames_out
 
 
-def calculate_frame_median(
-        frames_in: np.ndarray,
-        frames_cl: np.ndarray
-    ) -> np.ndarray:
+def calculate_frame_median(frames_in: np.ndarray, frames_cl: np.ndarray,
+                           do_integer_output=False) -> np.ndarray:
     """Calculating mean waveforms of spike waveforms with median()"""
     NoCluster, NumCluster = np.unique(frames_cl, return_counts=True)
     SizeCluster = np.size(NoCluster)
@@ -71,7 +67,7 @@ def calculate_frame_median(
         indices = np.argwhere(frames_cl == val).flatten()
         frames_out[idx0, :] = np.median(frames_in[indices, :], axis=0)
 
-    return frames_out.astype(int)
+    return frames_out.astype(int) if do_integer_output else frames_out
 
 
 def calculate_frame_snr(

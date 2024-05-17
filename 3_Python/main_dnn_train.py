@@ -1,14 +1,14 @@
 from package.dnn.dnn_handler import dnn_handler
 
-dnn_handler = dnn_handler(
-    mode_dnn=0,
-    mode_cellbib=0,
-    do_plot=True,
-    do_block=True
-)
-
 # TODO: Remove output estimation (getting the information from model)
 if __name__ == "__main__":
+    dnn_handler = dnn_handler(
+        mode_dnn=2,
+        mode_cellbib=0,
+        do_plot=True,
+        do_block=True
+    )
+
     # --- Configs (AE)
     mode_ae = 0
     noise_std_ae = 0.01
