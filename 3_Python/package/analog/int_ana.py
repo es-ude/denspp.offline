@@ -32,7 +32,7 @@ class SettingsINT:
 
 
 RecommendedSettingsINT = SettingsINT(
-    vdd=0.6, vss=0.6,
+    vdd=0.6, vss=-0.6,
     fs_ana=50e3, gain=40,
     offset_v=1e-6,
     offset_i=1e-12,
