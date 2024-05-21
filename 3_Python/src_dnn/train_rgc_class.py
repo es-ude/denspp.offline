@@ -98,7 +98,7 @@ def do_train_rgc_class(dnn_handler: dnn_handler) -> None:
     trainhandler.load_model()
     trainhandler.load_data(dataset)
     del dataset
-    epoch_acc = trainhandler.do_training()[-1]
+    epoch_acc = trainhandler.do_training()[-1][0]
 
     # --- Post-Processing: Getting data, save and plot results
     logsdir = trainhandler.get_saving_path()

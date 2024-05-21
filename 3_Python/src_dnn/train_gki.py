@@ -61,7 +61,7 @@ def do_train_ae(dnn_handler: dnn_handler, mode_ae: int, noise_std=0.05) -> None:
         noise_std: Std of the additional noise added to the input [default: 0.05]
     """
     from package.dnn.dataset.autoencoder import prepare_training
-    from package.dnn.pytorch.autoencoder import train_nn
+    from package.dnn.pytorch.autoencoder_1d import train_nn
     from package.plot.plot_dnn import results_training, plot_statistic_data
 
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
@@ -121,7 +121,7 @@ def do_train_cl(dnn_handler: dnn_handler) -> None:
     trainhandler.load_model()
     trainhandler.load_data(dataset)
     del dataset
-    epoch_acc = trainhandler.do_training()[-1]
+    epoch_acc = trainhandler.do_training()[-1][0]
 
     # --- Post-Processing: Getting data, save and plot results
     logsdir = trainhandler.get_saving_path()
@@ -133,6 +133,7 @@ def do_train_cl(dnn_handler: dnn_handler) -> None:
         plt.close('all')
         # --- Plotting full model
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
+
         plot_confusion(data_result['valid_clus'], data_result['yclus'],
                        path2save=logsdir, cl_dict=frame_dict)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],

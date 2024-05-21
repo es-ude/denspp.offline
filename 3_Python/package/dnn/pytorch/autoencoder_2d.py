@@ -2,7 +2,7 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import Tensor, load, save, from_numpy, tensor, max, min, log10, sum, inference_mode
+from torch import flatten, load, save, from_numpy, inference_mode
 from scipy.io import savemat
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
 
@@ -21,15 +21,16 @@ class train_nn(training_pytorch):
         for tdata in self.train_loader[self._run_kfold]:
             self.optimizer.zero_grad()
             pred_out = self.model(tdata['in'].to(self.used_hw_dev))[1]
-            loss = self.loss_fn(pred_out, tdata['out'].to(self.used_hw_dev))
+            loss = self.loss_fn(
+                flatten(pred_out, 1),
+                flatten(tdata['out'].to(self.used_hw_dev), 1)
+            )
             loss.backward()
             self.optimizer.step()
 
             train_loss += loss.item()
             total_batches += 1
-
-        train_loss = train_loss / total_batches
-        return train_loss
+        return float(train_loss / total_batches)
 
     def __do_valid_epoch(self) -> float:
         """Do validation during epoch of training"""
@@ -40,36 +41,13 @@ class train_nn(training_pytorch):
         with inference_mode():
             for vdata in self.valid_loader[self._run_kfold]:
                 pred_out = self.model(vdata['in'].to(self.used_hw_dev))[1]
+                valid_loss += self.loss_fn(
+                    flatten(pred_out, 1),
+                    flatten(vdata['out'].to(self.used_hw_dev), 1)
+                )
 
-                valid_loss += self.loss_fn(pred_out, vdata['out'].to(self.used_hw_dev)).item()
                 total_batches += 1
-
-        valid_loss = valid_loss / total_batches
-        return valid_loss
-
-    def __do_snr_epoch(self) -> Tensor:
-        """Do metric calculation during validation step of training"""
-        self.model.eval()
-        inc_snr = list()
-        with inference_mode():
-            for vdata in self.valid_loader[self._run_kfold]:
-                data_mean = vdata['mean'].to(self.used_hw_dev)
-                data_in = vdata['in'].to(self.used_hw_dev)
-                pred_out = self.model(vdata['in'].to(self.used_hw_dev))[1]
-                snr0_0 = self.__calculate_snr(data_in, data_mean)
-                snr1_0 = self.__calculate_snr(pred_out, data_mean)
-                inc_snr.extend((snr1_0 - snr0_0))
-
-        return tensor(inc_snr)
-
-    def __calculate_snr(self, vdata_in: Tensor, vdata_mean: Tensor) -> Tensor:
-        """a0 = ((max(ymean) - min(ymean))**2"""
-        max_values, _ = max(vdata_mean, dim=1)
-        min_values, _ = min(vdata_mean, dim=1)
-        a0 = (max_values - min_values) ** 2
-        b0 = sum((vdata_in - vdata_mean) ** 2, dim=1)
-        result = 10 * log10(a0 / b0)
-        return result
+        return float(valid_loss / total_batches)
 
     def do_training(self, path2save='') -> list:
         """Start model training incl. validation and custom-own metric calculation"""
@@ -122,7 +100,7 @@ class train_nn(training_pytorch):
 
                 # Saving metrics after each epoch
                 epoch_loss.append((train_loss, valid_loss))
-                epoch_metric.append(self.__do_snr_epoch())
+                epoch_metric.append(list())
 
             # --- Saving metrics after each fold
             run_metric.append((epoch_loss, epoch_metric))
@@ -131,15 +109,14 @@ class train_nn(training_pytorch):
 
         # --- Ending of all trainings phases
         self._end_training_routine(timestamp_start)
-
         return run_metric
 
     def do_validation_after_training(self) -> dict:
         """Performing the validation with the best model after training for plotting and saving results"""
 
         # --- Getting data from validation set for inference
-        data_valid = self.get_data_points(use_train_dataloader=False)
         data_train = self.get_data_points(use_train_dataloader=True)
+        data_valid = self.get_data_points(use_train_dataloader=False)
 
         # --- Do the Inference with Best Model
         print(f"\nDoing the inference with validation data on best model")

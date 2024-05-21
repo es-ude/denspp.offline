@@ -224,3 +224,21 @@ def plot_statistic_data(train_cl: np.ndarray | list, valid_cl=None, path2save=''
     # --- saving plots
     if path2save:
         save_figure(plt, path2save, "ai_training_histdata")
+
+
+def plot_mnist_graphs(data: np.ndarray, label: np.ndarray, title="", path2save="") -> None:
+    """Plotting the MNIST data"""
+    plt.figure()
+    axs = [plt.subplot(3, 3, idx + 1) for idx in range(9)]
+
+    for idx, ax in enumerate(axs):
+        pos_num = int(np.argwhere(label == idx)[0])
+        ax.imshow(data[pos_num], cmap=plt.get_cmap('gray'))
+
+        ax.set_title(f"Label = {idx}")
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+    plt.tight_layout()
+    if path2save:
+        save_figure(plt, path2save, f"mnist_plot{title}")
