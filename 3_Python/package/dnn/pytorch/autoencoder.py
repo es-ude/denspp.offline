@@ -40,8 +40,7 @@ class train_nn(training_pytorch):
         with inference_mode():
             for vdata in self.valid_loader[self._run_kfold]:
                 pred_out = self.model(vdata['in'].to(self.used_hw_dev))[1]
-                valid_loss += self.loss_fn(pred_out, vdata['out'].to(self.used_hw_dev)).item()
-                pred_out = self.model(vdata['in'].to(self.used_hw_dev))[1]
+
                 valid_loss += self.loss_fn(pred_out, vdata['out'].to(self.used_hw_dev)).item()
                 total_batches += 1
 
