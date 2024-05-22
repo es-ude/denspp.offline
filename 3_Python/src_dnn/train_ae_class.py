@@ -83,7 +83,7 @@ def do_train_ae_classifier(dnn_handler: dnn_handler,
     trainhandler = train_autoencoder(config_train=config_train_ae, config_data=config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
-    loss_ae, snr_ae = trainhandler.do_training()[-1]
+    loss_ae, snr_ae = trainhandler.do_training(metrics='snr')[-1]
     path2model = trainhandler.get_saving_path()
 
     if dnn_handler.do_plot:
@@ -109,7 +109,7 @@ def do_train_ae_classifier(dnn_handler: dnn_handler,
     trainhandler = train_classifier(config_train=config_train_cl, config_data=config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
-    acc_class = trainhandler.do_training()[-1]
+    acc_class = trainhandler.do_training()[-1][0]
 
     if dnn_handler.do_plot:
         logsdir = trainhandler.get_saving_path()
