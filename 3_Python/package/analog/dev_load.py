@@ -327,6 +327,7 @@ if __name__ == "__main__":
     uout = dev.get_voltage_response_v2(iin, uinn, 3, 1e-2)
 
     # --- Plotting: Current response
+    plt.close('all')
     plt.figure()
     num_rows = 2
     axs = [plt.subplot(num_rows, 1, idx + 1) for idx in range(num_rows)]

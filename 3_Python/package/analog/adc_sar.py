@@ -167,6 +167,7 @@ if __name__ == "__main__":
     freq, Yadc = do_fft(uadc_hs, set_adc.fs_adc)
 
     # --- Plotting results
+    plt.close('all')
     plt.figure()
     ax1 = plt.subplot(311)
     ax2 = plt.subplot(312, sharex=ax1)

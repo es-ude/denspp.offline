@@ -145,6 +145,7 @@ if __name__ == "__main__":
     u_dict = ["I_in", "Transimpedance", "Push", "Pull", "Push-Pull (Pos.)", "Push-Pull (Neg.)", "Push-Pull (Abs.)"]
 
     # --- Plotten
+    plt.close('all')
     plt.figure()
     plt_size = [2, 4]
     axs = [plt.subplot(plt_size[0], plt_size[1], 1+idx) for idx in range(plt_size[0] * plt_size[1])]

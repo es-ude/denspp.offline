@@ -187,7 +187,8 @@ if __name__ == "__main__":
     cmp.cmp_normal(inp1, vcm)
 
     # --- Plots
-    plt.figure(1)
+    plt.close('all')
+    plt.figure()
     axs = [plt.subplot(2, 1, idx+1) for idx in range(2)]
 
     # --- Transfer function
