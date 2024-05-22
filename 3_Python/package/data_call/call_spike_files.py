@@ -268,11 +268,11 @@ class DataLoader(DataController):
         # --- Groundtruth from BlackRock
         spike_xoffset = int(-0.1e-6 * self.raw_data.data_fs_orig)
         self.raw_data.label_exist = int(loaded_data['nev_detected']['Exits'][0, 0][0])
-        #nev_waveform = list()
+        # nev_waveform = list()
         for elec in elec_process:
             self.raw_data.evnt_xpos.append(loaded_data['nev_detected'][f'Elec{1 + elec}'][0, 0]['timestamps'][0, 0][0, :] - spike_xoffset)
             self.raw_data.evnt_cluster_id.append(loaded_data['nev_detected'][f'Elec{1 + elec}'][0, 0]['cluster'][0, 0][0, :])
-            #nev_waveform.append(data_lsb * loaded_data['nev_detected'][f'Elec{1+elec}'][0, 0]['waveform'][0, 0])
+            # nev_waveform.append(data_lsb * loaded_data['nev_detected'][f'Elec{1+elec}'][0, 0]['waveform'][0, 0])
 
         # --- Behaviour
         self.raw_data.behaviour_exist = True
@@ -347,7 +347,7 @@ class DataLoader(DataController):
         folder_name = "08_RGC_FZJuelich"
         data_type = '*_merged.mat'
         self._prepare_access_folder(folder_name, data_type, case, point)
-        #loaded_data = loadmat(self.path2file)
+        # loaded_data = loadmat(self.path2file)
         loaded_data = loadmat_mat73(self.path2file)
 
         # Input and meta

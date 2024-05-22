@@ -68,25 +68,21 @@ class DataController:
         if t_range.size == 2:
             idx0 = int(t_range[0] * self.raw_data.data_fs_used)
             idx1 = int(t_range[1] * self.raw_data.data_fs_used)
+            self.__fill_factor = (idx0 - idx1) / rawdata[-1].size
 
             for idx, data_in in enumerate(rawdata):
                 # --- Cutting specific time range out of raw data
                 rawdata_out.append(data_in[idx0:idx1])
-                self.__fill_factor = (idx0 - idx1) / data_in.size
 
                 # --- Cutting labeled information
                 if self.raw_data.label_exist:
-                    # Find values from x-positions
+                    # Adapting new data
                     idx2 = int(np.argwhere(spikepos_in[idx] >= idx0)[0])
                     idx3 = int(np.argwhere(spikepos_in[idx] <= idx1)[-1])
-                else:
-                    idx2 = 0
-                    idx3 = -1
+                    spike_xout.append(spikepos_in[idx][idx2:idx3] - idx0)
+                    spike_cout.append(cluster_in[idx][idx2:idx3])
 
-                spike_xout.append(spikepos_in[idx][idx2:idx3] - idx0)
-                spike_cout.append(cluster_in[idx][idx2:idx3])
-
-            # Übergabe
+            # --- Return adapted data
             self.raw_data.data_raw = rawdata_out
             self.raw_data.evnt_xpos = spike_xout
             self.raw_data.evnt_cluster_id = spike_cout
