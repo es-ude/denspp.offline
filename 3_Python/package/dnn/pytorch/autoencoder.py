@@ -2,9 +2,20 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import flatten, load, save, from_numpy, inference_mode
+from torch import Tensor, load, save, from_numpy, tensor, inference_mode, flatten
+from torch import max, min, log10, sum
 from scipy.io import savemat
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
+
+
+def _calculate_snr(vdata_in: Tensor, vdata_mean: Tensor) -> Tensor:
+    """a0 = ((max(ymean) - min(ymean))**2"""
+    max_values, _ = max(vdata_mean, dim=1)
+    min_values, _ = min(vdata_mean, dim=1)
+    a0 = (max_values - min_values) ** 2
+    b0 = sum((vdata_in - vdata_mean) ** 2, dim=1)
+    result = 10 * log10(a0 / b0)
+    return result
 
 
 class train_nn(training_pytorch):
@@ -19,12 +30,15 @@ class train_nn(training_pytorch):
 
         self.model.train(True)
         for tdata in self.train_loader[self._run_kfold]:
+            data_x = tdata['in'].to(self.used_hw_dev)
+            data_y = tdata['out'].to(self.used_hw_dev)
+            data_p = self.model(data_x)[1]
+
             self.optimizer.zero_grad()
-            pred_out = self.model(tdata['in'].to(self.used_hw_dev))[1]
-            loss = self.loss_fn(
-                flatten(pred_out, 1),
-                flatten(tdata['out'].to(self.used_hw_dev), 1)
-            )
+            if len(data_y) > 2:
+                loss = self.loss_fn(flatten(data_p, 1), flatten(data_y, 1))
+            else:
+                loss = self.loss_fn(data_p, data_y)
             loss.backward()
             self.optimizer.step()
 
@@ -40,16 +54,44 @@ class train_nn(training_pytorch):
         self.model.eval()
         with inference_mode():
             for vdata in self.valid_loader[self._run_kfold]:
-                pred_out = self.model(vdata['in'].to(self.used_hw_dev))[1]
-                valid_loss += self.loss_fn(
-                    flatten(pred_out, 1),
-                    flatten(vdata['out'].to(self.used_hw_dev), 1)
-                )
+                data_x = vdata['in'].to(self.used_hw_dev)
+                data_y = vdata['out'].to(self.used_hw_dev)
+                data_p = self.model(data_x)[1]
 
                 total_batches += 1
+                if len(data_y) > 2:
+                    valid_loss += self.loss_fn(flatten(data_p, 1), flatten(data_y, 1)).item()
+                else:
+                    valid_loss += self.loss_fn(data_p, data_y).item()
         return float(valid_loss / total_batches)
 
-    def do_training(self, path2save='') -> list:
+    def __do_snr_epoch(self) -> Tensor:
+        """Do metric calculation during validation step of training"""
+        self.model.eval()
+        inc_snr = list()
+        with inference_mode():
+            for vdata in self.valid_loader[self._run_kfold]:
+                data_mean = vdata['mean'].to(self.used_hw_dev)
+                data_in = vdata['in'].to(self.used_hw_dev)
+                pred_out = self.model(vdata['in'].to(self.used_hw_dev))[1]
+
+                snr0_0 = _calculate_snr(data_in, data_mean)
+                snr1_0 = _calculate_snr(pred_out, data_mean)
+                inc_snr.extend((snr1_0 - snr0_0))
+        return tensor(inc_snr)
+
+    def __do_calc_metric(self, used_metrics: str) -> Tensor:
+        """Determination of additional metrics during training"""
+        out = Tensor()
+        match used_metrics:
+            case 'snr':
+                out = self.__do_snr_epoch()
+            case '':
+                out = Tensor()
+
+        return out
+
+    def do_training(self, path2save='', metrics='') -> list:
         """Start model training incl. validation and custom-own metric calculation"""
         self._init_train(path2save=path2save)
         self._save_config_txt('_ae')
@@ -79,28 +121,29 @@ class train_nn(training_pytorch):
                 print(f'\nStarting with Fold #{fold}')
 
             for epoch in range(0, self.settings.num_epochs):
-                train_loss = self.__do_training_epoch()
-                valid_loss = self.__do_valid_epoch()
+                loss_train = self.__do_training_epoch()
+                loss_valid = self.__do_valid_epoch()
 
                 print(f'... results of epoch {epoch + 1}/{self.settings.num_epochs} '
                       f'[{(epoch + 1) / self.settings.num_epochs * 100:.2f} %]: '
-                      f'train_loss = {train_loss:.5f},'
-                      f'\tvalid_loss = {valid_loss:.5f}')
+                      f'train_loss = {loss_train:.5f},'
+                      f'\tvalid_loss = {loss_valid:.5f},'
+                      f'\tdelta_loss = {loss_train-loss_valid:.6f}')
 
                 # Log the running loss averaged per batch for both training and validation
-                self._writer.add_scalar('Loss_train (AE)', train_loss, epoch+1)
-                self._writer.add_scalar('Loss_valid (AE)', valid_loss, epoch+1)
+                self._writer.add_scalar('Loss_train (AE)', loss_train, epoch+1)
+                self._writer.add_scalar('Loss_valid (AE)', loss_valid, epoch+1)
                 self._writer.flush()
 
                 # Tracking the best performance and saving the model
-                if valid_loss < best_loss[1]:
-                    best_loss = [train_loss, valid_loss]
+                if loss_valid < best_loss[1]:
+                    best_loss = [loss_train, loss_valid]
                     path2model = join(self._path2temp, f'model_ae_fold{fold:03d}_epoch{epoch:04d}.pth')
                     save(self.model, path2model)
 
                 # Saving metrics after each epoch
-                epoch_loss.append((train_loss, valid_loss))
-                epoch_metric.append(list())
+                epoch_loss.append((loss_train, loss_valid))
+                epoch_metric.append(self.__do_calc_metric(metrics))
 
             # --- Saving metrics after each fold
             run_metric.append((epoch_loss, epoch_metric))
@@ -115,8 +158,8 @@ class train_nn(training_pytorch):
         """Performing the validation with the best model after training for plotting and saving results"""
 
         # --- Getting data from validation set for inference
-        data_train = self.get_data_points(use_train_dataloader=True)
         data_valid = self.get_data_points(use_train_dataloader=False)
+        data_train = self.get_data_points(use_train_dataloader=True)
 
         # --- Do the Inference with Best Model
         print(f"\nDoing the inference with validation data on best model")

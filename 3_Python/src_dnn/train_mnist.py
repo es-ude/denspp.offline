@@ -13,7 +13,7 @@ config_data = Config_Dataset(
     data_num_augmentation=0,
     data_do_addnoise_cluster=False,
     # --- Data Normalization
-    data_do_normalization=False,
+    data_do_normalization=True,
     data_normalization_mode='CPU',
     data_normalization_method='minmax',
     data_normalization_setting='bipolar',
@@ -32,7 +32,7 @@ config_train_cl = Config_PyTorch(
     optimizer='Adam',
     num_kfold=1,
     num_epochs=5,
-    batch_size=256,
+    batch_size=512,
     data_split_ratio=0.25,
     data_do_shuffle=True
 )
@@ -44,8 +44,8 @@ config_train_ae = Config_PyTorch(
     loss_fn=nn.MSELoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=100,
-    batch_size=256,
+    num_epochs=10,
+    batch_size=512,
     data_split_ratio=0.25,
     data_do_shuffle=True
 )
@@ -65,7 +65,7 @@ def do_train_cl(do_plot=True, do_block=True) -> None:
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
 
     # ---Loading Data, Do Training and getting the results
-    dataset = prepare_training(config_data.data_path, True)
+    dataset = prepare_training(config_data.data_path, config_data.data_do_normalization, True)
     num_output = 10
     trainhandler = train_nn(config_train_cl, config_data)
     trainhandler.load_model()
@@ -97,14 +97,14 @@ def do_train_ae(do_plot=True, do_block=True) -> None:
         do_block: Blocking the plots for user interactions, otherwise only saving
     """
     from package.dnn.dataset.mnist import prepare_training
-    from package.dnn.pytorch.autoencoder_2d import train_nn
+    from package.dnn.pytorch.autoencoder import train_nn
     from package.plot.plot_dnn import plot_statistic_data, plot_mnist_graphs
     from package.plot.plot_metric import plot_loss
 
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
 
     # ---Loading Data, Do Training and getting the results
-    dataset = prepare_training(config_data.data_path, False, False)
+    dataset = prepare_training(config_data.data_path, config_data.data_do_normalization, False)
     trainhandler = train_nn(config_train_ae, config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)

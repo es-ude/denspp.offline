@@ -32,7 +32,7 @@ config_train = Config_PyTorch(
     loss_fn=nn.MSELoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=100,
+    num_epochs=10,
     batch_size=256,
     data_split_ratio=0.25,
     data_do_shuffle=True
@@ -47,7 +47,7 @@ def do_train_ae(dnn_handler: dnn_handler, mode_ae: int, noise_std=0.05) -> None:
         noise_std: Std of the additional noise added to the input [default: 0.05]
     """
     from package.dnn.dataset.autoencoder import prepare_training
-    from package.dnn.pytorch.autoencoder_1d import train_nn
+    from package.dnn.pytorch.autoencoder import train_nn
     from package.plot.plot_dnn import results_training, plot_statistic_data
 
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
@@ -64,7 +64,7 @@ def do_train_ae(dnn_handler: dnn_handler, mode_ae: int, noise_std=0.05) -> None:
     trainhandler.load_model()
     trainhandler.load_data(dataset)
     del dataset
-    loss_ae, snr_train = trainhandler.do_training()[-1]
+    loss_ae, snr_train = trainhandler.do_training(metrics='snr')[-1]
 
     # --- Post-Processing: Validation after training
     logsdir = trainhandler.get_saving_path()

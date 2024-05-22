@@ -40,7 +40,7 @@ def do_train_ae_classifier(dnn_handler: dnn_handler,
     """
     from package.dnn.dataset.autoencoder import prepare_training as get_dataset_ae
     from package.dnn.dataset.autoencoder_class import prepare_training as get_dataset_class
-    from package.dnn.pytorch.autoencoder_1d import train_nn as train_autoencoder
+    from package.dnn.pytorch.autoencoder import train_nn as train_autoencoder
     from package.dnn.pytorch.classifier import train_nn as train_classifier
     from package.plot.plot_dnn import results_training, plot_statistic_data
     from package.plot.plot_metric import plot_confusion, plot_loss
@@ -83,7 +83,7 @@ def do_train_ae_classifier(dnn_handler: dnn_handler,
     trainhandler = train_autoencoder(config_train=config_train_ae, config_data=config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
-    loss_ae, snr_ae = trainhandler.do_training()[-1]
+    loss_ae, snr_ae = trainhandler.do_training(metrics='snr')[-1]
     path2model = trainhandler.get_saving_path()
 
     if dnn_handler.do_plot:

@@ -16,14 +16,18 @@ if __name__ == "__main__":
     # --- Selecting model for train
     match dnn_handler.mode_train_dnn:
         case 0:
-            # --- MNIST
+            # --- MNIST (Classifier)
             from src_dnn.train_mnist import do_train_cl
-            do_train_cl(dnn_handler)
+            do_train_cl(dnn_handler.do_plot, dnn_handler.do_block)
         case 1:
+            # --- MNIST (Autoencoder)
+            from src_dnn.train_mnist import do_train_ae
+            do_train_ae(dnn_handler.do_plot, dnn_handler.do_block)
+        case 2:
             # --- Autoencoder
             from src_dnn.train_ae import do_train_ae
             do_train_ae(dnn_handler, mode_ae, noise_std_ae)
-        case 2:
+        case 3:
             # --- Classifier
             from src_dnn.train_cl import do_train_cl
             do_train_cl(dnn_handler)

@@ -61,7 +61,7 @@ def do_train_ae(dnn_handler: dnn_handler, mode_ae: int, noise_std=0.05) -> None:
         noise_std: Std of the additional noise added to the input [default: 0.05]
     """
     from package.dnn.dataset.autoencoder import prepare_training
-    from package.dnn.pytorch.autoencoder_1d import train_nn
+    from package.dnn.pytorch.autoencoder import train_nn
     from package.plot.plot_dnn import results_training, plot_statistic_data
 
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")

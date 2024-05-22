@@ -3,7 +3,7 @@ from package.dnn.dnn_handler import dnn_handler
 
 if __name__ == "__main__":
     dnn_handler = dnn_handler(
-        mode_dnn=2,
+        mode_dnn=3,
         mode_cellbib=0,
         do_plot=True,
         do_block=True
@@ -18,26 +18,30 @@ if __name__ == "__main__":
     # --- Selecting model for train
     match dnn_handler.mode_train_dnn:
         case 0:
-            # --- MNIST
+            # --- MNIST (Classifier)
             from src_dnn.train_mnist import do_train_cl
-            do_train_cl(dnn_handler)
+            do_train_cl(dnn_handler.do_plot, dnn_handler.do_block)
         case 1:
+            # --- MNIST (Autoencoder)
+            from src_dnn.train_mnist import do_train_ae
+            do_train_ae(dnn_handler.do_plot, dnn_handler.do_block)
+        case 2:
             # --- Spike Detection
             from src_dnn.train_sda import dnn_train_sda
             dnn_train_sda(dnn_handler,4)
-        case 2:
+        case 3:
             # --- Autoencoder (Normal)
             from src_dnn.train_ae import do_train_ae
             do_train_ae(dnn_handler, mode_ae, noise_std_ae)
-        case 3:
+        case 4:
             # --- Autoencoder + Classifier
             from src_dnn.train_ae_class import do_train_ae_classifier
             do_train_ae_classifier(dnn_handler, num_hiddenlayer, num_output, mode_ae, noise_std_ae)
-        case 4:
+        case 5:
             # --- RGC ON/OFF Classifier
             from src_dnn.train_rgc_class import do_train_rgc_class
             do_train_rgc_class(dnn_handler)
-        case 4:
+        case 6:
             # --- Neural Decoder (Utah Array)
             from src_dnn.train_decoder_utah import do_train_decoder_utah
             do_train_decoder_utah(dnn_handler, 500)

@@ -40,14 +40,14 @@ config_train = Config_PyTorch(
 
 
 def do_train_ae(dnn_handler: dnn_handler, mode_ae: int, noise_std=0.05) -> None:
-    """Training routine for Autoencoders
+    """Training routine for Autoencoders in Neural Applications (Spike Frames)
     Args:
         dnn_handler: Handler for configurating the routine selection for train deep neural networks
         mode_ae: Selected model of the Autoencoder (0: normal, 1: Denoising (mean), 2: Denoising (input)) [default:0]
         noise_std: Std of the additional noise added to the input [default: 0.05]
     """
     from package.dnn.dataset.autoencoder import prepare_training
-    from package.dnn.pytorch.autoencoder_1d import train_nn
+    from package.dnn.pytorch.autoencoder import train_nn
     from package.plot.plot_dnn import results_training, plot_statistic_data
 
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
@@ -64,7 +64,7 @@ def do_train_ae(dnn_handler: dnn_handler, mode_ae: int, noise_std=0.05) -> None:
     trainhandler.load_model()
     trainhandler.load_data(dataset)
     del dataset
-    loss_ae, snr_train = trainhandler.do_training()[-1]
+    loss_ae, snr_train = trainhandler.do_training(metrics='snr')[-1]
 
     # --- Post-Processing: Validation after training
     logsdir = trainhandler.get_saving_path()
