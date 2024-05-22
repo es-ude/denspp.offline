@@ -1,6 +1,6 @@
 import dataclasses
 import numpy as np
-from package.analog.dev_noise import ProcessNoise, SettingsNoise, RecommendedSettingsNoise
+from package.analog.dev_noise import ProcessNoise, SettingsNoise
 
 
 @dataclasses.dataclass
@@ -40,6 +40,14 @@ RecommendedSettingsCUR = SettingsCUR(
     offset_v=1e-6, offset_i=1e-12,
     noise_en=False,
     para_en=False
+)
+
+RecommendedSettingsNoise = SettingsNoise(
+    temp=300,
+    wgn_dB=-120,
+    Fc=10,
+    slope=0.6,
+    do_print=False
 )
 
 

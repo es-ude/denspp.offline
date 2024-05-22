@@ -191,7 +191,7 @@ class ElectricalLoad(ProcessNoise):
                     derror.append(error[-1] - error[-2])
                     error_sign.append(np.sign(derror[-1]) == -1.0)
 
-                # Final Decision (with hyper-parameter)
+                # Final Decision (with hyperparameter)
                 if np.abs(error[-1]) >= 1e-24 and step_ite < 8:
                     u_top -= direction * step_size
                     do_calc = True
@@ -226,7 +226,7 @@ class ElectricalLoad(ProcessNoise):
 
         i_out = du / self._settings.value
         if self._settings.noise_en:
-            i_out += self._gen_noise_awgn(du.size, False)
+            i_out += self._gen_noise_awgn_curr(du.size, self._settings.value)
         return i_out
 
     def capacitor(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
@@ -244,7 +244,7 @@ class ElectricalLoad(ProcessNoise):
         i_out = np.zeros(du.shape)
         i_out[1:] = self._settings.value * np.diff(du) * self._settings.fs_ana
         if self._settings.noise_en:
-            i_out += self._gen_noise_awgn(du.size, False)
+            i_out += self._gen_noise_awgn_pwr(du.size)
         return i_out
 
     def inductor(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
@@ -260,7 +260,7 @@ class ElectricalLoad(ProcessNoise):
         du = u_inp - u_inn
         i_out = cumtrapz(du, dx=1/self._settings.fs_ana, initial=0) / self._settings.value
         if self._settings.noise_en:
-            i_out += self._gen_noise_awgn(du.size, False)
+            i_out += self._gen_noise_awgn_pwr(du.size)
         return i_out
 
     def diode_single_barrier(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
@@ -281,7 +281,7 @@ class ElectricalLoad(ProcessNoise):
         du = u_inp - u_inn
         i_out = is0 * np.exp((du - u_th) / (n0 * u_kb))
         if self._settings.noise_en:
-            i_out += self._gen_noise_awgn(du.size, False)
+            i_out += self._gen_noise_awgn_pwr(du.size)
         return i_out
 
     def diode_double_barrier(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
@@ -303,7 +303,7 @@ class ElectricalLoad(ProcessNoise):
         i_out = is0 * (np.exp((du - u_th) / (n0 * u_kb)) - 1)
         i_out -= is0 * (np.exp((-du - u_th) / (n0 * u_kb)) - 1)
         if self._settings.noise_en:
-            i_out += self._gen_noise_awgn(du.size, False)
+            i_out += self._gen_noise_awgn_pwr(du.size)
         return i_out
 
 

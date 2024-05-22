@@ -1,7 +1,7 @@
 import dataclasses
 import numpy as np
 from scipy.signal import butter, lfilter, square
-from package.analog.dev_noise import ProcessNoise, SettingsNoise, RecommendedSettingsNoise
+from package.analog.dev_noise import ProcessNoise, SettingsNoise
 
 
 @dataclasses.dataclass
@@ -16,8 +16,9 @@ class SettingsAMP:
         n_filt:     Order of filter stage []
         f_filt:     Frequency range of filtering [Hz]
         offset:     Offset voltage of the amplifier [V]
-        noise_en:   Enable noise on output [True/False]
         f_chop:     Chopping frequency [Hz] (for chopper)
+        noise_en:   Enable noise on output [True/False]
+        noise_edev: Input voltage noise spectral density [V/sqrt(Hz)]
     """
     vdd:    float
     vss:    float
@@ -28,9 +29,11 @@ class SettingsAMP:
     f_filt: list
     f_type: str
     offset: float
-    noise_en:  bool
     # Chopper properties
     f_chop: float
+    # Noise properties
+    noise_en: bool
+    noise_edev: float
 
     @property
     def vcm(self) -> float:
@@ -41,8 +44,18 @@ RecommendedSettingsAMP = SettingsAMP(
     vdd=0.6, vss=-0.6,
     fs_ana=50e3, gain=40,
     n_filt=1, f_filt=[0.1, 8e3], f_type="bandpass",
-    offset=0e-6, noise_en=False,
-    f_chop=10e3
+    offset=0e-6,
+    f_chop=10e3,
+    noise_en=False,
+    noise_edev=100e-9
+)
+
+RecommendedSettingsNoise = SettingsNoise(
+    temp=300,
+    wgn_dB=-120,
+    Fc=10,
+    slope=0.6,
+    do_print=False
 )
 
 
@@ -74,13 +87,19 @@ class PreAmp(ProcessNoise):
         uin[uin < self._settings_dev.vss] = self._settings_dev.vss
         return uin
 
+    def __noise_generation_circuit(self, size: int) -> np.ndarray:
+        """Generating of noise using circuit noise properties"""
+        if self._settings_dev.noise_en:
+            u_out = self._gen_noise_awgn_dev(size, self._settings_dev.noise_edev)
+        else:
+            u_out = np.zeros((size,))
+        return u_out
+
     def pre_amp(self, uinp: np.ndarray, uinn: np.ndarray) -> np.ndarray:
         """Performs the pre-amplification (single, normal) with input signal
-
         Args:
             uinp:   Positive input voltage [V]
             uinn:   Negative input voltage [V]
-
         Returns:
             Test signal
         """
@@ -88,15 +107,11 @@ class PreAmp(ProcessNoise):
         u_out = self._settings_dev.gain * lfilter(b=self.__b_iir_spk, a=self.__a_iir_spk, x=du)
         u_out += self._settings_dev.gain * self._settings_dev.offset
         u_out += self._settings_dev.vcm
-
-        # Adding noise
-        if self._settings_dev.noise_en:
-            u_out += self._settings_dev.gain * self._gen_noise_real(du.size)
+        u_out += self._settings_dev.gain * self.__noise_generation_circuit(du.size)
         return self.__voltage_clipping(u_out)
 
     def pre_amp_chopper(self, uinp: np.ndarray, uinn: np.ndarray) -> [np.ndarray, np.ndarray]:
         """Performs the pre-amplification (single, chopper) with input signal
-
         Args:
             uinp:   Positive input voltage
             uinn:   Negative input voltage
@@ -106,9 +121,7 @@ class PreAmp(ProcessNoise):
         # --- Chopping
         du = (du + self._settings_dev.offset - self._settings_dev.vcm) * clk_chop
         uchp_in = self._settings_dev.vcm + self._settings_dev.gain * du
-        # --- Adding noise
-        if self._settings_dev.noise_en:
-            uchp_in += self._settings_dev.gain * self._gen_noise_real(du.size)
+        uchp_in += self._settings_dev.gain * self.__noise_generation_circuit(du.size)
         # --- Back chopping and Filtering
         u_filt = uchp_in * clk_chop
         u_out = lfilter(self.__b_iir_spk, self.__a_iir_spk, u_filt)
