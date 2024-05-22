@@ -34,7 +34,7 @@ class SettingsSC:
 
 
 RecommendedSettingsAMP = SettingsSC(
-    vdd=0.6, vss=0.6,
+    vdd=0.6, vss=-0.6,
     fs_ana=50e3, fs_sc=10e3,
     gain=40,
     offset=0e-6,

@@ -121,7 +121,7 @@ def do_train_cl(dnn_handler: dnn_handler) -> None:
     trainhandler.load_model()
     trainhandler.load_data(dataset)
     del dataset
-    epoch_acc = trainhandler.do_training()[-1]
+    epoch_acc = trainhandler.do_training()[-1][0]
 
     # --- Post-Processing: Getting data, save and plot results
     logsdir = trainhandler.get_saving_path()
@@ -133,6 +133,7 @@ def do_train_cl(dnn_handler: dnn_handler) -> None:
         plt.close('all')
         # --- Plotting full model
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
+
         plot_confusion(data_result['valid_clus'], data_result['yclus'],
                        path2save=logsdir, cl_dict=frame_dict)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],

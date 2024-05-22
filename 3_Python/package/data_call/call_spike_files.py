@@ -19,7 +19,7 @@ class DataHandler:
         self.device_id = ''
         self.electrode_id = list()
         self.data_raw = list()
-        self.data_mapping_avai = False
+        self.data_mapping = list()
         # --- GroundTruth: Spike Sorting (per Channel)
         self.label_exist = False
         self.evnt_xpos = list()
@@ -86,7 +86,7 @@ class DataLoader(DataController):
         self.raw_data.data_type = "Synthetic"
         self.raw_data.data_fs_orig = int(1 / loaded_data["samplingInterval"][0][0] * 1000)
 
-        self.raw_data.data_mapping_avai = False
+        self.raw_data.data_mapping = list()
         self.raw_data.device_id = [0]
         self.raw_data.electrode_id = [int(loaded_data["chan"][0])-1]
         self.raw_data.data_raw = [0.5e-6 * np.float32(loaded_data["data"][0])]
@@ -120,7 +120,7 @@ class DataLoader(DataController):
         self.raw_data.data_type = "Synthetic"
         self.raw_data.data_fs_orig = 24e3
 
-        self.raw_data.data_mapping_avai = False
+        self.raw_data.data_mapping = list()
         self.raw_data.device_id = [0]
         self.raw_data.electrode_id = [int(loaded_data["data"].shape[0])-1]
         self.raw_data.data_raw = [25e-6 * np.float32(loaded_data["data"][0])]
@@ -148,7 +148,7 @@ class DataLoader(DataController):
         self.raw_data.data_type = "Synthetic"
         self.raw_data.data_fs_orig = float(1000 / loaded_data["samplingInterval"][0][0])
 
-        self.raw_data.data_mapping_avai = False
+        self.raw_data.data_mapping = list()
         self.raw_data.device_id = [0]
         self.raw_data.electrode_id = [int(loaded_data["chan"][0][0])-1]
         self.raw_data.data_raw = [100e-6 * np.float32(loaded_data["data"][0])]
@@ -177,7 +177,7 @@ class DataLoader(DataController):
         self.raw_data.data_lsb = 1 / loaded_data['GainPre'][0][0]
         self.raw_data.data_fs_orig = loaded_data['origFs'][0][0]
 
-        self.raw_data.data_mapping_avai = False
+        self.raw_data.data_mapping = list()
         self.raw_data.device_id = [0]
         elec_orig = np.arange(0, loaded_data['raw_data'].shape[0]).tolist()
         elec_process = self.select_electrodes if not len(self.select_electrodes) == 0 else elec_orig
@@ -207,7 +207,7 @@ class DataLoader(DataController):
         self.raw_data.data_type = "Intracellular Matching"
         self.raw_data.data_fs_orig = int(loaded_data['fs'][0])
 
-        self.raw_data.data_mapping_avai = False
+        self.raw_data.data_mapping = list()
         self.raw_data.device_id = [0]
         # Information for data structure(Channel No = 255: Müll, No = 254: Intracellular response)
         elec_orig = np.arange(0, loaded_data['juxta_channel'][0]).tolist()
@@ -255,7 +255,7 @@ class DataLoader(DataController):
         data_lsb = gain_base * float(gain_str[0])
         self.raw_data.data_fs_orig = int(loaded_data['rawdata']['SamplingRate'][0, 0][0])
 
-        self.raw_data.data_mapping_avai = False
+        self.raw_data.data_mapping = list()
         self.raw_data.device_id = [nsp_device]
         elec_orig = np.arange(0, int(loaded_data['rawdata']['NoElectrodes'][0, 0][0])).tolist()
         elec_process = self.select_electrodes if not len(self.select_electrodes) == 0 else elec_orig
@@ -268,11 +268,11 @@ class DataLoader(DataController):
         # --- Groundtruth from BlackRock
         spike_xoffset = int(-0.1e-6 * self.raw_data.data_fs_orig)
         self.raw_data.label_exist = int(loaded_data['nev_detected']['Exits'][0, 0][0])
-        #nev_waveform = list()
+        # nev_waveform = list()
         for elec in elec_process:
             self.raw_data.evnt_xpos.append(loaded_data['nev_detected'][f'Elec{1 + elec}'][0, 0]['timestamps'][0, 0][0, :] - spike_xoffset)
             self.raw_data.evnt_cluster_id.append(loaded_data['nev_detected'][f'Elec{1 + elec}'][0, 0]['cluster'][0, 0][0, :])
-            #nev_waveform.append(data_lsb * loaded_data['nev_detected'][f'Elec{1+elec}'][0, 0]['waveform'][0, 0])
+            # nev_waveform.append(data_lsb * loaded_data['nev_detected'][f'Elec{1+elec}'][0, 0]['waveform'][0, 0])
 
         # --- Behaviour
         self.raw_data.behaviour_exist = True
@@ -317,7 +317,7 @@ class DataLoader(DataController):
         self.raw_data.data_type = "Isolated RGC"
         self.raw_data.data_fs_orig = int(loaded_data['sp_trains']['sample_rate'][0][0])
 
-        self.raw_data.data_mapping_avai = False
+        self.raw_data.data_mapping = list()
         self.raw_data.device_id = [0]
         self.raw_data.electrode_id = np.arange(0, len(elec_process)).tolist()
         for idx, pos_ch in enumerate(elec_process):
@@ -345,9 +345,9 @@ class DataLoader(DataController):
     def __load_fzj_mcs(self, case: int, point: int) -> None:
         """Loading the recording files from MCS setup in FZ Juelich (case = experiment, point = file)"""
         folder_name = "08_RGC_FZJuelich"
-        data_type = '*.mat'
+        data_type = '*_merged.mat'
         self._prepare_access_folder(folder_name, data_type, case, point)
-        #loaded_data = loadmat(self.path2file)
+        # loaded_data = loadmat(self.path2file)
         loaded_data = loadmat_mat73(self.path2file)
 
         # Input and meta
@@ -356,7 +356,7 @@ class DataLoader(DataController):
         self.raw_data.data_type = "MCS 60MEA"
         self.raw_data.data_fs_orig = float(loaded_data['fs'])
 
-        self.raw_data.data_mapping_avai = False
+        self.raw_data.data_mapping = loaded_data["head_name"]
         self.raw_data.device_id = [0]
         elec_orig = np.arange(0, loaded_data['electrode'].shape[1]).tolist()
         elec_process = self.select_electrodes if not len(self.select_electrodes) == 0 else elec_orig

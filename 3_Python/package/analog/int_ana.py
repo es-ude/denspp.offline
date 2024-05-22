@@ -32,7 +32,7 @@ class SettingsINT:
 
 
 RecommendedSettingsINT = SettingsINT(
-    vdd=0.6, vss=0.6,
+    vdd=0.6, vss=-0.6,
     fs_ana=50e3, gain=40,
     offset_v=1e-6,
     offset_i=1e-12,
@@ -76,3 +76,39 @@ class VoltageIntegrator(ProcessNoise):
             u_out += self._settings.gain * self._gen_noise_real(du.size)
 
         return self.__voltage_clipping(u_out)
+
+
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+    dev_test = VoltageIntegrator(RecommendedSettingsINT)
+
+    # --- Definition of Inputs
+    f_smp = 10e3
+    t_end = 0.2
+    u_off = 0e-3
+    upp = [0.1, 0.01]
+    f0 = [100, 500]
+
+    time = np.linspace(0, t_end, int(t_end * f_smp), endpoint=True)
+    u_inp = np.zeros(time.shape) + u_off
+    for idx, peak_value in enumerate(upp):
+        u_inp += peak_value * np.sin(2 * np.pi * time * f0[idx])
+    u_inn = np.array(RecommendedSettingsINT.vcm)
+
+    # --- DUT
+    u_out = dev_test.do(u_inp, u_inn)
+
+    # --- Test condition (here, Figure)
+    plt.figure()
+    plt.plot(time, u_inp, 'k', label="input")
+    plt.plot(time, u_out, 'r', label="output")
+    plt.grid()
+    plt.xlabel("Time t / s")
+    plt.ylabel("Voltage U_x / V")
+
+    plt.tight_layout()
+    plt.show()
+
+
+
+
