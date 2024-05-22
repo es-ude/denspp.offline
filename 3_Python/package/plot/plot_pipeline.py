@@ -1,10 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from package.plot.plot_common import cm_to_inch, save_figure
 
 from package.pipeline_signals import PipelineSignal
 from package.nsp import calc_amplitude, calc_autocorrelogram, calc_firing_rate
-
+from package.plot.plot_common import cm_to_inch, save_figure
 
 color_none = ['#929591']
 color_cluster = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
@@ -46,10 +45,9 @@ def results_afe0(signals: PipelineSignal, no_electrode: int, path="", time_cut=[
         save_figure(plt, path, "pipeline_afe_elec" + str(no_electrode) + addon_zoom)
 
 
-def results_afe1(signals: PipelineSignal, no_electrode: int, path="", time_cut=[]) -> None:
+def results_afe1(signals: PipelineSignal, no_electrode: int, path="", time_cut=()) -> None:
     """Plotting the results in type of ... """
     fs_ana = signals.fs_ana
-    fs_adc = signals.fs_adc
     fs_dig = signals.fs_dig
 
     uin = signals.u_in
@@ -122,7 +120,7 @@ def results_afe2(signals: PipelineSignal, no_electrode: int, path="", time_cut=[
     colo0 = list()
     tick_old = 0
     for idx, tick in enumerate(ticks):
-        sel = [tick-12, tick+30]
+        sel = [int(tick)-12, int(tick)+30]
         time0.append(time[tick_old:sel[0]])
         time0.append(time[sel[0]:sel[1]])
         tran0.append(xadc[tick_old:sel[0]] if show_noise else np.zeros(shape=(len(xadc[tick_old:sel[0]]), ), dtype=int))
@@ -304,7 +302,7 @@ def results_firing_rate(signals: PipelineSignal, no_electrode: int, path="") -> 
         axs.append(plt.subplot(no_cluster, 1, idx+1))
 
     for idx, ax in enumerate(axs):
-        ax.plot(fr_in[idx][0, :], fr_in[idx][1, :], color=color_cluster[idx], drawstyle='steps-post')
+        ax.plot(fr_in[idx][0, :], fr_in[idx][1, :], color=color_cluster[idx % len(color_cluster)], drawstyle='steps-post')
 
     axs[no_cluster-1].set_xlabel("Time t [s]")
     axs[0].set_ylabel("Firing rate [Spikes/s]")
@@ -385,8 +383,6 @@ def results_paper(signals: PipelineSignal, no_electrode: int, path="", time_cut=
     ax3 = plt.subplot(313, sharex=ax1)
 
     ax1.plot(tD, xadc, color='k', drawstyle='steps-post')
-    ax1.set_yticks([-20, 0, 40])
-    ax1.set_ylim(-21, 41)
     ax1.set_ylabel("ADC output")
     ax1.xaxis.set_visible(False)
     if not len(time_cut) == 0:
@@ -437,9 +433,6 @@ def results_paper(signals: PipelineSignal, no_electrode: int, path="", time_cut=
         ax2.plot(np.transpose(mean_frames[idx, :]), color=color_cluster[idx],
                  marker='.', markersize=4, drawstyle='steps-post')
 
-    ax2.set_xticks([0, 7, 15, 23, 31])
-    ax2.set_yticks([-20, 0, 40])
-    ax2.set_ylim(-21, 41)
     ax2.set_ylabel('ADC output')
     ax2.set_xlabel('Frame position')
 

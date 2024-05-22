@@ -9,7 +9,19 @@ if __name__ == "__main__":
         case 0:
             # ---- Merging spike frames from several files to one file
             from package.data_merge.merge_datasets_frames import merge_frames_from_dataset, MergeDatasets
-            merge_handler = MergeDatasets(path2file)
+            from package.data_call.call_handler import SettingsDATA
+
+            setup_data = SettingsDATA(
+                # path='../2_Data',
+                # path='/media/erbsloeh/ExtremeSSD/0_Invasive',
+                path='C:/HomeOffice/Data_Neurosignal',
+                data_set=1, data_case=0, data_point=0,
+                t_range=[0],
+                ch_sel=[],
+                fs_resample=50e3
+            )
+
+            merge_handler = MergeDatasets(setup_data, path2file)
             # Merging frames
             merge_handler.get_frames_from_dataset(
                 cluster_class_avai=False,

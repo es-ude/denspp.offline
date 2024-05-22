@@ -8,12 +8,13 @@ from scipy.io import savemat, loadmat
 from tqdm import tqdm
 import platform
 
-from package.data_call.call_spike_files import DataLoader
+from package.data_call.call_spike_files import DataLoader, SettingsDATA
 from src_neuro.pipeline_data import Settings, Pipeline
 
 
 class MergeDatasets:
-    def __init__(self, path2save: str):
+    def __init__(self, settings_data: SettingsDATA, path2save: str):
+        self.__settings = settings_data
         self.path2save = path2save
         self.filepath = path2save
         self.__generate_folder()
@@ -37,7 +38,7 @@ class MergeDatasets:
         only_pos: Taking the datapoints of the choicen dataset [Start, End]
         """
         # --- Loading the src_neuro
-        afe_set = Settings()
+        afe_set = Settings(self.__settings.fs_resample)
         fs_ana = afe_set.SettingsADC.fs_ana
         fs_adc = afe_set.SettingsADC.fs_adc
 
@@ -66,8 +67,8 @@ class MergeDatasets:
             frames_in = np.empty(shape=(0, 0), dtype=np.dtype('int16'))
             frames_cl = np.empty(shape=(0, 0), dtype=np.dtype('uint16'))
 
-            afe_set.SettingsDATA.data_point = runPoint
-            datahandler = DataLoader(afe_set.SettingsDATA)
+            self.__settings.data_point = runPoint
+            datahandler = DataLoader(self.__settings)
             datahandler.do_call()
             datahandler.do_resample()
 
@@ -75,7 +76,7 @@ class MergeDatasets:
             for ch in tqdm(datahandler.raw_data.electrode_id, ncols=100, desc="Progress: "):
                 spike_xpos = np.floor(datahandler.raw_data.evnt_xpos[ch] * fs_adc / fs_ana).astype("int")
                 # --- Processing the analogue input
-                afe = Pipeline(afe_set)
+                afe = Pipeline(fs_ana)
                 afe.run_input(datahandler.raw_data.data_raw[ch], spike_xpos)
                 length_data_in = afe.signals.x_adc.size
 

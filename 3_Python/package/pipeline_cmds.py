@@ -2,6 +2,7 @@ from os import mkdir
 from os.path import exists, join
 from shutil import copy
 from datetime import datetime
+from scipy.io import savemat
 
 
 class PipelineCMD:
@@ -25,3 +26,9 @@ class PipelineCMD:
 
         copy(src=self._path2pipe, dst=path2save)
         self.path2save = path2save
+
+    def save_results(self, name: str, data: dict) -> None:
+        """Saving the data with a dictionary"""
+        path2data = join(self.path2save, name)
+        savemat(path2data, data)
+        print(f"... data saved in: {path2data}")

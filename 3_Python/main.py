@@ -1,78 +1,48 @@
-from os import mkdir
-from os.path import join, exists
 import numpy as np
 import matplotlib.pyplot as plt
 from threading import Thread, active_count
-
-from scipy.io import savemat
 from tqdm import tqdm
 
-from src_neuro.pipeline_v1 import Settings, Pipeline
 from package.metric import Metric
+from package.data_call.call_handler import SettingsDATA
 from package.data_call.call_spike_files import DataLoader
-from package.plot.plot_pipeline import results_afe1, results_afe2, results_fec
+from src_neuro.pipeline_v2 import Pipeline
+
+
+SettingsDATA = SettingsDATA(
+    path='../2_Data',
+    data_set=1,
+    data_case=0,
+    data_point=0,
+    t_range=[0],
+    ch_sel=[],
+    fs_resample=100e3
+)
 
 
 class CustomThread(Thread):
-    def __init__(self, rawdata: np.ndarray, channel: int, settings, path2save=''):
+    output_full = None
+    output_save = None
+
+    def __init__(self, rawdata: np.ndarray):
         Thread.__init__(self)
         self.input = rawdata
-        self.output = None
-        self.out_save = dict()
-        self.metric = None
-        self.path2save = path2save
-        self.thread_num = self.name
-        self.channel = channel
-        self.settings = settings
+        self.metric = Metric()
+        self.pipeline = Pipeline(SettingsDATA.fs_resample)
 
     def run(self):
-        # ---- Run src_neuro and calculate metrics
-        pipeline = Pipeline(self.settings)
-        pipeline.run(self.input)
-        self.metric = Metric()
-        self.output = pipeline.signals
-        self.out_save = pipeline.prepare_saving()
-
-
-def save_results(data: list, path2save="") -> None:
-    """Function for plotting the results"""
-    name = 'results.mat'
-    mdict = dict()
-    for elec, val in enumerate(data):
-        mdict0 = {'frames_out': val.frames_align[0],
-                  'frames_pos': val.frames_align[1],
-                  'frames_clu': val.frames_align[2],
-                  'fs_dig': val.fs_dig}
-        mdict.update({f'Elec_{elec:03d}': mdict0})
-    savemat(join(path2save, name), mdict)
-
-
-def func_plots(data, channel: int, path2save="") -> None:
-    """Function to plot results from spike sorting"""
-    # --- Spike Sorting output
-    results_afe1(data, channel, path=path2save)
-    # results_afe2(data, channel, path=path2save)
-    # results_afe2(data, channel, path=path2save, time_cut=[10, 12])
-    # results_fec(data, channel, path=path2save)
-    # results_paper(data, channel, path=path2save)
-
-    # --- NSP block
-    # results_ivt(data, channel, path=path2save)
-    # results_firing_rate(data, channel, path=path2save)
-    # results_correlogram(data, channel, path=path2save)
-    # results_cluster_amplitude(data, channel, path=path2save)
+        self.pipeline.run(self.input)
+        self.output_full = self.pipeline.signals
+        self.output_save = self.pipeline.prepare_saving()
 
 
 if __name__ == "__main__":
-    plt.close('all')
-
     block_plots = False
     use_multithreading = False
     print("\nRunning end-to-end spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
 
     # ----- Preparation: Module calling -----
-    settings = Settings()
-    datahand = DataLoader(settings.SettingsDATA)
+    datahand = DataLoader(SettingsDATA)
     datahand.do_call()
     datahand.do_cut()
     datahand.do_resample()
@@ -82,8 +52,10 @@ if __name__ == "__main__":
 
     # ----- Module declaration & Channel Calculation -----
     num_electrodes = dataIn.electrode_id
-    pipe_test = Pipeline(settings)
-    results = [None] * len(num_electrodes)
+    pipe_test = Pipeline(SettingsDATA.fs_resample)
+    path2save = pipe_test.path2save
+    results_full = dict()
+    results_save = dict()
 
     print("\nPerforming neural signal processing on all channels")
     if use_multithreading and len(num_electrodes) > 1:
@@ -98,26 +70,31 @@ if __name__ == "__main__":
         for thr in tqdm(process_threads, ncols=100, desc='Progress: '):
             threads = list()
             for idx, elec in enumerate(thr):
-                threads.append(CustomThread(dataIn.data_raw[elec], elec, settings, pipe_test.path2save))
+                threads.append(CustomThread(dataIn.data_raw[elec]))
                 threads[idx].start()
 
             for idx, elec in enumerate(thr):
                 threads[idx].join()
-                results[elec] = threads[idx].output
+                results_full[f'Elec_{elec:03d}'] = threads[idx].output_full
+                results_save[f'Elec_{elec:03d}'] = threads[idx].output_save
     else:
         # --- Path for Single-Threading
         print('... using single threading')
         for idx, elec in enumerate(tqdm(num_electrodes, ncols=100, desc='Progress: ')):
-            thread = CustomThread(dataIn.data_raw[idx], elec, settings, pipe_test.path2save)
+            thread = CustomThread(dataIn.data_raw[idx])
             thread.start()
             thread.join()
-            results[elec] = thread.output
+            results_full[f'Elec_{elec:03d}'] = thread.output_full
+            results_save[f'Elec_{elec:03d}'] = thread.output_save
 
-    # --- Plot all plots and save results (must be externally)
-    print("\nSaving and plotting the results")
-    save_results(results, path2save=pipe_test.path2save)
+    # --- Plot all plots and save results
+    print("\nSaving results")
+    pipe_test.save_results('results.mat', results_save)
+
+    print("\nPlotting results")
+    plt.close('all')
     for idx, elec in enumerate(num_electrodes):
-        func_plots(results[elec], elec, pipe_test.path2save)
+        pipe_test.do_plotting(results_full[f"Elec_{elec:03d}"], elec)
+    plt.show(block=block_plots)
 
     print("This is the End!")
-    plt.show(block=block_plots)

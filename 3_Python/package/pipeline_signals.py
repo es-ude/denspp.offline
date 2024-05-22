@@ -7,9 +7,6 @@ class invasive_analog:
         self.x_adc = None           # ADC output
         self.fs_ana = 0.0           # "Sampling rate"
 
-    def init_analog(self, fs_ana: float) -> None:
-        self.fs_ana = fs_ana
-
 
 class invasive_digital:
     def __init__(self) -> None:
@@ -28,10 +25,6 @@ class invasive_digital:
         self.fs_adc = 0.0           # Sampling rate of the ADC incl. oversampling
         self.fs_dig = 0.0           # Processing rate of the digital part
 
-    def init_digital(self, fs_adc: float, osr: int) -> None:
-        self.fs_adc = osr * fs_adc
-        self.fs_dig = fs_adc
-
 
 class invasive_nsp:
     def __init__(self) -> None:
@@ -40,8 +33,5 @@ class invasive_nsp:
 
 
 class PipelineSignal(invasive_analog, invasive_digital, invasive_nsp):
-    def __init__(self, fs_ana: float, fs_adc: float, osr: int) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.fs_ana = fs_ana
-        self.fs_adc = osr * fs_adc
-        self.fs_dig = fs_adc

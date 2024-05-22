@@ -2,17 +2,26 @@ import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-from src_emg.pipeline_emg import Settings, Pipeline
-from src_emg.call_emg import DataLoader
+from src_emg.call_emg import DataLoader, SettingsDATA
 from src_emg.plotting_emg import results_input
+from src_emg.pipeline_emg import Pipeline
+
+SettingsDATA = SettingsDATA(
+        path='C:/HomeOffice/Data_EMG',
+        data_set=1,
+        data_case=0,
+        data_point=1,
+        t_range=[0],
+        ch_sel=[-1],
+        fs_resample=1e3
+    )
 
 if __name__ == "__main__":
     plt.close('all')
     print("\nRunning EMG detection")
 
     # ----- Preparation: Module calling -----
-    settings = Settings()
-    datahand = DataLoader(settings.SettingsDATA)
+    datahand = DataLoader(SettingsDATA)
     datahand.do_call()
     #datahand.do_cut()
     datahand.do_resample()
@@ -22,12 +31,13 @@ if __name__ == "__main__":
     num_channels = len(dataIn.data_raw)
 
     # --- Pipeline
-    pipe_emg = Pipeline(settings)
+    pipe_emg = Pipeline(SettingsDATA.fs_resample)
 
-    signals_out = [np.zeros((1,), dtype=float) for idx in range(num_channels)]
+    # --- Processing
+    signals_out = [dict() for idx in range(num_channels)]
     for idx, thr in enumerate(tqdm(dataIn.data_raw, ncols=100, desc='Progress: ')):
         pipe_emg.run(thr)
-        signals_out[idx] = pipe_emg.signal.x_env
+        signals_out[idx] = pipe_emg.signal.x_sda
 
     # ----- Plotting
     results_input(dataIn.data_raw, dataIn.data_fs_orig,
