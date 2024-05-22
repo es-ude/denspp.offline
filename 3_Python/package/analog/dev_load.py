@@ -1,7 +1,7 @@
 import dataclasses
 import numpy as np
 from tqdm import tqdm
-from package.analog.dev_noise import ProcessNoise, SettingsNoise, RecommendedSettingsNoise
+from package.analog.dev_noise import ProcessNoise, SettingsNoise
 from scipy.integrate import cumtrapz
 from scipy.constants import Boltzmann, elementary_charge
 
@@ -27,6 +27,14 @@ RecommendedSettingsDEV = SettingsDEV(
     noise_en=False,
     para_en=False,
     value=10e3
+)
+
+RecommendedSettingsNoise = SettingsNoise(
+    temp=300,
+    wgn_dB=-120,
+    Fc=10,
+    slope=0.6,
+    do_print=False
 )
 
 
