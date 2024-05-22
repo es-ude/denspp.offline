@@ -6,7 +6,7 @@ from datetime import datetime
 
 class PipelineCMD:
     path2save: str
-    path2pipe: str
+    _path2pipe: str
 
     def __init__(self):
         pass
@@ -23,5 +23,5 @@ class PipelineCMD:
         if not exists(path2save):
             mkdir(path2save)
 
-        copy(src=self.path2pipe, dst=path2save)
+        copy(src=self._path2pipe, dst=path2save)
         self.path2save = path2save

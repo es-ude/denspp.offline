@@ -32,6 +32,9 @@ class Pipeline(PipelineCMD):
     """Processing Pipeline for analysing invasive neural activities"""
     def __init__(self, settings: SettingsPipe):
         super().__init__()
+        self._path2pipe = abspath(__file__)
+        self.generate_folder('runs', '_mem')
+
         self.settings = settings
         self.signals = PipelineSignal(
             fs_ana=settings.SettingsDATA.fs_resample,
@@ -41,9 +44,6 @@ class Pipeline(PipelineCMD):
 
         self.__preamp0 = PreAmp(settings.SettingsAMP)
         self.__adc = ADC0(settings.SettingsADC)
-
-        self.path2pipe = abspath(__file__)
-        self.generate_folder('runs', '_mem')
 
     def run(self, uinp: np.ndarray) -> None:
         self.signals.u_in = uinp

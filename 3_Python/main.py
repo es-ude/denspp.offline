@@ -36,9 +36,6 @@ class CustomThread(Thread):
 
 def save_results(data: list, path2save="") -> None:
     """Function for plotting the results"""
-    if not exists(path2save):
-        mkdir(path2save)
-
     name = 'results.mat'
     mdict = dict()
     for elec, val in enumerate(data):

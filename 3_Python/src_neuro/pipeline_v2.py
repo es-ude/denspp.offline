@@ -88,7 +88,7 @@ class Pipeline(PipelineCMD):
     """Processing Pipeline for analysing invasive neural activities"""
     def __init__(self, settings: Settings):
         super().__init__()
-        self.path2pipe = abspath(__file__)
+        self._path2pipe = abspath(__file__)
         self.generate_folder('runs', '_neuro')
 
         self.settings = settings

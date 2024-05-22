@@ -6,7 +6,7 @@ def cm_to_inch(value):
     return value / 2.54
 
 
-def save_figure(fig, path: str, name: str, formats=('pdf', 'svg', 'eps')):
+def save_figure(fig, path: str, name: str, formats=('pdf', 'svg')):
     """Saving figure in given format"""
     path2fig = join(path, name)
 

@@ -63,7 +63,7 @@ class Pipeline(PipelineCMD):
     """"""
     def __init__(self, settings: Settings):
         super().__init__()
-        self.path2pipe = abspath(__file__)
+        self._path2pipe = abspath(__file__)
         self.generate_folder('runs', '_emg')
 
         self.signal = PipelineSignal(

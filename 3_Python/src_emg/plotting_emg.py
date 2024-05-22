@@ -1,24 +1,11 @@
-import os.path
 import numpy as np
 import matplotlib.pyplot as plt
+from package.plot.plot_common import cm_to_inch, save_figure
 
-color_cluster = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
-
-
-def cm_to_inch(value):
-    return value / 2.54
+color_label = ['r', 'b', 'y', 'm', 'k']
 
 
-def save_figure(fig, path: str, name: str):
-    format = ['eps', 'svg']
-    path2fig = os.path.join(path, name)
-
-    for idx, form in enumerate(format):
-        file_name = path2fig + '.' + form
-        fig.savefig(file_name, format=form)
-
-
-def results_input(signals: list, fs: float | int, label_xpos=(), label_id=()) -> None:
+def results_input(signals: list, fs: float | int, label_xpos=(), label_id=(), path2save='', addon='') -> None:
     """"""
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(21)))
     plt.subplots_adjust(hspace=0)
@@ -32,7 +19,6 @@ def results_input(signals: list, fs: float | int, label_xpos=(), label_id=()) ->
         else:
             axs.append(plt.subplot(3, 3, idx+1, sharex=axs[0]))
 
-    color_label = ['r', 'b', 'y', 'm', 'k']
     for idx, ax in enumerate(axs):
         if label_avai:
             for id in np.unique(label_id):
@@ -48,5 +34,5 @@ def results_input(signals: list, fs: float | int, label_xpos=(), label_id=()) ->
 
     plt.tight_layout()
     # --- saving plots
-    #if path:
-        #save_figure(plt, path, "pipeline_afe_elec" + str(no_electrode))
+    if path2save:
+        save_figure(plt, path2save, f"pipeline_emg_elec{addon}")
