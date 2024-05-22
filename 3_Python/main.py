@@ -3,7 +3,7 @@ from os.path import join, exists
 import numpy as np
 import matplotlib.pyplot as plt
 from threading import Thread, active_count
-from datetime import datetime
+
 from scipy.io import savemat
 from tqdm import tqdm
 
@@ -71,8 +71,6 @@ if __name__ == "__main__":
 
     block_plots = False
     use_multithreading = False
-    str_datum = datetime.now().strftime('%Y%m%d_%H%M%S')
-    folder_name = '{}_pipeline'.format(str_datum)
     print("\nRunning end-to-end spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
 
     # ----- Preparation: Module calling -----
@@ -88,7 +86,6 @@ if __name__ == "__main__":
     # ----- Module declaration & Channel Calculation -----
     num_electrodes = dataIn.electrode_id
     pipe_test = Pipeline(settings)
-    path2save = pipe_test.generate_folder(folder_name)
     results = [None] * len(num_electrodes)
 
     print("\nPerforming neural signal processing on all channels")
@@ -104,7 +101,7 @@ if __name__ == "__main__":
         for thr in tqdm(process_threads, ncols=100, desc='Progress: '):
             threads = list()
             for idx, elec in enumerate(thr):
-                threads.append(CustomThread(dataIn.data_raw[elec], elec, settings, path2save))
+                threads.append(CustomThread(dataIn.data_raw[elec], elec, settings, pipe_test.path2save))
                 threads[idx].start()
 
             for idx, elec in enumerate(thr):
@@ -114,16 +111,16 @@ if __name__ == "__main__":
         # --- Path for Single-Threading
         print('... using single threading')
         for idx, elec in enumerate(tqdm(num_electrodes, ncols=100, desc='Progress: ')):
-            thread = CustomThread(dataIn.data_raw[idx], elec, settings, path2save)
+            thread = CustomThread(dataIn.data_raw[idx], elec, settings, pipe_test.path2save)
             thread.start()
             thread.join()
             results[elec] = thread.output
 
     # --- Plot all plots and save results (must be externally)
     print("\nSaving and plotting the results")
-    save_results(results, path2save=path2save)
+    save_results(results, path2save=pipe_test.path2save)
     for idx, elec in enumerate(num_electrodes):
-        func_plots(results[elec], elec, path2save)
+        func_plots(results[elec], elec, pipe_test.path2save)
 
     print("This is the End!")
     plt.show(block=block_plots)

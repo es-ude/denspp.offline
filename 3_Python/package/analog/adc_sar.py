@@ -1,5 +1,6 @@
 import numpy as np
-from package.analog.adc_basic import adc_basic, SettingsADC, SettingsNon, RecommendedSettingsNon
+from package.analog.adc_basic import adc_basic, SettingsADC
+from package.analog.adc_basic import SettingsNon, RecommendedSettingsNon
 
 
 class ADC_SAR(adc_basic):

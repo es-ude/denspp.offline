@@ -1,6 +1,7 @@
 from glob import glob
-from os.path import join, exists
 from os import mkdir
+from os.path import join, exists
+
 import numpy as np
 from datetime import datetime
 from scipy.io import savemat, loadmat
@@ -15,9 +16,19 @@ class MergeDatasets:
     def __init__(self, path2save: str):
         self.path2save = path2save
         self.filepath = path2save
+        self.__generate_folder()
 
-    def get_filepath(self):
+    def get_filepath(self) -> str:
         return self.filepath
+
+    def __generate_folder(self, addon='Merging') -> None:
+        if not exists(self.path2save):
+            mkdir(self.path2save)
+
+        path2folder = join(self.path2save, addon)
+        if not exists(path2folder):
+            mkdir(path2folder)
+        self.path2folder = path2folder
 
     def get_frames_from_dataset(self, cluster_class_avai=False, process_points=None) -> None:
         """
@@ -29,17 +40,6 @@ class MergeDatasets:
         afe_set = Settings()
         fs_ana = afe_set.SettingsADC.fs_ana
         fs_adc = afe_set.SettingsADC.fs_adc
-
-        # ------ Loading Data: Preparing Data
-        create_time = datetime.now().strftime("%Y-%m-%d")
-        print("... loading the datasets")
-        path2folder = join(self.path2save, 'Merging')
-
-        if not exists(self.path2save):
-            mkdir(self.path2save)
-
-        if not exists(path2folder):
-            mkdir(path2folder)
 
         # --- Setting the points
         do_reduced_sample = isinstance(process_points, list)
@@ -55,6 +55,7 @@ class MergeDatasets:
         endPoint = 0
 
         # --- Calling the data into RAM
+        print("... loading the datasets")
         settings = dict()
         first_run = True
         while first_run or runPoint < endPoint:
@@ -93,13 +94,12 @@ class MergeDatasets:
 
                     if sample_first_do_delete and not sample_last_do_delete:
                         frame_cl = np.delete(frame_cl, sample_first_delete_pos)
-                        # frame_new = frame_new[1:, ]
                     elif not sample_first_do_delete and sample_last_do_delete:
                         frame_cl = np.delete(frame_cl, sample_last_delete_pos)
-                        # frame_new = frame_new[0:-1, ]
                     elif sample_first_do_delete and sample_last_do_delete:
                         frame_cl = np.delete(frame_cl, (sample_first_delete_pos, sample_last_delete_pos))
-                    # --- Only suitable for RGC TDB data (unknown error)
+
+                    # Only suitable for RGC TDB data (unknown error)
                     elif not sample_first_do_delete and not sample_last_do_delete:
                         if np.unique(frame_cl).size == 1:
                             num_min = np.min((frame_cl.size, frame_new.shape[0]))
@@ -117,7 +117,7 @@ class MergeDatasets:
                 # --- Processing (Frames and cluster)
                 max_cluster_num = 0 if (first_run or cluster_class_avai) else (1 + np.argmax(np.unique(frames_cl)))
                 if first_run:
-                    endPoint = process_points[1] if use_end_point != 0 else datahandler.no_files
+                    endPoint = process_points[1] if use_end_point != 0 else datahandler._no_files
                     settings = afe.save_settings()
                     frames_in = frame_new
                     frames_cl = frame_cl + max_cluster_num
@@ -141,7 +141,8 @@ class MergeDatasets:
             print(f"... available clusters: {output[0]} with samples: {output[1]}")
 
             # --- Saving data (each run)
-            newfile_name = join(path2folder,
+            create_time = datetime.now().strftime("%Y-%m-%d")
+            newfile_name = join(self.path2folder,
                                 f"{create_time}_Dataset-{datahandler.raw_data.data_name}_step{runPoint + 1:03d}")
             savemat(f"{newfile_name}.mat",
                     {"frames_in": frames_in,

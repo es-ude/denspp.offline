@@ -1,8 +1,7 @@
-from os import mkdir
-from os.path import exists, join
-import shutil
+from os.path import abspath
 import numpy as np
 
+from package.pipeline_cmds import PipelineCMD
 from package.pipeline_signals import PipelineSignal
 from package.data_call.call_handler import SettingsDATA
 from package.analog.pre_amp import PreAmp, SettingsAMP
@@ -29,7 +28,8 @@ class Settings:
         gain=100,
         n_filt=2, f_filt=[200, 8e3], f_type="band",
         offset=0e-6, noise_en=False,
-        f_chop=20e3
+        f_chop=20e3,
+        noise_edev=100e-9
     )
     SettingsADC = SettingsADC(
         vdd=0.6, vss=-0.6,
@@ -50,8 +50,12 @@ class Settings:
 
 
 # --- Setting the src_neuro
-class Pipeline:
+class Pipeline(PipelineCMD):
     def __init__(self, settings: Settings):
+        super().__init__()
+        self.path2pipe = abspath(__file__)
+        # self.generate_folder('runs', '_data')
+
         self.signals = PipelineSignal(
             fs_ana=settings.SettingsDATA.fs_resample,
             fs_adc=settings.SettingsADC.fs_adc,
@@ -67,20 +71,6 @@ class Pipeline:
         self.path2logs = "logs"
         self.path2runs = "runs"
         self.path2settings = "src_data/pipeline_data.py"
-
-    def saving_results(self, name: str) -> str:
-        if not exists(self.path2runs):
-            mkdir(self.path2runs)
-
-        path2figure = join(self.path2runs, name)
-        if not exists(path2figure):
-            mkdir(path2figure)
-
-        # --- Copy settings into this folder
-        shutil.copy(src=self.path2settings, dst=path2figure)
-        self.path2figure = path2figure
-
-        return path2figure
 
     def save_settings(self) -> dict:
         mdict = {"fs_adc": self.__adc.settings.fs_adc,

@@ -2,13 +2,13 @@ import numpy as np
 from os import mkdir
 from os.path import exists, join
 import matplotlib.pyplot as plt
-from sklearn.metrics import ConfusionMatrixDisplay, precision_recall_curve, precision_recall_fscore_support
+from sklearn.metrics import ConfusionMatrixDisplay, precision_recall_fscore_support
 from package.plot.plot_common import save_figure, cm_to_inch
 from package.metric import compare_timestamps
 
 
 def plot_boxplot_metric(freq: np.ndarray, metric: list, type_name: str, name: str,
-                        path2save='', saving_formats=['pdf']) -> None:
+                        path2save='', saving_formats=('pdf')) -> None:
     """Plotting one metric of the sweep run"""
     if not exists(path2save):
         mkdir(path2save)

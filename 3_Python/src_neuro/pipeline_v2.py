@@ -1,7 +1,7 @@
-import os
-import shutil
+from os.path import abspath
 import numpy as np
 
+from package.pipeline_cmds import PipelineCMD
 from package.pipeline_signals import PipelineSignal
 from package.data_call.call_handler import SettingsDATA
 from package.analog.pre_amp import PreAmp, SettingsAMP
@@ -34,7 +34,8 @@ class Settings:
         gain=40,
         n_filt=1, f_filt=[0.1, 8e3], f_type="band",
         offset=1e-6, noise_en=True,
-        f_chop=10e3
+        f_chop=10e3,
+        noise_edev=100e-9
     )
 
     SettingsADC = SettingsADC(
@@ -83,9 +84,13 @@ class Settings:
 
 
 # --- Setting the src_neuro
-class Pipeline:
+class Pipeline(PipelineCMD):
     """Processing Pipeline for analysing invasive neural activities"""
     def __init__(self, settings: Settings):
+        super().__init__()
+        self.path2pipe = abspath(__file__)
+        self.generate_folder('runs', '_neuro')
+
         self.settings = settings
         self.signals = PipelineSignal(
             fs_ana=settings.SettingsDATA.fs_resample,
@@ -100,23 +105,6 @@ class Pipeline:
         self.__sda = SpikeDetection(settings.SettingsSDA)
         self.__fe = FeatureExtraction(settings.SettingsFE)
         self.__cl = Clustering(settings.SettingsCL)
-
-        self.path2runs = "runs"
-        self.path2figure = str()
-        self.path2settings = "src_neuro/pipeline_v1.py"
-
-    def generate_folder(self, name: str) -> str:
-        if not os.path.exists(self.path2runs):
-            os.mkdir(self.path2runs)
-
-        path2figure = os.path.join(self.path2runs, name)
-        if not os.path.exists(path2figure):
-            os.mkdir(path2figure)
-
-        # --- Copy settings into this folder
-        shutil.copy(src=self.path2settings, dst=path2figure)
-        self.path2figure = path2figure
-        return path2figure
 
     def prepare_saving(self) -> dict:
         mdict = {"Settings": self.settings,

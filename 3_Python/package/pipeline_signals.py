@@ -1,4 +1,4 @@
-class PipelineSignal_Analog:
+class invasive_analog:
     def __init__(self) -> None:
         self.u_in = None            # Input voltage
         self.u_pre = None           # Output of pre-amp
@@ -11,7 +11,7 @@ class PipelineSignal_Analog:
         self.fs_ana = fs_ana
 
 
-class PipelineSignal_Digital:
+class invasive_digital:
     def __init__(self) -> None:
         self.x_adc = None           # ADC output
         self.x_spk = None           # Output of digital filtering - spike
@@ -33,13 +33,13 @@ class PipelineSignal_Digital:
         self.fs_dig = fs_adc
 
 
-class PipelineSignal_NSP:
+class invasive_nsp:
     def __init__(self) -> None:
         self.spike_ticks = None     # Spike Ticks
         self.nsp_post = dict()      # Adding some parameters after calculating some neural signal processing methods
 
 
-class PipelineSignal(PipelineSignal_Analog, PipelineSignal_Digital, PipelineSignal_NSP):
+class PipelineSignal(invasive_analog, invasive_digital, invasive_nsp):
     def __init__(self, fs_ana: float, fs_adc: float, osr: int) -> None:
         super().__init__()
         self.fs_ana = fs_ana

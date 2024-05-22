@@ -2,7 +2,7 @@ if __name__ == "__main__":
     print("\nPreparing datasets for AI Training in "
           "end-to-end spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
 
-    merge_dataset_mode = 1
+    merge_dataset_mode = 0
     path2file = "data"
 
     match merge_dataset_mode:
@@ -12,7 +12,7 @@ if __name__ == "__main__":
             merge_handler = MergeDatasets(path2file)
             # Merging frames
             merge_handler.get_frames_from_dataset(
-                cluster_class_avai=True,
+                cluster_class_avai=False,
                 process_points=[]
             )
             merge_handler.merge_data_from_diff_data()

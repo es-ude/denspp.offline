@@ -141,7 +141,7 @@ class adc_basic:
         unoise = noise_awgn(
             size=size,
             fs=self.settings.fs_ana,
-            wgndBW=-self.__snr_ideal
+            e_n=-self.__snr_ideal
         )
         return unoise
 

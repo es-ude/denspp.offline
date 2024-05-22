@@ -1,6 +1,6 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 from src_emg.pipeline_emg import Settings, Pipeline
 from src_emg.call_emg import DataLoader
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     signals_out = [np.zeros((1,), dtype=float) for idx in range(num_channels)]
     for idx, thr in enumerate(tqdm(dataIn.data_raw, ncols=100, desc='Progress: ')):
         pipe_emg.run(thr)
-        signals_out[idx] = pipe_emg.x_env
+        signals_out[idx] = pipe_emg.signal.x_env
 
     # ----- Plotting
     results_input(dataIn.data_raw, dataIn.data_fs_orig)
