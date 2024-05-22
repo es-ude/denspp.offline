@@ -28,33 +28,10 @@ config_data = Config_Dataset(
     data_sel_pos=[]
 )
 
-config_train_ae = Config_PyTorch(
-    # --- Settings of Models/Training
-    model=models_ae.cnn_ae_v4(32, 5),
-    loss='MSE',
-    loss_fn=nn.MSELoss(),
-    optimizer='Adam',
-    num_kfold=1,
-    num_epochs=100,
-    batch_size=256,
-    data_split_ratio=0.25,
-    data_do_shuffle=True
-)
-config_train_cl = Config_PyTorch(
-    # --- Settings of Models/Training
-    model=models_class.classifier_ae_v1(5, 5),
-    loss='Cross Entropy',
-    loss_fn=nn.CrossEntropyLoss(),
-    optimizer='Adam',
-    num_kfold=1,
-    num_epochs=100,
-    batch_size=256,
-    data_split_ratio=0.25,
-    data_do_shuffle=True
-)
 
-
-def do_train_ae_classifier(dnn_handler: dnn_handler, num_output: int, mode_ae: int, noise_std=0.05) -> None:
+def do_train_ae_classifier(dnn_handler: dnn_handler,
+                           num_feature_layer: int, num_output: int,
+                           mode_ae: int, noise_std=0.05) -> None:
     """Training routine for Autoencoders and Classification after Encoder
     Args:
         dnn_handler: Handler for configurating the routine selection for train deep neural networks
@@ -68,6 +45,32 @@ def do_train_ae_classifier(dnn_handler: dnn_handler, num_output: int, mode_ae: i
     from package.plot.plot_dnn import results_training, plot_statistic_data
     from package.plot.plot_metric import plot_confusion, plot_loss
 
+    # --- Definition of settings
+    config_train_ae = Config_PyTorch(
+        # --- Settings of Models/Training
+        model=models_ae.cnn_ae_v4(32, num_feature_layer),
+        loss='MSE',
+        loss_fn=nn.MSELoss(),
+        optimizer='Adam',
+        num_kfold=1,
+        num_epochs=100,
+        batch_size=256,
+        data_split_ratio=0.25,
+        data_do_shuffle=True
+    )
+    config_train_cl = Config_PyTorch(
+        # --- Settings of Models/Training
+        model=models_class.classifier_ae_v1(num_feature_layer, num_output),
+        loss='Cross Entropy',
+        loss_fn=nn.CrossEntropyLoss(),
+        optimizer='Adam',
+        num_kfold=1,
+        num_epochs=100,
+        batch_size=256,
+        data_split_ratio=0.25,
+        data_do_shuffle=True
+    )
+
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
     use_cell_bib = not (dnn_handler.mode_cell_bib == 0)
     use_cell_mode = 0 if not use_cell_bib else dnn_handler.mode_cell_bib - 1
@@ -80,12 +83,12 @@ def do_train_ae_classifier(dnn_handler: dnn_handler, num_output: int, mode_ae: i
     trainhandler = train_autoencoder(config_train=config_train_ae, config_data=config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
-    loss_ae, snr_ae = trainhandler.do_training()[-1]
+    loss_ae, snr_ae = trainhandler.do_training(metrics='snr')[-1]
     path2model = trainhandler.get_saving_path()
 
     if dnn_handler.do_plot:
         logsdir = trainhandler.get_saving_path()
-        data_result = trainhandler.do_validation_after_training(num_output)
+        data_result = trainhandler.do_validation_after_training()
         data_mean = dataset.frames_me
 
         results_training(
@@ -101,12 +104,12 @@ def do_train_ae_classifier(dnn_handler: dnn_handler, num_output: int, mode_ae: i
     # ----------- Step #2: TRAINING CLASSIFIER
     # --- Processing: Loading dataset and Do Classification
     dataset = get_dataset_class(settings=config_data, path2model=path2model,
-                                use_cell_bib=use_cell_bib, mode_classes=mode_cell_bib)
+                                use_cell_bib=use_cell_bib, mode_classes=use_cell_mode)
     num_output = dataset.frames_me.shape[0]
     trainhandler = train_classifier(config_train=config_train_cl, config_data=config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
-    acc_class = trainhandler.do_training()[-1]
+    acc_class = trainhandler.do_training()[-1][0]
 
     if dnn_handler.do_plot:
         logsdir = trainhandler.get_saving_path()

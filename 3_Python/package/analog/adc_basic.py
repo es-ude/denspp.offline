@@ -2,7 +2,7 @@ import dataclasses
 import numpy as np
 from fractions import Fraction
 from scipy.signal import square, resample_poly
-from package.data_process.process_noise import noise_awgn
+from package.analog.dev_noise import noise_awgn
 
 
 @dataclasses.dataclass
@@ -67,7 +67,6 @@ RecommendedSettingsADC = SettingsADC(
     Nadc=12, fs_dig=20e3, osr=1,
     type_out="signed"
 )
-
 RecommendedSettingsNon = SettingsNon(
     wgndB=-100,
     offset=1e-6,
@@ -75,17 +74,17 @@ RecommendedSettingsNon = SettingsNon(
 )
 
 
-class ADC_Basic:
+class adc_basic:
     """"Basic class for applying an Analogue-Digital-Converter (ADC) on the raw data"""
-    def __init__(self, setting: SettingsADC, settings_non: SettingsNon):
+    def __init__(self, settings_adc: SettingsADC):
         # --- Settings
-        self.settings = setting
-        self.settings_non = settings_non
+        self.settings = settings_adc
+
         # --- Internal characteristic
         self.noise_eff_out = 0.0
         self.__dvrange = self.settings.vref[0] - self.settings.vref[1]
         self.__lsb = self.settings.lsb
-        self.__oversampling_ratio = setting.osr
+        self.__oversampling_ratio = self.settings.osr
         self.__snr_ideal = 10 * np.log10(4) * self.settings.Nadc + 10 * np.log10(3/2)
         self.__digital_border = np.array([0, 2 ** self.settings.Nadc - 1])
         self.__digital_border -= 2 ** (self.settings.Nadc-1) if self.settings.type_out == "signed" else 0
@@ -98,7 +97,7 @@ class ADC_Basic:
         # --- Internal voltage values
         self.__input_snh = 0.0
 
-    def __do_snh_sample(self, uin: np.ndarray, do: bool) -> np.ndarray:
+    def __do_snh_sample(self, uin: np.ndarray, do: bool | np.ndarray) -> np.ndarray:
         """Performing sample-and-hold (S&H) stage for buffering input value"""
         uout = uin
         if do:
@@ -110,10 +109,9 @@ class ADC_Basic:
         """Performing sample-and-hold (S&H) stage for buffering input value"""
         t = np.arange(0, uin.size, 1) / self.settings.fs_ana
         clk_fsh = square(2 * np.pi * t * f_snh, duty=0.5)
-        do_snh = 1 + np.where(np.diff(clk_fsh) >= 0.5)
+        do_snh = np.where(np.diff(clk_fsh) >= 0.5)
+        do_snh += 1
 
-        do = np.zeros(shape=uin.shape)
-        do[do_snh[0]] = 1
         uout = np.zeros(shape=uin.shape)
         for idx, do_snh in enumerate(do_snh):
             uout[idx] = self.__do_snh_sample(uin[idx], do_snh)
@@ -140,7 +138,7 @@ class ADC_Basic:
 
     def gen_noise(self, size: int) -> np.ndarray:
         """Generate the transient input noise of the amplifier"""
-        unoise, self.noise_eff_out = noise_awgn(
+        unoise = noise_awgn(
             size=size,
             fs=self.settings.fs_ana,
             wgndBW=-self.__snr_ideal

@@ -1,10 +1,11 @@
 import numpy as np
-from package.analog.adc_basic import ADC_Basic, SettingsADC, RecommendedSettingsNon
+from package.analog.adc_basic import adc_basic, SettingsADC, SettingsNon, RecommendedSettingsNon
 
-class ADC_SAR(ADC_Basic):
+
+class ADC_SAR(adc_basic):
     """"Class for applying a Sukzessive Approximation (SAR) Analogue-Digital-Converter (ADC) on the raw data"""
-    def __init__(self, setting: SettingsADC):
-        super().__init__(setting, RecommendedSettingsNon)
+    def __init__(self, settings_adc: SettingsADC, settings_non=RecommendedSettingsNon):
+        super().__init__(settings_adc)
         self.use_noise = True
         # --- Transfer function
         self.__dv = self.settings.vref[0] - self.settings.vref[1]
@@ -136,16 +137,20 @@ class ADC_SAR(ADC_Basic):
             self.__stage_two_dly += self.alpha_int[1] * self.__stage_one_dly
         return xout, uout, uerr
 
+
 # ------------ TEST ROUTINE -------------
-from package.data_process.process_noise import noise_real, do_fft
-import matplotlib.pyplot as plt
 if __name__ == "__main__":
+    from package.analog.dev_noise import noise_real
+    from package.signal_analyse import do_fft
+    import matplotlib.pyplot as plt
+
     set_adc = SettingsADC(
         vdd=0.6, vss=-0.6,
         fs_ana=200e3, fs_dig=20e3, osr=10,
         dvref=0.1, Nadc=12,
         type_out="signed"
     )
+
     adc0 = ADC_SAR(set_adc)
 
     t_end = 1

@@ -33,9 +33,8 @@ class train_nn(training_pytorch):
             total_correct += sum(dec_cl == tdata_out)
             total_samples += len(tdata['in'])
 
-        train_acc = int(total_correct) / total_samples
-        train_loss = train_loss / total_batches
-
+        train_acc = float(int(total_correct) / total_samples)
+        train_loss = float(train_loss / total_batches)
         return train_loss, train_acc
 
     def __do_valid_epoch(self) -> [float, float]:
@@ -52,12 +51,11 @@ class train_nn(training_pytorch):
 
                 valid_loss += self.loss_fn(pred_cl, vdata['out'].to(self.used_hw_dev)).item()
                 total_batches += 1
-                total_correct += int(sum(dec_cl == vdata['out'].to(self.used_hw_dev)))  # hier optimieren
+                total_correct += sum(dec_cl == vdata['out'].to(self.used_hw_dev))  # hier optimieren
                 total_samples += len(vdata['in'])
 
-        valid_acc = total_correct / total_samples
-        valid_loss = valid_loss / total_batches
-
+        valid_acc = float(int(total_correct) / total_samples)
+        valid_loss = float(valid_loss / total_batches)
         return valid_loss, valid_acc
 
     def do_training(self, path2save='') -> list:
@@ -96,7 +94,8 @@ class train_nn(training_pytorch):
                 print(f'... results of epoch {epoch + 1}/{self.settings.num_epochs} '
                       f'[{(epoch + 1) / self.settings.num_epochs * 100:.2f} %]: '
                       f'train_loss = {train_loss:.5f}, train_acc = {100 * train_acc:.2f} % - '
-                      f'valid_loss = {valid_loss:.5f}, valid_acc = {100 * valid_acc:.2f} %')
+                      f'valid_loss = {valid_loss:.5f}, valid_acc = {100 * valid_acc:.2f} % - '
+                      f'delta_loss = {train_loss-valid_loss:.5f}, delta_acc = {100 * (train_acc-valid_acc):.4f} %')
 
                 # Log the running loss averaged per batch for both training and validation
                 self._writer.add_scalar('Loss_train (CL)', train_loss, epoch+1)
@@ -123,7 +122,6 @@ class train_nn(training_pytorch):
 
         # --- Ending of all trainings phases
         self._end_training_routine(timestamp_start)
-
         return metrics_own
 
     def do_validation_after_training(self, num_output: int) -> dict:
