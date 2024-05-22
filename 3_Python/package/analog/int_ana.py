@@ -66,7 +66,7 @@ RecommendedSettingsNoise = SettingsNoise(
 
 class IntegratorStage(ProcessNoise):
     """Class for emulating an analogue integrator for voltage and current transient signals"""
-    _settings_noise: SettingsNoise
+    _settings: SettingsINT
     _sampling_rate: float
     __print_device = "voltage integrator"
 

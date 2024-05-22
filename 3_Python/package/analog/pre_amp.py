@@ -61,7 +61,7 @@ RecommendedSettingsNoise = SettingsNoise(
 
 class PreAmp(ProcessNoise):
     """Class for emulating an analogue pre-amplifier"""
-    _settings_noise: SettingsNoise
+    _settings_dev: SettingsAMP
     __print_device = "pre-amplifier"
 
     def __init__(self, settings_amp: SettingsAMP, settings_noise=RecommendedSettingsNoise):

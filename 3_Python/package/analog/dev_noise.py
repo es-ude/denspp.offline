@@ -1,6 +1,6 @@
 import dataclasses
 import numpy as np
-from scipy.constants import k as kB
+from scipy.constants import Boltzmann, elementary_charge
 from package.signal_analyse import do_fft
 
 
@@ -26,7 +26,11 @@ class SettingsNoise:
 
     @property
     def noise_pwr(self) -> float:
-        return 4 * kB * self.temp_celsius
+        return 4 * Boltzmann * self.temp_celsius
+
+    @property
+    def temperature_voltage(self) -> float:
+        return Boltzmann * self.temp / elementary_charge
 
 
 RecommendedSettingsNoise = SettingsNoise(

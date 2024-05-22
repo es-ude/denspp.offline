@@ -53,7 +53,7 @@ RecommendedSettingsNoise = SettingsNoise(
 
 class CurrentAmplifier(ProcessNoise):
     """Class for emulating an analogue current amplifier"""
-    _settings_noise: SettingsNoise
+    _settings: SettingsCUR
     __print_device = "current amplifier"
 
     def __init__(self, settings_dev: SettingsCUR, settings_noise=RecommendedSettingsNoise):

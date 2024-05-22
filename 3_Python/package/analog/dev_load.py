@@ -1,10 +1,9 @@
 import dataclasses
 import numpy as np
 from tqdm import tqdm
-from package.analog.dev_noise import ProcessNoise, SettingsNoise
 from scipy.integrate import cumtrapz
 from scipy.constants import Boltzmann, elementary_charge
-
+from package.analog.dev_noise import ProcessNoise, SettingsNoise
 
 @dataclasses.dataclass
 class SettingsDEV:
@@ -14,19 +13,22 @@ class SettingsDEV:
         fs_ana:     Sampling frequency of input [Hz]
         noise_en:   Enable noise on output [True / False]
         para_en:    Enable parasitic [True / False]
-        value:      Value of the selected electrical device
+        dev_value:  Value of the selected electrical device
+        temp:       Temperature [K]
     """
     fs_ana:     float
     noise_en:   bool
     para_en:    bool
-    value:      float
+    dev_value:  float
+    temp:       float
 
 
 RecommendedSettingsDEV = SettingsDEV(
     fs_ana=50e3,
     noise_en=False,
     para_en=False,
-    value=10e3
+    dev_value=10e3,
+    temp=300
 )
 
 RecommendedSettingsNoise = SettingsNoise(
@@ -76,9 +78,13 @@ def _error_tanh(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float
 
 class ElectricalLoad(ProcessNoise):
     """Class for emulating an electrical device"""
-    _settings_noise: SettingsNoise
+    _settings: SettingsDEV
     __print_device = "electrical behaviour"
     __r_series = 100.0
+
+    @property
+    def temperature_voltage(self) -> float:
+        return Boltzmann * self._settings.temp / elementary_charge
 
     def __init__(self, settings_dev: SettingsDEV, settings_noise=RecommendedSettingsNoise):
         super().__init__(settings_noise, settings_dev.fs_ana)
@@ -97,51 +103,9 @@ class ElectricalLoad(ProcessNoise):
                 i1 = 0.0
         return i1
 
-    def get_voltage_response(self, i_in: np.ndarray, u_inn: np.ndarray | float, device_sel: int) -> np.ndarray:
+    def get_voltage_response(self, i_in: np.ndarray, u_inn: np.ndarray | float,
+                             device_sel: int, start_step=1e-3, take_last_value=True) -> np.ndarray:
         """Getting the voltage response from current input of selected electrical device
-
-        Args:
-            i_in:   Applied current input [A]
-            u_inn:  Negative input | bottom electrode | reference voltage [V]
-            device_sel: Selected electrical device [0: resistor, 1: ...]
-        Returns:
-            Corresponding voltage response
-        """
-        u_applied_grob = np.linspace(-2, 2, 21, endpoint=True)
-
-        u_response = np.zeros(i_in.shape)
-        idx = 0
-        for i0 in tqdm(i_in, ncols=100, desc="Progress: "):
-            # --- Step #1: Find minimum (grobe Suche)
-            error_step0 = list()
-            for u_top in u_applied_grob:
-                i1 = self.__dut(u_top, u_inn if isinstance(u_inn, float) else u_inn[idx], device_sel)
-                error_step0.append(_error_mse(i1, i0))
-
-            error0 = np.array(error_step0)
-            x0 = np.argwhere(error0 == error0.min())
-            del error0
-
-            # --- Step #2: Find minimum in range [x0-1, x0+1]
-            u_applied_fine = np.linspace(u_applied_grob[x0[0] - 1], u_applied_grob[x0[0] + 1], 1001, endpoint=True)
-            error_step1 = list()
-            for u_top in u_applied_fine:
-                i1 = self.__dut(u_top, u_inn if isinstance(u_inn, float) else u_inn[idx], device_sel)
-                error_step1.append(_error_mae(i1, i0))
-
-            error0 = np.array(error_step1)
-            x0 = np.argwhere(error0 == error0.min())
-
-            # --- Update
-            u_response[idx] = u_applied_fine[x0[0]]
-            idx += 1
-
-        return u_response
-
-    def get_voltage_response_v2(self, i_in: np.ndarray, u_inn: np.ndarray | float,
-                                device_sel: int, start_step=1e-3, take_last_value=True) -> np.ndarray:
-        """Getting the voltage response from current input of selected electrical device
-
         Args:
             i_in:               Applied current input [A]
             u_inn:              Negative input | bottom electrode | reference voltage [V]
@@ -214,83 +178,69 @@ class ElectricalLoad(ProcessNoise):
 
     def resistor(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
         """Performing the behaviour of an electrical resistor
-
         Args:
             u_inp:   Positive input voltage [V]
             u_inn:   Negative input voltage [V]
-
         Returns:
             Corresponding current signal
         """
         du = u_inp - u_inn
-
-        i_out = du / self._settings.value
+        i_out = du / self._settings.dev_value
         if self._settings.noise_en:
-            i_out += self._gen_noise_awgn_curr(du.size, self._settings.value)
+            i_out += self._gen_noise_awgn_curr(du.size, self._settings.dev_value)
         return i_out
 
     def capacitor(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
         """Performing the behaviour of an electrical capacitor
-
         Args:
             u_inp:   Positive input voltage [V]
             u_inn:   Negative input voltage [V]
-
         Returns:
             Corresponding current signal
         """
         du = u_inp - u_inn
-
         i_out = np.zeros(du.shape)
-        i_out[1:] = self._settings.value * np.diff(du) * self._settings.fs_ana
+        i_out[1:] = self._settings.dev_value * np.diff(du) * self._settings.fs_ana
         if self._settings.noise_en:
             i_out += self._gen_noise_awgn_pwr(du.size)
         return i_out
 
     def inductor(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
         """Performing the behaviour of an electrical inductor
-
         Args:
             u_inp:   Positive input voltage [V]
             u_inn:   Negative input voltage [V]
-
         Returns:
             Corresponding current signal
         """
         du = u_inp - u_inn
-        i_out = cumtrapz(du, dx=1/self._settings.fs_ana, initial=0) / self._settings.value
+        i_out = cumtrapz(du, dx=1/self._settings.fs_ana, initial=0) / self._settings.dev_value
         if self._settings.noise_en:
             i_out += self._gen_noise_awgn_pwr(du.size)
         return i_out
 
     def diode_single_barrier(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
         """Performing the behaviour of a diode with single-side barrier
-
         Args:
             u_inp:   Positive input voltage [V]
             u_inn:   Negative input voltage [V]
-
         Returns:
             Corresponding current signal
         """
         is0 = 1e-12
         n0 = 1.4
         u_th = 0.25
-
-        u_kb = Boltzmann * 300 / elementary_charge
         du = u_inp - u_inn
-        i_out = is0 * np.exp((du - u_th) / (n0 * u_kb))
+        i_out = is0 * np.exp((du - u_th) / (n0 * self.temperature_voltage))
         if self._settings.noise_en:
             i_out += self._gen_noise_awgn_pwr(du.size)
         return i_out
 
     def diode_double_barrier(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
         """Performing the behaviour of a diode with double-side barrier
-
         Args:
             u_inp:   Positive input voltage [V]
             u_inn:   Negative input voltage [V]
-
         Returns:
             Corresponding current signal
         """
@@ -298,10 +248,9 @@ class ElectricalLoad(ProcessNoise):
         n0 = 1.4
         u_th = 0.5
 
-        u_kb = Boltzmann * 300 / elementary_charge
         du = u_inp - u_inn
-        i_out = is0 * (np.exp((du - u_th) / (n0 * u_kb)) - 1)
-        i_out -= is0 * (np.exp((-du - u_th) / (n0 * u_kb)) - 1)
+        i_out = is0 * (np.exp((du - u_th) / (n0 * self.temperature_voltage)) - 1)
+        i_out -= is0 * (np.exp((-du - u_th) / (n0 * self.temperature_voltage)) - 1)
         if self._settings.noise_en:
             i_out += self._gen_noise_awgn_pwr(du.size)
         return i_out
@@ -311,28 +260,29 @@ class ElectricalLoad(ProcessNoise):
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     settings = SettingsDEV(
-        fs_ana=50e3,
+        fs_ana=1000e3,
         noise_en=False,
         para_en=False,
-        value=10e3
+        dev_value=10e3,
+        temp=300
     )
 
-    dev = ElectricalLoad(settings)
-
     # --- Declaration of input
-    t_end = 0.1
-    t0 = np.linspace(0, 0.0001, num=int(t_end * settings.fs_ana))
-
+    t_end = 0.5e-3
+    t0 = np.linspace(0, t_end, num=int(t_end * settings.fs_ana), endpoint=True)
     u_off = 0.0
-    u_pp = 1.0
-    uinp = u_off + u_pp * np.sin(2 * np.pi * t0 * 10e3)
+    u_pp = [0.25, 0.3, 0.1]
+    f0 = [10e3, 18e3, 28e3]
+    uinp = np.zeros(t0.shape) + u_off
+    for idx, peak_val in enumerate(u_pp):
+        uinp += peak_val * np.sin(2 * np.pi * t0 * f0[idx])
     uinn = 0.0
 
     # --- Model declaration
+    dev = ElectricalLoad(settings)
     iout = dev.diode_double_barrier(uinp, uinn)
-
     iin = 1e-4 * uinp
-    uout = dev.get_voltage_response_v2(iin, uinn, 3, 1e-2)
+    uout = dev.get_voltage_response(iin, uinn, 3, 1e-2)
 
     # --- Plotting: Current response
     plt.close('all')
