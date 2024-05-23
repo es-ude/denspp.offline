@@ -49,7 +49,7 @@ class Pipeline(PipelineCMD):
         self._path2pipe = abspath(__file__)
         # self.generate_folder('runs', '_data')
 
-        settings = _Settings(fs_ana)
+        settings = _SettingsPipe(fs_ana)
         self.signals = PipelineSignal()
         self.signals.fs_ana = fs_ana
         self.signals.fs_adc = settings.SettingsADC.fs_adc

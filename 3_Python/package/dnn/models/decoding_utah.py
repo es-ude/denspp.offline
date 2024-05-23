@@ -36,7 +36,7 @@ class cnn_lstm_dec_v1(nn.Module):
             nn.ReLU(),
             nn.Linear(dense_layer_size[1], dense_layer_size[2], bias=do_bias_train),
             nn.BatchNorm1d(dense_layer_size[2]),
-            nn.Softmax()
+            nn.Softmax(dim=1)
         )
 
         self.flatten = nn.Flatten(start_dim=0)

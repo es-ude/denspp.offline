@@ -24,7 +24,7 @@ class mlp_class_v1(nn.Module):
             if not idx == len(config_network)-1:
                 self.model.add_module(f"act_{idx:02d}", nn.ReLU())
             else:
-                self.model.add_module(f"soft", nn.Softmax())
+                self.model.add_module(f"soft", nn.Softmax(dim=1))
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
         x = torch.flatten(x, start_dim=1)

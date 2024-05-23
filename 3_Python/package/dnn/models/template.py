@@ -23,7 +23,7 @@ class mlp_cl_v1(nn.Module):
             if not idx == len(config_network)-1:
                 self.model.add_module(f"act_{idx:02d}", nn.Tanh())
             else:
-                self.model.add_module(f"soft", nn.Softmax())
+                self.model.add_module(f"soft", nn.Softmax(dim=1))
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
         prob = self.model(x)

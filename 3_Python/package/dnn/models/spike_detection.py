@@ -23,7 +23,7 @@ class dnn_sda_v1(nn.Module):
             nn.ReLU(),
             nn.Linear(lin_size[2], lin_size[3]),
             nn.BatchNorm1d(lin_size[3], affine=do_train_bias),
-            nn.Softmax(dim=0)
+            nn.Softmax(dim=1)
         )
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
@@ -60,7 +60,7 @@ class cnn_sda_v1(nn.Module):
             nn.MaxPool1d(pool_size[0]),
             nn.Flatten(start_dim=1),
             nn.Linear(lin_size[0], lin_size[1]),
-            nn.Softmax(dim=0)
+            nn.Softmax(dim=1)
         )
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
