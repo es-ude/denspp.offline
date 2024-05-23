@@ -125,8 +125,8 @@ if __name__ == "__main__":
     )
 
     # ----- Preparation: Module calling -----
-    print("Running framework for end-to-end neural signal processing (DeNSPP)"
-          "\nStep #1: Loading data"
+    print("\nRunning framework for end-to-end neural signal processing (DeNSPP)"
+          "\n\nStep #1: Loading data"
           "\n=================================================")
     datahand = DataLoader(SettingsDATA)
     datahand.do_call()
