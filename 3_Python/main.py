@@ -147,4 +147,4 @@ if __name__ == "__main__":
           "\n=================================================")
     thr_station.do_save_results()
     thr_station.do_save_results(True)
-    #thr_station.do_plot_results()
+    thr_station.do_plot_results()
