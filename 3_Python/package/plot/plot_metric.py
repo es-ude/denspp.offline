@@ -168,7 +168,6 @@ def plot_confusion(true_labels: list | np.ndarray,
         )
 
     # --- Plotting the results of the class confusion matrix
-    print(f'... Fbeta score is {100 * fbeta:.2f}%')
     fig, ax = plt.subplots(figsize=(cm_to_inch(12), cm_to_inch(12.5)))
     cmp.plot(ax=ax, colorbar=False, values_format='.3f',
              text_kw={'fontsize': 9}, cmap=plt.cm.Blues,

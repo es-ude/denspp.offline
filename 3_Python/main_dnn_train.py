@@ -16,7 +16,8 @@ if __name__ == "__main__":
     num_output = 6
 
     # --- Selecting model for train
-    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
+    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)"
+          "\n===========================================================================================")
     match dnn_handler.mode_train_dnn:
         case 0:
             # --- MNIST (Classifier)
@@ -48,4 +49,5 @@ if __name__ == "__main__":
             do_train_decoder_utah(dnn_handler, 500)
         case _:
             print("Wrong model! Please select right model!")
-    print("Finish!")
+    print("================================================================"
+          "\nFinish!")
