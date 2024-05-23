@@ -1,8 +1,7 @@
 from os.path import abspath
 import numpy as np
 
-from package.pipeline_signals import PipelineSignal
-from package.pipeline_cmds import PipelineCMD
+from package.pipeline_cmds import PipelineCMD, PipelineSignal
 from package.analog.pre_amp import PreAmp, SettingsAMP
 from package.analog.adc_sar import SettingsADC, ADC_SAR
 

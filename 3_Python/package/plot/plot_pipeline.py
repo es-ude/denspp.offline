@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from package.pipeline_signals import PipelineSignal
+from package.pipeline_cmds import PipelineSignal
 from package.nsp import calc_amplitude, calc_autocorrelogram, calc_firing_rate
 from package.plot.plot_common import cm_to_inch, save_figure
 

@@ -8,7 +8,7 @@ if __name__ == "__main__":
     match merge_dataset_mode:
         case 0:
             # ---- Merging spike frames from several files to one file
-            from package.data_merge.merge_datasets_frames import merge_frames_from_dataset, MergeDatasets
+            from package.data_merge.merge_datasets_frames import MergeDatasets
             from package.data_call.call_handler import SettingsDATA
 
             setup_data = SettingsDATA(
@@ -21,15 +21,18 @@ if __name__ == "__main__":
                 fs_resample=50e3
             )
 
-            merge_handler = MergeDatasets(setup_data, path2file)
-            # Merging frames
+            merge_handler = MergeDatasets(setup_data, path2file, True)
             merge_handler.get_frames_from_dataset(
                 cluster_class_avai=False,
                 process_points=[]
             )
-            merge_handler.merge_data_from_diff_data()
+            merge_handler.merge_data_from_diff_files()
+            merge_handler.save_merged_data_in_matfile()
+            merge_handler.save_merged_data_in_npyfile()
+
             # --- Merging the frames to new cluster device
-            merge_frames_from_dataset()
+            print("\n====================================================="
+                  "\nFinal Step with merging cluster have to be done in MATLAB")
         case 1:
             # ---- Merging decoding (KlaesLab) from several files to one file
             from package.data_merge.merge_utah_decoder import DatasetDecoder

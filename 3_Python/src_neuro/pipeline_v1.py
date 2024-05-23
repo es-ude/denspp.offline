@@ -1,7 +1,6 @@
 from os.path import abspath
 import numpy as np
-from package.pipeline_cmds import PipelineCMD
-from package.pipeline_signals import PipelineSignal
+from package.pipeline_cmds import PipelineCMD, PipelineSignal
 
 from package.nsp import calc_spiketicks
 from package.analog.pre_amp import PreAmp, SettingsAMP
@@ -97,12 +96,10 @@ class Pipeline(PipelineCMD):
 
     def prepare_saving(self) -> dict:
         """"""
-        mdict = {"fs_ana": self.signals.fs_ana,
-                 "fs_adc": self.signals.fs_adc,
+        mdict = {"fs_adc": self.signals.fs_adc,
                  "fs_dig": self.signals.fs_dig,
-                 "u_in": self.signals.u_in,
-                 "x_spk": self.signals.x_spk,
-                 "x_lfp": self.signals.x_lfp,
+                 "x_adc": np.array(self.signals.x_adc, dtype=np.int16),
+                 "x_spk": np.array(self.signals.x_spk, dtype=np.int16),
                  "frames_out": self.signals.frames_align[0],
                  "frames_pos": self.signals.frames_align[1],
                  "frames_id": self.signals.frames_align[2]}
