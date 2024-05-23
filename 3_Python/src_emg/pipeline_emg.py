@@ -20,7 +20,7 @@ def get_envelope(signal: np.ndarray, size_envelope: int) -> np.ndarray:
     return out
 
 
-class SettingsPipe:
+class _SettingsPipe:
     """Settings class for setting-up the pipeline"""
     def __init__(self, fs_ana: float):
         self.SettingsAMP.fs_ana = fs_ana
@@ -59,7 +59,7 @@ class Pipeline(PipelineCMD):
         self._path2pipe = abspath(__file__)
         self.generate_folder('runs', '_emg')
 
-        settings = SettingsPipe(fs_ana)
+        settings = _SettingsPipe(fs_ana)
         self.signal = PipelineSignal()
         self.signal.fs_ana = settings.SettingsADC.fs_ana
         self.signal.fs_adc = settings.SettingsADC.fs_adc
@@ -70,7 +70,7 @@ class Pipeline(PipelineCMD):
         self.dsp0 = DSP(settings.SettingsDSP_SPK)
 
     def prepare_saving(self) -> dict:
-        """"""
+        """Getting processing data of selected signals"""
         mdict = {
             "fs_ana": self.signal.fs_ana,
             "fs_adc": self.signal.fs_adc,
@@ -81,6 +81,10 @@ class Pipeline(PipelineCMD):
             "x_env": self.signal.x_sda
         }
         return mdict
+
+    def do_plotting(self, data: PipelineSignal, channel: int) -> None:
+        """Function to plot results from spike sorting"""
+        pass
 
     def run(self, u_inp: np.ndarray) -> None:
         self.signal.u_in = u_inp

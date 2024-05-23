@@ -1,6 +1,6 @@
 import numpy as np
 from package.metric import calculate_snr
-from package.data_process.process_noise import noise_awgn
+from package.analog.dev_noise import noise_awgn
 
 
 class EasyNeuralData_Generator:

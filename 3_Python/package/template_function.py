@@ -1,12 +1,11 @@
 import numpy as np
 
 
-def activation_relu(signal: np.ndarray, scale: float, do_scale=True) -> np.ndarray:
+def activation_relu(signal: np.ndarray, scale: float) -> np.ndarray:
     """This function should do an activation layer
     Args:
         signal:     Input array
         scale:      Scaling value
-        do_scale:   Should I do the scaling? [Default: True]
     Returns:
         Output array
     """

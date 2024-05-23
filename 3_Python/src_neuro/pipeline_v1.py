@@ -1,7 +1,7 @@
 from os.path import abspath
 import numpy as np
-from package.pipeline_cmds import PipelineCMD, PipelineSignal
 
+from package.pipeline_cmds import PipelineCMD, PipelineSignal
 from package.nsp import calc_spiketicks
 from package.analog.pre_amp import PreAmp, SettingsAMP
 from package.analog.adc_basic import SettingsADC
@@ -12,7 +12,7 @@ from package.digital.fex import FeatureExtraction, SettingsFeature
 from package.digital.cluster import Clustering, SettingsCluster
 
 
-class Settings:
+class _SettingsPipe:
     """Settings class for setting-up the pipeline"""
     def __init__(self, fs: float):
         self.SettingsAMP.fs_ana = fs
@@ -80,7 +80,7 @@ class Pipeline(PipelineCMD):
         self._path2pipe = abspath(__file__)
         self.generate_folder('runs', '_neuro')
 
-        settings = Settings(fs_ana)
+        settings = _SettingsPipe(fs_ana)
         self.signals = PipelineSignal()
         self.signals.fs_ana = settings.SettingsADC.fs_ana
         self.signals.fs_adc = settings.SettingsADC.fs_adc
@@ -95,7 +95,7 @@ class Pipeline(PipelineCMD):
         self.__cl = Clustering(settings.SettingsCL)
 
     def prepare_saving(self) -> dict:
-        """"""
+        """Getting processing data of selected signals"""
         mdict = {"fs_adc": self.signals.fs_adc,
                  "fs_dig": self.signals.fs_dig,
                  "x_adc": np.array(self.signals.x_adc, dtype=np.int16),
@@ -106,7 +106,7 @@ class Pipeline(PipelineCMD):
         return mdict
 
     def do_plotting(self, data: PipelineSignal, channel: int) -> None:
-        """Function to plot results from spike sorting"""
+        """Function to plot results"""
         import package.plot.plot_pipeline as plt_neuro
 
         path2save = self.path2save
@@ -119,7 +119,7 @@ class Pipeline(PipelineCMD):
 
         # --- NSP block
         plt_neuro.results_ivt(data, channel, path=path2save)
-        plt_neuro.results_firing_rate(data, channel, path=path2save)
+        #plt_neuro.results_firing_rate(data, channel, path=path2save)
         # plt_neuro.results_correlogram(data, channel, path=path2save)
         # plt_neuro.results_cluster_amplitude(data, channel, path=path2save)
 

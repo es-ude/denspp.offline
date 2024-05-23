@@ -6,8 +6,7 @@ from package.analog.pre_amp import PreAmp, SettingsAMP
 from package.analog.adc_sar import SettingsADC, ADC_SAR
 
 
-# --- Configuring the src_neuro
-class SettingsPipe:
+class _SettingsPipe:
     """Settings class for setting-up the pipeline"""
     def __init__(self, fs_ana: float):
         self.SettingsAMP.fs_ana = fs_ana
@@ -37,7 +36,7 @@ class Pipeline(PipelineCMD):
         self._path2pipe = abspath(__file__)
         self.generate_folder('runs', '_mem')
 
-        settings = SettingsPipe(fs_ana)
+        settings = _SettingsPipe(fs_ana)
         self.signals = PipelineSignal()
         self.signals.fs_ana = settings.SettingsADC.fs_ana
         self.signals.fs_adc = settings.SettingsADC.fs_adc
@@ -47,7 +46,7 @@ class Pipeline(PipelineCMD):
         self.__adc = ADC_SAR(settings.SettingsADC)
 
     def prepare_saving(self) -> dict:
-        """"""
+        """Getting processing data of selected signals"""
         mdict = {"fs_ana": self.signals.fs_ana,
                  "fs_adc": self.signals.fs_adc,
                  "fs_dig": self.signals.fs_dig,
@@ -56,9 +55,8 @@ class Pipeline(PipelineCMD):
         return mdict
 
     def do_plotting(self, data: PipelineSignal, channel: int) -> None:
-        """Function to plot results from spike sorting"""
-        import package.plot.plot_pipeline as plt_neuro
-        path2save = self.path2save
+        """Function to plot results"""
+        pass
 
     def run(self, uinp: np.ndarray) -> None:
         self.signals.u_in = uinp

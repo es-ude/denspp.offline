@@ -9,7 +9,7 @@ from package.digital.sda import SpikeDetection, SettingsSDA
 
 
 # --- Configuring the src_neuro
-class Settings:
+class _SettingsPipe:
     """Settings class for setting-up the pipeline"""
     def __init__(self, fs_ana: float):
         self.SettingsAMP.fs_ana = fs_ana
@@ -49,7 +49,7 @@ class Pipeline(PipelineCMD):
         self._path2pipe = abspath(__file__)
         # self.generate_folder('runs', '_data')
 
-        settings = Settings(fs_ana)
+        settings = _Settings(fs_ana)
         self.signals = PipelineSignal()
         self.signals.fs_ana = fs_ana
         self.signals.fs_adc = settings.SettingsADC.fs_adc
@@ -62,9 +62,14 @@ class Pipeline(PipelineCMD):
         self.frame_left_windowsize = self.__sda.frame_start + int(self.__sda.offset_frame / 2)
         self.frame_right_windowsize = self.__sda.frame_ends + int(self.__sda.offset_frame / 2)
 
-    def save_settings(self) -> dict:
+    def prepare_saving(self) -> dict:
+        """Getting processing data of selected signals"""
         mdict = {"fs_adc": self.signals.fs_adc}
         return mdict
+
+    def do_plotting(self, data: PipelineSignal, channel: int) -> None:
+        """Function to plot results"""
+        pass
 
     def run_input(self, uin: np.ndarray, spike_xpos: np.ndarray, spike_xoffset=0) -> None:
         """Processing the raw data for frame generation

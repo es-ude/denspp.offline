@@ -17,7 +17,6 @@ SettingsDATA = SettingsDATA(
     )
 
 if __name__ == "__main__":
-    plt.close('all')
     print("\nRunning EMG detection")
 
     # ----- Preparation: Module calling -----
@@ -28,23 +27,18 @@ if __name__ == "__main__":
     datahand.output_meta()
     dataIn = datahand.get_data()
     del datahand
-    num_channels = len(dataIn.data_raw)
 
-    # --- Pipeline
+    # --- Pipeline and Processing
     pipe_emg = Pipeline(SettingsDATA.fs_resample)
-
-    # --- Processing
-    signals_out = [dict() for idx in range(num_channels)]
+    signals_out = [dict() for idx in range(len(dataIn.data_raw))]
     for idx, thr in enumerate(tqdm(dataIn.data_raw, ncols=100, desc='Progress: ')):
         pipe_emg.run(thr)
         signals_out[idx] = pipe_emg.signal.x_sda
 
     # ----- Plotting
+    plt.close('all')
     results_input(dataIn.data_raw, dataIn.data_fs_orig,
                   path2save=pipe_emg.path2save, addon='_input')
     results_input(signals_out, dataIn.data_fs_orig, dataIn.evnt_xpos, dataIn.evnt_cluster_id,
                   path2save=pipe_emg.path2save, addon='_after')
     plt.show()
-
-    # ----- Ending -----
-    print("This is the End, ... my only friend, ... the end")
