@@ -1,9 +1,9 @@
 import numpy as np
-from package.analog.adc_basic import adc_basic, SettingsADC
+from package.analog.adc_basic import _adc_basic, SettingsADC
 from package.analog.adc_basic import SettingsNon, RecommendedSettingsNon
 
 
-class ADC_Nyquist(adc_basic):
+class ADC_Nyquist(_adc_basic):
     """Class for applying a Nyquist Analogue-Digital-Converter (ADC) on the raw data"""
     def __init__(self, settings_adc: SettingsADC, settings_non=RecommendedSettingsNon):
         super().__init__(settings_adc)

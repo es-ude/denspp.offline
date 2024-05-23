@@ -1,9 +1,9 @@
 import numpy as np
-from package.analog.adc_basic import adc_basic, SettingsADC
+from package.analog.adc_basic import _adc_basic, SettingsADC
 from package.analog.adc_basic import SettingsNon, RecommendedSettingsNon
 
 
-class ADC_DeltaSigma(adc_basic):
+class ADC_DeltaSigma(_adc_basic):
     """Class for using Continuous Time Delta Sigma ADC"""
     def __init__(self, settings_adc: SettingsADC, settings_non=RecommendedSettingsNon):
         super().__init__(settings_adc)

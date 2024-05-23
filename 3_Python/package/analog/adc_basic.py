@@ -74,7 +74,7 @@ RecommendedSettingsNon = SettingsNon(
 )
 
 
-class adc_basic:
+class _adc_basic:
     """"Basic class for applying an Analogue-Digital-Converter (ADC) on the raw data"""
     def __init__(self, settings_adc: SettingsADC):
         # --- Settings
