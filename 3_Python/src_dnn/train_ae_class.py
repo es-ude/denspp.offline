@@ -71,7 +71,6 @@ def do_train_ae_classifier(dnn_handler: dnn_handler,
         data_do_shuffle=True
     )
 
-    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
     use_cell_bib = not (dnn_handler.mode_cell_bib == 0)
     use_cell_mode = 0 if not use_cell_bib else dnn_handler.mode_cell_bib - 1
 
@@ -133,4 +132,3 @@ def do_train_ae_classifier(dnn_handler: dnn_handler,
         metric_snr_run.append((last_loss, last_snr, last_class))
 
     del dataset, trainhandler
-    print("\nThe End")

@@ -1,13 +1,11 @@
 import dataclasses
-import os
 import platform
-import shutil
 import cpuinfo
 import numpy as np
 from typing import Any
 from os import mkdir, remove
 from os.path import exists, join
-from shutil import rmtree
+from shutil import rmtree, copy
 from glob import glob
 from datetime import datetime
 from torch import optim, device, cuda, backends
@@ -83,11 +81,11 @@ def copy_handler_dummy() -> None:
     path2dst = 'src_dnn'
     # --- Checking if path to local training handler exists
     if not exists(path2dst):
-        os.mkdir(path2dst)
+        mkdir(path2dst)
     if not exists(join(path2dst, 'models')):
-        os.mkdir(join(path2dst, 'models'))
+        mkdir(join(path2dst, 'models'))
     if not exists(join(path2dst, 'dataset')):
-        os.mkdir(join(path2dst, 'dataset'))
+        mkdir(join(path2dst, 'dataset'))
 
     # --- Copy process
     if not exists(path2dst):
@@ -96,9 +94,9 @@ def copy_handler_dummy() -> None:
         for file in glob(join(path2src, "*.py")):
             print(f"... copied: {file}")
             if "main" in file:
-                shutil.copy(file, f"")
+                copy(file, f"")
             else:
-                shutil.copy(file, f"{path2dst}/")
+                copy(file, f"{path2dst}/")
         print("Please restart the training routine!")
 
 
@@ -128,8 +126,6 @@ class training_pytorch:
         self._do_kfold = False
         self._do_shuffle = config_train.data_do_shuffle
         self._run_kfold = 0
-        self._samples_train = list()
-        self._samples_valid = list()
 
         # --- Saving options
         self.settings = config_train
@@ -146,18 +142,16 @@ class training_pytorch:
 
     def __setup_device(self) -> None:
         """Setup PyTorch for Training"""
-
+        self.used_hw_cpu = (f"{cpuinfo.get_cpu_info()['brand_raw']} "
+                            f"(@ {1e-9 * cpuinfo.get_cpu_info()['hz_actual'][0]:.3f} GHz)")
         # Using GPU
         if cuda.is_available():
             self.used_hw_gpu = cuda.get_device_name()
-            self.used_hw_cpu = (f"{cpuinfo.get_cpu_info()['brand_raw']} "
-                       f"(@ {1e-9 * cpuinfo.get_cpu_info()['hz_actual'][0]:.3f} GHz)")
             self.used_hw_dev = device("cuda")
             self.used_hw_num = cuda.device_count()
             device0 = self.used_hw_gpu
         # Using Apple M1 Chip
-        elif backends.mps.is_available() and backends.mps.is_built() and self.os_type == "Darwin" and not self.use_only_cpu:
-            self.used_hw_cpu = "MP1"
+        elif backends.mps.is_available() and backends.mps.is_built() and self.os_type == "Darwin":
             self.used_hw_gpu = 'None'
             self.used_hw_num = cuda.device_count()
             self.used_hw_dev = device("mps")
@@ -165,18 +159,11 @@ class training_pytorch:
             device0 = self.used_hw_cpu
         # Using normal CPU
         else:
-            self.used_hw_cpu = (f"{cpuinfo.get_cpu_info()['brand_raw']} "
-                       f"(@ {1e-9 * cpuinfo.get_cpu_info()['hz_actual'][0]:.3f} GHz)")
             self.used_hw_gpu = 'None'
             self.used_hw_dev = device("cpu")
             self.used_hw_num = cpuinfo.get_cpu_info()['count']
             device0 = self.used_hw_cpu
-
-        print(f"... using PyTorch with {device0} device on {self.os_type}")
-
-    def _check_user_config(self) -> None:
-        if not exists("settings_ai"):
-            shutil.copy()
+        print(f"\nUsing PyTorch with {device0} on {self.os_type}")
 
     def _init_train(self, path2save='') -> None:
         """Do init of class for training"""
@@ -219,8 +206,6 @@ class training_pytorch:
                 subsamps_valid = SubsetRandomSampler(idx_valid)
                 out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train))
                 out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
-                self._samples_train.append(subsamps_train.indices.size)
-                self._samples_valid.append(subsamps_valid.indices.size)
         else:
             idx = np.arange(len(data_set))
             if self._do_shuffle:
@@ -232,9 +217,6 @@ class training_pytorch:
             subsamps_valid = SubsetRandomSampler(idx_valid)
             out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train))
             out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
-
-            self._samples_train.append(subsamps_train.indices.size)
-            self._samples_valid.append(subsamps_valid.indices.size)
 
         # --- CUDA support for dataset
         if cuda.is_available():
@@ -256,7 +238,9 @@ class training_pytorch:
         self.optimizer = self.settings.load_optimizer(learn_rate=learn_rate)
         self.loss_fn = self.settings.loss_fn
         if print_model:
+            print("\nPrint summary of model")
             summary(self.model, input_size=self.model.model_shape)
+            print("\n\n")
 
     def _save_config_txt(self, addon='') -> None:
         """Writing the content of the configuration class in *.txt-file"""

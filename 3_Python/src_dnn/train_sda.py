@@ -51,7 +51,6 @@ def dnn_train_sda(dnn_handler: dnn_handler, sda_threshold: int) -> None:
     from package.plot.plot_dnn import plot_statistic_data
     from package.plot.plot_metric import plot_confusion, plot_loss
 
-    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
     # --- Processing: Loading Data and Do Training
     dataset = prepare_training(config_data, sda_threshold)
     data_dict = dataset.sda_dict
@@ -72,6 +71,4 @@ def dnn_train_sda(dnn_handler: dnn_handler, sda_threshold: int) -> None:
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=data_dict)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir, cl_dict=data_dict)
-
         plt.show(block=dnn_handler.do_block)
-    print("\nThe End")

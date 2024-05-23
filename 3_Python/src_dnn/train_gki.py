@@ -64,10 +64,9 @@ def do_train_ae(dnn_handler: dnn_handler, mode_ae: int, noise_std=0.05) -> None:
     from package.dnn.pytorch.autoencoder import train_nn
     from package.plot.plot_dnn import results_training, plot_statistic_data
 
-    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
-
     use_cell_bib = not (dnn_handler.mode_cell_bib == 0)
     use_cell_mode = 0 if not use_cell_bib else dnn_handler.mode_cell_bib - 1
+
     # --- Processing: Loading dataset and Do Training
     dataset = prepare_training(settings=config_data,
                                use_cell_bib=use_cell_bib, mode_classes=use_cell_mode,
@@ -94,9 +93,7 @@ def do_train_ae(dnn_handler: dnn_handler, mode_ae: int, noise_std=0.05) -> None:
         )
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                             path2save=logsdir, cl_dict=data_result['cl_dict'])
-
         plt.show(block=dnn_handler.do_block)
-    print("\nThe End")
 
 
 def do_train_cl(dnn_handler: dnn_handler) -> None:
@@ -109,7 +106,6 @@ def do_train_cl(dnn_handler: dnn_handler) -> None:
     from package.plot.plot_dnn import plot_statistic_data
     from package.plot.plot_metric import plot_confusion, plot_loss
 
-    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
     use_cell_bib = not (dnn_handler.mode_cell_bib == 0)
     use_cell_mode = 0 if not use_cell_bib else dnn_handler.mode_cell_bib - 1
 
@@ -131,16 +127,13 @@ def do_train_cl(dnn_handler: dnn_handler) -> None:
     # --- Plotting
     if dnn_handler.do_plot:
         plt.close('all')
-        # --- Plotting full model
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
 
         plot_confusion(data_result['valid_clus'], data_result['yclus'],
                        path2save=logsdir, cl_dict=frame_dict)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                             path2save=logsdir, cl_dict=frame_dict)
-
         plt.show(block=dnn_handler.do_block)
-    print("\nThe End")
 
 
 if __name__ == "__main__":

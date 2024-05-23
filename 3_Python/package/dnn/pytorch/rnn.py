@@ -3,7 +3,6 @@ from os.path import join
 from shutil import copy
 from datetime import datetime
 from torch import Tensor, load, save, from_numpy
-from scipy.io import savemat
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
 
 
@@ -74,7 +73,8 @@ class train_nn(training_pytorch):
         save(self.model.state_dict(), path2model_init)
         timestamp_start = datetime.now()
         timestamp_string = timestamp_start.strftime('%H:%M:%S')
-        print(f'\nTraining starts on {timestamp_string}')
+        print(f'\nTraining starts on {timestamp_string}'
+              f"\n=====================================================================================")
 
         for fold in np.arange(self.settings.num_kfold):
             best_loss = [1e6, 1e6]
@@ -154,6 +154,5 @@ class train_nn(training_pytorch):
         output.update({'cl_dict': self.cell_classes})
 
         # --- Saving dict
-        savemat(join(self.get_saving_path(), 'results.mat'), output,
-                do_compression=True, long_field_names=True)
+        np.save(join(self.get_saving_path(), 'results.mat'), output)
         return output

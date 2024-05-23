@@ -3,7 +3,6 @@ from os.path import join
 from shutil import copy
 from datetime import datetime
 from torch import load, save, from_numpy, inference_mode, sum
-from scipy.io import savemat
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
 
 
@@ -73,7 +72,8 @@ class train_nn(training_pytorch):
         save(self.model.state_dict(), path2model_init)
         timestamp_start = datetime.now()
         timestamp_string = timestamp_start.strftime('%H:%M:%S')
-        print(f'\nTraining starts on {timestamp_string}')
+        print(f'\nTraining starts on {timestamp_string}'
+              f"\n=====================================================================================")
 
         for fold in np.arange(self.settings.num_kfold):
             best_loss = [1e6, 1e6]
@@ -131,7 +131,6 @@ class train_nn(training_pytorch):
         data_valid = self.get_data_points(num_output, use_train_dataloader=False)
 
         # --- Do the Inference with Best Model
-        print(f"\nDoing the inference with validation data on best model")
         model_inference = load(self.get_best_model('class')[0])
         yclus = model_inference(from_numpy(data_valid['in']))[1]
         yclus = yclus.detach().numpy()
@@ -144,6 +143,5 @@ class train_nn(training_pytorch):
         output.update({'cl_dict': self.cell_classes})
 
         # --- Saving dict
-        savemat(join(self.get_saving_path(), 'results_class.mat'), output,
-                do_compression=True, long_field_names=True)
+        np.save(join(self.get_saving_path(), 'results_class.npy'), output)
         return output

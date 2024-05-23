@@ -4,7 +4,6 @@ from shutil import copy
 from datetime import datetime
 from torch import Tensor, load, save, from_numpy, tensor, inference_mode, flatten
 from torch import max, min, log10, sum
-from scipy.io import savemat
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
 
 
@@ -106,7 +105,8 @@ class train_nn(training_pytorch):
         save(self.model.state_dict(), path2model_init)
         timestamp_start = datetime.now()
         timestamp_string = timestamp_start.strftime('%H:%M:%S')
-        print(f'\nTraining starts on {timestamp_string}')
+        print(f'\nTraining starts on {timestamp_string}'
+              f"\n=====================================================================================")
 
         for fold in np.arange(self.settings.num_kfold):
             best_loss = np.array((1_000_000., 1_000_000.), dtype=float)
@@ -162,7 +162,6 @@ class train_nn(training_pytorch):
         data_train = self.get_data_points(use_train_dataloader=True)
 
         # --- Do the Inference with Best Model
-        print(f"\nDoing the inference with validation data on best model")
         model_test = load(self.get_best_model('ae')[0])
         feat_out, pred_out = model_test(from_numpy(data_valid['in']))
         feat_out = feat_out.detach().numpy()
@@ -176,6 +175,5 @@ class train_nn(training_pytorch):
         output.update({'cl_dict': self.cell_classes})
 
         # --- Saving dict
-        savemat(join(self.get_saving_path(), 'results_ae.mat'), output,
-                do_compression=True, long_field_names=True)
+        np.save(join(self.get_saving_path(), 'results_ae.npy'), output)
         return output

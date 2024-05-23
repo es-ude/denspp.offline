@@ -50,8 +50,6 @@ def do_train_ae(dnn_handler: dnn_handler, mode_ae: int, noise_std=0.05) -> None:
     from package.dnn.pytorch.autoencoder import train_nn
     from package.plot.plot_dnn import results_training, plot_statistic_data
 
-    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
-
     use_cell_bib = not (dnn_handler.mode_cell_bib == 0)
     use_cell_mode = 0 if not use_cell_bib else dnn_handler.mode_cell_bib - 1
     # --- Processing: Loading dataset and Do Training
@@ -82,4 +80,3 @@ def do_train_ae(dnn_handler: dnn_handler, mode_ae: int, noise_std=0.05) -> None:
                             path2save=logsdir, cl_dict=data_result['cl_dict'])
 
         plt.show(block=dnn_handler.do_block)
-    print("\nThe End")

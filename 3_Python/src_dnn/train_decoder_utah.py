@@ -53,7 +53,6 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
     from package.plot.plot_dnn import plot_statistic_data
     from package.plot.plot_metric import plot_confusion, plot_loss
 
-    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
     # --- Processing: Loading Data and Do Training
     dataset = prepare_training(config_data, length_window_ms)
     data_dict = dataset.frame_dict
@@ -75,7 +74,4 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=data_dict)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir, cl_dict=data_dict)
-
         plt.show(block=dnn_handler.do_block)
-
-    print("\nThe End")

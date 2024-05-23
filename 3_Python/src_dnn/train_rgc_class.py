@@ -86,7 +86,6 @@ def do_train_rgc_class(dnn_handler: dnn_handler) -> None:
     from package.plot.plot_dnn import plot_statistic_data
     from package.plot.plot_metric import plot_confusion, plot_loss
 
-    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
     use_cell_bib = not (dnn_handler.mode_cell_bib == 0)
     use_cell_mode = 0 if not use_cell_bib else dnn_handler.mode_cell_bib - 1
 
@@ -117,6 +116,4 @@ def do_train_rgc_class(dnn_handler: dnn_handler) -> None:
 
         # --- Plotting reduced model (ON/OFF and Transient/Sustained)
         rgc_logic_combination(logsdir)
-
         plt.show(block=dnn_handler.do_block)
-    print("\nThe End")

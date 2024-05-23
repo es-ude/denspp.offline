@@ -53,7 +53,6 @@ if __name__ == "__main__":
                                   noise_std=noise_std)
     snr_in_raw, snr_in_val = calculate_dataset_snr(dataset)
 
-    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSSP)")
     metric_snr_run = list()
     # --- Run with increasing SNR
     for run_id, snr in enumerate(snr_soll):
@@ -73,7 +72,6 @@ if __name__ == "__main__":
 
         # --- Übergabe next run
         metric_snr_run.append((loss_ae, snr_ae))
-
         STD_SNR_ratio_plotting_data.append(
             (data_result.get('median_SNR_in', None), data_result.get('median_SNR_inc', None))
         )
@@ -88,4 +86,3 @@ if __name__ == "__main__":
     plt.show()
 
 del dataset, trainhandler
-print("Ended")

@@ -62,8 +62,6 @@ def do_train_cl(do_plot=True, do_block=True) -> None:
     from package.plot.plot_dnn import plot_statistic_data, plot_mnist_graphs
     from package.plot.plot_metric import plot_confusion, plot_loss
 
-    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
-
     # ---Loading Data, Do Training and getting the results
     dataset = prepare_training(config_data.data_path, config_data.data_do_normalization, True)
     num_output = 10
@@ -87,7 +85,6 @@ def do_train_cl(do_plot=True, do_block=True) -> None:
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir)
         plt.show(block=do_block)
-    print("\nThe End")
 
 
 def do_train_ae(do_plot=True, do_block=True) -> None:
@@ -101,7 +98,6 @@ def do_train_ae(do_plot=True, do_block=True) -> None:
     from package.plot.plot_dnn import plot_statistic_data, plot_mnist_graphs
     from package.plot.plot_metric import plot_loss
 
-    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
 
     # ---Loading Data, Do Training and getting the results
     dataset = prepare_training(config_data.data_path, config_data.data_do_normalization, False)
@@ -125,4 +121,3 @@ def do_train_ae(do_plot=True, do_block=True) -> None:
         plot_mnist_graphs(data_result['input'], data_result['valid_clus'], "_input", path2save=logsdir)
         plot_mnist_graphs(data_result['pred'], data_result['valid_clus'], "_predicted", path2save=logsdir)
         plt.show(block=do_block)
-    print("\nThe End")
