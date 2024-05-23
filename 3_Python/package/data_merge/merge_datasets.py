@@ -391,3 +391,12 @@ class SortDataset:
         print(f"Percentage of overall kept frames: {data_ratio_merged * 100:.2f}")
         print(f"Percentage of overall dismissed frames: {data_ratio_dismiss * 100:.2f}")
         savemat(self.setOptions['path2save'], out, appendmat=False, oned_as='column')
+
+    def save_output_as_npyfile(self, out: dict, processed_num: int, frames_in_num: int) -> None:
+        """Saving output as a matlab file"""
+        data_ratio_merged = processed_num / frames_in_num
+        data_ratio_dismiss = 1 - data_ratio_merged
+        out['data_ratio_merged'] = data_ratio_merged
+        print(f"Percentage of overall kept frames: {data_ratio_merged * 100:.2f}")
+        print(f"Percentage of overall dismissed frames: {data_ratio_dismiss * 100:.2f}")
+        np.save(self.setOptions['path2save'], out, appendmat=False, oned_as='column')
