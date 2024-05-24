@@ -50,10 +50,10 @@ class Pipeline(PipelineCMD):
         # self.generate_folder('runs', '_data')
 
         settings = _SettingsPipe(fs_ana)
-        self.signals = PipelineSignal()
-        self.signals.fs_ana = fs_ana
-        self.signals.fs_adc = settings.SettingsADC.fs_adc
-        self.signals.fs_dig = settings.SettingsADC.fs_dig
+        self.fs_ana = fs_ana
+        self.fs_dig = settings.SettingsADC.fs_dig
+        self.fs_adc = settings.SettingsADC.fs_dig
+        self.clean_pipeline()
 
         self.__preamp = PreAmp(settings.SettingsAMP)
         self.__adc = ADC0(settings.SettingsADC)
@@ -61,6 +61,13 @@ class Pipeline(PipelineCMD):
 
         self.frame_left_windowsize = self.__sda.frame_start + int(self.__sda.offset_frame / 2)
         self.frame_right_windowsize = self.__sda.frame_ends + int(self.__sda.offset_frame / 2)
+
+    def clean_pipeline(self) -> None:
+        """Cleaning the signals of the pipeline"""
+        self.signals = PipelineSignal()
+        self.signals.fs_ana = self.fs_ana
+        self.signals.fs_adc = self.fs_adc
+        self.signals.fs_dig = self.fs_dig
 
     def prepare_saving(self) -> dict:
         """Getting processing data of selected signals"""

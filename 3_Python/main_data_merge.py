@@ -8,6 +8,7 @@ if __name__ == "__main__":
     match merge_dataset_mode:
         case 0:
             # ---- Merging spike frames from several files to one file
+            from src_neuro.pipeline_data import Pipeline
             from package.data_merge.merge_datasets_frames import MergeDatasets
             from package.data_call.call_handler import SettingsDATA
 
@@ -21,7 +22,7 @@ if __name__ == "__main__":
                 fs_resample=50e3
             )
 
-            merge_handler = MergeDatasets(setup_data, path2file, True)
+            merge_handler = MergeDatasets(Pipeline, setup_data, path2file, True)
             merge_handler.get_frames_from_dataset(
                 cluster_class_avai=False,
                 process_points=[]

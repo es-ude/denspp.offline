@@ -2,40 +2,44 @@ from glob import glob
 from os import mkdir
 from os.path import join, exists
 from shutil import rmtree
-
 import numpy as np
 from datetime import datetime
 from scipy.io import savemat, loadmat
 from tqdm import tqdm
 import platform
-
 from package.data_call.call_spike_files import DataLoader, SettingsDATA
-from src_neuro.pipeline_data import Settings, Pipeline
 
 
 class MergeDatasets:
-    def __init__(self, settings_data: SettingsDATA, path2save: str, do_list=False):
+    def __init__(self, pipeline, settings_data: SettingsDATA, path2save: str, do_list=False) -> None:
+        """"""
         self.__settings = settings_data
         self.__path2save = path2save
-        self.__generate_folder()
 
+        self.__pipeline = pipeline(self.__settings.fs_resample)
         self.__saving_data_list = do_list
         self.__data_list = list()
         self.__data_single = dict()
         self.__data_merged = dict()
+        self.__cluster_available = False
 
     def __generate_folder(self, addon='Merging') -> None:
         """Generating the folder temporary saving"""
-        # --- Generate path2save folder (e.g. "save")
-        if not exists(self.__path2save):
-            mkdir(self.__path2save)
-
-        # --- Generate subfolder in which data is stored
         self.__name_temp_folder = addon
         self.path2folder = join(self.__path2save, addon)
-        if exists(self.path2folder):
-            rmtree(self.path2folder)
-        mkdir(self.path2folder)
+
+        if not self.__saving_data_list:
+            # --- Generate path2save folder (e.g. "save")
+            if not exists(self.__path2save):
+                mkdir(self.__path2save)
+
+            # --- Generate subfolder in which data is stored
+            if exists(self.path2folder):
+                rmtree(self.path2folder)
+            mkdir(self.path2folder)
+        else:
+            if exists(self.path2folder):
+                rmtree(self.path2folder)
 
     def __erase_folder(self, do_erase=True) -> None:
         """Erasing the folder temporary saving"""
@@ -73,15 +77,15 @@ class MergeDatasets:
               f'\n... available classes: {meta_infos_id[0]} with {meta_infos_id[1]} samples')
 
     def get_frames_from_dataset(self, cluster_class_avai=False, process_points=None) -> None:
+        """Tool for loading datasets in order to generate one new dataset (Step 1)
+        Args:
+            cluster_class_avai: False = Concatenate the class number with increasing id number (useful for non-biological clusters)
+            process_points:     Taking the datapoints of the choicen dataset [Start, End]
         """
-        Tool for loading datasets in order to generate one new dataset (Step 1),
-        cluster_class_avai: False = Concatenate the class number with increasing id number (useful for non-biological clusters)
-        only_pos: Taking the datapoints of the choicen dataset [Start, End]
-        """
-        # --- Loading the src_neuro
-        afe_set = Settings(self.__settings.fs_resample)
-        fs_ana = afe_set.SettingsADC.fs_ana
-        fs_adc = afe_set.SettingsADC.fs_adc
+        self.__generate_folder()
+        self.__cluster_available = cluster_class_avai
+        fs_ana = self.__pipeline.fs_ana
+        fs_adc = self.__pipeline.fs_adc
 
         # --- Setting the points
         do_reduced_sample = isinstance(process_points, list)
@@ -103,7 +107,6 @@ class MergeDatasets:
         while first_run or runPoint < endPoint:
             self.__data_single = dict()
             first_run = True
-            num_cluster_max = 0
             ite_recoverd = 0
             frames_in = np.empty(shape=(0, 0), dtype=np.dtype('int16'))
             frames_cl = np.empty(shape=(0, 0), dtype=np.dtype('uint16'))
@@ -120,21 +123,20 @@ class MergeDatasets:
             for ch in tqdm(datahandler.raw_data.electrode_id, ncols=100, desc="Progress: "):
                 spike_xpos = np.floor(datahandler.raw_data.evnt_xpos[ch] * fs_adc / fs_ana).astype("int")
                 # --- Processing the analogue input
-                afe = Pipeline(fs_ana)
-                afe.run_input(datahandler.raw_data.data_raw[ch], spike_xpos)
-                length_data_in = afe.signals.x_adc.size
+                self.__pipeline.run_input(datahandler.raw_data.data_raw[ch], spike_xpos)
+                length_data_in = self.__pipeline.signals.x_adc.size
 
-                frame_new = afe.signals.frames_align
+                frame_new = self.__pipeline.signals.frames_align
                 frame_cl = datahandler.raw_data.evnt_cluster_id[ch]
 
                 # --- Post-Processing: Checking if same length
                 if frame_new.shape[0] != frame_cl.size:
                     ite_recoverd += 1
                     # Check where errors are available
-                    sample_first_delete_pos = np.argwhere((spike_xpos - afe.frame_left_windowsize) <= 0).flatten()
+                    sample_first_delete_pos = np.argwhere((spike_xpos - self.__pipeline.frame_left_windowsize) <= 0).flatten()
                     sample_first_do_delete = sample_first_delete_pos.size > 0
                     sample_last_delete_pos = np.argwhere(
-                        ((spike_xpos + afe.frame_right_windowsize) >= length_data_in) < 0).flatten()
+                        ((spike_xpos + self.__pipeline.frame_right_windowsize) >= length_data_in) < 0).flatten()
                     sample_last_do_delete = sample_last_delete_pos.size > 0
 
                     if sample_first_do_delete and not sample_last_do_delete:
@@ -160,23 +162,21 @@ class MergeDatasets:
                         frame_new = frame_new[0:num_min - 1, ]
 
                 # --- Processing (Frames and cluster)
-                num_cluster_now = 1 + frame_cl.max()
-                num_cluster_max += 0 if (first_run or cluster_class_avai) else num_cluster_now
                 if first_run:
                     endPoint = process_points[1] if use_end_point != 0 else datahandler._no_files
-                    settings = afe.save_settings()
+                    settings = self.__pipeline.prepare_saving()
                     frames_in = frame_new
-                    frames_cl = frame_cl + num_cluster_max
+                    frames_cl = frame_cl
                 else:
                     frames_in = np.concatenate((frames_in, frame_new), axis=0)
-                    frames_cl = np.concatenate((frames_cl, frame_cl + num_cluster_max), axis=0)
+                    frames_cl = np.concatenate((frames_cl, frame_cl), axis=0)
                 first_run = False
 
                 if frames_in.shape[0] != frames_cl.size:
                     print(f'Data merging has an error after channel #{ch}')
 
                 # --- Release memory
-                del afe, spike_xpos, frame_new, frame_cl
+                del spike_xpos, frame_new, frame_cl
 
             # --- Bringing data into format
             create_time = datetime.now().strftime("%Y-%m-%d")
@@ -190,6 +190,7 @@ class MergeDatasets:
             self.__iteration_save_results()
 
             # --- Release memory
+            self.__pipeline.clean_pipeline()
             del datahandler, frames_in, frames_cl
             runPoint += 1
 
@@ -217,6 +218,7 @@ class MergeDatasets:
         frame_in = np.zeros((0, 0), dtype='int16')
         frame_cl = np.zeros((0, 0), dtype='uint16')
 
+        max_num_clusters = 0
         for idx, file in enumerate(data_used):
             if not self.__saving_data_list:
                 data = np.load(file, allow_pickle=True).item()
@@ -224,9 +226,10 @@ class MergeDatasets:
             else:
                 data = file
 
-            cl_in = data['frames_cl']
+            cl_in = data['frames_cl'] + max_num_clusters
             frame_in = data['frames_in'] if idx == 0 else np.append(frame_in, data['frames_in'], axis=0)
             frame_cl = cl_in if idx == 0 else np.append(frame_cl, cl_in, axis=0)
+            max_num_clusters = 0 if self.__cluster_available else 1 + np.unique(frame_cl).max()
 
         # --- Transfer in common structure
         create_time = datetime.now().strftime("%Y-%m-%d")
