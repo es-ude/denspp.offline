@@ -1,13 +1,12 @@
 from torch import nn, Tensor, unsqueeze, argmax
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_handler import __model_settings_common
 
 
-class cnn_ae_v1(nn.Module):
+class cnn_ae_v1(__model_settings_common):
     """Class of a convolutional autoencoder for feature extraction"""
     def __init__(self):
-        super().__init__()
-        self.out_modelname = 'cnn_ae_v1'
-        self.out_modeltyp = 'Autoencoder'
+        super().__init__('Autoencoder')
         self.model_shape = (1, 32)
         self.model_embedded = False
         do_bias_train = True
@@ -53,12 +52,10 @@ class cnn_ae_v1(nn.Module):
         return self.flatten(encoded), self.flatten(decoded)
 
 
-class cnn_ae_v2(nn.Module):
+class cnn_ae_v2(__model_settings_common):
     """Class of a convolutional autoencoder for feature extraction"""
     def __init__(self):
-        super().__init__()
-        self.out_modelname = 'cnn_ae_v2'
-        self.out_modeltyp = 'Autoencoder'
+        super().__init__('Autoencoder')
         self.model_embedded = False
         self.model_shape = (1, 32)
         do_bias_train = True
@@ -115,12 +112,10 @@ class cnn_ae_v2(nn.Module):
 
 
 # Anpassungen an fcnn_layer[0] und fcnn_out notwendig, wenn CNN-Kernel geändert wird
-class cnn_ae_v3(nn.Module):
+class cnn_ae_v3(__model_settings_common):
     """Class of a convolutional autoencoder for feature extraction"""
     def __init__(self, input_size=32, output_size=6):
-        super().__init__()
-        self.out_modelname = 'cnn_ae_v3'
-        self.out_modeltyp = 'Autoencoder'
+        super().__init__('Autoencoder')
         self.model_embedded = False
         self.model_shape = (1, input_size)
         do_bias_train = True
@@ -193,12 +188,10 @@ class cnn_ae_v3(nn.Module):
         return encoded, self.flatten(decoded)
 
 
-class cnn_ae_v4(nn.Module):
+class cnn_ae_v4(__model_settings_common):
     """Class of a convolutional autoencoder for feature extraction"""
     def __init__(self, input_size=32, output_size=8):
-        super().__init__()
-        self.out_modelname = 'cnn_ae_v4'
-        self.out_modeltyp = 'Autoencoder'
+        super().__init__('Autoencoder')
         self.model_embedded = False
         self.model_shape = (1, input_size)
         do_bias_train = True
@@ -254,12 +247,10 @@ class cnn_ae_v4(nn.Module):
         return encoded, decoded
 
 
-class classifier_ae_v1(nn.Module):
+class classifier_ae_v1(__model_settings_common):
     """Classification model of autoencoder output"""
     def __init__(self, input_size=6, output_size=5):
-        super().__init__()
-        self.out_modelname = 'ae_class_v1'
-        self.out_modeltyp = 'Classification'
+        super().__init__('Classifier')
         self.model_shape = (1, input_size)
         self.model_embedded = False
         lin_size = [input_size, 16, 12, output_size]

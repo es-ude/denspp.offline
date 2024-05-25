@@ -3,13 +3,12 @@ import torch.nn as nn
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 from elasticai.creator.nn import Sequential
 from elasticai.creator.nn.fixed_point import BatchNormedLinear, HardTanh
+from package.dnn.pytorch_handler import __model_settings_common
 
 
-class dnn_ae_v2(nn.Module):
+class dnn_ae_v2(__model_settings_common):
     def __init__(self, input_size=32, output_size=3):
-        super().__init__()
-        self.out_modelname = 'dnn_dae_embedded_v2'
-        self.out_modeltyp = 'Autoencoder'
+        super().__init__('Autoencoder')
         self.model_shape = (1, input_size)
         self.model_embedded = True
         bits_total = 12

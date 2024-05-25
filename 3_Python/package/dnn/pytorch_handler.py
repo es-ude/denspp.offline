@@ -8,11 +8,37 @@ from os.path import exists, join
 from shutil import rmtree, copy
 from glob import glob
 from datetime import datetime
-from torch import optim, device, cuda, backends
+from torch import optim, device, cuda, backends, nn
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
 from sklearn.model_selection import KFold
+
+
+class __model_settings_common(nn.Module):
+    model: nn.Sequential
+
+    def __init__(self, type_model: str):
+        super().__init__()
+        self.model_shape = (1, 28, 28)
+        self.model_embedded = False
+        self.out_modeltyp = type_model
+        self.out_modelname = self.__get_modelname()
+
+    def __get_modelname(self) -> str:
+        """"""
+        return self.__class__.__name__ + self.__get_addon()
+
+    def __get_addon(self) -> str:
+        """"""
+        match self.out_modeltyp:
+            case 'Classifier':
+                addon = '_class'
+            case 'Autoencoder':
+                addon = '_ae'
+            case _:
+                addon = '_unknown'
+        return addon
 
 
 @dataclasses.dataclass(frozen=True)

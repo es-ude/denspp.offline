@@ -1,13 +1,12 @@
 from torch import nn, Tensor
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_handler import __model_settings_common
 
 
-class dnn_ae_v1(nn.Module):
+class dnn_ae_v1(__model_settings_common):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
     def __init__(self, input_size=32, output_size=3):
-        super().__init__()
-        self.out_modelname = 'dnn_ae_v1'
-        self.out_modeltyp = 'Autoencoder'
+        super().__init__('Autoencoder')
         self.model_shape = (1, input_size)
         self.model_embedded = False
         iohiddenlayer = [input_size, 20, 14, output_size]
@@ -42,12 +41,10 @@ class dnn_ae_v1(nn.Module):
         return encoded, self.decoder(encoded)
 
 
-class dnn_ae_v2(nn.Module):
+class dnn_ae_v2(__model_settings_common):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
     def __init__(self, input_size=32, output_size=3):
-        super().__init__()
-        self.out_modelname = 'dnn_ae_v2'
-        self.out_modeltyp = 'Autoencoder'
+        super().__init__('Autoencoder')
         self.model_shape = (1, input_size)
         self.model_embedded = False
         iohiddenlayer = [input_size, 20, output_size]

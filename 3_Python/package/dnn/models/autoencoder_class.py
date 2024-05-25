@@ -1,13 +1,12 @@
 from torch import nn, Tensor, argmax
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_handler import __model_settings_common
 
 
-class classifier_ae_v1(nn.Module):
+class classifier_ae_v1(__model_settings_common):
     """Classification model of autoencoder output"""
     def __init__(self, input_size=6, output_size=5):
-        super().__init__()
-        self.out_modelname = 'ae_class_v1'
-        self.out_modeltyp = 'Classification'
+        super().__init__('Classifier')
         self.model_shape = (1, input_size)
         self.model_embedded = False
         lin_size = [input_size, 16, 12, output_size]

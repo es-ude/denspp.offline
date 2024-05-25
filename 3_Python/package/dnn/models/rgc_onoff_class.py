@@ -1,13 +1,12 @@
 from torch import nn, Tensor, argmax, unsqueeze
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_handler import __model_settings_common
 
 
-class dnn_rgc_v1(nn.Module):
+class dnn_rgc_v1(__model_settings_common):
     """Classification model"""
     def __init__(self, input_size=40, output_size=4):
-        super().__init__()
-        self.out_modelname = 'rgc_class_v1'
-        self.out_modeltyp = 'Classification'
+        super().__init__('Classifier')
         self.model_shape = (1, input_size)
         self.model_embedded = False
         lin_size = [input_size, 45, 32, 28, 16, output_size]
@@ -41,12 +40,10 @@ class dnn_rgc_v1(nn.Module):
         return val, argmax(val, dim=1)
 
 
-class dnn_rgc_v2(nn.Module):
+class dnn_rgc_v2(__model_settings_common):
     """Classification model"""
     def __init__(self, input_size=40, output_size=4):
-        super().__init__()
-        self.out_modelname = 'rgc_class_v2'
-        self.out_modeltyp = 'Classification'
+        super().__init__('Classifier')
         self.model_shape = (1, input_size)
         self.model_embedded = False
         lin_size = [input_size, 64, 72, 58, 36, 24, output_size]
@@ -85,12 +82,10 @@ class dnn_rgc_v2(nn.Module):
         return val, argmax(val, dim=1)
 
 
-class cnn_rgc_onoff_v1(nn.Module):
+class cnn_rgc_onoff_v1(__model_settings_common):
     """Classification model"""
     def __init__(self, input_size=32, output_size=4):
-        super().__init__()
-        self.out_modelname = 'cnn_rgc_onoff_v1'
-        self.out_modeltyp = 'Classification'
+        super().__init__('Classifier')
         self.model_embedded = False
         self.model_shape = (1, input_size)
         kernel_layer = [1, 32, 25, 20]

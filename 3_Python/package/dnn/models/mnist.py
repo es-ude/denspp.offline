@@ -1,14 +1,13 @@
 import torch
 from torch import nn, Tensor, argmax
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_handler import __model_settings_common
 
 
-class mlp_class_v1(nn.Module):
+class mnist_mlp_cl_v1(__model_settings_common):
     """Class of a classifier with Dense-Layer for feature extraction"""
     def __init__(self):
-        super().__init__()
-        self.out_modelname = 'mnist_class_v1'
-        self.out_modeltyp = 'Classifier'
+        super().__init__('Classifier')
         self.model_shape = (1, 28, 28)
         self.model_embedded = False
         # --- Settings of model
@@ -32,12 +31,10 @@ class mlp_class_v1(nn.Module):
         return prob, argmax(prob, 1)
 
 
-class mlp_ae_v1(nn.Module):
+class mnist_mlp_ae_v1(nn.Module):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
     def __init__(self):
-        super().__init__()
-        self.out_modelname = 'mnist_ae_v1'
-        self.out_modeltyp = 'Autoencoder'
+        super().__init__('Autoencoder')
         self.model_shape = (1, 28, 28)
         self.model_embedded = False
         # --- Settings of model
@@ -71,7 +68,7 @@ class mlp_ae_v1(nn.Module):
 
 # --- Recommended Configurations for Training
 Recommended_Config_Classifier = Config_PyTorch(
-    model=mlp_class_v1(),
+    model=mnist_mlp_cl_v1(),
     loss='Cross Entropy Loss',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
@@ -83,7 +80,7 @@ Recommended_Config_Classifier = Config_PyTorch(
 )
 
 Recommended_Config_AE = Config_PyTorch(
-    model=mlp_ae_v1(),
+    model=mnist_mlp_ae_v1(),
     loss='MSE',
     loss_fn=nn.MSELoss(),
     optimizer='Adam',
@@ -96,8 +93,8 @@ Recommended_Config_AE = Config_PyTorch(
 
 Recommended_Config_DatasetSettings = Config_Dataset(
     # --- Settings of Datasets
-    data_path='../2_Data/00_Merged_Datasets',
-    data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
+    data_path='../2_Data',
+    data_file_name='',
     # --- Data Augmentation
     data_do_augmentation=False,
     data_num_augmentation=0,
