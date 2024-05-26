@@ -1,4 +1,4 @@
-from os import mkdir
+from os import mkdir, getcwd
 from os.path import exists, join
 from shutil import copy
 from datetime import datetime
@@ -14,18 +14,23 @@ class PipelineCMD:
     path2save: str
     _path2pipe: str
 
-    def __init__(self):
-        pass
+    def __init__(self, path2start='3_Python') -> None:
+        self._path2start = join(getcwd().split(path2start)[0], path2start)
+
+    def get_pipeline_name(self) -> str:
+        """Getting the name of the pipeline"""
+        return self.__class__.__name__
 
     def generate_folder(self, path2runs: str, addon: str) -> None:
         """Generating the default folder for saving figures and data"""
         str_datum = datetime.now().strftime('%Y%m%d_%H%M%S')
-        folder_name = f'{str_datum}_pipeline{addon}'
+        folder_name = f'{str_datum}_{self.get_pipeline_name().lower()}{addon}'
 
-        if not exists(path2runs):
-            mkdir(path2runs)
+        path2start = join(self._path2start, path2runs)
+        if not exists(path2start):
+            mkdir(path2start)
 
-        path2save = join(path2runs, folder_name)
+        path2save = join(path2start, folder_name)
         if not exists(path2save):
             mkdir(path2save)
 

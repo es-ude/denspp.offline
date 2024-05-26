@@ -1,4 +1,5 @@
 import dataclasses
+import os
 import platform
 import cpuinfo
 import numpy as np
@@ -104,7 +105,9 @@ class Config_Dataset:
 
 def copy_handler_dummy() -> None:
     """Generating a handler dummy for training neural networks"""
-    path2dst = 'src_dnn'
+    folder2search = '3_Python'
+    path2start = join(os.getcwd().split(folder2search)[0], folder2search)
+    path2dst = join(path2start, 'src_dnn')
     # --- Checking if path to local training handler exists
     if not exists(path2dst):
         mkdir(path2dst)
@@ -115,7 +118,7 @@ def copy_handler_dummy() -> None:
 
     # --- Copy process
     if not exists(path2dst):
-        path2src = 'package/dnn/template'
+        path2src = join(path2start, 'package/dnn/template')
         print("\nGenerating a template for ML training")
         for file in glob(join(path2src, "*.py")):
             print(f"... copied: {file}")
@@ -160,11 +163,19 @@ class training_pytorch:
         self._aitype = config_train.model.out_modeltyp
         self._model_name = config_train.model.out_modelname
         self._model_addon = str()
-        self._path2run = 'runs'
+        self._path2run = self.__check_start_folder()
         self._path2save = str()
         self._path2log = str()
         self._path2temp = str()
         self._path2config = str()
+
+    def __check_start_folder(self, start_folder='3_Python', new_folder='runs') -> str:
+        """"""
+        path2start = join(os.getcwd().split(start_folder)[0], start_folder)
+        path2dst = join(path2start, new_folder)
+        if not exists(path2dst):
+            mkdir(path2dst)
+        return path2dst
 
     def __setup_device(self) -> None:
         """Setup PyTorch for Training"""
