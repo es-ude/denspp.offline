@@ -1,5 +1,5 @@
 import numpy as np
-from sda_pipeline import Settings, Pipeline_Digital
+from sda_pipeline import Pipeline_Digital
 from sda_handler import do_single_run, do_method_sweep
 from package.signal_gen import EasyNeuralData_Generator
 
@@ -23,14 +23,9 @@ if __name__ == "__main__":
 
     # --- Preparing the experiment
     data = EasyNeuralData_Generator(spk_num, fs)
-    settings_exp = Settings()
-    settings_exp.SettingsAMP.fs_ana = fs
-    settings_exp.SettingsADC.fs_ana = fs
-    settings_exp.SettingsADC.fs_dig = fs
-    pipeline = Pipeline_Digital(settings_exp, fs)
-    spk_period = settings_exp.SettingsSDA.t_frame_lgth
+    pipeline = Pipeline_Digital(fs)
+    spk_period = pipeline.sda.frame_length
 
     do_single_run(pipeline, data, spk_amp, spk_period, spk_firing_rate[0], spk_snr[0], mode_sda[0], mode_thr[0], path2save)
     do_method_sweep(pipeline, data, spk_amp, spk_period, spk_firing_rate, spk_snr, mode_sda, mode_thr, path2save)
-
     print("\n The End!")

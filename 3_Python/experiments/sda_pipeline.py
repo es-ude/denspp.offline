@@ -1,6 +1,6 @@
 import numpy as np
-from package.template.pipeline_signals import PipelineSignal
-from package.analog.preamp import PreAmp, SettingsAMP
+from package.pipeline_cmds import PipelineSignal, PipelineCMD
+from package.analog.pre_amp import PreAmp, SettingsAMP
 from package.analog.adc_basic import SettingsADC
 from package.analog.adc_sar import ADC_SAR as ADC0
 from package.digital.dsp import DSP, SettingsDSP
@@ -8,7 +8,7 @@ from package.digital.sda import SpikeDetection, SettingsSDA
 
 
 # --- Configuring the src_neuro
-class Settings:
+class _SettingsPipe:
     """Settings class for handling the src_neuro setting"""
     SettingsAMP = SettingsAMP(
         vss=-0.6, vdd=0.6,
@@ -45,16 +45,12 @@ class Settings:
     )
 
 
-# --- Setting the src_neuro
-class Pipeline_Digital(PipelineSignal):
+class Pipeline_Digital(PipelineCMD):
     """Pipeline for processing SDA in digital approaches"""
-    def __init__(self, settings: Settings, fs: float):
-        PipelineSignal.__init__(self,
-            fs_ana=fs,
-            fs_adc=settings.SettingsADC.fs_adc,
-            osr=settings.SettingsADC.osr
-        )
+    def __init__(self, fs: float):
+        super().__init__()
 
+        settings = _SettingsPipe()
         self.preamp0 = PreAmp(settings.SettingsAMP)
         self.adc = ADC0(settings.SettingsADC)
         self.dsp1 = DSP(settings.SettingsDSP_SPK)
@@ -63,25 +59,30 @@ class Pipeline_Digital(PipelineSignal):
         self.mode_sda = None
         self.mode_thr = None
 
+        self.signals = PipelineSignal()
+        self.signals.fs_ana = fs
+        self.signals.fs_adc = settings.SettingsADC.fs_adc
+        self.signals.fs_dig = settings.SettingsADC.fs_dig
+
     def define_sda(self, mode_sda: int, mode_thr: int) -> None:
         self.mode_sda = mode_sda
         self.mode_thr = mode_thr
 
     def run_preprocess(self, uin: np.ndarray, do_smooth=False, do_get_frames=False) -> None:
-        self.u_in = uin
-        u_inn = np.array(self.preamp0.settings.vcm)
+        self.signals.u_in = uin
+        u_inn = np.array(self.preamp0.vcm)
         # ---- Analogue Front End Module ----
-        self.u_pre = self.preamp0.pre_amp(self.u_in, u_inn)
-        self.x_adc, _, self.u_quant = self.adc.adc_ideal(self.u_pre)
+        self.signals.u_pre = self.preamp0.pre_amp(self.signals.u_in, u_inn)
+        self.signals.x_adc = self.adc.adc_ideal(self.signals.u_pre)[0]
         # ---- Digital Pre-processing ----
-        self.x_spk = self.dsp1.filter(self.x_adc)
+        self.signals.x_spk = self.dsp1.filter(self.signals.x_adc)
         # ---- Spike detection incl. thresholding ----
-        self.x_dly = self.sda.time_delay(self.x_spk)
-        self.__do_sda(self.x_spk, self.mode_sda, self.mode_thr, do_smooth=do_smooth)
+        self.signals.x_dly = self.sda.time_delay(self.signals.x_spk)
+        self.__do_sda(self.signals.x_spk, self.mode_sda, self.mode_thr, do_smooth=do_smooth)
         if do_get_frames:
-            (_, self.frames_align, self.x_pos) = self.sda.frame_generation(self.x_dly, self.x_sda, self.x_thr)
+            (_, self.frames_align, self.x_pos) = self.sda.frame_generation(self.signals.x_dly, self.signals.x_sda, self.signals.x_thr)
         else:
-            self.x_pos = self.sda.frame_position(self.x_sda, self.x_thr)
+            self.signals.x_pos = self.sda.frame_position(self.signals.x_sda, self.signals.x_thr)
 
     def __do_sda(self, xin: np.ndarray, mode_sda: int, mode_thr: int, do_smooth=False) -> None:
         # --- Performing SDA
@@ -101,7 +102,7 @@ class Pipeline_Digital(PipelineSignal):
             xsda = self.sda.sda_ado(xin)
             text_sda = 'ADO'
         elif mode_sda == 5:
-            xsda = self.sda.sda_eed(xin, self.fs_adc)
+            xsda = self.sda.sda_eed(xin, self.signals.fs_adc)
             text_sda = 'EED'
         elif mode_sda == 6:
             xsda = self.sda.sda_spb(xin)
@@ -110,7 +111,7 @@ class Pipeline_Digital(PipelineSignal):
             xsda = np.zeros(shape=xin.shape)
             text_sda = 'Err'
 
-        self.x_sda = self.sda.sda_smooth(xsda)[0] if do_smooth else xsda
+        self.signals.x_sda = self.sda.sda_smooth(xsda)[0] if do_smooth else xsda
 
         # --- Performing Thresholding
         if mode_thr == 0:
@@ -138,6 +139,6 @@ class Pipeline_Digital(PipelineSignal):
             xthr = np.zeros(shape=xsda.shape)
             text_thr = 'Err'
 
-        self.x_thr = xthr
+        self.signals.x_thr = xthr
         addon = "+Smooth" if do_smooth else ""
         self.used_methods = f'{text_sda}+{text_thr}{addon}'
