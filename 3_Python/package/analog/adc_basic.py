@@ -147,11 +147,10 @@ class _adc_basic:
 
     def adc_ideal(self, uin: np.ndarray) -> [np.ndarray, np.ndarray, np.ndarray]:
         """Using the ideal ADC
-        input:
-        uin     - Input voltage
-        output:
-        x_out   - Output digital value
-        quant_er - Quantization error
+        Args:
+            uin:    Input voltage
+        Returns:
+            Tuple with three numpy arrays [x_out = Output digital value, u_out = Output digitized voltage, uerr = Quantization error]
         """
         # Pre-Processing
         uin_adc = self.clipping_voltage(uin)
