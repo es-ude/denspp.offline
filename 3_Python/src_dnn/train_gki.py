@@ -40,7 +40,7 @@ config_train_ae = Config_PyTorch(
 
 config_train_cl = Config_PyTorch(
     # --- Settings of Models/Training
-    model=models.mnist_gki_v6(),
+    model=models.mnist_gki_v1(),
     loss='Cross Entropy Loss',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
@@ -52,10 +52,10 @@ config_train_cl = Config_PyTorch(
 )
 
 
-def do_train_ae(dnn_handler: dnn_handler) -> None:
+def do_train_ae(settings: dnn_handler) -> None:
     """Training routine for Autoencoders
     Args:
-        dnn_handler: Handler for configuring the routine selection for train deep neural networks
+        settings: Handler for configuring the routine selection for train deep neural networks
     """
     from package.dnn.dataset.mnist import prepare_training
     from package.dnn.pytorch.autoencoder import train_nn
@@ -75,18 +75,18 @@ def do_train_ae(dnn_handler: dnn_handler) -> None:
     data_result = trainhandler.do_validation_after_training()
 
     # --- Plotting and Ending
-    if dnn_handler.do_plot:
+    if settings.do_plot:
         plt.close("all")
         plot_loss(loss_ae, 'Acc.', path2save=logsdir)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                             path2save=logsdir, cl_dict=data_result['cl_dict'])
-        plt.show(block=dnn_handler.do_block)
+        plt.show(block=settings.do_block)
 
 
-def do_train_cl(dnn_handler: dnn_handler) -> None:
+def do_train_cl(settings: dnn_handler) -> None:
     """Training routine for classifying neural activations
     Args:
-        dnn_handler: Handler for configuring the routine selection for train deep neural networks
+        settings: Handler for configuring the routine selection for train deep neural networks
     """
     from package.dnn.dataset.mnist import prepare_training
     from package.dnn.pytorch.classifier import train_nn
@@ -109,24 +109,24 @@ def do_train_cl(dnn_handler: dnn_handler) -> None:
     del trainhandler
 
     # --- Plotting
-    if dnn_handler.do_plot:
+    if settings.do_plot:
         plt.close('all')
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'],
                        path2save=logsdir, cl_dict=frame_dict)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                             path2save=logsdir, cl_dict=frame_dict)
-        plt.show(block=dnn_handler.do_block)
+        plt.show(block=settings.do_block)
 
 
 if __name__ == "__main__":
-    dnn_handler = dnn_handler(
+    dnn_settings = dnn_handler(
         mode_dnn=0,
         mode_cellbib=0,
         do_plot=True,
         do_block=False
     )
 
-    do_train_cl(dnn_handler)
+    do_train_cl(dnn_settings)
     print("Done")
     # do_train_ae(dnn_handler, 0, 0)
