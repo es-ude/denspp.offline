@@ -28,10 +28,6 @@ class SettingsCUR:
     noise_en:       bool
     para_en:        bool
 
-    @property
-    def vcm(self) -> float:
-        return (self.vdd + self.vss) / 2
-
 
 RecommendedSettingsCUR = SettingsCUR(
     vdd=0.9, vss=-0.9,
@@ -56,6 +52,10 @@ class CurrentAmplifier(ProcessNoise):
     _settings: SettingsCUR
     __print_device = "current amplifier"
 
+    @property
+    def vcm(self) -> float:
+        return (self._settings.vdd + self._settings.vss) / 2
+
     def __init__(self, settings_dev: SettingsCUR, settings_noise=RecommendedSettingsNoise):
         super().__init__(settings_noise, settings_dev.fs_ana)
         self._settings = settings_dev
@@ -75,7 +75,7 @@ class CurrentAmplifier(ProcessNoise):
         u_para = np.zeros((size, ))
         u_para += self._settings.transimpedance * self._settings.offset_i
         u_para += self._settings.offset_v
-        u_para += self._settings.vcm
+        u_para += self.vcm
         # Adding noise
         if self._settings.noise_en:
             u_para += self._gen_noise_real(size)

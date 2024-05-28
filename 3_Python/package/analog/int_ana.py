@@ -32,10 +32,6 @@ class SettingsINT:
     noise_edev:  float
 
     @property
-    def vcm(self) -> float:
-        return (self.vdd + self.vss) / 2
-
-    @property
     def u_error(self) -> float:
         return -(self.offset_v + self.offset_i * self.res_in)
 
@@ -74,6 +70,10 @@ class IntegratorStage(ProcessNoise):
         super().__init__(settings_noise, fs)
         self._sampling_rate = fs
         self._settings = settings_dev
+
+    @property
+    def vcm(self) -> float:
+        return (self._settings.vdd + self._settings.vss) / 2
 
     @property
     def tau_active_scale(self) -> float:
