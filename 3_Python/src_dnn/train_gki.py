@@ -45,7 +45,7 @@ config_train_cl = Config_PyTorch(
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=20,
+    num_epochs=100,
     batch_size=256,
     data_split_ratio=0.25,
     data_do_shuffle=True
@@ -60,6 +60,7 @@ def do_train_ae(dnn_handler: dnn_handler) -> None:
     from package.dnn.dataset.mnist import prepare_training
     from package.dnn.pytorch.autoencoder import train_nn
     from package.plot.plot_dnn import plot_statistic_data
+    from package.plot.plot_metric import plot_loss
 
     # --- Processing: Loading dataset and Do Training
     dataset = prepare_training(config_data.data_path, config_data.data_do_normalization, False)
@@ -76,6 +77,7 @@ def do_train_ae(dnn_handler: dnn_handler) -> None:
     # --- Plotting and Ending
     if dnn_handler.do_plot:
         plt.close("all")
+        plot_loss(loss_ae, 'Acc.', path2save=logsdir)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                             path2save=logsdir, cl_dict=data_result['cl_dict'])
         plt.show(block=dnn_handler.do_block)
@@ -99,7 +101,7 @@ def do_train_cl(dnn_handler: dnn_handler) -> None:
     trainhandler.load_model()
     trainhandler.load_data(dataset)
     del dataset
-    epoch_acc = trainhandler.do_training()[-1][0]
+    epoch_acc = trainhandler.do_training()[-1]
 
     # --- Post-Processing: Getting data, save and plot results
     logsdir = trainhandler.get_saving_path()
@@ -110,7 +112,6 @@ def do_train_cl(dnn_handler: dnn_handler) -> None:
     if dnn_handler.do_plot:
         plt.close('all')
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
-
         plot_confusion(data_result['valid_clus'], data_result['yclus'],
                        path2save=logsdir, cl_dict=frame_dict)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
