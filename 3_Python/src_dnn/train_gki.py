@@ -40,7 +40,7 @@ config_train_ae = Config_PyTorch(
 
 config_train_cl = Config_PyTorch(
     # --- Settings of Models/Training
-    model=models.mnist_gki_v1(),
+    model=models.mnist_gki_v6(),
     loss='Cross Entropy Loss',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
@@ -84,7 +84,7 @@ def do_train_ae(dnn_handler: dnn_handler) -> None:
 def do_train_cl(dnn_handler: dnn_handler) -> None:
     """Training routine for classifying neural activations
     Args:
-        dnn_handler: Handler for configurating the routine selection for train deep neural networks
+        dnn_handler: Handler for configuring the routine selection for train deep neural networks
     """
     from package.dnn.dataset.mnist import prepare_training
     from package.dnn.pytorch.classifier import train_nn
@@ -123,8 +123,9 @@ if __name__ == "__main__":
         mode_dnn=0,
         mode_cellbib=0,
         do_plot=True,
-        do_block=True
+        do_block=False
     )
 
     do_train_cl(dnn_handler)
+    print("Done")
     # do_train_ae(dnn_handler, 0, 0)
