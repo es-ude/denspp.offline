@@ -35,10 +35,6 @@ class SettingsAMP:
     noise_en: bool
     noise_edev: float
 
-    @property
-    def vcm(self) -> float:
-        return (self.vdd + self.vss) / 2
-
 
 RecommendedSettingsAMP = SettingsAMP(
     vdd=0.6, vss=-0.6,
@@ -64,11 +60,14 @@ class PreAmp(ProcessNoise):
     settings: SettingsAMP
     __print_device = "pre-amplifier"
 
+    @property
+    def vcm(self) -> float:
+        return (self.settings.vdd + self.settings.vss) / 2
+
     def __init__(self, settings_amp: SettingsAMP, settings_noise=RecommendedSettingsNoise):
         super().__init__(settings_noise, settings_amp.fs_ana)
         # --- Settings
         self.settings = settings_amp
-        self.vcm = self.settings.vcm
 
         # --- Filter properties
         f_filt = np.array(self.settings.f_filt)
@@ -107,7 +106,7 @@ class PreAmp(ProcessNoise):
         du = uinp - uinn
         u_out = self.settings.gain * lfilter(b=self.__b_iir_spk, a=self.__a_iir_spk, x=du)
         u_out += self.settings.gain * self.settings.offset
-        u_out += self.settings.vcm
+        u_out += self.vcm
         u_out += self.settings.gain * self.__noise_generation_circuit(du.size)
         return self.__voltage_clipping(u_out)
 
@@ -122,12 +121,12 @@ class PreAmp(ProcessNoise):
         du = uinp - uinn
         clk_chop = self.__gen_chop(du.size)
         # --- Chopping
-        du = (du + self.settings.offset - self.settings.vcm) * clk_chop
-        uchp_in = self.settings.vcm + self.settings.gain * du
+        du = (du + self.settings.offset - self.vcm) * clk_chop
+        uchp_in = self.vcm + self.settings.gain * du
         uchp_in += self.settings.gain * self.__noise_generation_circuit(du.size)
         # --- Back chopping and Filtering
         u_filt = uchp_in * clk_chop
         u_out = lfilter(self.__b_iir_spk, self.__a_iir_spk, u_filt)
-        u_out += self.settings.vcm
+        u_out += self.vcm
 
         return self.__voltage_clipping(u_out), self.__voltage_clipping(uchp_in)
