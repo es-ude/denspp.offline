@@ -6,6 +6,9 @@ import dataclasses
 import numpy as np
 from fractions import Fraction
 from scipy.signal import resample_poly
+import os
+import csv
+import matplotlib.pyplot as plt
 
 
 @dataclasses.dataclass
@@ -122,6 +125,16 @@ class DataController:
             self.raw_data.data_fs_used = self.raw_data.data_fs_orig
             self.__scaling = 1
 
+    def do_mapping(self) -> None:
+        csv_folder = r'C:/Users/Leoni Kaiser/Documents/Studium/Master/3. Semester/CPS_Projekt/Elektrodenmapping'
+        if self.raw_data.data_type == "MCS 60MEA":
+            print("Electrode geometry MCS 60MEA will be loaded.")
+            csv_filename = 'MCS_60MEA.csv'
+        else:
+            csv_filename = '*.csv'
+        mea = self._transform_rawdata_mapping(csv_folder, csv_filename)
+        self._plot_data(mea)
+
     def output_meta(self) -> None:
         """Print some meta information into the console"""
         print(f"... using data set of: {self.raw_data.data_name}")
@@ -188,13 +201,13 @@ class DataController:
     def _prepare_access_file(self, folder_name: str, data_type: str, sel_datapoint: int) -> None:
         """Getting the file of the corresponding trial"""
         # Checking for folder
-        folder_content = glob(join(self.settings.path, "*"))
+        """folder_content = glob(join(self.settings.path, "*"))
         folder_content.sort()
         path = ""
         for folder in folder_content:
             if folder_name[1:] in folder:
-                path = join(folder, data_type)
-
+                path = join(folder, data_type)"""
+        path = join(folder_name, data_type)
         folder_content = glob(path)
         folder_content.sort()
         self._no_files = len(folder_content)
@@ -263,31 +276,96 @@ class DataController:
         else:
             print("\t transformation may be already done - Please check!")
 
-    def _transform_rawdata_mapping(self, do_mapping: bool, mapping: list) -> None:
+    def _read_csv_file_mapping(self, csv_path):
+        numbers_list = []
+
+        # Check if the CSV file exists
+        if os.path.exists(csv_path):
+            # Open the CSV file
+            with open(csv_path, 'r') as file:
+                reader = csv.reader(file)
+
+                # Iterate over each row in the CSV file
+                for row in reader:
+                    # Convert each element in the row to an integer (assuming numbers are expected)
+                    numbers_row = [int(value) for value in row if value.strip().isdigit()]
+                    if numbers_row:
+                        numbers_list.append(numbers_row)
+        else:
+            return
+        return numbers_list
+
+    def _transform_rawdata_mapping(self, csv_folder, csv_filename) -> np.array:
         """Transforming the numpy array input to 2D array with electrode mapping configuration"""
         data_in = self.raw_data.data_raw
-        if isinstance(data_in, np.ndarray) and do_mapping:
-            if len(data_in.shape) == 2:
-                data_out = np.zeros((3, 3, data_in.shape[-1]), dtype=data_in.dtype)
-                print("2D transformation will be done")
-            elif len(data_in.shape) == 3:
-                print("2D transformation is available")
+        channel_head = self.raw_data.data_mapping
+        csv_path = os.path.join(csv_folder, csv_filename)
+        channel_numbers = self._read_csv_file_mapping(csv_path)
+        if self.raw_data.data_type == "MCS 60MEA":
+            mea = np.zeros((8, 8), dtype=object)
+        else:
+            print("Wrong data type. MEA won´t be initialized")
+            return
+        if isinstance(data_in, list):
+            if (len(data_in) > 0) & (len(data_in) == len(channel_head)):
+                print("2D->3D transformation will be done")
+                # Map channel numbers
+                for data_row_index, data_row in enumerate(channel_numbers):
+                    # Iterate over each element in the data row
+                    for data_col_index, data_value in enumerate(data_row):
+                        # Get the preset number at the same position if available
+                        if data_row_index < len(mea) and data_col_index < len(mea[data_row_index]):
+                            (mea[data_row_index][data_col_index]) = data_value
+
+                # Read channel data into 2D grid
+                for x in range(0, mea.shape[0]):
+                    for y in range(0, mea.shape[1]):
+                        if mea[x, y] > 0:
+                            column = 0
+                            for channel in channel_head:
+                                if int(channel[2:4]) == mea[x, y]:
+                                    mea[x, y] = data_in[column]
+                                    break
+                                column += 1
+                return mea
+            else:
+                print("Input data cannot be written into MEA")
+
+    def _plot_data(self, mea):
+        print("The plotted mea data is:", mea)
+        num_rows, num_cols = mea.shape
+        fig, axes = plt.subplots(num_rows, num_cols, figsize=(12, 8))
+
+        # Iterate over each element in data_array and plot the corresponding object
+        for i in range(num_rows):
+            for j in range(num_cols):
+                if isinstance(mea[i, j], np.ndarray):  # Check if element is an array
+                    ax = axes[i, j]
+                    ax.plot(mea[i, j], 'bo-')  # Plot the array as a line plot
+
+                    ax.set_xlabel('Index')
+                    ax.set_ylabel('Value')
+
+        # Adjust layout and display the plot
+        plt.tight_layout()
+        plt.show()
 
 
+###########################################################################
 if __name__ == "__main__":
     from package.data_call.call_spike_files import DataLoader, SettingsDATA
 
     settings = SettingsDATA(
-        #path="../../../2_Data",
-        path="D:/0_Invasive",
-        data_set=8, data_case=1, data_point=0,
-        t_range=[], ch_sel=[-1], fs_resample=20e3
+        path="../../../2_Data",
+        data_set=8, data_case=1, data_point=8,
+        t_range=[0, 0.00005], ch_sel=[], fs_resample=20e3
     )
     data_loader = DataLoader(settings)
     data_loader.do_call()
     data_loader.do_cut()
     data_loader.do_resample()
     data = data_loader.get_data()
+    data_loader.do_mapping()
     del data_loader
 
-    print(data)
+
