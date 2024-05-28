@@ -55,7 +55,12 @@ class ADC_DeltaSigma(_adc_basic):
         return xout, ufb
 
     def adc_deltasigma_order_one(self, uin: np.ndarray) -> np.ndarray:
-        """"Using the Delta Sigma Topology as an ADC (1-bit, first order)"""
+        """"Using the Delta Sigma Topology as an ADC (1-bit, first order)
+        Args:
+            uin: Input voltage [V]
+        Returns:
+            Corresponding digitized data value from Delta-Sigma ADC
+        """
         # Resampling the input to sampling frequency of ADC with oversampling
         uin_adc = self.clipping_voltage(uin)
         uin0 = self.do_resample(uin_adc)
@@ -83,7 +88,12 @@ class ADC_DeltaSigma(_adc_basic):
         return xout
 
     def adc_deltasigma_order_two(self, uin: np.ndarray) -> np.ndarray:
-        """"Using the Delta Sigma Topology as an ADC (1-bit, first order)"""
+        """"Using the Delta Sigma Topology as an ADC (1-bit, second order)
+        Args:
+            uin: Input voltage [V]
+        Returns:
+            Corresponding digitized data value from Delta-Sigma ADC
+        """
         # Resampling the input to sampling frequency of ADC with oversampling
         uin_adc = self.clipping_voltage(uin)
         uin0 = self.do_resample(uin_adc)

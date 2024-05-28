@@ -30,11 +30,10 @@ class ADC_Nyquist(_adc_basic):
 
     def adc_nyquist(self, uin: np.ndarray) -> [np.ndarray, np.ndarray]:
         """Using the Nyquist Topology as an ADC
-        input:
-        uin     - Input voltage
-        output:
-        x_out   - Output digital value
-        quant_er - Quantization error
+        Args:
+            uin:    Input voltage
+        Returns:
+            Tuple with two numpy arrays [x_out = Output digital value, quant_er = Quantization error]
         """
         # Do resampling and conversion
         uin_adc = self.clipping_voltage(uin)

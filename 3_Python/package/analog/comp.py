@@ -105,6 +105,8 @@ class Comp:
         Args:
             uinp    - Positive input voltage [V]
             uinn    - Negative input voltage [V]
+        Returns:
+            Corresponding numpy array with boolean values
         """
         u_cmp = self.__cmp_calc(uinp, uinn)
         return self.__voltage_clipping(u_cmp)
@@ -114,6 +116,8 @@ class Comp:
         Args:
             uinp    - Positive input voltage [V]
             uinn    - Negative input voltage [V]
+        Returns:
+            Corresponding numpy array with boolean values
         """
         u_cmp = self.__cmp_calc(uinp, uinn)
         self._unoise = self.__gen_noise(u_cmp.size, self.__noise_dis)
@@ -128,6 +132,8 @@ class Comp:
             uinp: Positive input voltage [V]
             uinn: Negative input voltage [V]
             scale_thr: Scaling value from supply voltage [default = 25%]
+        Returns:
+            Corresponding numpy array with boolean values
         """
         du = uinp - uinn
         self._unoise = self.__gen_noise(du.size, self.__noise_dis)
@@ -143,6 +149,8 @@ class Comp:
             uinp: Positive input voltage [V]
             uinn: Negative input voltage [V]
             scale_thr: Scaling value from supply voltage [default = 25%]
+        Returns:
+            Corresponding numpy array with boolean values
         """
         du = uinp - uinn
         self._unoise = self.__gen_noise(du.size, self.__noise_dis)
@@ -158,6 +166,8 @@ class Comp:
             uinp: Positive input voltage [V]
             uinn: Negative input voltage [V]
             scale_thr: Scaling value from supply voltage [default = 25%]
+        Returns:
+            Corresponding numpy array with boolean values
         """
         du = uinp - uinn
         self._unoise = self.__gen_noise(du.size, self.__noise_dis)

@@ -77,6 +77,7 @@ class IntegratorStage(ProcessNoise):
 
     @property
     def tau_active_scale(self) -> float:
+        """Getting the time constant tau of integrator"""
         return 1 / self._settings.tau / self._sampling_rate
 
     def __voltage_clipping(self, uin: np.ndarray) -> np.ndarray:
