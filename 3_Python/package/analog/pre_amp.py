@@ -102,7 +102,7 @@ class PreAmp(ProcessNoise):
             uinp:   Positive input voltage [V]
             uinn:   Negative input voltage [V]
         Returns:
-            Test signal
+            Corresponding numpy array with output voltage signal
         """
         du = uinp - uinn
         u_out = self.settings.gain * lfilter(b=self.__b_iir_spk, a=self.__a_iir_spk, x=du)
@@ -116,6 +116,8 @@ class PreAmp(ProcessNoise):
         Args:
             uinp:   Positive input voltage
             uinn:   Negative input voltage
+        Returns:
+            Tuple with two numpy arrays [u_out = Output voltage from pre-amp, u_chp = chopped voltage signal]
         """
         du = uinp - uinn
         clk_chop = self.__gen_chop(du.size)

@@ -82,21 +82,25 @@ class CurrentAmplifier(ProcessNoise):
 
         return u_para
 
-    def transimpedance_amplifier(self, iin: np.ndarray) -> np.ndarray:
+    def transimpedance_amplifier(self, iin: np.ndarray, uref: np.ndarray | float) -> np.ndarray:
         """Performing the transimpedance amplifier (single, normal) with input signal
-
         Args:
             iin:    Input current [A]
-            uinn:   Negative input voltage [V]
+            uref:   Negative input voltage [V]
         Returns:
-            Test signal
+            Corresponding numpy array with output voltage
         """
-        u_out = self._settings.transimpedance * iin
+        u_out = self._settings.transimpedance * iin + uref
         u_out += self.__add_parasitic(u_out.size)
         return self.__voltage_clipping(u_out)
 
     def push_amplifier(self, iin: np.ndarray) -> np.ndarray:
-        """Performing the CMOS push/source current amplifier"""
+        """Performing the CMOS push/source current amplifier
+        Args:
+            iin: Input current [A]
+        Returns:
+            Corresponding numpy array with output voltage
+        """
         u_out = np.zeros(iin.shape)
         x_neg = np.argwhere(iin < 0)
         u_out[x_neg,] = iin[x_neg,] * self._settings.transimpedance
@@ -104,7 +108,12 @@ class CurrentAmplifier(ProcessNoise):
         return self.__voltage_clipping(u_out)
 
     def pull_amplifier(self, iin: np.ndarray) -> np.ndarray:
-        """Performing the CMOS pull/sink current amplifier"""
+        """Performing the CMOS pull/sink current amplifier
+        Args:
+            iin: Input current [A]
+        Returns:
+            Corresponding numpy array with output voltage
+        """
         u_out = np.zeros(iin.shape)
         x_pos = np.argwhere(iin >= 0)
         u_out[x_pos, ] = iin[x_pos, ] * self._settings.transimpedance
@@ -112,13 +121,23 @@ class CurrentAmplifier(ProcessNoise):
         return self.__voltage_clipping(u_out)
 
     def push_pull_amplifier(self, iin: np.ndarray) -> [np.ndarray, np.ndarray]:
-        """Performing the CMOS push-pull current amplifier"""
+        """Performing the CMOS push-pull current amplifier
+        Args:
+            iin: Input current [A]
+        Returns:
+            Corresponding numpy array with output voltage
+        """
         u_pos = self.pull_amplifier(iin)
         u_neg = self.push_amplifier(iin)
         return u_pos, u_neg
 
     def push_pull_abs_amplifier(self, iin: np.ndarray) -> np.ndarray:
-        """Performing the CMOS push-pull current absolute amplifier"""
+        """Performing the CMOS push-pull current absolute amplifier
+        Args:
+            iin: Input current [A]
+        Returns:
+            Corresponding numpy array with output voltage
+        """
         u_out = self.pull_amplifier(iin)
         u_out -= self.push_amplifier(iin)
         return u_out
