@@ -17,7 +17,7 @@ config_data = Config_Dataset(
     data_num_augmentation=0,
     data_do_addnoise_cluster=False,
     # --- Data Normalization
-    data_do_normalization=False,
+    data_do_normalization=True,
     data_normalization_mode='CPU',
     data_normalization_method='minmax',
     data_normalization_setting='bipolar',

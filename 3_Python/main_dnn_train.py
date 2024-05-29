@@ -3,7 +3,7 @@ from package.dnn.dnn_handler import dnn_handler
 
 if __name__ == "__main__":
     dnn_handler = dnn_handler(
-        mode_dnn=0,
+        mode_dnn=4,
         mode_cellbib=0,
         do_plot=True,
         do_block=True
