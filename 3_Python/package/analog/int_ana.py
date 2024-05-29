@@ -169,7 +169,7 @@ class IntegratorStage(ProcessNoise):
         """
         u_out = self.__do_accumulation_active(u_inp, u_inn, self.tau_active_scale)
         u_out += self.__noise_generation_circuit(u_inp.size)
-        return u_out
+        return self.__voltage_clipping(u_out)
 
     def do_opa_volt_integration(self, u_inp: np.ndarray, u_inn: np.ndarray) -> np.ndarray:
         """Performs an active-integration behaviour using operational amplifiers (OPA)
@@ -182,7 +182,7 @@ class IntegratorStage(ProcessNoise):
         u_top = u_inp + self._settings.u_error
         u_out = self.__do_accumulation_resistance(u_top, u_inn, self.tau_active_scale) + self._settings.offset_v
         u_out += self.__noise_generation_circuit(u_top.size)
-        return u_out
+        return self.__voltage_clipping(u_out)
 
     def do_opa_curr_integration(self, iin: np.ndarray, uref: np.ndarray) -> np.ndarray:
         """Performs a capacitive passiv-integration behaviour
@@ -194,7 +194,7 @@ class IntegratorStage(ProcessNoise):
         """
         u_out = self.__do_accumulation_active(iin, np.array(0)) + uref
         u_out += self.__noise_generation_circuit(iin.size)
-        return u_out
+        return self.__voltage_clipping(u_out)
 
     def do_cap_curr_integration(self, iin: np.ndarray) -> np.ndarray:
         """Performs a capacitive passiv-integration behaviour
@@ -204,7 +204,7 @@ class IntegratorStage(ProcessNoise):
             Numpy array with voltage signal
         """
         u_out = self.__do_accumulation_passive(iin, np.array(0))
-        return u_out
+        return self.__voltage_clipping(u_out)
 
 
 if __name__ == "__main__":

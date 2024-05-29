@@ -63,6 +63,12 @@ class DlyAmp(ProcessNoise):
         # --- Settings
         self.settings = settings_dly
 
+    def __voltage_clipping(self, uin: np.ndarray) -> np.ndarray:
+        """Do voltage clipping at voltage supply"""
+        uin[uin > self.settings.vdd] = self.settings.vdd
+        uin[uin < self.settings.vss] = self.settings.vss
+        return uin
+
     def do_simple_delay(self, u_inp: np.ndarray) -> np.ndarray:
         """Performing a simple delay stage using taps
         Args:
@@ -72,7 +78,7 @@ class DlyAmp(ProcessNoise):
         """
         uout = np.zeros(u_inp.shape) + self.vcm
         uout[self.num_dly_taps:] = u_inp[:-self.num_dly_taps]
-        return uout
+        return self.__voltage_clipping(uout)
 
     def do_recursive_delay(self, u_inp: np.ndarray) -> np.ndarray:
         """Performing a recursive delay stage using taps
@@ -84,7 +90,7 @@ class DlyAmp(ProcessNoise):
         uout = np.zeros(u_inp.shape)
         uout[:self.num_dly_taps] = u_inp[-self.num_dly_taps:]
         uout[self.num_dly_taps:] = u_inp[:-self.num_dly_taps]
-        return uout
+        return self.__voltage_clipping(uout)
 
     def do_allpass_first_order(self, uin: np.ndarray, f_b=1.0) -> np.ndarray:
         """Performing a 1st order all-pass filter (IIR) for adding time delay
@@ -98,7 +104,7 @@ class DlyAmp(ProcessNoise):
 
         b = [iir_c0, 1.0]
         a = [1.0, iir_c0]
-        return lfilter(b, a, uin)
+        return self.__voltage_clipping(lfilter(b, a, uin))
 
     def do_allpass_second_order(self, uin: np.ndarray, f_b=1.0, bandwidth=0.5) -> np.ndarray:
         """Performing a 2nd order all-pass filter (IIR) for adding time delay
@@ -113,7 +119,7 @@ class DlyAmp(ProcessNoise):
 
         b = [-iir_c0, iir_c1*(1-iir_c0), 1.0]
         a = [1.0, iir_c1*(1-iir_c0), -iir_c0]
-        return lfilter(b, a, uin)
+        return self.__voltage_clipping(lfilter(b, a, uin))
 
 
 if __name__ == "__main__":
