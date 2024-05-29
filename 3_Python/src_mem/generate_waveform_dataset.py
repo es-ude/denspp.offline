@@ -25,7 +25,7 @@ class DatasetWFG(Dataset):
 
 
 def generate_dataset(selected_wfg: list, num_wfg_class: int, freq_wfg: float, sampling_rate: float,
-                     adding_noise=False, pwr_noise_db=-90.0, get_info_classes=False) -> DatasetWFG:
+                     adding_noise=False, pwr_noise_db=-30.0, get_info_classes=False) -> DatasetWFG:
     """Generating dataset
     Args:
         selected_wfg:       Selected types of waveforms
@@ -77,15 +77,24 @@ def generate_dataset(selected_wfg: list, num_wfg_class: int, freq_wfg: float, sa
 
 
 if __name__ == "__main__":
-    num_wfg_class = 2
+    import matplotlib.pyplot as plt
+    num_wfg_class = 1
     sel_wfg_class = [0, 5, 7, 8]
 
-    dataset = generate_dataset(sel_wfg_class, num_wfg_class, 2, 10e3, get_info_classes=True)
+    dataset = generate_dataset(sel_wfg_class, num_wfg_class, 2, 10e3,
+                               get_info_classes=True, adding_noise=True, pwr_noise_db=-30)
     signal_type = dataset.class_names
 
-    print(f"\n======================================================")
-    for idx, data in enumerate(dataset):
-        print(f"Sample #{idx:03d} ({signal_type[data[1]]}: {data}")
-    print(f"\n======================================================")
-    print("Done")
+    # --- Define plots
+    plt.figure()
+    axs = [plt.subplot(len(dataset), 1, idx + 1) for idx in range(0, len(dataset))]
 
+    color_plot = 'krym'
+    for idx, data in enumerate(dataset):
+        time0 = np.linspace(0, data[0].shape[0], data[0].shape[0]) / dataset.sampling_rate
+        axs[idx].plot(time0, data[0], color=color_plot[idx], label=f"{signal_type[data[1]]}")
+        axs[idx].legend()
+        axs[idx].grid()
+
+    plt.tight_layout()
+    plt.show()
