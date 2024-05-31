@@ -154,7 +154,7 @@ class WaveformGenerator:
             waveform_select:    List of selected waveforms
             polarity_cathodic:  List for performing cathodic-first generation
         Returns:
-            Two numpy arrays (time, output_signal)
+            List with three numpy arrays (time, output_signal, true rms value)
         """
         if not len(time_points) == len(waveform_select) == len(time_duration):
             print("Please check input! --> Length is not equal")
@@ -163,6 +163,7 @@ class WaveformGenerator:
             # Generate dummy
             out = self.__generate_zero(2 * time_points[-1] + time_duration[-1])
             time = np.linspace(0, out.size, out.size, endpoint=True) / self._sampling_rate
+            rms_value = 0.0
 
             # Create waveform
             for idx, time_sec in enumerate(time_points):
@@ -171,8 +172,9 @@ class WaveformGenerator:
 
                 waveform = self.__select_waveform_template(time_duration[idx], waveform_select[idx], do_polarity)
                 out[time_xpos:time_xpos+waveform.size] = waveform
+                rms_value = np.sqrt(np.sum(np.square(waveform)) / waveform.size)
 
-            return [time, out]
+            return [time, out, rms_value]
 
     def generate_biphasic_waveform(self, anodic_mode: int, anodic_duration: float,
                                    cathodic_mode: int, cathodic_duration: float,
@@ -223,7 +225,7 @@ if __name__ == "__main__":
     # polarity_cathodic = [idx % 3 == 0 for idx in range(num_elements)]
 
     wfg_generator = WaveformGenerator(50e3)
-    t0, signal0 = wfg_generator.generate_waveform(time_points, time_duration, time_wfg, polarity_cathodic)
+    t0, signal0, rms = wfg_generator.generate_waveform(time_points, time_duration, time_wfg, polarity_cathodic)
     t1, signal1 = wfg_generator.generate_biphasic_waveform(0, 0.1, 0, 0.2, 0.05, True, True)
     wfg_generator.check_charge_balancing(signal1)
 
