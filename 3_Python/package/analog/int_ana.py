@@ -32,6 +32,10 @@ class SettingsINT:
     noise_edev:  float
 
     @property
+    def vcm(self) -> float:
+        return (self.vdd - self.vss) / 2
+
+    @property
     def u_error(self) -> float:
         return -(self.offset_v + self.offset_i * self.res_in)
 
@@ -131,7 +135,7 @@ class IntegratorStage(ProcessNoise):
             u_out[idx] = self.__voltage_clipping(u_out[idx-1] + du)
         return u_out
 
-    def __do_accumulation_active(self, x_inp: np.ndarray, x_inn: np.ndarray, scale=1.0) -> np.ndarray:
+    def __do_accumulation_active(self, x_inp: np.ndarray, x_inn: np.ndarray | float, scale=1.0) -> np.ndarray:
         """Performs an active-accumulation of input signals
         Args:
             x_inp:   Positive input signal
@@ -140,9 +144,9 @@ class IntegratorStage(ProcessNoise):
         Returns:
             Numpy array with signal of accumulated input
         """
-        u_out = np.zeros(x_inp.shape) + self._settings.vcm
+        u_out = np.zeros(x_inp.shape) + self.vcm
         for idx, u_top in enumerate(x_inp[1:], start=1):
-            u_bot = x_inn[idx] if x_inn.size > 1 else x_inn
+            u_bot = x_inn[idx] if isinstance(x_inn, np.ndarray) else x_inn
             u_int = u_out[idx-1] + scale * self.__do_inversion(u_top - u_bot)
             u_out[idx] = self.__voltage_clipping(u_int)
         return u_out
