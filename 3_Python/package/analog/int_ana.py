@@ -118,6 +118,18 @@ class IntegratorStage(ProcessNoise):
         u_out = u_int if not self._settings.do_invert else -u_int
         return u_out
 
+    def __do_accumulation_sample(self, x_inp: np.ndarray, x_inn: np.ndarray, scale=1.0) -> np.ndarray:
+        """Performs an accumulation of input signals
+        Args:
+            x_inp:      Positive input signal
+            x_inn:      Negative input signal
+            scale:      Scaling value for integration [V/V]
+        Returns:
+            Numpy array with accumulated input
+        """
+        u_out = scale * np.sum(x_inp - x_inn)
+        return self.__voltage_clipping(u_out)
+
     def __do_accumulation_passive(self, x_inp: np.ndarray, x_inn: np.ndarray, scale=1.0, do_push=False) -> np.ndarray:
         """Performs a passive-accumulation of input signals
         Args:
@@ -163,6 +175,18 @@ class IntegratorStage(ProcessNoise):
         u_top = u_inp + self.__noise_generation_resistance(u_inp.size)
         return self.__do_accumulation_active(u_top, u_inn, scale)
 
+    def do_ideal_integration_sample(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
+        """Performs an ideal active-integration behaviour
+        Args:
+            u_inp:   Positive input voltage or current [V | A]
+            u_inn:   Negative input voltage [V]
+        Returns:
+            Numpy array with voltage sample
+        """
+        u_out = self.__do_accumulation_sample(u_inp, u_inn, self.tau_active_scale)
+        u_out += self.__noise_generation_circuit(u_out.size)
+        return self.__voltage_clipping(u_out)
+
     def do_ideal_integration(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
         """Performs an ideal active-integration behaviour
         Args:
@@ -172,7 +196,7 @@ class IntegratorStage(ProcessNoise):
             Numpy array with voltage signal
         """
         u_out = self.__do_accumulation_active(u_inp, u_inn, self.tau_active_scale)
-        u_out += self.__noise_generation_circuit(u_inp.size)
+        u_out += self.__noise_generation_circuit(u_out.size)
         return self.__voltage_clipping(u_out)
 
     def do_opa_volt_integration(self, u_inp: np.ndarray, u_inn: np.ndarray) -> np.ndarray:
@@ -185,7 +209,7 @@ class IntegratorStage(ProcessNoise):
         """
         u_top = u_inp + self._settings.u_error
         u_out = self.__do_accumulation_resistance(u_top, u_inn, self.tau_active_scale) + self._settings.offset_v
-        u_out += self.__noise_generation_circuit(u_top.size)
+        u_out += self.__noise_generation_circuit(u_out.size)
         return self.__voltage_clipping(u_out)
 
     def do_opa_curr_integration(self, iin: np.ndarray, uref: np.ndarray) -> np.ndarray:
@@ -197,7 +221,7 @@ class IntegratorStage(ProcessNoise):
             Numpy array with voltage signal
         """
         u_out = self.__do_accumulation_active(iin, np.array(0)) + uref
-        u_out += self.__noise_generation_circuit(iin.size)
+        u_out += self.__noise_generation_circuit(u_out.size)
         return self.__voltage_clipping(u_out)
 
     def do_cap_curr_integration(self, iin: np.ndarray) -> np.ndarray:
