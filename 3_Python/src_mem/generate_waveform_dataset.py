@@ -25,7 +25,8 @@ class DatasetWFG(Dataset):
 
 
 def generate_dataset(selected_wfg: list, num_wfg_class: int, freq_wfg: float, sampling_rate: float,
-                     adding_noise=False, pwr_noise_db=-30.0, get_info_classes=False) -> DatasetWFG:
+                     adding_noise=False, pwr_noise_db=-30.0, get_info_classes=False,
+                     do_normalize_rms=False) -> DatasetWFG:
     """Generating dataset
     Args:
         selected_wfg:       Selected types of waveforms
@@ -34,6 +35,7 @@ def generate_dataset(selected_wfg: list, num_wfg_class: int, freq_wfg: float, sa
         sampling_rate:      Sampling rate
         adding_noise:       Adding noise to output
         get_info_classes:   Getting print output with available signal types
+        do_normalize_rms:   Normalizing the energy of waveform in order to have similar true RMS
     Returns:
         Dataset with waveforms sample inside
     """
@@ -53,17 +55,28 @@ def generate_dataset(selected_wfg: list, num_wfg_class: int, freq_wfg: float, sa
     t_start = [0.25 / freq_wfg]
     num_samples = len(selected_wfg) * num_wfg_class
 
+    # --- Generation of signal
     waveforms_signals = np.zeros((num_samples, int(sampling_rate * t_window)), dtype=float)
     waveforms_classes = np.zeros((num_samples, ), dtype=int)
+    waveforms_rms = np.zeros(num_samples, )
     for idx, sel_wfg in enumerate(selected_wfg):
         for num_ite in range(0, num_wfg_class):
-            t0, signal0 = wfg_generator.generate_waveform(t_start, t_wfg, [sel_wfg], [False])
+            t0, signal0, rms = wfg_generator.generate_waveform(t_start, t_wfg, [sel_wfg], [False])
             if adding_noise:
                 signal0 += noise_awgn(t0.size, sampling_rate, pwr_noise_db)
 
-            waveforms_signals[idx * num_wfg_class + num_ite, :] = signal0
+            waveforms_signals[idx * num_wfg_class + num_ite, :] = signal0 if not do_normalize_rms else 1 / rms * signal0
             waveforms_classes[idx * num_wfg_class + num_ite] = idx
+            waveforms_rms[idx * num_wfg_class + num_ite] = rms
 
+    # --- Do energy normalization (Only check RMS values)
+    if do_normalize_rms:
+        rms_classes = np.zeros(len(selected_wfg), )
+        for i, id in enumerate(np.unique(selected_wfg)):
+            pos = np.argwhere(waveforms_classes == i)
+            rms_classes[i] = np.mean(waveforms_rms[pos])
+
+    # --- Getting dictionary of signal type
     waveforms_dict = list()
     for id in np.unique(selected_wfg):
         waveforms_dict.append(wfg_dict[id])
