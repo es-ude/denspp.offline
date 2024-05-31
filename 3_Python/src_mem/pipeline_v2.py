@@ -133,6 +133,7 @@ class Pipeline(PipelineCMD, _SettingsPipe):
         PipelineCMD.__init__(self)
         _SettingsPipe.__init__(self, fs_ana, type_device)
 
+        self._tpos_adc = [-1]
         self._path2pipe = abspath(__file__)
         self.generate_folder('runs', '_mem')
 
@@ -150,6 +151,10 @@ class Pipeline(PipelineCMD, _SettingsPipe):
         """Function to plot results"""
         plt_pipeline_signals_part_one(self.signals, num_sample, path2save=self.path2save)
         plt_pipeline_signals_part_two(self.signals, num_sample, path2save=self.path2save)
+
+    def define_time_adc_samp(self, tq: np.ndarray | list) -> None:
+        """Definition of sampling timepoints for ADC quantization"""
+        self._tpos_adc = tq
 
     def run(self, uinp: np.ndarray, u_offset: np.ndarray | list, t_dly: np.ndarray | list, gain=()) -> None:
         """Running the pipeline
@@ -191,8 +196,11 @@ class Pipeline(PipelineCMD, _SettingsPipe):
             i_off = self._load.get_current_response(u_offset[idx], self._dlyamp.vcm)
 
             u_tra = self._curamp.push_pull_abs_amplifier(i_load - i_off)
-            u_int = self._intamp.do_ideal_integration(u_tra, self._intamp.vcm)
-            x0.x_feat[idx] = u_int[-1]
+            u_int = np.zeros((len(self._tpos_adc, )))
+            for i, tq in enumerate(self._tpos_adc):
+                xpos = int(x0.fs_ana * tq)
+                u_int[i] = self._intamp.do_ideal_integration_sample(u_tra[:xpos], self._intamp.vcm)
+            x0.x_feat[idx] = u_int[-1] / u_int[0]
             # x0.x_feat[idx] = self._adc.adc_ideal(u_int[-1])[0]
 
             # --- Return signals to handler
