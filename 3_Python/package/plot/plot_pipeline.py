@@ -172,7 +172,7 @@ def results_afe2(signals: PipelineSignal, no_electrode: int, path="", time_cut=[
         axs[0].set_xlim([time[0], time[-1]])
         addon_zoom = ''
 
-    # plt.tight_layout()
+    plt.tight_layout()
     # --- saving plots
     if path:
         save_figure(plt, path, "pipeline_transient_sorted" + str(no_electrode) + addon_zoom)

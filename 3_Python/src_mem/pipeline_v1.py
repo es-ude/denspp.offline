@@ -11,19 +11,34 @@ from package.analog.int_ana import IntegratorStage, SettingsINT
 from package.analog.adc_sar import SettingsADC, ADC_SAR
 from src_mem.pipeline_mem import PipelineSignal
 
+from src_mem.memristor_plots import plt_pipeline_signals_part_one, plt_pipeline_signals_part_two
+
+
+def append_numpy_signals(data_in: np.ndarray, data_new: np.ndarray) -> np.ndarray:
+    """Appending the numpy arrays easily
+    Args:
+        data_in:    Test
+        data_new:   Test
+    Returns:
+        Numpy array with concatenated signals (num of channels in first dimension)
+    """
+    data_pre = data_new.reshape((1, data_new.size))
+    if data_in is None:
+        return data_pre
+    else:
+        return np.append(data_in, data_pre, axis=0)
+
 
 class _SettingsPipe:
-    """Settings class for setting-up the pipeline"""
     __vdd = 5.0
     __vss = -5.0
     __en_noise = False
-    __dly_bottom = 0.1e-3
 
     # --- Define Settings
     __settings_amp = SettingsAMP(
         vss=__vss, vdd=__vdd,
         fs_ana=0.0,
-        gain=40,
+        gain=1,
         n_filt=1, f_filt=[0.1, 8e3], f_type="band",
         offset=1e-6,
         noise_en=__en_noise,
@@ -33,7 +48,7 @@ class _SettingsPipe:
     __settings_dly = SettingsDLY(
         vss=__vss, vdd=__vdd,
         fs_ana=0.0,
-        t_dly=__dly_bottom,
+        t_dly=0.1e-3,
         offset=0e-6,
         noise_en=__en_noise,
         noise_edev=100e-9
@@ -45,16 +60,8 @@ class _SettingsPipe:
         offset=0e-3,
         noise=__en_noise
     )
-    __settings_load0 = SettingsDEV(
+    __settings_load = SettingsDEV(
         type='R',
-        fs_ana=0.0,
-        noise_en=__en_noise,
-        para_en=False,
-        dev_value=10e3,
-        temp=300
-    )
-    __settings_load1 = SettingsDEV(
-        type='Dd',
         fs_ana=0.0,
         noise_en=__en_noise,
         para_en=False,
@@ -87,32 +94,44 @@ class _SettingsPipe:
         fs_dig=20e3, osr=1, Nadc=12
     )
 
-    def __init__(self, fs_ana: float):
+    def __init__(self, fs_ana: float, type_dev: str) -> None:
+        """Settings class for setting-up the pipeline
+        Args:
+            fs_ana:     Sampling rate [Hz]
+            type_dev:   Selected device as electrical load
+        Returns:
+            None
+        """
         self.__settings_amp.fs_ana = fs_ana
         self.__settings_dly.fs_ana = fs_ana
         self.__settings_adc.fs_ana = fs_ana
         self.__settings_cur.fs_ana = fs_ana
-        self.__settings_load0.fs_ana = fs_ana
-        self.__settings_load1.fs_ana = fs_ana
+        self.__settings_load.fs_ana = fs_ana
+        self.__settings_load.type = type_dev
 
-        # --- Init Pipeline Elements
+        # --- Init Pipeline Elements (Init. of _load<X> later)
         self._preamp = PreAmp(self.__settings_amp)
         self._dlyamp = DlyAmp(self.__settings_dly)
+        self._load = ElectricalLoad(self.__settings_load)
         self._cmp = Comp(self.__settings_cmp)
-        self._load0 = ElectricalLoad(self.__settings_load0)
-        self._load1 = ElectricalLoad(self.__settings_load1)
         self._curamp = CurrentAmplifier(self.__settings_cur)
-        self._int = IntegratorStage(self.__settings_int, fs_ana)
+        self._intamp = IntegratorStage(self.__settings_int, fs_ana)
         self._adc = ADC_SAR(self.__settings_adc)
 
 
 class Pipeline(PipelineCMD, _SettingsPipe):
-    """Processing Pipeline for analysing invasive neural activities"""
     signals: PipelineSignal
 
-    def __init__(self, fs_ana: float):
+    def __init__(self, fs_ana: float, type_device: str) -> None:
+        """Processing Pipeline for analysing invasive neural activities
+        Args:
+            fs_ana:         Sampling rate [Hz]
+            type_device:    Selected device as electrical load
+        Returns:
+            None
+        """
         PipelineCMD.__init__(self)
-        _SettingsPipe.__init__(self, fs_ana)
+        _SettingsPipe.__init__(self, fs_ana, type_device)
 
         self._path2pipe = abspath(__file__)
         self.generate_folder('runs', '_mem')
@@ -127,35 +146,52 @@ class Pipeline(PipelineCMD, _SettingsPipe):
                  "x_feat": self.signals.x_feat}
         return mdict
 
-    def do_plotting(self, data: PipelineSignal, channel: int) -> None:
+    def do_plotting(self, num_sample: int) -> None:
         """Function to plot results"""
-        pass
+        plt_pipeline_signals_part_one(self.signals, num_sample, path2save=self.path2save)
+        plt_pipeline_signals_part_two(self.signals, num_sample, path2save=self.path2save)
 
-    def run(self, uinp: np.ndarray, u_offset: np.ndarray) -> None:
+    def run(self, uinp: np.ndarray, u_offset: np.ndarray | list, t_dly: np.ndarray | list) -> None:
+        """Running the pipeline"""
+        self._dlyamp.settings.t_dly = t_dly
+
         x0 = PipelineSignal()
         x0.fs_ana = self._preamp.settings.fs_ana
         x0.fs_adc = self._adc.settings.fs_adc
         x0.fs_dig = self._adc.settings.fs_dig
 
+        # --- Definition of input
         x0.u_inp = uinp
         x0.u_inn = np.array(self._preamp.vcm)
-        # ---- Configuration of pipeline
-        x0.u_pre = self._preamp.pre_amp(x0.u_inp, x0.u_inn)
-        x0.u_dly = self._dlyamp.do_simple_delay(x0.u_pre)
+        # x0.u_pre = self._preamp.pre_amp(x0.u_inp, x0.u_inn)
+        x0.u_pre = uinp
         x0.u_cmp = self._cmp.cmp_normal(x0.u_pre, x0.u_inn)
-        x0.u_mem_top = x0.u_pre + u_offset
-        x0.u_mem_bot = x0.u_dly
 
-        x0.i_off0 = self._load0.get_current_response(u_offset, self._dlyamp.vcm)
-        x0.i_load0 = self._load0.get_current_response(x0.u_mem_top, x0.u_mem_bot)
-        x0.i_off1 = self._load1.get_current_response(u_offset, self._dlyamp.vcm)
-        x0.i_load1 = self._load1.get_current_response(x0.u_mem_top, x0.u_mem_bot)
+        # --- Definition of Load Data Processing
+        num_feats = len(t_dly) if isinstance(t_dly, list) else t_dly.size
+        x0.x_feat = np.zeros((num_feats, ), dtype=float)
 
-        x0.u_trans0 = self._curamp.transimpedance_amplifier(x0.i_load0 - x0.i_off0, 0.0)
-        x0.u_trans1 = self._curamp.transimpedance_amplifier(x0.i_load1 - x0.i_off1, 0.0)
-        xfeat0 = self._adc.adc_ideal(x0.u_trans0[-1])[0]
-        xfeat1 = self._adc.adc_ideal(x0.u_trans1[-1])[0]
-        x0.x_feat = np.append(xfeat0, xfeat1)
+        for idx, t_dly_val in enumerate(t_dly):
+            self._dlyamp.settings.t_dly = t_dly_val
+            u_dly = self._dlyamp.do_simple_delay(x0.u_pre)
+            u_mem_top = x0.u_pre + u_offset[idx]
+            u_mem_bot = u_dly
+
+            i_load = self._load.get_current_response(u_mem_top, u_mem_bot)
+            i_off = self._load.get_current_response(u_offset[idx], self._dlyamp.vcm)
+
+            u_tra = self._curamp.push_pull_abs_amplifier(i_load - i_off)
+            u_int = self._intamp.do_ideal_integration(u_tra, self._intamp.vcm)
+            x0.x_feat[idx] = u_int[-1]
+            # x0.x_feat[idx] = self._adc.adc_ideal(u_int[-1])[0]
+
+            # --- Return signals to handler
+            x0.u_dly = append_numpy_signals(x0.u_dly, u_dly)
+            x0.u_mem_top = append_numpy_signals(x0.u_mem_top, u_mem_top)
+            x0.u_mem_bot = append_numpy_signals(x0.u_mem_bot, u_mem_bot)
+            x0.i_tra = append_numpy_signals(x0.i_tra, i_load - i_off)
+            x0.u_tra = append_numpy_signals(x0.u_tra, u_tra)
+            x0.u_int = append_numpy_signals(x0.u_int, u_int)
 
         # --- Return
         self.signals = x0

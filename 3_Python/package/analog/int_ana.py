@@ -163,7 +163,7 @@ class IntegratorStage(ProcessNoise):
         u_top = u_inp + self.__noise_generation_resistance(u_inp.size)
         return self.__do_accumulation_active(u_top, u_inn, scale)
 
-    def do_ideal_integration(self, u_inp: np.ndarray, u_inn: np.ndarray) -> np.ndarray:
+    def do_ideal_integration(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
         """Performs an ideal active-integration behaviour
         Args:
             u_inp:   Positive input voltage or current [V | A]

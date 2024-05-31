@@ -1,6 +1,5 @@
 import dataclasses
 import numpy as np
-from tqdm import tqdm
 from scipy.integrate import cumtrapz
 from scipy.constants import Boltzmann, elementary_charge
 from package.analog.dev_noise import ProcessNoise, SettingsNoise
@@ -120,7 +119,7 @@ class ElectricalLoad(ProcessNoise):
         """
         u_response = np.zeros(i_in.shape)
         idx = 0
-        for i0 in tqdm(i_in, ncols=100, desc="Progress: "):
+        for i0 in i_in:
             u_bottom = u_inn if isinstance(u_inn, float) else u_inn[idx]
             derror = []
             error = []
