@@ -265,11 +265,56 @@ class ElectricalLoad(ProcessNoise):
         return i_out
 
 
+def __plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray, mode_current_input: bool) -> None:
+    """Only for testing"""
+    scale_i = 1e3
+    scale_u = 1
+
+    signalx = scale_i * i_in if mode_current_input else scale_u * u_in
+    signaly = scale_u * u_in if mode_current_input else scale_i * i_in
+    label_axisx = 'Voltage U_x [V]' if mode_current_input else 'Current I_x [mA]'
+    label_axisy = 'Current I_x [mA]' if mode_current_input else 'Voltage U_x [V]'
+    label_legx = 'i_in' if mode_current_input else 'u_in'
+    label_legy = 'u_out' if mode_current_input else 'i_out'
+
+    # --- Plotting: Transient signals
+    plt.figure()
+    num_rows = 2
+    axs = [plt.subplot(num_rows, 1, idx + 1) for idx in range(num_rows)]
+
+    axs[0].set_xlim(time[0], time[-1])
+    twin1 = axs[0].twinx()
+    a = axs[0].plot(time, signalx, 'k', label=label_legx)
+    axs[0].set_ylabel(label_axisy)
+    axs[0].set_xlabel('Time t [s]')
+    b = twin1.plot(time, signaly, 'r', label=label_legy)
+    twin1.set_ylabel(label_axisx)
+    axs[0].grid()
+
+    # Generate common legend
+    lns = a + b
+    labs = [l.get_label() for l in lns]
+    axs[0].legend(lns, labs, loc=0)
+
+    # --- Plotting: I-U curve
+    if mode_current_input:
+        axs[1].plot(signaly, signalx, 'k', marker='.', linestyle='None')
+        axs[1].set_xlabel(label_axisx)
+        axs[1].set_ylabel(label_axisy)
+    else:
+        axs[1].plot(signalx, signaly, 'k', marker='.', linestyle='None')
+        axs[1].set_xlabel(label_axisy)
+        axs[1].set_ylabel(label_axisx)
+    axs[1].grid()
+
+    plt.tight_layout()
+
+
 # --- TEST CASE
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     settings = SettingsDEV(
-        type='R',
+        type='Dd',
         fs_ana=1000e3,
         noise_en=False,
         para_en=False,
@@ -296,47 +341,6 @@ if __name__ == "__main__":
 
     # --- Plotting: Current response
     plt.close('all')
-    plt.figure()
-    num_rows = 2
-    axs = [plt.subplot(num_rows, 1, idx + 1) for idx in range(num_rows)]
-
-    axs[0].set_xlim(t0[0], t0[-1])
-    twin1 = axs[0].twinx()
-    axs[0].plot(t0, uinp, 'k', label='u_in')
-    axs[0].set_ylabel('Voltage U_x [V]')
-    axs[0].set_xlabel('Time t [s]')
-    twin1.plot(t0, 1e3 * iout, 'r', label='i_out')
-    twin1.set_ylabel('Current I_x [mA]')
-    axs[0].grid()
-    axs[0].legend()
-
-    axs[1].plot(uinp - uinn, 1e3 * iout, 'k')
-    axs[1].grid()
-    axs[1].set_xlabel('Voltage U_x [V]')
-    axs[1].set_ylabel('Current I_x [mA]')
-    plt.tight_layout()
-    del axs
-
-    # --- Plotting: Voltage response
-    plt.figure()
-    num_rows = 2
-    axs = [plt.subplot(num_rows, 1, idx + 1) for idx in range(num_rows)]
-
-    axs[0].set_xlim(t0[0], t0[-1])
-    twin1 = axs[0].twinx()
-    axs[0].plot(t0, 1e3 * iin, 'k', label='i_in')
-    axs[0].set_ylabel('Current I_x [mA]')
-    axs[0].set_xlabel('Time t [s]')
-    twin1.plot(t0, uout, 'r', label='i_out')
-    twin1.set_ylabel('Voltage U_x [V]')
-    axs[0].grid()
-    axs[0].legend()
-
-    axs[1].plot(uout, 1e3 * iin, 'k')
-    axs[1].grid()
-    axs[1].set_xlabel('Voltage U_x [V]')
-    axs[1].set_ylabel('Current I_x [mA]')
-    plt.tight_layout()
-
-    # --- Do Plot
+    __plot_test_results(t0, uinp-uinn, iout, False)
+    __plot_test_results(t0, uout+uinn, iin, True)
     plt.show()

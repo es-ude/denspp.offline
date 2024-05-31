@@ -11,5 +11,4 @@ def save_figure(fig, path: str, name: str, formats=('pdf', 'svg')):
     path2fig = join(path, name)
 
     for idx, form in enumerate(formats):
-        file_name = path2fig + '.' + form
-        fig.savefig(file_name, format=form)
+        fig.savefig(f"{path2fig}.{form}", format=form)
