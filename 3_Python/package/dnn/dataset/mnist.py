@@ -35,13 +35,16 @@ class DatasetMNIST(Dataset):
         cluster_id = self.__cluster_id[idx]
         frame_in = self.__frames_orig[idx, :]
         frame_out = self.__frames_orig[idx, :] if not self.__do_classification else cluster_id
-
         return {'in': frame_in, 'out': frame_out, 'class': cluster_id}
 
 
 def load_mnist(data_path: str) -> [datasets.MNIST, datasets.MNIST]:
-    """Loading MNIST dataset and preparing for training"""
-
+    """Loading MNIST dataset and preparing for training
+    Args:
+        data_path:  String for finding the MNIST data locally
+    Returns:
+        Two dataset arrays with [training samples, validation samples]
+    """
     # --- Checking if dataset exists
     if not os.path.exists(data_path):
         os.makedirs(data_path)
@@ -65,7 +68,14 @@ def load_mnist(data_path: str) -> [datasets.MNIST, datasets.MNIST]:
 
 
 def prepare_training(data_path: str, do_normalization=False, do_classification=True) -> DatasetMNIST:
-    """"""
+    """Loading and preparing the MNIST dataset for Deep Learning
+    Args:
+        data_path:          String to the path for loading MNIST
+        do_normalization:   Option for normalization of pictures
+        do_classification:  Option for doing a classification, otherwise Autoencoder
+    Returns:
+        Getting the prepared Dataset for MNIST
+    """
     data_train, data_valid = load_mnist(data_path)
 
     # --- Translating data to common
@@ -77,10 +87,12 @@ def prepare_training(data_path: str, do_normalization=False, do_classification=T
     if do_normalization:
         data_raw = data_raw / 255.0
 
-    # --- Output
+    # --- Print Output
     check = np.unique(data_label, return_counts=True)
-    print(f"... for training are {data_raw.shape[0]} frames with each ({data_raw.shape[1]}, {data_raw.shape[2]}) points available")
-    print(f"... used data points for training: in total {check[0].size} classes with {np.sum(check[1])} samples")
+    print(f"... for training are {data_raw.shape[0]} frames with each "
+          f"({data_raw.shape[1]}, {data_raw.shape[2]}) points available")
+    print(f"... used data points for training: "
+          f"in total {check[0].size} classes with {np.sum(check[1])} samples")
     for idx, id in enumerate(check[0]):
         addon = f'' if not isinstance(data_dict, list) else f' ({data_dict[id]})'
         print(f"\tclass {id}{addon} --> {check[1][idx]} samples")
