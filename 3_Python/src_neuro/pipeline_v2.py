@@ -18,8 +18,8 @@ from package.nsp import calc_spiketicks
 class Settings:
     """Settings class for handling the src_neuro setting"""
     SettingsDATA = SettingsDATA(
-        path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
-        # path='C:\GitHub\spaike_project\\2_Data',
+        #path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
+        path='C:\home\muskel\Documents\Neuro\Mat Dateien', # Janniks path
         data_set=4,
         data_case=0,
         data_point=0,
