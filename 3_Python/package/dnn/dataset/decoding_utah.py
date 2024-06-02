@@ -158,15 +158,9 @@ def prepare_training(settings: Config_Dataset,
     full_path = settings.get_path2data()
 
     print(f"Constructed Path: {full_path}")
-    print(f"Path Exists: {os.path.exists(full_path)}")
+    print(f"Data Path Exists: {os.path.exists(full_path)}")
     #if os.path.exists(full_path) == False:
         #stop TRAINING
-    try:
-        data = np.load(full_path)
-        print("File loaded successfully!")
-    except FileNotFoundError as e:
-        print(f"Error: {e}")
-
     data_raw = np.load(settings.get_path2data(), allow_pickle=True).item()
 
     # --- Pre-Processing: Determine max. timepoint of events
