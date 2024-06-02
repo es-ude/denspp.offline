@@ -77,7 +77,6 @@ class Config_Dataset:
         """Getting the path name to the file"""
         return join(self.data_path, self.data_file_name)
 
-
 def copy_handler_dummy() -> None:
     """Generating a handler dummy for training neural networks"""
     path2dst = 'src_dnn'
