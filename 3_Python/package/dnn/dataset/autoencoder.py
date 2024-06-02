@@ -1,3 +1,5 @@
+import os
+
 from scipy.io import loadmat
 from torch import is_tensor
 from torch.utils.data import Dataset
@@ -76,6 +78,19 @@ def prepare_training(settings: Config_Dataset,
                      noise_std=0.1) -> DatasetAE:
     """Preparing dataset incl. augmentation for spike-frame based training"""
     print("... loading and processing the dataset")
+    # Construct the full path
+    full_path = settings.get_path2data()
+
+    print(f"Constructed Path: {full_path}")
+    print(f"Path Exists: {os.path.exists(full_path)}")
+    # if os.path.exists(full_path) == False:
+    # stop TRAINING
+    try:
+        data = np.load(full_path)
+        print("File loaded successfully!")
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
+
     npzfile = loadmat(settings.get_path2data())
     frames_in = npzfile["frames_in"]
     frames_cl = npzfile["frames_cluster"].flatten() if 'frames_cluster' in npzfile else npzfile["frames_cl"].flatten()

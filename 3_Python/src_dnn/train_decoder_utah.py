@@ -11,7 +11,7 @@ config_data = Config_Dataset(
     # --- Settings of Datasets
     #data_path='../2_Data/00_Merged_Datasets',
     #data_path='C:\HomeOffice\Data_Neurosignal\\00_Merged',
-    data_path='C:\home\muskel\Documents\cpsDEC\data',
+    data_path='/home/muskel/Documents/cpsDEC/data',
     #data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
     #data_file_name='2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted',
     data_file_name='2024-02-05_Dataset-KlaesNeuralDecoding.npy',
@@ -58,6 +58,7 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
     from package.plot.plot_metric import plot_confusion, plot_loss
 
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
+
     # --- Processing: Loading Data and Do Training
     dataset = prepare_training(config_data, length_window_ms)
     data_dict = dataset.frame_dict
