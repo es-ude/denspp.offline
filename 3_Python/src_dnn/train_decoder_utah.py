@@ -4,15 +4,14 @@ from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 import package.dnn.models.decoding_utah as models_dec
 
-
 config_data = Config_Dataset(
     # --- Settings of Datasets
     data_path='/home/muskel/Documents/cpsDEC/data',
     data_file_name='2024-02-05_Dataset-KlaesNeuralDecoding.npy',
 
     # --- Data Augmentation
-    data_do_augmentation=False,
-    data_num_augmentation=0,
+    data_do_augmentation=True,
+    data_num_augmentation=1000,
     data_do_addnoise_cluster=False,
     # --- Data Normalization
     data_do_normalization=False,
