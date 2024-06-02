@@ -1,7 +1,7 @@
 from package.dnn.dnn_handler import dnn_handler
 
 dnn_handler = dnn_handler(
-    mode_dnn=3,
+    mode_dnn=4,
     mode_cellbib=2,
     do_plot=True,
     do_block=True
