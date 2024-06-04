@@ -9,6 +9,10 @@ from scipy.signal import resample_poly
 import os
 import csv
 import matplotlib.pyplot as plt
+import mplcursors
+from matplotlib.ticker import ScalarFormatter
+import pickle
+from math import e
 
 
 @dataclasses.dataclass
@@ -288,7 +292,9 @@ class DataController:
                 # Iterate over each row in the CSV file
                 for row in reader:
                     # Convert each element in the row to an integer (assuming numbers are expected)
-                    numbers_row = [int(value) for value in row if value.strip().isdigit()]
+                    row = row[0]
+                    sep_row = row.split(';')
+                    numbers_row = [int(value) for value in sep_row]
                     if numbers_row:
                         numbers_list.append(numbers_row)
         else:
@@ -300,7 +306,7 @@ class DataController:
         data_in = self.raw_data.data_raw
         channel_head = self.raw_data.data_mapping
         csv_path = os.path.join(csv_folder, csv_filename)
-        channel_numbers = self._read_csv_file_mapping(csv_path)
+        self.channel_numbers = self._read_csv_file_mapping(csv_path)
         if self.raw_data.data_type == "MCS 60MEA":
             mea = np.zeros((8, 8), dtype=object)
         else:
@@ -310,7 +316,7 @@ class DataController:
             if (len(data_in) > 0) & (len(data_in) == len(channel_head)):
                 print("2D->3D transformation will be done")
                 # Map channel numbers
-                for data_row_index, data_row in enumerate(channel_numbers):
+                for data_row_index, data_row in enumerate(self.channel_numbers):
                     # Iterate over each element in the data row
                     for data_col_index, data_value in enumerate(data_row):
                         # Get the preset number at the same position if available
@@ -333,22 +339,86 @@ class DataController:
 
     def _plot_data(self, mea):
         print("The plotted mea data is:", mea)
-        num_rows, num_cols = mea.shape
-        fig, axes = plt.subplots(num_rows, num_cols, figsize=(12, 8))
+        num_rows, num_cols = mea.shape[0], mea.shape[1]
+        fig, axes = plt.subplots(num_rows, num_cols, figsize=(12, 8), gridspec_kw={'wspace': 0.8, 'hspace': 0.8})
 
-        # Iterate over each element in data_array and plot the corresponding object
+        plotted_lines = []
+
         for i in range(num_rows):
             for j in range(num_cols):
                 if isinstance(mea[i, j], np.ndarray):  # Check if element is an array
                     ax = axes[i, j]
-                    ax.plot(mea[i, j], 'bo-')  # Plot the array as a line plot
+                    line, = ax.plot(mea[i, j], 'b-')  # Plot the array as a line plot
 
-                    ax.set_xlabel('Index')
-                    ax.set_ylabel('Value')
+                    # Set y-axis labels to the minimum and maximum values only
+                    ymin, ymax = np.min(mea[i, j]), np.max(mea[i, j])
+                    ax.set_yticks([ymin, ymax])
+                    ymin = ymin * 10 ** 6
+                    ymax = ymax * 10 ** 6
+                    ax.set_yticklabels([f'{ymin:.2f}', f'{ymax:.2f}'])
+                else:
+                    ax = axes[i, j]
+                    line, = ax.plot([0], 'b-')  # Plot the array as a line plot
+                    ymin = 0
+                    ymax = 0
+                    ax.set_yticklabels([f'{ymin:.2f}', f'{ymax:.2f}'])
+                    # Remove x-axis ticks and labels
+                ax.set_xticklabels([])
+                ax.set_xticks([])
+
+                # Remove subplot border
+                ax.spines['top'].set_visible(False)
+                ax.spines['right'].set_visible(False)
+                ax.spines['left'].set_visible(False)
+                ax.spines['bottom'].set_visible(False)
+
+                if isinstance(mea[i, j], np.ndarray):
+                    # Store the subplot and the data for the cursor event
+                    line._mea_data = mea[i, j]
+                else:
+                    line._mea_data = [0]
+                plotted_lines.append(line)
+
+        plt.suptitle('MCS60 MEA Channel Signals [values upscaled with e5]', y=1)
 
         # Adjust layout and display the plot
+        plt.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05)
         plt.tight_layout()
+
+        # Function to create a bigger plot when clicking on a subplot
+        def on_click(event):
+            artist = event.artist
+            data = artist._mea_data
+            fig, ax = plt.subplots(figsize=(8, 6))
+            ax.plot(data, 'bo-')
+            ax.set_xlabel('Time')
+            ax.set_ylabel('Voltage')
+            ax.set_title('Channel')
+            plt.show()
+
+        # Use mplcursors to enable click events
+        cursor = mplcursors.cursor(plotted_lines, hover=False)
+        cursor.connect("add", on_click)
+
+        # Save the figure
+        with open(
+                r'C:/Users/Leoni Kaiser/Documents/Studium/Master/3. Semester/CPS_Projekt/Elektrodenmapping/Results/Plotted_Signals.fig.pickle',
+                'wb') as f:
+            pickle.dump(fig, f)
+
         plt.show()
+        plt.close()
+
+        for i in range(num_rows):
+            for j in range(num_cols):
+                if isinstance(mea[i, j], np.ndarray):
+                    plt.plot(mea[i, j])
+                    channel = self.channel_numbers[i][j]
+                    channel = str(channel)
+                    folder_save = r'C:/Users/Leoni Kaiser/Documents/Studium/Master/3. Semester/CPS_Projekt/Elektrodenmapping/Results/'
+                    path_save = folder_save + 'channel_' + channel + '.png'
+                    plt.savefig(path_save)
+                    plt.close()
 
 
 ###########################################################################
@@ -358,7 +428,7 @@ if __name__ == "__main__":
     settings = SettingsDATA(
         path="../../../2_Data",
         data_set=8, data_case=1, data_point=8,
-        t_range=[0, 0.00005], ch_sel=[], fs_resample=20e3
+        t_range=[0, 0.001], ch_sel=[], fs_resample=20e3
     )
     data_loader = DataLoader(settings)
     data_loader.do_call()
@@ -367,5 +437,10 @@ if __name__ == "__main__":
     data = data_loader.get_data()
     data_loader.do_mapping()
     del data_loader
+
+    #fig = pickle.load(open(r'C:/Users/Leoni Kaiser/Documents/Studium/Master/3. Semester/CPS_Projekt/Elektrodenmapping/Results/Plotted_Signals.fig.pickle', 'rb'))
+    #fig.show()
+    #plt.show()
+
 
 
