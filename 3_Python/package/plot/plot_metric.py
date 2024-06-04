@@ -137,7 +137,7 @@ def plot_confusion(true_labels: list | np.ndarray,
         plt.imshow(timestamps_result, cmap=plt.cm.Blues, interpolation='nearest')
         for i in range(timestamps_result.shape[0]):
             for j in range(timestamps_result.shape[1]):
-                plt.text(j, i, f'{timestamps_result[i, j]:.2f}', ha='center', va='center', color='white')
+                plt.text(j, i, f'{timestamps_result[i,j]:.2f}', ha='center', va='center', color='white')
         xtick_labels = ['true', 'false']
         plt.xticks(np.arange(2), xtick_labels)
         ytick_labels = ['positive', 'negative']
@@ -170,7 +170,7 @@ def plot_confusion(true_labels: list | np.ndarray,
     # --- Plotting the results of the class confusion matrix
     fig, ax = plt.subplots(figsize=(cm_to_inch(12), cm_to_inch(12.5)))
     cmp.plot(ax=ax, colorbar=False, values_format='.3f',
-             text_kw={'fontsize': 9}, cmap=plt.cm.Blues,
+             text_kw={'fontsize': 8}, cmap=plt.cm.Blues,
              xticks_rotation=('vertical' if do_xticks_vertical else 'horizontal')
              )
     cmp.ax_.set_title(f'Precision = {100*precision:.2f}%, Recall = {100*recall:.2f}%')

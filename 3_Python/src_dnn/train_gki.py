@@ -27,7 +27,7 @@ config_data = Config_Dataset(
 
 config_train_ae = Config_PyTorch(
     # --- Settings of Models/Training
-    model=models.mnist_gki_v1(),
+    model=models.mnist_gki_v8(),
     loss='MSE',
     loss_fn=nn.MSELoss(),
     optimizer='Adam',
@@ -40,7 +40,7 @@ config_train_ae = Config_PyTorch(
 
 config_train_cl = Config_PyTorch(
     # --- Settings of Models/Training
-    model=models.mnist_gki_v1(),
+    model=models.mnist_gki_v7(),
     loss='Cross Entropy Loss',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
@@ -59,7 +59,7 @@ def do_train_ae(settings: dnn_handler) -> None:
     """
     from package.dnn.dataset.mnist import prepare_training
     from package.dnn.pytorch.autoencoder import train_nn
-    from package.plot.plot_dnn import plot_statistic_data
+    from package.plot.plot_dnn import plot_statistic_data, plot_mnist_graphs
     from package.plot.plot_metric import plot_loss
 
     # --- Processing: Loading dataset and Do Training
@@ -77,6 +77,8 @@ def do_train_ae(settings: dnn_handler) -> None:
     # --- Plotting and Ending
     if settings.do_plot:
         plt.close("all")
+        plot_mnist_graphs(data_result["input"], label=data_result['valid_clus'], title='Input', path2save=logsdir)
+        plot_mnist_graphs(data_result["pred"], label=data_result['valid_clus'], title='Reconstructed', path2save=logsdir)
         plot_loss(loss_ae, 'Acc.', path2save=logsdir)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                             path2save=logsdir, cl_dict=data_result['cl_dict'])
@@ -127,6 +129,6 @@ if __name__ == "__main__":
         do_block=False
     )
 
-    do_train_cl(dnn_settings)
+    # do_train_cl(dnn_settings)
+    do_train_ae(dnn_settings)
     print("Done")
-    # do_train_ae(dnn_handler, 0, 0)

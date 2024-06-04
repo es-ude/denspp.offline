@@ -34,7 +34,6 @@ class train_nn(training_pytorch):
 
         train_acc = total_correct / total_samples
         train_loss = train_loss / total_batches
-
         return train_loss, train_acc
 
     def __do_valid_epoch(self) -> [float, float]:
@@ -55,7 +54,6 @@ class train_nn(training_pytorch):
 
         valid_acc = total_correct / total_samples
         valid_loss = valid_loss / total_batches
-
         return valid_loss, valid_acc
 
     def do_training(self, path2save='') -> list:
@@ -122,7 +120,6 @@ class train_nn(training_pytorch):
 
         # --- Ending of all trainings phases
         self._end_training_routine(timestamp_start)
-
         return metrics_own
 
     def do_validation_after_training(self, num_output: int) -> dict:

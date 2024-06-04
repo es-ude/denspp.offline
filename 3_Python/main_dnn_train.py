@@ -30,7 +30,7 @@ if __name__ == "__main__":
         case 2:
             # --- Spike Detection
             from src_dnn.train_sda import dnn_train_sda
-            dnn_train_sda(dnn_handler,4)
+            dnn_train_sda(dnn_handler, 4)
         case 3:
             # --- Autoencoder (Normal)
             from src_dnn.train_ae import do_train_ae
