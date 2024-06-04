@@ -98,7 +98,6 @@ def do_train_ae(do_plot=True, do_block=True) -> None:
     from package.plot.plot_dnn import plot_statistic_data, plot_mnist_graphs
     from package.plot.plot_metric import plot_loss
 
-
     # ---Loading Data, Do Training and getting the results
     dataset = prepare_training(config_data.data_path, config_data.data_do_normalization, False)
     trainhandler = train_nn(config_train_ae, config_data)

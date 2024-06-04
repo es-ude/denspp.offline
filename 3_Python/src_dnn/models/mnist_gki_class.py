@@ -161,14 +161,14 @@ class mnist_gki_v8(__model_settings_common):
         # --- Settings of model
         do_train_bias = True
         do_train_batch = True
-        config_network = [784, 40, 10]
+        config_network = [784, 400, 150, 10]
 
         # --- Model Deployment: Encoder
         self.encoder = nn.Sequential()
         for idx, layer_size in enumerate(config_network[1:], start=1):
             self.encoder.add_module(f"linear_{idx:02d}", nn.Linear(in_features=config_network[idx - 1], out_features=layer_size, bias=do_train_bias))
-            self.encoder.add_module(f"batch1d_{idx:02d}", nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch))
             if not idx == len(config_network) - 1:
+                self.encoder.add_module(f"batch1d_{idx:02d}", nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch))
                 self.encoder.add_module(f"act_{idx:02d}", nn.ReLU())
 
         # --- Model Deployment: Decoder

@@ -79,7 +79,7 @@ def do_train_ae(settings: dnn_handler) -> None:
         plt.close("all")
         plot_mnist_graphs(data_result["input"], label=data_result['valid_clus'], title='Input', path2save=logsdir)
         plot_mnist_graphs(data_result["pred"], label=data_result['valid_clus'], title='Reconstructed', path2save=logsdir)
-        plot_loss(loss_ae, 'Acc.', path2save=logsdir)
+        plot_loss(loss_ae, 'Loss', path2save=logsdir)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                             path2save=logsdir, cl_dict=data_result['cl_dict'])
         plt.show(block=settings.do_block)
