@@ -51,7 +51,7 @@ def plot_loss(metric: list, metric_type: str, path2save='', epoch_zoom=None) -> 
     axs[0].plot(plot_metrics[:, 1], color='r', marker='.', label='Valid.')
     plt.grid()
     plt.legend()
-    plt.title(f"{metric_type} = {plot_metrics.max():.3f}")
+    plt.title(f"{metric_type} = {plot_metrics.max() if 'Acc' in metric_type else plot_metrics.min():.3f}")
     plt.xlabel('Epoch')
     plt.ylabel(f'{metric_type}')
 
