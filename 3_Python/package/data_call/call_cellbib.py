@@ -120,9 +120,14 @@ class CellSelector(_RGC_ONOFF_FZJ, _RGC_TDB):
     cell_class_to_type: dict
     cell_class_used: dict
 
-    def __init__(self, sel_database: int, mode=0):
-        """Sel_databased: 0=RGC FZJ, 1=RGC_TDB,
-        Mode selection: 0=original, 1=Reduced specific, 2= ON/OFF, 3= Sustained/Transient"""
+    def __init__(self, sel_database: int, mode: int) -> None:
+        """Class for separating the classes into new subset
+        Args:
+            sel_database:   0=RGC FZJ, 1=RGC_TDB,
+            mode:           0=original, 1=Reduced specific, 2= ON/OFF, 3= Sustained/Transient
+        Returns:
+            None
+        """
         # Data selection
         if sel_database == 0:
             _RGC_ONOFF_FZJ.__init__(self)
@@ -156,10 +161,13 @@ class CellSelector(_RGC_ONOFF_FZJ, _RGC_TDB):
         else:
             val = np.zeros(shape=cluster_id.shape, dtype=np.int16) + default_value
             for idx, (_, values) in enumerate(self.cell_class_used.items()):
-                for id in values:
-                    pos = np.argwhere(cluster_id == id).flatten()
-                    if pos.size != 0:
-                        val[pos] = idx
+                if isinstance(values, list):
+                    for id in values:
+                        pos = np.argwhere(cluster_id == id).flatten()
+                        if pos.size != 0:
+                            val[pos] = idx
+                else:
+                    val = cluster_id
             return val
 
     def get_celltype_name_from_id(self, cluster_id: int | np.ndarray) -> str:

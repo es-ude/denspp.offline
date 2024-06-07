@@ -132,7 +132,7 @@ class train_nn(training_pytorch):
 
         # --- Do the Inference with Best Model
         model_inference = load(self.get_best_model('class')[0])
-        yclus = model_inference(from_numpy(data_valid['in']))[1]
+        yclus = model_inference(from_numpy(data_valid['in']).to(self.used_hw_dev))[1]
         yclus = yclus.detach().numpy()
 
         # --- Producing the output

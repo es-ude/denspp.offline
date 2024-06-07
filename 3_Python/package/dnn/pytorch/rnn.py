@@ -140,7 +140,7 @@ class train_nn(training_pytorch):
             data_input = data_valid['in']
             data_output = data_valid['out']
 
-        yclus = model_inference(data_input)[1]
+        yclus = model_inference(data_input.to(self.used_hw_dev))[1]
         yclus = yclus.detach().numpy()
 
         # --- Producing the output

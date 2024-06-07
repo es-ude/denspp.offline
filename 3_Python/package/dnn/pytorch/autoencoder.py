@@ -163,7 +163,7 @@ class train_nn(training_pytorch):
 
         # --- Do the Inference with Best Model
         model_test = load(self.get_best_model('ae')[0])
-        feat_out, pred_out = model_test(from_numpy(data_valid['in']))
+        feat_out, pred_out = model_test(from_numpy(data_valid['in']).to(self.used_hw_dev))
         feat_out = feat_out.detach().numpy()
         pred_out = pred_out.detach().numpy()
 

@@ -36,7 +36,7 @@ config_data = Config_Dataset(
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
-    model=models_rgc.dnn_rgc_v2(32, 4),
+    model=models_rgc.dnn_rgc_v2(32, 52),
     loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
