@@ -129,8 +129,10 @@ class train_nn(training_pytorch):
         data_valid = self.get_data_points(num_output, use_train_dataloader=False)
 
         # --- Do the Inference with Best Model
-        print(f"\nDoing the inference with validation data on best model")
-        model_inference = load(self.get_best_model('rnn')[0])
+        path2model = self.get_best_model('rnn')[0]
+        print("\n================================================================="
+              f"\nDo Validation with best model: {path2model}")
+        model_test = load(path2model)
         if not isinstance(data_valid['in'], Tensor):
             data_train = from_numpy(data_train['out'])
             data_input = from_numpy(data_valid['in'])
@@ -140,7 +142,7 @@ class train_nn(training_pytorch):
             data_input = data_valid['in']
             data_output = data_valid['out']
 
-        yclus = model_inference(data_input.to(self.used_hw_dev))[1]
+        yclus = model_test(data_input.to(self.used_hw_dev))[1]
         yclus = yclus.detach().numpy()
 
         # --- Producing the output

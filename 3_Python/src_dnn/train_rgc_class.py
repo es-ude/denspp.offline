@@ -1,11 +1,11 @@
 from os import mkdir
 from os.path import join, exists
-from scipy.io import loadmat
 from package.plot.plot_metric import plot_confusion
 from package.data_call.call_cellbib import logic_combination
 
 from torch import nn
 import matplotlib.pyplot as plt
+from numpy import load
 from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 import package.dnn.models.rgc_onoff_class as models_rgc
@@ -14,7 +14,8 @@ import package.dnn.models.rgc_onoff_class as models_rgc
 config_data = Config_Dataset(
     # --- Settings of Datasets
     #data_path='../2_Data/00_Merged_Datasets',
-    data_path='C:\HomeOffice\Data_Neurosignal\\00_Merged',
+    data_path='data',
+    #data_path='C:\HomeOffice\Data_Neurosignal\\00_Merged',
     #data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
     #data_file_name='2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted',
     data_file_name='2023-11-24_Dataset-07_RGC_TDB_Merged.mat',
@@ -36,28 +37,28 @@ config_data = Config_Dataset(
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
-    model=models_rgc.dnn_rgc_v2(32, 52),
+    model=models_rgc.dnn_rgc_v2(32, 4),
     loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=10,
+    num_epochs=2,
     batch_size=256,
     data_split_ratio=0.25,
     data_do_shuffle=True
 )
 
 
-def rgc_logic_combination(logsdir: str, valid_file_name='results_class.mat') -> None:
+def rgc_logic_combination(logsdir: str, valid_file_name='results_class.npy') -> None:
     """"""
-    data_result = loadmat(join(logsdir, valid_file_name))
+    data_result = load(join(logsdir, valid_file_name), allow_pickle=True).item()
     path2save = join(logsdir, 'logic_comb')
     if not exists(path2save):
         mkdir(path2save)
 
-    cell_dict_orig = data_result['cl_dict'].tolist()
-    true_labels_orig = data_result['valid_clus'].flatten()
-    pred_labels_orig = data_result['yclus'].flatten()
+    cell_dict_orig = data_result['cl_dict']
+    true_labels_orig = data_result['valid_clus']
+    pred_labels_orig = data_result['yclus']
 
     # --- Logical combination for ON/OFF
     cell_dict_onoff = ['OFF', 'ON']

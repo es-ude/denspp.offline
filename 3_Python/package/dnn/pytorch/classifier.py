@@ -131,9 +131,12 @@ class train_nn(training_pytorch):
         data_valid = self.get_data_points(num_output, use_train_dataloader=False)
 
         # --- Do the Inference with Best Model
-        model_inference = load(self.get_best_model('class')[0])
-        yclus = model_inference(from_numpy(data_valid['in']).to(self.used_hw_dev))[1]
-        yclus = yclus.detach().numpy()
+        path2model = self.get_best_model('class')[0]
+        print("\n================================================================="
+              f"\nDo Validation with best model: {path2model}")
+        model_test = load(path2model)
+        yclus = model_test(from_numpy(data_valid['in']).to(self.used_hw_dev))[1]
+        yclus = yclus.cpu().detach().numpy()
 
         # --- Producing the output
         output = dict()

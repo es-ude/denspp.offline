@@ -162,7 +162,10 @@ class train_nn(training_pytorch):
         data_train = self.get_data_points(use_train_dataloader=True)
 
         # --- Do the Inference with Best Model
-        model_test = load(self.get_best_model('ae')[0])
+        path2model = self.get_best_model('ae')[0]
+        print("\n================================================================="
+              f"\nDo Validation with best model: {path2model}")
+        model_test = load(path2model)
         feat_out, pred_out = model_test(from_numpy(data_valid['in']).to(self.used_hw_dev))
         feat_out = feat_out.detach().numpy()
         pred_out = pred_out.detach().numpy()
