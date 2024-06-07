@@ -8,9 +8,8 @@ from package.analog.dev_noise import ProcessNoise, SettingsNoise
 @dataclasses.dataclass
 class SettingsDEV:
     """Individual data class to configure the electrical device
-
     Inputs:
-        type:       Type of electrical device ['R': resistor, 'C': capacitor, 'L': inductor]
+        type:       Type of electrical device ['R': resistor, 'C': capacitor, 'L': inductor, 'Mem': Memristive (Light)]
         fs_ana:     Sampling frequency of input [Hz]
         noise_en:   Enable noise on output [True / False]
         para_en:    Enable parasitic [True / False]
@@ -82,9 +81,9 @@ def _error_tanh(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float
 class ElectricalLoad(ProcessNoise):
     """Class for emulating an electrical device"""
     _settings: SettingsDEV
+    _dev_type: dict
     __print_device = "electrical behaviour"
     __r_series = 100.0
-    __dev_type: dict
 
     @property
     def temperature_voltage(self) -> float:
@@ -93,10 +92,16 @@ class ElectricalLoad(ProcessNoise):
     def __init__(self, settings_dev: SettingsDEV, settings_noise=RecommendedSettingsNoise):
         super().__init__(settings_noise, settings_dev.fs_ana)
         self._settings = settings_dev
-        self.__dev_type = {'R': self.__resistor, 'C': self.__capacitor, 'L': self.__inductor}
-        self.__dev_type.update({'Ds': self.__diode_single_barrier, 'Dd': self.__diode_double_barrier})
+        self._dev_type = self._init_dev()
 
-    def get_current_response(self, u_top: np.ndarray, u_bot: np.ndarray | float) -> np.ndarray:
+    def _init_dev(self) -> dict:
+        """Initialization of simple devices"""
+        dev_type = {'R': self.__resistor, 'C': self.__capacitor, 'L': self.__inductor}
+        dev_type.update({'Ds': self.__diode_single_barrier, 'Dd': self.__diode_double_barrier})
+        dev_type.update({'Mem': self.__memristor_light})
+        return dev_type
+
+    def get_current(self, u_top: np.ndarray, u_bot: np.ndarray | float) -> np.ndarray:
         """Getting the current response from electrical device
         Args:
             u_top:      Applied voltage on top electrode [V]
@@ -104,9 +109,23 @@ class ElectricalLoad(ProcessNoise):
         Returns:
             Corresponding current response
         """
-        return self.__dut(u_top, u_bot)
+        iout = np.array(0.0, dtype=float)
+        if self._settings.type in self._dev_type.keys():
+            iout = self._dev_type[self._settings.type](u_top, u_bot)
+        return iout
 
-    def get_voltage_response(self, i_in: np.ndarray, u_inn: np.ndarray | float,
+    def get_current_density(self, u_top: np.ndarray, u_bot: np.ndarray | float, area: float) -> np.ndarray:
+        """Getting the current response from electrical device
+        Args:
+            u_top:      Applied voltage on top electrode [V]
+            u_bot:      Applied voltage on bottom electrode  [V]
+            area:       Area of device [mm^2]
+        Returns:
+            Corresponding current density response [A/mm^2]
+        """
+        return self.get_current(u_top, u_bot) / area
+
+    def get_voltage(self, i_in: np.ndarray, u_inn: np.ndarray | float,
                              start_step=1e-3, take_last_value=True) -> np.ndarray:
         """Getting the voltage response from electrical device
         Args:
@@ -135,7 +154,7 @@ class ElectricalLoad(ProcessNoise):
 
             error0 = list()
             for u_top in test_value:
-                i1 = self.__dut(u_top, u_bottom)
+                i1 = self.get_current_response(u_top, u_bottom)
                 error0.append(_error_mse(i1, i0))
 
             error0 = np.array(error0)
@@ -149,7 +168,7 @@ class ElectricalLoad(ProcessNoise):
             step_ite = 0
             do_calc = True
             while do_calc:
-                i1 = self.__dut(u_top, u_bottom)
+                i1 = self.get_current_response(u_top, u_bottom)
 
                 # Error Logging
                 error.append(_error_mse(i1, i0))
@@ -175,14 +194,6 @@ class ElectricalLoad(ProcessNoise):
             u_response[idx] = u_top
             idx += 1
         return u_response
-
-    def __dut(self, u_top: np.ndarray | float, u_bottom: float) -> np.ndarray:
-        """"""
-        if self._settings.type in self.__dev_type.keys():
-            i1 = self.__dev_type[self._settings.type](u_top, u_bottom)
-        else:
-            i1 = np.array(0.0, dtype=float)
-        return i1
 
     def __resistor(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
         """Performing the behaviour of an electrical resistor
@@ -263,8 +274,27 @@ class ElectricalLoad(ProcessNoise):
             i_out += self._gen_noise_awgn_pwr(du.size)
         return i_out
 
+    def __memristor_light(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
+        """Performing the behaviour of a memristor (light) with single-side hysterese
+        Args:
+            u_inp:   Positive input voltage [V]
+            u_inn:   Negative input voltage [V]
+        Returns:
+            Corresponding current signal
+        """
+        is0 = 10e-12
+        n0 = 9
+        u_th = 0.55
+        du = u_inp - u_inn
 
-def __plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray, mode_current_input: bool) -> None:
+        i_out = is0 * np.exp((du - u_th) / (n0 * self.temperature_voltage))
+        if self._settings.noise_en:
+            i_out += self._gen_noise_awgn_pwr(du.size)
+        return i_out
+
+
+def __plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray,
+                        mode_current_input: bool, do_ylog=False) -> None:
     """Only for testing"""
     scale_i = 1e3
     scale_u = 1
@@ -297,11 +327,17 @@ def __plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray, mo
 
     # --- Plotting: I-U curve
     if mode_current_input:
-        axs[1].plot(signaly, signalx, 'k', marker='.', linestyle='None')
+        if do_ylog:
+            axs[1].semilogy(signaly, signalx, 'k', marker='.', linestyle='None')
+        else:
+            axs[1].plot(signaly, signalx, 'k', marker='.', linestyle='None')
         axs[1].set_xlabel(label_axisx)
         axs[1].set_ylabel(label_axisy)
     else:
-        axs[1].plot(signalx, signaly, 'k', marker='.', linestyle='None')
+        if do_ylog:
+            axs[1].semilogy(signalx, signaly, 'k', marker='.', linestyle='None')
+        else:
+            axs[1].plot(signalx, signaly, 'k', marker='.', linestyle='None')
         axs[1].set_xlabel(label_axisy)
         axs[1].set_ylabel(label_axisx)
     axs[1].grid()
@@ -309,11 +345,27 @@ def __plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray, mo
     plt.tight_layout()
 
 
+def __generate_signal(t_end: float, fs: float, upp: list, fsig: list, uoff=0.0) -> [np.ndarray, np.ndarray]:
+    """Generating a signal for testing
+    Args:
+        t_end:      End of simulation
+        fs:         Sampling rate
+        upp:        List with amplitude values
+        fsig:       List with corresponding frequency
+        uoff:       Offset voltage
+    """
+    t0 = np.linspace(0, t_end, num=int(t_end * fs), endpoint=True)
+    uinp = np.zeros(t0.shape) + uoff
+    for idx, peak_val in enumerate(upp):
+        uinp += peak_val * np.sin(2 * np.pi * t0 * fsig[idx])
+    return t0, uinp
+
+
 # --- TEST CASE
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     settings = SettingsDEV(
-        type='Dd',
+        type='Mem',
         fs_ana=1000e3,
         noise_en=False,
         para_en=False,
@@ -322,24 +374,19 @@ if __name__ == "__main__":
     )
 
     # --- Declaration of input
+    do_ylog = True
     t_end = 0.5e-3
-    t0 = np.linspace(0, t_end, num=int(t_end * settings.fs_ana), endpoint=True)
-    u_off = 0.0
-    u_pp = [0.25, 0.3, 0.1]
-    f0 = [10e3, 18e3, 28e3]
-    uinp = np.zeros(t0.shape) + u_off
-    for idx, peak_val in enumerate(u_pp):
-        uinp += peak_val * np.sin(2 * np.pi * t0 * f0[idx])
+    t0, uinp = __generate_signal(0.5e-3, settings.fs_ana, [2.5, 0.3, 0.1], [10e3, 18e3, 28e3], 2.5)
     uinn = 0.0
 
     # --- Model declaration
     dev = ElectricalLoad(settings)
-    iout = dev.get_current_response(uinp, uinn)
+    iout = dev.get_current(uinp, uinn)
     iin = 1e-4 * uinp
-    uout = dev.get_voltage_response(iin, uinn, 1e-2)
+    uout = dev.get_voltage(iin, uinn, 1e-2)
 
     # --- Plotting: Current response
     plt.close('all')
-    __plot_test_results(t0, uinp-uinn, iout, False)
-    __plot_test_results(t0, uout+uinn, iin, True)
+    __plot_test_results(t0, uinp-uinn, iout, False, do_ylog)
+    __plot_test_results(t0, uout+uinn, iin, True, do_ylog)
     plt.show()
