@@ -111,7 +111,7 @@ def do_train_ae_classifier(dnn_handler: dnn_handler,
     trainhandler = train_classifier(config_train=config_train_cl, config_data=config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
-    acc_class = trainhandler.do_training()[-1][0]
+    acc_class = trainhandler.do_training()[-1]
 
     if dnn_handler.do_plot:
         logsdir = trainhandler.get_saving_path()

@@ -104,7 +104,7 @@ def do_train_ae(do_plot=True, do_block=True) -> None:
     trainhandler.load_model()
     trainhandler.load_data(dataset)
     del dataset
-    epoch_loss = trainhandler.do_training()[-1][0]
+    epoch_loss = trainhandler.do_training()[-1]
 
     # --- Post-Processing: Getting data, save and plot results
     logsdir = trainhandler.get_saving_path()

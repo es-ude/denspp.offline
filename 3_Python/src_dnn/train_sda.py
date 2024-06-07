@@ -58,7 +58,7 @@ def dnn_train_sda(dnn_handler: dnn_handler, sda_threshold: int) -> None:
     trainhandler.load_model()
     trainhandler.load_data(dataset)
     del dataset
-    epoch_acc = trainhandler.do_training()[-1][0]
+    epoch_acc = trainhandler.do_training()[-1]
 
     # --- Post-Processing: Getting data, save and plot results
     data_result = trainhandler.do_validation_after_training(3)
