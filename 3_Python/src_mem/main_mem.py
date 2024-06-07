@@ -22,17 +22,18 @@ def input_signal() -> [np.ndarray, np.ndarray]:
 
 if __name__ == "__main__":
     fs_ana = 20e3
-    num_samples = 250
+    num_samples = 100
     do_noise = True
     do_transient_plot = False
 
     # --- Definition of Dataset
     dataset = generate_dataset([0, 5, 7, 8, 9, 10], num_samples, 2, fs_ana,
+                               do_normalize_rms=True,
                                adding_noise=do_noise, pwr_noise_db=-28.2)
     dataset_names = dataset.class_names
 
     # --- Define Setting
-    n_dim = 3
+    n_dim = 2
     u_off = [0.75, 1.25]
     t_dly = [10e-3, 25e-3]
     gain = [1.0, 1.0]

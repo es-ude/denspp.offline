@@ -192,8 +192,8 @@ class Pipeline(PipelineCMD, _SettingsPipe):
             u_mem_top = x0.u_pre
             u_mem_bot = gain0 * u_dly - u_offset[idx]
 
-            i_load = self._load.get_current_response(u_mem_top, u_mem_bot)
-            i_off = self._load.get_current_response(u_offset[idx], self._dlyamp.vcm)
+            i_load = self._load.get_current(u_mem_top, u_mem_bot)
+            i_off = self._load.get_current(u_offset[idx], self._dlyamp.vcm)
 
             u_tra = self._curamp.push_pull_abs_amplifier(i_load - i_off)
             u_int = np.zeros((len(self._tpos_adc, )))
