@@ -5,9 +5,10 @@ from torch import is_tensor, load, from_numpy
 from torch.utils.data import Dataset
 
 from package.dnn.pytorch_handler import Config_Dataset
-from package.dnn.data_preprocessing_frames import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
-from package.dnn.data_preprocessing_frames import change_frame_size, reconfigure_cluster_with_cell_lib, generate_zero_frames, DataNormalization
-from package.dnn.data_augmentation_frames import *
+from package.data_process.frame_preprocessing import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
+from package.data_process.frame_preprocessing import change_frame_size, reconfigure_cluster_with_cell_lib, generate_zero_frames
+from package.data_process.frame_normalization import DataNormalization
+from package.data_process.frame_augmentation import *
 
 
 class DatasetAE_Class(Dataset):
@@ -62,22 +63,10 @@ def prepare_training(settings: Config_Dataset, path2model: str,
 
     # --- PART: Data Normalization
     if settings.data_do_normalization:
-        if settings.data_normalization_setting == 'bipolar':
-            do_bipolar = True
-            do_global = False
-        elif settings.data_normalization_setting == 'global':
-            do_bipolar = False
-            do_global = True
-        elif settings.data_normalization_setting == 'combined':
-            do_bipolar = True
-            do_global = True
-        else:
-            do_bipolar = False
-            do_global = False
         print(f"... do data normalization")
-        data_class_frames_in = DataNormalization(mode=settings.data_normalization_mode,
+        data_class_frames_in = DataNormalization(device=settings.data_normalization_mode,
                                                  method=settings.data_normalization_method,
-                                                 do_bipolar=do_bipolar, do_global=do_global)
+                                                 mode=settings.data_normalization_setting)
         frames_in = data_class_frames_in.normalize(frames_in)
 
     # --- PART: Mean waveform calculation and data augmentation

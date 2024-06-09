@@ -3,8 +3,9 @@ from scipy.io import loadmat
 from torch import is_tensor
 from torch.utils.data import Dataset
 from package.dnn.pytorch_handler import Config_Dataset
-from package.dnn.data_augmentation_frames import augmentation_reducing_samples
-from package.dnn.data_preprocessing_frames import reconfigure_cluster_with_cell_lib, DataNormalization
+from package.data_process.frame_augmentation import augmentation_reducing_samples
+from package.data_process.frame_preprocessing import reconfigure_cluster_with_cell_lib
+from package.data_process.frame_normalization import DataNormalization
 
 
 class DatasetRGC(Dataset):
@@ -48,22 +49,10 @@ def prepare_training(settings: Config_Dataset, use_cell_bib=False, mode_classes=
 
     # --- PART: Data Normalization
     if settings.data_do_normalization:
-        if settings.data_normalization_setting == 'bipolar':
-            do_bipolar = True
-            do_global = False
-        elif settings.data_normalization_setting == 'global':
-            do_bipolar = False
-            do_global = True
-        elif settings.data_normalization_setting == 'combined':
-            do_bipolar = True
-            do_global = True
-        else:
-            do_bipolar = False
-            do_global = False
         print(f"... do data normalization")
-        data_class_frames_in = DataNormalization(mode=settings.data_normalization_mode,
+        data_class_frames_in = DataNormalization(device=settings.data_normalization_mode,
                                                  method=settings.data_normalization_method,
-                                                 do_bipolar=do_bipolar, do_global=do_global)
+                                                 mode=settings.data_normalization_setting)
         frames_in = data_class_frames_in.normalize(frames_in)
 
     # --- PART: Reducing samples per cluster (if too large)

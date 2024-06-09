@@ -3,8 +3,8 @@ from scipy.io import loadmat
 from torch import is_tensor
 from torch.utils.data import Dataset, DataLoader
 from package.dnn.pytorch_handler import Config_Dataset
-from package.dnn.data_augmentation_frames import augmentation_reducing_samples
-from package.dnn.data_preprocessing_frames import DataNormalization
+from package.data_process.frame_augmentation import augmentation_reducing_samples
+from package.data_process.frame_normalization import DataNormalization
 
 
 class DatasetSDA(Dataset):

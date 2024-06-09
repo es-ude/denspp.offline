@@ -33,7 +33,7 @@ class Settings:
         fs_ana=SettingsDATA.fs_resample,
         gain=40,
         n_filt=1, f_filt=[0.1, 8e3], f_type="band",
-        offset=1e-6, noise=True,
+        offset=1e-6, noise_en=True,
         f_chop=10e3
     )
 
@@ -126,7 +126,7 @@ class Pipeline:
     def run(self, uinp: np.ndarray) -> None:
         self.signals.u_in = uinp
         # ---- Analogue Front End Module ----
-        self.signals.u_pre, _ = self.__preamp0.pre_amp_chopper(uinp, np.array(self.__preamp0.settings.vcm))
+        self.signals.u_pre, _ = self.__preamp0.pre_amp_chopper(uinp, np.array(self.__preamp0.vcm))
         self.signals.x_adc, _, self.signals.u_quant = self.__adc.adc_ideal(self.signals.u_pre)
         # ---- Digital Pre-processing ----
         self.signals.x_lfp = self.__dsp0.filter(self.signals.x_adc)

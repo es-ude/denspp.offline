@@ -1,6 +1,5 @@
 import dataclasses
 import numpy as np
-from package.data_process.process_noise import noise_awgn
 
 
 @dataclasses.dataclass

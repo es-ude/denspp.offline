@@ -64,7 +64,7 @@ def load_mnist(data_path: str) -> [datasets.MNIST, datasets.MNIST]:
     return data_train, data_valid
 
 
-def prepare_training(data_path: str, do_classification=True) -> DatasetMNIST:
+def prepare_training(data_path: str, do_normalization=False, do_classification=True) -> DatasetMNIST:
     """"""
     data_train, data_valid = load_mnist(data_path)
 
@@ -72,6 +72,10 @@ def prepare_training(data_path: str, do_classification=True) -> DatasetMNIST:
     data_raw = concat((data_train.data, data_valid.data), 0).numpy()
     data_label = concat((data_train.targets, data_valid.targets), 0).numpy()
     data_dict = data_train.classes
+
+    # --- Normalization
+    if do_normalization:
+        data_raw = data_raw / 255.0
 
     # --- Output
     check = np.unique(data_label, return_counts=True)

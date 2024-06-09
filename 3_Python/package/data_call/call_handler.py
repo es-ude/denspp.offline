@@ -6,6 +6,13 @@ import dataclasses
 import numpy as np
 from fractions import Fraction
 from scipy.signal import resample_poly
+import os
+import csv
+import matplotlib.pyplot as plt
+import mplcursors
+from matplotlib.ticker import ScalarFormatter
+import pickle
+from math import e
 
 
 @dataclasses.dataclass
@@ -68,25 +75,21 @@ class DataController:
         if t_range.size == 2:
             idx0 = int(t_range[0] * self.raw_data.data_fs_used)
             idx1 = int(t_range[1] * self.raw_data.data_fs_used)
+            self.__fill_factor = (idx0 - idx1) / rawdata[-1].size
 
             for idx, data_in in enumerate(rawdata):
                 # --- Cutting specific time range out of raw data
                 rawdata_out.append(data_in[idx0:idx1])
-                self.__fill_factor = (idx0 - idx1) / data_in.size
 
                 # --- Cutting labeled information
                 if self.raw_data.label_exist:
-                    # Find values from x-positions
+                    # Adapting new data
                     idx2 = int(np.argwhere(spikepos_in[idx] >= idx0)[0])
                     idx3 = int(np.argwhere(spikepos_in[idx] <= idx1)[-1])
-                else:
-                    idx2 = 0
-                    idx3 = -1
+                    spike_xout.append(spikepos_in[idx][idx2:idx3] - idx0)
+                    spike_cout.append(cluster_in[idx][idx2:idx3])
 
-                spike_xout.append(spikepos_in[idx][idx2:idx3] - idx0)
-                spike_cout.append(cluster_in[idx][idx2:idx3])
-
-            # Übergabe
+            # --- Return adapted data
             self.raw_data.data_raw = rawdata_out
             self.raw_data.evnt_xpos = spike_xout
             self.raw_data.evnt_cluster_id = spike_cout
@@ -125,6 +128,16 @@ class DataController:
         else:
             self.raw_data.data_fs_used = self.raw_data.data_fs_orig
             self.__scaling = 1
+
+    def do_mapping(self) -> None:
+        csv_folder = r'C:/Users/Leoni Kaiser/Documents/Studium/Master/3. Semester/CPS_Projekt/Elektrodenmapping'
+        if self.raw_data.data_type == "MCS 60MEA":
+            print("Electrode geometry MCS 60MEA will be loaded.")
+            csv_filename = 'MCS_60MEA.csv'
+        else:
+            csv_filename = '*.csv'
+        mea = self._transform_rawdata_mapping(csv_folder, csv_filename)
+        self._plot_data(mea)
 
     def output_meta(self) -> None:
         """Print some meta information into the console"""
@@ -191,7 +204,14 @@ class DataController:
 
     def _prepare_access_file(self, folder_name: str, data_type: str, sel_datapoint: int) -> None:
         """Getting the file of the corresponding trial"""
-        path = join(self.settings.path, folder_name, data_type)
+        # Checking for folder
+        """folder_content = glob(join(self.settings.path, "*"))
+        folder_content.sort()
+        path = ""
+        for folder in folder_content:
+            if folder_name[1:] in folder:
+                path = join(folder, data_type)"""
+        path = join(folder_name, data_type)
         folder_content = glob(path)
         folder_content.sort()
         self._no_files = len(folder_content)
@@ -211,6 +231,39 @@ class DataController:
         self._prepare_access_file(path2data, data_type, sel_datapoint)
         self._no_subfolder = len(file_data)
 
+    def _read_csv_file(self, path2csv: str, num_channels: int, split_option: str) -> list:
+        """"""
+        loaded_data = [[] for idx in range(num_channels)]
+        file = open(path2csv, 'r')
+
+        for line in file:
+            input = line.split(split_option)
+            sel_list = 0
+            for val in input:
+                if val:
+                    loaded_data[sel_list].append(val)
+                    sel_list += 1
+        return loaded_data
+
+    def _transform_rawdata_from_csv_to_numpy(self, data: list) -> np.ndarray:
+        """"""
+        # --- Getting meta information
+        num_samples = list()
+        for idx, data0 in enumerate(data):
+            num_samples.append(len(data0))
+        num_samples = np.array(num_samples)
+        num_channels = idx + 1
+
+        # --- Getting data in right format
+        data_used = np.zeros((num_channels, num_samples.min()), dtype=float)
+        for idx, data_ch in enumerate(data):
+            data_ch0 = list()
+            for value in data_ch:
+                data_ch0.append(float(value))
+            data_used[idx, :] = np.array(data_ch0[0:num_samples.min()])
+
+        return data_used
+
     def _transform_rawdata_to_numpy(self) -> None:
         """Transforming the initial raw data from list to numpy array"""
         if isinstance(self.raw_data.data_raw, list):
@@ -227,12 +280,167 @@ class DataController:
         else:
             print("\t transformation may be already done - Please check!")
 
-    def _transform_rawdata_mapping(self, do_mapping: bool, mapping: list) -> None:
+    def _read_csv_file_mapping(self, csv_path):
+        numbers_list = []
+
+        # Check if the CSV file exists
+        if os.path.exists(csv_path):
+            # Open the CSV file
+            with open(csv_path, 'r') as file:
+                reader = csv.reader(file)
+
+                # Iterate over each row in the CSV file
+                for row in reader:
+                    # Convert each element in the row to an integer (assuming numbers are expected)
+                    row = row[0]
+                    sep_row = row.split(';')
+                    numbers_row = [int(value) for value in sep_row]
+                    if numbers_row:
+                        numbers_list.append(numbers_row)
+        else:
+            return
+        return numbers_list
+
+    def _transform_rawdata_mapping(self, csv_folder, csv_filename) -> np.array:
         """Transforming the numpy array input to 2D array with electrode mapping configuration"""
         data_in = self.raw_data.data_raw
-        if isinstance(data_in, np.ndarray) and do_mapping:
-            if len(data_in.shape) == 2:
-                data_out = np.zeros((3, 3, data_in.shape[-1]), dtype=data_in.dtype)
-                print("2D transformation will be done")
-            elif len(data_in.shape) == 3:
-                print("2D transformation is available")
+        channel_head = self.raw_data.data_mapping
+        csv_path = os.path.join(csv_folder, csv_filename)
+        self.channel_numbers = self._read_csv_file_mapping(csv_path)
+        if self.raw_data.data_type == "MCS 60MEA":
+            mea = np.zeros((8, 8), dtype=object)
+        else:
+            print("Wrong data type. MEA won´t be initialized")
+            return
+        if isinstance(data_in, list):
+            if (len(data_in) > 0) & (len(data_in) == len(channel_head)):
+                print("2D->3D transformation will be done")
+                # Map channel numbers
+                for data_row_index, data_row in enumerate(self.channel_numbers):
+                    # Iterate over each element in the data row
+                    for data_col_index, data_value in enumerate(data_row):
+                        # Get the preset number at the same position if available
+                        if data_row_index < len(mea) and data_col_index < len(mea[data_row_index]):
+                            (mea[data_row_index][data_col_index]) = data_value
+
+                # Read channel data into 2D grid
+                for x in range(0, mea.shape[0]):
+                    for y in range(0, mea.shape[1]):
+                        if mea[x, y] > 0:
+                            column = 0
+                            for channel in channel_head:
+                                if int(channel[2:4]) == mea[x, y]:
+                                    mea[x, y] = data_in[column]
+                                    break
+                                column += 1
+                return mea
+            else:
+                print("Input data cannot be written into MEA")
+
+    def _plot_data(self, mea):
+        print("The plotted mea data is:", mea)
+        num_rows, num_cols = mea.shape[0], mea.shape[1]
+        fig, axes = plt.subplots(num_rows, num_cols, figsize=(12, 8), gridspec_kw={'wspace': 0.8, 'hspace': 0.8})
+
+        plotted_lines = []
+
+        for i in range(num_rows):
+            for j in range(num_cols):
+                if isinstance(mea[i, j], np.ndarray):  # Check if element is an array
+                    ax = axes[i, j]
+                    line, = ax.plot(mea[i, j], 'b-')  # Plot the array as a line plot
+
+                    # Set y-axis labels to the minimum and maximum values only
+                    ymin, ymax = np.min(mea[i, j]), np.max(mea[i, j])
+                    ax.set_yticks([ymin, ymax])
+                    ymin = ymin * 10 ** 6
+                    ymax = ymax * 10 ** 6
+                    ax.set_yticklabels([f'{ymin:.2f}', f'{ymax:.2f}'])
+                else:
+                    ax = axes[i, j]
+                    line, = ax.plot([0], 'b-')  # Plot the array as a line plot
+                    ymin = 0
+                    ymax = 0
+                    ax.set_yticklabels([f'{ymin:.2f}', f'{ymax:.2f}'])
+                    # Remove x-axis ticks and labels
+                ax.set_xticklabels([])
+                ax.set_xticks([])
+
+                # Remove subplot border
+                ax.spines['top'].set_visible(False)
+                ax.spines['right'].set_visible(False)
+                ax.spines['left'].set_visible(False)
+                ax.spines['bottom'].set_visible(False)
+
+                if isinstance(mea[i, j], np.ndarray):
+                    # Store the subplot and the data for the cursor event
+                    line._mea_data = mea[i, j]
+                else:
+                    line._mea_data = [0]
+                plotted_lines.append(line)
+
+        plt.suptitle('MCS60 MEA Channel Signals [values upscaled with e5]', y=1)
+
+        # Adjust layout and display the plot
+        plt.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05)
+        plt.tight_layout()
+
+        # Function to create a bigger plot when clicking on a subplot
+        def on_click(event):
+            artist = event.artist
+            data = artist._mea_data
+            fig, ax = plt.subplots(figsize=(8, 6))
+            ax.plot(data, 'bo-')
+            ax.set_xlabel('Time')
+            ax.set_ylabel('Voltage')
+            ax.set_title('Channel')
+            plt.show()
+
+        # Use mplcursors to enable click events
+        cursor = mplcursors.cursor(plotted_lines, hover=False)
+        cursor.connect("add", on_click)
+
+        # Save the figure
+        with open(
+                r'C:/Users/Leoni Kaiser/Documents/Studium/Master/3. Semester/CPS_Projekt/Elektrodenmapping/Results/Plotted_Signals.fig.pickle',
+                'wb') as f:
+            pickle.dump(fig, f)
+
+        plt.show()
+        plt.close()
+
+        for i in range(num_rows):
+            for j in range(num_cols):
+                if isinstance(mea[i, j], np.ndarray):
+                    plt.plot(mea[i, j])
+                    channel = self.channel_numbers[i][j]
+                    channel = str(channel)
+                    folder_save = r'C:/Users/Leoni Kaiser/Documents/Studium/Master/3. Semester/CPS_Projekt/Elektrodenmapping/Results/'
+                    path_save = folder_save + 'channel_' + channel + '.png'
+                    plt.savefig(path_save)
+                    plt.close()
+
+
+###########################################################################
+if __name__ == "__main__":
+    from package.data_call.call_spike_files import DataLoader, SettingsDATA
+
+    settings = SettingsDATA(
+        path="../../../2_Data",
+        data_set=8, data_case=1, data_point=8,
+        t_range=[0, 0.001], ch_sel=[], fs_resample=20e3
+    )
+    data_loader = DataLoader(settings)
+    data_loader.do_call()
+    data_loader.do_cut()
+    data_loader.do_resample()
+    data = data_loader.get_data()
+    data_loader.do_mapping()
+    del data_loader
+
+    #fig = pickle.load(open(r'C:/Users/Leoni Kaiser/Documents/Studium/Master/3. Semester/CPS_Projekt/Elektrodenmapping/Results/Plotted_Signals.fig.pickle', 'rb'))
+    #fig.show()
+    #plt.show()
+
+
+
