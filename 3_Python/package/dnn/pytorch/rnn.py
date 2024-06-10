@@ -25,7 +25,7 @@ class train_nn(training_pytorch):
             pred_con, pred_cl = self.model(tdata['in'].to(self.used_hw_dev))
 
             loss = self.loss_fn(pred_con, tdata['out'].to(self.used_hw_dev))
-            loss.backward()
+            loss.backward() # backprogation
             self.optimizer.step()
 
             train_loss += loss.item()

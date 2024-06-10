@@ -81,3 +81,55 @@ Recommended_Config_DatasetSettings = Config_Dataset(
     data_exclude_cluster=[],
     data_sel_pos=[]
 )
+class cnn2D_v1(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.out_modelname = 'cnn_ae_v1_2d'
+        self.out_modeltyp = 'Autoencoder'
+        self.model_embedded = False
+        self.model_shape = (1, 32)
+        do_bias_train = True
+        kernel_layer = [1, 22, 8, 3]
+        kernel_size = [(4, 4), (3, 3), (3, 3)]  # 2D kernel size
+        kernel_stride = [(2, 2), (2, 2), (2, 2)]  # 2D kernel stride
+        kernel_padding = [(0, 0), (0, 0), (0, 0)]  # 2D kernel padding
+        kernel_out = [(0, 0), (0, 0), (0, 0)]  # 2D kernel output padding
+
+        # Encoder setup
+        self.encoder = nn.Sequential(
+            nn.Conv2d(kernel_layer[0], kernel_layer[1], kernel_size[0],
+                      stride=kernel_stride[0], padding=kernel_padding[0]),
+            nn.BatchNorm2d(kernel_layer[1], affine=do_bias_train),
+            nn.ReLU(),
+            nn.Conv2d(kernel_layer[1], kernel_layer[2], kernel_size[1],
+                      stride=kernel_stride[1], padding=kernel_padding[1]),
+            nn.BatchNorm2d(kernel_layer[2], affine=do_bias_train),
+            nn.ReLU(),
+            nn.Conv2d(kernel_layer[2], kernel_layer[3], kernel_size[2],
+                      stride=kernel_stride[2], padding=kernel_padding[2]),
+            nn.BatchNorm2d(kernel_layer[3], affine=do_bias_train),
+            nn.ReLU()
+        )
+        self.flatten = nn.Flatten(start_dim=1)
+        self.decoder = nn.Sequential(
+            nn.ConvTranspose2d(kernel_layer[3], kernel_layer[2], kernel_size[2], stride=kernel_stride[2],
+                               padding=kernel_padding[2], output_padding=kernel_out[2]),
+            nn.BatchNorm2d(kernel_layer[2], affine=do_bias_train),
+            nn.ReLU(),
+            nn.ConvTranspose2d(kernel_layer[2], kernel_layer[1], kernel_size[1], stride=kernel_stride[1],
+                               padding=kernel_padding[1], output_padding=kernel_out[1]),
+            nn.BatchNorm2d(kernel_layer[1], affine=do_bias_train),
+            nn.ReLU(),
+            nn.ConvTranspose2d(kernel_layer[1], kernel_layer[0], kernel_size[0], stride=kernel_stride[0],
+                               padding=kernel_padding[0], output_padding=kernel_out[0]),
+            nn.BatchNorm2d(kernel_layer[0], affine=do_bias_train),
+            nn.ReLU(),
+            nn.Linear(24, self.model_shape[1], bias=True)
+        )
+
+    def forward(self, x):
+        encoded = self.encoder(x)
+        decoded = self.decoder(encoded)
+        return self.flatten(encoded), self.flatten(decoded)
+
+
