@@ -101,7 +101,7 @@ class ElectricalLoad(ProcessNoise):
         dev_type.update({'Mem': self.__memristor_light})
         return dev_type
 
-    def get_current(self, u_top: np.ndarray, u_bot: np.ndarray | float) -> np.ndarray:
+    def get_current(self, u_top: np.ndarray | float, u_bot: np.ndarray | float) -> np.ndarray:
         """Getting the current response from electrical device
         Args:
             u_top:      Applied voltage on top electrode [V]
@@ -109,7 +109,11 @@ class ElectricalLoad(ProcessNoise):
         Returns:
             Corresponding current response
         """
-        iout = np.zeros(u_top.shape, dtype=float)
+        if isinstance(u_top, float):
+            iout = np.zeros((1, ), dtype=float)
+        else:
+            iout = np.zeros(u_top.shape, dtype=float)
+
         if self._settings.type in self._dev_type.keys():
             iout = self._dev_type[self._settings.type](u_top, u_bot)
         return iout

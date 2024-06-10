@@ -1,6 +1,6 @@
 import numpy as np
 from tqdm import tqdm
-from src_mem.pipeline_v2 import Pipeline
+from src_mem.pipeline_v3 import Pipeline
 from src_mem.generate_waveform_dataset import generate_dataset
 from src_mem.memristor_plots import plot_pipeline_feat, show_plots
 

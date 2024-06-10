@@ -5,10 +5,11 @@ from package.pipeline_cmds import PipelineCMD
 from package.analog.pre_amp import PreAmp, SettingsAMP
 from package.analog.dly_amp import DlyAmp, SettingsDLY
 from package.analog.comp import Comp, SettingsCMP
-from package.analog.dev_load import ElectricalLoad, SettingsDEV
+# from package.analog.dev_load import ElectricalLoad, SettingsDEV
 from package.analog.cur_amp import CurrentAmplifier, SettingsCUR
 from package.analog.int_ana import IntegratorStage, SettingsINT
 from package.analog.adc_sar import SettingsADC, ADC_SAR
+from src_mem.memristor_extension import SettingsMem, MemristorModel
 from src_mem.pipeline_mem import PipelineSignal
 
 from src_mem.memristor_plots import plt_pipeline_signals_part_one, plt_pipeline_signals_part_two
@@ -60,13 +61,17 @@ class _SettingsPipe:
         offset=0e-3,
         noise=__en_noise
     )
-    __settings_load = SettingsDEV(
-        type='R',
+    __settings_load = SettingsMem(
+        type='M0',
         fs_ana=0.0,
         noise_en=__en_noise,
         para_en=False,
-        dev_value=10e3,
-        temp=300
+        dev_value={"Sample": {
+            "Branch_2": {"n": 24.0, "k": 2.75, "Is": 24.5, "Rs": 471.0},
+            "Branch_4": {"n": 4.88, "k": 19.6, "Is": 10.6, "Rs": 57.0}}},
+        dev_sel=1,
+        temp=300,
+        area=0.045
     )
     __settings_cur = SettingsCUR(
         vss=__vss, vdd=__vdd,
@@ -110,7 +115,7 @@ class _SettingsPipe:
         # --- Init Pipeline Elements (Init. of _load<X> later)
         self._preamp = PreAmp(self.__settings_amp)
         self._dlyamp = DlyAmp(self.__settings_dly)
-        self._load = ElectricalLoad(self.__settings_load)
+        self._load = MemristorModel(self.__settings_load)
         self._cmp = Comp(self.__settings_cmp)
         self._curamp = CurrentAmplifier(self.__settings_cur)
         self._intamp = IntegratorStage(self.__settings_int, fs_ana)
