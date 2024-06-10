@@ -94,11 +94,10 @@ class _SettingsPipe:
         fs_dig=20e3, osr=1, Nadc=12
     )
 
-    def __init__(self, fs_ana: float, type_dev: str) -> None:
+    def __init__(self, fs_ana: float) -> None:
         """Settings class for setting-up the pipeline
         Args:
             fs_ana:     Sampling rate [Hz]
-            type_dev:   Selected device as electrical load
         Returns:
             None
         """
@@ -107,7 +106,6 @@ class _SettingsPipe:
         self.__settings_adc.fs_ana = fs_ana
         self.__settings_cur.fs_ana = fs_ana
         self.__settings_load.fs_ana = fs_ana
-        self.__settings_load.type = type_dev
 
         # --- Init Pipeline Elements (Init. of _load<X> later)
         self._preamp = PreAmp(self.__settings_amp)
@@ -122,16 +120,15 @@ class _SettingsPipe:
 class Pipeline(PipelineCMD, _SettingsPipe):
     signals: PipelineSignal
 
-    def __init__(self, fs_ana: float, type_device: str) -> None:
+    def __init__(self, fs_ana: float) -> None:
         """Processing Pipeline for analysing invasive neural activities
         Args:
             fs_ana:         Sampling rate [Hz]
-            type_device:    Selected device as electrical load
         Returns:
             None
         """
         PipelineCMD.__init__(self)
-        _SettingsPipe.__init__(self, fs_ana, type_device)
+        _SettingsPipe.__init__(self, fs_ana)
 
         self._path2pipe = abspath(__file__)
         self.generate_folder('runs', '_mem')

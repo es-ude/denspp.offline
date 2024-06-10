@@ -43,7 +43,7 @@ if __name__ == "__main__":
         gain.append(1.0)
 
     # --- Run DUT
-    dut = Pipeline(fs_ana, 'R')
+    dut = Pipeline(fs_ana)
     dut.define_time_adc_samp([0.46, 0.7])
 
     data_mem_feat = list()

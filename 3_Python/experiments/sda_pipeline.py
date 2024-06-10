@@ -15,7 +15,9 @@ class _SettingsPipe:
         fs_ana=100,
         gain=40,
         n_filt=1, f_filt=[10, 8e3], f_type="band",
-        offset=1e-6, noise=True,
+        offset=1e-6,
+        noise_en=True,
+        noise_edev=1e-9,
         f_chop=10e3
     )
     SettingsADC = SettingsADC(

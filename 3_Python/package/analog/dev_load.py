@@ -109,7 +109,7 @@ class ElectricalLoad(ProcessNoise):
         Returns:
             Corresponding current response
         """
-        iout = np.array(0.0, dtype=float)
+        iout = np.zeros(u_top.shape, dtype=float)
         if self._settings.type in self._dev_type.keys():
             iout = self._dev_type[self._settings.type](u_top, u_bot)
         return iout
@@ -154,7 +154,7 @@ class ElectricalLoad(ProcessNoise):
 
             error0 = list()
             for u_top in test_value:
-                i1 = self.get_current_response(u_top, u_bottom)
+                i1 = self.get_current(u_top, u_bottom)
                 error0.append(_error_mse(i1, i0))
 
             error0 = np.array(error0)
@@ -168,7 +168,7 @@ class ElectricalLoad(ProcessNoise):
             step_ite = 0
             do_calc = True
             while do_calc:
-                i1 = self.get_current_response(u_top, u_bottom)
+                i1 = self.get_current(u_top, u_bottom)
 
                 # Error Logging
                 error.append(_error_mse(i1, i0))
