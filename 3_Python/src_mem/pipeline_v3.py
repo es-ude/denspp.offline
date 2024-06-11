@@ -62,13 +62,12 @@ class _SettingsPipe:
         noise=__en_noise
     )
     __settings_load = SettingsMem(
-        type='M0',
+        type='M1',
         fs_ana=0.0,
         noise_en=__en_noise,
         para_en=False,
-        dev_value={"Sample": {
-            "Branch_2": {"n": 24.0, "k": 2.75, "Is": 24.5, "Rs": 471.0},
-            "Branch_4": {"n": 4.88, "k": 19.6, "Is": 10.6, "Rs": 57.0}}},
+        dev_value={},
+        dev_branch=0,
         dev_sel=1,
         temp=300,
         area=0.045
