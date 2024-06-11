@@ -251,8 +251,8 @@ class ElectricalLoad(ProcessNoise):
             Corresponding current signal
         """
         is0 = 1e-12
-        n0 = 1.4
-        u_th = 0.25
+        n0 = 8
+        u_th = 0.55
         du = u_inp - u_inn
         i_out = is0 * np.exp((du - u_th) / (n0 * self.temperature_voltage))
         if self._settings.noise_en:

@@ -84,7 +84,7 @@ class IntegratorStage(ProcessNoise):
         """Getting the time constant tau of integrator"""
         return 1 / self._settings.tau / self._sampling_rate
 
-    def __voltage_clipping(self, uin: np.ndarray) -> np.ndarray:
+    def __voltage_clipping(self, uin: np.ndarray | float) -> np.ndarray:
         """Do voltage clipping at voltage supply"""
         uout = np.zeros(uin.shape) + uin
         if uin.size == 1:
@@ -127,8 +127,8 @@ class IntegratorStage(ProcessNoise):
         Returns:
             Numpy array with accumulated input
         """
-        u_out = scale * np.sum(x_inp - x_inn)
-        return self.__voltage_clipping(u_out)
+        u_out = np.sum(x_inp - x_inn, axis=0) * scale
+        return u_out
 
     def __do_accumulation_passive(self, x_inp: np.ndarray, x_inn: np.ndarray, scale=1.0, do_push=False) -> np.ndarray:
         """Performs a passive-accumulation of input signals
@@ -183,8 +183,8 @@ class IntegratorStage(ProcessNoise):
         Returns:
             Numpy array with voltage sample
         """
-        u_out = self.__do_accumulation_sample(u_inp, u_inn, self.tau_active_scale)
-        u_out += self.__noise_generation_circuit(u_out.size)
+        u_n = self.__noise_generation_circuit(u_inp.size)
+        u_out = self.__do_accumulation_sample(u_inp + u_n, u_inn, self.tau_active_scale)
         return self.__voltage_clipping(u_out)
 
     def do_ideal_integration(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:

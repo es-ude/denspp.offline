@@ -3,6 +3,13 @@ from tqdm import tqdm
 from src_mem.pipeline_v3 import Pipeline
 from src_mem.generate_waveform_dataset import generate_dataset
 from src_mem.memristor_plots import plot_pipeline_feat, show_plots
+from package.digital.cluster import SettingsCluster, Clustering
+from package.plot.plot_metric import plot_confusion
+
+
+set_clustering = SettingsCluster(
+    no_cluster=6
+)
 
 
 def input_signal() -> [np.ndarray, np.ndarray]:
@@ -32,7 +39,10 @@ if __name__ == "__main__":
                                adding_noise=do_noise, pwr_noise_db=-28.2)
     dataset_names = dataset.class_names
 
-    # --- Define Setting
+    # --- Define Clustering Pipeline
+    cluster_mod = Clustering(set_clustering)
+
+    # --- Define of Pipeline Parameters
     n_dim = 3
     u_off = [0.75, 1.25]
     t_dly = [10e-3, 25e-3]
@@ -58,12 +68,19 @@ if __name__ == "__main__":
             dut.do_plotting(num_sample)
             num_sample += 1
 
-    # --- Getting feature space and plot
+    # --- Getting feature space and clustering
     feat_pro = np.zeros((len(data_mem_feat), data_mem_feat[-1].size), dtype=float)
     for idx, data in enumerate(data_mem_feat):
         feat_pro[idx, ] = data
 
+    data_label = np.array(data_label, dtype=int)
+    pipe_label = cluster_mod.init_kmeans(feat_pro)
+    pipe_label2 = cluster_mod.sort_pred2label_data(pipe_label, data_label, feat_pro)
+
+    # --- Plotting
     plot_pipeline_feat(feat_pro, label=data_label, dict=dataset_names,
                        path2save=dut.path2save)
+    plot_confusion(data_label, pipe_label2, show_accuracy=True, cl_dict=dataset_names,
+                   path2save=dut.path2save)
     show_plots()
     print("Done")
