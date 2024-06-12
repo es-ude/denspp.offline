@@ -1,7 +1,7 @@
 import numpy as np
 from torch import nn
 import matplotlib.pyplot as plt
-from package.dnn import pytorch_handler
+from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 import src_dnn.models.rgc_ae_cl as models
 from src_dnn.train_rgc_class import rgc_logic_combination
@@ -28,7 +28,7 @@ config_data = Config_Dataset(
 )
 
 
-def do_train_rgc_ae_cl(dnn_handler: pytorch_handler,
+def do_train_rgc_ae_cl(dnn_handler: dnn_handler,
                            num_feature_layer: int, num_output: int,
                            mode_ae: int, noise_std=0.05) -> None:
     """Training routine for Autoencoders and Classification after Encoder
