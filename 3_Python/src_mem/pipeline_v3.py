@@ -67,7 +67,7 @@ class _SettingsPipe:
         noise_en=__en_noise,
         para_en=False,
         dev_value={},
-        dev_branch=0,
+        dev_branch=1,
         dev_sel=1,
         temp=300,
         area=0.045

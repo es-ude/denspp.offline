@@ -5,9 +5,9 @@ from package.plot.plot_common import cm_to_inch, save_figure
 from src_mem.pipeline_mem import PipelineSignal
 
 
-def show_plots() -> None:
-    """"""
-    plt.show()
+def show_plots(block=True) -> None:
+    """Showing plots and blocking system if required"""
+    plt.show(block=block)
 
 
 def plt_memristor_ref(frames_in: np.ndarray, frames_cluster: np.ndarray, frames_mean: np.ndarray) -> None:
@@ -173,5 +173,3 @@ def plot_pipeline_feat(feat_array: np.ndarray, label=None, dict=None, path2save=
         plt.tight_layout()
         if path2save:
             save_figure(plt, path2save, "pipeline_mem_feat")
-
-

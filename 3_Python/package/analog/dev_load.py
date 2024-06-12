@@ -109,7 +109,7 @@ class ElectricalLoad(ProcessNoise):
         Returns:
             Corresponding current response
         """
-        if isinstance(u_top, float):
+        if isinstance(u_top, float) or isinstance(u_top, int):
             iout = np.zeros((1, ), dtype=float)
         else:
             iout = np.zeros(u_top.shape, dtype=float)
