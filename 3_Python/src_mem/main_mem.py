@@ -63,7 +63,7 @@ def get_params(mode: int, n_dim: int) -> [list, list, list, list]:
     """"""
     match mode:
         case 0:
-            u_off = [0.75, 1.25]
+            u_off = [0.25, 1.25]
             t_dly = [10e-3, 25e-3]
             gain = [1.0, 1.0]
             if n_dim >= 3:
@@ -72,7 +72,14 @@ def get_params(mode: int, n_dim: int) -> [list, list, list, list]:
                 gain.append(1.0)
             t0_adc_sec = [0.46, 0.7]
         case 1:
-            pass
+            u_off = [0.75, 1.25]
+            t_dly = [5e-3, 10e-3]
+            gain = [1.0, 1.0]
+            if n_dim >= 3:
+                u_off.append(2.0)
+                t_dly.append(2e-3)
+                gain.append(1.0)
+            t0_adc_sec = [0.02, 0.0392]
         case 2:
             u_off = [-4.0, -3.5]
             t_dly = [0.2e-3, 0.5e-3]
@@ -87,7 +94,7 @@ def get_params(mode: int, n_dim: int) -> [list, list, list, list]:
 
 if __name__ == "__main__":
     n_dim = 3
-    mode_dataset = 2
+    mode_dataset = 1
     do_noise = False
     do_transient_plot = False
     do_block_plots = True
@@ -101,7 +108,7 @@ if __name__ == "__main__":
     dut = Pipeline(fs_ana)
     dut.define_time_adc_samp(tq)
 
-    plot_signals_neural_cluster(dataset0, path2save=dut.path2save)
+    # plot_signals_neural_cluster(dataset0, path2save=dut.path2save)
 
     data_mem_feat = list()
     data_label = list()
@@ -114,8 +121,8 @@ if __name__ == "__main__":
             data_in = data['in'].flatten()
             data_cl = data['out']
         else:
-            #data_in = data['in'] / data['in'].max()
-            data_in = data['mean'] / data['mean'].max() + noise_awgn(data['mean'].size, fs_ana, -31.2)
+            data_in = data['in'] / data['in'].max()
+            #data_in = data['mean'] / data['mean'].max() + noise_awgn(data['mean'].size, fs_ana, -31.2)
             data_cl = data['out']
 
         dut.run(data_in, u_off, t_dly, do_sum=do_transient_plot)
