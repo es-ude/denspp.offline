@@ -9,6 +9,27 @@ from package.data_process.frame_normalization import DataNormalization
 from package.data_process.frame_augmentation import *
 
 
+RecommendedDataset_Config = Config_Dataset(
+    # --- Settings of Datasets
+    data_path="../2_Data/00_Merged_Datasets",
+    data_file_name="2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted.mat",
+    # --- Data Augmentation
+    data_do_augmentation=False,
+    data_num_augmentation=0,
+    data_do_addnoise_cluster=False,
+    # --- Data Normalization
+    data_do_normalization=False,
+    data_normalization_mode='CPU',
+    data_normalization_method='minmax',
+    data_normalization_setting='bipolar',
+    # --- Dataset Reduction
+    data_do_reduce_samples_per_cluster=False,
+    data_num_samples_per_cluster=0,
+    data_exclude_cluster=[],
+    data_sel_pos=[]
+)
+
+
 class DatasetAE(Dataset):
     """Dataset Preparator for training Autoencoder"""
     def __init__(self, frames_raw: np.ndarray, cluster_id: np.ndarray,
@@ -71,7 +92,7 @@ class DatasetAE(Dataset):
 
 
 def prepare_training(settings: Config_Dataset,
-                     use_cell_bib=False, mode_classes=2,
+                     use_cell_bib=False, mode_classes=0,
                      use_median=True,
                      mode_train_ae=0, do_classification=False,
                      noise_std=0.1) -> DatasetAE:
