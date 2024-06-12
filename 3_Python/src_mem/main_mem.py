@@ -79,8 +79,7 @@ def get_params(mode: int, n_dim: int) -> [list, list, list, list]:
                 u_off.append(3.2)
                 t_dly.append(0.3e-3)
                 gain.append(1.0)
-            t0_adc_sec = [0.8e-3, 1.5e-3]
-
+            t0_adc_sec = [1.5e-3]
     return u_off, t_dly, gain, t0_adc_sec
 
 
@@ -113,7 +112,7 @@ if __name__ == "__main__":
             data_in = 0.025 * data['in']
             data_cl = data['out']
 
-        dut.run(data_in, u_off, t_dly)
+        dut.run(data_in, u_off, t_dly, do_sum=do_transient_plot)
         data_label.append(data_cl)
         data_mem_feat.append(dut.signals.x_feat)
 

@@ -153,13 +153,15 @@ class Pipeline(PipelineCMD, _SettingsPipe):
         """Definition of sampling timepoints for ADC quantization"""
         self._tpos_adc = tq
 
-    def run(self, uinp: np.ndarray, u_offset: np.ndarray | list, t_dly: np.ndarray | list, gain=()) -> None:
+    def run(self, uinp: np.ndarray, u_offset: np.ndarray | list, t_dly: np.ndarray | list,
+            gain=(), do_sum=False) -> None:
         """Running the pipeline
         Args:
             uinp:       Transient signal of each channel
             u_offset:   List or numpy array with offset voltage values for each analogue feature extraction stage
             t_dly:      List or numpy array with time delay values for each analogue feature extraction stage
             gain:       List or numpy array with gain value for each analogue feature extraction stage [+/- 0.8 ... 1.2]
+            do_sum:     Do full integration of current
         Returns:
             None
         """
@@ -193,12 +195,21 @@ class Pipeline(PipelineCMD, _SettingsPipe):
             i_off = self._load.get_current(u_offset[idx], self._dlyamp.vcm)
 
             u_tra = self._curamp.push_pull_abs_amplifier(i_load - i_off)
-            u_int = np.zeros((len(self._tpos_adc, )))
-            for i, tq in enumerate(self._tpos_adc):
-                xpos = int(x0.fs_ana * tq)
-                u_int[i] = self._intamp.do_ideal_integration_sample(u_tra[:xpos], self._intamp.vcm)
-            x0.x_feat[idx] = u_int[-1] / u_int[0]
-            # x0.x_feat[idx] = self._adc.adc_ideal(u_int[-1])[0]
+            if do_sum:
+                u_int = np.zeros((u_tra.size, len(self._tpos_adc)), dtype=float)
+                for i, tq in enumerate(self._tpos_adc):
+                    xpos = int(x0.fs_ana * tq) - 1
+                    u_int[:xpos, i] = self._intamp.do_ideal_integration(u_tra[:xpos], self._intamp.vcm)
+                    u_int[xpos:, i] += u_int[xpos - 1, i]
+                x0.x_feat[idx] = u_int[-1, -1] / u_int[-1, 0] if len(self._tpos_adc) > 1 else u_int[xpos, -1]
+                # x0.x_feat[idx] = self._adc.adc_ideal(u_int[-1])[0]
+            else:
+                u_int = np.zeros((len(self._tpos_adc, )))
+                for i, tq in enumerate(self._tpos_adc):
+                    xpos = int(x0.fs_ana * tq)
+                    u_int[i] = self._intamp.do_ideal_integration_sample(u_tra[:xpos], self._intamp.vcm)
+                x0.x_feat[idx] = u_int[-1] / u_int[0] if len(self._tpos_adc) > 1 else u_int[-1]
+                # x0.x_feat[idx] = self._adc.adc_ideal(u_int[-1])[0]
 
             # --- Return signals to handler
             x0.u_dly = append_numpy_signals(x0.u_dly, u_dly)
