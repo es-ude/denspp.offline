@@ -150,6 +150,7 @@ class Pipeline(PipelineCMD, _SettingsPipe):
 
     def do_plotting(self, num_sample: int) -> None:
         """Function to plot results"""
+
         plt_pipeline_signals_part_one(self.signals, num_sample, path2save=self.path2save)
         plt_pipeline_signals_part_two(self.signals, num_sample, path2save=self.path2save)
 

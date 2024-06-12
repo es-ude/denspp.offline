@@ -1,11 +1,10 @@
 import dataclasses
-import os
+from os import mkdir, remove, getcwd
+from os.path import exists, join
 import platform
 import cpuinfo
 import numpy as np
 from typing import Any
-from os import mkdir, remove
-from os.path import exists, join
 from shutil import rmtree, copy
 from glob import glob
 from datetime import datetime
@@ -106,7 +105,7 @@ class Config_Dataset:
 def copy_handler_dummy() -> None:
     """Generating a handler dummy for training neural networks"""
     folder2search = '3_Python'
-    path2start = join(os.getcwd().split(folder2search)[0], folder2search)
+    path2start = join(getcwd().split(folder2search)[0], folder2search)
     path2dst = join(path2start, 'src_dnn')
     # --- Checking if path to local training handler exists
     if not exists(path2dst):
@@ -171,7 +170,7 @@ class training_pytorch:
 
     def __check_start_folder(self, start_folder='3_Python', new_folder='runs') -> str:
         """"""
-        path2start = join(os.getcwd().split(start_folder)[0], start_folder)
+        path2start = join(getcwd().split(start_folder)[0], start_folder)
         path2dst = join(path2start, new_folder)
         if not exists(path2dst):
             mkdir(path2dst)

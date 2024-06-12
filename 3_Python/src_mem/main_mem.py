@@ -5,6 +5,8 @@ from src_mem.generate_waveform_dataset import generate_dataset
 from src_mem.memristor_plots import plot_pipeline_feat, show_plots
 from package.digital.cluster import SettingsCluster, Clustering
 from package.plot.plot_metric import plot_confusion
+from package.dnn.dataset.autoencoder import RecommendedDataset_Config, prepare_training as load_neural
+from package.dnn.dataset.mnist import DatasetMNIST, prepare_training as load_mnist
 
 
 set_clustering = SettingsCluster(
@@ -12,13 +14,16 @@ set_clustering = SettingsCluster(
 )
 
 
-def input_signal() -> [np.ndarray, np.ndarray]:
-    # --- Declaration of input
+def input_signal(f_samp: float) -> [np.ndarray, np.ndarray]:
+    """"""
+    # --- Settings
     t_end = 10e-3
-    t0 = np.linspace(0, t_end, num=int(t_end * fs_ana), endpoint=True)
     u_off = 0.0
     u_pp = [0.25, 0.3, 0.1]
     f0 = [1e3, 1.8e3, 2.8e3]
+
+    # --- Declaration of input
+    t0 = np.linspace(0, t_end, num=int(t_end * f_samp), endpoint=True)
     uinp = np.zeros(t0.shape) + u_off
     for idx, peak_val in enumerate(u_pp):
         uinp += peak_val * np.sin(2 * np.pi * t0 * f0[idx])
@@ -27,41 +32,89 @@ def input_signal() -> [np.ndarray, np.ndarray]:
     return uinp, uinn
 
 
+def get_dataset(mode: int):
+    """Loading the datset"""
+    match mode:
+        case 0:
+            # --- Loading waveforms
+            num_samples = 500
+            fs_ana = 20e3
+            dataset = generate_dataset([0, 5, 7, 8, 9, 10], num_samples, 2, fs_ana,
+                                       do_normalize_rms=True,
+                                       adding_noise=do_noise, pwr_noise_db=-28.2)
+            dataset_names = dataset.class_names
+        case 1:
+            # --- Loading MNIST
+            fs_ana = 20e3
+            dataset = load_mnist("data", True, True)
+            dataset_names = dataset.frame_dict
+        case 2:
+            # --- Loading neural data
+            fs_ana = 20e3
+            dataset = load_neural(RecommendedDataset_Config, do_classification=True)
+            dataset_names = dataset.frame_dict
+
+    return dataset, dataset_names, fs_ana
+
+
+def get_params(mode: int, n_dim: int) -> [list, list, list, list]:
+    """"""
+    match mode:
+        case 0:
+            u_off = [0.75, 1.25]
+            t_dly = [10e-3, 25e-3]
+            gain = [1.0, 1.0]
+            if n_dim >= 3:
+                u_off.append(2.0)
+                t_dly.append(15e-3)
+                gain.append(1.0)
+            t0_adc_sec = [0.46, 0.7]
+        case 1:
+            pass
+        case 2:
+            u_off = [2.0, 2.2]
+            t_dly = [0.2e-3, 0.4e-3]
+            gain = [1.0, 1.0]
+            if n_dim >= 3:
+                u_off.append(3.2)
+                t_dly.append(0.3e-3)
+                gain.append(1.0)
+            t0_adc_sec = [0.8e-3, 1.5e-3]
+
+    return u_off, t_dly, gain, t0_adc_sec
+
+
 if __name__ == "__main__":
-    fs_ana = 20e3
-    num_samples = 500
-    do_noise = True
+    n_dim = 3
+    mode_dataset = 2
+    do_noise = False
     do_transient_plot = False
 
-    # --- Definition of Dataset
-    dataset = generate_dataset([0, 5, 7, 8, 9, 10], num_samples, 2, fs_ana,
-                               do_normalize_rms=True,
-                               adding_noise=do_noise, pwr_noise_db=-28.2)
-    dataset_names = dataset.class_names
-
-    # --- Define Clustering Pipeline
-    cluster_mod = Clustering(set_clustering)
-
-    # --- Define of Pipeline Parameters
-    n_dim = 3
-    u_off = [0.75, 1.25]
-    t_dly = [10e-3, 25e-3]
-    gain = [1.0, 1.0]
-    if n_dim >= 3:
-        u_off.append(2.0)
-        t_dly.append(15e-3)
-        gain.append(1.0)
+    # --- Input Definition
+    dataset0, clus_names, fs_ana = get_dataset(mode_dataset)
+    u_off, t_dly, gain, tq = get_params(mode_dataset, n_dim)
 
     # --- Run DUT
+    cluster_mod = Clustering(set_clustering)
     dut = Pipeline(fs_ana)
-    dut.define_time_adc_samp([0.46, 0.7])
+    dut.define_time_adc_samp(tq)
 
     data_mem_feat = list()
     data_label = list()
     num_sample = 0
-    for data in tqdm(dataset, ncols=100, desc="Progress:"):
-        dut.run(data[0], u_off, t_dly)
-        data_label.append(data[1])
+    for data in tqdm(dataset0, ncols=100, desc="Progress:"):
+        if mode_dataset == 0:
+            data_in = data[0]
+            data_cl = data[1]
+        elif mode_dataset == 1:
+            data_in = data['in'].flatten()
+            data_cl = data['out']
+        else:
+            data_in = 0.025 * data['in']
+            data_cl = data['out']
+
+        dut.run(data_in, u_off, t_dly)
+        data_label.append(data_cl)
         data_mem_feat.append(dut.signals.x_feat)
 
         if do_transient_plot:
@@ -75,12 +128,13 @@ if __name__ == "__main__":
 
     data_label = np.array(data_label, dtype=int)
     pipe_label = cluster_mod.init_kmeans(feat_pro)
-    pipe_label2 = cluster_mod.sort_pred2label_data(pipe_label, data_label, feat_pro)
 
     # --- Plotting
-    plot_pipeline_feat(feat_pro, label=data_label, dict=dataset_names,
+    plot_pipeline_feat(feat_pro, label=data_label, dict=clus_names,
                        path2save=dut.path2save)
-    plot_confusion(data_label, pipe_label2, show_accuracy=True, cl_dict=dataset_names,
+
+    pipe_label2 = cluster_mod.sort_pred2label_data(pipe_label, data_label, feat_pro)
+    plot_confusion(data_label, pipe_label2, show_accuracy=True, cl_dict=clus_names,
                    path2save=dut.path2save)
     show_plots()
     print("Done")
