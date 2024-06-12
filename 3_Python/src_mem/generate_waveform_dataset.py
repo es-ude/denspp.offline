@@ -24,7 +24,7 @@ class DatasetWFG(Dataset):
             return self.__signals[idx, :], self.__classes[idx]
 
 
-def generate_dataset(selected_wfg: list, num_wfg_class: int, freq_wfg: float, sampling_rate: float,
+def generate_dataset(selected_wfg: list, num_wfg_class: int, freq_wfg: float, sampling_rate: float, scale_amp=1.0,
                      adding_noise=False, pwr_noise_db=-30.0, get_info_classes=False,
                      do_normalize_rms=False) -> DatasetWFG:
     """Generating dataset
@@ -33,6 +33,7 @@ def generate_dataset(selected_wfg: list, num_wfg_class: int, freq_wfg: float, sa
         num_wfg_class:      Number of samples for each waveform class
         freq_wfg:           Frequency of the waveform
         sampling_rate:      Sampling rate
+        scale_amp:          Scaling factor for waveform amplitude
         adding_noise:       Adding noise to output
         get_info_classes:   Getting print output with available signal types
         do_normalize_rms:   Normalizing the energy of waveform in order to have similar true RMS
@@ -65,7 +66,8 @@ def generate_dataset(selected_wfg: list, num_wfg_class: int, freq_wfg: float, sa
             if adding_noise:
                 signal0 += noise_awgn(t0.size, sampling_rate, pwr_noise_db)
 
-            waveforms_signals[idx * num_wfg_class + num_ite, :] = signal0 if not do_normalize_rms else 1 / rms * signal0
+            signal = scale_amp * signal0 if not do_normalize_rms else scale_amp / rms * signal0
+            waveforms_signals[idx * num_wfg_class + num_ite, :] = signal
             waveforms_classes[idx * num_wfg_class + num_ite] = idx
             waveforms_rms[idx * num_wfg_class + num_ite] = rms
 

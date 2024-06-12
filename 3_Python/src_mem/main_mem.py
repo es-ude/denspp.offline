@@ -16,24 +16,6 @@ set_clustering = SettingsCluster(
 )
 
 
-def input_signal(f_samp: float) -> [np.ndarray, np.ndarray]:
-    """"""
-    # --- Settings
-    t_end = 10e-3
-    u_off = 0.0
-    u_pp = [0.25, 0.3, 0.1]
-    f0 = [1e3, 1.8e3, 2.8e3]
-
-    # --- Declaration of input
-    t0 = np.linspace(0, t_end, num=int(t_end * f_samp), endpoint=True)
-    uinp = np.zeros(t0.shape) + u_off
-    for idx, peak_val in enumerate(u_pp):
-        uinp += peak_val * np.sin(2 * np.pi * t0 * f0[idx])
-    uinn = 0.0
-
-    return uinp, uinn
-
-
 def get_dataset(mode: int):
     """Loading the datset"""
     match mode:
@@ -41,9 +23,9 @@ def get_dataset(mode: int):
             # --- Loading waveforms
             num_samples = 500
             fs_ana = 20e3
-            dataset = generate_dataset([0, 5, 7, 8, 9, 10], num_samples, 2, fs_ana,
+            dataset = generate_dataset([0, 5, 7, 8, 9, 10], num_samples, 2, fs_ana, 0.45,
                                        do_normalize_rms=True,
-                                       adding_noise=do_noise, pwr_noise_db=-28.2)
+                                       adding_noise=do_noise, pwr_noise_db=-33.2)
             dataset_names = dataset.class_names
         case 1:
             # --- Loading MNIST
@@ -63,11 +45,11 @@ def get_params(mode: int, n_dim: int) -> [list, list, list, list]:
     """"""
     match mode:
         case 0:
-            u_off = [0.25, 1.25]
+            u_off = [1.25, 2.5]
             t_dly = [10e-3, 25e-3]
             gain = [1.0, 1.0]
             if n_dim >= 3:
-                u_off.append(2.0)
+                u_off.append(3.25)
                 t_dly.append(15e-3)
                 gain.append(1.0)
             t0_adc_sec = [0.46, 0.7]
