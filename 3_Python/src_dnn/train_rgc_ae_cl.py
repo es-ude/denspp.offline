@@ -1,22 +1,22 @@
 import numpy as np
 from torch import nn
 import matplotlib.pyplot as plt
-from package.dnn.dnn_handler import dnn_handler
+from package.dnn import pytorch_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
-import src_dnn.models.autoencoder_rgc as models_ae
-import src_dnn.models.rgc_onoff_class as models_class
+import src_dnn.models.rgc_ae_cl as models
+from src_dnn.train_rgc_class import rgc_logic_combination
 
 
 config_data = Config_Dataset(
     # --- Settings of Datasets
-    data_path='../2_Data/00_Merged_Datasets',
+    data_path='data',
     data_file_name='2023-11-24_Dataset-07_RGC_TDB_Merged.mat',
     # --- Data Augmentation
     data_do_augmentation=False,
     data_num_augmentation=0,
     data_do_addnoise_cluster=False,
     # --- Data Normalization
-    data_do_normalization=False,
+    data_do_normalization=True,
     data_normalization_mode='CPU',
     data_normalization_method='minmax',
     data_normalization_setting='bipolar',
@@ -28,7 +28,7 @@ config_data = Config_Dataset(
 )
 
 
-def do_train_rgc_ae_cl(dnn_handler: dnn_handler,
+def do_train_rgc_ae_cl(dnn_handler: pytorch_handler,
                            num_feature_layer: int, num_output: int,
                            mode_ae: int, noise_std=0.05) -> None:
     """Training routine for Autoencoders and Classification after Encoder
@@ -47,7 +47,7 @@ def do_train_rgc_ae_cl(dnn_handler: dnn_handler,
     # --- Definition of settings
     config_train_ae = Config_PyTorch(
         # --- Settings of Models/Training
-        model=models_ae.dnn_ae_rgc_tdb_v1(32, num_feature_layer),
+        model=models.cnn_rgc_ae_v1(32, num_feature_layer),
         loss='MSE',
         loss_fn=nn.MSELoss(),
         optimizer='Adam',
@@ -59,12 +59,12 @@ def do_train_rgc_ae_cl(dnn_handler: dnn_handler,
     )
     config_train_cl = Config_PyTorch(
         # --- Settings of Models/Training
-        model=models_class.dnn_rgc_v2(num_feature_layer, num_output),
+        model=models.rgc_ae_cl_v1(num_feature_layer, num_output),
         loss='Cross Entropy',
         loss_fn=nn.CrossEntropyLoss(),
         optimizer='Adam',
         num_kfold=1,
-        num_epochs=10,
+        num_epochs=100,
         batch_size=256,
         data_split_ratio=0.25,
         data_do_shuffle=True
@@ -121,15 +121,9 @@ def do_train_rgc_ae_cl(dnn_handler: dnn_handler,
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                             path2save=logsdir, cl_dict=data_result['cl_dict'])
 
+        # --- Plotting reduced model (ON/OFF and Transient/Sustained)
+        rgc_logic_combination(logsdir)
         plt.show(block=dnn_handler.do_block)
-    else:
-        # --- Übergabe next run (Taking best results
-        last_loss = loss_ae[-1]
-        last_snr = snr_ae[-1].detach().numpy()
-        last_snr = (last_snr.min(), np.median(last_snr), last_snr.max())
-        last_class = acc_class[-1]
-
-        metric_snr_run.append((last_loss, last_snr, last_class))
 
     del dataset, trainhandler
     print("\nThe End")
