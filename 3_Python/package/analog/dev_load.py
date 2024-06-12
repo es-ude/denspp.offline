@@ -1,15 +1,15 @@
 import dataclasses
 import numpy as np
-from scipy.integrate import cumtrapz
+import matplotlib.pyplot as plt
 from scipy.constants import Boltzmann, elementary_charge
-from package.analog.dev_noise import ProcessNoise, SettingsNoise
+from scipy.optimize import least_squares
 
 
 @dataclasses.dataclass
 class SettingsDEV:
     """Individual data class to configure the electrical device
     Inputs:
-        type:       Type of electrical device ['R': resistor, 'C': capacitor, 'L': inductor, 'Mem': Memristive (Light)]
+        type:       Type of electrical device ['R': resistor, 'C': capacitor, 'L': inductor, 'RDs': Resistive diode]
         fs_ana:     Sampling frequency of input [Hz]
         noise_en:   Enable noise on output [True / False]
         para_en:    Enable parasitic [True / False]
@@ -22,24 +22,6 @@ class SettingsDEV:
     para_en:    bool
     dev_value:  float
     temp:       float
-
-
-RecommendedSettingsDEV = SettingsDEV(
-    type='R',
-    fs_ana=50e3,
-    noise_en=False,
-    para_en=False,
-    dev_value=10e3,
-    temp=300
-)
-
-RecommendedSettingsNoise = SettingsNoise(
-    temp=300,
-    wgn_dB=-120,
-    Fc=10,
-    slope=0.6,
-    do_print=False
-)
 
 
 def _error_mbe(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
@@ -78,28 +60,160 @@ def _error_tanh(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float
     return error
 
 
-class ElectricalLoad(ProcessNoise):
+class ElectricalLoad_Handler:
     """Class for emulating an electrical device"""
     _settings: SettingsDEV
-    _dev_type: dict
-    __print_device = "electrical behaviour"
-    __r_series = 100.0
+    _poly_fit: np.ndarray
+    _type_device: dict
+    _type_string: dict
+    _type_func2reg: dict
 
     @property
     def temperature_voltage(self) -> float:
         return Boltzmann * self._settings.temp / elementary_charge
 
-    def __init__(self, settings_dev: SettingsDEV, settings_noise=RecommendedSettingsNoise):
-        super().__init__(settings_noise, settings_dev.fs_ana)
-        self._settings = settings_dev
-        self._dev_type = self._init_dev()
+    def __init__(self) -> None:
+        self._poly_fit = np.zeros((1, ), dtype=float)
 
-    def _init_dev(self) -> dict:
-        """Initialization of simple devices"""
-        dev_type = {'R': self.__resistor, 'C': self.__capacitor, 'L': self.__inductor}
-        dev_type.update({'Ds': self.__diode_single_barrier, 'Dd': self.__diode_double_barrier})
-        dev_type.update({'Mem': self.__memristor_light})
-        return dev_type
+    def _extract_iv_curve_from_regression(self, params_dev: list,
+                                          bounds_voltage: list, bounds_current: list,
+                                          mode=1, num_points_regression=201) -> [np.ndarray, np.ndarray]:
+        """Function for getting the I-V curve from regression
+        Args:
+            params_dev:             List with parameters from device
+            bounds_voltage:         List for voltage limitation / range
+            bounds_current:         List for current limitation / range
+            num_points_regression:  Number of samples for regression
+            mode:                   Mode for approximation (0 = Full, 1 = Symmetric (Neg.), 2 = Symmetric (Pos.
+        Returns:
+            Two numpy arrays with current and voltage from device
+        """
+        match mode:
+            case 1:
+                # --- Get Data
+                i_pathn = -np.logspace(bounds_current[1], bounds_current[0], num_points_regression, endpoint=True)
+                u_pathn = self._type_func2reg[self._settings.type](-i_pathn, params_dev, np.zeros(i_pathn.shape))
+                # --- Concatenate arrays
+                i_path = np.concatenate((i_pathn, -np.flipud(i_pathn)[1:]), axis=0)
+                u_path = np.concatenate((u_pathn, -np.flipud(u_pathn)[1:]), axis=0)
+            case 2:
+                # --- Get Data
+                i_pathp = np.logspace(bounds_current[0], bounds_current[1], num_points_regression, endpoint=True)
+                u_pathp = self._type_func2reg[self._settings.type](i_pathp, params_dev, np.zeros(i_pathp.shape))
+                # --- Concatenate arrays
+                i_path = np.concatenate((-np.flipud(i_pathp)[1:], i_pathp), axis=0)
+                u_path = np.concatenate((-np.flipud(u_pathp)[1:], i_pathp), axis=0)
+            case _:
+                # --- Get Data
+                i_pathp = np.logspace(bounds_current[0], bounds_current[1], num_points_regression, endpoint=True)
+                i_path = np.concatenate((-np.flipud(i_pathp[1:]), i_pathp), axis=0)
+                u_path = -self._type_func2reg[self._settings.type](i_path, params_dev, np.zeros(i_path.shape))
+
+        # --- Limiting with voltage boundries
+        x_start = int(np.argwhere(u_path >= bounds_voltage[0])[0])
+        x_stop = int(np.argwhere(u_path >= bounds_voltage[1])[0])
+        return i_path[x_start:x_stop], u_path[x_start:x_stop]
+
+    def _do_regression(self, u_inp: np.ndarray | float, u_inn: np.ndarray | float, params: list, bounds_current: list) -> np.ndarray:
+        """Performing the behaviour of the device with regression
+        Args:
+            u_inp:          Positive input voltage [V]
+            u_inn:          Negative input voltage [V]
+            params:         Device parameter
+            bounds_current: List with current limitations
+        Returns:
+            Corresponding current signal
+        """
+        du = u_inp - u_inn
+        if isinstance(du, float):
+            du = list()
+            du.append(u_inp - u_inn)
+
+        # --- Start Conditions
+        bounds = [10 ** bounds_current[0], 10 ** bounds_current[1]]
+        y_initial = 1e-6
+
+        # --- Run optimization
+        iout = list()
+        for idx, u_sample in enumerate(du):
+            sign_pos = u_sample >= 0.0
+            y_start = y_initial if idx == 0 else abs(iout[-1])
+            result = least_squares(self._type_func2reg[self._settings.type], y_start,
+                                   jac='3-point', bounds=(bounds[0], bounds[1]),
+                                   args=(params, abs(u_sample)))
+            iout.append(result.x[0] if sign_pos else -result.x[0])
+        return np.array(iout, dtype=float)
+
+    def _get_params_polyfit(self, params_dev: list,
+                            bounds_voltage: list, bounds_current: list,
+                            do_test=False, num_poly_order=11, num_points_regression=201,
+                            plot_title_prefix='') -> None:
+        """Function to extract the params of electrical device behaviour with polyfit function
+        Args:
+            params_dev:             List with parameters from device
+            bounds_voltage:         List for voltage limitation / range
+            bounds_current:         List for current limitation / range
+            do_test:                Performing a test
+            num_poly_order:         Order for polynominal fit
+            num_points_regression:  Number of samples for fitting regression
+        Returns:
+            None
+        """
+        i_path, u_path = self._extract_iv_curve_from_regression(
+            params_dev=params_dev,
+            bounds_voltage=bounds_voltage,
+            bounds_current=bounds_current,
+            num_points_regression=num_points_regression,
+            mode=1
+        )
+        self._poly_fit = np.polyfit(x=u_path, y=i_path, deg=num_poly_order)
+
+        # --- Calculating the error-related metric (MSE)
+        if do_test:
+            u_poly = np.linspace(bounds_voltage[0], bounds_voltage[1], num_points_regression, endpoint=True)
+            i_poly = self._type_device[self._settings.type](u_poly, 0.0)
+            i_test = self._do_regression(u_poly, 0.0, params_dev, bounds_current)
+            self._plot_fit_curve(u_poly, i_poly, i_test, plot_title_prefix)
+
+    def _plot_fit_curve(self, u_poly: np.ndarray, i_poly: np.ndarray, i_reg: np.ndarray, title_prefix='') -> None:
+        """Plotting the output of the polynominal fit function
+        Args:
+            u_poly:         Numpy array with voltage from polynom fit (input)
+            i_poly:         Numpy array of current response
+            i_reg:          Numpy array of current response from regression
+            title_prefix:   String with prefix of title
+        Returns:
+            None
+        """
+        mse = _error_mse(i_poly, i_reg)
+
+        # --- Plotting
+        plt.figure()
+        axs = list()
+        axs.append(plt.subplot(2, 1, 1))
+        axs.append(plt.subplot(2, 1, 2, sharex=axs[0]))
+        axs[0].semilogy(u_poly, 1e6 * abs(i_reg), 'k', marker='.', markersize=2, label='Regression')
+        axs[0].semilogy(u_poly, 1e6 * abs(i_poly), 'r', marker='.', markersize=2, label='Poly. fit')
+        axs[0].grid()
+        axs[0].set_ylabel(r'Current $log10(I_F)$ / µA')
+
+        axs[1].plot(u_poly, 1e6 * i_reg, 'k', marker='.', markersize=2, label='Regression')
+        axs[1].plot(u_poly, 1e6 * i_poly, 'r', marker='.', markersize=2, label='Poly. fit')
+        axs[1].grid()
+        axs[1].set_ylabel(r'Current $I_F$ / µA')
+        axs[1].legend()
+        axs[0].set_title(title_prefix + f"sqrt(MSE) = {1e9 * np.sqrt(mse):.4f} nA")
+
+        axs[1].set_xlabel(r'Voltage $\Delta U$ / V')
+        plt.tight_layout()
+        plt.show()
+
+    def print_types(self) -> None:
+        """Print electrical types in terminal"""
+        print("\n==========================================="
+              "\nAvailable types of electrical devices")
+        for idx, type in enumerate(self._type_device.keys()):
+            print(f"\t#{idx:03d}: {type} = {self._type_string[type]}")
 
     def get_current(self, u_top: np.ndarray | float, u_bot: np.ndarray | float) -> np.ndarray:
         """Getting the current response from electrical device
@@ -114,8 +228,8 @@ class ElectricalLoad(ProcessNoise):
         else:
             iout = np.zeros(u_top.shape, dtype=float)
 
-        if self._settings.type in self._dev_type.keys():
-            iout = self._dev_type[self._settings.type](u_top, u_bot)
+        if self._settings.type in self._type_device.keys():
+            iout = self._type_device[self._settings.type](u_top, u_bot)
         return iout
 
     def get_current_density(self, u_top: np.ndarray, u_bot: np.ndarray | float, area: float) -> np.ndarray:
@@ -130,7 +244,7 @@ class ElectricalLoad(ProcessNoise):
         return self.get_current(u_top, u_bot) / area
 
     def get_voltage(self, i_in: np.ndarray, u_inn: np.ndarray | float,
-                             start_step=1e-3, take_last_value=True) -> np.ndarray:
+                    start_step=1e-3, take_last_value=True) -> np.ndarray:
         """Getting the voltage response from electrical device
         Args:
             i_in:               Applied current input [A]
@@ -199,105 +313,25 @@ class ElectricalLoad(ProcessNoise):
             idx += 1
         return u_response
 
-    def __resistor(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
-        """Performing the behaviour of an electrical resistor
-        Args:
-            u_inp:   Positive input voltage [V]
-            u_inn:   Negative input voltage [V]
-        Returns:
-            Corresponding current signal
-        """
-        du = u_inp - u_inn
-        i_out = du / self._settings.dev_value
-        if self._settings.noise_en:
-            i_out += self._gen_noise_awgn_curr(du.size, self._settings.dev_value)
-        return i_out
 
-    def __capacitor(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
-        """Performing the behaviour of an electrical capacitor
-        Args:
-            u_inp:   Positive input voltage [V]
-            u_inn:   Negative input voltage [V]
-        Returns:
-            Corresponding current signal
-        """
-        du = u_inp - u_inn
-        i_out = np.zeros(du.shape)
-        i_out[1:] = self._settings.dev_value * np.diff(du) * self._settings.fs_ana
-        if self._settings.noise_en:
-            i_out += self._gen_noise_awgn_pwr(du.size)
-        return i_out
-
-    def __inductor(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
-        """Performing the behaviour of an electrical inductor
-        Args:
-            u_inp:   Positive input voltage [V]
-            u_inn:   Negative input voltage [V]
-        Returns:
-            Corresponding current signal
-        """
-        du = u_inp - u_inn
-        i_out = cumtrapz(du, dx=1/self._settings.fs_ana, initial=0) / self._settings.dev_value
-        if self._settings.noise_en:
-            i_out += self._gen_noise_awgn_pwr(du.size)
-        return i_out
-
-    def __diode_single_barrier(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
-        """Performing the behaviour of a diode with single-side barrier
-        Args:
-            u_inp:   Positive input voltage [V]
-            u_inn:   Negative input voltage [V]
-        Returns:
-            Corresponding current signal
-        """
-        is0 = 1e-12
-        n0 = 8
-        u_th = 0.55
-        du = u_inp - u_inn
-        i_out = is0 * np.exp((du - u_th) / (n0 * self.temperature_voltage))
-        if self._settings.noise_en:
-            i_out += self._gen_noise_awgn_pwr(du.size)
-        return i_out
-
-    def __diode_double_barrier(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
-        """Performing the behaviour of a diode with double-side barrier
-        Args:
-            u_inp:   Positive input voltage [V]
-            u_inn:   Negative input voltage [V]
-        Returns:
-            Corresponding current signal
-        """
-        is0 = 1e-12
-        n0 = 1.4
-        u_th = 0.5
-
-        du = u_inp - u_inn
-        i_out = is0 * (np.exp((du - u_th) / (n0 * self.temperature_voltage)) - 1)
-        i_out -= is0 * (np.exp((-du - u_th) / (n0 * self.temperature_voltage)) - 1)
-        if self._settings.noise_en:
-            i_out += self._gen_noise_awgn_pwr(du.size)
-        return i_out
-
-    def __memristor_light(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
-        """Performing the behaviour of a memristor (light) with single-side hysterese
-        Args:
-            u_inp:   Positive input voltage [V]
-            u_inn:   Negative input voltage [V]
-        Returns:
-            Corresponding current signal
-        """
-        is0 = 10e-12
-        n0 = 9
-        u_th = 0.55
-        du = u_inp - u_inn
-
-        i_out = is0 * np.exp((du - u_th) / (n0 * self.temperature_voltage))
-        if self._settings.noise_en:
-            i_out += self._gen_noise_awgn_pwr(du.size)
-        return i_out
+# ================================ FUNCTIONS FOR TESTING ===================================
+def _generate_signal(t_end: float, fs: float, upp: list, fsig: list, uoff=0.0) -> [np.ndarray, np.ndarray]:
+    """Generating a signal for testing
+    Args:
+        t_end:      End of simulation
+        fs:         Sampling rate
+        upp:        List with amplitude values
+        fsig:       List with corresponding frequency
+        uoff:       Offset voltage
+    """
+    t0 = np.linspace(0, t_end, num=int(t_end * fs), endpoint=True)
+    uinp = np.zeros(t0.shape) + uoff
+    for idx, peak_val in enumerate(upp):
+        uinp += peak_val * np.sin(2 * np.pi * t0 * fsig[idx])
+    return t0, uinp
 
 
-def __plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray,
+def _plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray,
                         mode_current_input: bool, do_ylog=False) -> None:
     """Only for testing"""
     scale_i = 1e3
@@ -339,7 +373,7 @@ def __plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray,
         axs[1].set_ylabel(label_axisy)
     else:
         if do_ylog:
-            axs[1].semilogy(signalx, signaly, 'k', marker='.', linestyle='None')
+            axs[1].semilogy(signalx, abs(signaly), 'k', marker='.', linestyle='None')
         else:
             axs[1].plot(signalx, signaly, 'k', marker='.', linestyle='None')
         axs[1].set_xlabel(label_axisy)
@@ -347,50 +381,3 @@ def __plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray,
     axs[1].grid()
 
     plt.tight_layout()
-
-
-def __generate_signal(t_end: float, fs: float, upp: list, fsig: list, uoff=0.0) -> [np.ndarray, np.ndarray]:
-    """Generating a signal for testing
-    Args:
-        t_end:      End of simulation
-        fs:         Sampling rate
-        upp:        List with amplitude values
-        fsig:       List with corresponding frequency
-        uoff:       Offset voltage
-    """
-    t0 = np.linspace(0, t_end, num=int(t_end * fs), endpoint=True)
-    uinp = np.zeros(t0.shape) + uoff
-    for idx, peak_val in enumerate(upp):
-        uinp += peak_val * np.sin(2 * np.pi * t0 * fsig[idx])
-    return t0, uinp
-
-
-# --- TEST CASE
-if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-    settings = SettingsDEV(
-        type='Mem',
-        fs_ana=1000e3,
-        noise_en=False,
-        para_en=False,
-        dev_value=10e3,
-        temp=300
-    )
-
-    # --- Declaration of input
-    do_ylog = True
-    t_end = 0.5e-3
-    t0, uinp = __generate_signal(0.5e-3, settings.fs_ana, [2.5, 0.3, 0.1], [10e3, 18e3, 28e3], 2.5)
-    uinn = 0.0
-
-    # --- Model declaration
-    dev = ElectricalLoad(settings)
-    iout = dev.get_current(uinp, uinn)
-    iin = 1e-4 * uinp
-    uout = dev.get_voltage(iin, uinn, 1e-2)
-
-    # --- Plotting: Current response
-    plt.close('all')
-    __plot_test_results(t0, uinp-uinn, iout, False, do_ylog)
-    __plot_test_results(t0, uout+uinn, iin, True, do_ylog)
-    plt.show()

@@ -5,11 +5,12 @@ from package.pipeline_cmds import PipelineCMD
 from package.analog.pre_amp import PreAmp, SettingsAMP
 from package.analog.dly_amp import DlyAmp, SettingsDLY
 from package.analog.comp import Comp, SettingsCMP
-# from package.analog.dev_load import ElectricalLoad, SettingsDEV
 from package.analog.cur_amp import CurrentAmplifier, SettingsCUR
 from package.analog.int_ana import IntegratorStage, SettingsINT
 from package.analog.adc_sar import SettingsADC, ADC_SAR
-from src_mem.memristor_extension import SettingsMem, MemristorModel
+
+from src_mem.memristor_extension import MemristorModel, SettingsMem
+from package.analog.dev_load import ElectricalLoad, SettingsDEV
 from src_mem.pipeline_mem import PipelineSignal
 
 from src_mem.memristor_plots import plt_pipeline_signals_part_one, plt_pipeline_signals_part_two

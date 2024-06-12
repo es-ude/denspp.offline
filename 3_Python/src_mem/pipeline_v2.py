@@ -5,7 +5,7 @@ from package.pipeline_cmds import PipelineCMD
 from package.analog.pre_amp import PreAmp, SettingsAMP
 from package.analog.dly_amp import DlyAmp, SettingsDLY
 from package.analog.comp import Comp, SettingsCMP
-from package.analog.dev_load import ElectricalLoad, SettingsDEV
+from package.analog.dev_models import ElectricalLoad, SettingsDEV
 from package.analog.cur_amp import CurrentAmplifier, SettingsCUR
 from package.analog.int_ana import IntegratorStage, SettingsINT
 from package.analog.adc_sar import SettingsADC, ADC_SAR
