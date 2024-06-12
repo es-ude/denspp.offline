@@ -53,6 +53,7 @@ class Pipeline(PipelineCMD):
         self.fs_ana = fs_ana
         self.fs_dig = settings.SettingsADC.fs_dig
         self.fs_adc = settings.SettingsADC.fs_dig
+        self.lsb = settings.SettingsADC.lsb
         self.clean_pipeline()
 
         self.__preamp = PreAmp(settings.SettingsAMP)
