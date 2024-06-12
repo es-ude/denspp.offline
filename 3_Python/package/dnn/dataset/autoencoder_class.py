@@ -86,6 +86,12 @@ def prepare_training(settings: Config_Dataset, path2model: str,
             frames_in = frames_in[selX[0], :]
             frames_cl = frames_cl[selX]
 
+    # --- Generate dict with labeled names
+    if frames_dict is None:
+        frames_dict = list()
+        for id in np.unique(frames_cl):
+            frames_dict.append(f"Neuron #{id}")
+
     # --- PART: Calculate SNR if desired
     if settings.data_do_augmentation or settings.data_do_addnoise_cluster:
         snr_mean = calculate_frame_snr(frames_in, frames_cl, frames_me)

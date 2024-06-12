@@ -1,3 +1,4 @@
+import numpy as np
 from scipy.io import loadmat
 from torch import is_tensor
 from torch.utils.data import Dataset
@@ -139,6 +140,12 @@ def prepare_training(settings: Config_Dataset,
             frames_in = frames_in[selX[0], :]
             frames_cl = frames_cl[selX]
 
+    # --- Generate dict with labeled names
+    if frames_dict is None:
+        frames_dict = list()
+        for id in np.unique(frames_cl):
+            frames_dict.append(f"Neuron #{id}")
+
     # --- PART: Calculate SNR if desired
     if settings.data_do_augmentation or settings.data_do_addnoise_cluster:
         snr_mean = calculate_frame_snr(frames_in, frames_cl, frames_me)
@@ -177,5 +184,5 @@ def prepare_training(settings: Config_Dataset,
         print(f"\tclass {id}{addon} --> {check[1][idx]} samples")
 
     return DatasetAE(frames_raw=frames_in, cluster_id=frames_cl, frames_cluster_me=frames_me,
-                     mode_train=mode_train_ae, do_classification=do_classification,
+                     cluster_dict=frames_dict, mode_train=mode_train_ae, do_classification=do_classification,
                      noise_std=noise_std)
