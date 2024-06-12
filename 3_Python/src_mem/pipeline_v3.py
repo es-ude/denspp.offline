@@ -10,7 +10,7 @@ from package.analog.int_ana import IntegratorStage, SettingsINT
 from package.analog.adc_sar import SettingsADC, ADC_SAR
 
 from src_mem.memristor_extension import MemristorModel, SettingsMem
-from package.analog.dev_load import ElectricalLoad, SettingsDEV
+from package.analog.dev_models import ElectricalLoad, SettingsDEV
 from src_mem.pipeline_mem import PipelineSignal
 
 from src_mem.memristor_plots import plt_pipeline_signals_part_one, plt_pipeline_signals_part_two
