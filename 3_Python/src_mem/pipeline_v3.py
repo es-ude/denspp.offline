@@ -68,7 +68,7 @@ class _SettingsPipe:
         noise_en=__en_noise,
         para_en=False,
         dev_value={},
-        dev_branch=1,
+        dev_branch=0,
         dev_sel=1,
         temp=300,
         area=0.045
@@ -138,6 +138,7 @@ class Pipeline(PipelineCMD, _SettingsPipe):
         self._tpos_adc = [-1]
         self._path2pipe = abspath(__file__)
         self.generate_folder('runs', '_mem')
+        self._load.plot_fit_curve()
 
     def prepare_saving(self) -> dict:
         """Getting processing data of selected signals"""

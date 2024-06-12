@@ -94,8 +94,8 @@ def get_params(mode: int, n_dim: int) -> [list, list, list, list]:
 
 if __name__ == "__main__":
     n_dim = 3
-    mode_dataset = 1
-    do_noise = False
+    mode_dataset = 0
+    do_noise = True
     do_transient_plot = False
     do_block_plots = True
 
@@ -142,7 +142,6 @@ if __name__ == "__main__":
     pipe_label = cluster_mod.init_kmeans(feat_pro)
 
     # --- Plotting
-
     plot_pipeline_feat(feat_pro, label=data_label, dict=clus_names,
                        path2save=dut.path2save)
     show_plots(do_block_plots)

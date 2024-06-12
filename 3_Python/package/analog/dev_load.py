@@ -1,4 +1,5 @@
 import dataclasses
+from os.path import join
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.constants import Boltzmann, elementary_charge
@@ -147,7 +148,8 @@ class ElectricalLoad_Handler:
     def _get_params_polyfit(self, params_dev: list,
                             bounds_voltage: list, bounds_current: list,
                             do_test=False, num_poly_order=11, num_points_regression=201,
-                            plot_title_prefix='') -> None:
+                            plot_title_prefix='',
+                            path2save='') -> None:
         """Function to extract the params of electrical device behaviour with polyfit function
         Args:
             params_dev:             List with parameters from device
@@ -156,6 +158,8 @@ class ElectricalLoad_Handler:
             do_test:                Performing a test
             num_poly_order:         Order for polynominal fit
             num_points_regression:  Number of samples for fitting regression
+            plot_title_prefix:      String for plot title as prefix
+            path2save:              String with path to save the figure
         Returns:
             None
         """
@@ -175,13 +179,15 @@ class ElectricalLoad_Handler:
             i_test = self._do_regression(u_poly, 0.0, params_dev, bounds_current)
             self._plot_fit_curve(u_poly, i_poly, i_test, plot_title_prefix)
 
-    def _plot_fit_curve(self, u_poly: np.ndarray, i_poly: np.ndarray, i_reg: np.ndarray, title_prefix='') -> None:
+    def _plot_fit_curve(self, u_poly: np.ndarray, i_poly: np.ndarray, i_reg: np.ndarray,
+                        title_prefix='', path2save='') -> None:
         """Plotting the output of the polynominal fit function
         Args:
             u_poly:         Numpy array with voltage from polynom fit (input)
             i_poly:         Numpy array of current response
             i_reg:          Numpy array of current response from regression
             title_prefix:   String with prefix of title
+            path2save:      String with path to save the figure
         Returns:
             None
         """
@@ -206,7 +212,9 @@ class ElectricalLoad_Handler:
 
         axs[1].set_xlabel(r'Voltage $\Delta U$ / V')
         plt.tight_layout()
-        plt.show()
+
+        #if path2save:
+        plt.savefig(join(path2save, "device_iv_charac.svg"), format='svg')
 
     def print_types(self) -> None:
         """Print electrical types in terminal"""
