@@ -4,7 +4,7 @@ from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 
 class cnn_rnn_v2(nn.Module):
     """Class of a convolutional Decoding for feature extraction"""
-    def __init__(self, num_clusters=1, input_samples=12, output_sampes=3):
+    def __init__(self, num_clusters=1, input_samples=12, output_samples=3):
         super().__init__()
         self.out_modelname = 'cnn_rnn_v2'
         self.out_modeltyp = 'Decoder'
@@ -16,7 +16,7 @@ class cnn_rnn_v2(nn.Module):
         kernel_stride = [3, 3, 2]
         kernel_padding = [0, 0, 0]
         # --- Settings for DNN/LSTM
-        dense_layer_size = [40, 32, output_sampes]
+        dense_layer_size = [40, 32, output_samples]
 
         self.cnn_1 = nn.Sequential(
             nn.Conv3d(kernel_layer[0], kernel_layer[1], kernel_size=(3, 3, 1),

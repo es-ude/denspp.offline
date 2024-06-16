@@ -180,7 +180,9 @@ class cnn2D_v2(nn.Module):
         self.out_modeltyp = 'Decoder'
         self.model_embedded = False # ist es auf einer Embedded Hardware?
         self.model_shape = (1, num_clusters, 10, 10, input_samples) # prepareTraining return Dataloader(...) Dimensionen
-
+        self.input_samples = input_samples
+        self.num_clusters = num_clusters
+        self.output_samples = output_samples
 
 
         # --- Settings for CNN
@@ -235,9 +237,12 @@ class cnn2D_v2(nn.Module):
         )
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
-        cnn_feat = self.cnn_1(x)
+        batch_size = x.size(0) # batchSize ist immer am Anfang zu finden
+        x = x.view(batch_size*self.input_samples, self.num_clusters, 10, 10)
 
-        pred_con = self.dnn_1(cnn_feat)
+        print("debugging <3")
+
+
         return pred_con, argmax(pred_con, 1)
 
 class cnn2D_v1(nn.Module):
