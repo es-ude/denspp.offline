@@ -184,7 +184,7 @@ class cnn2D_v2(nn.Module):
 
 
         # --- Settings for CNN
-        kernel_layer = [num_clusters, 10, 20]
+        kernel_layer = [10, 20]
         kernel_stride = [3, 3, 2]
         kernel_padding = [0, 0, 0]
         do_bias_train = True
@@ -192,32 +192,51 @@ class cnn2D_v2(nn.Module):
         dense_layer_size = [40, 32, output_samples]
 
         self.cnn_1 = nn.Sequential(
-            nn.Conv3d(kernel_layer[0], kernel_layer[1], kernel_size=(3, 3, 1),
-                      stride=kernel_stride[0], padding=kernel_padding[0]),
-            nn.BatchNorm3d(kernel_layer[1]),
+            nn.Conv2d(
+                in_channels=num_clusters,
+                out_channels=10,
+                kernel_size=(3,3),
+                stride= 1,
+                padding=0
+            ),
+            nn.BatchNorm2d(10),
             nn.ReLU(),
-            nn.Conv3d(kernel_layer[1], kernel_layer[2], kernel_size=(3, 3, 1),
-                      stride=kernel_stride[1], padding=kernel_padding[1]),
-            nn.BatchNorm3d(kernel_layer[2]),
-            nn.ReLU()
+            nn.Conv2d(
+                in_channels=10,
+                out_channels=20,
+                kernel_size=(3,3),
+                stride= 1,
+                padding=0
+            ),
+            nn.BatchNorm2d(20),
+            nn.ReLU(),
         )
         self.dnn_1 = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(dense_layer_size[0], dense_layer_size[1], bias=do_bias_train),
+            nn.Linear(
+                dense_layer_size[0],
+                dense_layer_size[1],
+                bias=do_bias_train),
             nn.BatchNorm1d(dense_layer_size[1]),
             nn.ReLU(),
-            nn.Linear(dense_layer_size[1], dense_layer_size[2], bias=do_bias_train),
+            nn.Linear(
+                dense_layer_size[1],
+                dense_layer_size[2],
+                bias=do_bias_train),
             nn.BatchNorm1d(dense_layer_size[2]),
             nn.Softmax()
         )
 
-        self.flatten = nn.Flatten(start_dim=0)
+        self.flatten = nn.Flatten()
+
+
         self.lstm_decoder = nn.Sequential(
             #nn.LSTMCell()
         )
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
         cnn_feat = self.cnn_1(x)
+
         pred_con = self.dnn_1(cnn_feat)
         return pred_con, argmax(pred_con, 1)
 
