@@ -28,7 +28,7 @@ config_data = Config_Dataset(
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
-    model=models_dec.cnn2D_v1(1, 12, 3),
+    model=models_dec.cnn_lstm_dec_v1(1, 12, 3),
     loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
