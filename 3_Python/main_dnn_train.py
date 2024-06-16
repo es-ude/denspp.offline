@@ -3,17 +3,17 @@ from package.dnn.dnn_handler import dnn_handler
 
 if __name__ == "__main__":
     dnn_handler = dnn_handler(
-        mode_dnn=3,
-        mode_cellbib=0,
+        mode_dnn=7,
+        mode_cellbib=2,
         do_plot=True,
-        do_block=True
+        do_block=False
     )
 
     # --- Configs (AE)
     mode_ae = 0
     noise_std_ae = 0.01
-    num_hiddenlayer = 5
-    num_output = 6
+    num_hiddenlayer = 6
+    num_output = 4
 
     # --- Selecting model for train
     match dnn_handler.mode_train_dnn:
@@ -45,5 +45,8 @@ if __name__ == "__main__":
             # --- Neural Decoder (Utah Array)
             from src_dnn.train_decoder_utah import do_train_decoder_utah
             do_train_decoder_utah(dnn_handler, 500)
+        case 7:
+            from src_dnn.train_rgc_ae_cl import do_train_rgc_ae_cl
+            do_train_rgc_ae_cl(dnn_handler, num_hiddenlayer, num_output, mode_ae)
         case _:
             print("Wrong model! Please select right model!")
