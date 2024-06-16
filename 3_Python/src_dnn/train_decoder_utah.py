@@ -6,8 +6,8 @@ import package.dnn.models.decoding_utah as models_dec
 
 config_data = Config_Dataset(
     # --- Settings of Datasets
-    data_path='/home/muskel/Documents/cpsDEC/data', # Ubuntu
-    #data_path='C:\spaikeDenSppDataset', # Windows
+    # data_path='/home/muskel/Documents/cpsDEC/data', # Ubuntu
+    data_path='C:\spaikeDenSppDataset', # Ubuntu
     data_file_name='2024-02-05_Dataset-KlaesNeuralDecoding.npy',
 
     # --- Data Augmentation
@@ -28,7 +28,7 @@ config_data = Config_Dataset(
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
-    model=models_dec.cnn2D_v1(),
+    model=models_dec.cnn2D_v1(1, 12, 3),
     loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
@@ -61,7 +61,6 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
     trainhandler.load_model()
     trainhandler.load_data(dataset)
     del dataset
-
     epoch_acc = trainhandler.do_training()[-1]
 
     # --- Post-Processing: Getting data, save and plot results
