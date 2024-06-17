@@ -232,13 +232,21 @@ class cnn2D_v2(nn.Module):
         self.flatten = nn.Flatten()
 
 
-        self.lstm_decoder = nn.Sequential(
-            #nn.LSTMCell()
+        self.lstm = nn.LSTM(
+            input_size=20 * 8 * 8,  # Adjust based on the output size from CNN
+            hidden_size=64,          # Example hidden size, adjust as needed
+            num_layers=1,            # Example number of LSTM layers, adjust as needed
+            batch_first=True         # Input and output tensors are provided as (batch, seq, feature)
         )
+
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
         batch_size = x.size(0) # batchSize ist immer am Anfang zu finden
-        x = x.view(batch_size*self.input_samples, self.num_clusters, 10, 10)
+        x = x.view(batch_size*self.input_samples, self.num_clusters, 10, 10) #batchsize ist immer 1
+        for i in self.input_samples
+            cnn_feat = self.cnn_1(x)
+        # preprocessing for LSTMN-Cell
+        cnn_feat = cnn_feat.view(batch_size, self.input_samples, -1)
 
         print("debugging <3")
 
