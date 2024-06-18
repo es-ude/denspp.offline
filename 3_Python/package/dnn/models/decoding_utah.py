@@ -225,7 +225,7 @@ class cnn2D_v2(nn.Module):
 
 
         self.lstm = nn.LSTM(
-            input_size=1,  # Adjust based on the output size from CNN
+            input_size=640,  # Adjust based on the output size from CNN
             hidden_size=64,          # Example hidden size, adjust as needed
             num_layers=input_samples,            # Example number of LSTM layers, adjust as needed
             batch_first=True         # Input and output tensors are provided as (batch, seq, feature)
