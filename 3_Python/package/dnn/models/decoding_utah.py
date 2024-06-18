@@ -233,9 +233,9 @@ class cnn2D_v2(nn.Module):
 
 
         self.lstm = nn.LSTM(
-            input_size=20 * 8 * 8,  # Adjust based on the output size from CNN
+            input_size=1,  # Adjust based on the output size from CNN
             hidden_size=64,          # Example hidden size, adjust as needed
-            num_layers=1,            # Example number of LSTM layers, adjust as needed
+            num_layers=input_samples,            # Example number of LSTM layers, adjust as needed
             batch_first=True         # Input and output tensors are provided as (batch, seq, feature)
         )
 
@@ -243,10 +243,12 @@ class cnn2D_v2(nn.Module):
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
         batch_size = x.size(0) # batchSize ist immer am Anfang zu finden
         x = x.view(batch_size*self.input_samples, self.num_clusters, 10, 10) #batchsize ist immer 1
-        for i in self.input_samples
-            cnn_feat = self.cnn_1(x)
+        cnn_feat = self.cnn_1(x)
         # preprocessing for LSTMN-Cell
-        cnn_feat = cnn_feat.view(batch_size, self.input_samples, -1)
+        cnn_feat = cnn_feat.view(batch_size, self.input_samples, -1) # Das was Leo gesagt hat, 10x10 = 100 vektor, damit
+        # es in die LSTM passt
+        lstm_output, _ = self.lstm(cnn_feat)
+        pred_con = self.dnn_1(lstm_output[:,-1,:])
 
         print("debugging <3")
 
