@@ -184,14 +184,9 @@ class cnn2D_v2(nn.Module):
         self.num_clusters = num_clusters
         self.output_samples = output_samples
 
-
-        # --- Settings for CNN
-        kernel_layer = [10, 20]
-        kernel_stride = [3, 3, 2]
-        kernel_padding = [0, 0, 0]
+        # --- Settings for DNN
+        dense_layer_size = [64, 32, output_samples]
         do_bias_train = True
-        # --- Settings for DNN/LSTM
-        dense_layer_size = [40, 32, output_samples]
 
         self.cnn_1 = nn.Sequential(
             nn.Conv2d(
@@ -208,15 +203,17 @@ class cnn2D_v2(nn.Module):
         self.dnn_1 = nn.Sequential(
             nn.Flatten(),
             nn.Linear(
-                dense_layer_size[0],
-                dense_layer_size[1],
-                bias=do_bias_train),
+                in_features= dense_layer_size[0],
+                out_features= dense_layer_size[1],
+                bias=do_bias_train
+            ),
             nn.BatchNorm1d(dense_layer_size[1]),
             nn.ReLU(),
             nn.Linear(
-                dense_layer_size[1],
-                dense_layer_size[2],
-                bias=do_bias_train),
+                in_features= dense_layer_size[1],
+                out_features= dense_layer_size[2],
+                bias=do_bias_train
+            ),
             nn.BatchNorm1d(dense_layer_size[2]),
             nn.Softmax()
         )
@@ -237,13 +234,11 @@ class cnn2D_v2(nn.Module):
         x = x.view(batch_size*self.input_samples, self.num_clusters, 10, 10) #batchsize ist immer 1
         cnn_feat = self.cnn_1(x)
         # preprocessing for LSTMN-Cell
-        cnn_feat = cnn_feat.view(batch_size, self.input_samples, -1) # Das was Leo gesagt hat, 10x10 = 100 vektor, damit
-        # es in die LSTM passt
+        cnn_feat = cnn_feat.view(batch_size, self.input_samples, -1)
+        # view was Leo gesagt hat, 10x10 = 100 vektor, damit es in die LSTM passt.
         lstm_output, _ = self.lstm(cnn_feat)
         pred_con = self.dnn_1(lstm_output[:,-1,:])
-
-        print("debugging <3")
-
+        #print("debug <3")
 
         return pred_con, argmax(pred_con, 1)
 
