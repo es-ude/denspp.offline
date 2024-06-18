@@ -172,7 +172,7 @@ Recommended_Config_DatasetSettings = Config_Dataset(
     data_exclude_cluster=[],
     data_sel_pos=[]
 )
-class cnn2D_v2(nn.Module):
+class cnn2D_LSTM_v2(nn.Module):
     """Class of a 2D convolutional Decoding for feature extraction 06/2024"""
     def __init__(self, num_clusters=1, input_samples=12, output_samples=3):
         super().__init__()
