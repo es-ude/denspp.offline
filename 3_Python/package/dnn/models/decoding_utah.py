@@ -203,15 +203,7 @@ class cnn2D_v2(nn.Module):
             ),
             nn.BatchNorm2d(10),
             nn.ReLU(),
-            nn.Conv2d(
-                in_channels=10,
-                out_channels=20,
-                kernel_size=(3,3),
-                stride= 1,
-                padding=0
-            ),
-            nn.BatchNorm2d(20),
-            nn.ReLU(),
+
         )
         self.dnn_1 = nn.Sequential(
             nn.Flatten(),
