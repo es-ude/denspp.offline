@@ -14,7 +14,7 @@ class cnn2D_lstm_dec_v2(nn.Module):
 
         kernel_layer = [num_clusters, 10, 20]
         # --- Settings for DNN/LSTM
-        dense_layer_size = [40, 32]
+        dense_layer_size = [64, 32]
 
         self.cnn_1 = nn.Sequential(
             nn.Conv2d(in_channels = num_clusters,
@@ -27,6 +27,7 @@ class cnn2D_lstm_dec_v2(nn.Module):
         )
 
         self.dnn_1 = nn.Sequential(
+            nn.Flatten(),
             nn.Linear(
                 in_features= dense_layer_size[0],
                 out_features= dense_layer_size[1],
@@ -39,31 +40,35 @@ class cnn2D_lstm_dec_v2(nn.Module):
                 out_features= output_samples,
                 bias=do_bias_train
             ),
-            nn.BatchNorm1d(dense_layer_size[2]),
+            nn.BatchNorm1d(output_samples),
             nn.Softmax()
         )
 
-        self.lstm = nn.LSTM(input_size=dense_layer_size[2], hidden_size=50, num_layers=1, batch_first=True)
-        self.fc = nn.Linear(50, output_samples)
+        self.flatten = nn.Flatten()
+        self.lstm = nn.LSTM(
+            input_size=640,  # Adjust based on the output size from CNN
+            hidden_size=64,          # Example hidden size, adjust as needed
+            num_layers=input_samples,            # Example number of LSTM layers, adjust as needed
+            batch_first=True         # Input and output tensors are provided as (batch, seq, feature)
+        )
 
     def forward(self, x):
         batch_size, num_clusters, height, width, num_time_windows = x.shape
         video = []
-        print("debug <3")
+        #print("debug <3")
         for i in range(num_time_windows):
             img = x[:, :, :, :, i]
-            img.view
+            img.view(batch_size, num_clusters, 10, 10) #batchsize ist immer 1
+
             cnn_out = self.cnn_1(img)
             cnn_out = cnn_out.view(batch_size, -1)  # Flatten
-            cnn_out = self.dnn_1(cnn_out)
             video.append(cnn_out.unsqueeze(1))  # Add time dimension
-        print(cnn_out)
         lstm_input = torch.cat(video, dim=1)  # Concatenate along the time dimension
-        print(lstm_input)
-        lstm_out, _ = self.lstm(lstm_input)
-        lstm_out = self.fc(lstm_out[:, -1, :])  # Take the output of the last LSTM cell
+        lstm_output, _ = self.lstm(lstm_input)
+        pred_con = self.dnn_1(lstm_output[:,-1,:])#get last lstm output
+        #print("debug <3")
 
-        return lstm_out
+        return pred_con, argmax(pred_con, 1)
 
 Recommended_Config_PytorchSettings = Config_PyTorch(
     # --- Settings of Models/Training
@@ -160,7 +165,7 @@ class cnn2D_LSTM_v2_testphase(nn.Module):
         self.output_samples = output_samples
 
         # --- Settings for DNN
-        dense_layer_size = [64, 32, output_samples]
+        dense_layer_size = [64, 32]
         do_bias_train = True
 
         self.cnn_1 = nn.Sequential(
@@ -186,10 +191,10 @@ class cnn2D_LSTM_v2_testphase(nn.Module):
             nn.ReLU(),
             nn.Linear(
                 in_features= dense_layer_size[1],
-                out_features= dense_layer_size[2],
+                out_features= output_samples,
                 bias=do_bias_train
             ),
-            nn.BatchNorm1d(dense_layer_size[2]),
+            nn.BatchNorm1d(output_samples),
             nn.Softmax()
         )
 
