@@ -22,6 +22,8 @@ class DataCompressor:
         else:
             self.data_type = "not defined"
 
+            raise ValueError("Not defined")
+
     def normalize(self, arr, t_min, t_max):
         norm_arr = []
         diff = t_max - t_min
@@ -101,7 +103,7 @@ class DataCompressor:
             print(a.shape)
 
 
-trialONE = DataCompressor(1)
+trialONE = DataCompressor(0)
 trialONE.format_data("timestamps")
 trialONE.format_data("waveforms")
 a = np.load(trialONE.get_Path("timestamps"))
