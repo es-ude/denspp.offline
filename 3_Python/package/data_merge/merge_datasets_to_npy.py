@@ -14,7 +14,7 @@ class DataCompressor:
         if data_type == 1:
             self.data_type = "Klaes-file"
             self.filepath = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), "data",
-                                         "2024-02-05_Dataset-KlaesNeuralDecoding (2).mat")
+                                         "2024-02-05_Dataset-KlaesNeuralDecoding.mat")
             self.num_experiments = 21
             self.num_trials = 50
         elif data_type == 2:
@@ -64,21 +64,24 @@ class DataCompressor:
             loaded_data = self.load_Data()
             b = self.create_Dict()
 
-            ##format matlab data to 4D Array
+            ##load each experiment
             for exp_key in loaded_data:
                 if exp_key.startswith("exp"):
                     exp_data = loaded_data[exp_key]
+
+                    #load each trial and save matlab variable "waveforms"
                     for trial_key in exp_data.dtype.names:
                         if trial_key.startswith("trial"):
-                            trial_data = exp_data[trial_key][0, 0]
-                            waveforms = trial_data["waveforms"][0, 0]
-                            print(len(waveforms[0]))
+                            waveforms = exp_data[trial_key][0, 0]["waveforms"][0, 0]
+
+                            # save actual waveforms from each electrode
                             for electrode in range(len(waveforms[0])):
                                 b[exp_index][trial_index][electrode] = waveforms[0][electrode]
+
                         trial_index += 1
                     trial_index = 0
                     exp_index += 1
-
+            print(b[0][0][1][0])
 
             ### format to one 2D array
             a = []
@@ -111,7 +114,7 @@ class DataCompressor:
             #np.save(self.get_Path(), lowestindex)
             #np.save(self.get_Path(), highestindex)
 
-            #print(a[0:10])
+            print(a[0])
 
 
 trialONE = DataCompressor(1)
