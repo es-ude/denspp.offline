@@ -1,3 +1,4 @@
+import os
 
 import numpy as np
 
@@ -12,7 +13,8 @@ class DataCompressor:
         self.mode_data = data_type
         if data_type == 1:
             self.data_type = "Klaes-file"
-            self.filepath = r"C:\Users\Haris\Documents\Master Sciebo neu\SS2024\CPS Projekt1\2024-02-05_Dataset-KlaesNeuralDecoding.mat"
+            self.filepath = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), "data",
+                                         "2024-02-05_Dataset-KlaesNeuralDecoding (2).mat")
             self.num_experiments = 21
             self.num_trials = 50
         elif data_type == 2:
@@ -43,7 +45,14 @@ class DataCompressor:
         loaded_data = loadmat(self.filepath)
         return loaded_data
 
-    def format_data(self):
+    def get_Path(self, feature):
+        current_dir = os.getcwd()
+        target_path = os.path.join(os.path.dirname(os.path.dirname(current_dir)), 'data')
+        os.makedirs(target_path, exist_ok=True)
+        file_path = os.path.join(target_path, f"waveforms_as_one_array_{feature}.npy")
+        return file_path
+
+    def format_data(self, feature):
 
         exp_index = 0
         trial_index = 0
@@ -60,7 +69,7 @@ class DataCompressor:
                     for trial_key in exp_data.dtype.names:
                         if trial_key.startswith("trial"):
                             trial_data = exp_data[trial_key][0, 0]
-                            waveforms = trial_data["waveforms"][0, 0]
+                            waveforms = trial_data[feature][0, 0]                                                       # change from "waveforms" to feature to extract different parts
                             for electrode in range(96):
                                 b[exp_index][trial_index][electrode] = waveforms[0][electrode]
                         trial_index += 1
@@ -86,12 +95,16 @@ class DataCompressor:
                                 continue
             a = np.array(a)
 
-            np.save("_waveforms_as_one_array" + ".npy", a)
+            filepath = self.get_Path(feature)
+            np.save(filepath, a)
 
             print(a.shape)
 
 
 trialONE = DataCompressor(1)
-trialONE.format_data()
-a = np.load(r"C:\Users\Haris\git\CPS_Projekt\denspp.offline\3_Python\package\data_merge\_waveforms_as_one_array.npy")
-print(a[0])
+trialONE.format_data("timestamps")
+trialONE.format_data("waveforms")
+a = np.load(trialONE.get_Path("timestamps"))
+b = np.load(trialONE.get_Path("waveforms"))
+print(a[3])
+print(b[3])
