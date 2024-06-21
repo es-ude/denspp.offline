@@ -52,14 +52,17 @@ class DataCompressor:
         file_path = os.path.join(target_path, f"waveforms_as_one_array.npy")
         return file_path
 
-    def is_valid(self, waveform):
+    def __is_valid(self, waveform):
         lowestindex_current = np.argmin(waveform)
         highestindex_current = np.argmax(waveform)
-        if (lowestindex_current == 11 or lowestindex_current == 12 or lowestindex_current == 13) and (highestindex_current < 1 or highestindex_current > 13):
+        if ((lowestindex_current == 11 or lowestindex_current == 12 or lowestindex_current == 13) and
+                (highestindex_current < 1 or highestindex_current > 13) and (highestindex_current < 40)):
             return True
         else:
             return False
 
+
+    ### main function
     def format_data(self):
 
         exp_index = 0
@@ -92,32 +95,33 @@ class DataCompressor:
             a = []
             lowestindex = []
             highestindex = []
-            waveform_index = 0
-            for exp in range(len(b)):
-                for trial in range(len(b[exp])):
-                    for electrode in range(len(b[exp][trial])):
-                        #if feature == "waveforms":
-                        for waveforms in range(len(b[exp][trial][electrode])):
 
-                            # a.append([waveform_index]+ list(data[x][y][z][v])) # so steht der index vorne dran
+            for exp in b:
+                for trial in b[exp]:
+                    for electrode in b[exp][trial]:
+
+                        for waveforms in b[exp][trial][electrode]:
+
+                            # a.append([waveform_index]+ list(data[x][y][z][v])) # so steht der index vorne dran #waveform index muss inkrementiert werden
                             # a.append(self.normalize(b[x][y][z][v], 0,1))        # so normalisiert, schlecht für kmeans
 
-                            if self.is_valid(b[exp][trial][electrode][waveforms]):
-                                a.append(b[exp][trial][electrode][waveforms])
-                                highestindex.append(np.argmax(b[exp][trial][electrode][waveforms]))
-                                lowestindex.append(np.argmin(b[exp][trial][electrode][waveforms]))
-                                waveform_index += 1
+                            if self.__is_valid(waveforms):
+                                a.append(waveforms)
+                                highestindex.append(np.argmax(waveforms))
+                                lowestindex.append(np.argmin(waveforms))
+
 
             a = np.array(a)
 
             np.save(self.get_Path(), a)
-            #np.save(self.get_Path(), lowestindex)
-            #np.save(self.get_Path(), highestindex)
+            #np.save(self.get_Path(), timestamp)
+
 
             print(a.shape)
+            print(a[0:2])
 
 
 trialONE = DataCompressor(1)
 trialONE.format_data()
 b = np.load(trialONE.get_Path())
-#print(b[3])
+
