@@ -81,6 +81,8 @@ class DataCompressor:
 
             ### format to one 2D array
             a = []
+            lowestindex = []
+            highestindex = []
             waveform_index = 0
             for x in range(len(b)):
                 for y in range(len(b[x])):
@@ -88,22 +90,29 @@ class DataCompressor:
                         for v in range(len(b[x][y][z])):
                             if len(b[x][y][z][v]) == 48:
                                 # a.append([waveform_index]+ list(data[x][y][z][v])) # so steht der index vorne dran
-                                a.append(b[x][y][z][v])
-                                #a.append(self.normalize(b[x][y][z][v], 0,1))        # so normalisiert, schlecht für kmeans
+                                # a.append(self.normalize(b[x][y][z][v], 0,1))        # so normalisiert, schlecht für kmeans
 
-                                waveform_index += 1
+                                lowestindex_current = np.argmin(b[x][y][z][v])
+                                highestindex_current = np.argmax(b[x][y][z][v])
+                                if lowestindex_current == 11 or lowestindex_current == 12 or lowestindex_current == 13:
+                                    if highestindex_current < 1 or highestindex_current > 13:
+                                        a.append(b[x][y][z][v])
+                                        highestindex.append(highestindex_current)
+                                        lowestindex.append(lowestindex_current)
+                                        waveform_index += 1
 
                             else:
                                 continue
             a = np.array(a)
 
-            filepath = self.get_Path(feature)
-            np.save(filepath, a)
+            np.save("_waveforms_as_one_array_cleaned" + ".npy", a)
+            np.save("lowest_index_of_waveforms" + ".npy", lowestindex)
+            np.save("highest_index_of_waveforms" + ".npy", highestindex)
 
             print(a.shape)
 
 
-trialONE = DataCompressor(0)
+trialONE = DataCompressor(1)
 trialONE.format_data("timestamps")
 trialONE.format_data("waveforms")
 a = np.load(trialONE.get_Path("timestamps"))
