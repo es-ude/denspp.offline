@@ -52,7 +52,7 @@ class DataCompressor:
         file_path = os.path.join(target_path, f"waveforms_as_one_array_{feature}.npy")
         return file_path
 
-    def format_data(self, feature):
+    def format_data(self):
 
         exp_index = 0
         trial_index = 0
@@ -69,16 +69,17 @@ class DataCompressor:
                     for trial_key in exp_data.dtype.names:
                         if trial_key.startswith("trial"):
                             trial_data = exp_data[trial_key][0, 0]
-                            waveforms = trial_data[feature][0, 0]                                                       # change from "waveforms" to feature to extract different parts
+                            waveforms = trial_data["waveforms"][0, 0]
                             for electrode in range(96):
                                 b[exp_index][trial_index][electrode] = waveforms[0][electrode]
                         trial_index += 1
                     trial_index = 0
                     exp_index += 1
 
-
             ### format to one 2D array
             a = []
+            lowestindex = []
+            highestindex = []
             waveform_index = 0
             for x in range(len(b)):
                 for y in range(len(b[x])):
@@ -86,20 +87,26 @@ class DataCompressor:
                         for v in range(len(b[x][y][z])):
                             if len(b[x][y][z][v]) == 48:
                                 # a.append([waveform_index]+ list(data[x][y][z][v])) # so steht der index vorne dran
-                                a.append(b[x][y][z][v])
-                                #a.append(self.normalize(b[x][y][z][v], 0,1))        # so normalisiert, schlecht für kmeans
+                                # a.append(self.normalize(b[x][y][z][v], 0,1))        # so normalisiert, schlecht für kmeans
 
-                                waveform_index += 1
+                                lowestindex_current = np.argmin(b[x][y][z][v])
+                                highestindex_current = np.argmax(b[x][y][z][v])
+                                if lowestindex_current == 11 or lowestindex_current == 12 or lowestindex_current == 13:
+                                    if highestindex_current < 1 or highestindex_current > 13:
+                                        a.append(b[x][y][z][v])
+                                        highestindex.append(highestindex_current)
+                                        lowestindex.append(lowestindex_current)
+                                        waveform_index += 1
 
                             else:
                                 continue
             a = np.array(a)
 
-            filepath = self.get_Path(feature)
-            np.save(filepath, a)
+            np.save("_waveforms_as_one_array_cleaned" + ".npy", a)
+            np.save("lowest_index_of_waveforms" + ".npy", lowestindex)
+            np.save("highest_index_of_waveforms" + ".npy", highestindex)
 
             print(a.shape)
-
 
 trialONE = DataCompressor(1)
 trialONE.format_data("timestamps")
