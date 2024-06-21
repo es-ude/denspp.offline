@@ -3,17 +3,17 @@ from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
-
+import os
 from sklearn.metrics import silhouette_score
 
-# Angenommen, 'data' ist Ihr 48000x48 Array
-data_load = np.load(r"C:\Users\Haris\git\CPS_Projekt\denspp.offline\3_Python\package\data_merge\_waveforms_as_one_array.npy")
-data = data_load[0:500]
+data_load = np.load(os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), "data",
+                                         "waveforms_as_one_array.npy"))
+data = data_load[0:1500]
 
 scaler = StandardScaler()
 data_normalized = scaler.fit_transform(data)
 
-# 2. Optimale Anzahl von Clustern bestimmen (hier Elbow Method)
+# Optimale Anzahl von Clustern bestimmen (hier Elbow Method)
 def find_optimal_clusters(data, max_k):
     iters = range(2, max_k+1, 2)
     sse = []
@@ -29,17 +29,17 @@ def find_optimal_clusters(data, max_k):
 # Find the optimal number of clusters
 find_optimal_clusters(data_normalized, 20)
 
-# 3. KMeans-Clustering anwenden (nach Bestimmung der optimalen Clusterzahl)
+# KMeans-Clustering anwenden (nach Bestimmung der optimalen Clusterzahl)
 n_clusters = 5  # Setzen Sie die optimale Anzahl von Clustern hier
 kmeans = KMeans(n_clusters=n_clusters, random_state=42)
 kmeans.fit(data_normalized)
 labels = kmeans.labels_
 
-# 4. t-SNE für die Reduktion der Dimensionalität auf 3D anwenden
+# t-SNE für die Reduktion der Dimensionalität auf 3D anwenden
 tsne = TSNE(n_components=3, perplexity=30, learning_rate=1, random_state=42)
 data_tsne = tsne.fit_transform(data_normalized)
 
-# 5. 3D-Plot der Cluster erstellen
+# 3D-Plot der Cluster erstellen
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 scatter = ax.scatter(data_tsne[:, 0], data_tsne[:, 1], data_tsne[:, 2], c=labels, cmap='viridis')

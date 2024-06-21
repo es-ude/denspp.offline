@@ -1,36 +1,33 @@
 import os
-
 import numpy as np
-
 from scipy.io import loadmat
+
+
+def normalize(arr, t_min, t_max):
+    norm_arr = []
+    diff = t_max - t_min
+    diff_arr = max(arr) - min(arr)
+    for i in arr:
+        temp = (((i - min(arr)) * diff) / diff_arr) + t_min
+        norm_arr.append(temp)
+    return norm_arr
 
 
 class DataCompressor:
 
-    def __init__(self, data_type):
+    def __init__(self):
 
-        self.mode_data = data_type
-        if data_type == 1:
-            self.data_type = "Klaes-file"
             self.filepath = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), "data",
                                          "2024-02-05_Dataset-KlaesNeuralDecoding.mat")
             self.num_experiments = 21
             self.num_trials = 50
-        elif data_type == 2:
-            self.data_type = "Martinez-file"
-        else:
-            self.data_type = "not defined"
 
-            raise ValueError("Not defined")
-
-    def normalize(self, arr, t_min, t_max):
-        norm_arr = []
-        diff = t_max - t_min
-        diff_arr = max(arr) - min(arr)
-        for i in arr:
-            temp = (((i - min(arr)) * diff) / diff_arr) + t_min
-            norm_arr.append(temp)
-        return norm_arr
+    def get_Path(self):
+        current_dir = os.getcwd()
+        target_path = os.path.join(os.path.dirname(os.path.dirname(current_dir)), 'data')
+        os.makedirs(target_path, exist_ok=True)
+        file_path = os.path.join(target_path, f"waveforms_as_one_array.npy")
+        return file_path
 
     def create_Dict(self):
         # easier to use a dict, since some electrodes have more waveforms than others
@@ -41,16 +38,27 @@ class DataCompressor:
                 b[x][y] = {}
         return b
 
-    def load_Data(self):
+    def extract_from_Klaes(self):
         loaded_data = loadmat(self.filepath)
-        return loaded_data
+        exp_index = 0
+        trial_index = 0
+        b = self.create_Dict()
 
-    def get_Path(self):
-        current_dir = os.getcwd()
-        target_path = os.path.join(os.path.dirname(os.path.dirname(current_dir)), 'data')
-        os.makedirs(target_path, exist_ok=True)
-        file_path = os.path.join(target_path, f"waveforms_as_one_array.npy")
-        return file_path
+        for exp_key in loaded_data:
+            if exp_key.startswith("exp"):
+                exp_data = loaded_data[exp_key]
+
+                for trial_key in exp_data.dtype.names:
+                    if trial_key.startswith("trial"):
+                        waveforms = exp_data[trial_key][0, 0]["waveforms"][0, 0]
+
+                        for electrode in range(len(waveforms[0])):
+                            b[exp_index][trial_index][electrode] = waveforms[0][electrode]
+
+                    trial_index += 1
+                trial_index = 0
+                exp_index += 1
+        return b
 
     def __is_valid(self, waveform):
         lowestindex_current = np.argmin(waveform)
@@ -65,63 +73,37 @@ class DataCompressor:
     ### main function
     def format_data(self):
 
-        exp_index = 0
-        trial_index = 0
 
-        if self.data_type == "Klaes-file":
+        b = self.extract_from_Klaes()
 
-            loaded_data = self.load_Data()
-            b = self.create_Dict()
+        ### format to one 2D array
+        a = []
+        lowestindex = []
+        highestindex = []
+        waveform_index = 0
+        for exp in b:
+            for trial in b[exp]:
+                for electrode in b[exp][trial]:
+                    #if feature == "waveforms":
+                    for waveforms in b[exp][trial][electrode]:
+                        # a.append([waveform_index]+ list(data[x][y][z][v])) # so steht der index vorne dran #waveform index muss inkrementiert werden
 
-            ##load each experiment
-            for exp_key in loaded_data:
-                if exp_key.startswith("exp"):
-                    exp_data = loaded_data[exp_key]
-
-                    #load each trial and save matlab variable "waveforms"
-                    for trial_key in exp_data.dtype.names:
-                        if trial_key.startswith("trial"):
-                            waveforms = exp_data[trial_key][0, 0]["waveforms"][0, 0]
-
-                            # save actual waveforms from each electrode
-                            for electrode in range(len(waveforms[0])):
-                                b[exp_index][trial_index][electrode] = waveforms[0][electrode]
-
-                        trial_index += 1
-                    trial_index = 0
-                    exp_index += 1
-
-            ### format to one 2D array
-            a = []
-            lowestindex = []
-            highestindex = []
-
-            for exp in b:
-                for trial in b[exp]:
-                    for electrode in b[exp][trial]:
-
-                        for waveforms in b[exp][trial][electrode]:
-
-                            # a.append([waveform_index]+ list(data[x][y][z][v])) # so steht der index vorne dran #waveform index muss inkrementiert werden
-                            # a.append(self.normalize(b[x][y][z][v], 0,1))        # so normalisiert, schlecht für kmeans
-
-                            if self.__is_valid(waveforms):
-                                a.append(waveforms)
-                                highestindex.append(np.argmax(waveforms))
-                                lowestindex.append(np.argmin(waveforms))
+                        if self.__is_valid(waveforms):
+                            a.append(normalize(waveforms, 0 ,1 ))
+                            highestindex.append(np.argmax(waveforms))
+                            lowestindex.append(np.argmin(waveforms))
 
 
-            a = np.array(a)
+        a = np.array(a)
 
-            np.save(self.get_Path(), a)
-            #np.save(self.get_Path(), timestamp)
+        np.save(self.get_Path(), a)
+        #np.save(self.get_Path(), timestamp)
+
+        print(a.shape)
+        print(a[0:2])
 
 
-            print(a.shape)
-            print(a[0:2])
-
-
-trialONE = DataCompressor(1)
+trialONE = DataCompressor()
 trialONE.format_data()
 b = np.load(trialONE.get_Path())
-
+#print(b[3])
