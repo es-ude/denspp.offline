@@ -9,7 +9,6 @@ class DataCompressor:
 
     def __init__(self, data_type):
 
-
         self.mode_data = data_type
         if data_type == 1:
             self.data_type = "Klaes-file"
@@ -34,8 +33,7 @@ class DataCompressor:
         return norm_arr
 
     def create_Dict(self):
-        # easier to use a dict, so the trial/exp-keys can be the indices
-        # otherwise you would need to cast every key as int
+        # easier to use a dict, since some electrodes have more waveforms than others
         b = {}
         for x in range(self.num_experiments):  # 21 experiments
             b[x] = {}
@@ -53,6 +51,14 @@ class DataCompressor:
         os.makedirs(target_path, exist_ok=True)
         file_path = os.path.join(target_path, f"waveforms_as_one_array.npy")
         return file_path
+
+    def is_valid(self, waveform):
+        lowestindex_current = np.argmin(waveform)
+        highestindex_current = np.argmax(waveform)
+        if (lowestindex_current == 11 or lowestindex_current == 12 or lowestindex_current == 13) and (highestindex_current < 1 or highestindex_current > 13):
+            return True
+        else:
+            return False
 
     def format_data(self):
 
@@ -81,7 +87,6 @@ class DataCompressor:
                         trial_index += 1
                     trial_index = 0
                     exp_index += 1
-            print(b[0][0][1][0])
 
             ### format to one 2D array
             a = []
@@ -92,21 +97,16 @@ class DataCompressor:
                 for trial in range(len(b[exp])):
                     for electrode in range(len(b[exp][trial])):
                         #if feature == "waveforms":
-                            for waveforms in range(len(b[exp][trial][electrode])):
+                        for waveforms in range(len(b[exp][trial][electrode])):
 
-                                # a.append([waveform_index]+ list(data[x][y][z][v])) # so steht der index vorne dran
-                                # a.append(self.normalize(b[x][y][z][v], 0,1))        # so normalisiert, schlecht für kmeans
+                            # a.append([waveform_index]+ list(data[x][y][z][v])) # so steht der index vorne dran
+                            # a.append(self.normalize(b[x][y][z][v], 0,1))        # so normalisiert, schlecht für kmeans
 
-                                lowestindex_current = np.argmin(b[exp][trial][electrode][waveforms])
-                                highestindex_current = np.argmax(b[exp][trial][electrode][waveforms])
-                                if lowestindex_current == 11 or lowestindex_current == 12 or lowestindex_current == 13:
-                                    if highestindex_current < 1 or highestindex_current > 13:
-                                        a.append(b[exp][trial][electrode][waveforms])
-                                        highestindex.append(highestindex_current)
-                                        lowestindex.append(lowestindex_current)
-                                        waveform_index += 1
-
-
+                            if self.is_valid(b[exp][trial][electrode][waveforms]):
+                                a.append(b[exp][trial][electrode][waveforms])
+                                highestindex.append(np.argmax(b[exp][trial][electrode][waveforms]))
+                                lowestindex.append(np.argmin(b[exp][trial][electrode][waveforms]))
+                                waveform_index += 1
 
             a = np.array(a)
 
@@ -114,7 +114,7 @@ class DataCompressor:
             #np.save(self.get_Path(), lowestindex)
             #np.save(self.get_Path(), highestindex)
 
-            print(a[0])
+            print(a.shape)
 
 
 trialONE = DataCompressor(1)
