@@ -12,7 +12,7 @@ class cnn_lstm_dec_v3(nn.Module):
         self.model_shape = (1, num_clusters, 10, 10, input_samples)
         do_bias_train = True
 
-        kernel_layer = [num_clusters, 10, 20]
+        kernel_layer = [num_clusters, 100, 200]
         # --- Settings for DNN/LSTM
         dense_layer_size = [64, 32]
 
@@ -56,7 +56,7 @@ class cnn_lstm_dec_v3(nn.Module):
 
         self.flatten = nn.Flatten()
         self.lstm = nn.LSTM(
-            input_size=720,  # Adjust based on the output size from CNN
+            input_size=7200,  # Adjust based on the output size from CNN
             hidden_size=64,          # Example hidden size, adjust as needed
             num_layers=input_samples,            # Example number of LSTM layers, adjust as needed
             batch_first=True         # Input and output tensors are provided as (batch, seq, feature)
