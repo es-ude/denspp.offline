@@ -2,7 +2,6 @@ import os
 import numpy as np
 from scipy.io import loadmat
 
-
 def normalize(arr, t_min, t_max):
     norm_arr = []
     diff = t_max - t_min
@@ -21,7 +20,6 @@ class DataCompressor:
                                          "2024-02-05_Dataset-KlaesNeuralDecoding.mat")
             self.num_experiments = 21
             self.num_trials = 50
-
 
 
     def get_Path(self, data_type):
@@ -59,8 +57,7 @@ class DataCompressor:
                         for electrode in range(len(waveforms[0])):
                             b[exp_index][trial_index][electrode] = waveforms[0][electrode]
                             for x in range(len(waveforms[0][electrode])):
-                                position.append(electrode)
-
+                                position.append(electrode+1) # +1 because electrodes start with 1
 
                     trial_index += 1
                 trial_index = 0
@@ -86,13 +83,11 @@ class DataCompressor:
                 for electrode in dataset[exp][trial]:
                     for waveforms in dataset[exp][trial][electrode]:
 
-                        #if self.feature == "waveforms" and self.__is_valid(waveforms):
                             a.append(waveforms)
                             highestindex.append(np.argmax(waveforms))
                             lowestindex.append(np.argmin(waveforms))
-
-
         return a
+
     ### main function
     def format_data(self):
 
@@ -104,9 +99,6 @@ class DataCompressor:
         timestamp_dataset, position = self.extract_from_Klaes("timestamps")
         dataset, position = self.extract_from_Klaes("waveforms")
 
-
-
-
         ### format to one 2D array
         waveforms_as_array = self.iterate_over_dataset(dataset)
         timestamps_as_array = self.iterate_over_dataset(timestamp_dataset)
@@ -114,21 +106,12 @@ class DataCompressor:
         timestamps_as_array = np.concatenate(timestamps_as_array)
         waveforms_as_array = np.array(waveforms_as_array)
 
-
+        #Todo Funktion rausziehen
         for x in range(len(waveforms_as_array)):
             if self.__is_valid(waveforms_as_array[x]):
                 valid_waveforms.append(waveforms_as_array[x])
                 valid_timestamps.append(timestamps_as_array[x])
                 valid_positions.append(position[x])
-
-
-        valid_timestamps = np.array(valid_timestamps)
-        valid_waveforms = np.array(valid_waveforms)
-        valid_positions = np.array(valid_positions)
-
-        print(valid_positions.shape)
-        print(valid_waveforms.shape)
-        print(valid_timestamps.shape)
 
         np.save(self.get_Path("waveforms"), valid_waveforms)
         np.save(self.get_Path("timestamps"), valid_timestamps)
@@ -136,9 +119,10 @@ class DataCompressor:
 
 
 trialONE = DataCompressor()
-trialONE.format_data()
+#trialONE.format_data()
 data = np.load(trialONE.get_Path("waveforms"))
-print(data[3])
-
-#print(data["valid_waveforms"][3])
-#print(data["valid_positions"][3])
+t = np.load(trialONE.get_Path("timestamps"))
+pos =np.load(trialONE.get_Path("positions"))
+print(t[len(t)-1])
+print(data[len(t)-1])
+print(pos[len(t)-1])
