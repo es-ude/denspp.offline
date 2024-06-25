@@ -74,18 +74,18 @@ class DataCompressor:
     def format_data(self):
 
 
-        b = self.extract_from_Klaes()
+        dataset = self.extract_from_Klaes()
 
         ### format to one 2D array
         a = []
         lowestindex = []
         highestindex = []
         waveform_index = 0
-        for exp in b:
-            for trial in b[exp]:
-                for electrode in b[exp][trial]:
+        for exp in dataset:
+            for trial in dataset[exp]:
+                for electrode in dataset[exp][trial]:
                     #if feature == "waveforms":
-                    for waveforms in b[exp][trial][electrode]:
+                    for waveforms in dataset[exp][trial][electrode]:
                         # a.append([waveform_index]+ list(data[x][y][z][v])) # so steht der index vorne dran #waveform index muss inkrementiert werden
 
                         if self.__is_valid(waveforms):
