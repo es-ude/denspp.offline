@@ -24,6 +24,14 @@ class cnn2D_lstm_dec_v3(nn.Module):
                       padding= 0),
             nn.BatchNorm2d(num_features= kernel_layer[1]),
             nn.ReLU(),
+
+            nn.Conv2d(in_channels = kernel_layer[1],
+                      out_channels= kernel_layer[2],
+                      kernel_size=3,
+                      stride= 1,
+                      padding= 0),
+            nn.BatchNorm2d(num_features= kernel_layer[1]),
+            nn.ReLU(),
         )
 
         self.dnn_1 = nn.Sequential(
@@ -137,38 +145,6 @@ class cnn2D_lstm_dec_v2(nn.Module):
 
         return pred_con, argmax(pred_con, 1)
 
-Recommended_Config_PytorchSettings = Config_PyTorch(
-    # --- Settings of Models/Training
-    model=cnn2D_lstm_dec_v2(),
-    loss='MSE',
-    loss_fn=nn.MSELoss(),
-    optimizer='Adam',
-    num_kfold=1,
-    num_epochs=10,
-    batch_size=512,
-    data_split_ratio=0.25,
-    data_do_shuffle=True
-)
-
-Recommended_Config_DatasetSettings = Config_Dataset(
-    # --- Settings of Datasets
-    data_path='../2_Data/00_Merged_Datasets',
-    data_file_name='2024-02-05_Dataset-KlaesNeuralDecoding.npy',
-    # --- Data Augmentation
-    data_do_augmentation=False,
-    data_num_augmentation=0,
-    data_do_addnoise_cluster=False,
-    # --- Data Normalization
-    data_do_normalization=False,
-    data_normalization_mode='',
-    data_normalization_method='',
-    data_normalization_setting='',
-    # --- Dataset Preparation
-    data_do_reduce_samples_per_cluster=False,
-    data_num_samples_per_cluster=0,
-    data_exclude_cluster=[],
-    data_sel_pos=[]
-)
 class cnn_lstm_dec_v1(nn.Module):
     """Class of a convolutional Decoding for feature extraction but with 3D CNN. Project WiSe 23/24"""
 
