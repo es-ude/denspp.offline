@@ -30,7 +30,7 @@ class cnn2D_lstm_dec_v3(nn.Module):
                       kernel_size=3,
                       stride= 1,
                       padding= 0),
-            nn.BatchNorm2d(num_features= kernel_layer[1]),
+            nn.BatchNorm2d(num_features= kernel_layer[2]),
             nn.ReLU(),
         )
 
@@ -41,6 +41,7 @@ class cnn2D_lstm_dec_v3(nn.Module):
                 out_features= dense_layer_size[1],
                 bias=do_bias_train
             ),
+            nn.Dropout(0.1),
             nn.BatchNorm1d(dense_layer_size[1]),
             nn.ReLU(),
             nn.Linear(
@@ -48,13 +49,14 @@ class cnn2D_lstm_dec_v3(nn.Module):
                 out_features= output_samples,
                 bias=do_bias_train
             ),
+            nn.Dropout(0.3),
             nn.BatchNorm1d(output_samples),
             nn.Softmax()
         )
 
         self.flatten = nn.Flatten()
         self.lstm = nn.LSTM(
-            input_size=640,  # Adjust based on the output size from CNN
+            input_size=720,  # Adjust based on the output size from CNN
             hidden_size=64,          # Example hidden size, adjust as needed
             num_layers=input_samples,            # Example number of LSTM layers, adjust as needed
             batch_first=True         # Input and output tensors are provided as (batch, seq, feature)
@@ -94,7 +96,7 @@ class cnn2D_lstm_dec_v2(nn.Module):
         self.cnn_1 = nn.Sequential(
             nn.Conv2d(in_channels = num_clusters,
                       out_channels= kernel_layer[1],
-                      kernel_size=3,
+                      kernel_size=(3,3),
                       stride= 1,
                       padding= 0),
             nn.BatchNorm2d(num_features= kernel_layer[1]),
