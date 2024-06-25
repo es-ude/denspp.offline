@@ -12,7 +12,7 @@ config_data = Config_Dataset(
 
     # --- Data Augmentation
     data_do_augmentation=True,
-    data_num_augmentation=10000,
+    data_num_augmentation=1000,
     data_do_addnoise_cluster=False,
     # --- Data Normalization
     data_do_normalization=False,
