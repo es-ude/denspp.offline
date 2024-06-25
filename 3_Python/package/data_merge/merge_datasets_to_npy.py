@@ -24,11 +24,11 @@ class DataCompressor:
 
 
 
-    def get_Path(self):
+    def get_Path(self, data_type):
         current_dir = os.getcwd()
         target_path = os.path.join(os.path.dirname(os.path.dirname(current_dir)), 'data')
         os.makedirs(target_path, exist_ok=True)
-        file_path = os.path.join(target_path, f"waveforms_as_one_array.npz")
+        file_path = os.path.join(target_path, f"{data_type}_as_one_array.npy")
         return file_path
 
     def create_Dict(self):
@@ -130,13 +130,15 @@ class DataCompressor:
         print(valid_waveforms.shape)
         print(valid_timestamps.shape)
 
-        np.savez(self.get_Path(), array1= valid_timestamps,array2=valid_waveforms, array3=valid_positions )
-        #np.save(self.get_Path(), b)
+        np.save(self.get_Path("waveforms"), valid_waveforms)
+        np.save(self.get_Path("timestamps"), valid_timestamps)
+        np.save(self.get_Path("positions"), valid_positions)
+
 
 trialONE = DataCompressor()
 trialONE.format_data()
-data = np.load(trialONE.get_Path())
-print(data["array1"][3])
-print(data["array3"][3])
+data = np.load(trialONE.get_Path("waveforms"))
+print(data[3])
+
 #print(data["valid_waveforms"][3])
 #print(data["valid_positions"][3])
