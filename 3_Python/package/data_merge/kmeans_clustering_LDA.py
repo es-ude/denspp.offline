@@ -4,15 +4,17 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import silhouette_score
+import os
 
 # Angenommen, 'data' ist Ihr 48000x48 Array
-data = np.load(r"C:\Users\Haris\git\CPS_Projekt\denspp.offline\3_Python\data\_waveforms_as_one_array.npy")
+data = np.load(os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), "data",
+                                         "exp0_waveforms_as_one_array.npy"))
 
 # Anzahl der Zeilen in Ihrem Array
 num_rows = data.shape[0]
 
 # Wählen Sie zufällig 100 Zeilenindizes aus
-random_indices = np.random.choice(num_rows, size=500, replace=False)
+random_indices = np.random.choice(num_rows, size=2000, replace=False)
 
 # Erstellen Sie ein neues Array mit den ausgewählten Zeilen
 new_array = data[random_indices]

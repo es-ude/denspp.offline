@@ -1,4 +1,7 @@
 import os
+import time
+
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.io import loadmat
 
@@ -26,7 +29,7 @@ class DataCompressor:
         current_dir = os.getcwd()
         target_path = os.path.join(os.path.dirname(os.path.dirname(current_dir)), 'data')
         os.makedirs(target_path, exist_ok=True)
-        file_path = os.path.join(target_path, f"{data_type}_as_one_array.npy")
+        file_path = os.path.join(target_path, f"exp7_{data_type}_as_one_array.npy")
         return file_path
 
     def create_Dict(self):
@@ -47,7 +50,7 @@ class DataCompressor:
         position = []
         counter = 1
         for exp_key in loaded_data:
-            if exp_key.startswith("exp"):
+            if exp_key.startswith("exp_01"):
                 exp_data = loaded_data[exp_key]
 
                 for trial_key in exp_data.dtype.names:
@@ -66,12 +69,15 @@ class DataCompressor:
         return b, position
 
     def __is_valid(self, waveform):
+
         lowestindex_current = np.argmin(waveform)
         highestindex_current = np.argmax(waveform)
-        if ((lowestindex_current == 11 or lowestindex_current == 12 or lowestindex_current == 13) and
-                (highestindex_current < 1 or highestindex_current > 13) and (highestindex_current < 40)):
+        if (((11 <= lowestindex_current <= 13) and
+                (highestindex_current == 0 or highestindex_current > 13) and (highestindex_current < 40)) and
+                (highestindex_current- lowestindex_current < 400)):
             return True
         else:
+            badwaveforms.append(waveform)
             return False
 
     def iterate_over_dataset(self, dataset):
@@ -88,41 +94,57 @@ class DataCompressor:
                             lowestindex.append(np.argmin(waveforms))
         return a
 
-    ### main function
-    def format_data(self):
+    def print_bad_waveforms(self):
+        global badwaveforms
+        badwaveforms = np.array(badwaveforms)
+        print(badwaveforms.shape)
+        for x in range(len(badwaveforms)):
+            plt.figure()
+            plt.plot(badwaveforms[x])
+            plt.show()
+            time.sleep(.5)
+            plt.close()
 
-        valid_waveforms = []
-        valid_timestamps = []
-        valid_positions = []
-
-        ####DIE FOLGENDEN ZWEI ZEILEN NICHT IN REIHENFOLGE VERTAUSCHEN!!!ELF
-        timestamp_dataset, position = self.extract_from_Klaes("timestamps")
-        dataset, position = self.extract_from_Klaes("waveforms")
-
-        ### format to one 2D array
-        waveforms_as_array = self.iterate_over_dataset(dataset)
-        timestamps_as_array = self.iterate_over_dataset(timestamp_dataset)
-
+    def copy_valid_data_to_new_arrays(self, position, timestamps_as_array, valid_positions, valid_timestamps, valid_waveforms,
+                                      waveforms_as_array):
         timestamps_as_array = np.concatenate(timestamps_as_array)
         waveforms_as_array = np.array(waveforms_as_array)
 
-        #Todo Funktion rausziehen
         for x in range(len(waveforms_as_array)):
             if self.__is_valid(waveforms_as_array[x]):
                 valid_waveforms.append(waveforms_as_array[x])
                 valid_timestamps.append(timestamps_as_array[x])
                 valid_positions.append(position[x])
 
+
+    ### main function
+    def format_data(self):
+        global badwaveforms
+        badwaveforms = []
+        valid_waveforms = []
+        valid_timestamps = []
+        valid_positions = []
+
+        # DIE FOLGENDEN ZWEI ZEILEN NICHT IN REIHENFOLGE VERTAUSCHEN, position wird sonst falsch beschrieben
+        timestamp_dataset, position = self.extract_from_Klaes("timestamps")
+        dataset, position = self.extract_from_Klaes("waveforms")
+
+        # format to one 2D array
+        waveforms_as_array = self.iterate_over_dataset(dataset)
+        timestamps_as_array = self.iterate_over_dataset(timestamp_dataset)
+
+        self.copy_valid_data_to_new_arrays(position, timestamps_as_array, valid_positions, valid_timestamps, valid_waveforms,
+                                           waveforms_as_array)
+
         np.save(self.get_Path("waveforms"), valid_waveforms)
         np.save(self.get_Path("timestamps"), valid_timestamps)
         np.save(self.get_Path("positions"), valid_positions)
+        print(len(valid_timestamps))
+        self.print_bad_waveforms()
 
 
 trialONE = DataCompressor()
-#trialONE.format_data()
+trialONE.format_data()
 data = np.load(trialONE.get_Path("waveforms"))
 t = np.load(trialONE.get_Path("timestamps"))
 pos =np.load(trialONE.get_Path("positions"))
-print(t[len(t)-1])
-print(data[len(t)-1])
-print(pos[len(t)-1])

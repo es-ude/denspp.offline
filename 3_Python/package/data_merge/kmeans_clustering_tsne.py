@@ -7,11 +7,11 @@ import os
 from sklearn.metrics import silhouette_score
 
 data_load = np.load(os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), "data",
-                                         "waveforms_as_one_array.npy"))
-data = data_load[0:1500]
+                                         "exp7_waveforms_as_one_array.npy"))
+data = data_load[2000:4000]
 
 scaler = StandardScaler()
-data_normalized = scaler.fit_transform(data)
+data_normalized = data
 
 # Optimale Anzahl von Clustern bestimmen (hier Elbow Method)
 def find_optimal_clusters(data, max_k):
@@ -30,13 +30,13 @@ def find_optimal_clusters(data, max_k):
 find_optimal_clusters(data_normalized, 20)
 
 # KMeans-Clustering anwenden (nach Bestimmung der optimalen Clusterzahl)
-n_clusters = 5  # Setzen Sie die optimale Anzahl von Clustern hier
+n_clusters = 6  # Setzen Sie die optimale Anzahl von Clustern hier
 kmeans = KMeans(n_clusters=n_clusters, random_state=42)
 kmeans.fit(data_normalized)
 labels = kmeans.labels_
 
 # t-SNE für die Reduktion der Dimensionalität auf 3D anwenden
-tsne = TSNE(n_components=3, perplexity=30, learning_rate=1, random_state=42)
+tsne = TSNE(n_components=3, perplexity=30, learning_rate=5, random_state=42)
 data_tsne = tsne.fit_transform(data_normalized)
 
 # 3D-Plot der Cluster erstellen
