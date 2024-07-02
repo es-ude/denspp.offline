@@ -17,7 +17,7 @@ class cnn_lstm_dec_v3(nn.Module):
         dense_layer_size = [1000, 720]
 
         self.cnn_1 = nn.Sequential(
-            nn.Conv2d(in_channels = num_clusters,
+            nn.Conv2d(in_channels = 1,
                       out_channels= kernel_layer[1],
                       kernel_size=3,
                       stride= 1,
@@ -51,7 +51,7 @@ class cnn_lstm_dec_v3(nn.Module):
             ),
             nn.Dropout(0.2),
             nn.BatchNorm1d(output_samples),
-            nn.Softmax()
+            nn.Softmax(dim=1)
         )
 
         self.flatten = nn.Flatten()
@@ -65,6 +65,7 @@ class cnn_lstm_dec_v3(nn.Module):
     def forward(self, x):
         batch_size, num_clusters, height, width, num_time_windows = x.shape
         video = []
+        [10,10,12]
         #print("debug <3")
         for i in range(num_time_windows):
             img = x[:, :, :, :, i]

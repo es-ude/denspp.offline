@@ -33,7 +33,7 @@ config_train = Config_PyTorch(
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=100,
+    num_epochs=1,
     batch_size=256,
     data_split_ratio=0.25,
     data_do_shuffle=True
@@ -47,7 +47,7 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
         length_window_ms: Size of the time window for segmenting the tick interval into firing events
     """
     from package.dnn.dataset.decoding_utah import prepare_training
-    from package.dnn.pytorch.rnn import train_nn
+    from package.dnn.pytorch.lstm import train_nn #Import der pytorch file
     from package.plot.plot_dnn import plot_statistic_data
     from package.plot.plot_metric import plot_confusion, plot_loss
 
