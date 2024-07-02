@@ -1,4 +1,5 @@
 import os
+import sys
 
 from torch import is_tensor
 from torch.utils.data import Dataset
@@ -155,10 +156,14 @@ def prepare_training(settings: Config_Dataset,
     """Preparing dataset incl. augmentation for spike-frame based training"""
     print("... loading and processing the dataset")
     # Construct the full path
+
     full_path = settings.get_path2data()
+    if not os.path.exists(full_path):
+        print("\n File Path not right")
+        sys.exit(1)
 
     print(f"Constructed Path: {full_path}")
-    print(f"Data Path Exists: {os.path.exists(full_path)}")
+
     data_raw = np.load(settings.get_path2data(), allow_pickle=True).item()
 
     # --- Pre-Processing: Determine max. timepoint of events
