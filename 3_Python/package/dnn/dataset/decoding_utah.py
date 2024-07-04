@@ -166,33 +166,19 @@ def prepare_training(settings: Config_Dataset,
 
     data_raw = np.load(settings.get_path2data(), allow_pickle=True).item()
 
-    # --- Pre-Processing: Determine max. timepoint of events
-    max_value_timepoint = 0
-    for _, data_exp in data_raw.items(): # 0-20 experimente
-        for key, data_trial in data_exp.items():
-            if 'trial' in key:
-                trial_timestamps = data_trial['timestamps']
-
-
-
-                for timestamp_in_electrode in trial_timestamps:
-                    if len(timestamp_in_electrode):
-                        if max(timestamp_in_electrode) > max_value_timepoint :
-                            max_value_timepoint = max(timestamp_in_electrode)
-
-
-
+    max_overall_timestamp = get_max_timestamp(data_raw)
 
     # --- Pre-Processing: Event -> Transient signal transformation
-    electrode_mapping = None
     dataset_timestamps = list()
     dataset_decision = list()
     dataset_waveform = list()
 
     num_ite_skipped = 0
+
+    electrode_mapping = data_raw['exp_000']['orientation'] # exp_000 is enough because it´s the same for every experiment
+
     for _, data_exp in data_raw.items():
-        if electrode_mapping is None:
-            electrode_mapping = data_exp['orientation']
+
 
         for key, data_trial in data_exp.items():
             if 'trial_' in key and not isinstance(data_trial['label']['patient_says'], np.ndarray):
@@ -200,7 +186,7 @@ def prepare_training(settings: Config_Dataset,
                 cluster = data_trial['cluster']
                 samples_time_window = int(1e-3 * data_trial['samplingrate'] * length_time_window_ms)
 
-                data_stream = __determine_firing_rate(events, cluster, samples_time_window, use_cluster, max_value_timepoint)
+                data_stream = __determine_firing_rate(events, cluster, samples_time_window, use_cluster, max_overall_timestamp)
 
                 dataset_timestamps.append(data_stream)
                 dataset_decision.append(data_trial['label'])
@@ -247,3 +233,15 @@ def prepare_training(settings: Config_Dataset,
 
     return DatasetDecoder(spike_train=dataset_timestamps0, classification=dataset_decision,
                           cluster_dict=label_dict, use_patient_dec=True)
+
+
+def get_max_timestamp(data_raw):
+    max_overall_timestamp = 0
+    for _, data_exp in data_raw.items():  # 0-20 experimente
+        for key, data_trial in data_exp.items():
+            if 'trial' in key:
+                trial_timestamps = data_trial['timestamps']
+                for timestamp_in_electrode in trial_timestamps:
+                    if len(timestamp_in_electrode) and max(timestamp_in_electrode) > max_overall_timestamp:
+                        max_overall_timestamp = max(timestamp_in_electrode)
+    return max_overall_timestamp
