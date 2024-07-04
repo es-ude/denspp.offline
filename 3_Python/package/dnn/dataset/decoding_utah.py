@@ -166,16 +166,8 @@ def preprocess_dataset(settings: Config_Dataset,
     # --- Pre-Processing: Mapping electrode to 2D-placement
     dataset_spike_train = add_electrode_2Dmapping_to_dataset(data_raw, dataset_timestamps, dataset_waveform)
 
-    # --- Creating dictionary with numbers
-    label_dict = dict()
-    num_label_types = 0
-    for label in dataset_decision:
-        used_label = label['patient_says']
-        if isinstance(used_label, str):
-            if used_label not in label_dict.keys():
-                label_dict.update({used_label: num_label_types})
-                num_label_types += 1
-    del num_label_types, label, used_label
+    # --- Creating lable dictionary
+    label_dict = create_lable_dict(dataset_decision)
 
     # --- Counting dataset
     label_count_label_free = [0 for _ in label_dict]
@@ -199,6 +191,18 @@ def preprocess_dataset(settings: Config_Dataset,
 
     return DatasetDecoder(dataset_spike_train=dataset_spike_train, decision=dataset_decision,
                           label_dict=label_dict, use_patient_dec=True)
+
+
+def create_lable_dict(dataset_decision):
+    label_dict = dict()
+    num_label_types = 0
+    for label in dataset_decision:
+        used_label = label['patient_says']
+        if isinstance(used_label, str):
+            if used_label not in label_dict.keys():
+                label_dict.update({used_label: num_label_types})
+                num_label_types += 1
+    return label_dict
 
 
 def add_electrode_2Dmapping_to_dataset(data_raw, dataset_timestamps, dataset_waveform):
