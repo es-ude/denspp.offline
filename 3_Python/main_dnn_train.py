@@ -6,7 +6,7 @@ if __name__ == "__main__":
         mode_dnn=7,
         mode_cellbib=2,
         do_plot=True,
-        do_block=False
+        do_block=True
     )
 
     # --- Configs (AE)

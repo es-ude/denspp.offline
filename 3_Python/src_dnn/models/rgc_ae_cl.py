@@ -1,4 +1,4 @@
-from torch import nn, Tensor, unsqueeze, argmax
+from torch import nn, Tensor, unsqueeze, argmax, cuda
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 
 
@@ -57,9 +57,9 @@ class cnn_rgc_ae_v1(nn.Module):
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
         x0 = unsqueeze(x, dim=1)
+        print("types", x0.type(), x.type())
         encoded = self.encoder(x0)
         decoded = self.decoder(encoded)
-
         return encoded, decoded
 
 

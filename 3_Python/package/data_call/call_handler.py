@@ -441,6 +441,10 @@ if __name__ == "__main__":
     #fig = pickle.load(open(r'C:/Users/Leoni Kaiser/Documents/Studium/Master/3. Semester/CPS_Projekt/Elektrodenmapping/Results/Plotted_Signals.fig.pickle', 'rb'))
     #fig.show()
     #plt.show()
+    #with open(r'C:/Users/Leoni Kaiser/Documents/Studium/Master/3. Semester/CPS_Projekt/Elektrodenmapping/Results/array.pkl',
+    #            'rb') as file:
+    #    loaded_arr = pickle.load(file)
+    #    print("Loaded array:", loaded_arr)
 
 
 

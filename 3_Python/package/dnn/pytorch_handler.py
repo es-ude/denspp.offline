@@ -338,6 +338,7 @@ class training_pytorch:
         for data_fold in (self.train_loader if use_train_dataloader else self.valid_loader):
             for vdata in data_fold:
                 for idx, (key, value) in enumerate(vdata.items()):
+                    value = value.numpy()
                     output[idx] = value if first_run else np.append(output[idx], value, axis=0)
                     if key not in keys:
                         keys.append(key)

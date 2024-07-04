@@ -52,7 +52,7 @@ def do_train_rgc_ae_cl(dnn_handler: dnn_handler,
         loss_fn=nn.MSELoss(),
         optimizer='Adam',
         num_kfold=1,
-        num_epochs=100,
+        num_epochs=10,
         batch_size=256,
         data_split_ratio=0.25,
         data_do_shuffle=True
@@ -64,7 +64,7 @@ def do_train_rgc_ae_cl(dnn_handler: dnn_handler,
         loss_fn=nn.CrossEntropyLoss(),
         optimizer='Adam',
         num_kfold=1,
-        num_epochs=100,
+        num_epochs=10,
         batch_size=256,
         data_split_ratio=0.25,
         data_do_shuffle=True
@@ -84,6 +84,7 @@ def do_train_rgc_ae_cl(dnn_handler: dnn_handler,
     trainhandler.load_data(dataset)
     loss_ae, snr_ae = trainhandler.do_training(metrics='snr')[-1]
     path2model = trainhandler.get_saving_path()
+
 
     if dnn_handler.do_plot:
         logsdir = trainhandler.get_saving_path()
