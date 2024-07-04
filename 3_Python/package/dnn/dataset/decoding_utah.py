@@ -173,9 +173,15 @@ def prepare_training(settings: Config_Dataset,
             if 'trial' in key:
                 trial_timestamps = data_trial['timestamps']
 
+
+
                 for timestamp_in_electrode in trial_timestamps:
-                    if len(timestamp_in_electrode) :
-                        max_value_timepoint = max_value_timepoint if max(timestamp_in_electrode) < max_value_timepoint else max(timestamp_in_electrode)
+                    if len(timestamp_in_electrode):
+                        if max(timestamp_in_electrode) > max_value_timepoint :
+                            max_value_timepoint = max(timestamp_in_electrode)
+
+
+
 
     # --- Pre-Processing: Event -> Transient signal transformation
     electrode_mapping = None
