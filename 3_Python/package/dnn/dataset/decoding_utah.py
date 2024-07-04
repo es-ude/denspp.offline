@@ -10,34 +10,34 @@ from package.dnn.data_augmentation_frames import *
 
 class DatasetDecoder(Dataset):
     """Dataset Preparation for Training Neural Decoder"""
-    def __init__(self, spike_train: list, classification: list,
+    def __init__(self, dataset_spike_train: list, decision: list,
                  cluster_dict: dict, use_patient_dec=True):
-        self.__input = spike_train
-        self.__output = classification
+        self.__datset_spike_train = dataset_spike_train
+        self.__decision = decision
         self.__use_patient_dec = use_patient_dec
 
         self.data_type = "Neural Decoder (Utah)"
         self.cluster_name_available = True
-        self.frame_dict = cluster_dict
+        self.cluster_dict = cluster_dict
 
     def __len__(self):
-        return len(self.__input)
+        return len(self.__datset_spike_train)
 
     def __getitem__(self, idx):
         if is_tensor(idx):
             idx = idx.tolist()
 
         if self.__use_patient_dec:
-            decision = self.__output[idx]['patient_says']
+            decision = self.__decision[idx]['patient_says']
         else:
-            decision = self.__output[idx]['exp_says']
+            decision = self.__decision[idx]['exp_says']
 
         output = -1
-        for key in self.frame_dict.keys():
+        for key in self.cluster_dict.keys():
             if key in decision:
-                output = self.frame_dict.get(decision)
+                output = self.cluster_dict.get(decision)
 
-        return {'in': np.array(self.__input[idx], dtype=np.float32), 'out': output}
+        return {'in': np.array(self.__datset_spike_train[idx], dtype=np.float32), 'out': output}
 
 
 def __generate_stream_empty_array(timestamps: list, cluster: list,
@@ -164,7 +164,7 @@ def preprocess_dataset(settings: Config_Dataset,
                                                                                                      max_overall_timestamp,
                                                                                                      use_cluster)
     # --- Pre-Processing: Mapping electrode to 2D-placement
-    dataset_timestamps0 = add_electrode_2Dmapping_to_dataset(data_raw, dataset_timestamps, dataset_waveform)
+    dataset_spike_train = add_electrode_2Dmapping_to_dataset(data_raw, dataset_timestamps, dataset_waveform)
 
     # --- Creating dictionary with numbers
     label_dict = dict()
@@ -188,16 +188,16 @@ def preprocess_dataset(settings: Config_Dataset,
                 label_count_label_free[idx] += 1
             else:
                 label_count_label_made[idx] += 1
+    num_samples = sum(label_count_label_free) + sum(label_count_label_made)
 
     # --- Output
-    num_samples = sum(label_count_label_free) + sum(label_count_label_made)
     print(f'... for training are in total {len(label_dict)} classes with {num_samples} samples available')
     if num_ite_skipped:
         print(f"... for training {num_ite_skipped} samples are skipped due to wrong decision values")
     for idx, label in enumerate(label_dict):
         print(f"\t class {idx} ({label}) --> {label_count_label_made[idx] + label_count_label_free[idx]} samples")
 
-    return DatasetDecoder(spike_train=dataset_timestamps0, classification=dataset_decision,
+    return DatasetDecoder(dataset_spike_train=dataset_spike_train, decision=dataset_decision,
                           cluster_dict=label_dict, use_patient_dec=True)
 
 

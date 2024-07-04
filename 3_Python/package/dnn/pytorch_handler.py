@@ -206,7 +206,7 @@ class training_pytorch:
         self.__setup_device()
         self._do_kfold = True if self.settings.num_kfold > 1 else False
         self._model_addon = data_set.data_type
-        self.cell_classes = data_set.frame_dict if data_set.cluster_name_available else []
+        self.cell_classes = data_set.cluster_dict if data_set.cluster_name_available else []
 
         # --- Preparing datasets
         out_train = list()

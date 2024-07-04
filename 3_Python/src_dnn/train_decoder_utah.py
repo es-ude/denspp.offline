@@ -55,7 +55,7 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
 
     # --- Processing: Loading Data and Do Training
     dataset = preprocess_dataset(config_data, length_window_ms)
-    data_dict = dataset.frame_dict
+    data_dict = dataset.cluster_dict
     num_output = len(data_dict)
     trainhandler = train_nn(config_train, config_data)
     trainhandler.load_model()
