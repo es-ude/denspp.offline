@@ -40,47 +40,48 @@ class DatasetDecoder(Dataset):
         return {'in': np.array(self.__input[idx], dtype=np.float32), 'out': output}
 
 
-def __generate_stream_empty_array(events: list, cluster: list,
+def __generate_stream_empty_array(timestamps: list, cluster: list,
                                   samples_time_window: int,
                                   use_cluster=False,
-                                  use_output_size=0) -> np.ndarray:
+                                  output_size=0) -> np.ndarray:
     """Generating an empty array of the transient array of all electrodes
     Args:
-        events: Lists with all timestamps of each electrode (iteration over electrode)
+        timestamps: Lists with all timestamps of each electrode (iteration over electrode)
         cluster: Lists with all corresponding cluster unit of each timestamp
         samples_time_window: Size of the window for determining features
         use_cluster: Decision of cluster information will be used
-        use_output_size: Determined the output array with a given length
+        output_size: Determined the output array with a given length
     Return:
         Zero numpy array for training neural decoding [num. electrodes x num. clusters x num. windows] (Starting clusters with Zero)
     """
-    length_time_window = np.zeros((len(events, )), dtype=np.uint32)
-    num_clusters = np.zeros((len(events, )), dtype=np.uint32)
-    for idx, event_ch in enumerate(events):
+    length_time_window = np.zeros((len(timestamps, )), dtype=np.uint32)
+    num_clusters = np.zeros((len(timestamps, )), dtype=np.uint32)
+    for idx, event_ch in enumerate(timestamps):
         length_time_window[idx] = 0 if len(event_ch) == 0 else event_ch[-1]
         num_clusters[idx] = 0 if len(event_ch) == 0 else np.unique(np.array(cluster[idx])).max()+1
 
-    if use_output_size == 0:
+    if output_size == 0:
         num_windows = int(1 + np.ceil(length_time_window.max() / samples_time_window))
     else:
-        num_windows = int(1 + np.ceil(use_output_size / samples_time_window))
-    return np.zeros((len(events), num_clusters.max() if use_cluster else 1, num_windows), dtype=np.uint16)
+        num_windows = int(1 + np.ceil(output_size / samples_time_window))
+    return np.zeros((len(timestamps), num_clusters.max() if use_cluster else 1, num_windows), dtype=np.uint16)
 
 
-def __determine_firing_rate(events: list, cluster: list, samples_time_window: int,
-                            use_cluster=False, use_output_size=0) -> np.ndarray:
+def __determine_firing_rate(timestamps: list, cluster: list, exp_samplingrate, length_time_window_ms,
+                            use_cluster=False, output_size=0) -> np.ndarray:
     """Pre-Processing Method: Calculating the firing rate for specific
     Args:
-        events: Lists with all timestamps of each electrode (iteration over electrode)
+        timestamps: Lists with all timestamps of each electrode (iteration over electrode)
         cluster: Lists with all corresponding cluster unit of each timestamp
         samples_time_window: Size of the window for determining features
         use_cluster: Decision of cluster information will be used
-        use_output_size: Determined the output array with a given length
+        output_size: Determined the output array with a given length
     Return:
         Numpy array with windowed number of detected events for training neural decoding [num. electrodes x num. clusters x num. windows]
     """
-    data_stream0 = __generate_stream_empty_array(events, cluster, samples_time_window, use_cluster, use_output_size)
-    for idx, ch_event in enumerate(events):
+    samples_time_window = int(1e-3 * exp_samplingrate * length_time_window_ms)
+    data_stream0 = __generate_stream_empty_array(timestamps, cluster, samples_time_window, use_cluster, output_size)
+    for idx, ch_event in enumerate(timestamps):
         if len(ch_event) == 0:
             # Skip due to empty electrode events
             continue
@@ -98,7 +99,6 @@ def __determine_firing_rate(events: list, cluster: list, samples_time_window: in
                     for idy, pos in enumerate(event_val[0]):
                         data_stream0[idx, cluster_num, pos] += event_val[1][idy]
             else:
-
                 event_ch0 = np.array(np.floor(ch_event0 / samples_time_window), dtype=int)
                 event_val = np.unique(event_ch0, return_counts=True)
                 for idy, pos in enumerate(event_val[0]):
@@ -151,8 +151,9 @@ def translate_wf_datastream_into_picture(data_raw: list, configuration: dict) ->
 
 
 def prepare_training(settings: Config_Dataset,
-                     length_time_window_ms=500, use_cluster=False,
-                     use_cell_bib=False, mode_classes=2) -> DatasetDecoder:
+                     length_time_window_ms=500,
+                     use_cluster=False,
+                     ) -> DatasetDecoder:
     """Preparing dataset incl. augmentation for spike-frame based training"""
     print("... loading and processing the dataset")
     # Construct the full path
@@ -184,9 +185,15 @@ def prepare_training(settings: Config_Dataset,
             if 'trial_' in key and not isinstance(data_trial['label']['patient_says'], np.ndarray):
                 timestamps = data_trial['timestamps']
                 cluster_per_trial = data_trial['cluster']
-                samples_time_window = int(1e-3 * exp_samplingrate * length_time_window_ms)
 
-                data_stream = __determine_firing_rate(timestamps, cluster_per_trial, samples_time_window, use_cluster, max_overall_timestamp)
+
+                data_stream = __determine_firing_rate(timestamps,
+                                                      cluster_per_trial,
+                                                      exp_samplingrate,
+                                                      length_time_window_ms,
+                                                      use_cluster,
+                                                      max_overall_timestamp
+                                                      )
 
                 dataset_timestamps.append(data_stream)
                 dataset_decision.append(data_trial['label'])
@@ -194,7 +201,7 @@ def prepare_training(settings: Config_Dataset,
             else:
                 num_ite_skipped += 1
 
-    del data_exp, data_trial, data_stream, key, timestamps, cluster_per_trial, samples_time_window
+    del data_exp, data_trial, data_stream, key, timestamps, cluster_per_trial
 
     # --- Pre-Processing: Mapping electrode to 2D-placement
     dataset_timestamps0 = translate_ts_datastream_into_picture(dataset_timestamps, electrode_mapping)
