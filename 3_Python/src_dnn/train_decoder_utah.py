@@ -46,7 +46,7 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
         dnn_handler: Handler for configurating the routine selection for train deep neural networks
         length_window_ms: Size of the time window for segmenting the tick interval into firing events
     """
-    from package.dnn.dataset.decoding_utah import prepare_training
+    from package.dnn.dataset.decoding_utah import preprocess_dataset
     from package.dnn.pytorch.lstm import train_nn #Import der pytorch file
     from package.plot.plot_dnn import plot_statistic_data
     from package.plot.plot_metric import plot_confusion, plot_loss
@@ -54,7 +54,7 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
 
     # --- Processing: Loading Data and Do Training
-    dataset = prepare_training(config_data, length_window_ms)
+    dataset = preprocess_dataset(config_data, length_window_ms)
     data_dict = dataset.frame_dict
     num_output = len(data_dict)
     trainhandler = train_nn(config_train, config_data)

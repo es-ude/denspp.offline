@@ -150,10 +150,10 @@ def translate_wf_datastream_into_picture(data_raw: list, configuration: dict) ->
     return picture_data_raw
 
 
-def prepare_training(settings: Config_Dataset,
-                     length_time_window_ms=500,
-                     use_cluster=False,
-                     ) -> DatasetDecoder:
+def preprocess_dataset(settings: Config_Dataset,
+                       length_time_window_ms=500,
+                       use_cluster=False,
+                       ) -> DatasetDecoder:
     """Preparing dataset incl. augmentation for spike-frame based training"""
     print("... loading and processing the dataset")
     # Construct the full path
