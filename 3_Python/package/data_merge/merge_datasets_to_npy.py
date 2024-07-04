@@ -1,29 +1,39 @@
 import os
-import numpy as np
-import scipy.io
-import numpy
+import time
 
+import matplotlib.pyplot as plt
+import numpy as np
 from scipy.io import loadmat
+
+def normalize(arr, t_min, t_max):
+    norm_arr = []
+    diff = t_max - t_min
+    diff_arr = max(arr) - min(arr)
+    for i in arr:
+        temp = (((i - min(arr)) * diff) / diff_arr) + t_min
+        norm_arr.append(temp)
+    return norm_arr
 
 
 class DataCompressor:
 
-    def __init__(self, data_type):
-        self.filepath = r"C:\Users\Haris\Documents\Master Sciebo neu\SS2024\CPS Projekt1\2024-02-05_Dataset-KlaesNeuralDecoding.mat"
+    def __init__(self):
 
-        self.mode_data = data_type
-        if data_type == 1:
-            self.data_type = "Klaes-file"
+            self.filepath = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), "data",
+                                         "2024-02-05_Dataset-KlaesNeuralDecoding.mat")
             self.num_experiments = 21
             self.num_trials = 50
-        elif data_type == 2:
-            self.data_type = "Martinez-file"
-        else:
-            self.data_type = "not defined"
+
+
+    def get_Path(self, data_type):
+        current_dir = os.getcwd()
+        target_path = os.path.join(os.path.dirname(os.path.dirname(current_dir)), 'data')
+        os.makedirs(target_path, exist_ok=True)
+        file_path = os.path.join(target_path, f"exp7_{data_type}_as_one_array.npy")
+        return file_path
 
     def create_Dict(self):
-        # easier to use a dict, so the trial/exp-keys can be the indices
-        # otherwise you would need to cast every key as int
+        # easier to use a dict, since some electrodes have more waveforms than others
         b = {}
         for x in range(self.num_experiments):  # 21 experiments
             b[x] = {}
@@ -31,63 +41,110 @@ class DataCompressor:
                 b[x][y] = {}
         return b
 
-    def load_Data(self):
+    def extract_from_Klaes(self, feature):
         loaded_data = loadmat(self.filepath)
-        return loaded_data
-
-    def format_data(self):
-
         exp_index = 0
         trial_index = 0
 
-        if self.data_type == "Klaes-file":
+        b = self.create_Dict()
+        position = []
+        counter = 1
+        for exp_key in loaded_data:
+            if exp_key.startswith("exp_01"):
+                exp_data = loaded_data[exp_key]
 
-            loaded_data = self.load_Data()
-            b = self.create_Dict()
+                for trial_key in exp_data.dtype.names:
+                    if trial_key.startswith("trial"):
+                        waveforms = exp_data[trial_key][0, 0][feature][0, 0]
 
-            ##format data
-            for exp_key in loaded_data:
+                        for electrode in range(len(waveforms[0])):
+                            b[exp_index][trial_index][electrode] = waveforms[0][electrode]
+                            for x in range(len(waveforms[0][electrode])):
+                                position.append(electrode+1) # +1 because electrodes start with 1
 
-                if exp_key.startswith("exp"):
+                    trial_index += 1
+                trial_index = 0
+                exp_index += 1
 
-                    exp_data = loaded_data[exp_key]
+        return b, position
 
-                    for trial_key in exp_data.dtype.names:
-                        if trial_key.startswith("trial"):
+    def __is_valid(self, waveform):
 
-                            trial_data = exp_data[trial_key][0, 0]
-                            waveforms = trial_data["waveforms"][0, 0]
+        lowestindex_current = np.argmin(waveform)
+        highestindex_current = np.argmax(waveform)
+        if (((11 <= lowestindex_current <= 13) and
+                (highestindex_current == 0 or highestindex_current > 13) and (highestindex_current < 40)) and
+                (highestindex_current- lowestindex_current < 400)):
+            return True
+        else:
+            badwaveforms.append(waveform)
+            return False
 
-                            for electrode in range(96):
-                                b[exp_index][trial_index][electrode] = waveforms[0][electrode]
+    def iterate_over_dataset(self, dataset):
+        a = []
+        lowestindex = []
+        highestindex = []
+        for exp in dataset:
+            for trial in dataset[exp]:
+                for electrode in dataset[exp][trial]:
+                    for waveforms in dataset[exp][trial][electrode]:
 
-                        trial_index += 1
+                            a.append(waveforms)
+                            highestindex.append(np.argmax(waveforms))
+                            lowestindex.append(np.argmin(waveforms))
+        return a
 
-                    trial_index = 0
-                    exp_index += 1
+    def print_bad_waveforms(self):
+        global badwaveforms
+        badwaveforms = np.array(badwaveforms)
+        print(badwaveforms.shape)
+        for x in range(len(badwaveforms)):
+            plt.figure()
+            plt.plot(badwaveforms[x])
+            plt.show()
+            time.sleep(.5)
+            plt.close()
 
-            numpy_array = np.array(list(b.values()))  # cast dict as list -> np.array
+    def copy_valid_data_to_new_arrays(self, position, timestamps_as_array, valid_positions, valid_timestamps, valid_waveforms,
+                                      waveforms_as_array):
+        timestamps_as_array = np.concatenate(timestamps_as_array)
+        waveforms_as_array = np.array(waveforms_as_array)
 
-            a = []
-
-            waveform_index = 0
-            for x in range(len(b)):
-                for y in range(len(b[x])):
-                    for z in range(len(b[x][y])):
-                        for v in range(len(b[x][y][z])):
-                            if len(b[x][y][z][v]) == 48:
-                                # a.append([waveform_index]+ list(data[x][y][z][v])) # so steht der index vorne dran
-                                a.append(b[x][y][z][v])
-                                waveform_index += 1
-
-                            else:
-                                continue
-            a = np.array(a)
-
-            np.save("_waveforms_as_one_array" + ".npy", a)
-
-            print(a.shape)
+        for x in range(len(waveforms_as_array)):
+            if self.__is_valid(waveforms_as_array[x]):
+                valid_waveforms.append(waveforms_as_array[x])
+                valid_timestamps.append(timestamps_as_array[x])
+                valid_positions.append(position[x])
 
 
-trialONE = DataCompressor(1)
+    ### main function
+    def format_data(self):
+        global badwaveforms
+        badwaveforms = []
+        valid_waveforms = []
+        valid_timestamps = []
+        valid_positions = []
+
+        # DIE FOLGENDEN ZWEI ZEILEN NICHT IN REIHENFOLGE VERTAUSCHEN, position wird sonst falsch beschrieben
+        timestamp_dataset, position = self.extract_from_Klaes("timestamps")
+        dataset, position = self.extract_from_Klaes("waveforms")
+
+        # format to one 2D array
+        waveforms_as_array = self.iterate_over_dataset(dataset)
+        timestamps_as_array = self.iterate_over_dataset(timestamp_dataset)
+
+        self.copy_valid_data_to_new_arrays(position, timestamps_as_array, valid_positions, valid_timestamps, valid_waveforms,
+                                           waveforms_as_array)
+
+        np.save(self.get_Path("waveforms"), valid_waveforms)
+        np.save(self.get_Path("timestamps"), valid_timestamps)
+        np.save(self.get_Path("positions"), valid_positions)
+        print(len(valid_timestamps))
+        self.print_bad_waveforms()
+
+
+trialONE = DataCompressor()
 trialONE.format_data()
+data = np.load(trialONE.get_Path("waveforms"))
+t = np.load(trialONE.get_Path("timestamps"))
+pos =np.load(trialONE.get_Path("positions"))
