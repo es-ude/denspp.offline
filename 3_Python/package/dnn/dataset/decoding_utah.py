@@ -159,13 +159,12 @@ def preprocess_dataset(settings: Config_Dataset,
 
     max_overall_timestamp = get_max_timestamp(data_raw)
 
-    dataset_decision, dataset_timestamps, dataset_waveform, num_ite_skipped = create_feature_dataset(
-        data_raw, length_time_window_ms, max_overall_timestamp, use_cluster)
-
+    dataset_decision, dataset_timestamps, dataset_waveform, num_ite_skipped = create_feature_dataset(data_raw,
+                                                                                                     length_time_window_ms,
+                                                                                                     max_overall_timestamp,
+                                                                                                     use_cluster)
     # --- Pre-Processing: Mapping electrode to 2D-placement
-    electrode_mapping = data_raw['exp_000']['orientation']  # exp_000 is enough because it´s the same for every experiment
-    dataset_timestamps0 = translate_ts_datastream_into_picture(dataset_timestamps, electrode_mapping)
-    dataset_waveform0 = translate_wf_datastream_into_picture(dataset_waveform, electrode_mapping)
+    dataset_timestamps0 = add_electrode_2Dmapping_to_dataset(data_raw, dataset_timestamps, dataset_waveform)
 
     # --- Creating dictionary with numbers
     label_dict = dict()
@@ -200,6 +199,15 @@ def preprocess_dataset(settings: Config_Dataset,
 
     return DatasetDecoder(spike_train=dataset_timestamps0, classification=dataset_decision,
                           cluster_dict=label_dict, use_patient_dec=True)
+
+
+def add_electrode_2Dmapping_to_dataset(data_raw, dataset_timestamps, dataset_waveform):
+    # exp_000 is enough because it´s the same for every experiment
+    electrode_mapping = data_raw['exp_000']['orientation']
+    dataset_timestamps0 = translate_ts_datastream_into_picture(dataset_timestamps, electrode_mapping)
+
+    #dataset_waveform0 = translate_wf_datastream_into_picture(dataset_waveform, electrode_mapping)  #ToDo:
+    return dataset_timestamps0
 
 
 def create_feature_dataset(data_raw, length_time_window_ms, max_overall_timestamp, use_cluster):
