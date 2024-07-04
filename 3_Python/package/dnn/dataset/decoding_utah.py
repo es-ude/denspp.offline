@@ -159,41 +159,11 @@ def preprocess_dataset(settings: Config_Dataset,
 
     max_overall_timestamp = get_max_timestamp(data_raw)
 
-    # --- Pre-Processing: Event -> Transient signal transformation
-    dataset_timestamps = list()
-    dataset_decision = list()
-    dataset_waveform = list()
-
-    num_ite_skipped = 0
-
-    electrode_mapping = data_raw['exp_000']['orientation'] # exp_000 is enough because it´s the same for every experiment
-    exp_samplingrate = data_raw['exp_000']['trial_000']['samplingrate']
-
-    for _, data_exp in data_raw.items():
-
-        for key, data_trial in data_exp.items():
-            if 'trial_' in key and not isinstance(data_trial['label']['patient_says'], np.ndarray):
-                timestamps = data_trial['timestamps']
-                cluster_per_trial = data_trial['cluster']
-
-
-                data_stream = __determine_firing_rate(timestamps,
-                                                      cluster_per_trial,
-                                                      exp_samplingrate,
-                                                      length_time_window_ms,
-                                                      use_cluster,
-                                                      max_overall_timestamp
-                                                      )
-
-                dataset_timestamps.append(data_stream)
-                dataset_decision.append(data_trial['label'])
-                dataset_waveform.append(data_trial['waveforms'])
-            else:
-                num_ite_skipped += 1
-
-    del data_exp, data_trial, data_stream, key, timestamps, cluster_per_trial
+    dataset_decision, dataset_timestamps, dataset_waveform, num_ite_skipped = create_feature_dataset(
+        data_raw, length_time_window_ms, max_overall_timestamp, use_cluster)
 
     # --- Pre-Processing: Mapping electrode to 2D-placement
+    electrode_mapping = data_raw['exp_000']['orientation']  # exp_000 is enough because it´s the same for every experiment
     dataset_timestamps0 = translate_ts_datastream_into_picture(dataset_timestamps, electrode_mapping)
     dataset_waveform0 = translate_wf_datastream_into_picture(dataset_waveform, electrode_mapping)
 
@@ -230,6 +200,37 @@ def preprocess_dataset(settings: Config_Dataset,
 
     return DatasetDecoder(spike_train=dataset_timestamps0, classification=dataset_decision,
                           cluster_dict=label_dict, use_patient_dec=True)
+
+
+def create_feature_dataset(data_raw, length_time_window_ms, max_overall_timestamp, use_cluster):
+    # --- Pre-Processing: Event -> Transient signal transformation
+    dataset_timestamps = list()
+    dataset_decision = list()
+    dataset_waveform = list()
+    num_ite_skipped = 0
+
+    exp_samplingrate = data_raw['exp_000']['trial_000']['samplingrate']
+    for _, data_exp in data_raw.items():
+
+        for key, data_trial in data_exp.items():
+            if 'trial_' in key and not isinstance(data_trial['label']['patient_says'], np.ndarray):
+                timestamps = data_trial['timestamps']
+                cluster_per_trial = data_trial['cluster']
+
+                timestamp_stream = __determine_firing_rate(timestamps,
+                                                           cluster_per_trial,
+                                                           exp_samplingrate,
+                                                           length_time_window_ms,
+                                                           use_cluster,
+                                                           max_overall_timestamp
+                                                           )
+
+                dataset_timestamps.append(timestamp_stream)
+                dataset_decision.append(data_trial['label'])
+                dataset_waveform.append(data_trial['waveforms'])
+            else:
+                num_ite_skipped += 1
+    return dataset_decision, dataset_timestamps, dataset_waveform, num_ite_skipped
 
 
 def load_dataset(settings):
