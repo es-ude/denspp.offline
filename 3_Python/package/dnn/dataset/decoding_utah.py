@@ -176,17 +176,17 @@ def prepare_training(settings: Config_Dataset,
     num_ite_skipped = 0
 
     electrode_mapping = data_raw['exp_000']['orientation'] # exp_000 is enough because it´s the same for every experiment
+    exp_samplingrate = data_raw['exp_000']['trial_000']['samplingrate']
 
     for _, data_exp in data_raw.items():
 
-
         for key, data_trial in data_exp.items():
             if 'trial_' in key and not isinstance(data_trial['label']['patient_says'], np.ndarray):
-                events = data_trial['timestamps']
-                cluster = data_trial['cluster']
-                samples_time_window = int(1e-3 * data_trial['samplingrate'] * length_time_window_ms)
+                timestamps = data_trial['timestamps']
+                cluster_per_trial = data_trial['cluster']
+                samples_time_window = int(1e-3 * exp_samplingrate * length_time_window_ms)
 
-                data_stream = __determine_firing_rate(events, cluster, samples_time_window, use_cluster, max_overall_timestamp)
+                data_stream = __determine_firing_rate(timestamps, cluster_per_trial, samples_time_window, use_cluster, max_overall_timestamp)
 
                 dataset_timestamps.append(data_stream)
                 dataset_decision.append(data_trial['label'])
@@ -194,7 +194,7 @@ def prepare_training(settings: Config_Dataset,
             else:
                 num_ite_skipped += 1
 
-    del data_exp, data_trial, data_stream, key, events, cluster, samples_time_window
+    del data_exp, data_trial, data_stream, key, timestamps, cluster_per_trial, samples_time_window
 
     # --- Pre-Processing: Mapping electrode to 2D-placement
     dataset_timestamps0 = translate_ts_datastream_into_picture(dataset_timestamps, electrode_mapping)
