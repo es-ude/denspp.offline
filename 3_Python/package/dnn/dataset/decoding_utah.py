@@ -8,7 +8,7 @@ from package.dnn.pytorch_handler import Config_Dataset
 from package.dnn.data_augmentation_frames import *
 
 
-class DatasetDecoder(Dataset):
+class Dataset(Dataset): #ToDo: Check if inheritance is necessary
     """Dataset Preparation for Training Neural Decoder"""
     def __init__(self, dataset_spike_train: list, decision: list,
                  label_dict: dict, use_patient_dec=True):
@@ -42,7 +42,7 @@ class DatasetDecoder(Dataset):
 def preprocess_dataset(settings: Config_Dataset,
                        length_time_window_ms=500,
                        use_cluster=False,
-                       ) -> DatasetDecoder:
+                       ) -> Dataset:
     """Preparing dataset incl. add timewindow featuer and counting dataset"""
     data_raw = load_dataset(settings)
 
@@ -68,8 +68,8 @@ def preprocess_dataset(settings: Config_Dataset,
     for idx, label in enumerate(label_dict):
         print(f"\t class {idx} ({label}) --> {label_count_label_made[idx] + label_count_label_free[idx]} samples")
 
-    return DatasetDecoder(dataset_spike_train=dataset_spike_train, decision=dataset_decision,
-                          label_dict=label_dict, use_patient_dec=True)
+    return Dataset(dataset_spike_train=dataset_spike_train, decision=dataset_decision,
+                   label_dict=label_dict, use_patient_dec=True)
 def load_dataset(settings):
     print("... loading and preprocessing the dataset")
     # Construct the full path
@@ -144,7 +144,6 @@ def __generate_stream_empty_array(timestamps: list, cluster: list,
     else:
         num_windows = int(1 + np.ceil(output_size / samples_time_window))
     return np.zeros((len(timestamps), num_clusters.max() if use_cluster else 1, num_windows), dtype=np.uint16)
-
 def __determine_firing_rate(timestamps: list, cluster: list, exp_samplingrate, length_time_window_ms,
                             use_cluster=False, output_size=0) -> np.ndarray:
     """Pre-Processing Method: Calculating the firing rate for specific
@@ -181,13 +180,11 @@ def __determine_firing_rate(timestamps: list, cluster: list, exp_samplingrate, l
                 event_val = np.unique(event_ch0, return_counts=True)
                 for idy, pos in enumerate(event_val[0]):
                     data_stream0[idx, 0, pos] += event_val[1][idy]
-
     return data_stream0
 def add_electrode_2Dmapping_to_dataset(data_raw, dataset_timestamps, dataset_waveform):
     # exp_000 is enough because it´s the same for every experiment
     electrode_mapping = data_raw['exp_000']['orientation']
     dataset_timestamps0 = translate_ts_datastream_into_picture(dataset_timestamps, electrode_mapping)
-
     #dataset_waveform0 = translate_wf_datastream_into_picture(dataset_waveform, electrode_mapping)  #ToDo:
     return dataset_timestamps0
 
@@ -196,7 +193,6 @@ def translate_ts_datastream_into_picture(data_raw: list, configuration: dict) ->
     picture_data_raw = []
     picture_data_point = None
     labels = configuration['label']
-
     for data_point in data_raw:
         for elecID, data in enumerate(data_point):
             if picture_data_point is None:
@@ -210,7 +206,6 @@ def translate_ts_datastream_into_picture(data_raw: list, configuration: dict) ->
 
         picture_data_raw.append(picture_data_point)
         picture_data_point = None
-
     return picture_data_raw
 def translate_wf_datastream_into_picture(data_raw: list, configuration: dict) -> list:
     """ Translate waveform data stream into picture format"""
