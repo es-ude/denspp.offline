@@ -168,14 +168,14 @@ def prepare_training(settings: Config_Dataset,
 
     # --- Pre-Processing: Determine max. timepoint of events
     max_value_timepoint = 0
-    for _, data_exp in data_raw.items():
+    for _, data_exp in data_raw.items(): # 0-20 experimente
         for key, data_trial in data_exp.items():
             if 'trial' in key:
-                events = data_trial['timestamps']
+                trial_timestamps = data_trial['timestamps']
 
-                for event_element in events:
-                    if len(event_element):
-                        max_value_timepoint = max_value_timepoint if max(event_element) < max_value_timepoint else max(event_element)
+                for timestamp_in_electrode in trial_timestamps:
+                    if len(timestamp_in_electrode) :
+                        max_value_timepoint = max_value_timepoint if max(timestamp_in_electrode) < max_value_timepoint else max(timestamp_in_electrode)
 
     # --- Pre-Processing: Event -> Transient signal transformation
     electrode_mapping = None

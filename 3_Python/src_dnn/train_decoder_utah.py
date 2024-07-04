@@ -7,7 +7,7 @@ import package.dnn.models.decoding_utah as models_dec
 config_data = Config_Dataset(
     # --- Settings of Datasets
     # data_path='/home/muskel/Documents/cpsDEC/data', # Ubuntu
-    data_path='C:\spaikeDenSppDataset', # Ubuntu
+    data_path='C:\spaikeDenSppDataset',
     data_file_name='2024-02-05_Dataset-KlaesNeuralDecoding.npy',
 
     # --- Data Augmentation
