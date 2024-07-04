@@ -11,14 +11,14 @@ from package.dnn.data_augmentation_frames import *
 class DatasetDecoder(Dataset):
     """Dataset Preparation for Training Neural Decoder"""
     def __init__(self, dataset_spike_train: list, decision: list,
-                 cluster_dict: dict, use_patient_dec=True):
+                 label_dict: dict, use_patient_dec=True):
         self.__datset_spike_train = dataset_spike_train
         self.__decision = decision
         self.__use_patient_dec = use_patient_dec
 
         self.data_type = "Neural Decoder (Utah)"
         self.cluster_name_available = True
-        self.cluster_dict = cluster_dict
+        self.lable_dict = label_dict
 
     def __len__(self):
         return len(self.__datset_spike_train)
@@ -33,9 +33,9 @@ class DatasetDecoder(Dataset):
             decision = self.__decision[idx]['exp_says']
 
         output = -1
-        for key in self.cluster_dict.keys():
+        for key in self.lable_dict.keys():
             if key in decision:
-                output = self.cluster_dict.get(decision)
+                output = self.lable_dict.get(decision)
 
         return {'in': np.array(self.__datset_spike_train[idx], dtype=np.float32), 'out': output}
 
@@ -198,7 +198,7 @@ def preprocess_dataset(settings: Config_Dataset,
         print(f"\t class {idx} ({label}) --> {label_count_label_made[idx] + label_count_label_free[idx]} samples")
 
     return DatasetDecoder(dataset_spike_train=dataset_spike_train, decision=dataset_decision,
-                          cluster_dict=label_dict, use_patient_dec=True)
+                          label_dict=label_dict, use_patient_dec=True)
 
 
 def add_electrode_2Dmapping_to_dataset(data_raw, dataset_timestamps, dataset_waveform):
