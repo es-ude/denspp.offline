@@ -155,17 +155,7 @@ def preprocess_dataset(settings: Config_Dataset,
                        use_cluster=False,
                        ) -> DatasetDecoder:
     """Preparing dataset incl. augmentation for spike-frame based training"""
-    print("... loading and processing the dataset")
-    # Construct the full path
-
-    full_path = settings.get_path2data()
-    if not os.path.exists(full_path):
-        print("\n File Path not right")
-        sys.exit(1)
-
-    print(f"Constructed Path: {full_path}")
-
-    data_raw = np.load(settings.get_path2data(), allow_pickle=True).item()
+    data_raw = load_dataset(settings)
 
     max_overall_timestamp = get_max_timestamp(data_raw)
 
@@ -240,6 +230,18 @@ def preprocess_dataset(settings: Config_Dataset,
 
     return DatasetDecoder(spike_train=dataset_timestamps0, classification=dataset_decision,
                           cluster_dict=label_dict, use_patient_dec=True)
+
+
+def load_dataset(settings):
+    print("... loading and preprocessing the dataset")
+    # Construct the full path
+    full_path = settings.get_path2data()
+    if not os.path.exists(full_path):
+        print("\n File Path not right")
+        sys.exit(1)
+    print(f"Constructed Path: {full_path}")
+    data_raw = np.load(settings.get_path2data(), allow_pickle=True).item()
+    return data_raw
 
 
 def get_max_timestamp(data_raw):
