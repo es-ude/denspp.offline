@@ -1,0 +1,116 @@
+Intracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_BP_bAC217_1
+Extracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_BP_bAC217_1
+Setting temperature to 34.000000 C
+Setting simulation time step to 0.025000 ms
+	1 
+	1 
+	1 
+template bAC217_L5_BP_d0cc8d7615 exist already
+Pre-generating 5000000 random positions
+Intracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_BTC_bAC217_1
+Extracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_BTC_bAC217_1
+Mechanisms already loaded from path: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/mods.  Aborting.
+	1 
+	1 
+	1 
+template bAC217_L5_BTC_160272643a exist already
+Pre-generating 5000000 random positions
+Intracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_ChC_cACint209_1
+Extracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_ChC_cACint209_1
+Mechanisms already loaded from path: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/mods.  Aborting.
+	1 
+	1 
+	1 
+template cACint209_L5_ChC_e98f63217d exist already
+Pre-generating 5000000 random positions
+Intracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_DBC_bAC217_1
+Extracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_DBC_bAC217_1
+Mechanisms already loaded from path: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/mods.  Aborting.
+	1 
+	1 
+	1 
+template bAC217_L5_DBC_4765d943f4 exist already
+Pre-generating 5000000 random positions
+Intracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_LBC_bAC217_1
+Extracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_LBC_bAC217_1
+Mechanisms already loaded from path: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/mods.  Aborting.
+	1 
+	1 
+	1 
+template bAC217_L5_LBC_c2cff91741 exist already
+Pre-generating 5000000 random positions
+Intracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_MC_bAC217_1
+Extracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_MC_bAC217_1
+Mechanisms already loaded from path: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/mods.  Aborting.
+	1 
+	1 
+	1 
+template bAC217_L5_MC_cc2a170ef6 exist already
+Pre-generating 5000000 random positions
+Intracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_NBC_bAC217_1
+Extracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_NBC_bAC217_1
+Mechanisms already loaded from path: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/mods.  Aborting.
+	1 
+	1 
+	1 
+template bAC217_L5_NBC_2db880c523 exist already
+Pre-generating 5000000 random positions
+Intracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_NGC_bNAC219_1
+Extracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_NGC_bNAC219_1
+Mechanisms already loaded from path: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/mods.  Aborting.
+	1 
+	1 
+	1 
+template bNAC219_L5_NGC_6186b7e85e exist already
+Pre-generating 5000000 random positions
+Intracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_SBC_bNAC219_1
+Extracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_SBC_bNAC219_1
+Mechanisms already loaded from path: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/mods.  Aborting.
+	1 
+	1 
+	1 
+template bNAC219_L5_SBC_77ab259b7f exist already
+Pre-generating 5000000 random positions
+Intracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_STPC_cADpyr232_1
+Extracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_STPC_cADpyr232_1
+Mechanisms already loaded from path: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/mods.  Aborting.
+	1 
+	1 
+	1 
+template cADpyr232_L5_STPC_d16b0be14e exist already
+Pre-generating 5000000 random positions
+Intracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_TTPC1_cADpyr232_1
+Extracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_TTPC1_cADpyr232_1
+Mechanisms already loaded from path: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/mods.  Aborting.
+	1 
+	1 
+	1 
+template cADpyr232_L5_TTPC1_0fb1ca4724 exist already
+Pre-generating 5000000 random positions
+Intracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_TTPC2_cADpyr232_1
+Extracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_TTPC2_cADpyr232_1
+Mechanisms already loaded from path: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/mods.  Aborting.
+	1 
+	1 
+	1 
+template cADpyr232_L5_TTPC2_8052133265 exist already
+Pre-generating 5000000 random positions
+Intracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_UTPC_cADpyr232_1
+Extracellular simulation: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/L5_UTPC_cADpyr232_1
+Mechanisms already loaded from path: /home/mahmoud/.config/mearec/1.9.1/cell_models/bbp/mods.  Aborting.
+	1 
+	1 
+	1 
+template cADpyr232_L5_UTPC_5e3840b51e exist already
+Pre-generating 5000000 random positions
+Aggregating templates
+
+
+
+Simulation time: 1338.3675603866577
+
+
+
+
+Saved  templates in /home/mahmoud/.config/mearec/1.9.1/templates/physrot/templates_50_Neuronexus-32_02-06-2024_23-27.h5 
+

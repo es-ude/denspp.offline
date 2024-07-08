@@ -1,0 +1,34 @@
+# Parameters for template generation
+
+# General settings
+general:
+  seed: 42             # Seed for random number generation
+  duration: 10.0       # Duration of the simulation in seconds
+  dt: 0.1              # Time step in milliseconds
+
+# Extracellular medium properties
+extracellular:
+  sigma: 0.3           # Conductivity of the extracellular medium (S/m)
+
+# Electrode array properties
+electrode_array:
+  type: 'mea'          # Type of the electrode array (e.g., 'mea' for multi-electrode array)
+  N: 64                # Number of electrodes
+  shape: 'square'      # Shape of the electrode array
+  pitch: 17.5          # Pitch of the electrodes in micrometers
+
+# Spike shapes
+spike_shapes:
+  n_neurons: 100       # Number of neurons to simulate
+  avg_spike_ampl: 50   # Average spike amplitude in microvolts
+
+# Noise properties
+noise:
+  std: 5               # Standard deviation of the noise in microvolts
+
+# Parallel processing
+parallel:
+  n_jobs: 4            # Number of parallel jobs for template generation
+
+# Verbose output
+verbose: true          # Whether to display verbose output
