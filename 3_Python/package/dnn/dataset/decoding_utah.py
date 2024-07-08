@@ -8,7 +8,7 @@ from package.dnn.pytorch_handler import Config_Dataset
 from package.dnn.data_augmentation_frames import *
 
 
-class Dataset(Dataset): #ToDo: Check if inheritance is necessary
+class DatasetDecoder(Dataset): #ToDo: Check if inheritance is necessary
     """Dataset Preparation for Training Neural Decoder"""
     def __init__(self, dataset_spike_train: list, decision: list,
                  label_dict: dict, use_patient_dec=True):
