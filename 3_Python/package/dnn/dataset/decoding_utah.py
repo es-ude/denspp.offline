@@ -91,7 +91,7 @@ def get_max_timestamp(data_raw):
                         max_overall_timestamp = max(timestamp_in_electrode)
     return max_overall_timestamp
 def create_feature_dataset(data_raw, length_time_window_ms, max_overall_timestamp, use_cluster):
-    # --- Pre-Processing: Event -> Transient signal transformation
+    # --- Pre-Processing: Event --> Transient signal transformation
     dataset_timestamps = list()
     dataset_decision = list()
     dataset_waveform = list()
