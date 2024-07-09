@@ -1,5 +1,5 @@
 from torch import nn, Tensor, argmax
-from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_handler import ConfigPyTorch, ConfigDataset
 
 
 class cnn_rnn_v2(nn.Module):
@@ -49,7 +49,7 @@ class cnn_rnn_v2(nn.Module):
         return pred_con, argmax(pred_con, 1)
 
 
-Recommended_Config_PytorchSettings = Config_PyTorch(
+Recommended_Config_PytorchSettings = ConfigPyTorch(
     # --- Settings of Models/Training
     model=cnn_rnn_v2(),
     loss='MSE',
@@ -62,7 +62,7 @@ Recommended_Config_PytorchSettings = Config_PyTorch(
     data_do_shuffle=True
 )
 
-Recommended_Config_DatasetSettings = Config_Dataset(
+Recommended_Config_DatasetSettings = ConfigDataset(
     # --- Settings of Datasets
     data_path='../2_Data/00_Merged_Datasets',
     data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
@@ -130,7 +130,7 @@ class cnn_lstm_dec_v1(nn.Module):
         return pred_con, argmax(pred_con, 1)
 
 
-Recommended_Config_PytorchSettings = Config_PyTorch(
+Recommended_Config_PytorchSettings = ConfigPyTorch(
     # --- Settings of Models/Training
     model=cnn_lstm_dec_v1(),
     loss='MSE',
@@ -143,7 +143,7 @@ Recommended_Config_PytorchSettings = Config_PyTorch(
     data_do_shuffle=True
 )
 
-Recommended_Config_DatasetSettings = Config_Dataset(
+Recommended_Config_DatasetSettings = ConfigDataset(
     # --- Settings of Datasets
     data_path='../2_Data/00_Merged_Datasets',
     data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',

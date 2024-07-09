@@ -2,7 +2,7 @@ import numpy as np
 from scipy.io import loadmat
 from torch import is_tensor
 from torch.utils.data import Dataset
-from package.dnn.pytorch_handler import Config_Dataset
+from package.dnn.pytorch_handler import ConfigDataset
 from package.dnn.data_augmentation_frames import augmentation_reducing_samples
 from package.dnn.data_preprocessing_frames import reconfigure_cluster_with_cell_lib, DataNormalization
 
@@ -26,7 +26,7 @@ class DatasetRGC(Dataset):
         return {'in': self.__frame_input[idx], 'out': self.__frame_cellid[idx]}
 
 
-def prepare_training(settings: Config_Dataset, use_cell_bib=False, mode_classes=0) -> DatasetRGC:
+def prepare_training(settings: ConfigDataset, use_cell_bib=False, mode_classes=0) -> DatasetRGC:
     """Preparing dataset incl. augmentation for spike-detection-based training"""
     print("... loading and processing the dataset")
     npzfile = loadmat(settings.get_path2data())

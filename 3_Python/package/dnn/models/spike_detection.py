@@ -1,5 +1,5 @@
 from torch import nn, Tensor, unsqueeze, argmax
-from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_handler import ConfigPyTorch, ConfigDataset
 
 
 class dnn_sda_v1(nn.Module):
@@ -69,7 +69,7 @@ class cnn_sda_v1(nn.Module):
         return xds, argmax(xds, dim=1)
 
 
-Recommended_Config_PytorchSettings = Config_PyTorch(
+Recommended_Config_PytorchSettings = ConfigPyTorch(
     model=dnn_sda_v1(),
     loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
@@ -81,7 +81,7 @@ Recommended_Config_PytorchSettings = Config_PyTorch(
     data_split_ratio=0.25
 )
 
-Recommended_Config_DatasetSettings = Config_Dataset(
+Recommended_Config_DatasetSettings = ConfigDataset(
     # --- Settings of Datasets
     data_path='../2_Data/00_Merged_Datasets',
     data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',

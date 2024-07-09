@@ -4,7 +4,7 @@ from scipy.io import loadmat
 from torch import is_tensor, load, from_numpy
 from torch.utils.data import Dataset
 
-from package.dnn.pytorch_handler import Config_Dataset
+from package.dnn.pytorch_handler import ConfigDataset
 from package.dnn.data_preprocessing_frames import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
 from package.dnn.data_preprocessing_frames import change_frame_size, reconfigure_cluster_with_cell_lib, generate_zero_frames, DataNormalization
 from package.dnn.data_augmentation_frames import *
@@ -38,7 +38,7 @@ class DatasetAE_Class(Dataset):
                 'out': self.__cluster_id[idx]}
 
 
-def prepare_training(settings: Config_Dataset, path2model: str,
+def prepare_training(settings: ConfigDataset, path2model: str,
                      use_cell_bib=False, mode_classes=2,
                      use_median_for_mean=True) -> DatasetAE_Class:
     """Preparing dataset incl. augmentation for spike-frame based training"""

@@ -2,12 +2,12 @@ import numpy as np
 from torch import nn
 import matplotlib.pyplot as plt
 from package.dnn.dnn_handler import dnn_handler
-from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_handler import ConfigPyTorch, ConfigDataset
 import package.dnn.models.autoencoder_cnn as models_ae
 import package.dnn.models.autoencoder_class as models_class
 
 
-config_data = Config_Dataset(
+config_data = ConfigDataset(
     # --- Settings of Datasets
     data_path='../2_Data/00_Merged_Datasets',
     data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
@@ -28,7 +28,7 @@ config_data = Config_Dataset(
     data_sel_pos=[]
 )
 
-config_train_ae = Config_PyTorch(
+config_train_ae = ConfigPyTorch(
     # --- Settings of Models/Training
     model=models_ae.cnn_ae_v4(32, 5),
     loss='MSE',
@@ -40,7 +40,7 @@ config_train_ae = Config_PyTorch(
     data_split_ratio=0.25,
     data_do_shuffle=True
 )
-config_train_cl = Config_PyTorch(
+config_train_cl = ConfigPyTorch(
     # --- Settings of Models/Training
     model=models_class.classifier_ae_v1(5, 5),
     loss='Cross Entropy',
