@@ -2,25 +2,23 @@ import dataclasses
 import os
 import platform
 import shutil
-from datetime import datetime
-from glob import glob
+import cpuinfo
+import numpy as np
+from typing import Any
 from os import mkdir, remove
 from os.path import exists, join
 from shutil import rmtree
-from typing import Any
-
-import cpuinfo
-import numpy as np
-import torch.backends.cudnn
-from sklearn.model_selection import KFold
+from glob import glob
+from datetime import datetime
 from torch import optim, device, cuda, backends
-from torch.utils.data import DataLoader, SubsetRandomSampler
 from torch.utils.tensorboard import SummaryWriter
+from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
+from sklearn.model_selection import KFold
 
 
 @dataclasses.dataclass(frozen=True)
-class ConfigPyTorch:
+class Config_PyTorch:
     """Class for handling the PyTorch training/inference routing"""
     # --- Settings of Models/Training
     model: Any
@@ -56,7 +54,7 @@ class ConfigPyTorch:
 
 
 @dataclasses.dataclass(frozen=True)
-class ConfigDataset:
+class Config_Dataset:
     """Class for handling preparation of dataset"""
     # --- Settings of Datasets
     data_path: str
@@ -78,6 +76,7 @@ class ConfigDataset:
     def get_path2data(self) -> str:
         """Getting the path name to the file"""
         return join(self.data_path, self.data_file_name)
+
 
 def copy_handler_dummy() -> None:
     """Generating a handler dummy for training neural networks"""
@@ -103,7 +102,7 @@ def copy_handler_dummy() -> None:
         print("Please restart the training routine!")
 
 
-class TrainingPytorch:
+class training_pytorch:
     """Class for Handling Training of Deep Neural Networks in PyTorch
     Args:
         config_train: Configuration settings for the PyTorch Training
@@ -117,7 +116,7 @@ class TrainingPytorch:
     valid_loader: list
     cell_classes: list
 
-    def __init__(self, config_train: ConfigPyTorch, config_dataset: ConfigDataset) -> None:
+    def __init__(self, config_train: Config_PyTorch, config_dataset: Config_Dataset, do_train=True) -> None:
         self.os_type = platform.system()
         self._writer = None
         self.model = None
@@ -132,11 +131,10 @@ class TrainingPytorch:
         self._samples_train = list()
         self._samples_valid = list()
 
-
         # --- Saving options
         self.settings = config_train
         self.settings_data = config_dataset
-        self._index_folder = 'train'
+        self._index_folder = 'train' if do_train else 'inference'
         self._aitype = config_train.model.out_modeltyp
         self._model_name = config_train.model.out_modelname
         self._model_addon = str()
@@ -209,7 +207,7 @@ class TrainingPytorch:
         self.__setup_device()
         self._do_kfold = True if self.settings.num_kfold > 1 else False
         self._model_addon = data_set.data_type
-        self.cell_classes = data_set.lable_dict if data_set.cluster_name_available else []
+        self.cell_classes = data_set.frame_dict if data_set.cluster_name_available else []
 
         # --- Preparing datasets
         out_train = list()
