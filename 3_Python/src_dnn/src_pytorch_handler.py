@@ -107,7 +107,6 @@ class TrainingPytorch:
     """Class for Handling Training of Deep Neural Networks in PyTorch
     Args:
         config_train: Configuration settings for the PyTorch Training
-        do_train: Mention if training should be used (default = True)
     """
     used_hw_dev: device
     used_hw_cpu: str
