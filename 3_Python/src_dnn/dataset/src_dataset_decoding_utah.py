@@ -4,7 +4,7 @@ import sys
 from torch import is_tensor
 from torch.utils.data import Dataset
 
-from package.dnn.pytorch_handler import ConfigDataset
+from src_dnn.src_pytorch_handler import ConfigDataset
 from package.dnn.data_augmentation_frames import *
 
 
