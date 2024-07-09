@@ -4,13 +4,13 @@ from shutil import copy
 from datetime import datetime
 from torch import Tensor, load, save, from_numpy, tensor, max, min, log10, sum, inference_mode
 from scipy.io import savemat
-from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
+from package.dnn.pytorch_handler import ConfigPyTorch, ConfigDataset, TrainingPytorch
 
 
-class train_nn(training_pytorch):
+class train_nn(TrainingPytorch):
     """Class for Handling Training of Autoencoders"""
-    def __init__(self, config_train: Config_PyTorch, config_data: Config_Dataset, do_train=True) -> None:
-        training_pytorch.__init__(self, config_train, config_data, do_train)
+    def __init__(self, config_train: ConfigPyTorch, config_data: ConfigDataset, do_train=True) -> None:
+        TrainingPytorch.__init__(self, config_train, config_data, do_train)
 
     def __do_training_epoch(self) -> float:
         """Do training during epoch of training"""

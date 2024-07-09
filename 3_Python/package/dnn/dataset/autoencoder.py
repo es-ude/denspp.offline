@@ -4,7 +4,7 @@ from scipy.io import loadmat
 from torch import is_tensor
 from torch.utils.data import Dataset
 
-from package.dnn.pytorch_handler import Config_Dataset
+from package.dnn.pytorch_handler import ConfigDataset
 from package.dnn.data_preprocessing_frames import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
 from package.dnn.data_preprocessing_frames import change_frame_size, reconfigure_cluster_with_cell_lib, generate_zero_frames, DataNormalization
 from package.dnn.data_augmentation_frames import *
@@ -71,7 +71,7 @@ class DatasetAE(Dataset):
                 'mean': self.frames_me[cluster_id, :]}
 
 
-def prepare_training(settings: Config_Dataset,
+def prepare_training(settings: ConfigDataset,
                      use_cell_bib=False, mode_classes=2,
                      use_median=True,
                      mode_train_ae=0, do_classification=False,

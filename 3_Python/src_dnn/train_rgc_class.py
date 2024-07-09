@@ -7,11 +7,11 @@ from package.data_call.call_cellbib import logic_combination
 from torch import nn
 import matplotlib.pyplot as plt
 from package.dnn.dnn_handler import dnn_handler
-from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_handler import ConfigPyTorch, ConfigDataset
 import package.dnn.models.rgc_onoff_class as models_rgc
 
 
-config_data = Config_Dataset(
+config_data = ConfigDataset(
     # --- Settings of Datasets
     #data_path='../2_Data/00_Merged_Datasets',
     data_path='C:\HomeOffice\Data_Neurosignal\\00_Merged',
@@ -34,7 +34,7 @@ config_data = Config_Dataset(
     data_sel_pos=[]
 )
 
-config_train = Config_PyTorch(
+config_train = ConfigPyTorch(
     # --- Settings of Models/Training
     model=models_rgc.dnn_rgc_v2(32, 4),
     loss='Cross Entropy',

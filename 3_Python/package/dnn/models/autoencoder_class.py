@@ -1,5 +1,5 @@
 from torch import nn, Tensor, argmax
-from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_handler import ConfigPyTorch, ConfigDataset
 
 
 class classifier_ae_v1(nn.Module):
@@ -34,7 +34,7 @@ class classifier_ae_v1(nn.Module):
         return val, argmax(val, dim=1)
 
 
-Recommended_Config_PytorchSettings = Config_PyTorch(
+Recommended_Config_PytorchSettings = ConfigPyTorch(
     model=classifier_ae_v1(),
     loss='MSE',
     loss_fn=nn.MSELoss(),
@@ -46,7 +46,7 @@ Recommended_Config_PytorchSettings = Config_PyTorch(
     data_split_ratio=0.25
 )
 
-Recommended_Config_DatasetSettings = Config_Dataset(
+Recommended_Config_DatasetSettings = ConfigDataset(
     # --- Settings of Datasets
     data_path='../2_Data/00_Merged_Datasets',
     data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',

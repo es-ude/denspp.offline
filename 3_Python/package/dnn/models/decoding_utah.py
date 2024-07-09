@@ -1,6 +1,6 @@
 from torch import nn, Tensor, argmax
 import torch
-from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_handler import ConfigPyTorch, ConfigDataset
 
 class cnn_lstm_dec_v3(nn.Module):
     """Class of a convolutional Decoding for feature extraction"""

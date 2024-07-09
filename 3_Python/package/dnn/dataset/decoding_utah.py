@@ -4,7 +4,7 @@ import sys
 from torch import is_tensor
 from torch.utils.data import Dataset
 
-from package.dnn.pytorch_handler import Config_Dataset
+from package.dnn.pytorch_handler import ConfigDataset
 from package.dnn.data_augmentation_frames import *
 
 
@@ -41,7 +41,7 @@ class DatasetDecoder(Dataset):  #ToDo: Check if inheritance is necessary
         return {'in': np.array(self.__datset_spike_train[idx], dtype=np.float32), 'out': output}
 
 
-def preprocess_dataset(settings: Config_Dataset,
+def preprocess_dataset(settings: ConfigDataset,
                        length_time_window_ms=500,
                        use_cluster=False,
                        ) -> DatasetDecoder:

@@ -18,7 +18,7 @@ from sklearn.model_selection import KFold
 
 
 @dataclasses.dataclass(frozen=True)
-class Config_PyTorch:
+class ConfigPyTorch:
     """Class for handling the PyTorch training/inference routing"""
     # --- Settings of Models/Training
     model: Any
@@ -54,7 +54,7 @@ class Config_PyTorch:
 
 
 @dataclasses.dataclass(frozen=True)
-class Config_Dataset:
+class ConfigDataset:
     """Class for handling preparation of dataset"""
     # --- Settings of Datasets
     data_path: str
@@ -101,7 +101,7 @@ def copy_handler_dummy() -> None:
         print("Please restart the training routine!")
 
 
-class training_pytorch:
+class TrainingPytorch:
     """Class for Handling Training of Deep Neural Networks in PyTorch
     Args:
         config_train: Configuration settings for the PyTorch Training
@@ -115,7 +115,7 @@ class training_pytorch:
     valid_loader: list
     cell_classes: list
 
-    def __init__(self, config_train: Config_PyTorch, config_dataset: Config_Dataset, do_train=True) -> None:
+    def __init__(self, config_train: ConfigPyTorch, config_dataset: ConfigDataset, do_train=True) -> None:
         self.os_type = platform.system()
         self._writer = None
         self.model = None
