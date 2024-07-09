@@ -7,10 +7,11 @@ from scipy.io import savemat
 from package.dnn.pytorch_handler import ConfigPyTorch, ConfigDataset, TrainingPytorch
 
 
-class train_nn(TrainingPytorch):
+class TrainNN(TrainingPytorch):
     """Class for Handling the Training of Classifiers within Recurrent Neural Networks"""
+
     def __init__(self, config_train: ConfigPyTorch, config_data: ConfigDataset, do_train=True) -> None:
-        TrainingPytorch.__init__(self, config_train, config_data, do_train)
+        TrainingPytorch.__init__(self, config_train, config_data)
 
     def __do_training_epoch(self) -> [float, float]:
         """Do training during epoch of training"""
@@ -25,7 +26,7 @@ class train_nn(TrainingPytorch):
             pred_con, pred_cl = self.model(tdata['in'].to(self.used_hw_dev))
 
             loss = self.loss_fn(pred_con, tdata['out'].to(self.used_hw_dev))
-            loss.backward()
+            loss.backward()  # backpropagation
             self.optimizer.step()
 
             train_loss += loss.item()
@@ -62,7 +63,7 @@ class train_nn(TrainingPytorch):
     def do_training(self, path2save='') -> list:
         """Start model training incl. validation and custom-own metric calculation"""
         self._init_train(path2save)
-        self._save_config_txt('_rnn')
+        self._save_config_txt('_LSTM')
 
         # --- Handling Kfold cross validation training
         if self._do_kfold:
@@ -98,10 +99,10 @@ class train_nn(TrainingPytorch):
                       f'valid_loss = {valid_loss:.5f}, valid_acc = {100 * valid_acc:.2f} %')
 
                 # Log the running loss averaged per batch for both training and validation
-                self._writer.add_scalar('Loss_train (CL)', train_loss, epoch+1)
-                self._writer.add_scalar('Loss_valid (CL)', valid_loss, epoch+1)
-                self._writer.add_scalar('Acc_train (CL)', train_acc, epoch+1)
-                self._writer.add_scalar('Acc_valid (CL)', valid_acc, epoch+1)
+                self._writer.add_scalar('Loss_train (CL)', train_loss, epoch + 1)
+                self._writer.add_scalar('Loss_valid (CL)', valid_loss, epoch + 1)
+                self._writer.add_scalar('Acc_train (CL)', train_acc, epoch + 1)
+                self._writer.add_scalar('Acc_valid (CL)', valid_acc, epoch + 1)
                 self._writer.flush()
 
                 # Tracking the best performance and saving the model

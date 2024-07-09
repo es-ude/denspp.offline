@@ -6,7 +6,7 @@ import package.dnn.models.decoding_utah as models_dec
 
 config_data = ConfigDataset(
     # --- Settings of Datasets
-    data_path='/home/muskel/Documents/cpsDEC/data', # Ubuntu
+    data_path='/home/muskel/Documents/cpsDEC/data',  # Ubuntu
     #data_path='C:\spaikeDenSppDataset',
     data_file_name='2024-02-05_Dataset-KlaesNeuralDecoding.npy',
 
@@ -48,7 +48,7 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
         length_window_ms: Size of the time window for segmenting the tick interval into firing events
     """
     from package.dnn.dataset.decoding_utah import preprocess_dataset
-    from package.dnn.pytorch.lstm import TrainNN #Import der pytorch file
+    from src_dnn.pytorch.src_lstm_Decoding import TrainNN  # Import der pytorch file
     from package.plot.plot_dnn import plot_statistic_data
     from package.plot.plot_metric import plot_confusion, plot_loss
 
@@ -75,7 +75,8 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
         plt.close("all")
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=data_deci_lable)
-        plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir, cl_dict=data_deci_lable)
+        plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir,
+                            cl_dict=data_deci_lable)
 
         plt.show(block=dnn_handler.do_block)
 
