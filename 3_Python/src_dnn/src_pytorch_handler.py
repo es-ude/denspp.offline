@@ -32,6 +32,7 @@ class ConfigPyTorch:
     batch_size: int
     data_split_ratio: float
     data_do_shuffle: bool
+    train_do_deterministic: bool
 
     def get_topology(self) -> str:
         """Getting the model name defined in models"""
@@ -79,6 +80,7 @@ class ConfigDataset:
         """Getting the path name to the file"""
         return join(self.data_path, self.data_file_name)
 
+
 def copy_handler_dummy() -> None:
     """Generating a handler dummy for training neural networks"""
     path2dst = 'src_dnn'
@@ -101,6 +103,11 @@ def copy_handler_dummy() -> None:
             else:
                 shutil.copy(file, f"{path2dst}/")
         print("Please restart the training routine!")
+
+
+def _check_user_config() -> None:
+    if not exists("settings_ai"):
+        shutil.copy()
 
 
 class TrainingPytorch:
@@ -127,10 +134,10 @@ class TrainingPytorch:
         self.config_available = False
         self._do_kfold = False
         self._do_shuffle = config_train.data_do_shuffle
+        self._do_deterministic = config_train.train_do_deterministic
         self._run_kfold = 0
         self._samples_train = list()
         self._samples_valid = list()
-
 
         # --- Saving options
         self.settings = config_train
@@ -151,8 +158,7 @@ class TrainingPytorch:
         # Using GPU
         if cuda.is_available():
             self.used_hw_gpu = cuda.get_device_name()
-            self.used_hw_cpu = (f"{cpuinfo.get_cpu_info()['brand_raw']} "
-                       f"(@ {1e-9 * cpuinfo.get_cpu_info()['hz_actual'][0]:.3f} GHz)")
+            self.used_hw_cpu = 'None'
             self.used_hw_dev = device("cuda")
             self.used_hw_num = cuda.device_count()
             device0 = self.used_hw_gpu
@@ -166,18 +172,14 @@ class TrainingPytorch:
             device0 = self.used_hw_cpu
         # Using normal CPU
         else:
-            self.used_hw_cpu = (f"{cpuinfo.get_cpu_info()['brand_raw']} "
-                       f"(@ {1e-9 * cpuinfo.get_cpu_info()['hz_actual'][0]:.3f} GHz)")
             self.used_hw_gpu = 'None'
+            self.used_hw_cpu = (f"{cpuinfo.get_cpu_info()['brand_raw']} "
+                                f"(@ {1e-9 * cpuinfo.get_cpu_info()['hz_actual'][0]:.3f} GHz)")
             self.used_hw_dev = device("cpu")
             self.used_hw_num = cpuinfo.get_cpu_info()['count']
             device0 = self.used_hw_cpu
 
         print(f"... using PyTorch with {device0} device on {self.os_type}")
-
-    def _check_user_config(self) -> None:
-        if not exists("settings_ai"):
-            shutil.copy()
 
     def _init_train(self, path2save='') -> None:
         """Do init of class for training"""
@@ -278,7 +280,7 @@ class TrainingPytorch:
             txt_handler.write(f'Batchsize: {self.settings.batch_size}\n')
             txt_handler.write(f'Num. of epochs: {self.settings.num_epochs}\n')
             txt_handler.write(f'Splitting ratio (Training/Validation): '
-                              f'{1-self.settings.data_split_ratio}/{self.settings.data_split_ratio}\n')
+                              f'{1 - self.settings.data_split_ratio}/{self.settings.data_split_ratio}\n')
             txt_handler.write(f'Do KFold cross validation?: {self._do_kfold},\n'
                               f'Number of KFold steps: {self.settings.num_kfold}\n')
             txt_handler.write(f'Do shuffle?: {self.settings.data_do_shuffle}\n')

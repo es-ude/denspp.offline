@@ -36,8 +36,8 @@ config_train = ConfigPyTorch(
     num_epochs=10,
     batch_size=256,
     data_split_ratio=0.25,
-    data_do_shuffle=True
-
+    data_do_shuffle=True,
+    train_do_deterministic=False  # Neu
 )
 
 
