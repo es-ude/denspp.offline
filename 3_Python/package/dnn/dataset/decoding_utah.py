@@ -68,7 +68,7 @@ def preprocess_dataset(settings: Config_Dataset,
     for idx, label in enumerate(label_dict):
         print(f"\t class {idx} ({label}) --> {label_count_label_made[idx] + label_count_label_free[idx]} samples")
 
-    return Dataset(dataset_spike_train=dataset_spike_train, decision=dataset_decision,
+    return DatasetDecoder(dataset_spike_train=dataset_spike_train, decision=dataset_decision,
                    label_dict=label_dict, use_patient_dec=True)
 def load_dataset(settings):
     print("... loading and preprocessing the dataset")

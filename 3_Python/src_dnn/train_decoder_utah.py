@@ -6,8 +6,8 @@ import package.dnn.models.decoding_utah as models_dec
 
 config_data = Config_Dataset(
     # --- Settings of Datasets
-    # data_path='/home/muskel/Documents/cpsDEC/data', # Ubuntu
-    data_path='C:\spaikeDenSppDataset',
+     data_path='/home/muskel/Documents/cpsDEC/data', # Ubuntu
+    #data_path='C:\spaikeDenSppDataset',
     data_file_name='2024-02-05_Dataset-KlaesNeuralDecoding.npy',
 
     # --- Data Augmentation
@@ -53,9 +53,10 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
 
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
 
-    # --- Processing: Loading Data and Do Training
+    # --- Processing: Loading Data
     dataset = preprocess_dataset(config_data, length_window_ms)
     data_dict = dataset.lable_dict
+
     num_output = len(data_dict)
     trainhandler = train_nn(config_train, config_data)
     trainhandler.load_model()
