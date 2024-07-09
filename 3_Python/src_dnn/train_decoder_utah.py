@@ -2,7 +2,7 @@ from torch import nn
 import matplotlib.pyplot as plt
 from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import ConfigPyTorch, ConfigDataset
-import package.dnn.models.decoding_utah as models_dec
+import package.dnn.models.decoding_utah as models_decoding
 
 config_data = ConfigDataset(
     # --- Settings of Datasets
@@ -28,7 +28,7 @@ config_data = ConfigDataset(
 
 config_train = ConfigPyTorch(
     # --- Settings of Models/Training
-    model=models_dec.cnn_lstm_dec_v1(1, 12, 3),
+    model=models_decoding.cnn_lstm_dec_v1(1, 12, 3),
     loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
