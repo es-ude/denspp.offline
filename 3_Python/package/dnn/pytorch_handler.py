@@ -2,19 +2,20 @@ import dataclasses
 import os
 import platform
 import shutil
-import cpuinfo
-import numpy as np
-from typing import Any
+from datetime import datetime
+from glob import glob
 from os import mkdir, remove
 from os.path import exists, join
 from shutil import rmtree
-from glob import glob
-from datetime import datetime
-from torch import optim, device, cuda, backends
-from torch.utils.tensorboard import SummaryWriter
-from torch.utils.data import DataLoader, SubsetRandomSampler
-from torchinfo import summary
+from typing import Any
+
+import cpuinfo
+import numpy as np
 from sklearn.model_selection import KFold
+from torch import optim, device, cuda, backends
+from torch.utils.data import DataLoader, SubsetRandomSampler
+from torch.utils.tensorboard import SummaryWriter
+from torchinfo import summary
 
 
 @dataclasses.dataclass(frozen=True)
