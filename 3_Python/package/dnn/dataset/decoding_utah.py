@@ -8,9 +8,10 @@ from package.dnn.pytorch_handler import Config_Dataset
 from package.dnn.data_augmentation_frames import *
 
 
-class DatasetDecoder(Dataset): #ToDo: Check if inheritance is necessary
+class DatasetDecoder(Dataset):  #ToDo: Check if inheritance is necessary
     """Dataset Preparation for Training Neural Decoder"""
-    def __init__(self, dataset_spike_train: list, decision: list,
+
+    def __init__(self, dataset_spike_train: list[dict], decision: list[dict],
                  label_dict: dict, use_patient_dec=True):
         self.__datset_spike_train = dataset_spike_train
         self.__decision = decision
@@ -39,11 +40,12 @@ class DatasetDecoder(Dataset): #ToDo: Check if inheritance is necessary
 
         return {'in': np.array(self.__datset_spike_train[idx], dtype=np.float32), 'out': output}
 
+
 def preprocess_dataset(settings: Config_Dataset,
                        length_time_window_ms=500,
                        use_cluster=False,
-                       ) -> Dataset:
-    """Preparing dataset incl. add timewindow featuer and counting dataset"""
+                       ) -> DatasetDecoder:
+    """Preparing dataset incl. add time-window feature and counting dataset"""
     data_raw = load_dataset(settings)
 
     max_overall_timestamp = get_max_timestamp(data_raw)
@@ -56,7 +58,7 @@ def preprocess_dataset(settings: Config_Dataset,
     dataset_spike_train = add_electrode_2Dmapping_to_dataset(data_raw, dataset_timestamps, dataset_waveform)
 
     # --- Creating lable dictionary
-    label_dict = create_lable_dict(dataset_decision)
+    label_dict = create_label_dict(dataset_decision)
 
     # --- Counting dataset
     label_count_label_free, label_count_label_made, num_samples = counting_dataset(dataset_decision, label_dict)
@@ -69,7 +71,9 @@ def preprocess_dataset(settings: Config_Dataset,
         print(f"\t class {idx} ({label}) --> {label_count_label_made[idx] + label_count_label_free[idx]} samples")
 
     return DatasetDecoder(dataset_spike_train=dataset_spike_train, decision=dataset_decision,
-                   label_dict=label_dict, use_patient_dec=True)
+                          label_dict=label_dict, use_patient_dec=True)
+
+
 def load_dataset(settings):
     print("... loading and preprocessing the dataset")
     # Construct the full path
@@ -80,9 +84,11 @@ def load_dataset(settings):
     print(f"Constructed Path: {full_path}")
     data_raw = np.load(settings.get_path2data(), allow_pickle=True).item()
     return data_raw
+
+
 def get_max_timestamp(data_raw):
     max_overall_timestamp = 0
-    for _, data_exp in data_raw.items():  # 0-20 experimente
+    for _, data_exp in data_raw.items():  # 0-20 experiment
         for key, data_trial in data_exp.items():
             if 'trial' in key:
                 trial_timestamps = data_trial['timestamps']
@@ -90,6 +96,8 @@ def get_max_timestamp(data_raw):
                     if len(timestamp_in_electrode) and max(timestamp_in_electrode) > max_overall_timestamp:
                         max_overall_timestamp = max(timestamp_in_electrode)
     return max_overall_timestamp
+
+
 def create_feature_dataset(data_raw, length_time_window_ms, max_overall_timestamp, use_cluster):
     # --- Pre-Processing: Event --> Transient signal transformation
     dataset_timestamps = list()
@@ -119,31 +127,31 @@ def create_feature_dataset(data_raw, length_time_window_ms, max_overall_timestam
             else:
                 num_ite_skipped += 1
     return dataset_decision, dataset_timestamps, dataset_waveform, num_ite_skipped
+
+
 def __generate_stream_empty_array(timestamps: list, cluster: list,
                                   samples_time_window: int,
                                   use_cluster=False,
                                   output_size=0) -> np.ndarray:
-    """Generating an empty array of the transient array of all electrodes
-    Args:
-        timestamps: Lists with all timestamps of each electrode (iteration over electrode)
-        cluster: Lists with all corresponding cluster unit of each timestamp
-        samples_time_window: Size of the window for determining features
-        use_cluster: Decision of cluster information will be used
-        output_size: Determined the output array with a given length
-    Return:
-        Zero numpy array for training neural decoding [num. electrodes x num. clusters x num. windows] (Starting clusters with Zero)
+    """Generating an empty array of the transient array of all electrodes Args: timestamps: Lists with all timestamps
+    of each electrode (iteration over electrode) cluster: Lists with all corresponding cluster unit of each timestamp
+    samples_time_window: Size of the window for determining features use_cluster: Decision of cluster information
+    will be used output_size: Determined the output array with a given length Return: Zero numpy array for training
+    neural decoding [num. electrodes x num. clusters x num. windows] (Starting clusters with Zero)
     """
     length_time_window = np.zeros((len(timestamps, )), dtype=np.uint32)
     num_clusters = np.zeros((len(timestamps, )), dtype=np.uint32)
     for idx, event_ch in enumerate(timestamps):
         length_time_window[idx] = 0 if len(event_ch) == 0 else event_ch[-1]
-        num_clusters[idx] = 0 if len(event_ch) == 0 else np.unique(np.array(cluster[idx])).max()+1
+        num_clusters[idx] = 0 if len(event_ch) == 0 else np.unique(np.array(cluster[idx])).max() + 1
 
     if output_size == 0:
         num_windows = int(1 + np.ceil(length_time_window.max() / samples_time_window))
     else:
         num_windows = int(1 + np.ceil(output_size / samples_time_window))
     return np.zeros((len(timestamps), num_clusters.max() if use_cluster else 1, num_windows), dtype=np.uint16)
+
+
 def __determine_firing_rate(timestamps: list, cluster: list, exp_samplingrate, length_time_window_ms,
                             use_cluster=False, output_size=0) -> np.ndarray:
     """Pre-Processing Method: Calculating the firing rate for specific
@@ -163,7 +171,7 @@ def __determine_firing_rate(timestamps: list, cluster: list, exp_samplingrate, l
             # Skip due to empty electrode events
             continue
         else:
-            # "Slicing" the timestamps of choicen electrode
+            # "Slicing" the timestamps of choice electrode
             ch_event0 = np.array(ch_event)
 
             if use_cluster:
@@ -181,6 +189,8 @@ def __determine_firing_rate(timestamps: list, cluster: list, exp_samplingrate, l
                 for idy, pos in enumerate(event_val[0]):
                     data_stream0[idx, 0, pos] += event_val[1][idy]
     return data_stream0
+
+
 def add_electrode_2Dmapping_to_dataset(data_raw, dataset_timestamps, dataset_waveform):
     # exp_000 is enough because it´s the same for every experiment
     electrode_mapping = data_raw['exp_000']['orientation']
@@ -188,25 +198,28 @@ def add_electrode_2Dmapping_to_dataset(data_raw, dataset_timestamps, dataset_wav
     #dataset_waveform0 = translate_wf_datastream_into_picture(dataset_waveform, electrode_mapping)  #ToDo:
     return dataset_timestamps0
 
+
 def translate_ts_datastream_into_picture(data_raw: list, configuration: dict) -> list:
     """ Translate timestamp data stream into picture format """
     picture_data_raw = []
     picture_data_point = None
     labels = configuration['label']
     for data_point in data_raw:
-        for elecID, data in enumerate(data_point):
+        for electID, data in enumerate(data_point):
             if picture_data_point is None:
                 picture_data_point = np.zeros((data.shape[0], 10, 10, data.shape[1]), dtype=np.uint16)
 
             for label in labels:
-                if f"elec{elecID + 1}" == label:
-                    row = configuration['row'][95 - elecID]
-                    col = configuration['col'][95 - elecID]
+                if f"elect{electID + 1}" == label:
+                    row = configuration['row'][95 - electID]
+                    col = configuration['col'][95 - electID]
                     picture_data_point[:, col, row, :] = data
 
         picture_data_raw.append(picture_data_point)
         picture_data_point = None
     return picture_data_raw
+
+
 def translate_wf_datastream_into_picture(data_raw: list, configuration: dict) -> list:
     """ Translate waveform data stream into picture format"""
     picture_data_raw = []
@@ -214,18 +227,22 @@ def translate_wf_datastream_into_picture(data_raw: list, configuration: dict) ->
     picture_data_point = [[[] for _ in range(10)] for _ in range(10)]  # array of empty lists
 
     for data_point in data_raw:
-        for elecID, data in enumerate(data_point):
+        for electID, data in enumerate(data_point):
             for label in labels:
-                if f"elec{elecID + 1}" == label:  # electrodes from data start at 0, but in mapping at 1.
-                    row = configuration['row'][95 - elecID] # col, row range from 0-9 and point to the "correct" label from the mapping file
-                    col = configuration['col'][95 - elecID]
+                if f"elec{electID + 1}" == label:  # electrodes from data start at 0, but in mapping at 1.
+                    row = configuration['row'][
+                        95 - electID]  # col, row range from 0-9 and point to the "correct" label from the mapping file
+                    col = configuration['col'][95 - electID]
                     picture_data_point[col][row] = data  # set list of lists as our list at col,row
 
         picture_data_raw.append(picture_data_point)
-        picture_data_point = [[[] for _ in range(10)] for _ in range(10)]  # after each picture_data_point has been added reset array
+        picture_data_point = [[[] for _ in range(10)] for _ in
+                              range(10)]  # after each picture_data_point has been added reset array
 
     return picture_data_raw
-def create_lable_dict(dataset_decision):
+
+
+def create_label_dict(dataset_decision):
     label_dict = dict()
     num_label_types = 0
     for label in dataset_decision:
@@ -235,6 +252,8 @@ def create_lable_dict(dataset_decision):
                 label_dict.update({used_label: num_label_types})
                 num_label_types += 1
     return label_dict
+
+
 def counting_dataset(dataset_decision, label_dict):
     label_count_label_free = [0 for _ in label_dict]
     label_count_label_made = [0 for _ in label_dict]
@@ -248,5 +267,3 @@ def counting_dataset(dataset_decision, label_dict):
                 label_count_label_made[idx] += 1
     num_samples = sum(label_count_label_free) + sum(label_count_label_made)
     return label_count_label_free, label_count_label_made, num_samples
-
-
