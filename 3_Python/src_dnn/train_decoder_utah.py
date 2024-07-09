@@ -37,6 +37,7 @@ config_train = ConfigPyTorch(
     batch_size=256,
     data_split_ratio=0.25,
     data_do_shuffle=True
+
 )
 
 
