@@ -146,12 +146,12 @@ class cnn_lstm_dec_v2(nn.Module):
 
         return pred_con, argmax(pred_con, 1)
 
-class cnn_lstm_dec_v1(nn.Module):
+class test_model_if_pipeline_running(nn.Module):
     """Class of a convolutional Decoding for feature extraction but with 3D CNN. Project WiSe 23/24"""
 
     def __init__(self, num_clusters=1, input_samples=12, output_samples=3):
         super().__init__()
-        self.out_modelname = 'cnn3D_dec_v1'
+        self.out_modelname = 'only Test Model if Pipeline running'
         self.out_modeltyp = 'Decoder'
         self.model_embedded = False
         self.model_shape = (1, num_clusters, 10, 10, input_samples)

@@ -28,7 +28,7 @@ config_data = ConfigDataset(
 
 config_train = ConfigPyTorch(
     # --- Settings of Models/Training
-    model=models_decoding.cnn_lstm_dec_v1(1, 12, 3),
+    model=models_decoding.test_model_if_pipeline_running(1, 12, 3),
     loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
