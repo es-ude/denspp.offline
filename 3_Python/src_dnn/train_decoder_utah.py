@@ -1,8 +1,8 @@
 from torch import nn
 import matplotlib.pyplot as plt
 from package.dnn.dnn_handler import dnn_handler
-from package.dnn.pytorch_handler import ConfigPyTorch, ConfigDataset
-import package.dnn.models.decoding_utah as models_decoding
+from src_dnn.src_pytorch_handler import ConfigPyTorch, ConfigDataset
+import src_dnn.models.src_models_decoding_utah as models_decoding
 
 config_data = ConfigDataset(
     # --- Settings of Datasets
