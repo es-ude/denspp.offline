@@ -6,8 +6,8 @@ import src_dnn.models.src_models_decoding_utah as models_decoding
 
 config_data = ConfigDataset(
     # --- Settings of Datasets
-    data_path='/home/muskel/Documents/cpsDEC/data',  # Ubuntu
-    #data_path='C:\spaikeDenSppDataset',
+    # data_path='/home/muskel/Documents/cpsDEC/data',  # Ubuntu
+    data_path='C:\spaikeDenSppDataset',
     data_file_name='2024-02-05_Dataset-KlaesNeuralDecoding.npy',
 
     # --- Data Augmentation
@@ -37,11 +37,13 @@ config_train = ConfigPyTorch(
     batch_size=256,
     data_split_ratio=0.25,
     data_do_shuffle=True,
-    train_do_deterministic=False  # Neu
+    train_do_deterministic=True,
+    seed = 0x000001EF5FC88360
 )
 
 
 def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> None:
+    # ToDo -> dnn_handler übergibt nur Einstellungen --> in Settings.yaml übertragen
     """Training routine for Neural Decoding of recordings from Utah array (KlaesLab)
     Args:
         dnn_handler: Handler for configurating the routine selection for train deep neural networks

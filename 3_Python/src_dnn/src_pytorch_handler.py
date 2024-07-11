@@ -6,12 +6,15 @@ from datetime import datetime
 from glob import glob
 from os import mkdir, remove
 from os.path import exists, join
+
 from shutil import rmtree
 from typing import Any
 
 import cpuinfo
 import numpy as np
 import torch.backends.cudnn
+import torch
+import random
 from sklearn.model_selection import KFold
 from torch import optim, device, cuda, backends
 from torch.utils.data import DataLoader, SubsetRandomSampler
@@ -32,7 +35,8 @@ class ConfigPyTorch:
     batch_size: int
     data_split_ratio: float
     data_do_shuffle: bool
-    train_do_deterministic: bool
+    train_do_deterministic: bool  # ToDo hinzufügen von Deterministic Möglichkeit im Training
+    seed: int
 
     def get_topology(self) -> str:
         """Getting the model name defined in models"""
@@ -135,6 +139,8 @@ class TrainingPytorch:
         self._do_kfold = False
         self._do_shuffle = config_train.data_do_shuffle
         self._do_deterministic = config_train.train_do_deterministic
+        self._seed = config_train.seed
+
         self._run_kfold = 0
         self._samples_train = list()
         self._samples_valid = list()
@@ -205,6 +211,18 @@ class TrainingPytorch:
         self._path2log = join(self._path2save, f'logs')
         self._writer = SummaryWriter(self._path2log, comment=f"event_log_kfold{self._run_kfold:03d}")
 
+    def get_dataloader_params(self, deterministic: bool, seed= None, generator= None):
+        """Getting the parameters for the DataLoader"""
+        if deterministic:
+            worker_seed = seed if seed is not None else torch.initial_seed() % 2 ** 32
+            np.random.seed(worker_seed) # ToDo random muss rausgenommen werden wenn seed übergeben wird
+            random.seed(worker_seed)
+            worker_init_fn = lambda worker_id: np.random.seed(worker_seed)
+            print("Worker seed=", worker_seed, "Generator seed=", generator)
+            generator = generator if generator is not None else torch.Generator().manual_seed(0)
+            return {'worker_init_fn': worker_init_fn, 'generator': generator}
+        return {}
+
     def load_data(self, data_set, num_workers=0) -> None:
         """Loading data for training and validation in DataLoader format into class"""
         self.__setup_device()
@@ -215,16 +233,22 @@ class TrainingPytorch:
         # --- Preparing datasets
         out_train = list()
         out_valid = list()
+
         if self._do_kfold:
+            params = self.get_dataloader_params(self._do_deterministic)
+
             kfold = KFold(n_splits=self.settings.num_kfold, shuffle=self._do_shuffle)
             for idx_train, idx_valid in kfold.split(np.arange(len(data_set))):
                 subsamps_train = SubsetRandomSampler(idx_train)
                 subsamps_valid = SubsetRandomSampler(idx_valid)
-                out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train))
+                out_train.append(
+                    DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train, **params))
                 out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
                 self._samples_train.append(subsamps_train.indices.size)
                 self._samples_valid.append(subsamps_valid.indices.size)
         else:
+            params = self.get_dataloader_params(self._do_deterministic)
+            print(params)
             idx = np.arange(len(data_set))
             if self._do_shuffle:
                 np.random.shuffle(idx)
@@ -233,7 +257,7 @@ class TrainingPytorch:
             idx_valid = idx[split_pos:]
             subsamps_train = SubsetRandomSampler(idx_train)
             subsamps_valid = SubsetRandomSampler(idx_valid)
-            out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train))
+            out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train,**params))
             out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
 
             self._samples_train.append(subsamps_train.indices.size)
