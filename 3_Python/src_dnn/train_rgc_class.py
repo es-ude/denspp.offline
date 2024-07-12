@@ -29,7 +29,7 @@ config_data = Config_Dataset(
     data_normalization_method='minmax',
     data_normalization_setting='bipolar',
     # --- Dataset Reduction
-    data_do_reduce_samples_per_cluster=True,
+    data_do_reduce_samples_per_cluster=False,
     data_num_samples_per_cluster=50_000,
     data_exclude_cluster=[],
     data_sel_pos=[]
@@ -37,14 +37,14 @@ config_data = Config_Dataset(
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
-    model=models_rgc.dnn_rgc_v2(32, 4),
+    model=models_rgc.cnn_rgc_onoff_v1(32, 4),
     loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=2,
-    batch_size=256,
-    data_split_ratio=0.25,
+    num_epochs=100,
+    batch_size=1024,
+    data_split_ratio=0.2,
     data_do_shuffle=True
 )
 

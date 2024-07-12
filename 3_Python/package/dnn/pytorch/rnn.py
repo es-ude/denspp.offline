@@ -143,7 +143,7 @@ class train_nn(training_pytorch):
             data_output = data_valid['out']
 
         yclus = model_test(data_input.to(self.used_hw_dev))[1]
-        yclus = yclus.detach().numpy()
+        yclus = yclus.detach().cpu().numpy()
 
         # --- Producing the output
         output = dict()

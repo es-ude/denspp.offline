@@ -69,7 +69,7 @@ class _SettingsPipe:
         para_en=False,
         dev_value={},
         dev_branch=0,
-        dev_sel=1,
+        dev_sel=2,
         temp=300,
         area=0.045
     )

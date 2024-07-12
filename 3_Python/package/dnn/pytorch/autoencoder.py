@@ -167,8 +167,8 @@ class train_nn(training_pytorch):
               f"\nDo Validation with best model: {path2model}")
         model_test = load(path2model)
         feat_out, pred_out = model_test(from_numpy(data_valid['in']).to(self.used_hw_dev))
-        feat_out = feat_out.detach().numpy()
-        pred_out = pred_out.detach().numpy()
+        feat_out = feat_out.detach().cpu().numpy()
+        pred_out = pred_out.detach().cpu().numpy()
 
         # --- Producing the output
         output = dict()

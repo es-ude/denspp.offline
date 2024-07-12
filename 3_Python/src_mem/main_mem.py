@@ -45,11 +45,11 @@ def get_params(mode: int, n_dim: int) -> [list, list, list, list]:
     """"""
     match mode:
         case 0:
-            u_off = [1.25, 2.5]
+            u_off = [1.25, 2.0]
             t_dly = [10e-3, 25e-3]
             gain = [1.0, 1.0]
             if n_dim >= 3:
-                u_off.append(3.25)
+                u_off.append(2.5)
                 t_dly.append(15e-3)
                 gain.append(1.0)
             t0_adc_sec = [0.46, 0.7]

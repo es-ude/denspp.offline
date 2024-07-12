@@ -136,7 +136,7 @@ class train_nn(training_pytorch):
               f"\nDo Validation with best model: {path2model}")
         model_test = load(path2model)
         yclus = model_test(from_numpy(data_valid['in']).to(self.used_hw_dev))[1]
-        yclus = yclus.cpu().detach().numpy()
+        yclus = yclus.detach().cpu().numpy()
 
         # --- Producing the output
         output = dict()

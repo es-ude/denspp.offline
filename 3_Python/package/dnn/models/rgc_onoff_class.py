@@ -32,7 +32,7 @@ class dnn_rgc_v1(__model_settings_common):
             nn.ReLU(),
             nn.Dropout(lin_drop[3]),
             nn.Linear(lin_size[4], lin_size[5]),
-            nn.Softmax(dim=1)
+            #nn.Softmax(dim=1)
         )
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
@@ -74,7 +74,7 @@ class dnn_rgc_v2(__model_settings_common):
             nn.Dropout(lin_drop[4]),
             nn.Linear(lin_size[5], lin_size[6], bias=do_train_bias),
             nn.BatchNorm1d(lin_size[6], affine=do_train_bias),
-            nn.Softmax(dim=1)
+            #nn.Softmax(dim=1)
         )
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
@@ -121,7 +121,7 @@ class cnn_rgc_onoff_v1(__model_settings_common):
             nn.ReLU(),
             nn.Linear(lin_size[1], lin_size[2], bias=do_train_bias),
             nn.BatchNorm1d(lin_size[2], affine=do_train_bias),
-            nn.Softmax(dim=1)
+            #nn.Softmax(dim=1)
         )
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:

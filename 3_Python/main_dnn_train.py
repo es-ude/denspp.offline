@@ -10,7 +10,7 @@ if __name__ == "__main__":
     )
 
     # --- Configs (AE)
-    mode_ae = 0
+    mode_ae = 5
     noise_std_ae = 0.01
     num_hiddenlayer = 5
     num_output = 6
