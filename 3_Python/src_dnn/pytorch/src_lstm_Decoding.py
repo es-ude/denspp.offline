@@ -1,5 +1,6 @@
 import numpy as np
 from os.path import join
+from pathlib import Path
 from shutil import copy
 from datetime import datetime
 from torch import Tensor, load, save, from_numpy
@@ -75,7 +76,16 @@ class TrainNN(TrainingPytorch):
         save(self.model.state_dict(), path2model_init)
         timestamp_start = datetime.now()
         timestamp_string = timestamp_start.strftime('%H:%M:%S')
-        print(f'\nTraining starts on {timestamp_string}')
+
+        base_path = Path(__file__).parents[2]
+        funcName = self.do_training.__name__
+        # Pfad ab dem Ordner "3_Python" extrahieren
+        shortened_path = Path(__file__).relative_to(base_path)
+        print(
+            f"\n\n=== Executing function --> {funcName} in file --> {shortened_path} ===")
+
+
+        print(f'\n\t Training starts on {timestamp_string}')
 
         for fold in np.arange(self.settings.num_kfold):
             best_loss = [1e6, 1e6]
@@ -87,13 +97,13 @@ class TrainNN(TrainingPytorch):
             self._init_writer()
 
             if self._do_kfold:
-                print(f'\nStarting with Fold #{fold}')
+                print(f'\n\tStarting with Fold #{fold}')
 
             for epoch in range(0, self.settings.num_epochs):
                 train_loss, train_acc = self.__do_training_epoch()
                 valid_loss, valid_acc = self.__do_valid_epoch()
 
-                print(f'... results of epoch {epoch + 1}/{self.settings.num_epochs} '
+                print(f'\t results of epoch {epoch + 1}/{self.settings.num_epochs} '
                       f'[{(epoch + 1) / self.settings.num_epochs * 100:.2f} %]: '
                       f'train_loss = {train_loss:.5f}, train_acc = {100 * train_acc:.2f} % - '
                       f'valid_loss = {valid_loss:.5f}, valid_acc = {100 * valid_acc:.2f} %')
@@ -133,7 +143,7 @@ class TrainNN(TrainingPytorch):
         data_valid = self.get_data_points(num_output, use_train_dataloader=False)
 
         # --- Do the Inference with Best Model
-        print(f"\nDoing the inference with validation data on best model")
+        print(f"\n\tDoing the inference with validation data on best model")
         model_inference = load(self.get_best_model('rnn')[0])
         if not isinstance(data_valid['in'], Tensor):
             data_train = from_numpy(data_train['out'])

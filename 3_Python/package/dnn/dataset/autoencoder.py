@@ -77,12 +77,12 @@ def prepare_training(settings: ConfigDataset,
                      mode_train_ae=0, do_classification=False,
                      noise_std=0.1) -> DatasetAE:
     """Preparing dataset incl. augmentation for spike-frame based training"""
-    print("... loading and processing the dataset")
+    print("\tloading and processing the dataset")
     # Construct the full path
     full_path = settings.get_path2data()
 
-    print(f"Constructed Path: {full_path}")
-    print(f"Path Exists: {os.path.exists(full_path)}")
+    print(f"\tConstructed Path: {full_path}")
+    print(f"\tPath Exists: {os.path.exists(full_path)}")
     # if os.path.exists(full_path) == False:
     # stop TRAINING
     try:
@@ -103,7 +103,7 @@ def prepare_training(settings: ConfigDataset,
 
     # --- PART: Reducing samples per cluster (if too large)
     if settings.data_do_reduce_samples_per_cluster:
-        print("... do data augmentation with reducing the samples per cluster")
+        print("\t do data augmentation with reducing the samples per cluster")
         frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
                                                              settings.data_num_samples_per_cluster, False)
 
@@ -121,7 +121,7 @@ def prepare_training(settings: ConfigDataset,
         else:
             do_bipolar = False
             do_global = False
-        print(f"... do data normalization")
+        print(f"\t do data normalization")
         data_class_frames_in = DataNormalization(mode=settings.data_normalization_mode,
                                                  method=settings.data_normalization_method,
                                                  do_bipolar=do_bipolar, do_global=do_global)
@@ -152,7 +152,7 @@ def prepare_training(settings: ConfigDataset,
 
     # --- PART: Data Augmentation
     if settings.data_do_augmentation and not settings.data_do_reduce_samples_per_cluster:
-        print("... do data augmentation")
+        print("\t do data augmentation")
         # new_frames, new_clusters = augmentation_mean_waveform(
         # frames_me, frames_cl, snr_mean, settings.data_num_augmentation)
         new_frames, new_clusters = augmentation_change_position(
@@ -166,7 +166,7 @@ def prepare_training(settings: ConfigDataset,
         info = np.unique(frames_cl, return_counts=True)
         num_cluster = np.max(info[0]) + 1
         num_frames = np.max(info[1])
-        print(f"... adding a zero-noise cluster: cluster = {num_cluster} - number of frames = {num_frames}")
+        print(f"\t adding a zero-noise cluster: cluster = {num_cluster} - number of frames = {num_frames}")
 
         new_mean, new_clusters, new_frames = generate_zero_frames(frames_in.shape[1], num_frames, snr_range_zero)
         frames_in = np.append(frames_in, new_frames, axis=0)
@@ -175,8 +175,8 @@ def prepare_training(settings: ConfigDataset,
 
     # --- Output
     check = np.unique(frames_cl, return_counts=True)
-    print(f"... for training are {frames_in.shape[0]} frames with each {frames_in.shape[1]} points available")
-    print(f"... used data points for training: in total {check[0].size} classes with {np.sum(check[1])} samples")
+    print(f"\t for training are {frames_in.shape[0]} frames with each {frames_in.shape[1]} points available")
+    print(f"\t used data points for training: in total {check[0].size} classes with {np.sum(check[1])} samples")
     for idx, id in enumerate(check[0]):
         addon = f'' if not isinstance(frames_dict, list | np.ndarray) else f' ({frames_dict[id]})'
         print(f"\tclass {id}{addon} --> {check[1][idx]} samples")

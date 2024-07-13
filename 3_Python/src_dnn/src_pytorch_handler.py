@@ -6,6 +6,7 @@ from datetime import datetime
 from glob import glob
 from os import mkdir, remove
 from os.path import exists, join
+from pathlib import Path
 
 from shutil import rmtree
 from typing import Any
@@ -20,6 +21,8 @@ from torch import optim, device, cuda, backends
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torch.utils.tensorboard import SummaryWriter
 from torchinfo import summary
+
+
 
 
 @dataclasses.dataclass(frozen=True)
@@ -186,7 +189,13 @@ class TrainingPytorch:
             self.used_hw_num = cpuinfo.get_cpu_info()['count']
             device0 = self.used_hw_cpu
 
-        print(f"... using PyTorch with {device0} device on {self.os_type}")
+        base_path = Path(__file__).parents[2]
+        funcName = self.__setup_device.__name__
+        # Pfad ab dem Ordner "3_Python" extrahieren
+        shortened_path = Path(__file__).relative_to(base_path)
+        print(
+            f"\n\n=== Executing function --> {funcName} in file --> {shortened_path} ===")
+        print(f"\n\t using PyTorch with {device0} device on {self.os_type}")
 
     def _init_train(self, path2save='') -> None:
         """Do init of class for training"""
@@ -219,7 +228,7 @@ class TrainingPytorch:
             np.random.seed(worker_seed) # ToDo random muss rausgenommen werden wenn seed übergeben wird
             random.seed(worker_seed)
             worker_init_fn = lambda worker_id: np.random.seed(worker_seed)
-            print("Worker seed=", worker_seed, "Generator seed=", generator)
+            print("\n\nWorker seed=", worker_seed, "Generator seed=", generator)
             generator = generator if generator is not None else torch.Generator().manual_seed(0)
             return {'worker_init_fn': worker_init_fn, 'generator': generator}
         return {}
@@ -286,11 +295,13 @@ class TrainingPytorch:
         if print_model:
 
             base_path = Path(__file__).parents[2]
+            funcName = self.load_model.__name__
             # Pfad ab dem Ordner "3_Python" extrahieren
             shortened_path = Path(__file__).relative_to(base_path)
             print(
-                f"\nExecuting file --> {shortened_path}")
+                f"\n\n=== Executing function --> {funcName} in file --> {shortened_path}  \t ===\n")
             summary(self.model, input_size=self.model.model_shape)
+
 
 
     def _save_config_txt(self, addon='') -> None:
@@ -345,8 +356,8 @@ class TrainingPytorch:
         diff_time = timestamp_end - timestamp_start
         diff_string = diff_time
 
-        print(f'\nTraining ends on: {timestamp_string}')
-        print(f'Training runs: {diff_string}')
+        print(f'\n\tTraining ends on: {timestamp_string}')
+        print(f'\tTraining runs: {diff_string}')
 
         # Delete init model
         init_model = glob(join(self._path2save, '*_reset.pth'))
@@ -360,8 +371,8 @@ class TrainingPytorch:
                 rmtree(folder, ignore_errors=True)
 
         # Give the option to open TensorBoard
-        print("\nLook data on TensorBoard -> open Terminal")
-        print("Type in: tensorboard serve --logdir ./runs")
+        print("\n\tLook data on TensorBoard -> open Terminal")
+        print("\tType in: tensorboard serve --logdir ./runs")
 
     def get_data_points(self, num_output=4, use_train_dataloader=False) -> dict:
         """Getting data from DataLoader for Plotting Results"""
