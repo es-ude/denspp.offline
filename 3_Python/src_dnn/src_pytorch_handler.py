@@ -138,7 +138,8 @@ class TrainingPytorch:
         self.config_available = False
         self._do_kfold = False
         self._do_shuffle = config_train.data_do_shuffle
-        self._do_deterministic = config_train.train_do_deterministic
+        # --- Deterministic training
+        self._deterministic = config_train.train_do_deterministic
         self._seed = config_train.seed
 
         self._run_kfold = 0
@@ -211,7 +212,7 @@ class TrainingPytorch:
         self._path2log = join(self._path2save, f'logs')
         self._writer = SummaryWriter(self._path2log, comment=f"event_log_kfold{self._run_kfold:03d}")
 
-    def get_dataloader_params(self, deterministic: bool, seed= None, generator= None):
+    def get_deterministc_dataloader_params(self, deterministic: bool, seed= None, generator= None):
         """Getting the parameters for the DataLoader"""
         if deterministic:
             worker_seed = seed if seed is not None else torch.initial_seed() % 2 ** 32
@@ -235,7 +236,7 @@ class TrainingPytorch:
         out_valid = list()
 
         if self._do_kfold:
-            params = self.get_dataloader_params(self._do_deterministic)
+            params = self.get_deterministc_dataloader_params(self._deterministic)
 
             kfold = KFold(n_splits=self.settings.num_kfold, shuffle=self._do_shuffle)
             for idx_train, idx_valid in kfold.split(np.arange(len(data_set))):
@@ -247,7 +248,7 @@ class TrainingPytorch:
                 self._samples_train.append(subsamps_train.indices.size)
                 self._samples_valid.append(subsamps_valid.indices.size)
         else:
-            params = self.get_dataloader_params(self._do_deterministic)
+            params = self.get_deterministc_dataloader_params(self._deterministic)
             print(params)
             idx = np.arange(len(data_set))
             if self._do_shuffle:

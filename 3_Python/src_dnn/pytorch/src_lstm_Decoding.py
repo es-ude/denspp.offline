@@ -10,7 +10,7 @@ from src_dnn.src_pytorch_handler import ConfigPyTorch, ConfigDataset, TrainingPy
 class TrainNN(TrainingPytorch):
     """Class for Handling the Training of Classifiers within Recurrent Neural Networks"""
 
-    def __init__(self, config_train: ConfigPyTorch, config_data: ConfigDataset, do_train=True) -> None:
+    def __init__(self, config_train: ConfigPyTorch, config_data: ConfigDataset) -> None:
         TrainingPytorch.__init__(self, config_train, config_data)
 
     def __do_training_epoch(self) -> [float, float]:
