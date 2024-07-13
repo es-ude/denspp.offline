@@ -28,7 +28,7 @@ config_data = ConfigDataset(
     data_sel_pos=[]
 )
 
-config_train = ConfigPyTorch(
+ConfigTrain = ConfigPyTorch(
     # --- Settings of Models/Training
     model=models_decoding.test_model_if_pipeline_running(1, 12, 3),
     loss='Cross Entropy',
@@ -52,25 +52,24 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
         length_window_ms: Size of the time window for segmenting the tick interval into firing events
     """
     from src_dnn.dataset.src_dataset_decoding_utah import preprocess_dataset
-    from src_dnn.pytorch.src_lstm_Decoding import TrainNN  # Import der pytorch file
+    from src_dnn.pytorch.src_lstm_Decoding import TrainHandlerLstm  # Import der pytorch file
     from package.plot.plot_dnn import plot_statistic_data
     from package.plot.plot_metric import plot_confusion, plot_loss
 
     base_path = Path(__file__).parents[2]
-    funcName = do_train_decoder_utah.__name__
+    func_name = do_train_decoder_utah.__name__
     # Pfad ab dem Ordner "3_Python" extrahieren
     shortened_path = Path(__file__).relative_to(base_path)
     print(
-        f"\n\n=== Executing function --> {funcName} in file --> {shortened_path} \t ===")
+        f"\n\n=== Executing function --> {func_name} in file --> {shortened_path} ===")
     print("\n\t Train modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
-
 
     # --- Processing: Loading Data
     dataset = preprocess_dataset(config_data, length_window_ms)
-    data_deci_lable = dataset.lable_dict
-    num_output = len(data_deci_lable)
+    data_deci_label = dataset.lable_dict
+    num_output = len(data_deci_label)
 
-    trainhandler = TrainNN(config_train, config_data)
+    trainhandler = TrainHandlerLstm(ConfigTrain, config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
     del dataset
@@ -85,9 +84,9 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
     if dnn_handler.do_plot:
         plt.close("all")
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
-        plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=data_deci_lable)
+        plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=data_deci_label)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir,
-                            cl_dict=data_deci_lable)
+                            cl_dict=data_deci_label)
 
         plt.show(block=dnn_handler.do_block)
 

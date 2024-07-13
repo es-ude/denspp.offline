@@ -23,8 +23,6 @@ from torch.utils.tensorboard import SummaryWriter
 from torchinfo import summary
 
 
-
-
 @dataclasses.dataclass(frozen=True)
 class ConfigPyTorch:
     """Class for handling the PyTorch training/inference routing"""
@@ -164,7 +162,6 @@ class TrainingPytorch:
 
     def __setup_device(self) -> None:
         """Setup PyTorch for Training"""
-
         # Using GPU
         if cuda.is_available():
             self.used_hw_gpu = cuda.get_device_name()

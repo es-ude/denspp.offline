@@ -8,8 +8,8 @@ from scipy.io import savemat
 from src_dnn.src_pytorch_handler import ConfigPyTorch, ConfigDataset, TrainingPytorch
 
 
-class TrainNN(TrainingPytorch):
-    """Class for Handling the Training of Classifiers within Recurrent Neural Networks"""
+class TrainHandlerLstm(TrainingPytorch):
+    """Class for Handling the Training of Classifiers within Long Short Term Memory (LSTM) Networks"""
 
     def __init__(self, config_train: ConfigPyTorch, config_data: ConfigDataset) -> None:
         TrainingPytorch.__init__(self, config_train, config_data)
