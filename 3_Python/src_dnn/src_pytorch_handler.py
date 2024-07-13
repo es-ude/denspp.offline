@@ -246,6 +246,7 @@ class TrainingPytorch:
 
             kfold = KFold(n_splits=self.settings.num_kfold, shuffle=self._do_shuffle)
             for idx_train, idx_valid in kfold.split(np.arange(len(data_set))):
+
                 subsamps_train = SubsetRandomSampler(idx_train)
                 subsamps_valid = SubsetRandomSampler(idx_valid)
                 out_train.append(
@@ -262,11 +263,11 @@ class TrainingPytorch:
             split_pos = int(len(data_set) * (1 - self.settings.data_split_ratio))
             idx_train = idx[0:split_pos]
             idx_valid = idx[split_pos:]
+
             subsamps_train = SubsetRandomSampler(idx_train)
             subsamps_valid = SubsetRandomSampler(idx_valid)
             out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train,**params))
             out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
-
             self._samples_train.append(subsamps_train.indices.size)
             self._samples_valid.append(subsamps_valid.indices.size)
 

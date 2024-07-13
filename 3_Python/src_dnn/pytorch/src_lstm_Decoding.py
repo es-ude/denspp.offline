@@ -11,56 +11,6 @@ from src_dnn.src_pytorch_handler import ConfigPyTorch, ConfigDataset, TrainingPy
 class TrainHandlerLstm(TrainingPytorch):
     """Class for Handling the Training of Classifiers within Long Short Term Memory (LSTM) Networks"""
 
-    def __init__(self, config_train: ConfigPyTorch, config_data: ConfigDataset) -> None:
-        TrainingPytorch.__init__(self, config_train, config_data)
-
-    def __do_training_epoch(self) -> [float, float]:
-        """Do training during epoch of training"""
-        train_loss = 0.0
-        total_batches = 0
-        total_correct = 0
-        total_samples = 0
-
-        self.model.train(True)
-        for tdata in self.train_loader[self._run_kfold]:
-            self.optimizer.zero_grad()
-            pred_con, pred_cl = self.model(tdata['in'].to(self.used_hw_dev))
-
-            loss = self.loss_fn(pred_con, tdata['out'].to(self.used_hw_dev))
-            loss.backward()  # backpropagation
-            self.optimizer.step()
-
-            train_loss += loss.item()
-            total_batches += 1
-            total_correct += int(sum(pred_cl == tdata['out']))
-            total_samples += len(tdata['in'])
-
-        train_acc = total_correct / total_samples
-        train_loss = train_loss / total_batches
-
-        return train_loss, train_acc
-
-    def __do_valid_epoch(self) -> [float, float]:
-        """Do validation during epoch of training"""
-        valid_loss = 0.0
-        total_batches = 0
-        total_correct = 0
-        total_samples = 0
-
-        self.model.eval()
-        for vdata in self.valid_loader[self._run_kfold]:
-            pred_cl, dec_cl = self.model(vdata['in'].to(self.used_hw_dev))
-
-            valid_loss += self.loss_fn(pred_cl, vdata['out'].to(self.used_hw_dev)).item()
-            total_batches += 1
-            total_correct += int(sum(dec_cl == vdata['out']))
-            total_samples += len(vdata['in'])
-
-        valid_acc = total_correct / total_samples
-        valid_loss = valid_loss / total_batches
-
-        return valid_loss, valid_acc
-
     def do_training(self, path2save='') -> list:
         """Start model training incl. validation and custom-own metric calculation"""
         self._init_train(path2save)
@@ -135,6 +85,55 @@ class TrainHandlerLstm(TrainingPytorch):
         self._end_training_routine(timestamp_start)
 
         return metrics_own
+    def __init__(self, config_train: ConfigPyTorch, config_data: ConfigDataset) -> None:
+        TrainingPytorch.__init__(self, config_train, config_data)
+
+    def __do_training_epoch(self) -> [float, float]:
+        """Do training during epoch of training"""
+        train_loss = 0.0
+        total_batches = 0
+        total_correct = 0
+        total_samples = 0
+
+        self.model.train(True)
+        for tdata in self.train_loader[self._run_kfold]:
+            self.optimizer.zero_grad()
+            pred_con, pred_cl = self.model(tdata['in'].to(self.used_hw_dev))
+
+            loss = self.loss_fn(pred_con, tdata['out'].to(self.used_hw_dev))
+            loss.backward()  # backpropagation
+            self.optimizer.step()
+
+            train_loss += loss.item()
+            total_batches += 1
+            total_correct += int(sum(pred_cl == tdata['out']))
+            total_samples += len(tdata['in'])
+
+        train_acc = total_correct / total_samples
+        train_loss = train_loss / total_batches
+
+        return train_loss, train_acc
+
+    def __do_valid_epoch(self) -> [float, float]:
+        """Do validation during epoch of training"""
+        valid_loss = 0.0
+        total_batches = 0
+        total_correct = 0
+        total_samples = 0
+
+        self.model.eval()
+        for vdata in self.valid_loader[self._run_kfold]:
+            pred_cl, dec_cl = self.model(vdata['in'].to(self.used_hw_dev))
+
+            valid_loss += self.loss_fn(pred_cl, vdata['out'].to(self.used_hw_dev)).item()
+            total_batches += 1
+            total_correct += int(sum(dec_cl == vdata['out']))
+            total_samples += len(vdata['in'])
+
+        valid_acc = total_correct / total_samples
+        valid_loss = valid_loss / total_batches
+
+        return valid_loss, valid_acc
 
     def do_validation_after_training(self, num_output: int) -> dict:
         """Performing the validation with the best model after training"""
