@@ -8,7 +8,7 @@ from src_dnn.src_pytorch_handler import ConfigDataset
 from package.dnn.data_augmentation_frames import *
 
 
-class DatasetDecoder(Dataset):  #ToDo: Check if inheritance is necessary
+class DecoderDataset(Dataset):  #ToDo: Check if inheritance is necessary
     """Dataset Preparation for Training Neural Decoder"""
 
     def __init__(self, dataset_spike_train: list[dict], decision: list[dict],
@@ -44,7 +44,7 @@ class DatasetDecoder(Dataset):  #ToDo: Check if inheritance is necessary
 def preprocess_dataset(settings: ConfigDataset,
                        length_time_window_ms=500,
                        use_cluster=False,
-                       ) -> DatasetDecoder:
+                       ) -> DecoderDataset:
     """Preparing dataset incl. add time-window feature and counting dataset"""
     data_raw = load_dataset(settings)
 
@@ -70,12 +70,14 @@ def preprocess_dataset(settings: ConfigDataset,
     for idx, label in enumerate(label_dict):
         print(f"\t class {idx} ({label}) --> {label_count_label_made[idx] + label_count_label_free[idx]} samples")
 
-    return DatasetDecoder(dataset_spike_train=dataset_spike_train, decision=dataset_decision,
+    return DecoderDataset(dataset_spike_train=dataset_spike_train, decision=dataset_decision,
                           label_dict=label_dict, use_patient_dec=True)
 
 
 def load_dataset(settings):
-    print("... loading and preprocessing the dataset")
+    current_file_path = os.path.abspath(__file__)
+    file_name = os.path.basename(current_file_path)
+    print(f"\n\nExecuting file --> {file_name} \n... loading and preprocessing the dataset")
     # Construct the full path
     full_path = settings.get_path2data()
     if not os.path.exists(full_path):

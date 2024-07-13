@@ -284,7 +284,14 @@ class TrainingPytorch:
         self.optimizer = self.settings.load_optimizer(learn_rate=learn_rate)
         self.loss_fn = self.settings.loss_fn
         if print_model:
+
+            base_path = Path(__file__).parents[2]
+            # Pfad ab dem Ordner "3_Python" extrahieren
+            shortened_path = Path(__file__).relative_to(base_path)
+            print(
+                f"\nExecuting file --> {shortened_path}")
             summary(self.model, input_size=self.model.model_shape)
+
 
     def _save_config_txt(self, addon='') -> None:
         """Writing the content of the configuration class in *.txt-file"""

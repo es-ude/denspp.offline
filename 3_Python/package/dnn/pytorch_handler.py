@@ -256,7 +256,9 @@ class training_pytorch:
         self.optimizer = self.settings.load_optimizer(learn_rate=learn_rate)
         self.loss_fn = self.settings.loss_fn
         if print_model:
+
             summary(self.model, input_size=self.model.model_shape)
+
 
     def _save_config_txt(self, addon='') -> None:
         """Writing the content of the configuration class in *.txt-file"""

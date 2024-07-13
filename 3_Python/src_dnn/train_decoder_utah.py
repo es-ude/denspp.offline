@@ -1,5 +1,6 @@
 from torch import nn
 import matplotlib.pyplot as plt
+import os
 from package.dnn.dnn_handler import dnn_handler  #  hier hab ich nie was geändert, kann aus PACKAGE importiert werden!!
 from src_dnn.src_pytorch_handler import ConfigPyTorch, ConfigDataset
 import src_dnn.models.src_models_decoding_utah as models_decoding
@@ -54,7 +55,7 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
     from package.plot.plot_dnn import plot_statistic_data
     from package.plot.plot_metric import plot_confusion, plot_loss
 
-    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
+    print(f"\nExecuting file --> {file_name} \n Train modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
 
     # --- Processing: Loading Data
     dataset = preprocess_dataset(config_data, length_window_ms)
