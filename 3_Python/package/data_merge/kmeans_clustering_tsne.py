@@ -4,14 +4,22 @@ from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 import os
+import pandas as pd
 from sklearn.metrics import silhouette_score
+from sklearn.decomposition import PCA
 
 data_load = np.load(os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), "data",
                                          "exp7_waveforms_as_one_array.npy"))
 data = data_load[2000:4000]
+pca = PCA(n_components=20)
+df = pd.DataFrame(data, columns=[f"Punkt_{i}" for i in range(48)])
 
+# Optional: Setze den Index auf die Wellennummer
+df.index.name = "Wellennummer"
 scaler = StandardScaler()
-data_normalized = data
+data_normalized = scaler.fit_transform(df)
+data_pca = pca.fit_transform(data_normalized)
+data_normalized = data_pca
 
 # Optimale Anzahl von Clustern bestimmen (hier Elbow Method)
 def find_optimal_clusters(data, max_k):
@@ -27,10 +35,10 @@ def find_optimal_clusters(data, max_k):
     plt.show()
 
 # Find the optimal number of clusters
-find_optimal_clusters(data_normalized, 20)
+find_optimal_clusters(data_normalized, 100)
 
 # KMeans-Clustering anwenden (nach Bestimmung der optimalen Clusterzahl)
-n_clusters = 6  # Setzen Sie die optimale Anzahl von Clustern hier
+n_clusters = 9  # Setzen Sie die optimale Anzahl von Clustern hier
 kmeans = KMeans(n_clusters=n_clusters, random_state=42)
 kmeans.fit(data_normalized)
 labels = kmeans.labels_
