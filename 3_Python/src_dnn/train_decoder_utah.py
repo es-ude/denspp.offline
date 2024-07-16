@@ -64,7 +64,6 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
     torch.use_deterministic_algorithms(True)
 
     trainhandler = TrainNN(config_train, config_data)
-    trainhandler.
     # --- Processing: Loading Data
     dataset = preprocess_dataset(config_data, length_window_ms)
     data_deci_lable = dataset.lable_dict
