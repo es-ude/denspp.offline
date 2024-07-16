@@ -218,7 +218,7 @@ class TrainingPytorch:
         self._path2log = join(self._path2save, f'logs')
         self._writer = SummaryWriter(self._path2log, comment=f"event_log_kfold{self._run_kfold:03d}")
 
-    def deterministic_training(self, seed: int) -> dict[str, Callable[[Any], None] | Generator] | dict[Any, Any]:
+    def preperation_for_deterministic_training(self, seed: int) -> dict[str, Callable[[Any], None] | Generator] | dict[Any, Any]:
         if self._seed == None or self._seed == 0:
             self._seed = 42
         if self._deterministic:
@@ -259,8 +259,8 @@ class TrainingPytorch:
         out_train = list()
         out_valid = list()
 
-        params = self.deterministic_training(self._seed)
-
+        params = self.preperation_for_deterministic_training(self._seed)
+        print(params)
         if self._do_kfold:
 
             kfold = KFold(n_splits=self.settings.num_kfold, shuffle=self._do_shuffle)

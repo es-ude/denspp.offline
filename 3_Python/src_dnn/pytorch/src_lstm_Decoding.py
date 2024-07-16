@@ -34,7 +34,6 @@ class TrainHandlerLstm(TrainingPytorch):
         print(
             f"\n\n=== Executing function --> {funcName} in file --> {shortened_path} ===")
 
-
         print(f'\n\t Training starts on {timestamp_string}')
 
         for fold in np.arange(self.settings.num_kfold):
@@ -47,7 +46,7 @@ class TrainHandlerLstm(TrainingPytorch):
             self._init_writer()
 
             if self._do_kfold:
-                print(f'\n\tStarting with Fold #{fold}')
+                print(f'\n\n\tStarting with Fold #{fold}')
 
             for epoch in range(0, self.settings.num_epochs):
                 train_loss, train_acc = self.__do_training_epoch()
