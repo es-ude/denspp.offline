@@ -9,7 +9,7 @@ from os.path import exists, join
 from pathlib import Path
 
 from shutil import rmtree
-from typing import Any
+from typing import Any, Dict, Callable
 
 import cpuinfo
 import numpy as np
@@ -17,7 +17,7 @@ import torch.backends.cudnn
 import torch
 import random
 from sklearn.model_selection import KFold
-from torch import optim, device, cuda, backends
+from torch import optim, device, cuda, backends, Generator
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torch.utils.tensorboard import SummaryWriter
 from torchinfo import summary
@@ -218,21 +218,28 @@ class TrainingPytorch:
         self._path2log = join(self._path2save, f'logs')
         self._writer = SummaryWriter(self._path2log, comment=f"event_log_kfold{self._run_kfold:03d}")
 
-    def deterministic_training(self, seed: int) -> None:
+    def deterministic_training(self, seed: int) -> dict[str, Callable[[Any], None] | Generator] | dict[Any, Any]:
         if self._seed == None or self._seed == 0:
             self._seed = 42
         if self._deterministic:
+            # --- set all pytorch determinism flags
+            # ToDo implement Cuda determinism
             random.seed(seed)
             np.random.seed(seed)
             torch.manual_seed(seed)
             torch.cuda.manual_seed_all(seed)
             torch.use_deterministic_algorithms(True)
+            # --- Deterministic training
+            params = self.get_deterministic_dataloader_params(self._deterministic, self._seed)
+
             print(f"\n\t\t=== Deterministic training with seed: {self._seed} ===")
+            return params
         else:
             self._seed = None
             print(f"\n\t\t=== None Deterministic training ===")
+            return {}
 
-    def get_deterministc_dataloader_params(self, deterministic: bool, seed: int):
+    def get_deterministic_dataloader_params(self, deterministic: bool, seed: int):
         """Getting the parameters for the DataLoader"""
         g = torch.Generator()
         g.manual_seed(seed)
@@ -252,18 +259,12 @@ class TrainingPytorch:
         out_train = list()
         out_valid = list()
 
-        # --- Deterministic training
-        if self._deterministic:
-            self.deterministic_training(self._seed)
-            params = self.get_deterministc_dataloader_params(self._deterministic, self._seed)
-        else:
-            params = {}
+        params = self.deterministic_training(self._seed)
 
         if self._do_kfold:
 
             kfold = KFold(n_splits=self.settings.num_kfold, shuffle=self._do_shuffle)
             for idx_train, idx_valid in kfold.split(np.arange(len(data_set))):
-
                 subsamps_train = SubsetRandomSampler(idx_train)
                 subsamps_valid = SubsetRandomSampler(idx_valid)
                 out_train.append(
@@ -282,7 +283,8 @@ class TrainingPytorch:
 
             subsamps_train = SubsetRandomSampler(idx_train)
             subsamps_valid = SubsetRandomSampler(idx_valid)
-            out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train,**params))
+            out_train.append(
+                DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train, **params))
             out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
             self._samples_train.append(subsamps_train.indices.size)
             self._samples_valid.append(subsamps_valid.indices.size)
@@ -307,7 +309,6 @@ class TrainingPytorch:
         self.optimizer = self.settings.load_optimizer(learn_rate=learn_rate)
         self.loss_fn = self.settings.loss_fn
         if print_model:
-
             base_path = Path(__file__).parents[2]
             funcName = self.load_model.__name__
             # Pfad ab dem Ordner "3_Python" extrahieren
@@ -315,8 +316,6 @@ class TrainingPytorch:
             print(
                 f"\n\n=== Executing function --> {funcName} in file --> {shortened_path}  \t ===\n")
             summary(self.model, input_size=self.model.model_shape)
-
-
 
     def _save_config_txt(self, addon='') -> None:
         """Writing the content of the configuration class in *.txt-file"""
