@@ -40,7 +40,7 @@ ConfigTrain = ConfigPyTorch(
     data_split_ratio=0.25,
     data_do_shuffle=True,
     train_do_deterministic=True,
-    seed = 0x000001EF5FC88360
+    seed = 42
 )
 
 
