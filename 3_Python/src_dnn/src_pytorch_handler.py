@@ -35,7 +35,7 @@ class ConfigPyTorch:
     batch_size: int
     data_split_ratio: float
     data_do_shuffle: bool
-    train_do_deterministic: bool  # ToDo hinzufügen von Deterministic Möglichkeit im Training
+    train_does_deterministic: bool  # ToDo hinzufügen von Deterministic Möglichkeit im Training
     seed: int
 
     def get_topology(self) -> str:
@@ -139,7 +139,7 @@ class TrainingPytorch:
         self._do_kfold = False
         self._do_shuffle = config_train.data_do_shuffle
         # --- Deterministic training
-        self._deterministic = config_train.train_do_deterministic
+        self._deterministic = config_train.train_does_deterministic
         self._seed = config_train.seed
 
         self._run_kfold = 0
@@ -212,6 +212,18 @@ class TrainingPytorch:
         self._path2log = join(self._path2save, f'logs')
         self._writer = SummaryWriter(self._path2log, comment=f"event_log_kfold{self._run_kfold:03d}")
 
+    def deterministic_training(self, seed: int) -> None:
+        if self._seed == None or self._seed == 0:
+            self._seed = 42
+        if self._deterministic:
+            np.random.seed(seed)
+            torch.manual_seed(seed)
+            torch.cuda.manual_seed_all(seed)
+            torch.use_deterministic_algorithms(True)
+            print(f"\n\t\t=== Deterministic training with seed: {self._seed} ===")
+        print(f"\n\t\t=== None Deterministic training ===")
+
+
     def get_deterministc_dataloader_params(self, deterministic: bool, seed= None, generator= None):
         """Getting the parameters for the DataLoader"""
         if deterministic:
@@ -234,22 +246,23 @@ class TrainingPytorch:
         # --- Preparing datasets
         out_train = list()
         out_valid = list()
+        if self._deterministic:
+            self.deterministic_training(self._seed)
+            params = self.get_deterministc_dataloader_params(self._deterministic, self._seed)
+
 
         if self._do_kfold:
-            params = self.get_deterministc_dataloader_params(self._deterministic)
 
-            kfold = KFold(n_splits=self.settings.num_kfold, shuffle=self._do_shuffle)
+            kfold = KFold(n_splits=self.settings.num_kfold, shuffle=self._do_shuffle, random_state=self._seed)
             for idx_train, idx_valid in kfold.split(np.arange(len(data_set))):
                 subsamps_train = SubsetRandomSampler(idx_train)
                 subsamps_valid = SubsetRandomSampler(idx_valid)
                 out_train.append(
                     DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train, **params))
-                out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
+                out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid, **params))
                 self._samples_train.append(subsamps_train.indices.size)
                 self._samples_valid.append(subsamps_valid.indices.size)
         else:
-            params = self.get_deterministc_dataloader_params(self._deterministic)
-            print(params)
             idx = np.arange(len(data_set))
             if self._do_shuffle:
                 np.random.shuffle(idx)
@@ -258,7 +271,7 @@ class TrainingPytorch:
             idx_valid = idx[split_pos:]
             subsamps_train = SubsetRandomSampler(idx_train)
             subsamps_valid = SubsetRandomSampler(idx_valid)
-            out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train,**params))
+            out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train))
             out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
 
             self._samples_train.append(subsamps_train.indices.size)
@@ -302,6 +315,9 @@ class TrainingPytorch:
             txt_handler.write('\n')
             txt_handler.write(f'Used Optimizer: {self.settings.optimizer}\n')
             txt_handler.write(f'Used Loss Function: {self.settings.loss}\n')
+            txt_handler.write(f'Deterministic Training: {self.settings.train_does_deterministic}\n')
+            if self.deterministic_training():
+                txt_handler.write(f'My Seed: {self.settings.seed}\n')
             txt_handler.write(f'Batchsize: {self.settings.batch_size}\n')
             txt_handler.write(f'Num. of epochs: {self.settings.num_epochs}\n')
             txt_handler.write(f'Splitting ratio (Training/Validation): '

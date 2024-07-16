@@ -1,4 +1,6 @@
+import torch
 from torch import nn
+import numpy as np
 import matplotlib.pyplot as plt
 from package.dnn.dnn_handler import dnn_handler  #  hier hab ich nie was geändert, kann aus PACKAGE importiert werden!!
 from src_dnn.src_pytorch_handler import ConfigPyTorch, ConfigDataset
@@ -6,8 +8,8 @@ import src_dnn.models.src_models_decoding_utah as models_decoding
 
 config_data = ConfigDataset(
     # --- Settings of Datasets
-    # data_path='/home/muskel/Documents/cpsDEC/data',  # Ubuntu
-    data_path='C:\spaikeDenSppDataset',
+    data_path='/home/muskel/Documents/cpsDEC/data',  # Ubuntu
+    # data_path='C:\spaikeDenSppDataset',
     data_file_name='2024-02-05_Dataset-KlaesNeuralDecoding.npy',
 
     # --- Data Augmentation
@@ -37,7 +39,7 @@ config_train = ConfigPyTorch(
     batch_size=256,
     data_split_ratio=0.25,
     data_do_shuffle=True,
-    train_do_deterministic=True,
+    train_does_deterministic=True,
     seed = 0x000001EF5FC88360
 )
 
@@ -55,13 +57,20 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
     from package.plot.plot_metric import plot_confusion, plot_loss
 
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
+    # --- Deterministic Settings
+    np.random.seed(config_train.seed)
+    torch.manual_seed(config_train.seed)
+    torch.cuda.manual_seed_all(config_train.seed)
+    torch.use_deterministic_algorithms(True)
 
+    trainhandler = TrainNN(config_train, config_data)
+    trainhandler.
     # --- Processing: Loading Data
     dataset = preprocess_dataset(config_data, length_window_ms)
     data_deci_lable = dataset.lable_dict
     num_output = len(data_deci_lable)
 
-    trainhandler = TrainNN(config_train, config_data)
+
     trainhandler.load_model()
     trainhandler.load_data(dataset)
     del dataset
