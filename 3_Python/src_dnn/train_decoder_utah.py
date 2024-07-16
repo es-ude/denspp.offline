@@ -1,15 +1,15 @@
-import torch
 from torch import nn
-import numpy as np
 import matplotlib.pyplot as plt
+import os
 from package.dnn.dnn_handler import dnn_handler  #  hier hab ich nie was geändert, kann aus PACKAGE importiert werden!!
 from src_dnn.src_pytorch_handler import ConfigPyTorch, ConfigDataset
 import src_dnn.models.src_models_decoding_utah as models_decoding
+from pathlib import Path
 
 config_data = ConfigDataset(
     # --- Settings of Datasets
-    data_path='/home/muskel/Documents/cpsDEC/data',  # Ubuntu
-    # data_path='C:\spaikeDenSppDataset',
+    # data_path='/home/muskel/Documents/cpsDEC/data',  # Ubuntu
+    data_path='C:\\spaikeDenSppDataset',
     data_file_name='2024-02-05_Dataset-KlaesNeuralDecoding.npy',
 
     # --- Data Augmentation
@@ -28,18 +28,18 @@ config_data = ConfigDataset(
     data_sel_pos=[]
 )
 
-config_train = ConfigPyTorch(
+ConfigTrain = ConfigPyTorch(
     # --- Settings of Models/Training
     model=models_decoding.test_model_if_pipeline_running(1, 12, 3),
     loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
-    num_kfold=1,
+    num_kfold=5,
     num_epochs=10,
     batch_size=256,
     data_split_ratio=0.25,
     data_do_shuffle=True,
-    train_does_deterministic=True,
+    train_do_deterministic=True,
     seed = 0x000001EF5FC88360
 )
 
@@ -52,24 +52,24 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
         length_window_ms: Size of the time window for segmenting the tick interval into firing events
     """
     from src_dnn.dataset.src_dataset_decoding_utah import preprocess_dataset
-    from src_dnn.pytorch.src_lstm_Decoding import TrainNN  # Import der pytorch file
+    from src_dnn.pytorch.src_lstm_Decoding import TrainHandlerLstm  # Import der pytorch file
     from package.plot.plot_dnn import plot_statistic_data
     from package.plot.plot_metric import plot_confusion, plot_loss
 
-    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
-    # --- Deterministic Settings
-    np.random.seed(config_train.seed)
-    torch.manual_seed(config_train.seed)
-    torch.cuda.manual_seed_all(config_train.seed)
-    torch.use_deterministic_algorithms(True)
+    base_path = Path(__file__).parents[2]
+    func_name = do_train_decoder_utah.__name__
+    # Pfad ab dem Ordner "3_Python" extrahieren
+    shortened_path = Path(__file__).relative_to(base_path)
+    print(
+        f"\n\n=== Executing function --> {func_name} in file --> {shortened_path} ===")
+    print("\n\t Train modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
 
-    trainhandler = TrainNN(config_train, config_data)
     # --- Processing: Loading Data
     dataset = preprocess_dataset(config_data, length_window_ms)
-    data_deci_lable = dataset.lable_dict
-    num_output = len(data_deci_lable)
+    data_deci_label = dataset.lable_dict
+    num_output = len(data_deci_label)
 
-
+    trainhandler = TrainHandlerLstm(ConfigTrain, config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
     del dataset
@@ -84,9 +84,9 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
     if dnn_handler.do_plot:
         plt.close("all")
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
-        plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=data_deci_lable)
+        plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=data_deci_label)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir,
-                            cl_dict=data_deci_lable)
+                            cl_dict=data_deci_label)
 
         plt.show(block=dnn_handler.do_block)
 

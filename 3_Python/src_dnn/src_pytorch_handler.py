@@ -6,6 +6,7 @@ from datetime import datetime
 from glob import glob
 from os import mkdir, remove
 from os.path import exists, join
+from pathlib import Path
 
 from shutil import rmtree
 from typing import Any
@@ -35,7 +36,7 @@ class ConfigPyTorch:
     batch_size: int
     data_split_ratio: float
     data_do_shuffle: bool
-    train_does_deterministic: bool  # ToDo hinzufügen von Deterministic Möglichkeit im Training
+    train_do_deterministic: bool  # ToDo hinzufügen von Deterministic Möglichkeit im Training
     seed: int
 
     def get_topology(self) -> str:
@@ -139,7 +140,7 @@ class TrainingPytorch:
         self._do_kfold = False
         self._do_shuffle = config_train.data_do_shuffle
         # --- Deterministic training
-        self._deterministic = config_train.train_does_deterministic
+        self._deterministic = config_train.train_do_deterministic
         self._seed = config_train.seed
 
         self._run_kfold = 0
@@ -161,7 +162,6 @@ class TrainingPytorch:
 
     def __setup_device(self) -> None:
         """Setup PyTorch for Training"""
-
         # Using GPU
         if cuda.is_available():
             self.used_hw_gpu = cuda.get_device_name()
@@ -186,7 +186,13 @@ class TrainingPytorch:
             self.used_hw_num = cpuinfo.get_cpu_info()['count']
             device0 = self.used_hw_cpu
 
-        print(f"... using PyTorch with {device0} device on {self.os_type}")
+        base_path = Path(__file__).parents[2]
+        funcName = self.__setup_device.__name__
+        # Pfad ab dem Ordner "3_Python" extrahieren
+        shortened_path = Path(__file__).relative_to(base_path)
+        print(
+            f"\n\n=== Executing function --> {funcName} in file --> {shortened_path} ===")
+        print(f"\n\t using PyTorch with {device0} device on {self.os_type}")
 
     def _init_train(self, path2save='') -> None:
         """Do init of class for training"""
@@ -212,26 +218,16 @@ class TrainingPytorch:
         self._path2log = join(self._path2save, f'logs')
         self._writer = SummaryWriter(self._path2log, comment=f"event_log_kfold{self._run_kfold:03d}")
 
-    def deterministic_training(self, seed: int) -> None:
-        if self._seed == None or self._seed == 0:
-            self._seed = 42
-        if self._deterministic:
-            random.seed(seed)
-            np.random.seed(seed)
-            torch.manual_seed(seed)
-            torch.cuda.manual_seed_all(seed)
-            torch.use_deterministic_algorithms(True)
-            print(f"\n\t\t=== Deterministic training with seed: {self._seed} ===")
-        print(f"\n\t\t=== None Deterministic training ===")
-
-    def get_deterministc_dataloader_params(self, deterministic: bool, seed: int):
+    def get_deterministc_dataloader_params(self, deterministic: bool, seed= None, generator= None):
         """Getting the parameters for the DataLoader"""
-        g = torch.Generator()
-        g.manual_seed(seed)
         if deterministic:
-            worker_init_fn = lambda worker_id: np.random.seed(seed)
-            print("Worker seed=", seed, "Generator seed=", g)
-            return {'worker_init_fn': worker_init_fn, 'generator': g}
+            worker_seed = seed if seed is not None else torch.initial_seed() % 2 ** 32
+            np.random.seed(worker_seed) # ToDo random muss rausgenommen werden wenn seed übergeben wird
+            random.seed(worker_seed)
+            worker_init_fn = lambda worker_id: np.random.seed(worker_seed)
+            print("\n\nWorker seed=", worker_seed, "Generator seed=", generator)
+            generator = generator if generator is not None else torch.Generator().manual_seed(0)
+            return {'worker_init_fn': worker_init_fn, 'generator': generator}
         return {}
 
     def load_data(self, data_set, num_workers=0) -> None:
@@ -245,40 +241,33 @@ class TrainingPytorch:
         out_train = list()
         out_valid = list()
 
-        # --- Deterministic training
-        if self._deterministic:
-            self.deterministic_training(self._seed)
-            params = self.get_deterministc_dataloader_params(self._deterministic, self._seed)
-        else:
-            params = {}
-
-        # --- KFold or normal split
         if self._do_kfold:
+            params = self.get_deterministc_dataloader_params(self._deterministic)
 
-            kfold = KFold(n_splits=self.settings.num_kfold, shuffle=self._do_shuffle, random_state=self._seed)
+            kfold = KFold(n_splits=self.settings.num_kfold, shuffle=self._do_shuffle)
             for idx_train, idx_valid in kfold.split(np.arange(len(data_set))):
+
                 subsamps_train = SubsetRandomSampler(idx_train)
                 subsamps_valid = SubsetRandomSampler(idx_valid)
                 out_train.append(
                     DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train, **params))
-                out_valid.append(
-                    DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid, **params))
+                out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
                 self._samples_train.append(subsamps_train.indices.size)
                 self._samples_valid.append(subsamps_valid.indices.size)
         else:
+            params = self.get_deterministc_dataloader_params(self._deterministic)
+            print(params)
             idx = np.arange(len(data_set))
             if self._do_shuffle:
                 np.random.shuffle(idx)
             split_pos = int(len(data_set) * (1 - self.settings.data_split_ratio))
             idx_train = idx[0:split_pos]
             idx_valid = idx[split_pos:]
+
             subsamps_train = SubsetRandomSampler(idx_train)
             subsamps_valid = SubsetRandomSampler(idx_valid)
-            out_train.append(
-                DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train, **params))
-            out_valid.append(
-                DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid, **params))
-
+            out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train,**params))
+            out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
             self._samples_train.append(subsamps_train.indices.size)
             self._samples_valid.append(subsamps_valid.indices.size)
 
@@ -302,7 +291,16 @@ class TrainingPytorch:
         self.optimizer = self.settings.load_optimizer(learn_rate=learn_rate)
         self.loss_fn = self.settings.loss_fn
         if print_model:
+
+            base_path = Path(__file__).parents[2]
+            funcName = self.load_model.__name__
+            # Pfad ab dem Ordner "3_Python" extrahieren
+            shortened_path = Path(__file__).relative_to(base_path)
+            print(
+                f"\n\n=== Executing function --> {funcName} in file --> {shortened_path}  \t ===\n")
             summary(self.model, input_size=self.model.model_shape)
+
+
 
     def _save_config_txt(self, addon='') -> None:
         """Writing the content of the configuration class in *.txt-file"""
@@ -320,9 +318,6 @@ class TrainingPytorch:
             txt_handler.write('\n')
             txt_handler.write(f'Used Optimizer: {self.settings.optimizer}\n')
             txt_handler.write(f'Used Loss Function: {self.settings.loss}\n')
-            txt_handler.write(f'Deterministic Training: {self.settings.train_does_deterministic}\n')
-            if self.deterministic_training():
-                txt_handler.write(f'My Seed: {self.settings.seed}\n')
             txt_handler.write(f'Batchsize: {self.settings.batch_size}\n')
             txt_handler.write(f'Num. of epochs: {self.settings.num_epochs}\n')
             txt_handler.write(f'Splitting ratio (Training/Validation): '
@@ -359,8 +354,8 @@ class TrainingPytorch:
         diff_time = timestamp_end - timestamp_start
         diff_string = diff_time
 
-        print(f'\nTraining ends on: {timestamp_string}')
-        print(f'Training runs: {diff_string}')
+        print(f'\n\tTraining ends on: {timestamp_string}')
+        print(f'\tTraining runs: {diff_string}')
 
         # Delete init model
         init_model = glob(join(self._path2save, '*_reset.pth'))
@@ -374,8 +369,8 @@ class TrainingPytorch:
                 rmtree(folder, ignore_errors=True)
 
         # Give the option to open TensorBoard
-        print("\nLook data on TensorBoard -> open Terminal")
-        print("Type in: tensorboard serve --logdir ./runs")
+        print("\n\tLook data on TensorBoard -> open Terminal")
+        print("\tType in: tensorboard serve --logdir ./runs")
 
     def get_data_points(self, num_output=4, use_train_dataloader=False) -> dict:
         """Getting data from DataLoader for Plotting Results"""
