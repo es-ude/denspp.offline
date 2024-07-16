@@ -238,7 +238,6 @@ class TrainingPytorch:
         g.manual_seed(seed)
         if deterministic:
             worker_init_fn = lambda worker_id: np.random.seed(seed)
-            print("Worker seed=", seed, "Generator seed=", g)
             return {'worker_init_fn': worker_init_fn, 'generator': g}
         return {}
 

@@ -8,8 +8,8 @@ from pathlib import Path
 
 config_data = ConfigDataset(
     # --- Settings of Datasets
-    # data_path='/home/muskel/Documents/cpsDEC/data',  # Ubuntu
-    data_path='C:\\spaikeDenSppDataset',
+    data_path='/home/muskel/Documents/cpsDEC/data',  # Ubuntu
+    #data_path='C:\\spaikeDenSppDataset',
     data_file_name='2024-02-05_Dataset-KlaesNeuralDecoding.npy',
 
     # --- Data Augmentation
