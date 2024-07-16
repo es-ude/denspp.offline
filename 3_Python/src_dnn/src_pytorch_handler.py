@@ -36,7 +36,7 @@ class ConfigPyTorch:
     batch_size: int
     data_split_ratio: float
     data_do_shuffle: bool
-    train_do_deterministic: bool  # ToDo hinzufügen von Deterministic Möglichkeit im Training
+    deterministic_training: bool  # ToDo hinzufügen von Deterministic Möglichkeit im Training
     seed: int
 
     def get_topology(self) -> str:
@@ -140,8 +140,9 @@ class TrainingPytorch:
         self._do_kfold = False
         self._do_shuffle = config_train.data_do_shuffle
         # --- Deterministic training
-        self._deterministic = config_train.train_do_deterministic
+        self._deterministic = config_train.deterministic_training
         self._seed = config_train.seed
+        self._cuda = cuda.is_available()
 
         self._run_kfold = 0
         self._samples_train = list()
@@ -218,33 +219,32 @@ class TrainingPytorch:
         self._path2log = join(self._path2save, f'logs')
         self._writer = SummaryWriter(self._path2log, comment=f"event_log_kfold{self._run_kfold:03d}")
 
-    def preperation_for_deterministic_training(self, seed: int) -> dict[str, Callable[[Any], None] | Generator] | dict[Any, Any]:
+    def preperation_for_training(self) -> None:
         if self._seed == None or self._seed == 0:
             self._seed = 42
         if self._deterministic:
             # --- set all pytorch determinism flags
-            # ToDo implement Cuda determinism
-            random.seed(seed)
-            np.random.seed(seed)
-            torch.manual_seed(seed)
-            torch.cuda.manual_seed_all(seed)
+            np.random.seed(self._seed)
+            torch.manual_seed(self._seed)
+            if self._cuda: # Neu eingeführt um Karstens Abfrage Cuda abfrage zu nutzen
+                torch.cuda.manual_seed_all(self._seed)
+            random.seed(self._seed)
+            torch.backends.cudnn.deterministic = True
             torch.use_deterministic_algorithms(True)
-            # --- Deterministic training
-            params = self.get_deterministic_dataloader_params(self._deterministic, self._seed)
-
             print(f"\n\t\t=== Deterministic training with seed: {self._seed} ===")
-            return params
+
         else:
             self._seed = None
             print(f"\n\t\t=== None Deterministic training ===")
-            return {}
 
-    def get_deterministic_dataloader_params(self, deterministic: bool, seed: int):
+
+    def get_dataloader_params(self):
         """Getting the parameters for the DataLoader"""
-        g = torch.Generator()
-        g.manual_seed(seed)
-        if deterministic:
-            worker_init_fn = lambda worker_id: np.random.seed(seed)
+
+        if self._deterministic:
+            g = torch.Generator()
+            g.manual_seed(self._seed)
+            worker_init_fn = lambda worker_id: np.random.seed(self._seed)
             return {'worker_init_fn': worker_init_fn, 'generator': g}
         return {}
 
@@ -259,8 +259,8 @@ class TrainingPytorch:
         out_train = list()
         out_valid = list()
 
-        params = self.preperation_for_deterministic_training(self._seed)
-        print(params)
+        params = self.get_dataloader_params()
+
         if self._do_kfold:
 
             kfold = KFold(n_splits=self.settings.num_kfold, shuffle=self._do_shuffle)
@@ -273,7 +273,6 @@ class TrainingPytorch:
                 self._samples_train.append(subsamps_train.indices.size)
                 self._samples_valid.append(subsamps_valid.indices.size)
         else:
-            print(params)
             idx = np.arange(len(data_set))
             if self._do_shuffle:
                 np.random.shuffle(idx)
@@ -333,7 +332,7 @@ class TrainingPytorch:
             txt_handler.write('\n')
             txt_handler.write(f'Used Optimizer: {self.settings.optimizer}\n')
             txt_handler.write(f'Used Loss Function: {self.settings.loss}\n')
-            txt_handler.write(f'Deterministic Training: {self.settings.train_do_deterministic}\n')
+            txt_handler.write(f'Deterministic Training: {self.settings.deterministic_training}\n')
             txt_handler.write(f'Seed: {self._seed}\n')
             txt_handler.write(f'Batchsize: {self.settings.batch_size}\n')
             txt_handler.write(f'Num. of epochs: {self.settings.num_epochs}\n')

@@ -13,8 +13,8 @@ config_data = ConfigDataset(
     data_file_name='2024-02-05_Dataset-KlaesNeuralDecoding.npy',
 
     # --- Data Augmentation
-    data_do_augmentation=True,
-    data_num_augmentation=1000,
+    data_do_augmentation=False,
+    data_num_augmentation=0,
     data_do_addnoise_cluster=False,
     # --- Data Normalization
     data_do_normalization=False,
@@ -23,7 +23,7 @@ config_data = ConfigDataset(
     data_normalization_setting='bipolar',
     # --- Dataset Reduction
     data_do_reduce_samples_per_cluster=False,
-    data_num_samples_per_cluster=50_000,
+    data_num_samples_per_cluster= 0,
     data_exclude_cluster=[],
     data_sel_pos=[]
 )
@@ -31,16 +31,17 @@ config_data = ConfigDataset(
 ConfigTrain = ConfigPyTorch(
     # --- Settings of Models/Training
     model=models_decoding.test_model_if_pipeline_running(1, 12, 3),
+    #model=models_decoding.cnn_lstm_dec_v3(1, 12, 3),
     loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
-    num_kfold=5,
-    num_epochs=10,
+    num_kfold=1,
+    num_epochs=100,
     batch_size=256,
     data_split_ratio=0.25,
-    data_do_shuffle=True,
-    train_do_deterministic=True,
-    seed = 42
+    data_do_shuffle=False   ,
+    deterministic_training=False,
+    seed = 133
 )
 
 
@@ -70,6 +71,7 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
     num_output = len(data_deci_label)
 
     trainhandler = TrainHandlerLstm(ConfigTrain, config_data)
+    trainhandler.preperation_for_training()
     trainhandler.load_model()
     trainhandler.load_data(dataset)
     del dataset
@@ -88,6 +90,6 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir,
                             cl_dict=data_deci_label)
 
-        plt.show(block=dnn_handler.do_block)
+        #plt.show(block=dnn_handler.do_block)
 
     print("\nThe End")
