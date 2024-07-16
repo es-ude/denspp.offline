@@ -52,20 +52,20 @@ def do_train_rgc_ae_cl(dnn_handler: dnn_handler,
         loss_fn=nn.MSELoss(),
         optimizer='Adam',
         num_kfold=1,
-        num_epochs=10,
-        batch_size=256,
+        num_epochs=100,
+        batch_size=1024,
         data_split_ratio=0.25,
         data_do_shuffle=True
     )
     config_train_cl = Config_PyTorch(
         # --- Settings of Models/Training
-        model=models.rgc_ae_cl_v1(num_feature_layer, num_output),
+        model=models.rgc_ae_cl_v2(num_feature_layer, num_output),
         loss='Cross Entropy',
         loss_fn=nn.CrossEntropyLoss(),
         optimizer='Adam',
         num_kfold=1,
-        num_epochs=10,
-        batch_size=256,
+        num_epochs=100,
+        batch_size=1024,
         data_split_ratio=0.25,
         data_do_shuffle=True
     )

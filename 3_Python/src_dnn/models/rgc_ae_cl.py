@@ -24,17 +24,17 @@ class cnn_rgc_ae_v1(nn.Module):
             nn.Conv1d(kernel_layer[0], kernel_layer[1], kernel_size[0],
                       stride=kernel_stride[0], padding=kernel_padding[0]),
             nn.BatchNorm1d(kernel_layer[1], affine=do_bias_train),
-            nn.Tanh(),
+            nn.SiLU(),
             nn.AvgPool1d(kernel_pool_size[0], kernel_pool_stride[0]),
             nn.Conv1d(kernel_layer[1], kernel_layer[2], kernel_size[1],
                       stride=kernel_stride[1], padding=kernel_padding[1]),
             nn.BatchNorm1d(kernel_layer[2], affine=do_bias_train),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.AvgPool1d(kernel_pool_size[1], kernel_pool_stride[1]),
             nn.Conv1d(kernel_layer[2], kernel_layer[3], kernel_size[2],
                       stride=kernel_stride[2], padding=kernel_padding[2]),
             nn.BatchNorm1d(kernel_layer[3], affine=do_bias_train),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.AvgPool1d(kernel_pool_size[2], kernel_pool_stride[2]),
             nn.Flatten()
         )
@@ -42,25 +42,66 @@ class cnn_rgc_ae_v1(nn.Module):
         self.decoder = nn.Sequential(
             nn.Linear(fcnn_layer[0], fcnn_layer[1], bias=do_bias_train),
             nn.BatchNorm1d(fcnn_layer[1], affine=do_bias_train),
-            nn.Tanh(),
+            nn.SiLU(),
             nn.Linear(fcnn_layer[1], fcnn_layer[2], bias=do_bias_train),
             nn.BatchNorm1d(fcnn_layer[2], affine=do_bias_train),
-            nn.Tanh(),
+            nn.SiLU(),
             nn.Linear(fcnn_layer[2], fcnn_layer[3], bias=do_bias_train),
             nn.BatchNorm1d(fcnn_layer[3], affine=do_bias_train),
-            nn.Tanh(),
+            nn.SiLU(),
             nn.Linear(fcnn_layer[3], fcnn_layer[4], bias=do_bias_train),
             nn.BatchNorm1d(fcnn_layer[4], affine=do_bias_train),
-            nn.Tanh(),
+            nn.SiLU(),
             nn.Linear(fcnn_layer[4], fcnn_layer[5], bias=do_bias_train)
         )
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
         x0 = unsqueeze(x, dim=1)
-        print("types", x0.type(), x.type())
         encoded = self.encoder(x0)
         decoded = self.decoder(encoded)
         return encoded, decoded
+
+class rgc_ae_cl_v2(nn.Module):
+    """Classification model"""
+    def __init__(self, input_size=6, output_size=4):
+        super().__init__()
+        self.out_modelname = 'rgc_class_v2'
+        self.out_modeltyp = 'Classification'
+        self.model_shape = (1, input_size)
+        self.model_embedded = False
+        lin_size = [input_size, 64, 72, 58, 36, 24, output_size]
+        lin_drop = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        do_train_bias = True
+
+        self.classifier = nn.Sequential(
+            nn.Dropout(0.0),
+            nn.Linear(lin_size[0], lin_size[1], bias=do_train_bias),
+            nn.BatchNorm1d(lin_size[1], affine=do_train_bias),
+            nn.Tanh(),
+            nn.Dropout(lin_drop[0]),
+            nn.Linear(lin_size[1], lin_size[2], bias=do_train_bias),
+            nn.BatchNorm1d(lin_size[2], affine=do_train_bias),
+            nn.Tanh(),
+            nn.Dropout(lin_drop[1]),
+            nn.Linear(lin_size[2], lin_size[3], bias=do_train_bias),
+            nn.BatchNorm1d(lin_size[3], affine=do_train_bias),
+            nn.ReLU(),
+            nn.Dropout(lin_drop[2]),
+            nn.Linear(lin_size[3], lin_size[4], bias=do_train_bias),
+            nn.BatchNorm1d(lin_size[4], affine=do_train_bias),
+            nn.ReLU(),
+            nn.Dropout(lin_drop[3]),
+            nn.Linear(lin_size[4], lin_size[5], bias=do_train_bias),
+            nn.BatchNorm1d(lin_size[5], affine=do_train_bias),
+            nn.ReLU(),
+            nn.Dropout(lin_drop[4]),
+            nn.Linear(lin_size[5], lin_size[6], bias=do_train_bias),
+            nn.BatchNorm1d(lin_size[6], affine=do_train_bias),
+        )
+
+    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+        val = self.classifier(x)
+        return val, argmax(val, dim=1)
 
 
 class rgc_ae_cl_v1(nn.Module):
@@ -79,11 +120,11 @@ class rgc_ae_cl_v1(nn.Module):
             nn.Dropout(0.0),
             nn.Linear(lin_size[0], lin_size[1]),
             nn.BatchNorm1d(lin_size[1], affine=do_train_bias),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Dropout(lin_drop[0]),
             nn.Linear(lin_size[1], lin_size[2]),
             nn.BatchNorm1d(lin_size[2], affine=do_train_bias),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Dropout(lin_drop[1]),
             nn.Linear(lin_size[2], lin_size[3]),
             nn.BatchNorm1d(lin_size[3], affine=do_train_bias),
