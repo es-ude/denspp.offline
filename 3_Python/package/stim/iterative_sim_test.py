@@ -35,14 +35,12 @@ f_rep = t_rep.frequency
 f_sine = t_sine.frequency
 f_pulse = t_pulse.frequency
 t_rest = 0
-n_rep = 5
-
-cdl_offset = 0
+n_rep = 20
 
 # --waveform generator--
 if not float(t_rest):
-    time_points       = [0,              float(t_sine) *3/4]
-    time_duration     = [float(t_sine),  float(t_rep - t_sine)]
+    time_points       = [0,              float(t_sine)        ]
+    time_duration     = [float(t_sine), float(t_rep - t_sine)]
     time_wfg          = [5,              13]
     polarity_cathodic = [True,           False]
 else:
@@ -51,14 +49,12 @@ else:
     time_wfg          = [3,              13,             3,                       13                                  ]
     polarity_cathodic = [True,           False,          False,                   False]
 
-# print(int(t_rep/t_samp_wfg))
+# print(int(t_rep/t_samp))
 wfg = WaveformGenerator(float(f_samp_wfg))
 t, waveform = wfg.generate_waveform(time_points, time_duration, time_wfg, polarity_cathodic)
-# t = t[0:int(t_rep/t_samp_wfg)]
+# t = t[0:int(t_rep/t_samp)]
 # waveform = waveform[0:int(t_rep/t_samp_wfg)]
 # waveform[0] = 0
-
-# print(t.size)
 
 # prev = 0
 # for i in range(len(t)-1): # time steps are variable during sim
@@ -67,16 +63,14 @@ t, waveform = wfg.generate_waveform(time_points, time_duration, time_wfg, polari
 #         prev = curr
 #         print(i, ': ', curr)
 
-# print(waveform[int(0.001*f_samp_wfg)])
-
-# --check waveform--
-plt.figure()
-plt.plot(t, waveform, 'k')
-plt.xlabel("Time t / s")
-plt.ylabel("Signal y(t)")
-plt.grid()
-plt.tight_layout()
-plt.show()
+# # --check waveform--
+# plt.figure()
+# plt.plot(t, waveform, 'k')
+# plt.xlabel("Time t / s")
+# plt.ylabel("Signal y(t)")
+# plt.grid()
+# plt.tight_layout()
+# plt.show()
 
 # --current stimulator--
 class SinePulseStimulator(NgSpiceShared):
@@ -112,43 +106,55 @@ circuit.Cdl.plus.add_current_probe(circuit)
 
 # print(str(circuit))
 
-# --simulation--
+# --create simulator--
 sine_stim = SinePulseStimulator(waveform=waveform, amplitude=i_amp, 
                                 f_samp_wfg=f_samp_wfg, send_data=False)
 simulator = circuit.simulator(temperature=25, nominal_temperature=25, 
                               simulator='ngspice-shared', ngspice_shared=sine_stim)
-# initial condition for "floating" capacitor (no parallel resistor)
-simulator.initial_condition(point=v_cm + cdl_offset)
+
+# --one-off simulation--
+simulator.initial_condition(point=v_cm)
 analysis = simulator.transient(step_time=t_samp, end_time=t_rep*n_rep)
 
-# print(analysis.time.as_ndarray()[:20]) # repeated zeros at first few time points
+# print(analysis.time.as_ndarray()[:20])
 # print(analysis.vistim_plus.as_ndarray()[:20])
 
-# print(float(t_rep)*n_rep)
-# print(analysis.vrfar_plus[0]) # init value is non-zero at non-zero init conditions
-# print(analysis.vcdl_plus[0]) # init value is zero at non-zero init conditions
-# print(analysis.point[0]) # init value is not exact to init condition set by user, might mean time has elapsed
-# print(analysis.out_n[0])
-# print(len(analysis.time)) # 100008 samples
-# prev = 0
-# for i in range(len(analysis.time)-1): # time steps are variable during sim
-#     curr = analysis.time[i+1] - analysis.time[i]
-#     if curr != prev:
-#         prev = curr
-#         print(i, ': ', curr)
-# print(analysis.time.as_ndarray()[-1])
-# print(analysis.time.as_ndarray())
-# print(analysis.time.as_ndarray()[-1] - analysis.time.as_ndarray()[-2])
-# print(analysis.time.as_ndarray()[1] - analysis.time.as_ndarray()[0])
-# print(f_samp)
+# --iterative simulation--
+start_time = 0@u_s
+prev_v_point = v_cm
+time = []
+i_in = []
+i_cdl = []
+i_rfar = []
+v_out = []
+v_cdl = []
+v_rtis = []
 
-# print(analysis.vrload_plus.as_ndarray())
+for rep in range(n_rep):
+    print(rep)
+    simulator.initial_condition(point=prev_v_point)
+    analysis_i = simulator.transient(step_time=t_samp, end_time=t_rep)
+    time = np.concatenate((time, analysis_i.time + start_time))
+    i_in = np.concatenate((i_in, analysis_i.vistim_plus))
+    i_cdl = np.concatenate((i_cdl, analysis_i.vcdl_plus))
+    i_rfar = np.concatenate((i_rfar, analysis_i.vrfar_plus))
+    v_out = np.concatenate((v_out, analysis_i.out_p - analysis_i.out_n))
+    v_cdl = np.concatenate((v_cdl, analysis_i.point - analysis_i.out_n))
+    v_rtis = np.concatenate((v_rtis, analysis_i.out_p - analysis_i.point))    
+    start_time += analysis_i.time[-1]
+    prev_v_point = analysis_i.point[-1]
 
-# # --check if waveform is charge-balanced--
-# print('waveform_generator:')
-# wfg.check_charge_balancing(waveform)
-# print('current source created:')
-# wfg.check_charge_balancing(analysis.vistim_plus.as_ndarray())
+# # --check time--
+# print(len(time))
+# plt.figure()
+# plt.plot(time, 'k')
+# plt.grid()
+# plt.tight_layout()
+# plt.show()
+
+# --comparison--
+print(len(analysis.time), len(time))
+print(analysis.out_p[-1] - analysis.out_n[-1] - v_out[-1])
 
 # # --graph plotting--
 # figure1, [ax1, ax2] = plt.subplots(2, 1)
@@ -169,23 +175,27 @@ analysis = simulator.transient(step_time=t_samp, end_time=t_rep*n_rep)
 # ax2.plot(analysis.time, analysis.point - analysis.out_n, label=r'$V_{Cdl}(t)$')
 # ax2.plot(analysis.time, analysis.out_p - analysis.point, label=r'$V_{Rtis}(t)$')
 # ax2.legend()
+# plt.tight_layout()
 
-# # charge = integrate.cumulative_trapezoid(analysis.vcdl_plus, analysis.time, initial=0)
+# figure2, [ax1, ax2] = plt.subplots(2, 1)
+# ax1.set_title('Currents')
+# ax1.set_xlabel('Time [s]')
+# ax1.set_ylabel('Current [A]')
+# ax1.grid()
+# ax1.plot(time, i_in, label=r'$I_{in}(t)$')
+# ax1.plot(time, i_rfar, label=r'$I_{Rfar}(t)$')
+# ax1.plot(time, i_cdl, label=r'$I_{Cdl}(t)$')
+# ax1.legend()
 
-# # ax3.set_title('Injected Charge')
-# # ax3.set_xlabel('Time [s]')
-# # ax3.set_ylabel('Charge [C]')
-# # ax3.grid()
-# # ax3.plot(analysis.time, charge)
-
-# # ax.plot(analysis.time, analysis.out_p - analysis.out_n)
-# # ax.plot(analysis.time, analysis.vistim_plus)
-# # ax.plot(analysis.time[0:4000], analysis.vistim_plus.as_ndarray()[0:4000] - waveform * float(i_amp))
-# # ax.plot(analysis.time, analysis.point - analysis.out_n)
-# # for node in analysis.branches.values():
-# #     ax.plot(analysis.time, node)
+# ax2.set_title('Voltages')
+# ax2.set_xlabel('Time [s]')
+# ax2.set_ylabel('Voltage [V]')
+# ax2.grid()
+# ax2.plot(time, v_out, label=r'$V_{out}(t)$')
+# ax2.plot(time, v_cdl, label=r'$V_{Cdl}(t)$')
+# ax2.plot(time, v_rtis, label=r'$V_{Rtis}(t)$')
+# ax2.legend()
 
 # plt.tight_layout()
 # plt.show()
-
 
