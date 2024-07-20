@@ -133,8 +133,8 @@ class train_nn(training_pytorch):
         # --- Do the Inference with Best Model
         print(f"\nDoing the inference with validation data on best model")
         model_inference = load(self.get_best_model('class')[0])
-        yclus = model_inference(from_numpy(data_valid['in']))[1]
-        yclus = yclus.detach().numpy()
+        yclus = model_inference(from_numpy(data_valid['in']).to(self.used_hw_dev))[1]
+        yclus = yclus.detach().cpu().numpy()
 
         # --- Producing the output
         output = dict()
