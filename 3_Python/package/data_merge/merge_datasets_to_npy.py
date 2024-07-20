@@ -140,11 +140,11 @@ class DataCompressor:
         np.save(self.get_Path("timestamps"), valid_timestamps)
         np.save(self.get_Path("positions"), valid_positions)
         print(len(valid_timestamps))
-        self.print_bad_waveforms()
+        #self.print_bad_waveforms()
 
 
 trialONE = DataCompressor()
 trialONE.format_data()
 data = np.load(trialONE.get_Path("waveforms"))
 t = np.load(trialONE.get_Path("timestamps"))
-pos =np.load(trialONE.get_Path("positions"))
+pos = np.load(trialONE.get_Path("positions"))

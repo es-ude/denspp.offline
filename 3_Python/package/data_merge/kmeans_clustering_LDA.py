@@ -22,7 +22,7 @@ new_array = data[random_indices]
 data = new_array
 
 scaler = StandardScaler()
-data_normalized = scaler.fit_transform(data)
+#data_normalized = scaler.fit_transform(data)
 
 # 2. Optimale Anzahl von Clustern bestimmen (hier Elbow Method)
 def find_optimal_clusters(data, max_k):
