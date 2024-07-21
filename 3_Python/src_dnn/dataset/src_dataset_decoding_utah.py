@@ -44,7 +44,7 @@ class DecoderDataset(Dataset):  #ToDo: Check if inheritance is necessary
 
 def preprocess_dataset(settings: ConfigDataset,
                        length_time_window_ms=500,
-                       use_cluster=False,
+                       use_cluster=True,
                        ) -> DecoderDataset:
     """Preparing dataset incl. add time-window feature and counting dataset"""
     data_raw = load_dataset(settings)
@@ -112,7 +112,7 @@ def create_feature_dataset(data_raw, length_time_window_ms, max_overall_timestam
     dataset_waveform = list()
     num_ite_skipped = 0
 
-    exp_samplingrate = data_raw['exp_000']['trial_000']['samplingrate']
+    exp_samplingrate_in_hertz = data_raw['exp_000']['trial_000']['samplingrate']
     for _, data_exp in data_raw.items():
 
         for key, data_trial in data_exp.items():
@@ -122,7 +122,7 @@ def create_feature_dataset(data_raw, length_time_window_ms, max_overall_timestam
 
                 timestamp_stream = __determine_firing_rate(timestamps,
                                                            cluster_per_trial,
-                                                           exp_samplingrate,
+                                                           exp_samplingrate_in_hertz,
                                                            length_time_window_ms,
                                                            use_cluster,
                                                            max_overall_timestamp
@@ -138,7 +138,7 @@ def create_feature_dataset(data_raw, length_time_window_ms, max_overall_timestam
 
 def __generate_stream_empty_array(timestamps: list, cluster: list,
                                   samples_time_window: int,
-                                  use_cluster=False,
+                                  use_cluster=True,
                                   output_size=0) -> np.ndarray:
     """Generating an empty array of the transient array of all electrodes Args: timestamps: Lists with all timestamps
     of each electrode (iteration over electrode) cluster: Lists with all corresponding cluster unit of each timestamp
@@ -159,42 +159,45 @@ def __generate_stream_empty_array(timestamps: list, cluster: list,
     return np.zeros((len(timestamps), num_clusters.max() if use_cluster else 1, num_windows), dtype=np.uint16)
 
 
-def __determine_firing_rate(timestamps: list, cluster: list, exp_samplingrate, length_time_window_ms,
+def __determine_firing_rate(timestamps: list, cluster: list, exp_samplingrate_in_hertz, length_time_window_ms,
                             use_cluster=False, output_size=0) -> np.ndarray:
     """Pre-Processing Method: Calculating the firing rate for specific
     Args:
         timestamps: Lists with all timestamps of each electrode (iteration over electrode)
         cluster: Lists with all corresponding cluster unit of each timestamp
-        samples_time_window: Size of the window for determining features
+        samples_per_time_window: Size of the window for determining features
         use_cluster: Decision of cluster information will be used
         output_size: Determined the output array with a given length
     Return:
         Numpy array with windowed number of detected events for training neural decoding [num. electrodes x num. clusters x num. windows]
     """
-    samples_time_window = int(1e-3 * exp_samplingrate * length_time_window_ms)
-    data_stream0 = __generate_stream_empty_array(timestamps, cluster, samples_time_window, use_cluster, output_size)
-    for idx, ch_event in enumerate(timestamps):
-        if len(ch_event) == 0:
+    samples_per_time_window = int(1e-3 * exp_samplingrate_in_hertz * length_time_window_ms)
+
+    data_stream0 = __generate_stream_empty_array(timestamps, cluster, samples_per_time_window, use_cluster, output_size)
+
+    for electrode, timestamps_of_spiketiks_per_electrode in enumerate(timestamps):
+        if len(timestamps_of_spiketiks_per_electrode) == 0:
             # Skip due to empty electrode events
             continue
         else:
             # "Slicing" the timestamps of choice electrode
-            ch_event0 = np.array(ch_event)
+            np_timestamp_of_spiketiks_per_electrode = np.array(timestamps_of_spiketiks_per_electrode)
 
             if use_cluster:
-                ch_cluster = np.array(cluster[idx])
-                for cluster_num in np.unique(ch_cluster):
-                    sel_event0 = np.argwhere(ch_cluster == cluster_num).flatten()
-                    event_ch0 = np.array(np.floor(ch_event0[sel_event0] / samples_time_window), dtype=int)
+                all_cluster_of_selected_electrode = np.array(cluster[electrode])
+                for cluster_num in np.unique(all_cluster_of_selected_electrode):
+                    indices_of_selected_cluster_in_all_cluster_per_electrode = np.argwhere(all_cluster_of_selected_electrode == cluster_num).flatten()
+
+                    event_ch0 = np.array(np.floor(np_timestamp_of_spiketiks_per_electrode[indices_of_selected_cluster_in_all_cluster_per_electrode] / samples_per_time_window), dtype=int)
 
                     event_val = np.unique(event_ch0, return_counts=True)
                     for idy, pos in enumerate(event_val[0]):
-                        data_stream0[idx, cluster_num, pos] += event_val[1][idy]
+                        data_stream0[electrode, cluster_num, pos] += event_val[1][idy]
             else:
-                event_ch0 = np.array(np.floor(ch_event0 / samples_time_window), dtype=int)
+                event_ch0 = np.array(np.floor(np_timestamp_of_spiketiks_per_electrode / samples_per_time_window), dtype=int)
                 event_val = np.unique(event_ch0, return_counts=True)
                 for idy, pos in enumerate(event_val[0]):
-                    data_stream0[idx, 0, pos] += event_val[1][idy]
+                    data_stream0[electrode, 0, pos] += event_val[1][idy]
     return data_stream0
 
 

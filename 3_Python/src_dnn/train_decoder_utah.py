@@ -10,7 +10,7 @@ config_data = ConfigDataset(
     # --- Settings of Datasets
     #TODO make path not hardcoded, get filename from os
     #data_path=r'C:\Users\jo-di\PycharmProjects\git\3_Python\data',  # Ubuntu
-    data_path='C:\\spaikeDenSppDataset',
+    data_path=r'C:\Users\Haris\Git\CpsProjekt\denspp.offline\3_Python\data',
     data_file_name='2024-02-05_Dataset-KlaesNeuralDecoding.npy',
 
     # --- Data Augmentation
@@ -67,7 +67,7 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
     print("\n\t Train modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
 
     # --- Processing: Loading Data
-    dataset = preprocess_dataset(config_data, length_window_ms)
+    dataset = preprocess_dataset(config_data, length_window_ms, use_cluster=False)
     data_deci_label = dataset.lable_dict
     num_output = len(data_deci_label)
 
