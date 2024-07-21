@@ -11,8 +11,8 @@ config_data = ConfigDataset(
     #TODO make path not hardcoded, get filename from os
     #data_path=r'C:\Users\jo-di\PycharmProjects\git\3_Python\data',  # Jo
     #data_path=r'C:\Users\Haris\Git\CpsProjekt\denspp.offline\3_Python\data', # Haris
-    #data_path=r'C:\spaikeDenSppDataset', # Jannik
     data_path=r'C:\spaikeDenSppDataset', # Jannik
+    #data_path='/home/muskel/Documents/cpsDEC/data',  # Jannik - Ubuntu
 
     data_file_name='2024-02-05_Dataset-KlaesNeuralDecoding.npy',
 
