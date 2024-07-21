@@ -83,7 +83,7 @@ def load_dataset(settings):
         f"\n\n=== Executing function --> {funcName} in file --> {shortened_path} === ")
     print("\n\t loading and preprocessing the dataset")
 
-    # Construct the full path
+    # Construct the full path of the dataset
     full_path = settings.get_path2data()
     if not os.path.exists(full_path):
         print("\n File Path not right")

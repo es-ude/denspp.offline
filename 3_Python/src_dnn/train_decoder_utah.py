@@ -8,8 +8,9 @@ from pathlib import Path
 
 config_data = ConfigDataset(
     # --- Settings of Datasets
-    data_path='/home/muskel/Documents/cpsDEC/data',  # Ubuntu
-    #data_path='C:\\spaikeDenSppDataset',
+    #TODO make path not hardcoded, get filename from os
+    data_path=r'C:\Users\jo-di\PycharmProjects\git\3_Python\data',  # Ubuntu
+    # data_path='C:\\spaikeDenSppDataset',
     data_file_name='2024-02-05_Dataset-KlaesNeuralDecoding.npy',
 
     # --- Data Augmentation
@@ -23,7 +24,7 @@ config_data = ConfigDataset(
     data_normalization_setting='bipolar',
     # --- Dataset Reduction
     data_do_reduce_samples_per_cluster=False,
-    data_num_samples_per_cluster= 0,
+    data_num_samples_per_cluster=0,
     data_exclude_cluster=[],
     data_sel_pos=[]
 )
@@ -39,9 +40,9 @@ ConfigTrain = ConfigPyTorch(
     num_epochs=100,
     batch_size=256,
     data_split_ratio=0.25,
-    data_do_shuffle=False   ,
+    data_do_shuffle=False,
     deterministic_training=False,
-    seed = 133
+    seed=133
 )
 
 
