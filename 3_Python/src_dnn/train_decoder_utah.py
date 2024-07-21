@@ -41,7 +41,7 @@ ConfigTrain = ConfigPyTorch(
     batch_size=256,
     data_split_ratio=0.25,
     data_do_shuffle=False,
-    deterministic_training=False,
+    deterministic_training=True,
     seed=133
 )
 
