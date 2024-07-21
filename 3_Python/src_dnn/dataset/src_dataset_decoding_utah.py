@@ -74,13 +74,14 @@ def preprocess_dataset(settings: ConfigDataset,
     return DecoderDataset(dataset_spike_train=dataset_spike_train, decision=dataset_decision,
                           label_dict=label_dict, use_patient_dec=True)
 
+
 def load_dataset(settings):
     base_path = Path(__file__).parents[2]
-    funcName = load_dataset.__name__
+    func_name = load_dataset.__name__
     # Pfad ab dem Ordner "3_Python" extrahieren
     shortened_path = Path(__file__).relative_to(base_path)
     print(
-        f"\n\n=== Executing function --> {funcName} in file --> {shortened_path} === ")
+        f"\n\n=== Executing function --> {func_name} in file --> {shortened_path} === ")
     print("\n\t loading and preprocessing the dataset")
 
     # Construct the full path of the dataset
@@ -159,7 +160,7 @@ def __generate_stream_empty_array(timestamps: list, cluster: list,
     return np.zeros((len(timestamps), num_clusters.max() if use_cluster else 1, num_windows), dtype=np.uint16)
 
 
-def __determine_firing_rate(timestamps: list, cluster: list, exp_samplingrate_in_hertz, length_time_window_ms,
+def __determine_firing_rate(timestamps: list, cluster: list, exp_sampling_rate_in_hertz, length_time_window_ms,
                             use_cluster=False, output_size=0) -> np.ndarray:
     """Pre-Processing Method: Calculating the firing rate for specific
     Args:
@@ -172,9 +173,9 @@ def __determine_firing_rate(timestamps: list, cluster: list, exp_samplingrate_in
     Return:
         Numpy array with windowed number of detected events for training neural decoding [num. electrodes x num. clusters x num. windows]
     """
-    samples_per_time_window = int(1e-3 * exp_samplingrate_in_hertz * length_time_window_ms)
+    samples_per_time_window: int = int(1e-3 * exp_sampling_rate_in_hertz * length_time_window_ms)
 
-    data_stream0 = __generate_stream_empty_array(timestamps, cluster, samples_per_time_window, use_cluster, output_size)
+    cluster_occurrency_per_timewindow = __generate_stream_empty_array(timestamps, cluster, samples_per_time_window, use_cluster, output_size)
 
     for electrode, timestamps_of_spiketiks_per_electrode in enumerate(timestamps):
         if len(timestamps_of_spiketiks_per_electrode) == 0:
@@ -182,31 +183,35 @@ def __determine_firing_rate(timestamps: list, cluster: list, exp_samplingrate_in
             continue
         else:
             # "Slicing" the timestamps of choice electrode
-            np_timestamp_of_spiketiks_per_electrode = np.array(timestamps_of_spiketiks_per_electrode)
+            np_timestamps_of_spiketiks_per_electrode = np.array(timestamps_of_spiketiks_per_electrode)
 
             if use_cluster:
                 all_cluster_of_selected_electrode = np.array(cluster[electrode])
                 for cluster_num in np.unique(all_cluster_of_selected_electrode):
-                    indices_of_selected_cluster_in_all_cluster_per_electrode = np.argwhere(all_cluster_of_selected_electrode == cluster_num).flatten()
+                    indices_of_selected_cluster_in_all_cluster_per_electrode = np.argwhere(
+                        all_cluster_of_selected_electrode == cluster_num).flatten()
 
-                    no_timewindows_of_cluster = np.array(np.floor(np_timestamp_of_spiketiks_per_electrode[indices_of_selected_cluster_in_all_cluster_per_electrode] / samples_per_time_window), dtype=int)
+                    no_timewindows_of_selected_cluster_in_electrode = np.array(np.floor(np_timestamps_of_spiketiks_per_electrode[indices_of_selected_cluster_in_all_cluster_per_electrode] / samples_per_time_window),dtype=int)
 
-                    event_val = np.unique(no_timewindows_of_cluster, return_counts=True)
-                    for idy, pos in enumerate(event_val[0]):
-                        data_stream0[electrode, cluster_num, pos] += event_val[1][idy]
+                    time_windows_with_cluster_and_occurrences = np.unique(no_timewindows_of_selected_cluster_in_electrode, return_counts=True)
+                    for i, time_window in enumerate(time_windows_with_cluster_and_occurrences[0]):
+                        cluster_occurrency_per_timewindow[electrode, cluster_num, time_window] += time_windows_with_cluster_and_occurrences[1][i]
+                        # schreibt in cluster_occurrency_per_timewindow für jede electrode die Anzahl der Cluster in die Zeitfenstern (22 Zeitfenster,
+                        # 2 cluster, Wert im Array ist die häufigkeit des Clusters in diesem Zeitfenster)
             else:
-                no_timewindows_of_cluster = np.array(np.floor(np_timestamp_of_spiketiks_per_electrode / samples_per_time_window), dtype=int)
-                event_val = np.unique(no_timewindows_of_cluster, return_counts=True)
-                for idy, pos in enumerate(event_val[0]):
-                    data_stream0[electrode, 0, pos] += event_val[1][idy]
-    return data_stream0
+                no_timewindows_of_selected_cluster_in_electrode = np.array(
+                    np.floor(np_timestamps_of_spiketiks_per_electrode / samples_per_time_window), dtype=int)
+                time_windows_with_cluster_and_occurrences = np.unique(no_timewindows_of_selected_cluster_in_electrode, return_counts=True)
+                for i, time_window in enumerate(time_windows_with_cluster_and_occurrences[0]):
+                    cluster_occurrency_per_timewindow[electrode, 0, time_window] += time_windows_with_cluster_and_occurrences[1][i]
+    return cluster_occurrency_per_timewindow
 
 
 def add_electrode_2Dmapping_to_dataset(data_raw, dataset_timestamps, dataset_waveform):
     # exp_000 is enough because it´s the same for every experiment
     electrode_mapping = data_raw['exp_000']['orientation']
     dataset_timestamps0 = translate_ts_datastream_into_picture(dataset_timestamps, electrode_mapping)
-    #dataset_waveform0 = translate_wf_datastream_into_picture(dataset_waveform, electrode_mapping)  #ToDo:
+    # dataset_waveform0 = translate_wf_datastream_into_picture(dataset_waveform, electrode_mapping)  #ToDo:
     return dataset_timestamps0
 
 
@@ -221,7 +226,7 @@ def translate_ts_datastream_into_picture(data_raw: list, configuration: dict) ->
                 picture_data_point = np.zeros((data.shape[0], 10, 10, data.shape[1]), dtype=np.uint16)
 
             for label in labels:
-                if f"elec{electID + 1}" == label: # elec bezieht sich auf den Datensatz nicht ändern!!
+                if f"elec{electID + 1}" == label:  # elec bezieht sich auf den Datensatz nicht ändern!!
                     row = configuration['row'][95 - electID]
                     col = configuration['col'][95 - electID]
                     picture_data_point[:, col, row, :] = data
