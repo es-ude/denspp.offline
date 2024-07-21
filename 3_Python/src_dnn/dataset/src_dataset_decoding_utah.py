@@ -163,7 +163,8 @@ def __determine_firing_rate(timestamps: list, cluster: list, exp_samplingrate_in
                             use_cluster=False, output_size=0) -> np.ndarray:
     """Pre-Processing Method: Calculating the firing rate for specific
     Args:
-        timestamps: Lists with all timestamps of each electrode (iteration over electrode)
+        timestamps: Lists with all timestamps of each electrode (iteration over electrode).
+            a timestamp is the no of the sample where the spike was detected
         cluster: Lists with all corresponding cluster unit of each timestamp
         samples_per_time_window: Size of the window for determining features
         use_cluster: Decision of cluster information will be used
@@ -188,14 +189,14 @@ def __determine_firing_rate(timestamps: list, cluster: list, exp_samplingrate_in
                 for cluster_num in np.unique(all_cluster_of_selected_electrode):
                     indices_of_selected_cluster_in_all_cluster_per_electrode = np.argwhere(all_cluster_of_selected_electrode == cluster_num).flatten()
 
-                    event_ch0 = np.array(np.floor(np_timestamp_of_spiketiks_per_electrode[indices_of_selected_cluster_in_all_cluster_per_electrode] / samples_per_time_window), dtype=int)
+                    no_timewindows_of_cluster = np.array(np.floor(np_timestamp_of_spiketiks_per_electrode[indices_of_selected_cluster_in_all_cluster_per_electrode] / samples_per_time_window), dtype=int)
 
-                    event_val = np.unique(event_ch0, return_counts=True)
+                    event_val = np.unique(no_timewindows_of_cluster, return_counts=True)
                     for idy, pos in enumerate(event_val[0]):
                         data_stream0[electrode, cluster_num, pos] += event_val[1][idy]
             else:
-                event_ch0 = np.array(np.floor(np_timestamp_of_spiketiks_per_electrode / samples_per_time_window), dtype=int)
-                event_val = np.unique(event_ch0, return_counts=True)
+                no_timewindows_of_cluster = np.array(np.floor(np_timestamp_of_spiketiks_per_electrode / samples_per_time_window), dtype=int)
+                event_val = np.unique(no_timewindows_of_cluster, return_counts=True)
                 for idy, pos in enumerate(event_val[0]):
                     data_stream0[electrode, 0, pos] += event_val[1][idy]
     return data_stream0
