@@ -217,7 +217,7 @@ def translate_ts_datastream_into_picture(data_raw: list, configuration: dict) ->
                 picture_data_point = np.zeros((data.shape[0], 10, 10, data.shape[1]), dtype=np.uint16)
 
             for label in labels:
-                if f"elect{electID + 1}" == label:
+                if f"elec{electID + 1}" == label:
                     row = configuration['row'][95 - electID]
                     col = configuration['col'][95 - electID]
                     picture_data_point[:, col, row, :] = data
