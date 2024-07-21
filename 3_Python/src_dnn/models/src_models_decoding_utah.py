@@ -1,14 +1,18 @@
 from torch import nn, Tensor, argmax
 import torch
 
-class cnn_lstm_dec_v3(nn.Module):
+
+
+
+
+class cnn_lstm_dec_v4(nn.Module):
     """Class of a convolutional Decoding for feature extraction"""
-    def __init__(self, num_clusters=1, input_samples=12, output_samples=3):
+    def __init__(self, num_clusters, timewindows_per_experiment, output_samples=3):
         super().__init__()
         self.out_modelname = 'cnn_lstm_dec_v3'
         self.out_modeltyp = 'Decoder'
         self.model_embedded = False
-        self.model_shape = (1, num_clusters, 10, 10, input_samples)
+        self.model_shape = (1, num_clusters, 10, 10, timewindows_per_experiment)
         do_bias_train = True
 
         kernel_layer = [num_clusters, 100, 50]
@@ -57,22 +61,22 @@ class cnn_lstm_dec_v3(nn.Module):
         self.lstm = nn.LSTM(
             input_size=1800,  # Adjust based on the output size from CNN
             hidden_size=1000,          # Example hidden size, adjust as needed
-            num_layers=input_samples,            # Example number of LSTM layers, adjust as needed
+            num_layers=timewindows_per_experiment,            # Example number of LSTM layers, adjust as needed
             batch_first=True         # Input and output tensors are provided as (batch, seq, feature)
         )
 
     def forward(self, x):
-        batch_size, num_clusters, height, width, num_time_windows = x.shape
+        batch_size, num_clusters, height, width, timewindows_per_experiment = x.shape
         video = []
-        [10,10,12]
         #print("debug <3")
-        for i in range(num_time_windows):
-            img = x[:, :, :, :, i]
-            img.view(batch_size, num_clusters, 10, 10) #batchsize ist immer 1
+        for timewindow in range(timewindows_per_experiment):
+            for cluster in range(num_clusters):
+                img = x[:, :, :, cluster, timewindow]
+                img.view(batch_size, num_clusters, 10, 10) # batchsize ist immer 1
 
-            cnn_out = self.cnn_1(img)
-            cnn_out = cnn_out.view(batch_size, -1)  # Flatten
-            video.append(cnn_out.unsqueeze(1))  # Add time dimension
+                cnn_out = self.cnn_1(img)
+                cnn_out = cnn_out.view(batch_size, -1)  # Flatten
+                video.append(cnn_out.unsqueeze(1))  # Add time dimension
         lstm_input = torch.cat(video, dim=1)  # Concatenate along the time dimension
         lstm_output, _ = self.lstm(lstm_input)
         pred_con = self.dnn_1(lstm_output[:,-1,:])#get last lstm output

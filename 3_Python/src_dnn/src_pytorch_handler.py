@@ -302,7 +302,7 @@ class TrainingPytorch:
         self.train_loader = out_train
         self.valid_loader = out_valid
 
-    def load_model(self, learn_rate=0.1, print_model=True) -> None:
+    def load_model(self, learn_rate=0.1, print_model=True) -> None: #ToDo  laut Papers 0.001 als Startwert
         """Loading optimizer, loss_fn into class"""
         self.model = self.settings.model
         self.optimizer = self.settings.load_optimizer(learn_rate=learn_rate)
