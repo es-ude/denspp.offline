@@ -35,6 +35,6 @@ if __name__ == "__main__":
         case 4:
             # --- Neural Decoder (Utah Array)
             from src_dnn.train_decoder_utah import do_train_decoder_utah
-            do_train_decoder_utah(dnn_handler, 250)
+            do_train_decoder_utah(dnn_handler, 500)
         case _:
             print("Wrong model! Please select right model!")
