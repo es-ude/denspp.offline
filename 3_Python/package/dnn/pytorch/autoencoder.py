@@ -109,9 +109,9 @@ class train_nn(training_pytorch):
               f"\n=====================================================================================")
 
         for fold in np.arange(self.settings.num_kfold):
+            # --- Init fold
             best_loss = np.array((1_000_000., 1_000_000.), dtype=float)
             patience_counter = self.settings.patience
-            # Init fold
             epoch_loss = list()
             epoch_metric = list()
             self.model.load_state_dict(load(path2model_init))
@@ -145,15 +145,14 @@ class train_nn(training_pytorch):
                     best_loss = [loss_train, loss_valid]
                     path2model = join(self._path2temp, f'model_ae_fold{fold:03d}_epoch{epoch:04d}.pth')
                     save(self.model, path2model)
-
-                # Early Stopping
-                if loss_valid < best_loss[1]:
-                    patience_counter = self.settings.patience  # Reset patience counter
+                    patience_counter = self.settings.patience
                 else:
                     patience_counter -= 1
-                    if patience_counter == 0:
-                        print(f"... training stopped due to no change after {epoch} epochs!")
-                        break
+
+                # Early Stopping
+                if patience_counter == 0:
+                    print(f"... training stopped due to no change after {epoch} epochs!")
+                    break
 
             # --- Saving metrics after each fold
             run_metric.append((epoch_loss, epoch_metric))
