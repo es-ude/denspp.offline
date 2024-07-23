@@ -47,6 +47,7 @@ class Config_PyTorch:
     # --- Settings of Models/Training
     model: Any
     loss_fn: Any
+    patience: int
     optimizer: str
     loss: str
     num_kfold: int
