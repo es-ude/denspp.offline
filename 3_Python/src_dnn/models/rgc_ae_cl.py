@@ -24,17 +24,17 @@ class cnn_rgc_ae_v1(nn.Module):
             nn.Conv1d(kernel_layer[0], kernel_layer[1], kernel_size[0],
                       stride=kernel_stride[0], padding=kernel_padding[0]),
             nn.BatchNorm1d(kernel_layer[1], affine=do_bias_train),
-            nn.SiLU(),
+            nn.ReLU(),
             nn.AvgPool1d(kernel_pool_size[0], kernel_pool_stride[0]),
             nn.Conv1d(kernel_layer[1], kernel_layer[2], kernel_size[1],
                       stride=kernel_stride[1], padding=kernel_padding[1]),
             nn.BatchNorm1d(kernel_layer[2], affine=do_bias_train),
-            nn.SiLU(),
+            nn.ReLU(),
             nn.AvgPool1d(kernel_pool_size[1], kernel_pool_stride[1]),
             nn.Conv1d(kernel_layer[2], kernel_layer[3], kernel_size[2],
                       stride=kernel_stride[2], padding=kernel_padding[2]),
             nn.BatchNorm1d(kernel_layer[3], affine=do_bias_train),
-            nn.SiLU(),
+            nn.ReLU(),
             nn.AvgPool1d(kernel_pool_size[2], kernel_pool_stride[2]),
             nn.Flatten()
         )
@@ -42,16 +42,16 @@ class cnn_rgc_ae_v1(nn.Module):
         self.decoder = nn.Sequential(
             nn.Linear(fcnn_layer[0], fcnn_layer[1], bias=do_bias_train),
             nn.BatchNorm1d(fcnn_layer[1], affine=do_bias_train),
-            nn.SiLU(),
+            nn.ReLU(),
             nn.Linear(fcnn_layer[1], fcnn_layer[2], bias=do_bias_train),
             nn.BatchNorm1d(fcnn_layer[2], affine=do_bias_train),
-            nn.SiLU(),
+            nn.ReLU(),
             nn.Linear(fcnn_layer[2], fcnn_layer[3], bias=do_bias_train),
             nn.BatchNorm1d(fcnn_layer[3], affine=do_bias_train),
-            nn.SiLU(),
+            nn.ReLU(),
             nn.Linear(fcnn_layer[3], fcnn_layer[4], bias=do_bias_train),
             nn.BatchNorm1d(fcnn_layer[4], affine=do_bias_train),
-            nn.SiLU(),
+            nn.ReLU(),
             nn.Linear(fcnn_layer[4], fcnn_layer[5], bias=do_bias_train)
         )
 
@@ -60,6 +60,7 @@ class cnn_rgc_ae_v1(nn.Module):
         encoded = self.encoder(x0)
         decoded = self.decoder(encoded)
         return encoded, decoded
+
 
 class rgc_ae_cl_v2(nn.Module):
     """Classification model"""
@@ -77,11 +78,11 @@ class rgc_ae_cl_v2(nn.Module):
             nn.Dropout(0.0),
             nn.Linear(lin_size[0], lin_size[1], bias=do_train_bias),
             nn.BatchNorm1d(lin_size[1], affine=do_train_bias),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Dropout(lin_drop[0]),
             nn.Linear(lin_size[1], lin_size[2], bias=do_train_bias),
             nn.BatchNorm1d(lin_size[2], affine=do_train_bias),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Dropout(lin_drop[1]),
             nn.Linear(lin_size[2], lin_size[3], bias=do_train_bias),
             nn.BatchNorm1d(lin_size[3], affine=do_train_bias),

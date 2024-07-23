@@ -22,7 +22,7 @@ config_data = Config_Dataset(
     data_normalization_setting='bipolar',
     # --- Dataset Reduction
     data_do_reduce_samples_per_cluster=False,
-    data_num_samples_per_cluster=50_000,
+    data_num_samples_per_cluster=500,
     data_exclude_cluster=[],
     data_sel_pos=[]
 )
@@ -85,11 +85,11 @@ def do_train_rgc_ae_cl(dnn_handler: dnn_handler,
     loss_ae, snr_ae = trainhandler.do_training(metrics='snr')[-1]
     path2model = trainhandler.get_saving_path()
 
-
     if dnn_handler.do_plot:
         logsdir = trainhandler.get_saving_path()
         data_result = trainhandler.do_validation_after_training()
         data_mean = dataset.frames_me
+        plot_loss(loss_ae, 'Loss', path2save=logsdir)
 
         results_training(
             path=logsdir, cl_dict=data_result['cl_dict'], feat=data_result['feat'],
@@ -109,12 +109,13 @@ def do_train_rgc_ae_cl(dnn_handler: dnn_handler,
     trainhandler = train_classifier(config_train=config_train_cl, config_data=config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
-    acc_class = trainhandler.do_training()[-1][0]
+    loss_class, acc_class = trainhandler.do_training()[-1]
 
     if dnn_handler.do_plot:
         logsdir = trainhandler.get_saving_path()
         data_result = trainhandler.do_validation_after_training(num_output)
 
+        plot_loss(loss_class, 'Loss', path2save=logsdir)
         plot_loss(acc_class, 'Acc.', path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'],
                        cl_dict=data_result['cl_dict'], path2save=logsdir,

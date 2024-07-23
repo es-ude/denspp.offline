@@ -14,7 +14,7 @@ import package.dnn.models.rgc_onoff_class as models_rgc
 config_data = Config_Dataset(
     # --- Settings of Datasets
     #data_path='../2_Data/00_Merged_Datasets',
-    data_path='C:\HomeOffice\Data_Neurosignal\\00_Merged',
+    data_path='data',
     #data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
     #data_file_name='2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted',
     data_file_name='2023-11-24_Dataset-07_RGC_TDB_Merged.mat',
@@ -28,7 +28,7 @@ config_data = Config_Dataset(
     data_normalization_method='minmax',
     data_normalization_setting='bipolar',
     # --- Dataset Reduction
-    data_do_reduce_samples_per_cluster=True,
+    data_do_reduce_samples_per_cluster=False,
     data_num_samples_per_cluster=50_000,
     data_exclude_cluster=[],
     data_sel_pos=[]
@@ -41,8 +41,8 @@ config_train = Config_PyTorch(
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=10,
-    batch_size=256,
+    num_epochs=100,
+    batch_size=1024,
     data_split_ratio=0.25,
     data_do_shuffle=True
 )

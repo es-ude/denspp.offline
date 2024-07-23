@@ -79,6 +79,7 @@ class train_nn(training_pytorch):
             best_loss = [1e6, 1e6]
             best_acc = [0.0, 0.0]
             # Init fold
+            epoch_loss = list()
             epoch_metric = list()
             self.model.load_state_dict(load(path2model_init))
             self._run_kfold = fold
@@ -112,10 +113,11 @@ class train_nn(training_pytorch):
                     save(self.model, path2model)
 
                 # Saving metrics after each epoch
+                epoch_loss.append((train_loss, valid_loss))
                 epoch_metric.append(np.array((train_acc, valid_acc), dtype=float))
 
             # --- Saving metrics after each fold
-            metrics_own.append(epoch_metric)
+            metrics_own.append((epoch_loss, epoch_metric))
             copy(path2model, self._path2save)
             self._save_train_results(best_loss[0], best_loss[1], 'Loss')
             self._save_train_results(best_acc[0], best_acc[1], 'Acc.')
