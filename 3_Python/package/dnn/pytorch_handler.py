@@ -187,6 +187,7 @@ class training_pytorch:
             self.used_hw_dev = device("cuda")
             self.used_hw_num = cuda.device_count()
             device0 = self.used_hw_gpu
+            cuda.empty_cache()
         # Using Apple M1 Chip
         elif backends.mps.is_available() and backends.mps.is_built() and self.os_type == "Darwin":
             self.used_hw_gpu = 'None'

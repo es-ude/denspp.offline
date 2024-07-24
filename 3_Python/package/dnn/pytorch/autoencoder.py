@@ -2,7 +2,7 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import Tensor, load, save, from_numpy, tensor, inference_mode, flatten
+from torch import Tensor, load, save, from_numpy, tensor, inference_mode, flatten, cuda
 from torch import max, min, log10, sum
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
 
@@ -165,10 +165,12 @@ class train_nn(training_pytorch):
 
     def do_validation_after_training(self) -> dict:
         """Performing the validation with the best model after training for plotting and saving results"""
-
         # --- Getting data from validation set for inference
         data_valid = self.get_data_points(use_train_dataloader=False)
         data_train = self.get_data_points(use_train_dataloader=True)
+
+        if cuda.is_available():
+            cuda.empty_cache()
 
         # --- Do the Inference with Best Model
         path2model = self.get_best_model('ae')[0]

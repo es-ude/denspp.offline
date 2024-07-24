@@ -2,7 +2,7 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import Tensor, load, save, from_numpy, sum
+from torch import cuda, Tensor, load, save, from_numpy, sum
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
 
 
@@ -136,6 +136,9 @@ class train_nn(training_pytorch):
         # --- Getting data from validation set for inference
         data_train = self.get_data_points(num_output, use_train_dataloader=True)
         data_valid = self.get_data_points(num_output, use_train_dataloader=False)
+
+        if cuda.is_available():
+            cuda.empty_cache()
 
         # --- Do the Inference with Best Model
         path2model = self.get_best_model('rnn')[0]
