@@ -49,6 +49,7 @@ Recommended_Config_PytorchSettings = Config_PyTorch(
     loss_fn=nn.MSELoss(),
     optimizer='Adam',
     num_kfold=1,
+    patience=20,
     num_epochs=40,
     batch_size=256,
     data_do_shuffle=True,

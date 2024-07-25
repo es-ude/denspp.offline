@@ -35,6 +35,7 @@ config_train = Config_PyTorch(
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
+    patience=20,
     num_epochs=100,
     batch_size=256,
     data_split_ratio=0.25,
