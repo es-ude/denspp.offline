@@ -57,7 +57,6 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
     # --- Processing: Loading Data and Do Training
     dataset = prepare_training(config_data, length_window_ms)
     data_dict = dataset.frame_dict
-    num_output = len(data_dict)
     trainhandler = train_nn(config_train, config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
@@ -65,7 +64,7 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
     epoch_acc = trainhandler.do_training()[-1][0]
 
     # --- Post-Processing: Getting data, save and plot results
-    data_result = trainhandler.do_validation_after_training(num_output)
+    data_result = trainhandler.do_validation_after_training()
     logsdir = trainhandler.get_saving_path()
     del trainhandler
 

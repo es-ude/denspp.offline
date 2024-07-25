@@ -26,7 +26,7 @@ config_data = Config_Dataset(
 
 config_train_cl = Config_PyTorch(
     # --- Settings of Models/Training
-    model=models.mlp_class_v1(),
+    model=models.mnist_mlp_cl_v1(),
     loss='Cross Entropy Loss',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
@@ -40,7 +40,7 @@ config_train_cl = Config_PyTorch(
 
 config_train_ae = Config_PyTorch(
     # --- Settings of Models/Training
-    model=models.mlp_ae_v1(),
+    model=models.mnist_mlp_ae_v1(),
     loss='MSE',
     loss_fn=nn.MSELoss(),
     optimizer='Adam',
@@ -66,7 +66,6 @@ def do_train_cl(do_plot=True, do_block=True) -> None:
 
     # ---Loading Data, Do Training and getting the results
     dataset = prepare_training(config_data.data_path, config_data.data_do_normalization, True)
-    num_output = 10
     trainhandler = train_nn(config_train_cl, config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
@@ -75,7 +74,7 @@ def do_train_cl(do_plot=True, do_block=True) -> None:
 
     # --- Post-Processing: Getting data, save and plot results
     logsdir = trainhandler.get_saving_path()
-    data_result = trainhandler.do_validation_after_training(num_output)
+    data_result = trainhandler.do_validation_after_training()
     del trainhandler
 
     # --- Plotting

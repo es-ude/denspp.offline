@@ -94,7 +94,6 @@ def do_train_rgc_class(dnn_handler: dnn_handler) -> None:
     # ---Loading Data, Do Training and getting the results
     dataset = prepare_training(config_data, use_cell_bib=use_cell_bib, mode_classes=use_cell_mode)
     frame_dict = dataset.frame_dict
-    num_output = len(frame_dict)
     trainhandler = train_nn(config_train, config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
@@ -103,7 +102,7 @@ def do_train_rgc_class(dnn_handler: dnn_handler) -> None:
 
     # --- Post-Processing: Getting data, save and plot results
     logsdir = trainhandler.get_saving_path()
-    data_result = trainhandler.do_validation_after_training(num_output)
+    data_result = trainhandler.do_validation_after_training()
     del trainhandler
 
     # --- Plotting

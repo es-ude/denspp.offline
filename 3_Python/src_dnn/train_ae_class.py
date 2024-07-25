@@ -109,7 +109,6 @@ def do_train_ae_classifier(dnn_handler: dnn_handler,
     # --- Processing: Loading dataset and Do Classification
     dataset = get_dataset_class(settings=config_data, path2model=path2model,
                                 use_cell_bib=use_cell_bib, mode_classes=use_cell_mode)
-    num_output = dataset.frames_me.shape[0]
     trainhandler = train_classifier(config_train=config_train_cl, config_data=config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)

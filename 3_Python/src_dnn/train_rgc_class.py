@@ -55,7 +55,6 @@ def rgc_logic_combination(logsdir: str, valid_file_name='results_class.npy') -> 
     if not exists(path2save):
         mkdir(path2save)
 
-    cell_dict_orig = data_result['cl_dict']
     true_labels_orig = data_result['valid_clus']
     pred_labels_orig = data_result['yclus']
 

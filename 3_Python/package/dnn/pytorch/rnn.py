@@ -131,7 +131,7 @@ class train_nn(training_pytorch):
         self._end_training_routine(timestamp_start)
         return metrics_own
 
-    def do_validation_after_training(self, num_output: int) -> dict:
+    def do_validation_after_training(self) -> dict:
         """Performing the validation with the best model after training"""
         if cuda.is_available():
             cuda.empty_cache()

@@ -62,7 +62,7 @@ def dnn_train_sda(dnn_handler: dnn_handler, sda_threshold: int) -> None:
     epoch_acc = trainhandler.do_training()[-1]
 
     # --- Post-Processing: Getting data, save and plot results
-    data_result = trainhandler.do_validation_after_training(3)
+    data_result = trainhandler.do_validation_after_training()
     logsdir = trainhandler.get_saving_path()
     del trainhandler
 
