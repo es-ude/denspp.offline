@@ -88,31 +88,41 @@ class cnn_rgc_onoff_v1(__model_settings_common):
         super().__init__('Classifier')
         self.model_embedded = False
         self.model_shape = (1, input_size)
-        kernel_layer = [1, 32, 25, 20]
-        kernel_size = [3, 3, 3, 3]
-        kernel_stride = [1, 1, 1, 1]
-        kernel_padding = [0, 0, 0, 0]
-        pool_size = [2, 2, 2]
-        lin_size = [40, 16, output_size]
+        kernel_layer = [24, 32, 24, 12, 6]
+        kernel_size = [2, 2, 3, 3, 3]
+        kernel_stride = [1, 1, 1, 1, 1]
+        kernel_padding = [1, 2, 2, 2, 2]
+        pool_size = [2, 2, 2, 2, 2]
+        lin_size = [12, 40, 20, output_size]
         do_train_bias = True
 
         self.cnn = nn.Sequential(
             nn.Dropout(0.0),
-            nn.Conv1d(kernel_layer[0], kernel_layer[1], kernel_size[0],
+            nn.Conv1d(1, kernel_layer[0], kernel_size[0],
                       stride=kernel_stride[0], padding=kernel_padding[0], bias=do_train_bias),
-            nn.BatchNorm1d(kernel_layer[1], affine=do_train_bias),
-            nn.SiLU(),
+            nn.BatchNorm1d(kernel_layer[0], affine=do_train_bias),
+            nn.PReLU(),
             nn.MaxPool1d(pool_size[0]),
-            nn.Conv1d(kernel_layer[1], kernel_layer[2], kernel_size[1],
+            nn.Conv1d(kernel_layer[0], kernel_layer[1], kernel_size[1],
                       stride=kernel_stride[1], padding=kernel_padding[1], bias=do_train_bias),
-            nn.BatchNorm1d(kernel_layer[2], affine=do_train_bias),
-            nn.SiLU(),
+            nn.BatchNorm1d(kernel_layer[1], affine=do_train_bias),
+            nn.PReLU(),
             nn.MaxPool1d(pool_size[1]),
-            nn.Conv1d(kernel_layer[2], kernel_layer[3], kernel_size[2],
+            nn.Conv1d(kernel_layer[1], kernel_layer[2], kernel_size[2],
                       stride=kernel_stride[2], padding=kernel_padding[2], bias=do_train_bias),
-            nn.BatchNorm1d(kernel_layer[3], affine=do_train_bias),
-            nn.SiLU(),
+            nn.BatchNorm1d(kernel_layer[2], affine=do_train_bias),
+            nn.ReLU(),
             nn.MaxPool1d(pool_size[2]),
+            nn.Conv1d(kernel_layer[2], kernel_layer[3], kernel_size[3],
+                      stride=kernel_stride[3], padding=kernel_padding[3], bias=do_train_bias),
+            nn.BatchNorm1d(kernel_layer[3], affine=do_train_bias),
+            nn.ReLU(),
+            nn.MaxPool1d(pool_size[3]),
+            nn.Conv1d(kernel_layer[3], kernel_layer[4], kernel_size[4],
+                      stride=kernel_stride[4], padding=kernel_padding[4], bias=do_train_bias),
+            nn.BatchNorm1d(kernel_layer[4], affine=do_train_bias),
+            nn.ReLU(),
+            nn.MaxPool1d(pool_size[4]),
             nn.Flatten(start_dim=1)
         )
         self.classifier = nn.Sequential(
@@ -121,6 +131,9 @@ class cnn_rgc_onoff_v1(__model_settings_common):
             nn.ReLU(),
             nn.Linear(lin_size[1], lin_size[2], bias=do_train_bias),
             nn.BatchNorm1d(lin_size[2], affine=do_train_bias),
+            nn.ReLU(),
+            nn.Linear(lin_size[2], lin_size[3], bias=do_train_bias),
+            nn.BatchNorm1d(lin_size[3], affine=do_train_bias),
             #nn.Softmax(dim=1)
         )
 
@@ -137,6 +150,7 @@ Recommended_Config_PytorchSettings = Config_PyTorch(
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
+    patience=10,
     num_epochs=40,
     batch_size=256,
     data_do_shuffle=True,

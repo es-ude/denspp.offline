@@ -2,8 +2,8 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import Tensor, load, save, from_numpy, tensor, inference_mode, flatten, cuda
-from torch import max, min, log10, sum
+from torch import Tensor, from_numpy, load, save, tensor, inference_mode, flatten, cuda, cat
+from torch import max, min, log10, sum, randn
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
 
 
@@ -165,10 +165,6 @@ class train_nn(training_pytorch):
 
     def do_validation_after_training(self) -> dict:
         """Performing the validation with the best model after training for plotting and saving results"""
-        # --- Getting data from validation set for inference
-        data_valid = self.get_data_points(use_train_dataloader=False)
-        data_train = self.get_data_points(use_train_dataloader=True)
-
         if cuda.is_available():
             cuda.empty_cache()
 
@@ -177,17 +173,29 @@ class train_nn(training_pytorch):
         print("\n================================================================="
               f"\nDo Validation with best model: {path2model}")
         model_test = load(path2model)
-        feat_out, pred_out = model_test(from_numpy(data_valid['in']).to(self.used_hw_dev))
-        feat_out = feat_out.detach().cpu().numpy()
-        pred_out = pred_out.detach().cpu().numpy()
 
-        # --- Producing the output
-        output = dict()
-        output.update({'settings': self.settings, 'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')})
-        output.update({'train_clus': data_train['class'], 'valid_clus': data_valid['class']})
-        output.update({'input': data_valid['in'], 'feat': feat_out, 'pred': pred_out})
-        output.update({'cl_dict': self.cell_classes})
+        pred_model = randn(32, 1)
+        feat_model = randn(32, 1)
+        clus_orig_list = randn(32, 1)
+        data_orig_list = randn(32, 1)
 
-        # --- Saving dict
-        np.save(join(self.get_saving_path(), 'results_ae.npy'), output)
-        return output
+        first_cycle = True
+        for ite_cycle, vdata in enumerate(self.valid_loader[-1]):
+            feat, pred = model_test(vdata['in'].to(self.used_hw_dev))
+            if first_cycle:
+                feat_model = feat.detach().cpu()
+                pred_model = pred.detach().cpu()
+                clus_orig_list = vdata['out']
+                data_orig_list = vdata['in']
+            else:
+                feat_model = cat((feat_model, feat.detach().cpu()), dim=0)
+                pred_model = cat((pred_model, feat.detach().cpu()), dim=0)
+                clus_orig_list = cat((clus_orig_list, vdata['out']), dim=0)
+                data_orig_list = cat((data_orig_list, vdata['in']), dim=0)
+            first_cycle = False
+
+        # --- Preparing output
+        result_feat = feat_model.numpy()
+        result_pred = pred_model.numpy()
+        return self._getting_data_for_plotting(data_orig_list.numpy(), clus_orig_list.numpy(),
+                                               {'feat': result_feat, 'pred': result_pred})

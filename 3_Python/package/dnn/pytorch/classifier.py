@@ -2,7 +2,7 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import load, save, from_numpy, inference_mode, sum, cuda
+from torch import Tensor, from_numpy, load, save, inference_mode, sum, cuda, cat, randn
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
 
 
@@ -133,30 +133,36 @@ class train_nn(training_pytorch):
         self._end_training_routine(timestamp_start)
         return metrics_own
 
-    def do_validation_after_training(self, num_output: int) -> dict:
+    def do_validation_after_training(self) -> dict:
         """Performing the training with the best model after"""
-        # --- Getting data from validation set for inference
-        data_train = self.get_data_points(num_output, use_train_dataloader=True)
-        data_valid = self.get_data_points(num_output, use_train_dataloader=False)
         if cuda.is_available():
             cuda.empty_cache()
 
         # --- Do the Inference with Best Model
         path2model = self.get_best_model('class')[0]
+        model_test = load(path2model)
         print("\n================================================================="
               f"\nDo Validation with best model: {path2model}")
 
-        model_test = load(path2model)
-        yclus = model_test(from_numpy(data_valid['in']).to(self.used_hw_dev))[1]
-        yclus = yclus.detach().cpu().numpy()
+        clus_pred_list = randn(32, 1)
+        clus_orig_list = randn(32, 1)
+        data_orig_list = randn(32, 1)
 
-        # --- Producing the output
-        output = dict()
-        output.update({'settings': self.settings, 'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')})
-        output.update({'train_clus': data_train['out'], 'valid_clus': data_valid['out']})
-        output.update({'input': data_valid['in'], 'yclus': yclus})
-        output.update({'cl_dict': self.cell_classes})
+        first_cycle = True
+        for vdata in self.valid_loader[-1]:
+            clus_pred = model_test(vdata['in'].to(self.used_hw_dev))[1]
+            if first_cycle:
+                clus_pred_list = clus_pred.detach().cpu()
+                clus_orig_list = vdata['out']
+                data_orig_list = vdata['in']
+            else:
+                clus_pred_list = cat((clus_pred_list, clus_pred.detach().cpu()), dim=0)
+                clus_orig_list = cat((clus_orig_list, vdata['out']), dim=0)
+                data_orig_list = cat((data_orig_list, vdata['in']), dim=0)
+            first_cycle = False
 
-        # --- Saving dict
-        np.save(join(self.get_saving_path(), 'results_class.npy'), output)
-        return output
+        # --- Preparing output
+        result_pred = clus_pred_list.numpy()
+        return self._getting_data_for_plotting(data_orig_list.numpy(), clus_orig_list.numpy(), {'yclus': result_pred})
+
+

@@ -64,7 +64,7 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
     epoch_acc = trainhandler.do_training()[-1][0]
 
     # --- Post-Processing: Getting data, save and plot results
-    data_result = trainhandler.do_validation_after_training(num_output)
+    data_result = trainhandler.do_validation_after_training()
     logsdir = trainhandler.get_saving_path()
     del trainhandler
 

@@ -115,7 +115,7 @@ def do_train_ae_classifier(dnn_handler: dnn_handler,
 
     if dnn_handler.do_plot:
         logsdir = trainhandler.get_saving_path()
-        data_result = trainhandler.do_validation_after_training(num_output)
+        data_result = trainhandler.do_validation_after_training()
 
         plot_loss(acc_class, 'Acc.', path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'],

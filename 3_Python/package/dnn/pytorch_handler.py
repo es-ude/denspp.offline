@@ -8,7 +8,7 @@ from typing import Any
 from shutil import rmtree, copy
 from glob import glob
 from datetime import datetime
-from torch import optim, device, cuda, backends, nn
+from torch import optim, device, cuda, backends, nn, from_numpy, Tensor, randn, cat
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
@@ -141,6 +141,7 @@ class training_pytorch:
     used_hw_num: int
     train_loader: list
     valid_loader: list
+    selected_samples: dict
     cell_classes: list
 
     def __init__(self, config_train: Config_PyTorch, config_dataset: Config_Dataset, do_train=True) -> None:
@@ -262,11 +263,12 @@ class training_pytorch:
                 out_train[idx].pin_memory = True
                 out_train[idx].pin_memory_device = self.used_hw_dev.type
                 out_train[idx].num_workers = num_workers
+
                 out_valid[idx].pin_memory = True
                 out_valid[idx].pin_memory_device = self.used_hw_dev.type
                 out_valid[idx].num_workers = num_workers
 
-        # --- Output
+        # --- Output: Data
         self.train_loader = out_train
         self.valid_loader = out_valid
 
@@ -350,22 +352,55 @@ class training_pytorch:
         print("\nLook data on TensorBoard -> open Terminal")
         print("Type in: tensorboard serve --logdir ./runs")
 
-    def get_data_points(self, num_output=4, use_train_dataloader=False) -> dict:
-        """Getting data from DataLoader for Plotting Results"""
-        output = [[] for _ in range(num_output)]
-        keys = []
-        mdict = dict()
+    def __get_data_points(self, only_getting_labels=False, use_train_dataloader=False) -> dict:
+        """Getting data from DataLoader for Plotting Results
+        Args:
+            only_getting_labels:    Option for taking only labels
+            use_train_dataloader:   Mode for selecting datatype (True=Training, False=Validation)
+        Returns:
+              Dict with data for plotting
+        """
+        used_dataset = self.train_loader[-1] if use_train_dataloader else self.valid_loader[-1]
 
+        # --- Getting the keys
+        keys = list()
+        for data in used_dataset:
+            keys = list(data.keys())
+            break
+
+        if only_getting_labels:
+            keys.pop(0)
+
+        # --- Extracting data
+        data_extract = [randn(32, 1) for idx in keys]
         first_run = True
-        for data_fold in (self.train_loader if use_train_dataloader else self.valid_loader):
-            for vdata in data_fold:
-                for idx, (key, value) in enumerate(vdata.items()):
-                    output[idx] = value if first_run else np.append(output[idx], value, axis=0)
-                    if key not in keys:
-                        keys.append(key)
-                first_run = False
+        for data in used_dataset:
+            for idx, key in enumerate(keys):
+                if first_run:
+                    data_extract[idx] = data[key]
+                else:
+                    data_extract[idx] = cat((data_extract[idx], data[key]), dim=0)
+            first_run = False
 
-        for key, value in zip(keys, output):
-            mdict.update([(key, value)])
-
+        # --- Prepare output
+        mdict = dict()
+        for idx, data in enumerate(data_extract):
+            mdict.update({keys[idx]: data.numpy()})
         return mdict
+
+    def _getting_data_for_plotting(self, valid_input: np.ndarray, valid_label: np.ndarray, results={}) -> dict:
+        """Getting the raw data for plotting results"""
+        # --- Producing and Saving the output
+        print(f"... preparing results for plot generation")
+        data_train = self.__get_data_points(only_getting_labels=True, use_train_dataloader=True)
+
+        output = dict()
+        output.update({'settings': self.settings, 'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')})
+        output.update({'train_clus': data_train['out'], 'cl_dict': self.cell_classes})
+        output.update({'input': valid_input, 'valid_clus': valid_label})
+        output.update(results)
+
+        data2save = join(self.get_saving_path(), 'results_class.npy')
+        print(f"... saving results: {data2save}")
+        np.save(data2save, output)
+        return output

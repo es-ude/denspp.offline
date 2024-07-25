@@ -16,20 +16,18 @@ config_data = Config_Dataset(
     #data_path='../2_Data/00_Merged_Datasets',
     data_path='data',
     #data_path='C:\HomeOffice\Data_Neurosignal\\00_Merged',
-    #data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
-    #data_file_name='2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted',
     data_file_name='2023-11-24_Dataset-07_RGC_TDB_Merged.mat',
     # --- Data Augmentation
     data_do_augmentation=False,
     data_num_augmentation=0,
     data_do_addnoise_cluster=False,
     # --- Data Normalization
-    data_do_normalization=True,
+    data_do_normalization=False,
     data_normalization_mode='CPU',
     data_normalization_method='minmax',
     data_normalization_setting='bipolar',
     # --- Dataset Reduction
-    data_do_reduce_samples_per_cluster=False,
+    data_do_reduce_samples_per_cluster=True,
     data_num_samples_per_cluster=50_000,
     data_exclude_cluster=[],
     data_sel_pos=[]
@@ -42,8 +40,9 @@ config_train = Config_PyTorch(
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=100,
-    batch_size=1024,
+    patience=20,
+    num_epochs=10,
+    batch_size=512,
     data_split_ratio=0.2,
     data_do_shuffle=True
 )
@@ -80,7 +79,7 @@ def rgc_logic_combination(logsdir: str, valid_file_name='results_class.npy') -> 
 def do_train_rgc_class(dnn_handler: dnn_handler) -> None:
     """Training routine for classifying RGC ON/OFF and Transient/Sustained Types (Classification)
     Args:
-        dnn_handler: Handler for configurating the routine selection for train deep neural networks
+        dnn_handler: Handler for configuring the routine selection for train deep neural networks
     """
     from package.dnn.dataset.rgc_classification import prepare_training
     from package.dnn.pytorch.classifier import train_nn
@@ -93,7 +92,6 @@ def do_train_rgc_class(dnn_handler: dnn_handler) -> None:
     # ---Loading Data, Do Training and getting the results
     dataset = prepare_training(config_data, use_cell_bib=use_cell_bib, mode_classes=use_cell_mode)
     frame_dict = dataset.frame_dict
-    num_output = len(frame_dict)
     trainhandler = train_nn(config_train, config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
@@ -102,7 +100,7 @@ def do_train_rgc_class(dnn_handler: dnn_handler) -> None:
 
     # --- Post-Processing: Getting data, save and plot results
     logsdir = trainhandler.get_saving_path()
-    data_result = trainhandler.do_validation_after_training(num_output)
+    data_result = trainhandler.do_validation_after_training()
     del trainhandler
 
     # --- Plotting
@@ -110,10 +108,8 @@ def do_train_rgc_class(dnn_handler: dnn_handler) -> None:
         plt.close('all')
         # --- Plotting full model
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
-        plot_confusion(data_result['valid_clus'], data_result['yclus'],
-                       path2save=logsdir, cl_dict=frame_dict)
-        plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
-                            path2save=logsdir, cl_dict=frame_dict)
+        plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=frame_dict)
+        plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir, cl_dict=frame_dict)
 
         # --- Plotting reduced model (ON/OFF and Transient/Sustained)
         rgc_logic_combination(logsdir)

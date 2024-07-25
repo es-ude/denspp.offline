@@ -67,7 +67,7 @@ def do_train_classifier(dnn_handler: dnn_handler, num_output=5) -> None:
 
     # --- Post-Processing: Getting data, save and plot results
     logsdir = trainhandler.get_saving_path()
-    data_result = trainhandler.do_validation_after_training(num_output)
+    data_result = trainhandler.do_validation_after_training()
     del trainhandler
 
     # --- Plotting
