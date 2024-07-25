@@ -180,7 +180,7 @@ def prepare_training(settings: Config_Dataset,
     print(f"... for training are {frames_in.shape[0]} frames with each {frames_in.shape[1]} points available")
     print(f"... used data points for training: in total {check[0].size} classes with {np.sum(check[1])} samples")
     for idx, id in enumerate(check[0]):
-        addon = f'' if not isinstance(frames_dict, list | np.ndarray) else f' ({frames_dict[id]})'
+        addon = f'' if len(frames_dict) == 0 else f' ({frames_dict[id]})'
         print(f"\tclass {id}{addon} --> {check[1][idx]} samples")
 
     return DatasetAE(frames_raw=frames_in, cluster_id=frames_cl, frames_cluster_me=frames_me,

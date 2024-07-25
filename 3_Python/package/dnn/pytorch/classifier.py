@@ -164,5 +164,3 @@ class train_nn(training_pytorch):
         # --- Preparing output
         result_pred = clus_pred_list.numpy()
         return self._getting_data_for_plotting(data_orig_list.numpy(), clus_orig_list.numpy(), {'yclus': result_pred})
-
-

@@ -22,12 +22,12 @@ config_data = Config_Dataset(
     data_num_augmentation=0,
     data_do_addnoise_cluster=False,
     # --- Data Normalization
-    data_do_normalization=False,
+    data_do_normalization=True,
     data_normalization_mode='CPU',
     data_normalization_method='minmax',
     data_normalization_setting='bipolar',
     # --- Dataset Reduction
-    data_do_reduce_samples_per_cluster=True,
+    data_do_reduce_samples_per_cluster=False,
     data_num_samples_per_cluster=50_000,
     data_exclude_cluster=[],
     data_sel_pos=[]
@@ -41,7 +41,7 @@ config_train = Config_PyTorch(
     optimizer='Adam',
     num_kfold=1,
     patience=20,
-    num_epochs=10,
+    num_epochs=100,
     batch_size=512,
     data_split_ratio=0.2,
     data_do_shuffle=True

@@ -185,12 +185,12 @@ class train_nn(training_pytorch):
             if first_cycle:
                 feat_model = feat.detach().cpu()
                 pred_model = pred.detach().cpu()
-                clus_orig_list = vdata['out']
+                clus_orig_list = vdata['class']
                 data_orig_list = vdata['in']
             else:
                 feat_model = cat((feat_model, feat.detach().cpu()), dim=0)
-                pred_model = cat((pred_model, feat.detach().cpu()), dim=0)
-                clus_orig_list = cat((clus_orig_list, vdata['out']), dim=0)
+                pred_model = cat((pred_model, pred.detach().cpu()), dim=0)
+                clus_orig_list = cat((clus_orig_list, vdata['class']), dim=0)
                 data_orig_list = cat((data_orig_list, vdata['in']), dim=0)
             first_cycle = False
 

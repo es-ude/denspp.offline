@@ -3,14 +3,14 @@ from package.dnn.dnn_handler import dnn_handler
 
 if __name__ == "__main__":
     dnn_handler = dnn_handler(
-        mode_dnn=5,
+        mode_dnn=3,
         mode_cellbib=2,
         do_plot=True,
         do_block=False
     )
 
     # --- Configs (AE)
-    mode_ae = 5
+    mode_ae = 0
     noise_std_ae = 0.01
     num_hiddenlayer = 5
     num_output = 6

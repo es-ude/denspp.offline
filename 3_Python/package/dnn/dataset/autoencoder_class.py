@@ -24,7 +24,7 @@ class DatasetAE_Class(Dataset):
         self.__cluster_id = np.array(cluster_id, dtype=np.uint8)
         self.frames_me = np.array(frames_cluster_me, dtype=np.float32)
         # --- Parameters for Confusion Matrix for Classification
-        self.cluster_name_available = isinstance(cluster_dict, list)
+        self.cluster_name_available = not len(cluster_dict) == 0
         self.frame_dict = cluster_dict
         self.data_type = "Autoencoder-based Classification"
 
@@ -133,7 +133,7 @@ def prepare_training(settings: Config_Dataset, path2model: str,
     print("... for training are", frames_in.shape[0], "frames with each", frames_in.shape[1], "points available")
     print(f"... used data points for training: in total {check[0].size} classes with {np.sum(check[1])} samples")
     for idx, id in enumerate(check[0]):
-        addon = f'' if not isinstance(frames_dict, list | np.ndarray) else f' ({frames_dict[id]})'
+        addon = f'' if len(frames_dict) == 0 else f' ({frames_dict[id]})'
         print(f"\tclass {id}{addon} --> {check[1][idx]} samples")
 
     return DatasetAE_Class(frames_raw=frames_in, frames_feat=frames_feat, cluster_id=frames_cl,
