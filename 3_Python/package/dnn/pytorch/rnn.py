@@ -117,8 +117,8 @@ class train_nn(training_pytorch):
                     patience_counter -= 1
 
                 # Early Stopping
-                if patience_counter == 0:
-                    print(f"... training stopped due to no change after {epoch} epochs!")
+                if patience_counter <= 0:
+                    print(f"... training stopped due to no change after {epoch+1} epochs!")
                     break
 
             # --- Saving metrics after each fold
