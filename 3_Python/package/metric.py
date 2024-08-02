@@ -45,7 +45,7 @@ def _error_mse(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
 def _error_rae(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
     """Calculating the distance-based metric with relative absolute error"""
     mse = _error_mse(y_pred, y_true)
-    if isinstance(mse, np.ndarray):
+    if isinstance(y_pred, np.ndarray):
         error = float(np.sqrt(mse) / _error_mae(np.zeros(shape=y_pred.shape), y_true))
     else:
         error = float((mse ** 0.5) / _error_mae(0.0, y_pred))
@@ -56,7 +56,7 @@ def _error_rse(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
     """Calculating the distance-based metric with relative squared error"""
     mse = _error_mse(y_pred, y_true)
     y_true_mean = np.mean(y_true)
-    if isinstance(mse, np.ndarray):
+    if isinstance(y_pred, np.ndarray):
         error = float(mse / np.sum((y_pred - y_true_mean) ** 2) / y_pred.size)
     else:
         error = float(mse / (y_pred - y_true_mean) ** 2)
