@@ -46,6 +46,7 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
         self._type_params = self.__init_params()
         self._type_func2reg = self.__init_func2reg()
         self._type_func2cur = self.__init_func2curve()
+        self._fit_options = [6, 1001]
 
     def __init_dev(self) -> dict:
         """Initialization of functions to get devices"""
@@ -198,9 +199,6 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
         """Function for performing curve fitting for resistive diode behaviour"""
         return a + b * i_path + c * np.log(d * i_path + 1)
 
-    def _func2fit_resistive_diode(self, params: list, u_path: np.ndarray) -> np.ndarray:
-        """"""
-
     def _resistive_schottky_single(self, u_inp: np.ndarray, u_inn: np.ndarray | float,
                                    mode_fitting=1) -> np.ndarray:
         """Performing the behaviour of a series connection of resistor and single-side schottky diode
@@ -260,15 +258,15 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
             i_fit += self._gen_noise_awgn_pwr(du.size)
         return i_fit
 
-    def plot_fit_curve(self, find_best_order=False) -> None:
+    def plot_fit_curve(self, find_best_order=False, show_plots=False) -> None:
         """Plotting the output of the polynom fit function
         Args:
             find_best_order:    Find the best poly.-fit order
+            show_plots:         Showing plots of each run
         Returns:
             None
         """
         params = self._type_params[self._settings.type]
-        self._bounds_voltage[0] = 1.33
         if not find_best_order:
             self._get_params_polyfit(
                 params_dev=params,
@@ -278,7 +276,9 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
                 mode_fit=0
             )
         else:
-            self._find_best_poly_order(3, 18, params, mode_fitting=0)
+            self._find_best_poly_order(3, 18,
+                                       bounds_voltage=self._bounds_voltage, params_dev=params,
+                                       mode_fitting=0, show_plots=show_plots)
 
 
 # --------------------- TEST CASE ---------------------------------------
@@ -309,7 +309,8 @@ if __name__ == "__main__":
 
     # --- Plotting: I-V curve
     print("\nPlotting I-V curve")
-    #dev.plot_fit_curve()
+    dev.change_boundary_voltage(1.33, 6.0)
+    dev.plot_fit_curve()
 
     # --- Plotting: Current response
     print("\nPlotting transient response")

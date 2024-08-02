@@ -1,4 +1,5 @@
 import dataclasses
+from warnings import warn
 from os.path import join
 import numpy as np
 import matplotlib.pyplot as plt
@@ -26,50 +27,20 @@ class SettingsDEV:
     temp:       float
 
 
-def _plot_fit_curve(u_poly: np.ndarray, i_poly: np.ndarray, i_reg: np.ndarray,
-                    metric=(), block_plot=False, title_prefix='', path2save='') -> None:
-    """Plotting the output of the polynomial fit function
-    Args:
-        u_poly:         Numpy array with voltage from polynom fit (input)
-        i_poly:         Numpy array of current response
-        i_reg:          Numpy array of current response from regression
-        block_plot:     Blocking the plots before continuing [Default: False]
-        title_prefix:   String with prefix of title
-        path2save:      String with path to save the figure
-    Returns:
-        None
-    """
-    plt.figure()
-    plt.tight_layout()
-    i_test0 = (u_poly-1.7)/10e3
-    i_test1 = 0.1e-12 * (np.exp((u_poly-0.1)/(2.8 * 26e-3)) - 1)
-
-    axs = list()
-    axs.append(plt.subplot(2, 1, 1))
-    axs.append(plt.subplot(2, 1, 2, sharex=axs[0]))
-    axs[0].semilogy(u_poly, 1e6 * abs(i_reg), 'k', marker='.', markersize=2, label='Regression')
-    axs[0].semilogy(u_poly, 1e6 * abs(i_poly), 'r', marker='.', markersize=2, label='Poly. fit')
-    axs[0].grid()
-    axs[0].set_ylabel(r'Current $\log_{10}(I_F)$ / µA')
-
-    axs[1].plot(u_poly, 1e6 * i_reg, 'k', marker='.', markersize=2, label='Regression')
-    axs[1].plot(u_poly, 1e6 * i_poly, 'r', marker='.', markersize=2, label='Poly. fit')
-    axs[1].grid()
-    axs[1].set_ylabel(r'Current $I_F$ / µA')
-    axs[1].set_xlabel(r'Voltage $\Delta U$ / V')
-    axs[1].legend()
-
-    # --- Add figure title
-    if not len(metric) == 0:
-        axs[0].set_title(title_prefix + f"{metric[0]} = {metric[1]:.4f}")
-
-    if path2save:
-        plt.savefig(join(path2save, "device_iv_charac.svg"), format='svg')
-    plt.show(block=block_plot)
-
-
 def _calc_error(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
     return _error_rae(y_pred, y_true)
+
+
+def _raise_voltage_violation(du: np.ndarray | float, range_volt: list) -> None:
+    """Checking differential voltage input for violation of voltage range for given branch"""
+    violation_dwn = np.count_nonzero(du < range_volt[0], axis=0)
+    violation_up = np.count_nonzero(du > range_volt[1], axis=0)
+
+    if violation_up or violation_dwn:
+        warn("Warning: Voltage Range Violation! - Results are not confirmed!", DeprecationWarning)
+        addon_dwn = '' if not violation_dwn else '(Downer limit)'
+        addon_up = '' if not violation_up else ' (Upper limit)'
+        print(f"Warning: Voltage Range Violation! {addon_dwn}{addon_up}")
 
 
 class ElectricalLoad_Handler:
@@ -99,10 +70,10 @@ class ElectricalLoad_Handler:
         self._approx_fit = np.zeros((1, ), dtype=float)
         self._bounds_current = [-14, -3]
         self._bounds_voltage = [0.0, +6]
-        self._fit_options = [6, 201]
+        self._fit_options = [1, 1001]
 
-    def _extract_iv_curve_from_regression(self, params_dev: list,
-                                          bounds_voltage: list, bounds_current: list, mode=0) -> [np.ndarray, np.ndarray]:
+    def _extract_iv_curve_from_regression(self, params_dev: list, bounds_voltage: list, bounds_current: list,
+                                          mode=0) -> [np.ndarray, np.ndarray]:
         """Function for getting the I-V curve from regression
         Args:
             params_dev:             List with parameters from device
@@ -132,7 +103,7 @@ class ElectricalLoad_Handler:
                 i_path = np.concatenate((i_pathn, -np.flipud(i_pathn)[1:]), axis=0)
                 u_path = np.concatenate((u_pathn, -np.flipud(u_pathn)[1:]), axis=0)
             case 3:
-                # --- Get Data (Symmetric, Neg. mirrored)(Symmetric, Pos. mirrored)
+                # --- Get Data (Symmetric, Neg. mirrored)
                 i_pathp = np.logspace(bounds_current[0], bounds_current[1], self._fit_options[1], endpoint=True)
                 u_pathp = self._type_func2reg[self._settings.type](i_pathp, params_dev, np.zeros(i_pathp.shape))
                 # --- Concatenate arrays
@@ -162,7 +133,7 @@ class ElectricalLoad_Handler:
 
         # --- Start Conditions
         bounds = [10 ** bounds_current[0], 10 ** bounds_current[1]]
-        y_initial = 0.5 * params[0]
+        y_initial = 2 * bounds[0]
 
         # --- Run optimization
         iout = list()
@@ -207,7 +178,7 @@ class ElectricalLoad_Handler:
             i_test = self._do_regression(u_poly, 0.0, params_dev, bounds_current)
             error = _calc_error(i_poly, i_test)
             if do_plot:
-                _plot_fit_curve(u_poly, i_poly, i_test, metric=['1e3 * RAE', 1e3 * error],
+                self._plot_fit_curve(u_poly, i_poly, i_test, metric=['1e3 * RAE', 1e3 * error],
                                 title_prefix=plot_title_prefix, path2save=path2save)
         else:
             error = -1.0
@@ -244,19 +215,61 @@ class ElectricalLoad_Handler:
             i_test = self._do_regression(u_poly, 0.0, params_dev, bounds_current)
             error = _calc_error(i_poly, i_test)
             if do_plot:
-                _plot_fit_curve(u_poly, i_poly, i_test, metric=['1e3 * RAE', 1e3 * error],
+                self._plot_fit_curve(u_poly, i_poly, i_test, metric=['1e3 * RAE', 1e3 * error],
                                 title_prefix=plot_title_prefix, path2save=path2save)
         else:
             error = -1.0
         return error
 
+    def _plot_fit_curve(self, u_poly: np.ndarray, i_poly: np.ndarray, i_reg: np.ndarray,
+                        metric=(), block_plot=False, title_prefix='', path2save='') -> None:
+        """Plotting the output of the polynomial fit function
+        Args:
+            u_poly:         Numpy array with voltage from polynom fit (input)
+            i_poly:         Numpy array of current response
+            i_reg:          Numpy array of current response from regression
+            block_plot:     Blocking the plots before continuing [Default: False]
+            title_prefix:   String with prefix of title
+            path2save:      String with path to save the figure
+        Returns:
+            None
+        """
+        plt.figure()
+        plt.tight_layout()
+
+        axs = list()
+        axs.append(plt.subplot(2, 1, 1))
+        axs.append(plt.subplot(2, 1, 2, sharex=axs[0]))
+        axs[0].semilogy(u_poly, 1e6 * abs(i_reg), 'k', marker='.', markersize=2, label='Regression')
+        axs[0].semilogy(u_poly, 1e6 * abs(i_poly), 'r', marker='.', markersize=2, label='Poly. fit')
+        axs[0].grid()
+        axs[0].set_ylabel(r'Current $\log_{10}(I_F)$ / µA')
+
+        axs[1].plot(u_poly, 1e6 * i_reg, 'k', marker='.', markersize=2, label='Regression')
+        axs[1].plot(u_poly, 1e6 * i_poly, 'r', marker='.', markersize=2, label='Poly. fit')
+        axs[1].grid()
+        axs[1].set_ylabel(r'Current $I_F$ / µA')
+        axs[1].set_xlabel(r'Voltage $\Delta U$ / V')
+        axs[1].legend()
+
+        # --- Add figure title
+        if not len(metric) == 0:
+            axs[0].set_title(title_prefix + f"{metric[0]} = {metric[1]:.4f} @ N_Poly = {self._fit_options[0]}")
+
+        if path2save:
+            plt.savefig(join(path2save, "device_iv_charac.svg"), format='svg')
+        plt.show(block=block_plot)
+
     def _find_best_poly_order(self, order_start: int, order_stop: int,
-                             params: list, mode_fitting=0) -> None:
+                              bounds_voltage: list, params_dev: list,
+                              show_plots=False, mode_fitting=0) -> None:
         """Finding the best polynomial order for fitting
         Args:
             order_start:    Integer value with starting order number
             order_stop:     Integer value with stoping order number
-            params:         List
+            bounds_voltage: Voltage limitation for fitting
+            params_dev:     List
+            show_plots:     Showing plots of each run
             mode_fitting:   Fitting mode
         Returns:
             None
@@ -267,13 +280,12 @@ class ElectricalLoad_Handler:
         order_search = [idx for idx in range(order_start, order_stop+1)]
         error_search = []
         for idx, order in enumerate(order_search):
-
-            self.change_options_polynom_fit(order, self._fit_options[1])
+            self.change_options_fit(order, self._fit_options[1])
             error = self._get_params_polyfit(
-                params_dev=params,
-                bounds_voltage=self._bounds_voltage,
+                params_dev=params_dev,
+                bounds_voltage=bounds_voltage,
                 bounds_current=self._bounds_current,
-                do_test=True, do_plot=False,
+                do_test=True, do_plot=show_plots,
                 mode_fit=mode_fitting
             )
             error_search.append(error)
@@ -285,7 +297,7 @@ class ElectricalLoad_Handler:
         print(f"\nBest solution: Order = {np.array(order_search)[xmin]} with an error of {error_search[xmin]}!")
         print("TEST")
 
-    def change_boundary_current(self, upper_limit: int, downer_limit: int) -> None:
+    def change_boundary_current(self, upper_limit: float, downer_limit: float) -> None:
         """Redefining the current limits for polynom fitting of I-V behaviour of electrical devices
         Args:
             upper_limit:    Exponential integer for upper current limit
@@ -293,7 +305,7 @@ class ElectricalLoad_Handler:
         """
         self._bounds_current = [downer_limit, upper_limit]
 
-    def change_boundary_voltage(self, upper_limit: int, downer_limit: int) -> None:
+    def change_boundary_voltage(self, upper_limit: float, downer_limit: float) -> None:
         """Redefining the voltage limits for polynom fitting of I-V behaviour of electrical devices
         Args:
             upper_limit:    Exponential integer for upper voltage limit
@@ -301,13 +313,13 @@ class ElectricalLoad_Handler:
         """
         self._bounds_voltage = [downer_limit, upper_limit]
 
-    def change_options_polynom_fit(self, order: int, number: int) -> None:
+    def change_options_fit(self, poly_order: int, num_points_fit: int) -> None:
         """Redefining the options for polynom fitting of I-V behaviour of electrical devices
         Args:
-            order:    Order of the polynom fit
-            number:   Exponential integer for downer voltage limit
+            poly_order:     Order of the polynom fit
+            num_points_fit: Exponential integer for downer voltage limit
         """
-        self._fit_options = [order, number]
+        self._fit_options = [poly_order, num_points_fit]
 
     def print_types(self) -> None:
         """Print electrical types in terminal"""
