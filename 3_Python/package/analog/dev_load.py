@@ -3,7 +3,8 @@ from os.path import join
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.constants import Boltzmann, elementary_charge
-from scipy.optimize import least_squares
+from scipy.optimize import least_squares, curve_fit
+from package.metric import _error_rae, _error_mse
 
 
 @dataclasses.dataclass
@@ -25,97 +26,126 @@ class SettingsDEV:
     temp:       float
 
 
-def _error_mbe(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
-    """Calculating the distance-based metric with mean bias error"""
-    if isinstance(y_true, np.ndarray):
-        error = float(np.sum(y_pred - y_true) / y_pred.size)
-    else:
-        error = y_pred - y_true
-    return error
+def _plot_fit_curve(u_poly: np.ndarray, i_poly: np.ndarray, i_reg: np.ndarray,
+                    metric=(), block_plot=False, title_prefix='', path2save='') -> None:
+    """Plotting the output of the polynomial fit function
+    Args:
+        u_poly:         Numpy array with voltage from polynom fit (input)
+        i_poly:         Numpy array of current response
+        i_reg:          Numpy array of current response from regression
+        block_plot:     Blocking the plots before continuing [Default: False]
+        title_prefix:   String with prefix of title
+        path2save:      String with path to save the figure
+    Returns:
+        None
+    """
+    plt.figure()
+    plt.tight_layout()
+    i_test0 = (u_poly-1.7)/10e3
+    i_test1 = 0.1e-12 * (np.exp((u_poly-0.1)/(2.8 * 26e-3)) - 1)
+
+    axs = list()
+    axs.append(plt.subplot(2, 1, 1))
+    axs.append(plt.subplot(2, 1, 2, sharex=axs[0]))
+    axs[0].semilogy(u_poly, 1e6 * abs(i_reg), 'k', marker='.', markersize=2, label='Regression')
+    axs[0].semilogy(u_poly, 1e6 * abs(i_poly), 'r', marker='.', markersize=2, label='Poly. fit')
+    axs[0].grid()
+    axs[0].set_ylabel(r'Current $\log_{10}(I_F)$ / µA')
+
+    axs[1].plot(u_poly, 1e6 * i_reg, 'k', marker='.', markersize=2, label='Regression')
+    axs[1].plot(u_poly, 1e6 * i_poly, 'r', marker='.', markersize=2, label='Poly. fit')
+    axs[1].grid()
+    axs[1].set_ylabel(r'Current $I_F$ / µA')
+    axs[1].set_xlabel(r'Voltage $\Delta U$ / V')
+    axs[1].legend()
+
+    # --- Add figure title
+    if not len(metric) == 0:
+        axs[0].set_title(title_prefix + f"{metric[0]} = {metric[1]:.4f}")
+
+    if path2save:
+        plt.savefig(join(path2save, "device_iv_charac.svg"), format='svg')
+    plt.show(block=block_plot)
 
 
-def _error_mae(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
-    """Calculating the distance-based metric with mean absolute error"""
-    if isinstance(y_true, np.ndarray):
-        error = float(np.sum(np.abs(y_pred - y_true)) / y_pred.size)
-    else:
-        error = float(np.abs(y_pred - y_true))
-    return error
-
-
-def _error_mse(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
-    """Calculating the distance-based metric with mean squared error"""
-    if isinstance(y_true, np.ndarray):
-        error = float(np.sum((y_pred - y_true) ** 2) / y_pred.size)
-    else:
-        error = float(y_pred - y_true) ** 2
-    return error
-
-
-def _error_tanh(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
-    """Calculating the distance-based metric with tanh"""
-    if isinstance(y_true, np.ndarray):
-        error = float(np.tanh(np.sum(y_pred - y_true) / y_pred.size))
-    else:
-        error = float(np.tanh(y_pred - y_true))
-    return error
+def _calc_error(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
+    return _error_rae(y_pred, y_true)
 
 
 class ElectricalLoad_Handler:
     """Class for emulating an electrical device"""
     _settings: SettingsDEV
     _poly_fit: np.ndarray
+    _curve_fit: np.ndarray
+    _approx_fit: np.ndarray
+    _fit_options: list
+    _bounds_current: list
+    _bounds_voltage: list
     _type_device: dict
     _type_string: dict
     _type_func2reg: dict
+    _type_func2cur: dict
 
     @property
     def temperature_voltage(self) -> float:
         return Boltzmann * self._settings.temp / elementary_charge
 
     def __init__(self) -> None:
+        self._init_class()
+
+    def _init_class(self) -> None:
         self._poly_fit = np.zeros((1, ), dtype=float)
+        self._curve_fit = np.zeros((1, ), dtype=float)
+        self._approx_fit = np.zeros((1, ), dtype=float)
+        self._bounds_current = [-14, -3]
+        self._bounds_voltage = [0.0, +6]
+        self._fit_options = [6, 201]
 
     def _extract_iv_curve_from_regression(self, params_dev: list,
-                                          bounds_voltage: list, bounds_current: list,
-                                          mode=1, num_points_regression=201) -> [np.ndarray, np.ndarray]:
+                                          bounds_voltage: list, bounds_current: list, mode=0) -> [np.ndarray, np.ndarray]:
         """Function for getting the I-V curve from regression
         Args:
             params_dev:             List with parameters from device
             bounds_voltage:         List for voltage limitation / range
             bounds_current:         List for current limitation / range
-            num_points_regression:  Number of samples for regression
-            mode:                   Mode for approximation (0 = Full, 1 = Symmetric (Neg.), 2 = Symmetric (Pos.
+            mode:                   Mode for approximation (0= Given Range, 1=Full Range, 2= Symmetric (Mirror Neg.), 3= Symmetric (Mirror Pos.)
         Returns:
             Two numpy arrays with current and voltage from device
         """
+        u_path = np.zeros((1,), dtype=float)
+        i_path = np.zeros((1,), dtype=float)
         match mode:
+            case 0:
+                # --- Get Data (Given Range)
+                i_path = np.logspace(bounds_current[0], bounds_current[1], self._fit_options[1], endpoint=True)
+                u_path = -self._type_func2reg[self._settings.type](i_path, params_dev, np.zeros(i_path.shape))
             case 1:
-                # --- Get Data
-                i_pathn = -np.logspace(bounds_current[1], bounds_current[0], num_points_regression, endpoint=True)
+                # --- Get Data (Full Range)
+                i_pathp = np.logspace(bounds_current[0], bounds_current[1], self._fit_options[1], endpoint=True)
+                i_path = np.concatenate((-np.flipud(i_pathp[1:]), i_pathp), axis=0)
+                u_path = -self._type_func2reg[self._settings.type](i_path, params_dev, np.zeros(i_path.shape))
+            case 2:
+                # --- Get Data (Symmetric, Pos. mirrored)
+                i_pathn = -np.logspace(bounds_current[1], bounds_current[0], self._fit_options[1], endpoint=True)
                 u_pathn = self._type_func2reg[self._settings.type](-i_pathn, params_dev, np.zeros(i_pathn.shape))
                 # --- Concatenate arrays
                 i_path = np.concatenate((i_pathn, -np.flipud(i_pathn)[1:]), axis=0)
                 u_path = np.concatenate((u_pathn, -np.flipud(u_pathn)[1:]), axis=0)
-            case 2:
-                # --- Get Data
-                i_pathp = np.logspace(bounds_current[0], bounds_current[1], num_points_regression, endpoint=True)
+            case 3:
+                # --- Get Data (Symmetric, Neg. mirrored)(Symmetric, Pos. mirrored)
+                i_pathp = np.logspace(bounds_current[0], bounds_current[1], self._fit_options[1], endpoint=True)
                 u_pathp = self._type_func2reg[self._settings.type](i_pathp, params_dev, np.zeros(i_pathp.shape))
                 # --- Concatenate arrays
                 i_path = np.concatenate((-np.flipud(i_pathp)[1:], i_pathp), axis=0)
                 u_path = np.concatenate((-np.flipud(u_pathp)[1:], i_pathp), axis=0)
-            case _:
-                # --- Get Data
-                i_pathp = np.logspace(bounds_current[0], bounds_current[1], num_points_regression, endpoint=True)
-                i_path = np.concatenate((-np.flipud(i_pathp[1:]), i_pathp), axis=0)
-                u_path = -self._type_func2reg[self._settings.type](i_path, params_dev, np.zeros(i_path.shape))
 
-        # --- Limiting with voltage boundries
+        # --- Limiting with voltage boundaries
         x_start = int(np.argwhere(u_path >= bounds_voltage[0])[0])
         x_stop = int(np.argwhere(u_path >= bounds_voltage[1])[0])
         return i_path[x_start:x_stop], u_path[x_start:x_stop]
 
-    def _do_regression(self, u_inp: np.ndarray | float, u_inn: np.ndarray | float, params: list, bounds_current: list) -> np.ndarray:
+    def _do_regression(self, u_inp: np.ndarray | float, u_inn: np.ndarray | float,
+                       params: list, bounds_current: list) -> np.ndarray:
         """Performing the behaviour of the device with regression
         Args:
             u_inp:          Positive input voltage [V]
@@ -132,7 +162,7 @@ class ElectricalLoad_Handler:
 
         # --- Start Conditions
         bounds = [10 ** bounds_current[0], 10 ** bounds_current[1]]
-        y_initial = 1e-6
+        y_initial = 0.5 * params[0]
 
         # --- Run optimization
         iout = list()
@@ -145,76 +175,139 @@ class ElectricalLoad_Handler:
             iout.append(result.x[0] if sign_pos else -result.x[0])
         return np.array(iout, dtype=float)
 
+    def _get_params_curve_fit(self, params_dev: list,
+                              bounds_voltage: list, bounds_current: list,
+                              do_test=False, do_plot=True, plot_title_prefix='', path2save='') -> float:
+        """Function to extract the params of electrical device behaviour with curve fitting
+        Args:
+            params_dev:             List with parameters from device
+            bounds_voltage:         List for voltage limitation / range
+            bounds_current:         List for current limitation / range
+            do_test:                Performing a test
+
+            do_plot:                Plotting the results of regression and polynom fitting
+            plot_title_prefix:      String for plot title as prefix
+            path2save:              String with path to save the figure
+        Returns:
+            Floating value with Relative Squared Error
+        """
+        i_path, u_path = self._extract_iv_curve_from_regression(
+            params_dev=params_dev,
+            bounds_voltage=bounds_voltage,
+            bounds_current=bounds_current,
+            num_points_regression=self._fit_options[1],
+            mode=0
+        )
+        self._curve_fit = curve_fit(f=self._type_func2cur[self._settings.type], xdata=u_path, ydata=i_path)[0]
+
+        # --- Calculating the metric
+        if do_test:
+            u_poly = np.linspace(bounds_voltage[0], bounds_voltage[1], self._fit_options[1], endpoint=True)
+            i_poly = self._type_device[self._settings.type](u_poly, 0.0)
+            i_test = self._do_regression(u_poly, 0.0, params_dev, bounds_current)
+            error = _calc_error(i_poly, i_test)
+            if do_plot:
+                _plot_fit_curve(u_poly, i_poly, i_test, metric=['1e3 * RAE', 1e3 * error],
+                                title_prefix=plot_title_prefix, path2save=path2save)
+        else:
+            error = -1.0
+        return error
+
     def _get_params_polyfit(self, params_dev: list,
-                            bounds_voltage: list, bounds_current: list,
-                            do_test=False, num_poly_order=11, num_points_regression=201,
-                            plot_title_prefix='',
-                            path2save='') -> None:
+                            bounds_voltage: list, bounds_current: list, mode_fit=0,
+                            do_test=False, do_plot=True, plot_title_prefix='', path2save='') -> float:
         """Function to extract the params of electrical device behaviour with polyfit function
         Args:
             params_dev:             List with parameters from device
             bounds_voltage:         List for voltage limitation / range
             bounds_current:         List for current limitation / range
             do_test:                Performing a test
-            num_poly_order:         Order for polynominal fit
-            num_points_regression:  Number of samples for fitting regression
+            mode_fit:               0: Full Range, 1: Take Pos. Range, Mirror Neg., 2: Take Neg. Range, Mirror Pos.
+            do_plot:                Plotting the results of regression and polynom fitting
             plot_title_prefix:      String for plot title as prefix
             path2save:              String with path to save the figure
         Returns:
-            None
+            Floating value with Relative Squared Error
         """
         i_path, u_path = self._extract_iv_curve_from_regression(
             params_dev=params_dev,
             bounds_voltage=bounds_voltage,
             bounds_current=bounds_current,
-            num_points_regression=num_points_regression,
-            mode=1
+            mode=mode_fit
         )
-        self._poly_fit = np.polyfit(x=u_path, y=i_path, deg=num_poly_order)
+        self._poly_fit = np.polyfit(x=u_path, y=i_path, deg=self._fit_options[0])
 
-        # --- Calculating the error-related metric (MSE)
+        # --- Calculating the metric
         if do_test:
-            u_poly = np.linspace(bounds_voltage[0], bounds_voltage[1], num_points_regression, endpoint=True)
+            u_poly = np.linspace(bounds_voltage[0], bounds_voltage[1], self._fit_options[1], endpoint=True)
             i_poly = self._type_device[self._settings.type](u_poly, 0.0)
             i_test = self._do_regression(u_poly, 0.0, params_dev, bounds_current)
-            self._plot_fit_curve(u_poly, i_poly, i_test, plot_title_prefix)
+            error = _calc_error(i_poly, i_test)
+            if do_plot:
+                _plot_fit_curve(u_poly, i_poly, i_test, metric=['1e3 * RAE', 1e3 * error],
+                                title_prefix=plot_title_prefix, path2save=path2save)
+        else:
+            error = -1.0
+        return error
 
-    def _plot_fit_curve(self, u_poly: np.ndarray, i_poly: np.ndarray, i_reg: np.ndarray,
-                        title_prefix='', path2save='') -> None:
-        """Plotting the output of the polynominal fit function
+    def _find_best_poly_order(self, order_start: int, order_stop: int,
+                             params: list, mode_fitting=0) -> None:
+        """Finding the best polynomial order for fitting
         Args:
-            u_poly:         Numpy array with voltage from polynom fit (input)
-            i_poly:         Numpy array of current response
-            i_reg:          Numpy array of current response from regression
-            title_prefix:   String with prefix of title
-            path2save:      String with path to save the figure
+            order_start:    Integer value with starting order number
+            order_stop:     Integer value with stoping order number
+            params:         List
+            mode_fitting:   Fitting mode
         Returns:
             None
         """
-        mse = _error_mse(i_poly, i_reg)
+        print("\n=====================================================")
+        print("Searching the best poly order with minimal error")
+        print("=====================================================")
+        order_search = [idx for idx in range(order_start, order_stop+1)]
+        error_search = []
+        for idx, order in enumerate(order_search):
 
-        # --- Plotting
-        plt.figure()
-        axs = list()
-        axs.append(plt.subplot(2, 1, 1))
-        axs.append(plt.subplot(2, 1, 2, sharex=axs[0]))
-        axs[0].semilogy(u_poly, 1e6 * abs(i_reg), 'k', marker='.', markersize=2, label='Regression')
-        axs[0].semilogy(u_poly, 1e6 * abs(i_poly), 'r', marker='.', markersize=2, label='Poly. fit')
-        axs[0].grid()
-        axs[0].set_ylabel(r'Current $log10(I_F)$ / µA')
+            self.change_options_polynom_fit(order, self._fit_options[1])
+            error = self._get_params_polyfit(
+                params_dev=params,
+                bounds_voltage=self._bounds_voltage,
+                bounds_current=self._bounds_current,
+                do_test=True, do_plot=False,
+                mode_fit=mode_fitting
+            )
+            error_search.append(error)
+            print(f"#{idx:02d}: order = {order:02d} --> Error = {error}")
 
-        axs[1].plot(u_poly, 1e6 * i_reg, 'k', marker='.', markersize=2, label='Regression')
-        axs[1].plot(u_poly, 1e6 * i_poly, 'r', marker='.', markersize=2, label='Poly. fit')
-        axs[1].grid()
-        axs[1].set_ylabel(r'Current $I_F$ / µA')
-        axs[1].legend()
-        axs[0].set_title(title_prefix + f"sqrt(MSE) = {1e9 * np.sqrt(mse):.4f} nA")
+        # --- Finding best order
+        error_search = np.array(error_search)
+        xmin = np.argwhere(error_search == error_search.min()).flatten()
+        print(f"\nBest solution: Order = {np.array(order_search)[xmin]} with an error of {error_search[xmin]}!")
+        print("TEST")
 
-        axs[1].set_xlabel(r'Voltage $\Delta U$ / V')
-        plt.tight_layout()
+    def change_boundary_current(self, upper_limit: int, downer_limit: int) -> None:
+        """Redefining the current limits for polynom fitting of I-V behaviour of electrical devices
+        Args:
+            upper_limit:    Exponential integer for upper current limit
+            downer_limit:   Exponential integer for downer current limit
+        """
+        self._bounds_current = [downer_limit, upper_limit]
 
-        #if path2save:
-        plt.savefig(join(path2save, "device_iv_charac.svg"), format='svg')
+    def change_boundary_voltage(self, upper_limit: int, downer_limit: int) -> None:
+        """Redefining the voltage limits for polynom fitting of I-V behaviour of electrical devices
+        Args:
+            upper_limit:    Exponential integer for upper voltage limit
+            downer_limit:   Exponential integer for downer voltage limit
+        """
+        self._bounds_voltage = [downer_limit, upper_limit]
+
+    def change_options_polynom_fit(self, order: int, number: int) -> None:
+        """Redefining the options for polynom fitting of I-V behaviour of electrical devices
+        Args:
+            order:    Order of the polynom fit
+            number:   Exponential integer for downer voltage limit
+        """
+        self._fit_options = [order, number]
 
     def print_types(self) -> None:
         """Print electrical types in terminal"""
@@ -252,17 +345,18 @@ class ElectricalLoad_Handler:
         return self.get_current(u_top, u_bot) / area
 
     def get_voltage(self, i_in: np.ndarray, u_inn: np.ndarray | float,
-                    start_step=1e-3, take_last_value=True) -> np.ndarray:
+                    start_value=0.0, start_step=1e-3, take_last_value=True) -> np.ndarray:
         """Getting the voltage response from electrical device
         Args:
             i_in:               Applied current input [A]
             u_inn:              Negative input | bottom electrode | reference voltage [V]
+            start_value:        Starting value [V]
             start_step:         Start precision voltage to start iterating the top electrode voltage
             take_last_value:    Option to take the voltage value from last sample (faster)
         Returns:
             Corresponding voltage response
         """
-        u_response = np.zeros(i_in.shape)
+        u_response = np.zeros(i_in.shape) + start_value
         idx = 0
         for i0 in i_in:
             u_bottom = u_inn if isinstance(u_inn, float) else u_inn[idx]
@@ -271,7 +365,7 @@ class ElectricalLoad_Handler:
             error_sign = []
 
             # First Step Test (Direction)
-            initial_value = u_bottom if idx == 0 and not take_last_value else u_response[idx-1]
+            initial_value = start_value if idx == 0 and not take_last_value else u_response[idx-1]
             test_value = list()
             test_value.append(initial_value - start_step * (float(np.random.random(1) + 0.5)))
             test_value.append(initial_value - 0.5 * start_step * (float(np.random.random(1) - 0.5)))
@@ -289,7 +383,7 @@ class ElectricalLoad_Handler:
             del error0, error0_sign
 
             # --- Iteration
-            u_top = u_bottom if idx == 0 and not take_last_value else u_response[idx-1]
+            u_top = start_value if idx == 0 and not take_last_value else u_response[idx-1]
             step_size = start_step
             step_ite = 0
             do_calc = True
@@ -387,5 +481,4 @@ def _plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray,
         axs[1].set_xlabel(label_axisy)
         axs[1].set_ylabel(label_axisx)
     axs[1].grid()
-
     plt.tight_layout()
