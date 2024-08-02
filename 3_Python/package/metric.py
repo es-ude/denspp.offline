@@ -42,6 +42,27 @@ def _error_mse(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
     return error
 
 
+def _error_rae(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
+    """Calculating the distance-based metric with relative absolute error"""
+    mse = _error_mse(y_pred, y_true)
+    if isinstance(mse, np.ndarray):
+        error = float(np.sqrt(mse) / _error_mae(np.zeros(shape=y_pred.shape), y_true))
+    else:
+        error = float((mse ** 0.5) / _error_mae(0.0, y_pred))
+    return error
+
+
+def _error_rse(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
+    """Calculating the distance-based metric with relative squared error"""
+    mse = _error_mse(y_pred, y_true)
+    y_true_mean = np.mean(y_true)
+    if isinstance(mse, np.ndarray):
+        error = float(mse / np.sum((y_pred - y_true_mean) ** 2) / y_pred.size)
+    else:
+        error = float(mse / (y_pred - y_true_mean) ** 2)
+    return error
+
+
 def compare_timestamps(true_labels: list, pred_labels: list, window=2) -> [float, float, list, list]:
     """ This function compares the timestamps of the predicted classes and the true classes and returns TP, FP, FN and
     new arrays which only contain the classes that have matched timestamps in both arrays. The function should be used
