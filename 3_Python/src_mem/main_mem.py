@@ -1,14 +1,12 @@
 import numpy as np
 from tqdm import tqdm
 from src_mem.pipeline_v3 import Pipeline
-from src_mem.generate_waveform_dataset import generate_dataset
+from package.generate_waveform_dataset import generate_dataset
 from src_mem.memristor_plots import plot_pipeline_feat, show_plots
-from package.analog.dev_noise import noise_awgn
 from package.digital.cluster import SettingsCluster, Clustering
 from package.plot.plot_metric import plot_confusion
-from package.plot.plot_neural import plot_signals_neural_cluster
 from package.dnn.dataset.autoencoder import RecommendedDataset_Config, prepare_training as load_neural
-from package.dnn.dataset.mnist import DatasetMNIST, prepare_training as load_mnist
+from package.dnn.dataset.mnist import prepare_training as load_mnist
 
 
 set_clustering = SettingsCluster(

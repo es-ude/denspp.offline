@@ -211,6 +211,7 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
         """
         params = self._type_params['RDs']
         bounds_voltage = [0.0, self._bounds_voltage[1]]
+
         du = u_inp - u_inn
         if isinstance(du, float):
             du = list()
@@ -231,7 +232,7 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
             # --- Regression
             i_fit = self._do_regression(u_inp, u_inn, params, self._bounds_current)
 
-        i_fit[i_fit < 0.0] = 0.0
+        i_fit[i_fit < 0.0] = params[0]
         if self._settings.noise_en:
             i_fit += self._gen_noise_awgn_pwr(du.size)
         return i_fit
@@ -299,7 +300,7 @@ if __name__ == "__main__":
     u_off = 2.6
 
     t0, uinp = _generate_signal(0.5e-3, settings.fs_ana, [2.5, 0.3, 0.1], [10e3, 18e3, 28e3], 0.0)
-    uinp = 0.5 * uinp + u_off
+    uinp = uinp + u_off
     uinn = 0.0
 
     # --- Model declaration

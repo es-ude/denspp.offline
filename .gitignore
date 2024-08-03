@@ -4,9 +4,8 @@
 
 3_Python/.idea
 3_Python/__pycache__
+3_Python/Config_*.*
 
 3_Python/data
-3_Python/experiments/runs
 3_Python/runs
-3_Python/src_mem/memristor_b2_b4.py
-3_Python/src_mem/memristor_extension.py
+3_Python/src_mem
