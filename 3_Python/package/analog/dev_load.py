@@ -216,7 +216,7 @@ class ElectricalLoad_Handler:
             error = _calc_error(i_poly, i_test)
             if do_plot:
                 self._plot_fit_curve(u_poly, i_poly, i_test, metric=['1e3 * RAE', 1e3 * error],
-                                title_prefix=plot_title_prefix, path2save=path2save)
+                                     title_prefix=plot_title_prefix, path2save=path2save)
         else:
             error = -1.0
         return error
@@ -297,7 +297,7 @@ class ElectricalLoad_Handler:
         print(f"\nBest solution: Order = {np.array(order_search)[xmin]} with an error of {error_search[xmin]}!")
         print("TEST")
 
-    def change_boundary_current(self, upper_limit: float, downer_limit: float) -> None:
+    def change_boundary_current(self, downer_limit: float, upper_limit: float) -> None:
         """Redefining the current limits for polynom fitting of I-V behaviour of electrical devices
         Args:
             upper_limit:    Exponential integer for upper current limit
@@ -305,7 +305,7 @@ class ElectricalLoad_Handler:
         """
         self._bounds_current = [downer_limit, upper_limit]
 
-    def change_boundary_voltage(self, upper_limit: float, downer_limit: float) -> None:
+    def change_boundary_voltage(self, downer_limit: float, upper_limit: float) -> None:
         """Redefining the voltage limits for polynom fitting of I-V behaviour of electrical devices
         Args:
             upper_limit:    Exponential integer for upper voltage limit

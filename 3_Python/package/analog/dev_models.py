@@ -88,8 +88,8 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
         params_dict.update({'R': [self._settings.dev_value], 'C': [self._settings.dev_value], 'L': [self._settings.dev_value]})
         params_dict.update({'Ds': [1e-12, 1.4, 0.7], 'Dd': [1e-12, 1.4, 0.7]})
         params_dict.update({'DSs': [1e-12, 1.4, 0.2], 'DSd': [1e-12, 1.4, 0.2]})
-        params_dict.update({'RDs': [0.1e-12, 2.8, 0.1, self._settings.dev_value]})
-        params_dict.update({'RDd': [0.1e-12, 2.8, 0.1, self._settings.dev_value]})
+        params_dict.update({'RDs': [1e-12, 2.8, 0.1, self._settings.dev_value]})
+        params_dict.update({'RDd': [1e-12, 2.8, 0.1, self._settings.dev_value]})
         return params_dict
 
     def _resistor(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
@@ -149,6 +149,7 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
         """
         du = u_inp - u_inn
         i_out = params[0] * np.exp((du - params[2]) / (params[1] * self.temperature_voltage))
+
         # --- Current limitation
         xpos = np.argwhere(i_out >= 1.0).flatten()
         if not xpos.size == 0:
@@ -209,30 +210,38 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
         Returns:
             Corresponding current signal
         """
-        params = self._type_params['RDs']
+        params = self._type_params[self._settings.type]
         bounds_voltage = [0.0, self._bounds_voltage[1]]
 
         du = u_inp - u_inn
         if isinstance(du, float):
-            du = list()
-            du.append(u_inp - u_inn)
+            du = np.zeros(shape=(1,))
+            du[0] = u_inp - u_inn
 
         if mode_fitting == 1:
-            # --- Fitting
+            # Polynomial fitting
             if self._poly_fit.size == 1:
                 self._get_params_polyfit(params, bounds_voltage, self._bounds_current)
             i_fit = np.polyval(self._poly_fit, du)
         elif mode_fitting == 2:
-            # --- Curve fitting
+            # Curve fitting
             if self._curve_fit.size == 1:
                 self._get_params_curve_fit(params, bounds_voltage, self._bounds_current)
             i_fit = self._func2curve_resistive_diode(du, self._curve_fit[0], self._curve_fit[1],
                                                      self._curve_fit[2], self._curve_fit[3])
         else:
-            # --- Regression
+            # Regression
             i_fit = self._do_regression(u_inp, u_inn, params, self._bounds_current)
 
-        i_fit[i_fit < 0.0] = params[0]
+        # --- Checking if voltage limits or current limits are reached
+        xpos_uth = np.argwhere(du < params[2]).flatten()
+        if not xpos_uth.size == 0:
+            i_fit[xpos_uth] = params[0]
+        xpos_i0 = np.argwhere(i_fit < 0.0).flatten()
+        if not xpos_i0.size == 0:
+            i_fit[xpos_i0] = params[0]
+
+        # --- Adding noise
         if self._settings.noise_en:
             i_fit += self._gen_noise_awgn_pwr(du.size)
         return i_fit
@@ -245,18 +254,13 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
         Returns:
             Corresponding current signal
         """
-        params = self._type_params['RDd']
         du = u_inp - u_inn
-        if isinstance(du, float):
-            du = list()
-            du.append(u_inp - u_inn)
+        i_fit = self._resistive_schottky_single(np.abs(du), 0.0)
 
-        if self._poly_fit.size == 1:
-            self._get_params_polyfit(params, self._bounds_voltage, self._bounds_current)
-        i_fit = np.polyval(self._poly_fit, du)
+        xpos_neg = np.argwhere(du < 0.0).flatten()
+        if not xpos_neg.size == 0:
+            i_fit[xpos_neg] = (-1) * i_fit[xpos_neg]
 
-        if self._settings.noise_en:
-            i_fit += self._gen_noise_awgn_pwr(du.size)
         return i_fit
 
     def plot_fit_curve(self, find_best_order=False, show_plots=False) -> None:
@@ -286,7 +290,7 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     settings = SettingsDEV(
-        type='RDs',
+        type='RDd',
         fs_ana=500e3,
         noise_en=False,
         para_en=False,
@@ -297,10 +301,10 @@ if __name__ == "__main__":
     # --- Declaration of input
     do_ylog = False
     t_end = 0.5e-3
-    u_off = 2.6
+    u_off = 0.0
 
     t0, uinp = _generate_signal(0.5e-3, settings.fs_ana, [2.5, 0.3, 0.1], [10e3, 18e3, 28e3], 0.0)
-    uinp = uinp + u_off
+    uinp = 0.66 * uinp + u_off
     uinn = 0.0
 
     # --- Model declaration
@@ -319,8 +323,8 @@ if __name__ == "__main__":
     _plot_test_results(t0, uinp - uinn, iout, False, do_ylog)
 
     # --- Plotting: Voltage response
-    uout = dev.get_voltage(iout, uinn, u_off, 1e-2)
-    _plot_test_results(t0, uout+uinn, iout, True, do_ylog)
+    #uout = dev.get_voltage(iout, uinn, u_off, 1e-2)
+    #_plot_test_results(t0, uout+uinn, iout, True, do_ylog)
     plt.show()
 
 
