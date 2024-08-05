@@ -28,14 +28,17 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
     _fit_options: list
     _curve_fit: np.ndarray
     _approx_fit: np.ndarray
-    _bounds_current: list
-    _bounds_voltage: list
+
     _type_device: dict
     _type_string: dict
     _type_params: dict
     _type_func2reg: dict
     _type_func2cur: dict
     _type_func2app: dict
+
+    _bounds_curr: list
+    _bounds_volt: list
+    _params_used: list
 
     def __init__(self, settings_dev: SettingsDEV, settings_noise=RecommendedSettingsNoise):
         super().__init__(settings_noise, settings_dev.fs_ana)
@@ -46,6 +49,7 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
         self._type_params = self.__init_params()
         self._type_func2reg = self.__init_func2reg()
         self._type_func2cur = self.__init_func2curve()
+
         self._fit_options = [6, 1001]
 
     def __init_dev(self) -> dict:
@@ -200,8 +204,7 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
         """Function for performing curve fitting for resistive diode behaviour"""
         return a + b * i_path + c * np.log(d * i_path + 1)
 
-    def _resistive_schottky_single(self, u_inp: np.ndarray, u_inn: np.ndarray | float,
-                                   mode_fitting=1) -> np.ndarray:
+    def _resistive_schottky_single(self, u_inp: np.ndarray, u_inn: np.ndarray | float, mode_fitting=1) -> np.ndarray:
         """Performing the behaviour of a series connection of resistor and single-side schottky diode
         Args:
             u_inp:          Positive input voltage [V]
@@ -210,8 +213,9 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
         Returns:
             Corresponding current signal
         """
-        params = self._type_params[self._settings.type]
-        bounds_voltage = [0.0, self._bounds_voltage[1]]
+        self._params_used = self._type_params[self._settings.type]
+        self._bounds_volt = [1.0, self._bounds_volt[1]]
+        self._bounds_curr = [-15, -2]
 
         du = u_inp - u_inn
         if isinstance(du, float):
@@ -221,25 +225,25 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
         if mode_fitting == 1:
             # Polynomial fitting
             if self._poly_fit.size == 1:
-                self._get_params_polyfit(params, bounds_voltage, self._bounds_current)
+                self._get_params_polyfit(self._params_used)
             i_fit = np.polyval(self._poly_fit, du)
         elif mode_fitting == 2:
             # Curve fitting
             if self._curve_fit.size == 1:
-                self._get_params_curve_fit(params, bounds_voltage, self._bounds_current)
+                self._get_params_curve_fit(self._params_used, mode_fit=0)
             i_fit = self._func2curve_resistive_diode(du, self._curve_fit[0], self._curve_fit[1],
                                                      self._curve_fit[2], self._curve_fit[3])
         else:
             # Regression
-            i_fit = self._do_regression(u_inp, u_inn, params, self._bounds_current)
+            i_fit = self._do_regression(u_inp, u_inn, self._bounds_volt, self._bounds_curr)
 
         # --- Checking if voltage limits or current limits are reached
-        xpos_uth = np.argwhere(du < params[2]).flatten()
+        xpos_uth = np.argwhere(du < 0.75).flatten()
         if not xpos_uth.size == 0:
-            i_fit[xpos_uth] = params[0]
+            i_fit[xpos_uth] = self._params_used[0]
         xpos_i0 = np.argwhere(i_fit < 0.0).flatten()
         if not xpos_i0.size == 0:
-            i_fit[xpos_i0] = params[0]
+            i_fit[xpos_i0] = self._params_used[0]
 
         # --- Adding noise
         if self._settings.noise_en:
@@ -263,34 +267,12 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
 
         return i_fit
 
-    def plot_fit_curve(self, find_best_order=False, show_plots=False) -> None:
-        """Plotting the output of the polynom fit function
-        Args:
-            find_best_order:    Find the best poly.-fit order
-            show_plots:         Showing plots of each run
-        Returns:
-            None
-        """
-        params = self._type_params[self._settings.type]
-        if not find_best_order:
-            self._get_params_polyfit(
-                params_dev=params,
-                bounds_voltage=self._bounds_voltage,
-                bounds_current=self._bounds_current,
-                do_test=True,
-                mode_fit=0
-            )
-        else:
-            self._find_best_poly_order(3, 18,
-                                       bounds_voltage=self._bounds_voltage, params_dev=params,
-                                       mode_fitting=0, show_plots=show_plots)
-
 
 # --------------------- TEST CASE ---------------------------------------
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     settings = SettingsDEV(
-        type='RDd',
+        type='RDs',
         fs_ana=500e3,
         noise_en=False,
         para_en=False,
@@ -312,19 +294,21 @@ if __name__ == "__main__":
     dev = ElectricalLoad(settings)
     dev.print_types()
 
-    # --- Plotting: I-V curve
-    print("\nPlotting I-V curve")
-    dev.change_boundary_voltage(1.33, 6.0)
-    dev.plot_fit_curve()
-
     # --- Plotting: Current response
-    print("\nPlotting transient response")
+    print("\nPlotting transient current response")
     iout = dev.get_current(uinp, uinn)
     _plot_test_results(t0, uinp - uinn, iout, False, do_ylog)
 
     # --- Plotting: Voltage response
+    #print("\nPlotting transient voltage response")
     #uout = dev.get_voltage(iout, uinn, u_off, 1e-2)
     #_plot_test_results(t0, uout+uinn, iout, True, do_ylog)
+
+    # --- Plotting: I-V curve
+    print("\nPlotting I-V curve")
+    dev.change_boundary_voltage(1.0, 6.0)
+    dev.plot_fit_curve()
+
     plt.show()
 
 

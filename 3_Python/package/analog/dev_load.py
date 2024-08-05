@@ -50,12 +50,14 @@ class ElectricalLoad_Handler:
     _curve_fit: np.ndarray
     _approx_fit: np.ndarray
     _fit_options: list
-    _bounds_current: list
-    _bounds_voltage: list
     _type_device: dict
     _type_string: dict
     _type_func2reg: dict
     _type_func2cur: dict
+    # Local limitations
+    _bounds_curr: list
+    _bounds_volt: list
+    _params_used: list
 
     @property
     def temperature_voltage(self) -> float:
@@ -68,24 +70,27 @@ class ElectricalLoad_Handler:
         self._poly_fit = np.zeros((1, ), dtype=float)
         self._curve_fit = np.zeros((1, ), dtype=float)
         self._approx_fit = np.zeros((1, ), dtype=float)
-        self._bounds_current = [-14, -3]
-        self._bounds_voltage = [0.0, +6]
         self._fit_options = [1, 1001]
 
-    def _extract_iv_curve_from_regression(self, params_dev: list, bounds_voltage: list, bounds_current: list,
-                                          mode=0) -> [np.ndarray, np.ndarray]:
+        self._bounds_curr = [-14, -3]
+        self._bounds_volt = [0.0, +6]
+        self._params_used = [1e0]
+
+    def _extract_iv_curve_from_regression(self, params_dev: list,
+                                          bounds_voltage: list, bounds_current: list,
+                                          mode_fit=0) -> [np.ndarray, np.ndarray]:
         """Function for getting the I-V curve from regression
         Args:
             params_dev:             List with parameters from device
             bounds_voltage:         List for voltage limitation / range
             bounds_current:         List for current limitation / range
-            mode:                   Mode for approximation (0= Given Range, 1=Full Range, 2= Symmetric (Mirror Neg.), 3= Symmetric (Mirror Pos.)
+            mode_fit:               Fit Range Mode [0: Full Pos., 1: Full +/-, 2: Take Pos., Mirror Neg., 3: Take Neg., Mirror Pos.]
         Returns:
             Two numpy arrays with current and voltage from device
         """
         u_path = np.zeros((1,), dtype=float)
         i_path = np.zeros((1,), dtype=float)
-        match mode:
+        match mode_fit:
             case 0:
                 # --- Get Data (Given Range)
                 i_path = np.logspace(bounds_current[0], bounds_current[1], self._fit_options[1], endpoint=True)
@@ -146,16 +151,13 @@ class ElectricalLoad_Handler:
             iout.append(result.x[0] if sign_pos else -result.x[0])
         return np.array(iout, dtype=float)
 
-    def _get_params_curve_fit(self, params_dev: list,
-                              bounds_voltage: list, bounds_current: list,
+    def _get_params_curve_fit(self, params_dev: list, mode_fit: int,
                               do_test=False, do_plot=True, plot_title_prefix='', path2save='') -> float:
         """Function to extract the params of electrical device behaviour with curve fitting
         Args:
             params_dev:             List with parameters from device
-            bounds_voltage:         List for voltage limitation / range
-            bounds_current:         List for current limitation / range
+            mode_fit:               Fit Range Mode [0: Full Pos., 1: Full +/-, 2: Take Pos., Mirror Neg., 3: Take Neg., Mirror Pos.]
             do_test:                Performing a test
-
             do_plot:                Plotting the results of regression and polynom fitting
             plot_title_prefix:      String for plot title as prefix
             path2save:              String with path to save the figure
@@ -164,36 +166,36 @@ class ElectricalLoad_Handler:
         """
         i_path, u_path = self._extract_iv_curve_from_regression(
             params_dev=params_dev,
-            bounds_voltage=bounds_voltage,
-            bounds_current=bounds_current,
+            bounds_voltage=self._bounds_volt,
+            bounds_current=self._bounds_curr,
             num_points_regression=self._fit_options[1],
-            mode=0
+            mode_fit=mode_fit
         )
         self._curve_fit = curve_fit(f=self._type_func2cur[self._settings.type], xdata=u_path, ydata=i_path)[0]
 
         # --- Calculating the metric
         if do_test:
-            u_poly = np.linspace(bounds_voltage[0], bounds_voltage[1], self._fit_options[1], endpoint=True)
+            u_poly = np.linspace(self._bounds_volt[0], self._bounds_volt[1], self._fit_options[1], endpoint=True)
             i_poly = self._type_device[self._settings.type](u_poly, 0.0)
-            i_test = self._do_regression(u_poly, 0.0, params_dev, bounds_current)
+            i_test = self._do_regression(u_poly, 0.0, params_dev, self._bounds_curr)
             error = _calc_error(i_poly, i_test)
             if do_plot:
-                self._plot_fit_curve(u_poly, i_poly, i_test, metric=['1e3 * RAE', 1e3 * error],
-                                title_prefix=plot_title_prefix, path2save=path2save)
+                self._plot_fit_curve(
+                    u_poly, i_poly, i_test, metric=['1e3 * RAE', 1e3 * error],
+                    title_prefix=plot_title_prefix, path2save=path2save
+                )
         else:
             error = -1.0
         return error
 
-    def _get_params_polyfit(self, params_dev: list,
-                            bounds_voltage: list, bounds_current: list, mode_fit=0,
-                            do_test=False, do_plot=True, plot_title_prefix='', path2save='') -> float:
+    def _get_params_polyfit(self, params_dev: list, mode_fit=0,
+                            do_test=False, do_plot=False,
+                            plot_title_prefix='', path2save='') -> float:
         """Function to extract the params of electrical device behaviour with polyfit function
         Args:
             params_dev:             List with parameters from device
-            bounds_voltage:         List for voltage limitation / range
-            bounds_current:         List for current limitation / range
             do_test:                Performing a test
-            mode_fit:               0: Full Range, 1: Take Pos. Range, Mirror Neg., 2: Take Neg. Range, Mirror Pos.
+            mode_fit:               Fit Range Mode [0: Full Pos., 1: Full +/-, 2: Take Pos., Mirror Neg., 3: Take Neg., Mirror Pos.]
             do_plot:                Plotting the results of regression and polynom fitting
             plot_title_prefix:      String for plot title as prefix
             path2save:              String with path to save the figure
@@ -202,21 +204,23 @@ class ElectricalLoad_Handler:
         """
         i_path, u_path = self._extract_iv_curve_from_regression(
             params_dev=params_dev,
-            bounds_voltage=bounds_voltage,
-            bounds_current=bounds_current,
-            mode=mode_fit
+            bounds_voltage=self._bounds_volt,
+            bounds_current=self._bounds_curr,
+            mode_fit=mode_fit
         )
         self._poly_fit = np.polyfit(x=u_path, y=i_path, deg=self._fit_options[0])
 
         # --- Calculating the metric
         if do_test:
-            u_poly = np.linspace(bounds_voltage[0], bounds_voltage[1], self._fit_options[1], endpoint=True)
+            u_poly = np.linspace(self._bounds_volt[0], self._bounds_volt[1], self._fit_options[1], endpoint=True)
             i_poly = self._type_device[self._settings.type](u_poly, 0.0)
-            i_test = self._do_regression(u_poly, 0.0, params_dev, bounds_current)
+            i_test = self._do_regression(u_poly, 0.0, params_dev, self._bounds_curr)
             error = _calc_error(i_poly, i_test)
             if do_plot:
-                self._plot_fit_curve(u_poly, i_poly, i_test, metric=['1e3 * RAE', 1e3 * error],
-                                     title_prefix=plot_title_prefix, path2save=path2save)
+                self._plot_fit_curve(
+                    u_poly, i_poly, i_test, metric=['1e3 * RAE', 1e3 * error],
+                    title_prefix=plot_title_prefix, path2save=path2save
+                )
         else:
             error = -1.0
         return error
@@ -262,7 +266,7 @@ class ElectricalLoad_Handler:
 
     def _find_best_poly_order(self, order_start: int, order_stop: int,
                               bounds_voltage: list, params_dev: list,
-                              show_plots=False, mode_fitting=0) -> None:
+                              show_plots=False, mode_fit=0) -> None:
         """Finding the best polynomial order for fitting
         Args:
             order_start:    Integer value with starting order number
@@ -270,7 +274,7 @@ class ElectricalLoad_Handler:
             bounds_voltage: Voltage limitation for fitting
             params_dev:     List
             show_plots:     Showing plots of each run
-            mode_fitting:   Fitting mode
+            mode_fit:       Fit Range Mode [0: Full Pos., 1: Full +/-, 2: Take Pos., Mirror Neg., 3: Take Neg., Mirror Pos.]
         Returns:
             None
         """
@@ -284,9 +288,9 @@ class ElectricalLoad_Handler:
             error = self._get_params_polyfit(
                 params_dev=params_dev,
                 bounds_voltage=bounds_voltage,
-                bounds_current=self._bounds_current,
+                bounds_current=self._bounds_curr,
                 do_test=True, do_plot=show_plots,
-                mode_fit=mode_fitting
+                mode_fit=mode_fit
             )
             error_search.append(error)
             print(f"#{idx:02d}: order = {order:02d} --> Error = {error}")
@@ -297,13 +301,40 @@ class ElectricalLoad_Handler:
         print(f"\nBest solution: Order = {np.array(order_search)[xmin]} with an error of {error_search[xmin]}!")
         print("TEST")
 
+    def plot_fit_curve(self, find_best_order=False, show_plots=True, order_start=2, order_stop=18, mode_fit=0) -> None:
+        """Plotting the output of the polynom fit function
+        Args:
+            find_best_order:    Find the best poly.-fit order
+            show_plots:         Showing plots of each run
+            order_start:        Integer value for starting search (best polynom order)
+            order_stop:         Integer value for stopping search (best polynom order)
+            mode_fit:           Fit Range Mode [0: Full Pos., 1: Full +/-, 2: Take Pos., Mirror Neg., 3: Take Neg., Mirror Pos.]
+        Returns:
+            None
+        """
+        if len(self._params_used) == 1 and self._params_used[0] == 1.0:
+            warn("Please start fit curve after first fitting with get_voltage() or get_current()!", DeprecationWarning)
+
+        if not find_best_order:
+            self._get_params_polyfit(
+                params_dev=self._params_used,
+                do_test=True, do_plot=show_plots,
+                mode_fit=mode_fit
+            )
+        else:
+            self._find_best_poly_order(
+                order_start=order_start, order_stop=order_stop,
+                params_dev=self._params_used,
+                show_plots=show_plots, mode_fitting=mode_fit
+            )
+
     def change_boundary_current(self, downer_limit: float, upper_limit: float) -> None:
         """Redefining the current limits for polynom fitting of I-V behaviour of electrical devices
         Args:
             upper_limit:    Exponential integer for upper current limit
             downer_limit:   Exponential integer for downer current limit
         """
-        self._bounds_current = [downer_limit, upper_limit]
+        self._bounds_curr = [downer_limit, upper_limit]
 
     def change_boundary_voltage(self, downer_limit: float, upper_limit: float) -> None:
         """Redefining the voltage limits for polynom fitting of I-V behaviour of electrical devices
@@ -311,7 +342,7 @@ class ElectricalLoad_Handler:
             upper_limit:    Exponential integer for upper voltage limit
             downer_limit:   Exponential integer for downer voltage limit
         """
-        self._bounds_voltage = [downer_limit, upper_limit]
+        self._bounds_volt = [downer_limit, upper_limit]
 
     def change_options_fit(self, poly_order: int, num_points_fit: int) -> None:
         """Redefining the options for polynom fitting of I-V behaviour of electrical devices
