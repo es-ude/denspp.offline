@@ -1,13 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from package.plot.plot_common import cm_to_inch, save_figure
+from package.plot.plot_common import _cm_to_inch, _save_figure
 
 color_label = ['r', 'b', 'y', 'm', 'k']
 
 
 def results_input(signals: list, fs: float | int, label_xpos=(), label_id=(), path2save='', addon='') -> None:
     """"""
-    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(21)))
+    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(21)))
     plt.subplots_adjust(hspace=0)
     label_avai = not len(label_xpos) == 0
 
@@ -35,4 +35,4 @@ def results_input(signals: list, fs: float | int, label_xpos=(), label_id=(), pa
     plt.tight_layout()
     # --- saving plots
     if path2save:
-        save_figure(plt, path2save, f"pipeline_emg_elec{addon}")
+        _save_figure(plt, path2save, f"pipeline_emg_elec{addon}")

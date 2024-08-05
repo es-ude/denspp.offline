@@ -3,7 +3,7 @@ from os import mkdir
 from os.path import exists, join
 import matplotlib.pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay, precision_recall_fscore_support
-from package.plot.plot_common import save_figure, cm_to_inch
+from package.plot.plot_common import _save_figure, _cm_to_inch
 from package.metric import compare_timestamps
 
 
@@ -44,7 +44,7 @@ def plot_loss(metric: list, metric_type: str, path2save='', epoch_zoom=None) -> 
         plot_metrics[idx, :] = np.array(val, dtype=float)
 
     # --- Plotting
-    plt.figure(figsize=(cm_to_inch(10), cm_to_inch(8)))
+    plt.figure(figsize=(_cm_to_inch(10), _cm_to_inch(8)))
     axs = list()
     axs.append(plt.subplot(1, 1, 1))
     axs[0].plot(plot_metrics[:, 0], color='k', marker='.', label='Train.')
@@ -79,7 +79,7 @@ def plot_loss(metric: list, metric_type: str, path2save='', epoch_zoom=None) -> 
 
     plt.tight_layout()
     if path2save:
-        save_figure(plt, path2save, f"loss_metric_{metric_type}"+addon)
+        _save_figure(plt, path2save, f"loss_metric_{metric_type}" + addon)
 
 
 def plot_confusion(true_labels: list | np.ndarray,
@@ -168,7 +168,7 @@ def plot_confusion(true_labels: list | np.ndarray,
         )
 
     # --- Plotting the results of the class confusion matrix
-    fig, ax = plt.subplots(figsize=(cm_to_inch(12), cm_to_inch(12.5)))
+    fig, ax = plt.subplots(figsize=(_cm_to_inch(12), _cm_to_inch(12.5)))
     cmp.plot(ax=ax, colorbar=False, values_format='.3f',
              text_kw={'fontsize': 8}, cmap=plt.cm.Blues,
              xticks_rotation=('vertical' if do_xticks_vertical else 'horizontal')
@@ -177,7 +177,7 @@ def plot_confusion(true_labels: list | np.ndarray,
     plt.tight_layout()
     # --- saving
     if path2save:
-        save_figure(plt, path2save, f"confusion_matrix_{name_addon}")
+        _save_figure(plt, path2save, f"confusion_matrix_{name_addon}")
     plt.close('all')
 
 

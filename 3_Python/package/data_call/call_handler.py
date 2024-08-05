@@ -1,11 +1,12 @@
 import sys
-from os import listdir
-from os.path import join, exists, isdir
+from os.path import join, exists
 from glob import glob
 import dataclasses
 import numpy as np
 from fractions import Fraction
 from scipy.signal import resample_poly
+
+from package.structure_builder import _create_folder_general_firstrun
 
 
 @dataclasses.dataclass
@@ -43,6 +44,7 @@ class _DataController:
     path2file: str
 
     def __init__(self) -> None:
+        _create_folder_general_firstrun()
         # --- Meta-Information about datasets
         # Information of subfolders and files
         self._no_subfolder = 0

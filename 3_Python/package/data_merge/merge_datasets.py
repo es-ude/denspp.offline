@@ -5,14 +5,12 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import numpy.lib.scimath as sm
 
+from package.structure_builder import _create_folder_general_firstrun
+from package.metric import _error_mse
+
 
 def crossval(wave1, wave2):
     result = np.correlate(wave1, wave2, 'full') / (sm.sqrt(sum(np.square(wave1))) * sm.sqrt(sum(np.square(wave2))))
-    return result
-
-
-def mse_loss(yin, yref):
-    result = sum(np.square(yin - yref))
     return result
 
 
@@ -31,7 +29,7 @@ def calc_metric(wave_in, wave_ref):
 
     result = []
     result.append(maxInIndex - maxRefIndex)
-    result.append(mse_loss(wave_in, wave_ref))
+    result.append(_error_mse(wave_in, wave_ref))
     result.append(np.abs(np.trapz(wave_in[:maxInIndex + 1]) - np.trapz(wave_in[maxInIndex:])))
     result.append(maxInIndex)
     result.append(maxIn)
@@ -107,6 +105,7 @@ def plot_results(data_packet_X, data_packet_Y, data_packet_mean, path2fig, name)
 
 class SortDataset:
     def __init__(self, path_2_file: str):
+        _create_folder_general_firstrun()
         """Tool for loading and processing dataset to generate a sorted dataset"""
         self.setOptions = dict()
         self.setOptions['do_2nd_run'] = False

@@ -1,5 +1,5 @@
 from torch import nn
-import matplotlib.pyplot as plt
+from package.plot.plot_common import _show_plots, _close_plots
 from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 import package.dnn.models.autoencoder_cnn as ae_models
@@ -71,7 +71,7 @@ def do_train_ae(dnn_handler: dnn_handler, mode_ae: int, noise_std=0.05) -> None:
 
     # --- Plotting and Ending
     if dnn_handler.do_plot:
-        plt.close("all")
+        _close_plots()
         results_training(
             path=logsdir, cl_dict=data_result['cl_dict'], feat=data_result['feat'],
             yin=data_result['input'], ypred=data_result['pred'], ymean=data_mean,
@@ -80,4 +80,4 @@ def do_train_ae(dnn_handler: dnn_handler, mode_ae: int, noise_std=0.05) -> None:
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                             path2save=logsdir, cl_dict=data_result['cl_dict'])
 
-        plt.show(block=dnn_handler.do_block)
+        _show_plots(block=dnn_handler.do_block)

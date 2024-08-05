@@ -5,7 +5,7 @@ import platform
 import cpuinfo
 import numpy as np
 from typing import Any
-from shutil import rmtree, copy
+from shutil import rmtree
 from glob import glob
 from datetime import datetime
 from torch import optim, device, cuda, backends, nn, from_numpy, Tensor, randn, cat
@@ -13,6 +13,8 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
 from sklearn.model_selection import KFold
+
+from package.structure_builder import _create_folder_general_firstrun, _create_folder_dnn_firstrun
 
 
 class __model_settings_common(nn.Module):
@@ -103,31 +105,6 @@ class Config_Dataset:
         return join(self.data_path, self.data_file_name)
 
 
-def copy_handler_dummy() -> None:
-    """Generating a handler dummy for training neural networks"""
-    folder2search = '3_Python'
-    path2start = join(getcwd().split(folder2search)[0], folder2search)
-    path2dst = join(path2start, 'src_dnn')
-    # --- Checking if path to local training handler exists
-    if not exists(path2dst):
-        mkdir(path2dst)
-    if not exists(join(path2dst, 'models')):
-        mkdir(join(path2dst, 'models'))
-    if not exists(join(path2dst, 'dataset')):
-        mkdir(join(path2dst, 'dataset'))
-
-    # --- Copy process
-    if not exists(path2dst):
-        path2src = join(path2start, 'package/dnn/template')
-        print("\nGenerating a template for ML training")
-        for file in glob(join(path2src, "*.py")):
-            print(f"... copied: {file}")
-            if "main" in file:
-                copy(file, f"")
-            else:
-                copy(file, f"{path2dst}/")
-        print("Please restart the training routine!")
-
 
 class training_pytorch:
     """Class for Handling Training of Deep Neural Networks in PyTorch
@@ -145,6 +122,9 @@ class training_pytorch:
     cell_classes: list
 
     def __init__(self, config_train: Config_PyTorch, config_dataset: Config_Dataset, do_train=True) -> None:
+        _create_folder_general_firstrun()
+        _create_folder_dnn_firstrun()
+
         self.os_type = platform.system()
         self._writer = None
         self.model = None

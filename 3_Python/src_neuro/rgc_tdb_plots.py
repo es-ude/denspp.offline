@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 
-from package.plot.plot_common import save_figure, cm_to_inch
+from package.plot.plot_common import _save_figure, _cm_to_inch
 from package.data_call.call_spike_files import DataLoader, SettingsDATA
 from package.data_call.call_cellbib import CellSelector
 from src_neuro.pipeline_data import Pipeline
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     del spike_xpos, datahandler, idx, ch, file,
 
     # --- Plotting the results
-    fig, axs = plt.subplots(2, 2, sharex='col', sharey='row', figsize=(cm_to_inch(14), cm_to_inch(16)))
+    fig, axs = plt.subplots(2, 2, sharex='col', sharey='row', figsize=(_cm_to_inch(14), _cm_to_inch(16)))
     scaley = 1e6 / 1.0
     tick_textsize = 12
     label_fontsize = 13
@@ -99,5 +99,5 @@ if __name__ == "__main__":
     # Output
     plt.tight_layout(h_pad=0.05, w_pad=0.05
                      )
-    save_figure(fig, path2save, figure_name, ['pdf', 'svg'])
+    _save_figure(fig, path2save, figure_name, ['pdf', 'svg'])
     plt.show(block=True)

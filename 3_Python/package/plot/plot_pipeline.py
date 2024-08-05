@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 from package.pipeline_cmds import PipelineSignal
 from package.nsp import calc_amplitude, calc_autocorrelogram, calc_firing_rate
-from package.plot.plot_common import cm_to_inch, save_figure
+from package.plot.plot_common import _cm_to_inch, _save_figure
 
 color_none = ['#929591']
 color_cluster = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
@@ -17,7 +17,7 @@ def results_afe0(signals: PipelineSignal, no_electrode: int, path="", time_cut=[
     tA = np.arange(0, uin.size, 1) / fs_ana
 
     # --- Plot afe
-    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(21)))
+    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(21)))
     plt.subplots_adjust(hspace=0)
 
     ax1 = plt.subplot(311)
@@ -42,7 +42,7 @@ def results_afe0(signals: PipelineSignal, no_electrode: int, path="", time_cut=[
     plt.tight_layout()
     # --- saving plots
     if path:
-        save_figure(plt, path, "pipeline_afe_elec" + str(no_electrode) + addon_zoom)
+        _save_figure(plt, path, "pipeline_afe_elec" + str(no_electrode) + addon_zoom)
 
 
 def results_afe1(signals: PipelineSignal, no_electrode: int, path="", time_cut=()) -> None:
@@ -62,7 +62,7 @@ def results_afe1(signals: PipelineSignal, no_electrode: int, path="", time_cut=(
     tD = np.arange(0, xadc.size, 1) / fs_dig
 
     # --- Plotting
-    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(21)))
+    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(21)))
     plt.subplots_adjust(hspace=0)
 
     ax1 = plt.subplot(411)
@@ -104,7 +104,7 @@ def results_afe1(signals: PipelineSignal, no_electrode: int, path="", time_cut=(
     plt.tight_layout()
     # --- saving plots
     if path:
-        save_figure(plt, path, "pipeline_transient_elec" + str(no_electrode) + addon_zoom)
+        _save_figure(plt, path, "pipeline_transient_elec" + str(no_electrode) + addon_zoom)
 
 
 def results_afe2(signals: PipelineSignal, no_electrode: int, path="", time_cut=[], show_noise=False):
@@ -131,7 +131,7 @@ def results_afe2(signals: PipelineSignal, no_electrode: int, path="", time_cut=[
         tick_old = sel[1]
 
     # --- Plot generation
-    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
+    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(13)))
     # plt.subplots_adjust(hspace=0)
     axs = list()
     for idx in range(0, 1):
@@ -175,7 +175,7 @@ def results_afe2(signals: PipelineSignal, no_electrode: int, path="", time_cut=[
     plt.tight_layout()
     # --- saving plots
     if path:
-        save_figure(plt, path, "pipeline_transient_sorted" + str(no_electrode) + addon_zoom)
+        _save_figure(plt, path, "pipeline_transient_sorted" + str(no_electrode) + addon_zoom)
 
 
 def results_fec(signals: PipelineSignal, no_electrode: int, path="") -> None:
@@ -191,7 +191,7 @@ def results_fec(signals: PipelineSignal, no_electrode: int, path="") -> None:
         x0 = np.where(cluster == id)[0]
         frames_mean[idx, :] = np.mean(frames_out[x0], axis=0)
 
-    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
+    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(13)))
     plt.subplots_adjust(hspace=0)
     ax1 = plt.subplot(221)
     ax2 = plt.subplot(222)
@@ -216,7 +216,7 @@ def results_fec(signals: PipelineSignal, no_electrode: int, path="") -> None:
     plt.tight_layout()
     # --- saving plots
     if path:
-        save_figure(plt, path, "pipeline_fec_elec" + str(no_electrode))
+        _save_figure(plt, path, "pipeline_fec_elec" + str(no_electrode))
 
 
 def results_ivt(signals: PipelineSignal, no_electrode: int, path="") -> None:
@@ -235,7 +235,7 @@ def results_ivt(signals: PipelineSignal, no_electrode: int, path="") -> None:
     no_bins = 100
 
     # Plotting
-    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
+    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(13)))
     plt.subplots_adjust(hspace=0)
     axs = list()
     for idx in range(0, len(cluster_num)):
@@ -263,7 +263,7 @@ def results_ivt(signals: PipelineSignal, no_electrode: int, path="") -> None:
     plt.tight_layout()
     # --- saving plots
     if path:
-        save_figure(plt, path, "pipeline_ivt" + str(no_electrode))
+        _save_figure(plt, path, "pipeline_ivt" + str(no_electrode))
 
 
 def results_correlogram(signals: PipelineSignal, no_electrode: int, path="") -> None:
@@ -271,7 +271,7 @@ def results_correlogram(signals: PipelineSignal, no_electrode: int, path="") -> 
     val_in = calc_autocorrelogram(signals.spike_ticks, signals.fs_dig)
     cluster_num = len(val_in)
 
-    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
+    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(13)))
 
     axs = list()
     for idx, val in enumerate(val_in):
@@ -289,14 +289,14 @@ def results_correlogram(signals: PipelineSignal, no_electrode: int, path="") -> 
     plt.tight_layout()
     # --- saving plots
     if path:
-        save_figure(plt, path, "pipeline_correlogram" + str(no_electrode))
+        _save_figure(plt, path, "pipeline_correlogram" + str(no_electrode))
 
 
 def results_firing_rate(signals: PipelineSignal, no_electrode: int, path="") -> None:
     fr_in = calc_firing_rate(signals.spike_ticks, signals.fs_dig)
     no_cluster = len(fr_in)
 
-    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
+    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(13)))
     axs = list()
     for idx in range(0, no_cluster):
         axs.append(plt.subplot(no_cluster, 1, idx+1))
@@ -310,7 +310,7 @@ def results_firing_rate(signals: PipelineSignal, no_electrode: int, path="") -> 
     plt.tight_layout()
     # --- saving plots
     if path:
-        save_figure(plt, path, "pipeline_fr" + str(no_electrode))
+        _save_figure(plt, path, "pipeline_fr" + str(no_electrode))
 
 
 def results_cluster_amplitude(signals: PipelineSignal, no_electrode: int, path="") -> None:
@@ -318,7 +318,7 @@ def results_cluster_amplitude(signals: PipelineSignal, no_electrode: int, path="
     cluster = signals.frames_align[2]
     cluster_no = np.unique(cluster)
 
-    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
+    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(13)))
     axs = list()
     for idx, id in enumerate(cluster_no):
         if idx == 0:
@@ -350,7 +350,7 @@ def results_cluster_amplitude(signals: PipelineSignal, no_electrode: int, path="
     plt.tight_layout()
     # --- saving plots
     if path:
-        save_figure(plt, path, "pipeline_amp" + str(no_electrode))
+        _save_figure(plt, path, "pipeline_amp" + str(no_electrode))
 
 
 def results_paper(signals: PipelineSignal, no_electrode: int, path="", time_cut=[]) -> None:
@@ -375,7 +375,7 @@ def results_paper(signals: PipelineSignal, no_electrode: int, path="", time_cut=
         mean_frames[idx, :] = np.mean(frames_out[x0], axis=0)
 
     # --- Plot 1: Transient signals
-    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(12)))
+    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(12)))
     plt.rcParams.update({'font.size': text_size})
     plt.subplots_adjust(hspace=0)
     ax1 = plt.subplot(311)
@@ -411,10 +411,10 @@ def results_paper(signals: PipelineSignal, no_electrode: int, path="", time_cut=
     plt.tight_layout()
     # --- saving plots
     if path:
-        save_figure(plt, path, "pipeline_paper0_elec" + str(no_electrode))
+        _save_figure(plt, path, "pipeline_paper0_elec" + str(no_electrode))
 
     # --- Figure 2
-    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(6)))
+    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(6)))
     plt.rcParams.update({'font.size': text_size})
     plt.subplots_adjust(wspace=0.4)
     ax1 = plt.subplot(121)
@@ -439,4 +439,4 @@ def results_paper(signals: PipelineSignal, no_electrode: int, path="", time_cut=
     plt.tight_layout()
     # --- saving plots
     if path:
-        save_figure(plt, path, "pipeline_paper1_elec" + str(no_electrode))
+        _save_figure(plt, path, "pipeline_paper1_elec" + str(no_electrode))

@@ -1,5 +1,5 @@
 from torch import nn
-import matplotlib.pyplot as plt
+from package.plot.plot_common import _close_plots, _show_plots
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 import package.dnn.models.mnist as models
 
@@ -79,13 +79,13 @@ def do_train_cl(do_plot=True, do_block=True) -> None:
 
     # --- Plotting
     if do_plot:
-        plt.close('all')
+        _close_plots()
         # --- Plotting full model
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
         plot_mnist_graphs(data_result['input'], data_result['valid_clus'], path2save=logsdir)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir)
-        plt.show(block=do_block)
+        _show_plots(block=do_block)
 
 
 def do_train_ae(do_plot=True, do_block=True) -> None:
@@ -114,10 +114,10 @@ def do_train_ae(do_plot=True, do_block=True) -> None:
 
     # --- Plotting
     if do_plot:
-        plt.close('all')
+        _close_plots()
         # --- Plotting full model
         plot_loss(epoch_loss, 'Loss', path2save=logsdir)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir)
         plot_mnist_graphs(data_result['input'], data_result['valid_clus'], "_input", path2save=logsdir)
         plot_mnist_graphs(data_result['pred'], data_result['valid_clus'], "_predicted", path2save=logsdir)
-        plt.show(block=do_block)
+        _show_plots(block=do_block)

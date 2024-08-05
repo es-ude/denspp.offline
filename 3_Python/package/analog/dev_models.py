@@ -1,5 +1,7 @@
 import numpy as np
 from scipy.integrate import cumtrapz
+
+from package.structure_builder import _create_folder_general_firstrun
 from package.analog.dev_load import ElectricalLoad_Handler, SettingsDEV, _generate_signal, _plot_test_results
 from package.analog.dev_noise import ProcessNoise, SettingsNoise
 
@@ -42,14 +44,16 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
 
     def __init__(self, settings_dev: SettingsDEV, settings_noise=RecommendedSettingsNoise):
         super().__init__(settings_noise, settings_dev.fs_ana)
-        self._settings = settings_dev
+
+        _create_folder_general_firstrun()
         self._init_class()
+
+        self._settings = settings_dev
         self._type_device = self.__init_dev()
         self._type_string = self.__init_dev_string()
         self._type_params = self.__init_params()
         self._type_func2reg = self.__init_func2reg()
         self._type_func2cur = self.__init_func2curve()
-
         self._fit_options = [6, 1001]
 
     def __init_dev(self) -> dict:

@@ -1,5 +1,6 @@
 from os import mkdir
 from os.path import join, exists
+from package.plot.plot_common import _close_plots, _show_plots
 from package.plot.plot_metric import plot_confusion
 from package.data_call.call_cellbib import logic_combination
 
@@ -107,7 +108,7 @@ def do_train_rgc_class(dnn_handler: dnn_handler) -> None:
 
     # --- Plotting
     if dnn_handler.do_plot:
-        plt.close('all')
+        _close_plots()
         # --- Plotting full model
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'],
@@ -117,4 +118,4 @@ def do_train_rgc_class(dnn_handler: dnn_handler) -> None:
 
         # --- Plotting reduced model (ON/OFF and Transient/Sustained)
         rgc_logic_combination(logsdir)
-        plt.show(block=dnn_handler.do_block)
+        _close_plots(block=dnn_handler.do_block)

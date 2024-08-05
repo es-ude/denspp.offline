@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from package.plot.plot_common import cm_to_inch, save_figure
+from package.plot.plot_common import _cm_to_inch, _save_figure
 
 
 def plot_signals_neural_cluster(dataset, path2save='') -> None:
@@ -21,5 +21,5 @@ def plot_signals_neural_cluster(dataset, path2save='') -> None:
 
     plt.tight_layout(pad=0.5)
     if path2save:
-        save_figure(plt, path2save, f"neural_cluster_waveforms")
+        _save_figure(plt, path2save, f"neural_cluster_waveforms")
 
