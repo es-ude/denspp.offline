@@ -1,9 +1,12 @@
 import unittest
 from os import remove
-from os.path import join
+from os.path import join, exists
 
 from package.structure_builder import write_data_to_yaml_file, read_yaml_data_to_data
 
+# --- DATA FOR TESTING
+path2yaml = ''
+filename = 'test_output'
 data_wr = {
     'Name': 'John Doe',
     'Position': 'DevOps Engineer',
@@ -12,23 +15,22 @@ data_wr = {
     'Experience': {'GitHub': 'Software Engineer', 'Google': 'Technical Engineer', 'Linkedin': 'Data Analyst'},
     'Languages': {'Markup': ['HTML'], 'Programming': ['Python', 'JavaScript', 'Golang']}
 }
+path2chck = join(path2yaml, f"{filename}.yaml")
 
 
 class TestSum(unittest.TestCase):
     def test_sum(self):
         self.assertEqual(sum([1, 2, 3]), 6, "Should be 6")
 
-    def test_yaml(self):
-        path2yaml = ''
-        filename = 'test_output'
-
+    def test_yaml_create(self):
         write_data_to_yaml_file(data_wr, filename, path2yaml)
+        self.assertEqual(exists(path2chck), True, "YAML file should be there")
+
+    def test_yaml_read(self):
         data_rd = read_yaml_data_to_data(filename, path2yaml)
         self.assertEqual(data_wr == data_rd, True, "Should be equal")
-
-        # --- Checking
         if data_wr == data_rd:
-            remove(join(path2yaml, f"{filename}.yaml"))
+            remove(path2chck)
 
 
 if __name__ == '__main__':
