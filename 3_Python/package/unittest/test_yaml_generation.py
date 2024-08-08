@@ -2,7 +2,7 @@ import unittest
 from os import remove
 from os.path import join, exists
 
-from package.structure_builder import write_data_to_yaml_file, read_yaml_data_to_data
+from package.structure_builder import write_dict_to_yaml, read_yaml_to_dict
 
 # --- DATA FOR TESTING
 path2yaml = ''
@@ -23,11 +23,11 @@ class TestSum(unittest.TestCase):
         self.assertEqual(sum([1, 2, 3]), 6, "Should be 6")
 
     def test_yaml_create(self):
-        write_data_to_yaml_file(data_wr, filename, path2yaml)
+        write_dict_to_yaml(data_wr, filename, path2yaml)
         self.assertEqual(exists(path2chck), True, "YAML file should be there")
 
     def test_yaml_read(self):
-        data_rd = read_yaml_data_to_data(filename, path2yaml)
+        data_rd = read_yaml_to_dict(filename, path2yaml)
         self.assertEqual(data_wr == data_rd, True, "Should be equal")
         if data_wr == data_rd:
             remove(path2chck)

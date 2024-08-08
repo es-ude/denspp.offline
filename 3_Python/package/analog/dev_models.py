@@ -251,7 +251,7 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
 
         # --- Adding noise
         if self._settings.noise_en:
-            i_fit += self._gen_noise_awgn_pwr(du.size)
+            i_fit += self._gen_noise_awgn_curr(du.size, self._params_used[-1])
         return i_fit
 
     def _resistive_schottky_antiparallel(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
