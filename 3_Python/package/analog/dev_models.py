@@ -276,7 +276,7 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     settings = SettingsDEV(
-        type='RDs',
+        type='R',
         fs_ana=500e3,
         noise_en=False,
         para_en=False,
@@ -287,10 +287,10 @@ if __name__ == "__main__":
     # --- Declaration of input
     do_ylog = False
     t_end = 0.5e-3
-    u_off = 0.0
+    u_off = 1.35
 
     t0, uinp = _generate_signal(0.5e-3, settings.fs_ana, [2.5, 0.3, 0.1], [10e3, 18e3, 28e3], 0.0)
-    uinp = 0.66 * uinp + u_off
+    uinp = 0.125 * uinp + u_off
     uinn = 0.0
 
     # --- Model declaration
@@ -304,9 +304,9 @@ if __name__ == "__main__":
     _plot_test_results(t0, uinp - uinn, iout, False, do_ylog)
 
     # --- Plotting: Voltage response
-    #print("\nPlotting transient voltage response")
-    #uout = dev.get_voltage(iout, uinn, u_off, 1e-2)
-    #_plot_test_results(t0, uout+uinn, iout, True, do_ylog)
+    print("\nPlotting transient voltage response")
+    uout = dev.get_voltage(iout, uinn, u_off, 1e-2)
+    _plot_test_results(t0, uout+uinn, iout, True, do_ylog)
 
     # --- Plotting: I-V curve
     print("\nPlotting I-V curve")

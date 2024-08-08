@@ -91,37 +91,41 @@ class ElectricalLoad_Handler:
         Returns:
             Two numpy arrays with current and voltage from device
         """
-        u_path = np.zeros((1,), dtype=float)
-        i_path = np.zeros((1,), dtype=float)
-        match mode_fit:
-            case 0:
-                # --- Get Data (Given Range)
-                i_path = np.logspace(bounds_current[0], bounds_current[1], self._fit_options[1], endpoint=True)
-                u_path = -self._type_func2reg[self._settings.type](i_path, params_dev, np.zeros(i_path.shape))
-            case 1:
-                # --- Get Data (Full Range)
-                i_pathp = np.logspace(bounds_current[0], bounds_current[1], self._fit_options[1], endpoint=True)
-                i_path = np.concatenate((-np.flipud(i_pathp[1:]), i_pathp), axis=0)
-                u_path = -self._type_func2reg[self._settings.type](i_path, params_dev, np.zeros(i_path.shape))
-            case 2:
-                # --- Get Data (Symmetric, Pos. mirrored)
-                i_pathn = -np.logspace(bounds_current[1], bounds_current[0], self._fit_options[1], endpoint=True)
-                u_pathn = self._type_func2reg[self._settings.type](-i_pathn, params_dev, np.zeros(i_pathn.shape))
-                # --- Concatenate arrays
-                i_path = np.concatenate((i_pathn, -np.flipud(i_pathn)[1:]), axis=0)
-                u_path = np.concatenate((u_pathn, -np.flipud(u_pathn)[1:]), axis=0)
-            case 3:
-                # --- Get Data (Symmetric, Neg. mirrored)
-                i_pathp = np.logspace(bounds_current[0], bounds_current[1], self._fit_options[1], endpoint=True)
-                u_pathp = self._type_func2reg[self._settings.type](i_pathp, params_dev, np.zeros(i_pathp.shape))
-                # --- Concatenate arrays
-                i_path = np.concatenate((-np.flipud(i_pathp)[1:], i_pathp), axis=0)
-                u_path = np.concatenate((-np.flipud(u_pathp)[1:], i_pathp), axis=0)
+        if self._settings.type in self._type_func2reg:
+            u_path = np.zeros((1,), dtype=float)
+            i_path = np.zeros((1,), dtype=float)
+            match mode_fit:
+                case 0:
+                    # --- Get Data (Given Range)
+                    i_path = np.logspace(bounds_current[0], bounds_current[1], self._fit_options[1], endpoint=True)
+                    u_path = -self._type_func2reg[self._settings.type](i_path, params_dev, np.zeros(i_path.shape))
+                case 1:
+                    # --- Get Data (Full Range)
+                    i_pathp = np.logspace(bounds_current[0], bounds_current[1], self._fit_options[1], endpoint=True)
+                    i_path = np.concatenate((-np.flipud(i_pathp[1:]), i_pathp), axis=0)
+                    u_path = -self._type_func2reg[self._settings.type](i_path, params_dev, np.zeros(i_path.shape))
+                case 2:
+                    # --- Get Data (Symmetric, Pos. mirrored)
+                    i_pathn = -np.logspace(bounds_current[1], bounds_current[0], self._fit_options[1], endpoint=True)
+                    u_pathn = self._type_func2reg[self._settings.type](-i_pathn, params_dev, np.zeros(i_pathn.shape))
+                    # --- Concatenate arrays
+                    i_path = np.concatenate((i_pathn, -np.flipud(i_pathn)[1:]), axis=0)
+                    u_path = np.concatenate((u_pathn, -np.flipud(u_pathn)[1:]), axis=0)
+                case 3:
+                    # --- Get Data (Symmetric, Neg. mirrored)
+                    i_pathp = np.logspace(bounds_current[0], bounds_current[1], self._fit_options[1], endpoint=True)
+                    u_pathp = self._type_func2reg[self._settings.type](i_pathp, params_dev, np.zeros(i_pathp.shape))
+                    # --- Concatenate arrays
+                    i_path = np.concatenate((-np.flipud(i_pathp)[1:], i_pathp), axis=0)
+                    u_path = np.concatenate((-np.flipud(u_pathp)[1:], i_pathp), axis=0)
 
-        # --- Limiting with voltage boundaries
-        x_start = int(np.argwhere(u_path >= bounds_voltage[0])[0])
-        x_stop = int(np.argwhere(u_path >= bounds_voltage[1])[0])
-        return i_path[x_start:x_stop], u_path[x_start:x_stop]
+            # --- Limiting with voltage boundaries
+            x_start = int(np.argwhere(u_path >= bounds_voltage[0])[0])
+            x_stop = int(np.argwhere(u_path >= bounds_voltage[1])[0])
+            return i_path[x_start:x_stop], u_path[x_start:x_stop]
+        else:
+            print("Skipped regression task: No regression model for choicen device is available")
+            return np.zeros((1, ), dtype=float), np.zeros((1, ), dtype=float)
 
     def _do_regression(self, u_inp: np.ndarray | float, u_inn: np.ndarray | float,
                        params: list, bounds_current: list) -> np.ndarray:
@@ -211,21 +215,25 @@ class ElectricalLoad_Handler:
             bounds_current=self._bounds_curr,
             mode_fit=mode_fit
         )
-        self._poly_fit = np.polyfit(x=u_path, y=i_path, deg=self._fit_options[0])
+        if not i_path.size == 1:
+            self._poly_fit = np.polyfit(x=u_path, y=i_path, deg=self._fit_options[0])
 
-        # --- Calculating the metric
-        if do_test:
-            u_poly = np.linspace(self._bounds_volt[0], self._bounds_volt[1], self._fit_options[1], endpoint=True)
-            i_poly = self._type_device[self._settings.type](u_poly, 0.0)
-            i_test = self._do_regression(u_poly, 0.0, params_dev, self._bounds_curr)
-            error = _calc_error(i_poly, i_test)
-            if do_plot:
-                self._plot_fit_curve(
-                    u_poly, i_poly, i_test, metric=['1e3 * RAE', 1e3 * error],
-                    title_prefix=plot_title_prefix, path2save=path2save
-                )
+            # --- Calculating the metric
+            if do_test:
+                u_poly = np.linspace(self._bounds_volt[0], self._bounds_volt[1], self._fit_options[1], endpoint=True)
+                i_poly = self._type_device[self._settings.type](u_poly, 0.0)
+                i_test = self._do_regression(u_poly, 0.0, params_dev, self._bounds_curr)
+                error = _calc_error(i_poly, i_test)
+                if do_plot:
+                    self._plot_fit_curve(
+                        u_poly, i_poly, i_test, metric=['1e3 * RAE', 1e3 * error],
+                        title_prefix=plot_title_prefix, path2save=path2save
+                    )
+            else:
+                error = -1.0
         else:
             error = -1.0
+
         return error
 
     def _plot_fit_curve(self, u_poly: np.ndarray, i_poly: np.ndarray, i_reg: np.ndarray,
@@ -471,6 +479,8 @@ def _generate_signal(t_end: float, fs: float, upp: list, fsig: list, uoff=0.0) -
         upp:        List with amplitude values
         fsig:       List with corresponding frequency
         uoff:       Offset voltage
+    Returns:
+        List with two numpy arrays (time, voltage signal)
     """
     t0 = np.linspace(0, t_end, num=int(t_end * fs), endpoint=True)
     uinp = np.zeros(t0.shape) + uoff
@@ -480,8 +490,18 @@ def _generate_signal(t_end: float, fs: float, upp: list, fsig: list, uoff=0.0) -
 
 
 def _plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray,
-                        mode_current_input: bool, do_ylog=False) -> None:
-    """Only for testing"""
+                       mode_current_input: bool, do_ylog=False, plot_gray=False) -> None:
+    """Function for plotting transient signal and I-V curve of the used electrical device
+    Args:
+        time:       Numpy array with time information
+        u_in:       Numpy array with input voltage (mode_current_input = False) or output voltage (True)
+        i_in:       Numpy array with output current (mode_current_input = False) or input current (True)
+        mode_current_input: Bool decision for selecting right source and sink value
+        do_ylog:    Plotting the current in the I-V-curve normal (False) or logarithmic (True)
+        plot_gray:  Plotting the response of device in red dashed (False) or gray dashed (True)
+    Returns:
+        None
+    """
     scale_i = 1e3
     scale_u = 1
 
@@ -502,7 +522,10 @@ def _plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray,
     a = axs[0].plot(time, signalx, 'k', label=label_legx)
     axs[0].set_ylabel(label_axisy)
     axs[0].set_xlabel('Time t [s]')
-    b = twin1.plot(time, signaly, 'r', label=label_legy)
+    if plot_gray:
+        b = twin1.plot(time, signaly, linestyle='dashed', color=[0.5, 0.5, 0.5], label=label_legy)
+    else:
+        b = twin1.plot(time, signaly, 'r--', label=label_legy)
     twin1.set_ylabel(label_axisx)
     axs[0].grid()
 

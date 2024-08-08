@@ -16,5 +16,5 @@ pynvml
 torchinfo
 torchvision
 tensorboard
-# elasticai-creator
+# elasticai-creator == 0.59.2
 # snntorch
