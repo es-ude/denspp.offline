@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from package.pipeline_cmds import PipelineSignal
-from package.nsp import calc_amplitude, calc_autocorrelogram, calc_firing_rate
+from package.nsp.spike_analyse import calc_amplitude, calc_autocorrelogram, calc_firing_rate
 from package.plot.plot_common import _cm_to_inch, _save_figure
 
 color_none = ['#929591']

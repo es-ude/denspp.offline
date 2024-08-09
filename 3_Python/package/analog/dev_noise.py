@@ -1,7 +1,7 @@
 import dataclasses
 import numpy as np
 from scipy.constants import Boltzmann, elementary_charge
-from package.signal_analyse import do_fft
+from package.data_process.transformation import do_fft
 
 
 @dataclasses.dataclass

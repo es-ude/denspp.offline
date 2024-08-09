@@ -2,7 +2,7 @@ from os.path import abspath
 import numpy as np
 
 from package.pipeline_cmds import PipelineCMD, PipelineSignal
-from package.nsp import calc_spiketicks
+from package.nsp.spike_analyse import calc_spiketicks
 from package.analog.pre_amp import PreAmp, SettingsAMP
 from package.analog.adc_basic import SettingsADC
 from package.analog.adc_sar import ADC_SAR as ADC0

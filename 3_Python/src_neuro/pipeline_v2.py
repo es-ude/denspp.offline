@@ -9,7 +9,7 @@ from package.digital.dsp import DSP, SettingsDSP
 from package.digital.sda import SpikeDetection, SettingsSDA
 from package.digital.fex import FeatureExtraction, SettingsFeature
 from package.digital.cluster import Clustering, SettingsCluster
-from package.nsp import calc_spiketicks
+from package.nsp.spike_analyse import calc_spiketicks
 
 
 class _SettingsPipe:

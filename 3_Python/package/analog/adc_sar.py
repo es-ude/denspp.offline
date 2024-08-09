@@ -1,6 +1,6 @@
 import numpy as np
 from package.analog.adc_basic import _adc_basic, SettingsADC
-from package.analog.adc_basic import SettingsNon, RecommendedSettingsNon
+from package.analog.adc_basic import RecommendedSettingsNon
 
 
 class ADC_SAR(_adc_basic):
@@ -138,7 +138,7 @@ class ADC_SAR(_adc_basic):
 # ------------ TEST ROUTINE -------------
 if __name__ == "__main__":
     from package.analog.dev_noise import noise_real
-    from package.signal_analyse import do_fft
+    from package.data_process.transformation import do_fft
     import matplotlib.pyplot as plt
 
     set_adc = SettingsADC(
