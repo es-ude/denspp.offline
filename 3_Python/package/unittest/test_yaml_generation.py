@@ -2,7 +2,7 @@ import unittest
 from os import remove
 from os.path import join, exists
 
-from package.structure_builder import write_dict_to_yaml, read_yaml_to_dict
+from package.yaml_handler import write_dict_to_yaml, read_yaml_to_dict
 
 # --- DATA FOR TESTING
 path2yaml = ''
