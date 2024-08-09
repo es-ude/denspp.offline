@@ -1,3 +1,5 @@
+import types
+
 import yaml
 from os import mkdir, getcwd
 from os.path import join, exists
@@ -93,10 +95,16 @@ class yaml_config_handler:
 
     @property
     def path2chck(self) -> str:
+        """Getting the path to the desired YAML file"""
         return join(self.__path2yaml, f"{self.__yaml_name}.yaml")
 
     def __init__(self, dummy_yaml: dict, path2yaml='', yaml_name='Config_Train'):
-        """"""
+        """Creating a class for handling YAML files
+        Args:
+            dummy_yaml:         Dictionary with all entries of the dummy, will be generated if YAML file does not exists
+            path2yaml:          String with path to the YAML file [Default: '']
+            yaml_name:          String with name of the YAML file [Default: 'Config_Train']
+        """
         self.__path2yaml = path2yaml
         self.__yaml_name = yaml_name
 
@@ -114,12 +122,22 @@ class yaml_config_handler:
         )
 
     def list_keys(self) -> None:
-        """"""
+        """Printing all keys and values of available content in dict"""
         print("\nPrinting the keys and values of existing data")
         print("=======================================================")
         for key in self._data.keys():
-            print(key)
+            print(f"{key}: {self._data[key]}")
+        print("\n")
 
     def get_value(self, param: str):
-        """"""
+        """Getting the content of a specific key input
+        Args:
+            param:  String with the input
+        Returns:
+            Value to corresponding key entry
+        """
         return self._data[param]
+
+    def get_class(self) -> types.SimpleNamespace:
+        """Getting all key inputs from yaml dictionary to a class"""
+        return types.SimpleNamespace(**self._data)
