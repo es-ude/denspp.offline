@@ -11,6 +11,9 @@ from charge_balancer import *
 
 logger = Logging.setup_logging()
 
+# --graphing options--
+graph_signals = False
+
 # --circuit parameters--
 R_tis = 20@u_kOhm
 R_far = 10@u_MOhm
@@ -18,9 +21,9 @@ C_dl = 6@u_nF
 v_cm = 1@u_mV
 
 # --simulation parameters--
-n_rep = 10
+n_rep = 50
 i_amp=12e-6
-f_samp=10e6
+f_samp=1e6
 f_samp_wfg=200*f_samp
 t_start=1e-3
 t_end=1e-3
@@ -31,38 +34,55 @@ n_waves=2
 
 cb_offset = CBSettings(
     cbstrat=CBStrat.OFFSET_CURRENT,
-    adaptive=False,
-    window=0.1,
-    adjust=0.005*i_amp
+    cbeval=CBEval.WINDOW,
+    memory=False,
+    size=0.1,
+    charge=True,
+    adjust=0.1*float(C_dl)
 )
 
 cb_dclipping = CBSettings(
     cbstrat=CBStrat.ANO_DCLIPPING,
-    adaptive=False,
-    window=0.1,
-    adjust=0.05*t_sine
+    cbeval=CBEval.WINDOW,
+    memory=False,
+    size=0.1,
+    charge=True,
+    adjust=0.1*float(C_dl)
 )
 
 cb_duration = CBSettings(
     cbstrat=CBStrat.ANO_DURATION,
-    adaptive=False,
-    window=0.1,
-    adjust=0.2*t_sine
+    cbeval=CBEval.WINDOW,
+    memory=False,
+    size=0.1,
+    charge=True,
+    adjust=0.1*float(C_dl)
 )
 
 cb_amplitude = CBSettings(
     cbstrat=CBStrat.ANO_AMPLITUDE,
-    adaptive=False,
-    window=0.1,
-    adjust=0.2
+    cbeval=CBEval.WINDOW,
+    memory=False,
+    size=0.1,
+    charge=True,
+    adjust=0.1*float(C_dl)
 )
 
 cb_aclipping = CBSettings(
     cbstrat=CBStrat.ANO_ACLIPPING,
-    adaptive=False,
-    window=0.1,
-    adjust=0.2*i_amp
+    cbeval=CBEval.WINDOW,
+    memory=False,
+    size=0.1,
+    charge=True,
+    adjust=0.1*float(C_dl)
 )
+
+# cb_adaptive = CBSettings(
+#     cbstrat=CBStrat.OFFSET_CURRENT,
+#     adaptive=True,
+#     window=2e-6,
+#     adjust=0
+# )
 
 wfgsettings = WFGSettings(
     i_amp=i_amp,
@@ -74,7 +94,8 @@ wfgsettings = WFGSettings(
     n_waves=n_waves
 )
 
-cbal = ChargeBalancer(wfgsettings=wfgsettings, cbsettings=cb_aclipping)
+cbal = ChargeBalancer(wfgsettings=wfgsettings, cbsettings=cb_amplitude)
+print("init rep time: ", cbal.get_t_rep())
 
 # --current stimulator--
 class SinePulseStimulator(NgSpiceShared):
@@ -120,6 +141,11 @@ i_rfar = []
 v_out = []
 v_cdl = []
 v_rtis = []
+whole_wf = []
+
+v_res1 = [float(0)]
+v_res2 = [float(0)]
+t_iter_points = [float(0)]
 
 # --create simulator--
 sine_stim = SinePulseStimulator(waveform=cbal.waveform,
@@ -128,44 +154,105 @@ simulator = circuit.simulator(temperature=25, nominal_temperature=25,
                               simulator='ngspice-shared', ngspice_shared=sine_stim)
 
 for rep in range(n_rep):
+    print("Running rep", rep+1)
     sine_stim.update_waveform(cbal.waveform)
+    whole_wf = np.concatenate((whole_wf, cbal.waveform))
     
     simulator.initial_condition(point=prev_v_point)
     analysis_i = simulator.transient(step_time=1/cbal.f_samp, end_time=cbal.get_t_rep())
-    time = np.concatenate((time, analysis_i.time + start_time))
-    i_in = np.concatenate((i_in, analysis_i.vistim_plus))
-    i_cdl = np.concatenate((i_cdl, analysis_i.vcdl_plus))
-    i_rfar = np.concatenate((i_rfar, analysis_i.vrfar_plus))
-    v_out = np.concatenate((v_out, analysis_i.out_p - analysis_i.out_n))
-    v_cdl = np.concatenate((v_cdl, analysis_i.point - analysis_i.out_n))
-    v_rtis = np.concatenate((v_rtis, analysis_i.out_p - analysis_i.point))    
+
+    # time = np.concatenate((time, analysis_i.time + (cbal.get_t_rep()*rep)@u_s))
+    if graph_signals:
+        time = np.concatenate((time, analysis_i.time + start_time))
+        i_in = np.concatenate((i_in, analysis_i.vistim_plus))
+        i_cdl = np.concatenate((i_cdl, analysis_i.vcdl_plus))
+        i_rfar = np.concatenate((i_rfar, analysis_i.vrfar_plus))
+        v_out = np.concatenate((v_out, analysis_i.out_p - analysis_i.out_n))
+        v_cdl = np.concatenate((v_cdl, analysis_i.point - analysis_i.out_n))
+        v_rtis = np.concatenate((v_rtis, analysis_i.out_p - analysis_i.point)) 
+   
     start_time += analysis_i.time[-1]
     prev_v_point = analysis_i.point[-1]
+    t_iter_points.append(float(start_time))
 
-    cbal.perform_charge_balancing(float(prev_v_point))
+    v_res1.append(prev_v_point-v_cm)
 
-    print(rep, prev_v_point)
+    cbal.perform_charge_balancing(float(prev_v_point-v_cm))
+
+    # print("Res voltage:", prev_v_point)
+
+print("Running whole sim")
+sine_stim.update_waveform(whole_wf)
+simulator.initial_condition(point=v_cm)
+analysis = simulator.transient(step_time=1/f_samp, end_time=start_time)
+
+# print(time[-1])
+# print(cbal.get_t_rep()*n_rep)
+
+# print(t_iter_points)
+
+x = 1
+
+for i in range(len(analysis.time.as_ndarray())):
+    if float(analysis.time.as_ndarray()[i]) >= t_iter_points[x]:
+        v_res2.append(analysis.out_p.as_ndarray()[i] - analysis.out_n.as_ndarray()[i])
+        x += 1
+
+if len(v_res2) < n_rep + 1:
+    v_res2.append(analysis.out_p.as_ndarray()[-1] - analysis.out_n.as_ndarray()[-1])
 
 # --graph plotting--
-figure1, [ax1, ax2] = plt.subplots(2, 1)
-ax1.set_title('Currents')
-ax1.set_xlabel('Time [s]')
-ax1.set_ylabel('Current [A]')
+if graph_signals:
+    figure1, [ax1, ax2] = plt.subplots(2, 1)
+    ax1.set_title('Currents')
+    ax1.set_xlabel('Time [s]')
+    ax1.set_ylabel('Current [A]')
+    ax1.grid()
+    ax1.plot(time, i_in, label=r'$I_{in}(t)$')
+    ax1.plot(time, i_rfar, label=r'$I_{Rfar}(t)$')
+    ax1.plot(time, i_cdl, label=r'$I_{Cdl}(t)$')
+    ax1.legend()
+
+    ax2.set_title('Voltages')
+    ax2.set_xlabel('Time [s]')
+    ax2.set_ylabel('Voltage [V]')
+    ax2.grid()
+    ax2.plot(time, v_out, label=r'$V_{out}(t)$')
+    ax2.plot(time, v_cdl, label=r'$V_{Cdl}(t)$')
+    ax2.plot(time, v_rtis, label=r'$V_{Rtis}(t)$')
+    ax2.legend()
+    plt.tight_layout()
+
+    figure2, [ax1, ax2] = plt.subplots(2, 1)
+    ax1.set_title('Currents')
+    ax1.set_xlabel('Time [s]')
+    ax1.set_ylabel('Current [A]')
+    ax1.grid()
+    ax1.plot(analysis.time, analysis.vistim_plus, label=r'$I_{in}(t)$')
+    ax1.plot(analysis.time, analysis.vrfar_plus, label=r'$I_{Rfar}(t)$')
+    ax1.plot(analysis.time, analysis.vcdl_plus, label=r'$I_{Cdl}(t)$')
+    ax1.legend()
+
+    ax2.set_title('Voltages')
+    ax2.set_xlabel('Time [s]')
+    ax2.set_ylabel('Voltage [V]')
+    ax2.grid()
+    ax2.plot(analysis.time, analysis.out_p - analysis.out_n, label=r'$V_{out}(t)$')
+    ax2.plot(analysis.time, analysis.point - analysis.out_n, label=r'$V_{Cdl}(t)$')
+    ax2.plot(analysis.time, analysis.out_p - analysis.point, label=r'$V_{Rtis}(t)$')
+    ax2.legend()
+    plt.tight_layout()
+
+# --residual voltage graph--
+figure3, ax1 = plt.subplots(1)
+ax1.set_title('Residual Voltage')
+ax1.set_xlabel('Rep')
+ax1.set_ylabel('Voltage [V]')
 ax1.grid()
-ax1.plot(time, i_in, label=r'$I_{in}(t)$')
-ax1.plot(time, i_rfar, label=r'$I_{Rfar}(t)$')
-ax1.plot(time, i_cdl, label=r'$I_{Cdl}(t)$')
+ax1.plot(v_res1, label=r'$Iterative$')
+ax1.plot(v_res2, label=r'$One-off$')
 ax1.legend()
-
-ax2.set_title('Voltages')
-ax2.set_xlabel('Time [s]')
-ax2.set_ylabel('Voltage [V]')
-ax2.grid()
-ax2.plot(time, v_out, label=r'$V_{out}(t)$')
-ax2.plot(time, v_cdl, label=r'$V_{Cdl}(t)$')
-ax2.plot(time, v_rtis, label=r'$V_{Rtis}(t)$')
-ax2.legend()
-
 plt.tight_layout()
+
 plt.show()
 

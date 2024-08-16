@@ -4,7 +4,14 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
+from PySpice.Unit import *
+
 from enum import Enum
+
+class CBEval(Enum):
+    WINDOW = 1
+    PROPORTIONAL = 2
+    SIGMOID = 3
 
 class CBStrat(Enum):
     OFFSET_CURRENT = 1
@@ -14,12 +21,14 @@ class CBStrat(Enum):
     ANO_ACLIPPING = 5
 
 @dataclass
-class CBSettings:
+class CBSettings: # --change this!!!--
     """"""
-    cbstrat: CBStrat
-    adaptive: bool
-    window: float
-    adjust: float
+    cbstrat: CBStrat # parameter to be changed
+    cbeval: CBEval # evaluation scheme
+    memory: bool # (window comp only) does waveform revert to original when value is within window?
+    size: float # size of window comparator/linear factor
+    charge: bool # adjustment is based on parameter/charge?
+    adjust: float # how much the parameter/charge is adjusted
 
 @dataclass
 class WFGSettings:
@@ -44,24 +53,35 @@ class ChargeBalancer:
         
         self.t_clip = float(0)
         self.i_offset = float(0)
-        self.amp_ratio = float(1)
+        # self.amp_ratio = float(1)
+        self.i_amp_cat = self.i_amp
+        self.i_amp_ano = self.i_amp
         self.i_lim = self.i_amp
 
         self.t_cat = self.t_sine / 2
         self.t_ano = self.t_cat
 
         self.cbstrat = cbsettings.cbstrat
-        self.adaptive = cbsettings.adaptive
-        self.window = cbsettings.window
+        # self.adaptive = cbsettings.adaptive
+        # self.window = cbsettings.window
+        self.cbeval = cbsettings.cbeval
+        self.memory = cbsettings.memory
+        self.size = cbsettings.size
+        self.charge = cbsettings.charge
         self.adjust = cbsettings.adjust
+
+        self.q_delta = float(0)
+
+        self.q_ano_init = 2 * self.t_ano * self.i_amp_ano / np.pi
 
         self.wfg = WaveformGenerator(self.f_samp_wfg)
         self.waveform = self._generate_waveform()
 
-
-
     def get_t_rep(self):
         return self.t_start + self.n_waves * self._get_t_wave() + self.t_end
+    
+    def get_q_ano_init(self):
+        return self.q_ano_init
 
     def _get_t_wave(self):
         return self.t_cat + self.t_ano
@@ -96,40 +116,157 @@ class ChargeBalancer:
 
         t, waveform = self.wfg.generate_waveform(tp, td, ws, pc)
 
-        if self.amp_ratio != 1:
-            ano = [self.amp_ratio if i > 0 else 1 for i in waveform]
-            waveform *= ano
+        # if self.amp_ratio != 1:
+        #     # ano = [self.amp_ratio if i > 0 else 1 for i in waveform]
+        #     # waveform *= ano
+        #     waveform = np.where(waveform > 0, waveform * self.amp_ratio, waveform)
 
-        waveform *= self.i_amp
+        # waveform *= self.i_amp
+
+        if self.i_amp_cat != self.i_amp_ano:
+            waveform = np.where(waveform > 0, waveform * self.i_amp_ano, waveform * self.i_amp_cat)
+        else:
+            waveform *= self.i_amp
 
         if self.i_lim < self.i_amp:
-            waveform = np.array([self.i_lim if i > self.i_lim else i for i in waveform])
+            waveform = np.where(waveform > self.i_lim, self.i_lim, waveform)
+
+        # noise = np.random.normal(0, 0.01*self.i_amp, len(waveform))
+        # noise = np.where(waveform == 0, 0, noise)
 
         return self.i_offset + waveform
     
     def perform_charge_balancing(self, voltage: float):
+        # match self.cbstrat:
+        #     case CBStrat.OFFSET_CURRENT:
+        #         self.__offset_current(voltage)
+        #     case CBStrat.ANO_DCLIPPING:
+        #         self.__ano_dclipping(voltage)
+        #     case CBStrat.ANO_DURATION:
+        #         self.__ano_duration(voltage)
+        #     case CBStrat.ANO_AMPLITUDE:
+        #         self.__ano_amplitude(voltage)
+        #     case CBStrat.ANO_ACLIPPING:
+        #         self.__ano_aclipping(voltage)
+        #     case _:
+        #         print("Invalid strategy!")
+
+
+        factor = self.__evaluate(voltage)
+        change = factor * self.adjust
+
+        if self.memory or self.cbeval == CBEval.WINDOW:
+            self.q_delta += change
+        else:
+            self.q_delta = change
+
+        if self.cbeval == CBEval.WINDOW and not self.memory and change == 0:
+            self.q_delta = 0
+
+        if self.charge:
+            self.__adjust_waveform(self.__to_parameter(self.q_delta))
+        else:
+            self.__adjust_waveform(self.q_delta)
+
+        self.waveform = self._generate_waveform()
+
+    def __evaluate(self, voltage):
+        match self.cbeval:
+            case CBEval.WINDOW:
+                if voltage > self.size:
+                    return 1
+                elif voltage < -self.size:
+                    return -1
+                else:
+                    return 0
+            case CBEval.PROPORTIONAL:
+                return voltage * self.size
+            case _:
+                print("EVAL ERROR!")
+                return 0
+            
+    def __to_parameter(self, q_delta):
         match self.cbstrat:
             case CBStrat.OFFSET_CURRENT:
-                self.__offset_current(voltage)
+                return q_delta / self.get_t_rep()
             case CBStrat.ANO_DCLIPPING:
-                self.__ano_dclipping(voltage)
+                q_delta /= self.n_waves
+                return self.t_ano * np.arccos(1 - np.pi * q_delta / (self.t_ano * self.i_amp_ano)) / np.pi
             case CBStrat.ANO_DURATION:
-                self.__ano_duration(voltage)
+                q_delta /= self.n_waves
+                return q_delta * np.pi / (2 * self.i_amp_ano)
             case CBStrat.ANO_AMPLITUDE:
-                self.__ano_amplitude(voltage)
+                q_delta /= self.n_waves
+                return q_delta * np.pi / (2 * self.t_ano)
             case CBStrat.ANO_ACLIPPING:
-                self.__ano_aclipping(voltage)
+                if q_delta == 0:
+                    return self.i_amp_ano
+                else:
+                    # print(q_delta)
+                    q_delta /= self.n_waves
+                    q = self.q_ano_init - q_delta
+                    d1 = dx_1 = float(0)
+                    d2 = dx = self.i_amp_ano
+                    while dx != dx_1:
+                        dx_1 = dx
+                        dx = d1 - self.__get_q_error(d1, q) * ((d2 - d1) / (self.__get_q_error(d2, q) - self.__get_q_error(d1, q)))
+                        ei = self.__get_q_error(dx, q)
+                        if ei < 0:
+                            d1 = dx
+                        else:
+                            d2 = dx
+                        # print("dx =", dx, "e(dx) =", ei)
+                    # print(self.__get_q_ano_aclipped(dx), self.q_ano_init)
+                    return dx
             case _:
-                print("Invalid strategy!")
-        self.waveform = self._generate_waveform()
+                print("STRAT ERROR")
+
+    def __get_q_ano_aclipped(self, x):
+        # print(x, self.t_ano)
+        return self.t_ano * self.i_amp_ano / np.pi * (2 * (1 - np.sqrt(1 - (x / self.i_amp_ano) ** 2)) + x / self.i_amp_ano * (np.pi - 2 * np.arcsin(x / self.i_amp_ano)))
+    
+    def __get_q_error(self, x, q):
+        return self.__get_q_ano_aclipped(x) - q
+    
+    def __adjust_waveform(self, param_change):
+        match self.cbstrat:
+            case CBStrat.OFFSET_CURRENT:
+                self.i_offset = -param_change
+                print("i_offset =", (self.i_offset * 1e6)@u_uA)
+            case CBStrat.ANO_DCLIPPING:
+                self.t_clip = param_change
+                if self.t_clip > self.t_ano:
+                    self.t_clip = self.t_ano
+                if self.t_clip < 0:
+                    self.t_clip = 0
+                print("t_clip =", (self.t_clip * 1e6)@u_us)
+            case CBStrat.ANO_DURATION:
+                self.t_ano = self.t_sine / 2 - param_change
+                if self.t_ano < 0:
+                    self.t_ano = 0
+                print("t_ano =", (self.t_ano * 1e6)@u_us)
+            case CBStrat.ANO_AMPLITUDE:
+                self.i_amp_ano = self.i_amp - param_change
+                if self.i_amp_ano < 0:
+                    self.i_amp_ano = 0
+                print("i_amp_ano =", (self.i_amp_ano * 1e6)@u_uA)
+            case CBStrat.ANO_ACLIPPING:
+                self.i_lim = param_change
+                if self.i_lim > self.i_amp_ano:
+                    self.i_lim = self.i_amp_ano
+                if self.i_lim < 0:
+                    self.i_lim = 0
+                print("i_lim =", (self.i_lim * 1e6)@u_uA)
+            case _:
+                print("STRAT ERROR")
 
     def __offset_current(self, voltage):
         if voltage > self.window:
-            print("exceeded 0.1V!")
             self.i_offset -= self.adjust
+            print("i_offset decreased,", self.i_offset)
         elif voltage < -self.window:
-            print("exceeded -0.1V!")
             self.i_offset += self.adjust
+            print("i_offset increased,", self.i_offset)
 
     def __ano_dclipping(self, voltage):
         if voltage > self.window and self.t_clip < self.t_ano:
@@ -148,14 +285,14 @@ class ChargeBalancer:
             print("t_ano increased,", self.t_ano)
 
     def __ano_amplitude(self, voltage):
-        if voltage > self.window and self.amp_ratio > 0:
-            self.amp_ratio -= self.adjust
-            print("amp_ratio decreased,", self.amp_ratio)
+        if voltage > self.window and self.i_amp_ano > 0:
+            self.i_amp_ano -= self.adjust * self.i_amp
+            print("i_amp_ano decreased,", self.i_amp_ano)
         elif voltage < -self.window:
-            self.amp_ratio += self.adjust
-            print("amp_ratio increased,", self.amp_ratio)
-        if self.amp_ratio <= 0:
-            self.amp_ratio = self.adjust
+            self.i_amp_ano += self.adjust * self.i_amp
+            print("i_amp_ano increased,", self.i_amp_ano)
+        if self.i_amp_ano <= 0:
+            self.i_amp_ano = 0
 
     def __ano_aclipping(self, voltage):
         if voltage > self.window and self.i_lim > 0:
@@ -172,8 +309,10 @@ class ChargeBalancer:
 if __name__ == "__main__":
     cbsettings = CBSettings(
         cbstrat=CBStrat.OFFSET_CURRENT,
-        adaptive=False,
-        window=0.04,
+        cbeval=CBEval.WINDOW,
+        memory=True,
+        size=0.04,
+        charge=False,
         adjust=0.1*12e-6
     )
     wfgsettings = WFGSettings(
