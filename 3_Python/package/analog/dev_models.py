@@ -58,7 +58,7 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
 
     def __init_dev(self) -> dict:
         """Initialization of functions to get devices"""
-        dev_type = {'R': self._resistor, 'C': self._capacitor, 'L': self._inductor}
+        dev_type = {'R': self._resistor, 'C': self._capacitor}
         dev_type.update({'Ds': self._diode_single, 'Dd': self._diode_antiparallel})
         dev_type.update({'DSs': self._diode_single, 'DSd': self._diode_antiparallel})
         dev_type.update({'RDs': self._resistive_schottky_single, 'RDd': self._resistive_schottky_antiparallel})
@@ -127,21 +127,6 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
         du = u_inp - u_inn
         i_out = np.zeros(du.shape)
         i_out[1:] = params[0] * np.diff(du) * self._settings.fs_ana
-        if self._settings.noise_en:
-            i_out += self._gen_noise_awgn_pwr(du.size)
-        return i_out
-
-    def _inductor(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
-        """Performing the behaviour of an electrical inductor
-        Args:
-            u_inp:   Positive input voltage [V]
-            u_inn:   Negative input voltage [V]
-        Returns:
-            Corresponding current signal
-        """
-        params = self._type_params[self._settings.type]
-        du = u_inp - u_inn
-        i_out = cumtrapz(du, dx=1 / self._settings.fs_ana, initial=0) / params[0]
         if self._settings.noise_en:
             i_out += self._gen_noise_awgn_pwr(du.size)
         return i_out
