@@ -1,7 +1,71 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from warnings import warn
+
 from PySpice.Spice.Netlist import Circuit
 from PySpice.Spice.NgSpice.Shared import NgSpiceShared
+
+
+def resistor(value: float) -> Circuit:
+    """"""
+    circuit = Circuit("Resistive Load")
+    circuit.R(1, 'input', 'output', value)
+    circuit.V('cm', 'output', circuit.gnd, 0.0)
+    return circuit
+
+
+def resistive_diode(r0: float, Uth=0.7, IS0=4e-12, N=2) -> Circuit:
+    """"""
+    circuit = Circuit("Resistive Diode")
+    circuit.model('myDiode', 'D', IS=IS0, RS=0, N=N, VJ=Uth, BV=10, IBV=1e-12,)
+    circuit.R(1, 'input', 'middle', r0)
+    circuit.Diode(0, 'middle', 'output', model='MyDiode')
+    circuit.V('cm', 'output', circuit.gnd, 0.0)
+    return circuit
+
+
+def resistive_diode_antiparallel(r0: float, Uth=0.7, IS0=4e-12, N=2) -> Circuit:
+    """"""
+    circuit = Circuit("Resistive Diode (Antiparallel)")
+    circuit.model('myDiode', 'D', IS=IS0, RS=0, N=N, VJ=Uth, BV=10, IBV=1e-12,)
+    circuit.R(1, 'input', 'middle', r0)
+    circuit.Diode(0, 'middle', 'output', model='MyDiode')
+    circuit.Diode(1, 'output', 'middle', model='MyDiode')
+    circuit.V('cm', 'output', circuit.gnd, 0.0)
+    return circuit
+
+
+def simple_randles_model(R_tis=10e3, R_far=100e6, C_dl=10e-9) -> Circuit:
+    """"""
+    circuit = Circuit("Simple Randles Model")
+    circuit.R(1, 'input', 'middle', R_tis)
+    circuit.R(2, 'middle', 'output', R_far)
+    circuit.C(1, 'middle', 'output', C_dl)
+    circuit.V('cm', 'output', circuit.gnd, 0.0)
+    return circuit
+
+
+def voltage_divider(r_0: float, r_1: float, r_load=10e9, c_load=0.0) -> Circuit:
+    """"""
+    circuit = Circuit("Voltage Divider with Load")
+    circuit.R(1, 'input', 'output', r_0)
+    circuit.R(2, 'output', circuit.gnd, r_1)
+    circuit.R(3, 'output', circuit.gnd, r_load)
+    if not c_load == 0.0:
+        circuit.C(0, 'output', circuit.gnd, c_load)
+    return circuit
+
+
+def _raise_voltage_violation(du: np.ndarray | float, range_volt: list) -> None:
+    """Checking differential voltage input for violation of voltage range for given branch"""
+    violation_dwn = np.count_nonzero(du < range_volt[0], axis=0)
+    violation_up = np.count_nonzero(du > range_volt[1], axis=0)
+
+    if violation_up or violation_dwn:
+        warn("Warning: Voltage Range Violation! - Results are not confirmed!", DeprecationWarning)
+        addon_dwn = '' if not violation_dwn else '(Downer limit)'
+        addon_up = '' if not violation_up else ' (Upper limit)'
+        print(f"Warning: Voltage Range Violation! {addon_dwn}{addon_up}")
 
 
 class _ArbWFG(NgSpiceShared):
@@ -52,11 +116,16 @@ class PySpice_Handler:
         self._is_input_voltage = input_voltage
         self._used_temp = temperature
         self.__plot_color = 'krbg'
+        self._circuit = Circuit("Test")
 
     @property
     def __calc_temp_in_celsius(self) -> float:
         """Translating the temperature value from Kelvin [K] to Grad Celsius [°C]"""
         return self._used_temp - 273.15
+
+    def set_src_mode(self, do_voltage: bool) -> None:
+        """Setting the Source Mode of Input Source [0: Current, 1: Voltage]"""
+        self._is_input_voltage = do_voltage
 
     def load_circuit_model(self, circuit: Circuit) -> None:
         """Loading an external circuit SPICE model"""
@@ -71,6 +140,7 @@ class PySpice_Handler:
         Args:
             value:              Specified value of the input voltage or current source
             do_print_results:   Printing the node voltages
+            initial_value: Applied initial value [Default: 0.0]
         Returns:
             Dictionary with node voltages
         """

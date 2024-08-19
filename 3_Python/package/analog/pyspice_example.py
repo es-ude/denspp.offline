@@ -1,5 +1,4 @@
-from pyspice_handler import PySpice_Handler
-from pyspice_load import *
+from pyspice_handler import PySpice_Handler, resistor
 
 
 if __name__ == "__main__":
