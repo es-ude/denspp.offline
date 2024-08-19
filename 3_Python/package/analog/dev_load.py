@@ -385,6 +385,8 @@ class ElectricalLoad_Handler:
 
         if self._settings.type in self._type_device.keys():
             iout = self._type_device[self._settings.type](u_top, u_bot)
+        else:
+            print("Error: Model not available - Please check!")
         return iout
 
     def get_current_density(self, u_top: np.ndarray, u_bot: np.ndarray | float, area: float) -> np.ndarray:
@@ -482,7 +484,7 @@ def _generate_signal(t_end: float, fs: float, upp: list, fsig: list, uoff=0.0) -
     Returns:
         List with two numpy arrays (time, voltage signal)
     """
-    t0 = np.linspace(0, t_end, num=int(t_end * fs), endpoint=True)
+    t0 = np.arange(0, t_end, 1/fs)
     uinp = np.zeros(t0.shape) + uoff
     for idx, peak_val in enumerate(upp):
         uinp += peak_val * np.sin(2 * np.pi * t0 * fsig[idx])

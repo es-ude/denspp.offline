@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.integrate import cumtrapz
 
 from package.structure_builder import _create_folder_general_firstrun
 from package.analog.dev_load import ElectricalLoad_Handler, SettingsDEV, _generate_signal, _plot_test_results
@@ -91,7 +90,7 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
         return func_type
 
     def __init_params(self) -> dict:
-        """"""
+        """Initialization of Device Parameters"""
         params_dict = {}
         params_dict.update({'R': [self._settings.dev_value], 'C': [self._settings.dev_value], 'L': [self._settings.dev_value]})
         params_dict.update({'Ds': [1e-12, 1.4, 0.7], 'Dd': [1e-12, 1.4, 0.7]})
