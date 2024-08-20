@@ -1,8 +1,8 @@
-**/__pycache__
+**/__pycache__/
 **/.idea
 *.asv
 .DS_Store/
-**/venv
+**/venv/
 
 3_Python/Config_*.*
 3_Python/data
