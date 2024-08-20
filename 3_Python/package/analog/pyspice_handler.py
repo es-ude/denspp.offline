@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import PySpice.Logging.Logging as Logging
-from PySpice.Spice.Netlist import Circuit
+from PySpice.Spice.Netlist import Circuit, Netlist
 from PySpice.Spice.NgSpice.Shared import NgSpiceShared
 
 from package.plot.plot_common import _scale_auto_value
@@ -57,11 +57,13 @@ class PySpiceModels:
 ############################################################################
 
 
-def _add_method(o: object, method, name):
+def _add_method(o: object, method, name) -> None:
+    """Changing the functionality of an attribute"""
     setattr(o, name, method.__get__(o, type(o)))
 
 
-def _create_arbfwg(spice_instance: NgSpiceShared, waveform: np.ndarray, f_samp: float):
+def _create_arbfwg(spice_instance: NgSpiceShared, waveform: np.ndarray, f_samp: float) -> None:
+    """Bugfixing for replacement a PySPICE function"""
     def get_vsrc_data(self, voltage, time, node, ngspice_id) -> int:
         """Internal NgSpice function for simulation"""
         self._logger.debug('ngspice_id-{} get_vsrc_data @{} node {}'.format(ngspice_id, time, node))
@@ -80,7 +82,8 @@ def _create_arbfwg(spice_instance: NgSpiceShared, waveform: np.ndarray, f_samp: 
     _add_method(spice_instance, get_isrc_data, "get_isrc_data")
 
 
-def _clear_arbfwg(spice_instance: NgSpiceShared):
+def _clear_arbfwg(spice_instance: NgSpiceShared) -> None:
+    """"""
     def get_vsrc_data(self, voltage, time, node, ngspice_id) -> int:
         """Internal NgSpice function for simulation"""
         self._logger.debug('ngspice_id-{} get_vsrc_data @{} node {}'.format(ngspice_id, time, node))
@@ -93,6 +96,25 @@ def _clear_arbfwg(spice_instance: NgSpiceShared):
 
     _add_method(spice_instance, get_vsrc_data, "get_vsrc_data")
     _add_method(spice_instance, get_isrc_data, "get_isrc_data")
+
+
+def do_bugfix_clone_circuit(circuits_netlist: Netlist) -> None:
+    """"""
+    def copy_to(self, netlist: Netlist) -> Netlist:
+        for subcircuit in self.subcircuits:
+            netlist.subcircuit(subcircuit)
+
+        for element in self.elements:
+            element.copy_to(netlist)
+
+        for name, model in self._models.items():
+            netlist._models[name] = model
+
+        netlist.raw_spice = str(self.raw_spice)
+        return netlist
+
+    _add_method(circuits_netlist, copy_to, "copy_to")
+
 
 ############################################################################
 
@@ -128,9 +150,11 @@ class PySpice_Handler:
         """Setting the Source Mode of Input Source [0: Current, 1: Voltage]"""
         self._is_input_voltage = do_voltage
 
-    def load_circuit_model(self, circuit_new: Circuit) -> None:
+    def load_circuit_model(self, circuit_used: Circuit) -> None:
         """Loading an external circuit SPICE model"""
-        self._circuit = circuit_new.clone()
+        self._circuit = Circuit("TEST")
+        do_bugfix_clone_circuit(circuit_used)
+        circuit_used.copy_to(self._circuit)
 
     def print_spice_circuit(self) -> None:
         """Printing the circuit in SPICE format"""
@@ -542,13 +566,15 @@ class PySpice_Handler:
 
 if __name__ == "__main__":
     # --- Settings
-    run_mode = [0, 1, 2, 3, 4, 5, 0]
+    run_mode = [0, 1, 2, 3, 4, 5]
     do_voltage = True
     fs = 100e3
     t_sim = 20e-3
 
     models = PySpiceModels()
-    circuit = models.voltage_divider(10e3, 10e3, c_load=10e-9)
+    # circuit = models.voltage_divider(10e3, 10e3, c_load=10e-9)
+    circuit = models.resistive_diode(100)
+
     # --- Definition of Sim mode
     pyspice = PySpice_Handler(input_voltage=do_voltage)
     for mode in run_mode:

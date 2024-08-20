@@ -56,7 +56,7 @@ class PySpiceLoad(PySpice_Handler):
 
     def __init_dev(self) -> dict:
         """Initialization of functions to get devices"""
-        dev_type = {'R': self._resistor, 'C': self._capacitor, 'L': self._inductor}
+        dev_type = {'R': self._resistor, 'C': self._capacitor}
         dev_type.update({'Ds': self._diode_single, 'Dd': self._diode_antiparallel})
         dev_type.update({'RDs': self._resistive_schottky_single, 'RDd': self._resistive_schottky_antiparallel})
         dev_type.update({'RaM': self._simple_randles_model})
@@ -100,27 +100,22 @@ class PySpiceLoad(PySpice_Handler):
             Corresponding current response
         """
         du = u_top - u_bot
-        if isinstance(du, float) or isinstance(du, int):
-            iout = np.zeros((1,), dtype=float)
-        else:
-            iout = np.zeros(du.shape, dtype=float)
-
         if self._settings.type in self._type_device.keys():
             self.set_src_mode(True)
             self.load_circuit_model(self._type_device[self._settings.type]())
 
-            if isinstance(du, float):
+            if isinstance(du, float) or isinstance(du, int):
                 results = self.do_dc_simulation(du, do_print_results=False)
-                iout = results['i_in'][-1]
+                i_out0 = results['i_in']
             else:
                 self.set_simulation_duration(du.size / self._settings.fs_ana)
                 results = self.do_transient_arbitrary_simulation(du, self.__sim_time, self._settings.fs_ana)
-                iout = results['i_in']
-                num_dly = iout.size-du.size-1
-                iout = iout[num_dly:-1]
+                i_out0 = results['i_in']
+                num_dly = i_out0.size-du.size-1
+                i_out0 = i_out0[num_dly:-1]
         else:
             raise "Error: Model not available - Please check!"
-        return np.array(iout)
+        return np.array(i_out0)
 
     def get_voltage(self, i_in: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
         """Getting the voltage response from electrical device
@@ -178,15 +173,8 @@ class PySpiceLoad(PySpice_Handler):
         """"""
         params = self._type_params[self._settings.type]
         circuit = Circuit("Capacitive Load")
-        circuit.C(1, 'input', 'output', params[0])
-        circuit.V('cm', 'output', circuit.gnd, 0.0)
-        return circuit
-
-    def _inductor(self) -> Circuit:
-        """"""
-        params = self._type_params[self._settings.type]
-        circuit = Circuit("Capacitive Load")
-        circuit.L(0, 'input', 'output', params[0])
+        circuit.R(0, 'input', 'middle', 100)
+        circuit.C(0, 'middle', 'output', params[0])
         circuit.V('cm', 'output', circuit.gnd, 0.0)
         return circuit
 
@@ -194,7 +182,7 @@ class PySpiceLoad(PySpice_Handler):
         """"""
         params = self._type_params[self._settings.type]
         circuit = Circuit("Resistive Diode")
-        circuit.model('myDiode', 'D', IS=params[0], RS=0, N=params[1], VJ=params[2], BV=10, IBV=1e-12)
+        circuit.model('myDiode', 'D')
         circuit.Diode(0, 'input', 'output', model='MyDiode')
         circuit.V('cm', 'output', circuit.gnd, 0.0)
         return circuit
@@ -245,7 +233,7 @@ class PySpiceLoad(PySpice_Handler):
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     settings = SettingsPySpice(
-        type='R',
+        type='Ds',
         fs_ana=1000e3,
         noise_en=False,
         dev_value=20e3,
