@@ -182,8 +182,8 @@ class PySpiceLoad(PySpice_Handler):
         """"""
         params = self._type_params[self._settings.type]
         circuit = Circuit("Resistive Diode")
-        circuit.model('myDiode', 'D')
-        circuit.Diode(0, 'input', 'output', model='MyDiode')
+        circuit.model('myDiode', 'D', IS=params[0], N=params[1], VJ=params[2], BV=10, IBV=1e-12)
+        circuit.Diode(0, 'input', 'output', model='myDiode')
         circuit.V('cm', 'output', circuit.gnd, 0.0)
         return circuit
 
@@ -191,9 +191,9 @@ class PySpiceLoad(PySpice_Handler):
         """"""
         params = self._type_params[self._settings.type]
         circuit = Circuit("Resistive Diode")
-        circuit.model('myDiode', 'D', IS=params[0], RS=0, N=params[1], VJ=params[2], BV=10, IBV=1e-12)
-        circuit.Diode(0, 'input', 'output', model='MyDiode')
-        circuit.Diode(1, 'output', 'input', model='MyDiode')
+        circuit.model('myDiode', 'D', IS=params[0], N=params[1], VJ=params[2], BV=10, IBV=1e-12)
+        circuit.Diode(0, 'input', 'output', model='myDiode')
+        circuit.Diode(1, 'output', 'input', model='myDiode')
         circuit.V('cm', 'output', circuit.gnd, 0.0)
         return circuit
 
@@ -203,7 +203,7 @@ class PySpiceLoad(PySpice_Handler):
         circuit = Circuit("Resistive Diode")
         circuit.model('myDiode', 'D', IS=params[0], RS=0, N=params[1], VJ=params[2], BV=10, IBV=1e-12)
         circuit.R(1, 'input', 'middle', params[3])
-        circuit.Diode(0, 'middle', 'output', model='MyDiode')
+        circuit.Diode(0, 'middle', 'output', model='myDiode')
         circuit.V('cm', 'output', circuit.gnd, 0.0)
         return circuit
 
@@ -213,8 +213,8 @@ class PySpiceLoad(PySpice_Handler):
         circuit = Circuit("Resistive Diode (Antiparallel)")
         circuit.model('myDiode', 'D', IS=params[0], RS=0, N=params[1], VJ=params[2], BV=10, IBV=1e-12)
         circuit.R(1, 'input', 'middle', params[3])
-        circuit.Diode(0, 'middle', 'output', model='MyDiode')
-        circuit.Diode(1, 'output', 'middle', model='MyDiode')
+        circuit.Diode(0, 'middle', 'output', model='myDiode')
+        circuit.Diode(1, 'output', 'middle', model='myDiode')
         circuit.V('cm', 'output', circuit.gnd, 0.0)
         return circuit
 

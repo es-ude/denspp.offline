@@ -9,30 +9,43 @@ from package.plot.plot_common import _scale_auto_value
 
 
 class PySpiceModels:
+    def __init__(self):
+        self.vcm =  0.0
+
     def resistor(self, value: float) -> Circuit:
         """"""
         circuit0 = Circuit("Resistive Load")
         circuit0.R(1, 'input', 'output', value)
-        circuit0.V('cm', 'output', circuit0.gnd, 0.0)
+        circuit0.V('cm', 'output', circuit0.gnd, self.vcm)
         return circuit0
 
-    def resistive_diode(self, r0: float, Uth=0.7, IS0=4e-12, N=2) -> Circuit:
+    def diode_1n4148(self) -> Circuit:
+        """"""
+        circuit0 = Circuit("Diode_1N4148")
+        circuit0.model('1N4148', 'D', IS=4.352e-9, N=1.906, BV=110, IBV=0.0001, RS=0.6458,
+                       CJO=7.048e-13, V=0.869, M=0.03, FC=0.5, TT=3.48E-9)
+        circuit0.Diode(0, 'input', 'middle', model='1N4148')
+        circuit0.R(0, 'middle', 'output', 100)
+        circuit0.V('cm', 'output', circuit0.gnd, self.vcm)
+        return circuit0
+
+    def resistive_diode(self, r0=1e3, Uth=0.7, IS0=4e-12, N=2) -> Circuit:
         """"""
         circuit0 = Circuit("Resistive Diode")
         circuit0.model('myDiode', 'D', IS=IS0, RS=0, N=N, VJ=Uth, BV=10, IBV=1e-12, )
         circuit0.R(1, 'input', 'middle', r0)
-        circuit0.Diode(0, 'middle', 'output', model='MyDiode')
-        circuit0.V('cm', 'output', circuit0.gnd, 0.0)
+        circuit0.Diode(0, 'middle', 'output', model='myDiode')
+        circuit0.V('cm', 'output', circuit0.gnd, self.vcm)
         return circuit0
 
-    def resistive_diode_antiparallel(self, r0: float, Uth=0.7, IS0=4e-12, N=2) -> Circuit:
+    def resistive_diode_antiparallel(self, r0=1e3, Uth=0.7, IS0=4e-12, N=2) -> Circuit:
         """"""
         circuit0 = Circuit("Resistive Diode (Antiparallel)")
-        circuit0.model('myDiode', 'D', IS=IS0, RS=0, N=N, VJ=Uth, BV=10, IBV=1e-12, )
+        circuit0.model('myDiode', 'D', IS=IS0, RS=0, N=N, VJ=Uth, BV=10, IBV=1e-12)
         circuit0.R(1, 'input', 'middle', r0)
-        circuit0.Diode(0, 'middle', 'output', model='MyDiode')
-        circuit0.Diode(1, 'output', 'middle', model='MyDiode')
-        circuit0.V('cm', 'output', circuit0.gnd, 0.0)
+        circuit0.Diode(0, 'middle', 'output', model='myDiode')
+        circuit0.Diode(1, 'output', 'middle', model='myDiode')
+        circuit0.V('cm', 'output', circuit0.gnd, self.vcm)
         return circuit
 
     def simple_randles_model(self, R_tis=10e3, R_far=100e6, C_dl=10e-9) -> Circuit:
@@ -41,17 +54,18 @@ class PySpiceModels:
         circuit0.R(1, 'input', 'middle', R_tis)
         circuit0.R(2, 'middle', 'output', R_far)
         circuit0.C(1, 'middle', 'output', C_dl)
-        circuit0.V('cm', 'output', circuit0.gnd, 0.0)
+        circuit0.V('cm', 'output', circuit0.gnd, self.vcm)
         return circuit0
 
-    def voltage_divider(self, r_0: float, r_1: float, r_load=10e9, c_load=0.0) -> Circuit:
+    def voltage_divider(self, r_0=10e3, r_1=10e3, r_load=10e12, c_load=0.0) -> Circuit:
         """"""
         circuit0 = Circuit("Voltage Divider with Load")
         circuit0.R(1, 'input', 'output', r_0)
-        circuit0.R(2, 'output', circuit0.gnd, r_1)
-        circuit0.R(3, 'output', circuit0.gnd, r_load)
+        circuit0.R(2, 'output', 'ref', r_1)
+        circuit0.R(3, 'output', 'ref', r_load)
         if not c_load == 0.0:
-            circuit0.C(0, 'output', circuit0.gnd, c_load)
+            circuit0.C(0, 'output', 'ref', c_load)
+        circuit0.V(0, 'ref', circuit0.gnd, self.vcm)
         return circuit0
 
 ############################################################################
@@ -572,8 +586,9 @@ if __name__ == "__main__":
     t_sim = 20e-3
 
     models = PySpiceModels()
-    # circuit = models.voltage_divider(10e3, 10e3, c_load=10e-9)
-    circuit = models.resistive_diode(100)
+    # circuit = models.voltage_divider(c_load=10e-9)
+    circuit = models.resistive_diode()
+    # circuit = models.diode_1n4148()
 
     # --- Definition of Sim mode
     pyspice = PySpice_Handler(input_voltage=do_voltage)
@@ -582,8 +597,9 @@ if __name__ == "__main__":
         if mode == 0:
             pyspice.do_dc_simulation(1.0)
         elif mode == 1:
-            pyspice.do_dc_sweep_simulation(-2.0, 5.0, 1e-3)
+            pyspice.do_dc_sweep_simulation(-2.0, 1.0, 1e-3)
             pyspice.plot_iv_curve(do_log=False)
+            pyspice.plot_iv_curve(do_log=True)
         elif mode == 2:
             pyspice.do_ac_simulation(1e0, 1e5, 101)
             pyspice.plot_bodeplot()
