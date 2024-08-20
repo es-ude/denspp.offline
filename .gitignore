@@ -2,6 +2,7 @@
 **/.idea
 *.asv
 .DS_Store/
+*/venv
 
 3_Python/Config_*.*
 3_Python/data
