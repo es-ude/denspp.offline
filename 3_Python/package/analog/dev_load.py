@@ -7,6 +7,7 @@ from scipy.constants import Boltzmann, elementary_charge
 from scipy.optimize import least_squares, curve_fit
 
 from package.structure_builder import _create_folder_general_firstrun
+from package.plot.plot_common import _scale_auto_value
 from package.metric import _error_rae, _error_mse
 
 
@@ -504,13 +505,14 @@ def _plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray,
     Returns:
         None
     """
-    scale_i = 1e3
-    scale_u = 1
+    scale_i, units_i = _scale_auto_value(i_in)
+    scale_u, units_u = _scale_auto_value(u_in)
+    scale_t, units_t = _scale_auto_value(time)
 
     signalx = scale_i * i_in if mode_current_input else scale_u * u_in
     signaly = scale_u * u_in if mode_current_input else scale_i * i_in
-    label_axisx = 'Voltage U_x [V]' if mode_current_input else 'Current I_x [mA]'
-    label_axisy = 'Current I_x [mA]' if mode_current_input else 'Voltage U_x [V]'
+    label_axisx = f'Voltage U_x [{units_u}V]' if mode_current_input else f'Current I_x [{units_i}A]'
+    label_axisy = f'Current I_x [{units_i}A]' if mode_current_input else f'Voltage U_x [{units_u}V]'
     label_legx = 'i_in' if mode_current_input else 'u_in'
     label_legy = 'u_out' if mode_current_input else 'i_out'
 
@@ -519,15 +521,15 @@ def _plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray,
     num_rows = 2
     axs = [plt.subplot(num_rows, 1, idx + 1) for idx in range(num_rows)]
 
-    axs[0].set_xlim(time[0], time[-1])
+    axs[0].set_xlim(scale_t * time[0], scale_t * time[-1])
     twin1 = axs[0].twinx()
-    a = axs[0].plot(time, signalx, 'k', label=label_legx)
+    a = axs[0].plot(scale_t * time, signalx, 'k', label=label_legx)
     axs[0].set_ylabel(label_axisy)
-    axs[0].set_xlabel('Time t [s]')
+    axs[0].set_xlabel(f'Time t [{units_t}s]')
     if plot_gray:
-        b = twin1.plot(time, signaly, linestyle='dashed', color=[0.5, 0.5, 0.5], label=label_legy)
+        b = twin1.plot(scale_t * time, signaly, linestyle='dashed', color=[0.5, 0.5, 0.5], label=label_legy)
     else:
-        b = twin1.plot(time, signaly, 'r--', label=label_legy)
+        b = twin1.plot(scale_t * time, signaly, 'r--', label=label_legy)
     twin1.set_ylabel(label_axisx)
     axs[0].grid()
 
