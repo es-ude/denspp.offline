@@ -53,6 +53,7 @@ class PySpiceLoad(PySpice_Handler):
         self._type_string = self.__init_dev_string()
         self._type_params = self.__init_params()
         self.__sim_time = 1.0
+        self.__prep_model = True
 
     def __init_dev(self) -> dict:
         """Initialization of functions to get devices"""
@@ -109,14 +110,19 @@ class PySpiceLoad(PySpice_Handler):
             self.set_src_mode(True)
             self.load_circuit_model(self._type_device[self._settings.type]())
 
-            self.do_transient_arbitary_simulation((u_top - u_bot), self.__sim_time, self._settings.fs_ana)
-            results = self.get_results(3)
-            iout = results['i_in']
-            num_dly = iout.size-du.size
-            iout = iout[num_dly:]
+            if isinstance(du, float):
+                results = self.do_dc_simulation(du, self.__sim_time, self._settings.fs_ana)
+                iout = results['i_in'][-1]
+            else:
+                self.set_simulation_duration(du.size / self._settings.fs_ana)
+                results = self.do_transient_arbitrary_simulation(du, self.__sim_time, self._settings.fs_ana)
+                iout = results['i_in']
+                num_dly = iout.size-du.size
+                iout = iout[num_dly:]
+            self.__prep_model = False
         else:
             print("Error: Model not available - Please check!")
-        return iout
+        return np.array(iout)
 
     def get_voltage(self, i_in: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
         """Getting the voltage response from electrical device
@@ -133,9 +139,10 @@ class PySpiceLoad(PySpice_Handler):
 
         if self._settings.type in self._type_device.keys():
             self.set_src_mode(False)
+            self.set_simulation_duration(i_in.size / self._settings.fs_ana)
             self.load_circuit_model(self._type_device[self._settings.type]())
 
-            self.do_transient_arbitary_simulation(i_in, self.__sim_time, self._settings.fs_ana)
+            self.do_transient_arbitrary_simulation(i_in, self.__sim_time, self._settings.fs_ana)
             results = self.get_results(3)
             vout = results['v_in'] + u_inn
             num_dly = vout.size - i_in.size - 1
@@ -262,6 +269,10 @@ if __name__ == "__main__":
     dev.set_simulation_duration(t_end)
     dev.print_types()
 
+    # --- Plotting: I-V curve
+    print("\nPlotting I-V curve")
+    dev.plot_fit_curve()
+
     # --- Plotting: Current response
     print("\nPlotting transient current response")
     iout = dev.get_current(uinp, uinn)
@@ -271,9 +282,4 @@ if __name__ == "__main__":
     print("\nPlotting transient voltage response")
     #uout = dev.get_voltage(iout, uinn)
     #_plot_test_results(t0, uout+uinn, iout, True, do_ylog)
-
-    # --- Plotting: I-V curve
-    print("\nPlotting I-V curve")
-    #dev.plot_fit_curve()
-
     plt.show(block=True)

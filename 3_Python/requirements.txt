@@ -1,9 +1,11 @@
 numpy
 matplotlib
 scipy
-fxpmath == 0.49.2
+tqdm == 4.66.5
+fxpmath == 0.4.9
 tqdm == 4.66.5
 mat73 == 0.61
+PyYAML == 6.0.2
 
 # Libs for electric circuit simulation
 PySpice == 1.5
@@ -14,10 +16,11 @@ neo == 0.13.0
 # Libs for NN with PyTorch
 scikit-learn == 1.5.1
 py-cpuinfo == 9.0.0
-torch == 2.4.0
+
 pynvml == 11.5.3
 torchinfo == 1.8.0
-torchvision == 0.19.0
+torch == 2.3.0
+torchvision == 0.18.0
+torchaudio == 2.3.0
 tensorboard == 2.16.0
 # elasticai-creator == 0.59.2
-# snntorch == 0.9.1
