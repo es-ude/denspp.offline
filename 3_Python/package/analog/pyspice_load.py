@@ -53,7 +53,6 @@ class PySpiceLoad(PySpice_Handler):
         self._type_string = self.__init_dev_string()
         self._type_params = self.__init_params()
         self.__sim_time = 1.0
-        self.__prep_model = True
 
     def __init_dev(self) -> dict:
         """Initialization of functions to get devices"""
@@ -111,17 +110,16 @@ class PySpiceLoad(PySpice_Handler):
             self.load_circuit_model(self._type_device[self._settings.type]())
 
             if isinstance(du, float):
-                results = self.do_dc_simulation(du, self.__sim_time, self._settings.fs_ana)
+                results = self.do_dc_simulation(du, do_print_results=False)
                 iout = results['i_in'][-1]
             else:
                 self.set_simulation_duration(du.size / self._settings.fs_ana)
                 results = self.do_transient_arbitrary_simulation(du, self.__sim_time, self._settings.fs_ana)
                 iout = results['i_in']
-                num_dly = iout.size-du.size
-                iout = iout[num_dly:]
-            self.__prep_model = False
+                num_dly = iout.size-du.size-1
+                iout = iout[num_dly:-1]
         else:
-            print("Error: Model not available - Please check!")
+            raise "Error: Model not available - Please check!"
         return np.array(iout)
 
     def get_voltage(self, i_in: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
@@ -248,7 +246,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     settings = SettingsPySpice(
         type='R',
-        fs_ana=125e3,
+        fs_ana=1000e3,
         noise_en=False,
         dev_value=20e3,
         temp=300
@@ -269,10 +267,6 @@ if __name__ == "__main__":
     dev.set_simulation_duration(t_end)
     dev.print_types()
 
-    # --- Plotting: I-V curve
-    print("\nPlotting I-V curve")
-    dev.plot_fit_curve()
-
     # --- Plotting: Current response
     print("\nPlotting transient current response")
     iout = dev.get_current(uinp, uinn)
@@ -282,4 +276,9 @@ if __name__ == "__main__":
     print("\nPlotting transient voltage response")
     #uout = dev.get_voltage(iout, uinn)
     #_plot_test_results(t0, uout+uinn, iout, True, do_ylog)
+
+    # --- Plotting: I-V curve
+    print("\nPlotting I-V curve")
+    dev.plot_fit_curve()
+
     plt.show(block=True)

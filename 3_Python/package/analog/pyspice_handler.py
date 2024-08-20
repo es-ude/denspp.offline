@@ -1,87 +1,100 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+import PySpice.Logging.Logging as Logging
 from PySpice.Spice.Netlist import Circuit
 from PySpice.Spice.NgSpice.Shared import NgSpiceShared
 
-
-def resistor(value: float) -> Circuit:
-    """"""
-    circuit0 = Circuit("Resistive Load")
-    circuit0.R(1, 'input', 'output', value)
-    circuit0.V('cm', 'output', circuit0.gnd, 0.0)
-    return circuit0
+from package.plot.plot_common import _scale_auto_value
 
 
-def resistive_diode(r0: float, Uth=0.7, IS0=4e-12, N=2) -> Circuit:
-    """"""
-    circuit0 = Circuit("Resistive Diode")
-    circuit0.model('myDiode', 'D', IS=IS0, RS=0, N=N, VJ=Uth, BV=10, IBV=1e-12, )
-    circuit0.R(1, 'input', 'middle', r0)
-    circuit0.Diode(0, 'middle', 'output', model='MyDiode')
-    circuit0.V('cm', 'output', circuit0.gnd, 0.0)
-    return circuit0
+class PySpiceModels:
+    def resistor(self, value: float) -> Circuit:
+        """"""
+        circuit0 = Circuit("Resistive Load")
+        circuit0.R(1, 'input', 'output', value)
+        circuit0.V('cm', 'output', circuit0.gnd, 0.0)
+        return circuit0
+
+    def resistive_diode(self, r0: float, Uth=0.7, IS0=4e-12, N=2) -> Circuit:
+        """"""
+        circuit0 = Circuit("Resistive Diode")
+        circuit0.model('myDiode', 'D', IS=IS0, RS=0, N=N, VJ=Uth, BV=10, IBV=1e-12, )
+        circuit0.R(1, 'input', 'middle', r0)
+        circuit0.Diode(0, 'middle', 'output', model='MyDiode')
+        circuit0.V('cm', 'output', circuit0.gnd, 0.0)
+        return circuit0
+
+    def resistive_diode_antiparallel(self, r0: float, Uth=0.7, IS0=4e-12, N=2) -> Circuit:
+        """"""
+        circuit0 = Circuit("Resistive Diode (Antiparallel)")
+        circuit0.model('myDiode', 'D', IS=IS0, RS=0, N=N, VJ=Uth, BV=10, IBV=1e-12, )
+        circuit0.R(1, 'input', 'middle', r0)
+        circuit0.Diode(0, 'middle', 'output', model='MyDiode')
+        circuit0.Diode(1, 'output', 'middle', model='MyDiode')
+        circuit0.V('cm', 'output', circuit0.gnd, 0.0)
+        return circuit
+
+    def simple_randles_model(self, R_tis=10e3, R_far=100e6, C_dl=10e-9) -> Circuit:
+        """"""
+        circuit0 = Circuit("Simple Randles Model")
+        circuit0.R(1, 'input', 'middle', R_tis)
+        circuit0.R(2, 'middle', 'output', R_far)
+        circuit0.C(1, 'middle', 'output', C_dl)
+        circuit0.V('cm', 'output', circuit0.gnd, 0.0)
+        return circuit0
+
+    def voltage_divider(self, r_0: float, r_1: float, r_load=10e9, c_load=0.0) -> Circuit:
+        """"""
+        circuit0 = Circuit("Voltage Divider with Load")
+        circuit0.R(1, 'input', 'output', r_0)
+        circuit0.R(2, 'output', circuit0.gnd, r_1)
+        circuit0.R(3, 'output', circuit0.gnd, r_load)
+        if not c_load == 0.0:
+            circuit0.C(0, 'output', circuit0.gnd, c_load)
+        return circuit0
+
+############################################################################
 
 
-def resistive_diode_antiparallel(r0: float, Uth=0.7, IS0=4e-12, N=2) -> Circuit:
-    """"""
-    circuit0 = Circuit("Resistive Diode (Antiparallel)")
-    circuit0.model('myDiode', 'D', IS=IS0, RS=0, N=N, VJ=Uth, BV=10, IBV=1e-12, )
-    circuit0.R(1, 'input', 'middle', r0)
-    circuit0.Diode(0, 'middle', 'output', model='MyDiode')
-    circuit0.Diode(1, 'output', 'middle', model='MyDiode')
-    circuit0.V('cm', 'output', circuit0.gnd, 0.0)
-    return circuit
+def _add_method(o: object, method, name):
+    setattr(o, name, method.__get__(o, type(o)))
 
 
-def simple_randles_model(R_tis=10e3, R_far=100e6, C_dl=10e-9) -> Circuit:
-    """"""
-    circuit0 = Circuit("Simple Randles Model")
-    circuit0.R(1, 'input', 'middle', R_tis)
-    circuit0.R(2, 'middle', 'output', R_far)
-    circuit0.C(1, 'middle', 'output', C_dl)
-    circuit0.V('cm', 'output', circuit0.gnd, 0.0)
-    return circuit0
-
-
-def voltage_divider(r_0: float, r_1: float, r_load=10e9, c_load=0.0) -> Circuit:
-    """"""
-    circuit0 = Circuit("Voltage Divider with Load")
-    circuit0.R(1, 'input', 'output', r_0)
-    circuit0.R(2, 'output', circuit0.gnd, r_1)
-    circuit0.R(3, 'output', circuit0.gnd, r_load)
-    if not c_load == 0.0:
-        circuit0.C(0, 'output', circuit0.gnd, c_load)
-    return circuit0
-
-
-class _ArbWFG(NgSpiceShared):
-    def __init__(self, waveform: np.ndarray, f_samp: float, **kwargs) -> None:
-        """Private Class for Enabling Transient Simulation with Custom-defined Arbitrary Waveforms
-        Args:
-            waveform:   Transient input signal
-            f_samp:     Sampling rate
-        Returns:
-            None
-        """
-        super().__init__(**kwargs)
-
-        self.waveform = waveform
-        self.f_samp_wfg = f_samp
-
+def _create_arbfwg(spice_instance: NgSpiceShared, waveform: np.ndarray, f_samp: float):
     def get_vsrc_data(self, voltage, time, node, ngspice_id) -> int:
         """Internal NgSpice function for simulation"""
         self._logger.debug('ngspice_id-{} get_vsrc_data @{} node {}'.format(ngspice_id, time, node))
-        index = int(time * self.f_samp_wfg) % len(self.waveform)
-        voltage[0] = self.waveform[index]
+        index = int(time * f_samp) % len(waveform)
+        voltage[0] = waveform[index]
         return 0
 
     def get_isrc_data(self, current, time, node, ngspice_id) -> int:
         """Internal NgSpice function for simulation"""
         self._logger.debug('ngspice_id-{} get_isrc_data @{} node {}'.format(ngspice_id, time, node))
-        index = int(time * self.f_samp_wfg) % len(self.waveform)
-        current[0] = self.waveform[index]
+        index = int(time * f_samp) % len(waveform)
+        current[0] = waveform[index]
         return 0
+
+    _add_method(spice_instance, get_vsrc_data, "get_vsrc_data")
+    _add_method(spice_instance, get_isrc_data, "get_isrc_data")
+
+
+def _clear_arbfwg(spice_instance: NgSpiceShared):
+    def get_vsrc_data(self, voltage, time, node, ngspice_id) -> int:
+        """Internal NgSpice function for simulation"""
+        self._logger.debug('ngspice_id-{} get_vsrc_data @{} node {}'.format(ngspice_id, time, node))
+        return 0
+
+    def get_isrc_data(self, current, time, node, ngspice_id) -> int:
+        """Internal NgSpice function for simulation"""
+        self._logger.debug('ngspice_id-{} get_isrc_data @{} node {}'.format(ngspice_id, time, node))
+        return 0
+
+    _add_method(spice_instance, get_vsrc_data, "get_vsrc_data")
+    _add_method(spice_instance, get_isrc_data, "get_isrc_data")
+
+############################################################################
 
 
 class PySpice_Handler:
@@ -103,7 +116,8 @@ class PySpice_Handler:
         self.__plot_color = 'krbg'
         self._circuit = Circuit("Test")
         self._run_ite = 0
-        self._arbitrary_signal_ng_spice_instance = None
+        self._arbitrary_signal_ng_spice_instance = NgSpiceShared.new_instance()
+        self.logger = Logging.setup_logging()
 
     @property
     def __calc_temp_in_celsius(self) -> float:
@@ -120,7 +134,12 @@ class PySpice_Handler:
 
     def print_spice_circuit(self) -> None:
         """Printing the circuit in SPICE format"""
+        print("\n======================================================")
+        print("\t CIRCUIT SPICE IMPLEMENTATION")
+        print("======================================================")
         print(self._circuit)
+
+    ############################################################################
 
     def do_dc_simulation(self, value: float, do_print_results=True, initial_value=0.0) -> dict:
         """Performing the DC or Operating Point Simulation
@@ -145,18 +164,27 @@ class PySpice_Handler:
         analysis = simulator.operating_point()
 
         results = dict()
+        if do_print_results:
+            print("\n======================================================")
+            print("\t RESULTS OF DC OPERATING POINT ANALYSIS")
+            print("======================================================")
         for node in analysis.nodes.values():
             results.update({str(node): float(node)})
             if do_print_results:
-                unit = 'V'
-                print(f'Node {str(node)}: {float(node):4.3f} {unit}')
+                string = str(node)
+                unit = 'µA' if '_plus' in string or '_minus' in string else 'V'
+                scale = 1e6 if '_plus' in string or '_minus' in string else 1e0
+                print(f'Node {str(node)}: {scale * float(node):4.3f} {unit}')
+
+
 
         del self.__results
         self.__results = self.get_results(0, analysis)
         return self.__results
 
-    def do_dc_sweep_simulation(self, start_dc: float, stop_dc: float, step_dc: float,
-                               initial_value=0.0) -> dict:
+    ############################################################################
+
+    def do_dc_sweep_simulation(self, start_dc: float, stop_dc: float, step_dc: float, initial_value=0.0) -> dict:
         """Performing the DC or Operating Point Simulation
         Args:
             start_dc:   Starting point of DC Sweep
@@ -187,6 +215,8 @@ class PySpice_Handler:
         self.__results = self.get_results(1, results)
         return self.__results
 
+    ############################################################################
+
     def do_ac_simulation(self, start_freq: float, stop_freq: float, num_points: int,
                          amplitude=1.0, initial_value=0.0) -> dict:
         """Performing the DC or Operating Point Simulation
@@ -216,6 +246,8 @@ class PySpice_Handler:
         del self.__results
         self.__results = self.get_results(2, results)
         return self.__results
+
+    ############################################################################
 
     def do_transient_pulse_simulation(self, neg_value: float, pos_value: float,
                                       pulse_width: float, pulse_period: float,
@@ -255,8 +287,9 @@ class PySpice_Handler:
         self.__results = self.get_results(3, results)
         return self.__results
 
-    def do_transient_sinusoidal_simulation(self, amp: float, freq: float,
-                                           t_sim: float, f_samp: float,
+    ############################################################################
+
+    def do_transient_sinusoidal_simulation(self, amp: float, freq: float, t_sim: float, f_samp: float,
                                            t_dly=0.0, offset=0.0, initial_value=0.0) -> dict:
         """Performing the Transient Simulation with Sinusoidal Signal
         Args:
@@ -293,6 +326,8 @@ class PySpice_Handler:
         self.__results = self.get_results(3, results)
         return self.__results
 
+    ############################################################################
+
     def do_transient_arbitrary_simulation(self, signal: np.ndarray, t_end: float, f_samp: float,
                                           initial_value=0.0) -> dict:
         """Performing the Transient Simulation with Arbitrary Signal Waveform
@@ -315,11 +350,7 @@ class PySpice_Handler:
             self._circuit.Iinput.plus.add_current_probe(self._circuit)
 
         # --- Generating instance for using arbitrary waveforms in SPICE transient simulation
-        if self._arbitrary_signal_ng_spice_instance is None:
-            self._arbitrary_signal_ng_spice_instance = _ArbWFG(signal, f_samp, send_data=False)
-        else:
-            self._arbitrary_signal_ng_spice_instance.waveform = signal
-            self._arbitrary_signal_ng_spice_instance.f_samp_wfg = f_samp
+        _create_arbfwg(self._arbitrary_signal_ng_spice_instance, signal, f_samp)
         data = self._arbitrary_signal_ng_spice_instance
 
         # --- Prepare and Run simulation
@@ -333,7 +364,11 @@ class PySpice_Handler:
         # --- Process results
         del self.__results
         self.__results = self.get_results(3, results)
+
+        _clear_arbfwg(self._arbitrary_signal_ng_spice_instance)
         return self.__results
+
+    ############################################################################
 
     def create_dummy_signal(self, t_sim: float, f_samp: float, offset=0.0) -> [np.ndarray, np.ndarray]:
         """Creating a dummy function for transient simulation
@@ -354,8 +389,10 @@ class PySpice_Handler:
             sig_out += amp * np.sin(2 * np.pi * freq * time0)
         return time0, sig_out
 
+    ############################################################################
+
     def get_results(self, mode: int, data) -> dict:
-        """Getting the results from SPICE analysis
+        """Getting the results from already runned SPICE analysis
         Args:
             mode:   Selection mode for getting results (0 = Operating Point, 1 = DC Sweep, 2 = AC Sweep, 3 = Transient)
         Returns:
@@ -387,42 +424,46 @@ class PySpice_Handler:
                 output_dict.update({"v_out": np.array(data.output)})
         return output_dict
 
-    def plot_iv_curve(self, do_log=False, path2save='', block_plots=True) -> None:
+    ############################################################################
+
+    def plot_iv_curve(self, do_log=False, path2save='', block_plots=False) -> None:
         """Plotting the I-V relationship/curve of investigated circuit (taking v_in and i_in)
         Args:
-            do_log:     Do a logarithmic plotting on y-axis
-            path2save:  Optional string for plotting [Default: '' for non-plotting]
-            block_plots:    Blocking plots for showing [Default: True]
+            do_log:         Do a logarithmic plotting on y-axis
+            path2save:      Optional string for plotting [Default: '' for non-plotting]
+            block_plots:    Blocking plots for showing [Default: False]
         Returns:
           None
         """
         # --- Getting data
         results = self.__results
         u_in = results["v_in"]
+        scale_u, units_u = _scale_auto_value(u_in)
         i_out = results["i_in"]
+        scale_i, units_i = _scale_auto_value(i_out)
 
         # --- Plotting
         plt.figure()
         if not do_log:
-            plt.plot(u_in, i_out, 'k', linewidth=1, marker='.')
+            plt.plot(scale_u * u_in, scale_i * i_out, 'k', linewidth=1, marker='.')
         else:
-            plt.semilogy(u_in, np.abs(i_out), 'k', linewidth=1, marker='.')
-        plt.xlabel(r'Voltage $U$ / V')
-        plt.ylabel(r'Current $I$ / A')
-        plt.xlim([u_in[0], u_in[-1]])
+            plt.semilogy(scale_u * u_in, scale_i * np.abs(i_out), 'k', linewidth=1, marker='.')
+        plt.xlabel(fr'Voltage $U$ / {units_u}V')
+        plt.ylabel(fr'Current $I$ / {units_i}A')
+        plt.xlim([scale_u * u_in[0], scale_u * u_in[-1]])
 
         plt.tight_layout()
         plt.grid()
         if path2save:
-            plt.savefig('test.svg', format='svg')
+            plt.savefig('pyspice_dc_result.svg', format='svg')
         plt.show(block=block_plots)
 
-    def plot_bodeplot(self, mode=0, path2save='', block_plots=True) -> None:
+    def plot_bodeplot(self, mode=0, path2save='', block_plots=False) -> None:
         """Plotting the Bode Diagram (mode == 0) or Impedance Plot (mode == 1) of investigated circuit
         Args:
             mode:           Mode selection (0 = Bode diagram, 1 = Impedance plot)
             path2save:      Optional string for plotting [Default: '' for non-plotting]
-            block_plots:    Blocking plots for showing [Default: True]
+            block_plots:    Blocking plots for showing [Default: False]
         Returns:
           None
         """
@@ -449,41 +490,44 @@ class PySpice_Handler:
         plt.tight_layout()
         plt.subplots_adjust(hspace=0.05)
         if path2save:
-            plt.savefig('test.svg', format='svg')
+            plt.savefig('pyspice_ac_result.svg', format='svg')
         plt.show(block=block_plots)
 
-    def plot_transient(self, path2save='', block_plots=True) -> None:
+    def plot_transient(self, path2save='', block_plots=False) -> None:
         """Plotting the results of Transient Simulation of investigated circuit
         Args:
             path2save:  Optional string for plotting [Default: '' for non-plotting]
-            block_plots:    Blocking plots for showing [Default: True]
+            block_plots:    Blocking plots for showing [Default: False]
         Returns:
           None
         """
         # --- Getting data
         results = self.__results
         time = results["time"]
+        scale_t, units_t = _scale_auto_value(time)
         v_sig = [results["v_in"], results["v_out"]]
+        scale_u, units_u = _scale_auto_value(np.concatenate((v_sig[0], v_sig[1]), axis=0))
         v_label = ["Input", "Output"]
         i_in = results["i_in"]
+        scale_i, units_i = _scale_auto_value(i_in)
 
         # --- Plotting
         fig, ax1 = plt.subplots()
         idx = 0
         for sig, label in zip(v_sig, v_label):
             if idx == 0:
-                lns = ax1.plot(time, sig, linewidth=1, label=label)
+                lns = ax1.plot(scale_t * time, scale_u * sig, linewidth=1, label=label)
             else:
-                lns += ax1.plot(time, sig, linewidth=1, label=label)
+                lns += ax1.plot(scale_t * time, scale_u * sig, linewidth=1, label=label)
             idx += 1
 
-        ax1.set_ylabel(r"Voltage $U_x$ / V")
-        ax1.set_xlabel(r'Time $t$ / s')
+        ax1.set_ylabel(fr"Voltage $U_x$ / {units_u}V")
+        ax1.set_xlabel(fr'Time $t$ / {units_t}s')
 
         ax2 = ax1.twinx()
-        lns += ax2.plot(time, i_in, 'r--', linewidth=1, label='Current')
-        ax2.set_ylabel(r"Current $I$ / A")
-        ax2.set_xlim([time[0], time[-1]])
+        lns += ax2.plot(scale_t * time, scale_i * i_in, 'r--', linewidth=1, label='Current')
+        ax2.set_ylabel(fr"Current $I$ / {units_i}A")
+        ax2.set_xlim([scale_t * time[0], scale_t * time[-1]])
 
         # added these three lines
         labs = [l.get_label() for l in lns]
@@ -492,18 +536,19 @@ class PySpice_Handler:
         plt.tight_layout()
         plt.grid()
         if path2save:
-            plt.savefig('test.svg', format='svg')
+            plt.savefig('pyspice_transient_result.svg', format='svg')
         plt.show(block=block_plots)
 
 
 if __name__ == "__main__":
     # --- Settings
-    run_mode = [0, 1, 2, 3, 4, 5, 5]
+    run_mode = [0, 1, 2, 3, 4, 5, 0]
     do_voltage = True
     fs = 100e3
     t_sim = 20e-3
 
-    circuit = voltage_divider(10e3, 10e3, c_load=10e-9)
+    models = PySpiceModels()
+    circuit = models.voltage_divider(10e3, 10e3, c_load=10e-9)
     # --- Definition of Sim mode
     pyspice = PySpice_Handler(input_voltage=do_voltage)
     for mode in run_mode:
@@ -512,20 +557,20 @@ if __name__ == "__main__":
             pyspice.do_dc_simulation(1.0)
         elif mode == 1:
             pyspice.do_dc_sweep_simulation(-2.0, 5.0, 1e-3)
-            pyspice.plot_iv_curve(do_log=False, block_plots=False)
+            pyspice.plot_iv_curve(do_log=False)
         elif mode == 2:
             pyspice.do_ac_simulation(1e0, 1e5, 101)
-            pyspice.plot_bodeplot(block_plots=False)
+            pyspice.plot_bodeplot()
         elif mode == 3:
             pyspice.do_transient_pulse_simulation(0.0, 1.8, 1e-3, 5e-3, t_sim, fs)
-            pyspice.plot_transient(block_plots=False)
+            pyspice.plot_transient()
         elif mode == 4:
             pyspice.do_transient_sinusoidal_simulation(1.0, 0.25e3, t_sim, fs)
-            pyspice.plot_transient(block_plots=False)
+            pyspice.plot_transient()
         elif mode == 5:
             signal0 = pyspice.create_dummy_signal(t_sim, fs)[1]
             pyspice.do_transient_arbitrary_simulation(signal0, t_sim, fs)
-            pyspice.plot_transient(block_plots=False)
+            pyspice.plot_transient()
 
     pyspice.print_spice_circuit()
     plt.show(block=True)
