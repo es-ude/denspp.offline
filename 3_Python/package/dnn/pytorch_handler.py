@@ -105,12 +105,11 @@ class Config_Dataset:
         return join(self.data_path, self.data_file_name)
 
 
-
 class training_pytorch:
     """Class for Handling Training of Deep Neural Networks in PyTorch
     Args:
-        config_train: Configuration settings for the PyTorch Training
-        do_train: Mention if training should be used (default = True)
+        config_train:   Configuration settings for the PyTorch Training
+        do_train:       Mention if training should be used (default = True)
     """
     used_hw_dev: device
     used_hw_cpu: str
@@ -151,7 +150,6 @@ class training_pytorch:
         self._path2config = str()
 
     def __check_start_folder(self, start_folder='3_Python', new_folder='runs') -> str:
-        """"""
         path2start = join(getcwd().split(start_folder)[0], start_folder)
         path2dst = join(path2start, new_folder)
         if not exists(path2dst):

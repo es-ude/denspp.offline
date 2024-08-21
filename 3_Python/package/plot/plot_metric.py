@@ -109,8 +109,7 @@ def plot_confusion(true_labels: list | np.ndarray,
         cl_dict: Dictionary mapping class indices to labels.
         path2save: Path to save the generated plots.
         name_addon: Additional name for saved plots.
-
-    Output:
+    Returns:
         The function generates and displays confusion matrices and timestamp-based plots.
         If path2save is provided, the plots are saved to the specified path."""
 
@@ -177,7 +176,7 @@ def plot_confusion(true_labels: list | np.ndarray,
     plt.tight_layout()
     # --- saving
     if path2save:
-        _save_figure(plt, path2save, f"confusion_matrix_{name_addon}")
+        _save_figure(plt, path2save, f"confusion_matrix{name_addon}")
     plt.close('all')
 
 

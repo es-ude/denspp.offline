@@ -40,10 +40,11 @@ def _raise_voltage_violation(du: np.ndarray | float, range_volt: list) -> None:
     violation_up = np.count_nonzero(du > range_volt[1], axis=0)
 
     if violation_up or violation_dwn:
-        warn("Warning: Voltage Range Violation! - Results are not confirmed!", DeprecationWarning)
-        addon_dwn = '' if not violation_dwn else '(Downer limit)'
-        addon_up = '' if not violation_up else ' (Upper limit)'
-        print(f"Warning: Voltage Range Violation! {addon_dwn}{addon_up}")
+        val = du.min if violation_dwn else du.max
+        limit = range_volt[0] if violation_dwn else range_volt[1]
+        addon = '(Upper limit)' if not violation_dwn else '(Downer limit)'
+
+        warn(f"--- Warning: Voltage Range Violation! {addon} ---")
 
 
 class ElectricalLoad_Handler:
@@ -325,7 +326,7 @@ class ElectricalLoad_Handler:
             None
         """
         if len(self._params_used) == 1 and self._params_used[0] == 1.0:
-            warn("Please start fit curve after first fitting with get_voltage() or get_current()!", DeprecationWarning)
+            warn("Please start fit curve after first fitting with get_voltage() or get_current()!")
 
         if not find_best_order:
             self._get_params_polyfit(

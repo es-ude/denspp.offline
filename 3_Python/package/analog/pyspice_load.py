@@ -53,27 +53,28 @@ class PySpiceLoad(PySpice_Handler):
         self._type_string = self.__init_dev_string()
         self._type_params = self.__init_params()
         self.__sim_time = 1.0
+        self.vcm = 0.0
 
     def __init_dev(self) -> dict:
         """Initialization of functions to get devices"""
         dev_type = {'R': self._resistor, 'C': self._capacitor}
         dev_type.update({'Ds': self._diode_single, 'Dd': self._diode_antiparallel})
-        dev_type.update({'RDs': self._resistive_schottky_single, 'RDd': self._resistive_schottky_antiparallel})
+        dev_type.update({'RDs': self._resistive_diode_single, 'RDd': self._resistive_diode_antiparallel})
         dev_type.update({'RaM': self._simple_randles_model})
         return dev_type
 
     def __init_dev_string(self) -> dict:
         """Initialization of functions to get devices"""
-        dev_type = {'R': 'Resistor', 'C': 'Capacitor', 'L': 'Inductor'}
+        dev_type = {'R': 'Resistor', 'C': 'Capacitor'}
         dev_type.update({'Ds': 'pn-Diode (single)', 'Dd': 'pn-Diode (anti-parallel)'})
-        dev_type.update({'RDs': 'Resistive schottky diode (single)', 'RDd': 'Resistive schottky diode (anti-parallel)'})
+        dev_type.update({'RDs': 'Resistive diode (single)', 'RDd': 'Resistive diode (anti-parallel)'})
         dev_type.update({'RaM': 'Simple Randles Model'})
         return dev_type
 
     def __init_params(self) -> dict:
         """Initialization of Device Parameters"""
         params_dict = {}
-        params_dict.update({'R': [self._settings.dev_value], 'C': [self._settings.dev_value], 'L': [self._settings.dev_value]})
+        params_dict.update({'R': [self._settings.dev_value], 'C': [self._settings.dev_value]})
         params_dict.update({'Ds': [1e-12, 1.4, 0.7], 'Dd': [1e-12, 1.4, 0.7]})
         params_dict.update({'RDs': [1e-12, 2.8, 0.1, self._settings.dev_value]})
         params_dict.update({'RDd': [1e-12, 2.8, 0.1, self._settings.dev_value]})
@@ -162,71 +163,77 @@ class PySpiceLoad(PySpice_Handler):
 
     # --------------- OVERVIEW OF MODELS -------------------------
     def _resistor(self) -> Circuit:
-        """"""
+        """Using resistor as load element"""
         params = self._type_params[self._settings.type]
         circuit = Circuit("Resistive Load")
         circuit.R(1, 'input', 'output', params[0])
-        circuit.V('cm', 'output', circuit.gnd, 0.0)
+        circuit.V('cm', 'output', circuit.gnd, self.vcm)
         return circuit
 
     def _capacitor(self) -> Circuit:
-        """"""
+        """Using capacitor as load element"""
         params = self._type_params[self._settings.type]
         circuit = Circuit("Capacitive Load")
         circuit.R(0, 'input', 'middle', 100)
         circuit.C(0, 'middle', 'output', params[0])
-        circuit.V('cm', 'output', circuit.gnd, 0.0)
+        circuit.V('cm', 'output', circuit.gnd, self.vcm)
         return circuit
 
     def _diode_single(self) -> Circuit:
-        """"""
+        """Using 1N4148 diode as load element"""
         params = self._type_params[self._settings.type]
-        circuit = Circuit("Resistive Diode")
-        circuit.model('myDiode', 'D', IS=params[0], N=params[1], VJ=params[2], BV=10, IBV=1e-12)
-        circuit.Diode(0, 'input', 'output', model='myDiode')
-        circuit.V('cm', 'output', circuit.gnd, 0.0)
-        return circuit
+        circuit0 = Circuit("Diode_1N4148")
+        circuit0.model('1N4148', 'D', IS=4.352e-9, N=1.906, BV=110, IBV=0.0001, RS=0.6458,
+                       CJO=7.048e-13, V=0.869, M=0.03, FC=0.5, TT=3.48E-9)
+        circuit0.R(0, 'input', 'middle', 10)
+        circuit0.Diode(0, 'middle', 'output', model='1N4148')
+        circuit0.V('cm', 'output', circuit0.gnd, self.vcm)
+        return circuit0
 
     def _diode_antiparallel(self) -> Circuit:
-        """"""
+        """Using 1N4148 in anti-parallel configuration as load element"""
         params = self._type_params[self._settings.type]
-        circuit = Circuit("Resistive Diode")
-        circuit.model('myDiode', 'D', IS=params[0], N=params[1], VJ=params[2], BV=10, IBV=1e-12)
-        circuit.Diode(0, 'input', 'output', model='myDiode')
-        circuit.Diode(1, 'output', 'input', model='myDiode')
-        circuit.V('cm', 'output', circuit.gnd, 0.0)
-        return circuit
+        circuit0 = Circuit("Diode_1N4148 (Antiparallel)")
+        circuit0.model('1N4148', 'D', IS=4.352e-9, N=1.906, BV=110, IBV=0.0001, RS=0.6458,
+                       CJO=7.048e-13, V=0.869, M=0.03, FC=0.5, TT=3.48E-9)
+        circuit0.Diode(0, 'input', 'middle', model='1N4148')
+        circuit0.Diode(1, 'middle', 'input', model='1N4148')
+        circuit0.R(0, 'middle', 'output', 10)
+        circuit0.V('cm', 'output', circuit0.gnd, self.vcm)
+        return circuit0
 
-    def _resistive_schottky_single(self) -> Circuit:
-        """"""
+    def _resistive_diode_single(self) -> Circuit:
+        """Using resistive diode as load element"""
         params = self._type_params[self._settings.type]
-        circuit = Circuit("Resistive Diode")
-        circuit.model('myDiode', 'D', IS=params[0], RS=0, N=params[1], VJ=params[2], BV=10, IBV=1e-12)
-        circuit.R(1, 'input', 'middle', params[3])
-        circuit.Diode(0, 'middle', 'output', model='myDiode')
-        circuit.V('cm', 'output', circuit.gnd, 0.0)
-        return circuit
+        circuit0 = Circuit("Resistive Diode")
+        circuit0.model('1N4148', 'D', IS=4.352e-9, N=1.906, BV=110, IBV=0.0001, RS=0.6458,
+                       CJO=7.048e-13, V=0.869, M=0.03, FC=0.5, TT=3.48E-9)
+        circuit0.R(0, 'input', 'middle', params[3])
+        circuit0.Diode(0, 'middle', 'output', model='1N4148')
+        circuit0.V('cm', 'output', circuit0.gnd, self.vcm)
+        return circuit0
 
-    def _resistive_schottky_antiparallel(self) -> Circuit:
-        """"""
+    def _resistive_diode_antiparallel(self) -> Circuit:
+        """Using resistive diode in anti-parallel configuration as load element"""
         params = self._type_params[self._settings.type]
-        circuit = Circuit("Resistive Diode (Antiparallel)")
-        circuit.model('myDiode', 'D', IS=params[0], RS=0, N=params[1], VJ=params[2], BV=10, IBV=1e-12)
-        circuit.R(1, 'input', 'middle', params[3])
-        circuit.Diode(0, 'middle', 'output', model='myDiode')
-        circuit.Diode(1, 'output', 'middle', model='myDiode')
-        circuit.V('cm', 'output', circuit.gnd, 0.0)
-        return circuit
+        circuit0 = Circuit("Resistive Diode (Antiparallel)")
+        circuit0.model('1N4148', 'D', IS=4.352e-9, N=1.906, BV=110, IBV=0.0001, RS=0.6458,
+                       CJO=7.048e-13, V=0.869, M=0.03, FC=0.5, TT=3.48E-9)
+        circuit0.R(0, 'input', 'middle', params[3])
+        circuit0.Diode(0, 'middle', 'output', model='1N4148')
+        circuit0.Diode(1, 'output', 'middle', model='1N4148')
+        circuit0.V('cm', 'output', circuit0.gnd, self.vcm)
+        return circuit0
 
     def _simple_randles_model(self) -> Circuit:
-        """"""
+        """Using simple Randles model as load element"""
         params = self._type_params[self._settings.type]
-        circuit = Circuit("Simple Randles Model")
-        circuit.R(1, 'input', 'middle', params[0])
-        circuit.R(2, 'middle', 'output', params[1])
-        circuit.C(1, 'middle', 'output', params[2])
-        circuit.V('cm', 'output', circuit.gnd, 0.0)
-        return circuit
+        circuit0 = Circuit("Simple Randles Model")
+        circuit0.R('tis', 'input', 'middle', params[0])
+        circuit0.R('far', 'middle', 'output', params[1])
+        circuit0.C('dl', 'middle', 'output', params[2])
+        circuit0.V('cm', 'output', circuit0.gnd, 0.0)
+        return circuit0
 
 
 # --------------------- TEST CASE ------------------------------------
