@@ -166,7 +166,7 @@ class PySpice_Handler:
 
     def load_circuit_model(self, circuit_used: Circuit) -> None:
         """Loading an external circuit SPICE model"""
-        self._circuit = Circuit("TEST")
+        self._circuit = Circuit(circuit_used.title)
         do_bugfix_clone_circuit(circuit_used)
         circuit_used.copy_to(self._circuit)
 
@@ -213,8 +213,6 @@ class PySpice_Handler:
                 unit = 'µA' if '_plus' in string or '_minus' in string else 'V'
                 scale = 1e6 if '_plus' in string or '_minus' in string else 1e0
                 print(f'Node {str(node)}: {scale * float(node):4.3f} {unit}')
-
-
 
         del self.__results
         self.__results = self.get_results(0, analysis)
@@ -580,8 +578,8 @@ class PySpice_Handler:
 
 if __name__ == "__main__":
     # --- Settings
-    run_mode = [0, 1, 2, 3, 4, 5]
-    do_voltage = True
+    run_mode = [0, 1, 2, 3, 4]
+    do_voltage = False
     fs = 100e3
     t_sim = 20e-3
 
