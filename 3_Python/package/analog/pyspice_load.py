@@ -240,7 +240,7 @@ class PySpiceLoad(PySpice_Handler):
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     settings = SettingsPySpice(
-        type='Ds',
+        type='R',
         fs_ana=500e3,
         noise_en=False,
         dev_value=100e3,
@@ -262,10 +262,6 @@ if __name__ == "__main__":
     dev.set_simulation_duration(t_end)
     dev.print_types()
 
-    # --- Plotting: I-V curve
-    print("\nPlotting I-V curve")
-    dev.plot_fit_curve()
-
     # --- Plotting: Current response
     print("\nPlotting transient current response")
     iout = dev.get_current(uinp, uinn)
@@ -275,5 +271,9 @@ if __name__ == "__main__":
     print("\nPlotting transient voltage response")
     #uout = dev.get_voltage(iout, uinn)
     #_plot_test_results(t0, uout+uinn, iout, True, do_ylog)
+
+    # --- Plotting: I-V curve
+    print("\nPlotting I-V curve")
+    dev.plot_fit_curve()
 
     plt.show(block=True)

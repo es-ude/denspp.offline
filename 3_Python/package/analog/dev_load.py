@@ -107,11 +107,12 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
         Returns:
             Corresponding current signal
         """
-        params = self._type_params[self._settings.type]
+        self._params_used = self._type_params[self._settings.type]
+
         du = u_inp - u_inn
-        i_out = du / params[0]
+        i_out = du / self._params_used[0]
         if self._settings.noise_en:
-            i_out += self._gen_noise_awgn_curr(du.size, params[0])
+            i_out += self._gen_noise_awgn_curr(du.size, self._params_used[0])
         return i_out
 
     def _capacitor(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
@@ -122,10 +123,11 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
         Returns:
             Corresponding current signal
         """
-        params = self._type_params[self._settings.type]
+        self._params_used = self._type_params[self._settings.type]
+
         du = u_inp - u_inn
         i_out = np.zeros(du.shape)
-        i_out[1:] = params[0] * np.diff(du) * self._settings.fs_ana
+        i_out[1:] = self._params_used[0] * np.diff(du) * self._settings.fs_ana
         if self._settings.noise_en:
             i_out += self._gen_noise_awgn_pwr(du.size)
         return i_out
@@ -159,8 +161,8 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
         Returns:
             Corresponding current signal
         """
-        params = self._type_params[self._settings.type]
-        return self._func2equa_diode(params, u_inp, u_inn)
+        self._params_used = self._type_params[self._settings.type]
+        return self._func2equa_diode(self._params_used, u_inp, u_inn)
 
     def _diode_antiparallel(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
         """Performing the behaviour of a pn-diode (anti-parallel)
@@ -170,9 +172,9 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
         Returns:
             Corresponding current signal
         """
-        params = self._type_params[self._settings.type]
-        i_pos = self._func2equa_diode(params, u_inp, u_inn)
-        i_neg = self._func2equa_diode(params, -u_inp, -u_inn)
+        self._params_used = self._type_params[self._settings.type]
+        i_pos = self._func2equa_diode(self._params_used, u_inp, u_inn)
+        i_neg = self._func2equa_diode(self._params_used, -u_inp, -u_inn)
         return i_pos + i_neg
 
     def _func2reg_resistive_diode(self, i_path: np.ndarray, params: list, xd: np.ndarray) -> np.ndarray:
@@ -260,7 +262,7 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     settings = SettingsDEV(
-        type='Ds',
+        type='R',
         fs_ana=500e3,
         noise_en=False,
         para_en=False,
@@ -289,8 +291,8 @@ if __name__ == "__main__":
 
     # --- Plotting: Voltage response
     print("\nPlotting transient voltage response")
-    #uout = dev.get_voltage(iout, uinn, u_off, 1e-2)
-    #_plot_test_results(t0, uout+uinn, iout, True, do_ylog)
+    uout = dev.get_voltage(iout, uinn, u_off, 1e-2)
+    _plot_test_results(t0, uout+uinn, iout, True, do_ylog)
 
     # --- Plotting: I-V curve
     print("\nPlotting I-V curve")

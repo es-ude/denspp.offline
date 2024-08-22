@@ -23,6 +23,7 @@ class Clustering:
         Returns:
             None
         """
+        self._cluster_init_done = False
         self._settings = settings
         self._cluster = None
         self._n_init_iterations = 10
@@ -84,6 +85,13 @@ class Clustering:
 
         return label_out
 
+    def get_cluster_model(self):
+        """Getting the cluster model after initialization"""
+        if self._cluster_init_done:
+            return self._cluster
+        else:
+            return None
+
     def cluster_gmm(self, features: np.ndarray) -> np.ndarray:
         """Performing the gaussian mixture model for clusting
         Args:
@@ -108,6 +116,7 @@ class Clustering:
             random_state=42,
             n_clusters=self._settings.no_cluster
         ).fit(features)
+        self._cluster_init_done = True
 
         return self._cluster.labels_
 

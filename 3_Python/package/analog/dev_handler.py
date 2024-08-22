@@ -42,9 +42,8 @@ def _raise_voltage_violation(du: np.ndarray | float, range_volt: list) -> None:
     if violation_up or violation_dwn:
         val = du.min if violation_dwn else du.max
         limit = range_volt[0] if violation_dwn else range_volt[1]
-        addon = '(Upper limit)' if not violation_dwn else '(Downer limit)'
-
-        warn(f"--- Warning: Voltage Range Violation! {addon} ---")
+        addon = f'(Upper limit)' if not violation_dwn else '(Downer limit)'
+        warn(f"--- Warning: Voltage Range Violation {addon}! With {val} of {limit} ---")
 
 
 class ElectricalLoad_Handler:
@@ -93,9 +92,11 @@ class ElectricalLoad_Handler:
         Returns:
             Two numpy arrays with current and voltage from device
         """
+
+        u_path = np.zeros((1,), dtype=float)
+        i_path = np.zeros((1,), dtype=float)
+
         if self._settings.type in self._type_func2reg:
-            u_path = np.zeros((1,), dtype=float)
-            i_path = np.zeros((1,), dtype=float)
             match mode_fit:
                 case 0:
                     # --- Get Data (Given Range)
@@ -120,14 +121,15 @@ class ElectricalLoad_Handler:
                     # --- Concatenate arrays
                     i_path = np.concatenate((-np.flipud(i_pathp)[1:], i_pathp), axis=0)
                     u_path = np.concatenate((-np.flipud(u_pathp)[1:], i_pathp), axis=0)
-
-            # --- Limiting with voltage boundaries
-            x_start = int(np.argwhere(u_path >= bounds_voltage[0])[0])
-            x_stop = int(np.argwhere(u_path >= bounds_voltage[1])[0])
-            return i_path[x_start:x_stop], u_path[x_start:x_stop]
         else:
-            print("Skipped regression task: No regression model for choicen device is available")
-            return np.zeros((1, ), dtype=float), np.zeros((1, ), dtype=float)
+            warn("Using normal device equation for getting I-V-behaviour")
+            u_path = np.linspace(bounds_voltage[0], bounds_voltage[1], self._fit_options[1], endpoint=True)
+            i_path = self.get_current(u_path, 0.0)
+
+        # --- Limiting with voltage boundaries
+        x_start = int(np.argwhere(u_path >= bounds_voltage[0])[0])
+        x_stop = int(np.argwhere(u_path >= bounds_voltage[1])[0])
+        return i_path[x_start:x_stop], u_path[x_start:x_stop]
 
     def _do_regression(self, u_inp: np.ndarray | float, u_inn: np.ndarray | float,
                        params: list, bounds_current: list) -> np.ndarray:
@@ -326,7 +328,7 @@ class ElectricalLoad_Handler:
             None
         """
         if len(self._params_used) == 1 and self._params_used[0] == 1.0:
-            warn("Please start fit curve after first fitting with get_voltage() or get_current()!")
+            self.get_current(0.0, 0.0)
 
         if not find_best_order:
             self._get_params_polyfit(
@@ -388,7 +390,7 @@ class ElectricalLoad_Handler:
         if self._settings.type in self._type_device.keys():
             iout = self._type_device[self._settings.type](u_top, u_bot)
         else:
-            print("Error: Model not available - Please check!")
+            raise Exception("Error: Model not available - Please check!")
         return iout
 
     def get_current_density(self, u_top: np.ndarray, u_bot: np.ndarray | float, area: float) -> np.ndarray:
