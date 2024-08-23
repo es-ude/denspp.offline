@@ -25,8 +25,8 @@ The Python folder contains the following folder structure:
 - _runs_: Temporary folder which saves the results of each run (only local)
 - _test_: Temporary folder for testing code which will not be pushed (only local)
 - _src_dnn_: Training handlers for different ML models
-- _src_<x>_: Example for generating Pipelines and specified functions for analysing signals for your application. There we have pipelines for analysing EMG and neural signals from invasive microelectrode arrays
-- 
+- _src_[x]_: Example for generating Pipelines and specified functions for analysing signals for your application. There we have pipelines for analysing EMG and neural signals from invasive microelectrode arrays
+  
 ## Usage
 For starting the Python framework, we recommend to configure the main folder "3_Python" as starting point in PyCharm in order to find all references in your script. For running code, you find several Python scripts for different examples.
 - _main.py_: For normal pipeline processing
