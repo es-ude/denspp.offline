@@ -19,16 +19,16 @@ This Git project contains the three folders:
 - _3_Python_: Containing the functions in order to setup a NSP pipeline incl. plotting examples
 
 The Python folder contains the following folder structure:
-- _data_: Merged datasets from your dataset library in order to train deep learning networks
+- _data_: Merged datasets from your dataset library in order to train deep learning networks (only local)
 - _experiments_: Custom-made functions for characterizing pipeline segments (e.g. spike detection)
-- _package_: All functions in order to setup the pipeline with (i) analogue, (ii) digital, (iii) neural signal processing and (iv) handler for train Autoencoders
-- _runs_: Temporary folder which saves the results of each run
+- _package_: All functions in order to setup the pipeline with (i) analogue, (ii) digital, (iii) neural signal processing and (iv) handler for train Deep Neural Networks (like Autoencoders, Recurrent Neural Networks and Classifiers)
+- _runs_: Temporary folder which saves the results of each run (only local)
+- _test_: Temporary folder for testing code which will not be pushed (only local)
 - _src_dnn_: Training handlers for different ML models
-- _src_emg_: Pipeline and necessary functions for analysing EMG signals
-- _src_neuro_: Pipeline and necesary functions for analysing action potentials from invasive microelectrode arrays
-
+- _src_<x>_: Example for generating Pipelines and specified functions for analysing signals for your application. There we have pipelines for analysing EMG and neural signals from invasive microelectrode arrays
+- 
 ## Usage
-For starting the software framework in your branch, please start Python script ...
+For starting the Python framework, we recommend to configure the main folder "3_Python" as starting point in PyCharm in order to find all references in your script. For running code, you find several Python scripts for different examples.
 - _main.py_: For normal pipeline processing
 - _main_data_merge.py_: For merging of given datasets
 - _main_dnn_train.py_: For training ML models, like Autoencoder and Classifier
