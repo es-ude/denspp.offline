@@ -217,3 +217,54 @@ def _get_median(parameter: list) -> float:
         param[idx] = np.median(val)
 
     return float(np.median(param))
+
+
+def plot_heatmap_2d_metric(freq: np.ndarray, lsb: np.ndarray, metric: list,
+                           type_metric: str, name: str, path2save="", mdict_eis=()) -> None:
+    """Plotting the heatmap with the median metric from the 2D-Parameter Sweep"""
+    # --- Pre-Processing
+    num_fs = np.unique(freq).size
+    num_lsb = np.unique(lsb).size
+
+    title_text = type_metric
+    text_size = 9
+
+    # --- Getting the data for plot
+    X, Y = np.meshgrid(np.unique(np.log10(freq)), np.unique(np.log10(lsb)))
+    Z = np.zeros(shape=X.shape, dtype=float)
+    for idx, val in enumerate(metric):
+        used_fs = np.log10(freq)[idx]
+        used_lsb = np.log10(lsb)[idx]
+        sel_col = int(np.argwhere(used_fs == np.log10(freq)).flatten()[0] / num_lsb)
+        sel_row = int(np.argwhere(used_lsb == np.log10(lsb)).flatten()[0])
+
+        if val.size == 0:
+            Z[sel_row, sel_col] = 0
+        else:
+            Z[sel_row, sel_col] = np.median(np.array(val, dtype=float))
+    del sel_row, sel_col, num_fs, num_lsb
+
+    # --- MAPE calculation with given value
+    if not len(mdict_eis) == 0:
+        if type_metric in mdict_eis:
+            Z = np.abs(Z - mdict_eis[type_metric])
+
+    # --- Plotting
+    plt.figure(figsize=(12, 9))
+    plt.rcParams.update({'font.size': 20})
+
+    plt.pcolor(X, Y, Z, edgecolor='k', vmin=Z.min(), vmax=Z.max())
+    plt.xlabel('Sampling Frequency [log10(Hz)]')
+    plt.ylabel('Least Significant Bit [log10(V)]')
+    plt.title(title_text)
+
+    # Add text
+    for (j, i), label in np.ndenumerate(Z):
+        plt.text(X[j, i], Y[j, i], f'{label:.2f}', ha='center', va='center',
+                 fontdict={'size': text_size}, color='gainsboro')
+
+    plt.colorbar(shrink=0.95, aspect=25)
+    plt.tight_layout()
+
+    # --- Saving
+    _save_figure(plt, path2save, f"{name}_metric-box2d_{type_metric}")
