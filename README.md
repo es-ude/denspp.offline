@@ -14,23 +14,23 @@ The folder "2_Data" contains only a subset of the data. In this repo, only a few
 
 ## File structure
 This Git project contains the three folders:
-- _1_Docu_: Documentation 
-- _2_Data_: Containing neural datasets. In this repo, only the synthetic dataset of Martinez2009 is available.
-- _3_Python_: Containing the functions in order to setup a NSP pipeline incl. plotting examples
+- `1_Docu`: Documentation 
+- `2_Data`: Containing neural datasets. In this repo, only the synthetic dataset of Martinez2009 is available.
+- `3_Python`: Containing the functions in order to setup a NSP pipeline incl. plotting examples
 
 The Python folder contains the following folder structure:
-- _data_: Merged datasets from your dataset library in order to train deep learning networks
-- _experiments_: Custom-made functions for characterizing pipeline segments (e.g. spike detection)
-- _package_: All functions in order to setup the pipeline with (i) analogue, (ii) digital, (iii) neural signal processing and (iv) handler for train Autoencoders
-- _runs_: Temporary folder which saves the results of each run
-- _src_dnn_: Training handlers for different ML models
-- _src_emg_: Pipeline and necessary functions for analysing EMG signals
-- _src_neuro_: Pipeline and necesary functions for analysing action potentials from invasive microelectrode arrays
-
+- `data`: Merged datasets from your dataset library in order to train deep learning networks (only local)
+- `experiments`: Custom-made functions for characterizing pipeline segments (e.g. spike detection)
+- `package`: All functions in order to setup the pipeline with (i) analogue, (ii) digital, (iii) neural signal processing and (iv) handler for train Deep Neural Networks (like Autoencoders, Recurrent Neural Networks and Classifiers)
+- `runs`: Temporary folder which saves the results of each run (only local)
+- `test`: Temporary folder for testing code which will not be pushed (only local)
+- `src_dnn`: Training handlers for different ML models
+- `src_[x]`: Example for generating Pipelines and specified functions for analysing signals for your application. There we have pipelines for analysing EMG and neural signals from invasive microelectrode arrays
+  
 ## Usage
-For starting the software framework in your branch, please start Python script ...
-- _main.py_: For normal pipeline processing
-- _main_data_merge.py_: For merging of given datasets
-- _main_dnn_train.py_: For training ML models, like Autoencoder and Classifier
-- _main_emg.py_: For processing EMG signals
-- _main_fpga.py_: For processing data using in Xilinx simulation environment and transfer the weights of a trained model in memory file 
+For starting the Python framework, we recommend to configure the main folder `3_Python` as starting point in PyCharm in order to find all references in your script. For running code, you find several Python scripts for different examples.
+- `main.py`: For normal pipeline processing
+- `main_data_merge.py`: For merging of given datasets
+- `main_dnn_train.py`: For training ML models, like Autoencoder and Classifier
+- `main_emg.py`: For processing EMG signals
+- `main_fpga.py`: For processing data using in Xilinx simulation environment and transfer the weights of a trained model in memory file 
