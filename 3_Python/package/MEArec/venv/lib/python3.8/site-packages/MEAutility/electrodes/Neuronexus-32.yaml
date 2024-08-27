@@ -1,0 +1,10 @@
+electrode_name: Neuronexus-32
+description: "Neuronexus A1x32-Poly3-5mm-25s-177-CM32 probe. 32 circular contacts in 3 staggered columns."
+sortlist: null
+pitch: [25.0, 18.0]
+dim: [10, 12, 10]
+stagger: -12.5
+size: 7.5
+plane: yz
+shape: circle
+type: mea

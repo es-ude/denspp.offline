@@ -1,0 +1,201 @@
+Metadata-Version: 2.1
+Name: quantities
+Version: 0.16.0
+Summary: Support for physical quantities with units, based on numpy
+Author-email: Darren Dale <dsdale24@gmail.com>
+Maintainer-email: Andrew Davison <andrew.davison@cnrs.fr>
+License: .. _license:
+        
+        ***********************************************
+        License
+        ***********************************************
+        
+        
+        Quantities only uses BSD compatible code.  See the Open Source
+        Initiative `licenses page <http://www.opensource.org/licenses>`_
+        for details on individual licenses.
+        
+        License Agreement for Quantities
+        ================================
+        
+        Copyright (c) 2012, Darren Dale <dsdale24@gmail.com>
+        All rights reserved.
+        
+        Redistribution and use in source and binary forms, with or without
+        modification, are permitted provided that the following conditions
+        are met:
+        1. Redistributions of source code must retain the above copyright
+           notice, this list of conditions and the following disclaimer.
+        2. Redistributions in binary form must reproduce the above copyright
+           notice, this list of conditions and the following disclaimer in the
+           documentation and/or other materials provided with the distribution.
+        3. Neither the name of the University nor the names of its contributors
+           may be used to endorse or promote products derived from this software
+           without specific prior written permission.
+        
+        THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+        ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+        IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+        ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+        FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+        DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+        OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+        HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+        LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+        OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+        SUCH DAMAGE.
+        
+        
+        License Agreement for Scimath
+        =============================
+        
+        This software is OSI Certified Open Source Software.
+        OSI Certified is a certification mark of the Open Source Initiative.
+        
+        Copyright (c) 2006, Enthought, Inc.
+        All rights reserved.
+        
+        Redistribution and use in source and binary forms, with or without
+        modification, are permitted provided that the following conditions are met:
+        
+         * Redistributions of source code must retain the above copyright notice, this
+           list of conditions and the following disclaimer.
+         * Redistributions in binary form must reproduce the above copyright notice,
+           this list of conditions and the following disclaimer in the documentation
+           and/or other materials provided with the distribution.
+         * Neither the name of Enthought, Inc. nor the names of its contributors may
+           be used to endorse or promote products derived from this software without
+           specific prior written permission.
+        
+        THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+        ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+        WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+        DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+        ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+        (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+        LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+        ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+        (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+        SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+        
+Project-URL: documentation, http://python-quantities.readthedocs.io/
+Project-URL: repository, https://github.com/python-quantities/python-quantities
+Project-URL: changelog, https://github.com/python-quantities/python-quantities/blob/master/CHANGES.txt
+Project-URL: download, http://pypi.python.org/pypi/quantities
+Keywords: quantities,units,physical,constants
+Classifier: Development Status :: 4 - Beta
+Classifier: Environment :: Console
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Education
+Classifier: Intended Audience :: End Users/Desktop
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python
+Classifier: Topic :: Education
+Classifier: Topic :: Scientific/Engineering
+Requires-Python: >=3.8
+Description-Content-Type: text/x-rst
+Requires-Dist: numpy >=1.20
+Provides-Extra: doc
+Requires-Dist: sphinx ; extra == 'doc'
+Provides-Extra: test
+Requires-Dist: pytest ; extra == 'test'
+Requires-Dist: wheel ; extra == 'test'
+
+==========
+quantities
+==========
+
+Quantities is designed to handle arithmetic and
+conversions of physical quantities, which have a magnitude, dimensionality
+specified by various units, and possibly an uncertainty. See the tutorial_
+for examples. Quantities builds on the popular numpy library and is
+designed to work with numpy ufuncs, many of which are already
+supported. Quantities is actively developed, and while the current features
+and API are stable, test coverage is incomplete so the package is not
+suggested for mission-critical applications.
+
+|pypi version|_ |Build status|_
+
+.. |pypi version| image:: https://img.shields.io/pypi/v/quantities.png
+.. _`pypi version`: https://pypi.python.org/pypi/quantities
+.. |Build status| image:: https://github.com/python-quantities/python-quantities/actions/workflows/test.yml/badge.svg?branch=master
+.. _`Build status`: https://github.com/python-quantities/python-quantities/actions/workflows/test.yml
+.. _tutorial: http://python-quantities.readthedocs.io/en/latest/user/tutorial.html
+
+
+A Python package for handling physical quantities. The source code and issue
+tracker are hosted on GitHub:
+
+https://www.github.com/python-quantities/python-quantities
+
+Download
+--------
+Get the latest version of quantities from
+https://pypi.python.org/pypi/quantities/
+
+To get the Git version do::
+
+    $ git clone git://github.com/python-quantities/python-quantities.git
+
+
+Documentation and usage
+-----------------------
+You can find the official documentation at:
+
+http://python-quantities.readthedocs.io/
+
+Here is a simple example:
+
+.. code:: python
+
+   >>> import quantities as pq
+   >>> distance = 42*pq.metre
+   >>> time = 17*pq.second
+   >>> velocity = distance / time
+   >>> "%.3f %s" % (velocity.magnitude, velocity.dimensionality)
+   '2.471 m/s'
+   >>> velocity + 3
+   Traceback (most recent call last):
+     ...
+   ValueError: Unable to convert between units of "dimensionless" and "m/s"
+
+Installation
+------------
+quantities has a hard dependency on the `NumPy <http://www.numpy.org>`_ library.
+You should install it first, please refer to the NumPy installation guide:
+
+http://docs.scipy.org/doc/numpy/user/install.html
+
+To install quantities itself, then simply run::
+
+    $ pip install quantities
+
+
+Tests
+-----
+To execute all tests, install pytest::
+
+    $ python -m pip install pytest
+
+And run::
+
+    $ pytest
+
+in the current directory. The master branch is automatically tested by
+GitHub Actions.
+
+Author
+------
+quantities was originally written by Darren Dale, and has received contributions from `many people`_.
+
+.. _`many people`: https://github.com/python-quantities/python-quantities/graphs/contributors
+
+License
+-------
+Quantities only uses BSD compatible code.  See the Open Source
+Initiative `licenses page <http://www.opensource.org/licenses>`_
+for details on individual licenses.
+
+See `doc/user/license.rst <doc/user/license.rst>`_ for further details on the license of quantities

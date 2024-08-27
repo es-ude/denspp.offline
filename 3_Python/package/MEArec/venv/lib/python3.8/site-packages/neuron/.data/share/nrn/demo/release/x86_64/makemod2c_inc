@@ -1,0 +1,80 @@
+./cabpump.c: ../cabpump.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "cabpump.mod" -o "/root/nrn/build/cmake_install/share/nrn/demo/release/x86_64")
+
+./cabpump.o: ./cabpump.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+
+./cachan1.c: ../cachan1.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "cachan1.mod" -o "/root/nrn/build/cmake_install/share/nrn/demo/release/x86_64")
+
+./cachan1.o: ./cachan1.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+
+./camchan.c: ../camchan.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "camchan.mod" -o "/root/nrn/build/cmake_install/share/nrn/demo/release/x86_64")
+
+./camchan.o: ./camchan.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+
+./capump.c: ../capump.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "capump.mod" -o "/root/nrn/build/cmake_install/share/nrn/demo/release/x86_64")
+
+./capump.o: ./capump.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+
+./invlfire.c: ../invlfire.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "invlfire.mod" -o "/root/nrn/build/cmake_install/share/nrn/demo/release/x86_64")
+
+./invlfire.o: ./invlfire.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+
+./khhchan.c: ../khhchan.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "khhchan.mod" -o "/root/nrn/build/cmake_install/share/nrn/demo/release/x86_64")
+
+./khhchan.o: ./khhchan.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+
+./mcna.c: ../mcna.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "mcna.mod" -o "/root/nrn/build/cmake_install/share/nrn/demo/release/x86_64")
+
+./mcna.o: ./mcna.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+
+./nacaex.c: ../nacaex.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "nacaex.mod" -o "/root/nrn/build/cmake_install/share/nrn/demo/release/x86_64")
+
+./nacaex.o: ./nacaex.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+
+./nachan.c: ../nachan.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "nachan.mod" -o "/root/nrn/build/cmake_install/share/nrn/demo/release/x86_64")
+
+./nachan.o: ./nachan.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+
+./release.c: ../release.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "release.mod" -o "/root/nrn/build/cmake_install/share/nrn/demo/release/x86_64")
+
+./release.o: ./release.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+

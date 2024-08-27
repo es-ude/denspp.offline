@@ -1,0 +1,54 @@
+Metadata-Version: 2.1
+Name: lazy-ops
+Version: 0.2.0
+Summary: Lazy slicing and transpose operations for h5py and zarr
+Home-page: https://github.com/ben-dichter-consulting/lazy_ops
+Author: Daniel Sotoude, Ben Dichter
+Author-email: dsot@protonmail.com, ben.dichter@gmail.com
+License: UNKNOWN
+Platform: UNKNOWN
+Classifier: Operating System :: OS Independent
+Classifier: Development Status :: 3 - Alpha
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Description-Content-Type: text/markdown
+Requires-Dist: zarr
+Requires-Dist: h5py
+
+# lazy_ops
+
+<strong>Lazy transposing and slicing of h5py Datasets and zarr arrays</strong>
+
+## Installation
+
+```bash
+$ pip install lazy_ops
+```
+
+## Usage:
+
+```python
+from lazy_ops import DatasetView
+
+# h5py #
+import h5py
+dsetview = DatasetView(dataset) # dataset is an instance of h5py.Dataset
+view1 = dsetview.lazy_slice[1:40:2,:,0:50:5].lazy_transpose([2,0,1]).lazy_slice[8,5:10]
+
+# zarr #
+import zarr
+zarrview = DatasetView(zarray) # dataset is an instance of zarr.core.Array
+view1 = zview.lazy_slice[1:10:2,:,5:10].lazy_transpose([0,2,1]).lazy_slice[0:3,1:4]
+
+# reading from view on either h5py or zarr
+A = view1[:]          # Brackets on DataSetView call the h5py or zarr slicing method, returning the data
+B = view1.dsetread()  # same as view1[:]
+
+# iterating on either h5yy or zarr
+for ib in view.lazy_iter(axis=1):
+    print(ib[0])
+
+```
+
+

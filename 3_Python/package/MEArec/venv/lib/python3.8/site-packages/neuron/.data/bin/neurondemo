@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -e
+
+ARCH=x86_64
+MODSUBDIR=x86_64
+
+if test "x${NRNHOME}" = x ; then
+        prefix="/root/nrn/build/cmake_install"
+	exec_prefix=/root/nrn/build/cmake_install
+	NRNBIN=${exec_prefix}/bin/
+	NRNDEMO=/root/nrn/build/cmake_install/share/"nrn"/demo/
+else
+    prefix="$NRNHOME"
+    exec_prefix="${prefix}"
+	NRNBIN="${exec_prefix}/bin/"
+	NRNDEMO="${prefix}/share/"nrn"/demo/"
+fi
+
+if test "${NRNHOME_EXEC}" != "" ; then
+	exec_prefix="${NRNHOME_EXEC}"
+	NRNBIN="${exec_prefix}/bin/"
+fi
+
+export NRNDEMO
+
+if [ ! -f "${NRNDEMO}neuron" ] ; then
+	(cd "${NRNDEMO}release" ; "${NRNBIN}nrnivmodl" ; cd .. ; rm -f neuron ; touch neuron)
+fi
+
+${NRNBIN}nrniv -dll "${NRNDEMO}release/${MODSUBDIR}/.libs/libnrnmech.so" "${NRNDEMO}demo.hoc" "$@" -

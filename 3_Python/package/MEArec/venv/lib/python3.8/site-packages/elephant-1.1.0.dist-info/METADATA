@@ -1,0 +1,107 @@
+Metadata-Version: 2.1
+Name: elephant
+Version: 1.1.0
+Summary: Elephant is a package for analysis of electrophysiology data in Python
+Home-page: http://python-elephant.org
+Author: Elephant authors and contributors
+Author-email: contact@python-elephant.org
+License: BSD
+Project-URL: Bug Tracker, https://github.com/NeuralEnsemble/elephant/issues
+Project-URL: Documentation, https://elephant.readthedocs.io/en/latest/
+Project-URL: Source Code, https://github.com/NeuralEnsemble/elephant
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Natural Language :: English
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Topic :: Scientific/Engineering
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE.txt
+Requires-Dist: neo >=0.10.0
+Requires-Dist: numpy <2,>=1.19.5
+Requires-Dist: quantities >=0.14.1
+Requires-Dist: scipy >=1.10.0
+Requires-Dist: six >=1.10.0
+Requires-Dist: tqdm
+Provides-Extra: cuda
+Requires-Dist: pycuda >=2020.1 ; extra == 'cuda'
+Provides-Extra: docs
+Requires-Dist: numpydoc >=1.1.0 ; extra == 'docs'
+Requires-Dist: jupyter >=1.0.0 ; extra == 'docs'
+Requires-Dist: sphinx >=3.3.0 ; extra == 'docs'
+Requires-Dist: nbsphinx >=0.8.0 ; extra == 'docs'
+Requires-Dist: sphinxcontrib-bibtex >1.0.0 ; extra == 'docs'
+Requires-Dist: sphinx-tabs >=1.3.0 ; extra == 'docs'
+Requires-Dist: matplotlib >=3.3.2 ; extra == 'docs'
+Provides-Extra: extras
+Requires-Dist: scikit-learn >=0.23.2 ; extra == 'extras'
+Requires-Dist: statsmodels >=0.12.1 ; extra == 'extras'
+Requires-Dist: jinja2 >=2.11.2 ; extra == 'extras'
+Provides-Extra: opencl
+Requires-Dist: pyopencl >=2020.2.2 ; extra == 'opencl'
+Provides-Extra: tests
+Requires-Dist: pytest ; extra == 'tests'
+Requires-Dist: nixio >=1.5.0 ; extra == 'tests'
+Provides-Extra: tutorials
+Requires-Dist: matplotlib >=3.3.2 ; extra == 'tutorials'
+Requires-Dist: h5py >=3.1.0 ; extra == 'tutorials'
+Requires-Dist: nixio >=1.5.0 ; extra == 'tutorials'
+
+# Elephant - Electrophysiology Analysis Toolkit
+
+[![Coverage Status](https://coveralls.io/repos/github/NeuralEnsemble/elephant/badge.svg?branch=master)](https://coveralls.io/github/NeuralEnsemble/elephant?branch=master)
+[![Documentation Status](https://readthedocs.org/projects/elephant/badge/?version=latest)](https://elephant.readthedocs.io/en/latest/?badge=latest)
+[![![PyPi]](https://img.shields.io/pypi/v/elephant)](https://pypi.org/project/elephant/)
+[![Statistics](https://img.shields.io/pypi/dm/elephant)](https://seladb.github.io/StarTrack-js/#/preload?r=neuralensemble,elephant)
+[![Gitter](https://badges.gitter.im/python-elephant/community.svg)](https://gitter.im/python-elephant/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![DOI Latest Release](https://zenodo.org/badge/10311278.svg)](https://zenodo.org/badge/latestdoi/10311278)
+[![tests](https://github.com/NeuralEnsemble/elephant/actions/workflows/CI.yml/badge.svg)](https://github.com/NeuralEnsemble/elephant/actions/workflows/CI.yml)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/6191/badge)](https://bestpractices.coreinfrastructure.org/projects/6191)
+[![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F-green)](https://fair-software.eu)
+[![Twitter](https://img.shields.io/twitter/follow/PyElephant?style=social)](https://twitter.com/pyelephant)
+[![Fosstodon](https://img.shields.io/badge/@elephant-6364FF?logo=mastodon&logoColor=fff&style=flat)](https://fosstodon.org/@elephant)
+
+
+*Elephant* package analyses all sorts of neurophysiological data:
+spike trains, LFP, analog signals. The input-output data format is either
+[Neo](https://github.com/NeuralEnsemble/python-neo), Quantity or Numpy array.
+
+
+### More Information
+
+* Documentation: https://elephant.readthedocs.io/en/latest/
+* Mailing list: https://groups.google.com/group/neuralensemble
+
+
+#### Visualization of Elephant analysis objects
+
+Viziphant package (https://github.com/INM-6/viziphant) is developed by Elephant
+team for plotting and visualization of the output of Elephant functions in a
+few lines of code.
+
+
+#### License
+ 
+Modified BSD License, see [LICENSE.txt](LICENSE.txt) for details.
+
+
+#### Copyright
+
+:copyright: 2014-2024 by the [Elephant team](doc/authors.rst).
+
+
+#### Acknowledgments
+
+See [acknowledgments](doc/acknowledgments.rst).
+
+
+#### Citation
+
+See [citations](doc/citation.rst).
