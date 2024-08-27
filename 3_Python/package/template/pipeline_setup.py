@@ -69,6 +69,7 @@ class _SettingsPipe:
         no_features=3
     )
     SettingsCL = SettingsCluster(
+        type="kMeans",
         no_cluster=3
     )
 

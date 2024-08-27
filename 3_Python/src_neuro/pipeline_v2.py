@@ -68,6 +68,7 @@ class _SettingsPipe:
         no_features=3
     )
     SettingsCL = SettingsCluster(
+        type="kMeans",
         no_cluster=3
     )
 
@@ -143,5 +144,8 @@ class Pipeline(PipelineCMD):
         # ---- Feature Extraction  ----
         self.signals.features = self.__fe.fe_pca(self.signals.frames_align[0])
         # ---- Clustering | Classification ----
-        (self.signals.frames_align[2]) = self.__cl.cluster_kmeans(self.signals.features)
+        self.signals.frames_align[2] = self.__cl.init(self.signals.features)
         self.signals.spike_ticks = calc_spiketicks(self.signals.frames_align)
+
+        # --- Saving clustering model
+        self.__cl.save_model_to_file('cluster_model', self.path2save)
