@@ -33,7 +33,7 @@ class SettingsINT:
 
     @property
     def vcm(self) -> float:
-        return (self.vdd - self.vss) / 2
+        return (self.vdd + self.vss) / 2
 
     @property
     def u_error(self) -> float:
