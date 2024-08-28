@@ -216,8 +216,7 @@ class DataLoader(_DataController):
         self.raw_data.electrode_id = elec_process
         self.raw_data.data_time = loaded_data['data'].shape[0] / self.raw_data.data_fs_orig
 
-        # Groundtruth
-        # TODO: Verarbeitung der Intrazellulären Antwort des juxta_channels
+        # --- Groundtruth
         spike_xoffset = int(0e-6 * self.raw_data.data_fs_orig)
         self.raw_data.label_exist = False
         # Behaviour

@@ -85,15 +85,7 @@ def _create_arbfwg(spice_instance: NgSpiceShared, waveform: np.ndarray, f_samp: 
         voltage[0] = waveform[index]
         return 0
 
-    def get_isrc_data(self, current, time, node, ngspice_id) -> int:
-        """Internal NgSpice function for simulation"""
-        self._logger.debug('ngspice_id-{} get_isrc_data @{} node {}'.format(ngspice_id, time, node))
-        index = int(time * f_samp) % len(waveform)
-        current[0] = waveform[index]
-        return 0
-
     _add_method(spice_instance, get_vsrc_data, "get_vsrc_data")
-    _add_method(spice_instance, get_isrc_data, "get_isrc_data")
 
 
 def _clear_arbfwg(spice_instance: NgSpiceShared) -> None:
@@ -103,13 +95,7 @@ def _clear_arbfwg(spice_instance: NgSpiceShared) -> None:
         self._logger.debug('ngspice_id-{} get_vsrc_data @{} node {}'.format(ngspice_id, time, node))
         return 0
 
-    def get_isrc_data(self, current, time, node, ngspice_id) -> int:
-        """Internal NgSpice function for simulation"""
-        self._logger.debug('ngspice_id-{} get_isrc_data @{} node {}'.format(ngspice_id, time, node))
-        return 0
-
     _add_method(spice_instance, get_vsrc_data, "get_vsrc_data")
-    _add_method(spice_instance, get_isrc_data, "get_isrc_data")
 
 
 def do_bugfix_clone_circuit(circuits_netlist: Netlist) -> None:
@@ -159,6 +145,11 @@ class PySpice_Handler:
     def __calc_temp_in_celsius(self) -> float:
         """Translating the temperature value from Kelvin [K] to Grad Celsius [°C]"""
         return self._used_temp - 273.15
+
+    def get_ngspice_version(self) -> None:
+        """Getting the version of used NGspice in PySPICE"""
+
+        print("A")
 
     def set_src_mode(self, do_voltage: bool) -> None:
         """Setting the Source Mode of Input Source [0: Current, 1: Voltage]"""
@@ -365,25 +356,26 @@ class PySpice_Handler:
     ############################################################################
 
     def do_transient_arbitrary_simulation(self, signal: np.ndarray, t_end: float, f_samp: float,
-                                          initial_value=0.0) -> dict:
+                                          initial_value=0.0, trans_value=1.0) -> dict:
         """Performing the Transient Simulation with Arbitrary Signal Waveform
         Args:
             signal:         Numpy array with transient custom-made signal
             t_end:          Total simulation time [s]
             f_samp:         Sampling frequency [Hz]
             initial_value:  Applied initial value [Default: 0.0]
+            trans_value:    Transcondunctance value [Default: 1 A/V]
         Returns:
             NGSpice dictionary with simulation results [optional]
         """
-        # TODO: Current controlled simulation does not work (I don't know why)
-
         # --- Definition of energy source
         if self._is_input_voltage:
             self._circuit.V('input', 'input', self._circuit.gnd, 'dc 0 external')
             self._circuit.Vinput.minus.add_current_probe(self._circuit)
         else:
-            self._circuit.I('input', self._circuit.gnd, 'input', 'dc 0 external')
-            self._circuit.Iinput.plus.add_current_probe(self._circuit)
+            self._circuit.V('data', 'src', self._circuit.gnd, 'dc 0 external')
+            self._circuit.VCCS('input', self._circuit.gnd, 'input0', 'src', self._circuit.gnd, trans_value)
+            self._circuit.R('sens', 'input0', 'input', 0.0)
+            self._circuit.Rsens.plus.add_current_probe(self._circuit)
 
         # --- Generating instance for using arbitrary waveforms in SPICE transient simulation
         _create_arbfwg(self._arbitrary_signal_ng_spice_instance, signal, f_samp)
@@ -399,7 +391,7 @@ class PySpice_Handler:
 
         # --- Process results
         del self.__results
-        self.__results = self.get_results(3, results)
+        self.__results = self.get_results(4, results)
 
         _clear_arbfwg(self._arbitrary_signal_ng_spice_instance)
         return self.__results
@@ -435,28 +427,34 @@ class PySpice_Handler:
               Dictionary with entries "v_in", "v_out", "i_in", "time", "freq"
         """
         output_dict = dict()
-        cur_in_selection = True if 'viinput_plus' in data.branches.keys() else False
-        cur_in_key = 'vvinput_minus' if not cur_in_selection else 'viinput_plus'
+        cur_in_key0 = 'vvinput_minus' if self._is_input_voltage else 'viinput_plus'
+        cur_in_key1 = 'vvinput_minus' if self._is_input_voltage else 'vrsens_plus'
         match mode:
             case 0:
                 # DC Operating Point Analysis
                 output_dict.update({"v_in": np.array(data.input)})
-                output_dict.update({"i_in": np.array(data.branches[cur_in_key])})
+                output_dict.update({"i_in": np.array(data.branches[cur_in_key0])})
             case 1:
                 # DC Sweep Analysis
                 output_dict.update({"v_in": np.array(data.input)})
-                output_dict.update({"i_in": np.array(data.branches[cur_in_key])})
+                output_dict.update({"i_in": np.array(data.branches[cur_in_key0])})
             case 2:
                 # AC Sweep Analysis
                 output_dict.update({"freq": np.array(data.frequency)})
                 output_dict.update({"v_in": np.array(data.input)})
-                output_dict.update({"i_in": np.array(data.branches[cur_in_key])})
+                output_dict.update({"i_in": np.array(data.branches[cur_in_key0])})
                 output_dict.update({"v_out": np.array(data.output)})
             case 3:
-                # Transient Simulation (Pulse, Sinusoidal or Arbitrary)
+                # Transient Simulation (Pulse, Sinusoidal)
                 output_dict.update({"time": np.array(data.time)})
                 output_dict.update({"v_in": np.array(data.input)})
-                output_dict.update({"i_in": np.array(data.branches[cur_in_key])})
+                output_dict.update({"i_in": np.array(data.branches[cur_in_key0])})
+                output_dict.update({"v_out": np.array(data.output)})
+            case 4:
+                # Transient Simulation (Pulse, Sinusoidal)
+                output_dict.update({"time": np.array(data.time)})
+                output_dict.update({"v_in": np.array(data.input)})
+                output_dict.update({"i_in": np.array(data.branches[cur_in_key1])})
                 output_dict.update({"v_out": np.array(data.output)})
         return output_dict
 
@@ -578,14 +576,14 @@ class PySpice_Handler:
 
 if __name__ == "__main__":
     # --- Settings
-    run_mode = [0, 1, 2, 3, 4]
-    do_voltage = False
+    run_mode = [0, 1, 2, 3, 4, 5]
+    do_voltage = True
     fs = 100e3
     t_sim = 20e-3
 
     models = PySpiceModels()
     # circuit = models.voltage_divider(c_load=10e-9)
-    circuit = models.resistive_diode()
+    circuit = models.simple_randles_model()
     # circuit = models.diode_1n4148()
 
     # --- Definition of Sim mode
@@ -611,6 +609,6 @@ if __name__ == "__main__":
             signal0 = pyspice.create_dummy_signal(t_sim, fs)[1]
             pyspice.do_transient_arbitrary_simulation(signal0, t_sim, fs)
             pyspice.plot_transient()
+        pyspice.print_spice_circuit()
 
-    pyspice.print_spice_circuit()
     plt.show(block=True)
