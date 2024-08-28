@@ -132,6 +132,11 @@ class PySpice_Handler:
         Returns:
             None
         """
+        from PySpice import __version__
+        from PySpice.Spice.NgSpice import NGSPICE_SUPPORTED_VERSION
+        self.__version_pyspice = __version__
+        self.__version_ngspice = NGSPICE_SUPPORTED_VERSION
+
         self.__results = dict()
         self._is_input_voltage = input_voltage
         self._used_temp = temperature
@@ -148,8 +153,7 @@ class PySpice_Handler:
 
     def get_ngspice_version(self) -> None:
         """Getting the version of used NGspice in PySPICE"""
-
-        print("A")
+        print(f"Using PySpice v{self.__version_pyspice} with NGSpice v{self.__version_ngspice}")
 
     def set_src_mode(self, do_voltage: bool) -> None:
         """Setting the Source Mode of Input Source [0: Current, 1: Voltage]"""
@@ -588,6 +592,7 @@ if __name__ == "__main__":
 
     # --- Definition of Sim mode
     pyspice = PySpice_Handler(input_voltage=do_voltage)
+    pyspice.get_ngspice_version()
     for mode in run_mode:
         pyspice.load_circuit_model(circuit)
         if mode == 0:
