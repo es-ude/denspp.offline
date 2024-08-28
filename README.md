@@ -37,7 +37,7 @@ For starting the Python framework, we recommend to configure the main folder `3_
 - `main_fpga.py`: For processing data using in Xilinx simulation environment and transfer the weights of a trained model in memory file
 
 ## Advanced installation guide for PySPICE
-`PySPICE` (Python Interface for using `NGSpice`) is a easy-to-use circuit simulation using SPICE commands in Python. A comment of PySPICE, it has several bugs in the code but this integration has included some workarounds for easy-to-use. 
+`PySPICE` (Python Interface for using `NGSpice`) is a easy-to-use circuit simulation using SPICE commands in Python. This API provides several workarounds for using PySpice in order to allow easy-to-use circuit simulation for single-pole and two-pole circuits. 
 
 ### Workaround #1: Using on Windows
 For using PySPICE on Windows, please type in the two following commands in the Terminal (Command Prompt) after the package is installed. We recommend to use a venv due to missing script `pyspice-post-installation` if PySPICE is installed for all users.
@@ -51,15 +51,3 @@ Checking if the installation is right:
 ````
 pyspice-post-installation --check-install
 ````
-
-### Workaround #2: Transient Simulation with current controlled source and arbitrary waveforms
-For using the transient simulation with current controlled source and arbitrary waveforms, here is the guideline for a workaround to fix the package bug.
-1. Download the tar.gz file of NgSpice version 34 ([Link](https://sourceforge.net/projects/ngspice/files/ng-spice-rework/old-releases/34/ngspice-34.tar.gz/download)) and unzip: 
-2. In `ngspice-34\src\spicelib\devices\isrc\isrc.c` source code, edit line 30 ([based on Link](https://sourceforge.net/u/thejackal360/ngspice/ci/276a456659aa276a30140b59eff39ececdaaadb1/)):
-   Old: IOP ("external", ISRC_EXTERNAL, IF_REALVEC,"external source description"),
-   New: IOP ("external", ISRC_EXTERNAL, IF_STRING,"external source description"),
-3. Build project "ngspice-34\visualc\sharedspice.vcxproj" in Visual Studio 2022 with the Release x64 option
-   (see Section 19.1.3 of NgSpice user manual)
-4. Copy "ngspice-34\visualc\sharedspice\Release.x64\ngspice.dll"
-5. In PySpice package location, go to "Spice\NgSpice\Spice64_dll\dll-vs" and replace both "ngspice.dll" and "ngspice-34.dll"
-   with the file copied in step 6, renaming where necessary.
