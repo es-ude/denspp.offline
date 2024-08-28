@@ -10,7 +10,7 @@ from package.plot.plot_common import _scale_auto_value
 
 class PySpiceModels:
     def __init__(self):
-        self.vcm =  0.0
+        self.vcm = 0.0
 
     def resistor(self, value: float) -> Circuit:
         """"""
@@ -22,7 +22,7 @@ class PySpiceModels:
     def diode_1n4148(self) -> Circuit:
         """"""
         circuit0 = Circuit("Diode_1N4148")
-        circuit0.model('1N4148', 'D', IS=4.352e-9, N=1.906, BV=110, IBV=0.0001, RS=0.6458,
+        circuit0.model('1N4148', 'D', IS=4.352e-9, N=1.906, BV=110, IBV=1e-5, RS=0.6458,
                        CJO=7.048e-13, V=0.869, M=0.03, FC=0.5, TT=3.48E-9)
         circuit0.Diode(0, 'input', 'middle', model='1N4148')
         circuit0.R(0, 'middle', 'output', 100)
@@ -586,8 +586,8 @@ if __name__ == "__main__":
     t_sim = 20e-3
 
     models = PySpiceModels()
-    # circuit = models.voltage_divider(c_load=10e-9)
-    circuit = models.simple_randles_model()
+    circuit = models.voltage_divider(c_load=10e-9)
+    # circuit = models.simple_randles_model()
     # circuit = models.diode_1n4148()
 
     # --- Definition of Sim mode
@@ -598,7 +598,7 @@ if __name__ == "__main__":
         if mode == 0:
             pyspice.do_dc_simulation(1.0)
         elif mode == 1:
-            pyspice.do_dc_sweep_simulation(-2.0, 1.0, 1e-3)
+            pyspice.do_dc_sweep_simulation(-12.0, 4.0, 1e-3)
             pyspice.plot_iv_curve(do_log=False)
             pyspice.plot_iv_curve(do_log=True)
         elif mode == 2:
