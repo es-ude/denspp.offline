@@ -66,11 +66,7 @@ class CurrentAmplifier(ProcessNoise):
         uin[uin < self._settings.vss] = self._settings.vss
         return uin
 
-    def __gen_noise(self, size: int) -> np.ndarray:
-        """Generating noise"""
-        return self._gen_noise_awgn(size, True)
-
-    def __add_parasitic(self, size: int) -> np.ndarray:
+    def __add_parasitic(self, size: int, resistance=1.0) -> np.ndarray:
         """"""
         u_para = np.zeros((size, ))
         u_para += self._settings.transimpedance * self._settings.offset_i
@@ -78,7 +74,7 @@ class CurrentAmplifier(ProcessNoise):
         u_para += self.vcm
         # Adding noise
         if self._settings.noise_en:
-            u_para += self._gen_noise_real(size)
+            u_para += self._gen_noise_real_volt(size, resistance)
 
         return u_para
 
@@ -94,6 +90,20 @@ class CurrentAmplifier(ProcessNoise):
         u_out += self.__add_parasitic(u_out.size)
         return self.__voltage_clipping(u_out)
 
+    def instrumentation_amplifier(self, iin: np.ndarray, uoff: np.ndarray | float, v_gain=1.0) -> np.ndarray:
+        """Using an instrumentation amplifier for current sensing
+        Args:
+            iin:    Input current [A]
+            uoff:   Offset output voltage [V]
+            v_gain: Gain of Amplifier [V/V]
+        Returns:
+            Corresponding numpy array with output voltage
+        """
+        r_sense = self._settings.transimpedance / v_gain
+        u_out = r_sense * iin + uoff
+        u_out += self.__add_parasitic(u_out.size, r_sense)
+        return u_out
+
     def push_amplifier(self, iin: np.ndarray) -> np.ndarray:
         """Performing the CMOS push/source current amplifier
         Args:
@@ -104,7 +114,7 @@ class CurrentAmplifier(ProcessNoise):
         u_out = np.zeros(iin.shape)
         x_neg = np.argwhere(iin < 0)
         u_out[x_neg,] = iin[x_neg,] * self._settings.transimpedance
-        u_out += self.__add_parasitic(u_out.size)
+        u_out += self.__add_parasitic(u_out.size, self._settings.transimpedance)
         return self.__voltage_clipping(u_out)
 
     def pull_amplifier(self, iin: np.ndarray) -> np.ndarray:
@@ -117,7 +127,7 @@ class CurrentAmplifier(ProcessNoise):
         u_out = np.zeros(iin.shape)
         x_pos = np.argwhere(iin >= 0)
         u_out[x_pos, ] = iin[x_pos, ] * self._settings.transimpedance
-        u_out += self.__add_parasitic(u_out.size)
+        u_out += self.__add_parasitic(u_out.size, self._settings.transimpedance)
         return self.__voltage_clipping(u_out)
 
     def push_pull_amplifier(self, iin: np.ndarray) -> [np.ndarray, np.ndarray]:
