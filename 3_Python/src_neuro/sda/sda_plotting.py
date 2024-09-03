@@ -4,21 +4,10 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 from matplotlib.cm import ScalarMappable
 
-
-def save_figure(fig, path: str, name: str):
-    """Function to save figure in specific formats"""
-    format0 = ['eps', 'svg', 'jpg']
-
-    if not os.path.exists(path):
-        os.mkdir(path)
-
-    path2fig = os.path.join(path, name)
-    for idx, form in enumerate(format0):
-        file_name = path2fig + '.' + form
-        fig.savefig(file_name, format=form)
+from package.plot.plot_common import save_figure, scale_auto_value
 
 
-def plot_histogramm(in0: np.ndarray, in1: np.ndarray, in2: np.ndarray) -> None:
+def plot_histogramm(in0: np.ndarray, in1: np.ndarray, in2: np.ndarray, path2save='', show_plot=False) -> None:
     plt.figure()
     ax0 = plt.subplot(131)
     ax1 = plt.subplot(132)
@@ -29,11 +18,15 @@ def plot_histogramm(in0: np.ndarray, in1: np.ndarray, in2: np.ndarray) -> None:
     ax2.hist(in2)
 
     plt.tight_layout()
-    plt.show()
+    # --- Saving plots
+    if path2save:
+        save_figure(plt, path2save, f"histogram_transient")
+    if show_plot:
+        plt.show(block=True)
 
 
 def plot_results_single(time: np.ndarray, spk_signal: np.ndarray, spk_sda: np.ndarray, spk_thr: np.ndarray,
-                        spk_frame: np.ndarray, methods: str, path ="", block_plot=True) -> None:
+                        spk_frame: np.ndarray, methods: str, path="", show_plot=False) -> None:
     """Plotting the results of a single run"""
     plt.figure()
     plt.subplots_adjust(hspace=0)
@@ -43,9 +36,10 @@ def plot_results_single(time: np.ndarray, spk_signal: np.ndarray, spk_sda: np.nd
     ax3 = plt.subplot(325)
     ax4 = plt.subplot(326)
 
+    scaley, unity = scale_auto_value(spk_signal)
     ax1.set_title(methods)
-    ax1.plot(time, 1e6 * spk_signal, color='k')
-    ax1.set_ylabel('U_elec [µV]')
+    ax1.plot(time, scaley * spk_signal, color='k')
+    ax1.set_ylabel(f'U_elec [{unity}V]')
     ax1.set_xlim([0, time[-1]])
 
     ax2.plot(time, spk_sda, color='k')
@@ -59,18 +53,18 @@ def plot_results_single(time: np.ndarray, spk_signal: np.ndarray, spk_sda: np.nd
     ax3.set_xlabel('Position')
     ax3.set_xlim([0, spk_frame.shape[1]-1])
 
-    ax4.hist(1e6 * spk_signal, bins=1000, color='k')
+    ax4.hist(scaley * spk_signal, bins=1000, color='k')
 
     plt.tight_layout()
     # --- saving plots
     if path:
         save_figure(plt, path, f"{methods}_transient")
-    plt.show(block=block_plot)
-    plt.close()
+    if show_plot:
+        plt.show(block=True)
 
 
 def plot_results_sweep(spk_firing_rate: np.ndarray, snr: np.ndarray, dt_acc: np.ndarray, tr_rate: np.ndarray,
-                       fr_rate: np.ndarray, methods: str, path="", block_plot=True) -> None:
+                       fr_rate: np.ndarray, methods: str, path="", show_plot=False) -> None:
     """Plotting the results of a single run"""
     fig = plt.figure(figsize=(12, 6))
     plt.subplots_adjust(hspace=0)
@@ -117,5 +111,5 @@ def plot_results_sweep(spk_firing_rate: np.ndarray, snr: np.ndarray, dt_acc: np.
     # --- saving plots
     if path:
         save_figure(plt, path, f"{methods}_sweep2D")
-    plt.show(block=block_plot)
-    plt.close()
+    if show_plot:
+        plt.show(block=True)

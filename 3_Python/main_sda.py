@@ -1,7 +1,8 @@
 import numpy as np
 from sda_pipeline import Pipeline_Digital
 from sda_handler import do_single_run, do_method_sweep
-from package.optimize_sda.signal_gen import EasyNeuralData_Generator
+from src_neuro.sda.signal_gen import EasyNeuralData_Generator
+
 
 # --------------- MAIN PROGRAMME
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 import numpy as np
-from os.path import join
+import os
 
 
 sel_color = ['k', 'r', 'gray', 'b', 'g', 'y', 'c', 'm']
@@ -26,7 +26,10 @@ def save_figure(fig, path: str, name: str, formats=('pdf', 'svg')) -> None:
     Returns:
         None
     """
-    path2fig = join(path, name)
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    path2fig = os.path.join(path, name)
     for idx, form in enumerate(formats):
         fig.savefig(f"{path2fig}.{form}", format=form)
 
