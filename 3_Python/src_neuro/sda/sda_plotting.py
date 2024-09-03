@@ -1,9 +1,7 @@
-import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 from matplotlib.cm import ScalarMappable
-
 from package.plot.plot_common import save_figure, scale_auto_value
 
 
