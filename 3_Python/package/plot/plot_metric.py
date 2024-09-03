@@ -90,29 +90,28 @@ def plot_confusion(true_labels: list | np.ndarray,
                    path2save="", name_addon="",
                    timestamps_result=(),
                    timestamps_f1=(), timestamps_accuracy=(),
-                   ) -> None:
+                   show_plots=False) -> None:
     """This function is designed to generate and display confusion matrices for classification results and
-    timestamp-based comparisons. The function takes various parameters, including true and predicted labels, as well as
-    additional information such as timestamps and plotting preferences. The confusion matrix for classification is
+    timestamp-based comparisons. The function takes various parameters, including true and predicted labels, as well as additional information such as timestamps and plotting preferences. The confusion matrix for classification is
     displayed using the ConfusionMatrixDisplay class from scikit-learn. It also calculates and prints precision, recall,
-     and F-beta score for the classification case. The timestamp-based comparison is visualized using a heatmap.
-     The resulting plots can be saved to a specified path if provided.
-
-    Parameters:
-        true_labels: List or numpy array containing true class labels.
-        pred_labels: List or numpy array containing predicted class labels.
-        timestamps_result: Resulting array for timestamp comparison (for plotting timestamps).
-        timestamps_f1: F1-score for timestamp comparison.
-        timestamps_accuracy: Accuracy for timestamp comparison.
-        plotting: Specifies the type of plotting to perform ("class", "timestamps", or "both").
-        show_accuracy: Boolean indicating whether to display accuracy in timestamp plots.
-        cl_dict: Dictionary mapping class indices to labels.
-        path2save: Path to save the generated plots.
-        name_addon: Additional name for saved plots.
+    and F-beta score for the classification case. The timestamp-based comparison is visualized using a heatmap.
+    The resulting plots can be saved to a specified path if provided.
+    Args:
+        true_labels:            List or numpy array containing true class labels.
+        pred_labels:            List or numpy array containing predicted class labels.
+        timestamps_result:      Resulting array for timestamp comparison (for plotting timestamps).
+        timestamps_f1:          F1-score for timestamp comparison.
+        timestamps_accuracy:    Accuracy for timestamp comparison.
+        plotting:               Specifies the type of plotting to perform ("class", "timestamps", or "both").
+        show_accuracy:          Boolean indicating whether to display accuracy in timestamp plots.
+        cl_dict:                Dictionary mapping class indices to labels.
+        path2save:              Path to save the generated plots.
+        name_addon:             Additional name for saved plots.
+        show_plots:             Command for showing plots in the end [Default: False]
     Returns:
         The function generates and displays confusion matrices and timestamp-based plots.
-        If path2save is provided, the plots are saved to the specified path."""
-
+        If path2save is provided, the plots are saved to the specified path.
+    """
     dict_available = False
     if plotting == "class" or plotting == "both":
         """Plotting the Confusion Matrix"""
@@ -177,7 +176,8 @@ def plot_confusion(true_labels: list | np.ndarray,
     # --- saving
     if path2save:
         _save_figure(plt, path2save, f"confusion_matrix{name_addon}")
-    plt.close('all')
+    if show_plots:
+        plt.show(block=True)
 
 
 def prep_confusion(true_labels: list, pred_labels: list, mode="training", plots="class", show_accuracy=False,
@@ -188,7 +188,7 @@ def prep_confusion(true_labels: list, pred_labels: list, mode="training", plots=
      accuracy using the compare_timestamps function. It then generates a timestamp-based result matrix and calls
      _plot_confusion for visualization. In other modes, it directly calls _plot_confusion with classification plotting.
 
-    Parameters:
+    Args:
         true_labels: List or numpy array containing true class labels.
         pred_labels: List or numpy array containing predicted class labels.
         mode: Specifies the mode ("pipeline" or other) for different processing.
@@ -197,8 +197,7 @@ def prep_confusion(true_labels: list, pred_labels: list, mode="training", plots=
         cl_dict: Dictionary mapping class indices to labels.
         path2save: Path to save the generated plots.
         window: Window parameter for timestamp-based comparisons.
-
-    Output:
+    Returns:
         The function calls _plot_confusion with the appropriate parameters based on the specified mode, resulting in
         the visualization of confusion matrices. If path2save is provided, the plots are saved to the specified path."""
 

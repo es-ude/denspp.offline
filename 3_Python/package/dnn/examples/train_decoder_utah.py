@@ -1,6 +1,5 @@
 from torch import nn
 from package.dnn.dnn_handler import dnn_handler
-from package.plot.plot_common import _show_plots, _close_plots
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 import package.dnn.models.decoding_utah as models_dec
 
@@ -70,8 +69,7 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
 
     # --- Plotting and Ending
     if dnn_handler.do_plot:
-        _close_plots()
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=data_dict)
-        plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir, cl_dict=data_dict)
-        _show_plots(block=dnn_handler.do_block)
+        plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir, cl_dict=data_dict,
+                            show_plot=dnn_handler.do_block)

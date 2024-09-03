@@ -1,6 +1,4 @@
 from torch import nn
-
-from package.plot.plot_common import _close_plots, _show_plots
 from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 import package.dnn.models.spike_detection as models_sda
@@ -69,8 +67,7 @@ def dnn_train_sda(dnn_handler: dnn_handler, sda_threshold: int) -> None:
 
     # --- Plotting
     if dnn_handler.do_plot:
-        _close_plots()
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=data_dict)
-        plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir, cl_dict=data_dict)
-        _show_plots(block=dnn_handler.do_block)
+        plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir,
+                            cl_dict=data_dict, show_plot=dnn_handler.do_block)

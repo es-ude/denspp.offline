@@ -1,11 +1,9 @@
 from os import mkdir
 from os.path import join, exists
-from package.plot.plot_common import _close_plots, _show_plots
 from package.plot.plot_metric import plot_confusion
 from package.data_call.call_cellbib import logic_combination
 
 from torch import nn
-import matplotlib.pyplot as plt
 from numpy import load
 from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
@@ -51,7 +49,7 @@ config_train = Config_PyTorch(
 )
 
 
-def rgc_logic_combination(logsdir: str, valid_file_name='results_class.npy') -> None:
+def rgc_logic_combination(logsdir: str, valid_file_name='results_class.npy', show_plot=False) -> None:
     """"""
     data_result = load(join(logsdir, valid_file_name), allow_pickle=True).item()
     path2save = join(logsdir, 'logic_comb')
@@ -76,7 +74,7 @@ def rgc_logic_combination(logsdir: str, valid_file_name='results_class.npy') -> 
     true_labels_transus, pred_labels_transus = logic_combination(true_labels_orig, pred_labels_orig, translate_dict)
     plot_confusion(true_labels_transus, pred_labels_transus, 'class',
                    cl_dict=cell_dict_transus, path2save=path2save,
-                   name_addon='_logic_transient-sustained')
+                   name_addon='_logic_transient-sustained', show_plots=show_plot)
 
 
 def do_train_rgc_class(dnn_handler: dnn_handler) -> None:
@@ -108,7 +106,6 @@ def do_train_rgc_class(dnn_handler: dnn_handler) -> None:
 
     # --- Plotting
     if dnn_handler.do_plot:
-        _close_plots()
         # --- Plotting full model
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'],
@@ -117,5 +114,4 @@ def do_train_rgc_class(dnn_handler: dnn_handler) -> None:
                             path2save=logsdir, cl_dict=frame_dict)
 
         # --- Plotting reduced model (ON/OFF and Transient/Sustained)
-        rgc_logic_combination(logsdir)
-        _close_plots(block=dnn_handler.do_block)
+        rgc_logic_combination(logsdir, show_plot=dnn_handler.do_block)

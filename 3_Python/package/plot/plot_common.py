@@ -16,16 +16,6 @@ def _save_figure(fig, path: str, name: str, formats=('pdf', 'svg')):
         fig.savefig(f"{path2fig}.{form}", format=form)
 
 
-def _show_plots(block=True) -> None:
-    """Showing plots and blocking system if required"""
-    plt.show(block=block)
-
-
-def _close_plots() -> None:
-    """Closing all opened plots"""
-    plt.close('all')
-
-
 def _scale_auto_value(data: np.ndarray | float) -> [float, str]:
     """Getting the scaling value and corresponding string notation for unit scaling in plots"""
     if isinstance(data, np.ndarray):
