@@ -31,5 +31,9 @@ if __name__ == "__main__":
             # --- Classifier
             from src_dnn.train_cl import do_train_cl
             do_train_cl(dnn_handler)
+        case 4:
+            # --- Autoencoder + Classifier
+            from src_dnn.train_ae_class import do_train_ae_classifier
+            do_train_ae_classifier(dnn_handler, 5, 5)
         case _:
             print("Wrong model! Please select right model!")

@@ -22,7 +22,7 @@ class dnn_sda_v1(__model_settings_common):
             nn.ReLU(),
             nn.Linear(lin_size[2], lin_size[3]),
             nn.BatchNorm1d(lin_size[3], affine=do_train_bias),
-            #nn.Softmax(dim=1)
+            # nn.Softmax(dim=1)
         )
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:

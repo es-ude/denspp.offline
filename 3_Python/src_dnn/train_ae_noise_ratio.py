@@ -2,9 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from settings_ai import config_train_ae, config_dataset
-from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch.autoencoder import train_nn
-from package.dnn.dataset.autoencoder import prepare_training as prepare_training_ae, DatasetAE
+from package.dnn.example.dataset.autoencoder import prepare_training as prepare_training_ae, DatasetAE
 
 from package.metric import calculate_snr
 

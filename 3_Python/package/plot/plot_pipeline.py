@@ -3,49 +3,49 @@ import matplotlib.pyplot as plt
 
 from package.pipeline_cmds import PipelineSignal
 from package.nsp.spike_analyse import calc_amplitude, calc_autocorrelogram, calc_firing_rate
-from package.plot.plot_common import _cm_to_inch, _save_figure
+from package.plot.plot_common import cm_to_inch, save_figure, get_plot_color, scale_auto_value
 
 color_none = ['#929591']
-color_cluster = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
 text_size = 14
 
 
-def results_afe0(signals: PipelineSignal, no_electrode: int, path="", time_cut=[]) -> None:
+def results_afe0(signals: PipelineSignal, no_electrode: int, path="", time_cut=(),
+                 show_plot=False) -> None:
     """Plotting the results in type of ... """
-    fs_ana = signals.fs_ana
-    uin = signals.u_in
-    tA = np.arange(0, uin.size, 1) / fs_ana
+    data_analog = [signals.u_in, signals.u_pre]
+    label = [r'$U_{in}$', r'$U_{pre}$']
 
     # --- Plot afe
-    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(21)))
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(21)))
+
+    time_analog = np.arange(0, signals.u_in.size, 1) / signals.fs_ana
+    scalex, unitx = scale_auto_value(time_analog)
+    axs = plt.subplots(len(data_analog), 1, sharex=True)[1]
     plt.subplots_adjust(hspace=0)
 
-    ax1 = plt.subplot(311)
-    ax2 = plt.subplot(312, sharex=ax1)
-    ax3 = plt.subplot(313, sharex=ax1)
-
-    ax1.plot(tA, 1e6 * uin, 'k')
-    ax1.set_ylabel("U_in [µV]")
-    ax2.plot(tA, 1e6 * signals.u_pre, color='k', drawstyle='steps-post')
-    ax2.set_ylabel("U_pre [µV]")
-    ax3.plot(tA, 1e6 * signals.u_quant, color='k', drawstyle='steps-post')
-    ax3.set_ylabel("U_adc [µV]")
-    ax3.set_xlabel("Time t (s)")
+    for idx, signal in enumerate(data_analog):
+        scaley, unity = scale_auto_value(signal)
+        axs[idx].plot(scalex * time_analog, scaley * signal, color='k', drawstyle='steps-post')
+        axs[idx].set_ylabel(f"{label[idx]} [{unity}V]")
+    axs[-1].set_xlabel(f"Time t [{unitx}s]")
 
     if not len(time_cut) == 0:
-        ax1.set_xlim(time_cut)
+        axs[-1].set_xlim(time_cut)
         addon_zoom = '_zoom'
     else:
-        ax1.set_xlim([tA[0], tA[-1]])
+        axs[-1].set_xlim([time_analog[0], time_analog[-1]])
         addon_zoom = ''
 
     plt.tight_layout()
     # --- saving plots
     if path:
-        _save_figure(plt, path, "pipeline_afe_elec" + str(no_electrode) + addon_zoom)
+        save_figure(plt, path, "pipeline_afe_elec" + str(no_electrode) + addon_zoom)
+    if show_plot:
+        plt.show(block=True)
 
 
-def results_afe1(signals: PipelineSignal, no_electrode: int, path="", time_cut=()) -> None:
+def results_afe1(signals: PipelineSignal, no_electrode: int, path="", time_cut=(),
+                 show_plot=False) -> None:
     """Plotting the results in type of ... """
     fs_ana = signals.fs_ana
     fs_dig = signals.fs_dig
@@ -58,11 +58,11 @@ def results_afe1(signals: PipelineSignal, no_electrode: int, path="", time_cut=(
     ticks_id = signals.frames_align[2]
     cluster = np.unique(ticks_id)
 
-    tA = np.arange(0, uin.size, 1) / fs_ana
-    tD = np.arange(0, xadc.size, 1) / fs_dig
+    time_ana = np.arange(0, uin.size, 1) / fs_ana
+    time_dig = np.arange(0, xadc.size, 1) / fs_dig
 
     # --- Plotting
-    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(21)))
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(21)))
     plt.subplots_adjust(hspace=0)
 
     ax1 = plt.subplot(411)
@@ -71,16 +71,16 @@ def results_afe1(signals: PipelineSignal, no_electrode: int, path="", time_cut=(
     ax4 = plt.subplot(414, sharex=ax1)
 
     # Input signal
-    ax1.plot(tA, 1e6 * uin, 'k')
+    ax1.plot(time_ana, 1e6 * uin, 'k')
     ax1.set_ylabel("$U_{in}$ (µV)")
 
     # ADC output
-    ax2.plot(tD, xadc, color='k', drawstyle='steps-post')
+    ax2.plot(time_dig, xadc, color='k', drawstyle='steps-post')
     ax2.set_ylabel("$X_{adc}$")
 
     # SDA + Thresholding
-    ax3.plot(tD, xsda, color='k', drawstyle='steps-post')
-    ax3.plot(tD, xthr, color='r', drawstyle='steps-post')
+    ax3.plot(time_dig, xsda, color='k', drawstyle='steps-post')
+    ax3.plot(time_dig, xthr, color='r', drawstyle='steps-post')
     ax3.set_ylabel("$X_{sda}$")
 
     # Spike Ticks
@@ -89,25 +89,28 @@ def results_afe1(signals: PipelineSignal, no_electrode: int, path="", time_cut=(
     for id in cluster:
         sel_x = np.where(ticks_id == id)[0]
         sel_ticks = ticks[sel_x]
-        ax4.eventplot(positions=tD[sel_ticks], orientation="horizontal",
+        ax4.eventplot(positions=time_dig[sel_ticks], orientation="horizontal",
                       lineoffsets=0.45+id, linelengths=0.9,
-                      color=color_cluster[id])
+                      color=get_plot_color(id))
     ax4.set_ylim([cluster[0], 1+cluster[-1]])
 
     if not len(time_cut) == 0:
         ax1.set_xlim(time_cut)
         addon_zoom = '_zoom'
     else:
-        ax1.set_xlim([tD[0], tD[-1]])
+        ax1.set_xlim([time_dig[0], time_dig[-1]])
         addon_zoom = ''
 
     plt.tight_layout()
     # --- saving plots
     if path:
-        _save_figure(plt, path, "pipeline_transient_elec" + str(no_electrode) + addon_zoom)
+        save_figure(plt, path, "pipeline_transient_elec" + str(no_electrode) + addon_zoom)
+    if show_plot:
+        plt.show(block=True)
 
 
-def results_afe2(signals: PipelineSignal, no_electrode: int, path="", time_cut=[], show_noise=False):
+def results_afe2(signals: PipelineSignal, no_electrode: int, path="", time_cut=(),
+                 show_noise=False, show_plot=False) -> None:
     """Plotting ADC output"""
     fs_dig = signals.fs_dig
     xadc = signals.x_adc
@@ -126,12 +129,11 @@ def results_afe2(signals: PipelineSignal, no_electrode: int, path="", time_cut=[
         tran0.append(xadc[tick_old:sel[0]] if show_noise else np.zeros(shape=(len(xadc[tick_old:sel[0]]), ), dtype=int))
         tran0.append(xadc[sel[0]:sel[1]])
         colo0.append(color_none[0])
-        colo0.append(color_cluster[ticks_id[idx]])
-
+        colo0.append(get_plot_color(ticks_id))
         tick_old = sel[1]
 
     # --- Plot generation
-    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(13)))
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
     # plt.subplots_adjust(hspace=0)
     axs = list()
     for idx in range(0, 1):
@@ -175,10 +177,13 @@ def results_afe2(signals: PipelineSignal, no_electrode: int, path="", time_cut=[
     plt.tight_layout()
     # --- saving plots
     if path:
-        _save_figure(plt, path, "pipeline_transient_sorted" + str(no_electrode) + addon_zoom)
+        save_figure(plt, path, "pipeline_transient_sorted" + str(no_electrode) + addon_zoom)
+    if show_plot:
+        plt.show(block=True)
 
 
-def results_fec(signals: PipelineSignal, no_electrode: int, path="") -> None:
+def results_fec(signals: PipelineSignal, no_electrode: int,
+                path="", show_plot=False) -> None:
     """Plotting results """
     frames_in = signals.frames_orig[0]
     frames_out = signals.frames_align[0]
@@ -191,7 +196,7 @@ def results_fec(signals: PipelineSignal, no_electrode: int, path="") -> None:
         x0 = np.where(cluster == id)[0]
         frames_mean[idx, :] = np.mean(frames_out[x0], axis=0)
 
-    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(13)))
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
     plt.subplots_adjust(hspace=0)
     ax1 = plt.subplot(221)
     ax2 = plt.subplot(222)
@@ -206,20 +211,22 @@ def results_fec(signals: PipelineSignal, no_electrode: int, path="") -> None:
 
     ax3.set_title("Feature Space")
     for idx, id in enumerate(cluster):
-        ax3.plot(feat[idx, 0], feat[idx, 1], color=color_cluster[id], marker='.')
+        ax3.plot(feat[idx, 0], feat[idx, 1], color=get_plot_color(id), marker='.')
 
     ax4.set_title("Mean Frames (Clustered)")
     for idx, frame in enumerate(frames_mean):
-        ax4.plot(np.transpose(frame), color=color_cluster[idx],
+        ax4.plot(np.transpose(frame), color=get_plot_color(idx),
                  marker='.', markersize=4, drawstyle='steps-post')
 
     plt.tight_layout()
     # --- saving plots
     if path:
-        _save_figure(plt, path, "pipeline_fec_elec" + str(no_electrode))
+        save_figure(plt, path, "pipeline_fec_elec" + str(no_electrode))
+    if show_plot:
+        plt.show(block=True)
 
 
-def results_ivt(signals: PipelineSignal, no_electrode: int, path="") -> None:
+def results_ivt(signals: PipelineSignal, no_electrode: int, path="", show_plot=False) -> None:
     """Plotting the results of interval timing spikes of each cluster"""
     frames = signals.frames_align[0]
     cluster = signals.frames_align[2]
@@ -235,7 +242,7 @@ def results_ivt(signals: PipelineSignal, no_electrode: int, path="") -> None:
     no_bins = 100
 
     # Plotting
-    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(13)))
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
     plt.subplots_adjust(hspace=0)
     axs = list()
     for idx in range(0, len(cluster_num)):
@@ -249,8 +256,8 @@ def results_ivt(signals: PipelineSignal, no_electrode: int, path="") -> None:
 
     for idx, id in enumerate(cluster_num):
         val_plot = 2*idx
-        axs[val_plot+0].plot(mean_frames[id, :], color=color_cluster[id], drawstyle='steps-post')
-        axs[val_plot+1].hist(scale * its[id], bins=no_bins)
+        axs[val_plot+0].plot(mean_frames[id, :], color=get_plot_color(int(id)), drawstyle='steps-post')
+        axs[val_plot+1].hist(scale * its[int(id)], bins=no_bins)
 
     axs[0].set_xticks([0, 7, 15, 23, 31])
     axs[0].set_ylabel("ADC output")
@@ -263,15 +270,17 @@ def results_ivt(signals: PipelineSignal, no_electrode: int, path="") -> None:
     plt.tight_layout()
     # --- saving plots
     if path:
-        _save_figure(plt, path, "pipeline_ivt" + str(no_electrode))
+        save_figure(plt, path, "pipeline_ivt" + str(no_electrode))
+    if show_plot:
+        plt.show(block=True)
 
 
-def results_correlogram(signals: PipelineSignal, no_electrode: int, path="") -> None:
+def results_correlogram(signals: PipelineSignal, no_electrode: int, path="", show_plot=False) -> None:
     """Plotting the results of interval timing spikes of each cluster"""
     val_in = calc_autocorrelogram(signals.spike_ticks, signals.fs_dig)
     cluster_num = len(val_in)
 
-    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(13)))
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
 
     axs = list()
     for idx, val in enumerate(val_in):
@@ -289,20 +298,24 @@ def results_correlogram(signals: PipelineSignal, no_electrode: int, path="") -> 
     plt.tight_layout()
     # --- saving plots
     if path:
-        _save_figure(plt, path, "pipeline_correlogram" + str(no_electrode))
+        save_figure(plt, path, "pipeline_correlogram" + str(no_electrode))
+    if show_plot:
+        plt.show(block=True)
 
 
-def results_firing_rate(signals: PipelineSignal, no_electrode: int, path="") -> None:
+def results_firing_rate(signals: PipelineSignal, no_electrode: int,
+                        path="", show_plot=False) -> None:
+    """"""
     fr_in = calc_firing_rate(signals.spike_ticks, signals.fs_dig)
     no_cluster = len(fr_in)
 
-    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(13)))
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
     axs = list()
     for idx in range(0, no_cluster):
         axs.append(plt.subplot(no_cluster, 1, idx+1))
 
     for idx, ax in enumerate(axs):
-        ax.plot(fr_in[idx][0, :], fr_in[idx][1, :], color=color_cluster[idx % len(color_cluster)], drawstyle='steps-post')
+        ax.plot(fr_in[idx][0, :], fr_in[idx][1, :], color=get_plot_color(idx), drawstyle='steps-post')
 
     axs[no_cluster-1].set_xlabel("Time t [s]")
     axs[0].set_ylabel("Firing rate [Spikes/s]")
@@ -310,15 +323,18 @@ def results_firing_rate(signals: PipelineSignal, no_electrode: int, path="") -> 
     plt.tight_layout()
     # --- saving plots
     if path:
-        _save_figure(plt, path, "pipeline_fr" + str(no_electrode))
+        save_figure(plt, path, "pipeline_fr" + str(no_electrode))
+    if show_plot:
+        plt.show(block=True)
 
 
-def results_cluster_amplitude(signals: PipelineSignal, no_electrode: int, path="") -> None:
+def results_cluster_amplitude(signals: PipelineSignal, no_electrode: int, path="", show_plot=False) -> None:
+    """"""
     amp = calc_amplitude(signals.frames_align)
     cluster = signals.frames_align[2]
     cluster_no = np.unique(cluster)
 
-    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(13)))
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
     axs = list()
     for idx, id in enumerate(cluster_no):
         if idx == 0:
@@ -340,8 +356,8 @@ def results_cluster_amplitude(signals: PipelineSignal, no_electrode: int, path="
         time = np.array(time) / signals.fs_dig
         amp_min = np.array(amp_min)
         amp_max = np.array(amp_max)
-        axs[sel+0].plot(time, amp_min, color=color_cluster[idx], marker='.', linestyle='None')
-        axs[sel+1].plot(time, amp_max, color=color_cluster[idx], marker='.', linestyle='None')
+        axs[sel+0].plot(time, amp_min, color=get_plot_color(idx), marker='.', linestyle='None')
+        axs[sel+1].plot(time, amp_max, color=get_plot_color(idx), marker='.', linestyle='None')
 
     axs[0].set_ylabel('Min. amp')
     axs[1].set_ylabel('Max. amp')
@@ -350,10 +366,12 @@ def results_cluster_amplitude(signals: PipelineSignal, no_electrode: int, path="
     plt.tight_layout()
     # --- saving plots
     if path:
-        _save_figure(plt, path, "pipeline_amp" + str(no_electrode))
+        save_figure(plt, path, "pipeline_amp" + str(no_electrode))
+    if show_plot:
+        plt.show(block=True)
 
 
-def results_paper(signals: PipelineSignal, no_electrode: int, path="", time_cut=[]) -> None:
+def results_paper(signals: PipelineSignal, no_electrode: int, path="", time_cut=(), show_plot=False) -> None:
     """Plotting results of end-to-end spike sorting for paper"""
     # --- Selection of Transient signals
     fs_adc = signals.fs_dig
@@ -375,7 +393,7 @@ def results_paper(signals: PipelineSignal, no_electrode: int, path="", time_cut=
         mean_frames[idx, :] = np.mean(frames_out[x0], axis=0)
 
     # --- Plot 1: Transient signals
-    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(12)))
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(12)))
     plt.rcParams.update({'font.size': text_size})
     plt.subplots_adjust(hspace=0)
     ax1 = plt.subplot(311)
@@ -402,7 +420,7 @@ def results_paper(signals: PipelineSignal, no_electrode: int, path="", time_cut=
         sel_ticks = ticks[sel_x]
         ax3.eventplot(positions=tD[sel_ticks], orientation="horizontal",
                       lineoffsets=0.45+id, linelengths=0.9,
-                      color=color_cluster[id])
+                      color=get_plot_color(id))
 
     ax3.set_ylim([cluster[0], 1+cluster[-1]])
     ax3.set_ylabel("Spike Train")
@@ -411,10 +429,10 @@ def results_paper(signals: PipelineSignal, no_electrode: int, path="", time_cut=
     plt.tight_layout()
     # --- saving plots
     if path:
-        _save_figure(plt, path, "pipeline_paper0_elec" + str(no_electrode))
+        save_figure(plt, path, "pipeline_paper0_elec" + str(no_electrode))
 
     # --- Figure 2
-    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(6)))
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(6)))
     plt.rcParams.update({'font.size': text_size})
     plt.subplots_adjust(wspace=0.4)
     ax1 = plt.subplot(121)
@@ -426,11 +444,12 @@ def results_paper(signals: PipelineSignal, no_electrode: int, path="", time_cut=
     ax1.set_ylabel('Feat. 1')
     ax1.set_xlabel('Feat. 2')
     for idx in range(0, cluster.shape[0]):
-        ax1.plot(feat[idx, 0], feat[idx, 1], color=color_cluster[cluster[idx]], marker='.', drawstyle='steps-post')
+        ax1.plot(feat[idx, 0], feat[idx, 1], color=get_plot_color(int(cluster[idx])),
+                 marker='.', drawstyle='steps-post')
 
     # Spike Frames
     for idx in range(0, mean_frames.shape[0]):
-        ax2.plot(np.transpose(mean_frames[idx, :]), color=color_cluster[idx],
+        ax2.plot(np.transpose(mean_frames[idx, :]), color=get_plot_color(idx),
                  marker='.', markersize=4, drawstyle='steps-post')
 
     ax2.set_ylabel('ADC output')
@@ -439,4 +458,6 @@ def results_paper(signals: PipelineSignal, no_electrode: int, path="", time_cut=
     plt.tight_layout()
     # --- saving plots
     if path:
-        _save_figure(plt, path, "pipeline_paper1_elec" + str(no_electrode))
+        save_figure(plt, path, "pipeline_paper1_elec" + str(no_electrode))
+    if show_plot:
+        plt.show(block=True)

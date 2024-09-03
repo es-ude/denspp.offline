@@ -4,11 +4,10 @@ from package.plot.plot_metric import plot_confusion
 from package.data_call.call_cellbib import logic_combination
 
 from torch import nn
-import matplotlib.pyplot as plt
 from numpy import load
 from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
-import package.dnn.models.rgc_onoff_class as models_rgc
+import package.dnn.example.models.rgc_onoff_class as models_rgc
 
 
 config_data = Config_Dataset(
@@ -16,6 +15,8 @@ config_data = Config_Dataset(
     #data_path='../2_Data/00_Merged_Datasets',
     data_path='data',
     #data_path='C:\HomeOffice\Data_Neurosignal\\00_Merged',
+    #data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
+    #data_file_name='2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted',
     data_file_name='2023-11-24_Dataset-07_RGC_TDB_Merged.mat',
     # --- Data Augmentation
     data_do_augmentation=False,
@@ -27,7 +28,7 @@ config_data = Config_Dataset(
     data_normalization_method='minmax',
     data_normalization_setting='bipolar',
     # --- Dataset Reduction
-    data_do_reduce_samples_per_cluster=False,
+    data_do_reduce_samples_per_cluster=True,
     data_num_samples_per_cluster=50_000,
     data_exclude_cluster=[],
     data_sel_pos=[]
@@ -35,26 +36,27 @@ config_data = Config_Dataset(
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
-    model=models_rgc.cnn_rgc_onoff_v1(32, 4),
+    model=models_rgc.dnn_rgc_v2(32, 4),
     loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
     patience=20,
-    num_epochs=100,
-    batch_size=512,
-    data_split_ratio=0.2,
+    num_epochs=2,
+    batch_size=256,
+    data_split_ratio=0.25,
     data_do_shuffle=True
 )
 
 
-def rgc_logic_combination(logsdir: str, valid_file_name='results_class.npy') -> None:
+def rgc_logic_combination(logsdir: str, valid_file_name='results_class.npy', show_plot=False) -> None:
     """"""
     data_result = load(join(logsdir, valid_file_name), allow_pickle=True).item()
     path2save = join(logsdir, 'logic_comb')
     if not exists(path2save):
         mkdir(path2save)
 
+    cell_dict_orig = data_result['cl_dict']
     true_labels_orig = data_result['valid_clus']
     pred_labels_orig = data_result['yclus']
 
@@ -72,15 +74,15 @@ def rgc_logic_combination(logsdir: str, valid_file_name='results_class.npy') -> 
     true_labels_transus, pred_labels_transus = logic_combination(true_labels_orig, pred_labels_orig, translate_dict)
     plot_confusion(true_labels_transus, pred_labels_transus, 'class',
                    cl_dict=cell_dict_transus, path2save=path2save,
-                   name_addon='_logic_transient-sustained')
+                   name_addon='_logic_transient-sustained', show_plots=show_plot)
 
 
 def do_train_rgc_class(dnn_handler: dnn_handler) -> None:
     """Training routine for classifying RGC ON/OFF and Transient/Sustained Types (Classification)
     Args:
-        dnn_handler: Handler for configuring the routine selection for train deep neural networks
+        dnn_handler: Handler for configurating the routine selection for train deep neural networks
     """
-    from package.dnn.dataset.rgc_classification import prepare_training
+    from package.dnn.example.dataset.rgc_classification import prepare_training
     from package.dnn.pytorch.classifier import train_nn
     from package.plot.plot_dnn import plot_statistic_data
     from package.plot.plot_metric import plot_confusion, plot_loss
@@ -104,12 +106,12 @@ def do_train_rgc_class(dnn_handler: dnn_handler) -> None:
 
     # --- Plotting
     if dnn_handler.do_plot:
-        plt.close('all')
         # --- Plotting full model
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
-        plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=frame_dict)
-        plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir, cl_dict=frame_dict)
+        plot_confusion(data_result['valid_clus'], data_result['yclus'],
+                       path2save=logsdir, cl_dict=frame_dict)
+        plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
+                            path2save=logsdir, cl_dict=frame_dict)
 
         # --- Plotting reduced model (ON/OFF and Transient/Sustained)
-        rgc_logic_combination(logsdir)
-        plt.show(block=dnn_handler.do_block)
+        rgc_logic_combination(logsdir, show_plot=dnn_handler.do_block)

@@ -5,7 +5,7 @@ import PySpice.Logging.Logging as Logging
 from PySpice.Spice.Netlist import Circuit, Netlist
 from PySpice.Spice.NgSpice.Shared import NgSpiceShared
 
-from package.plot.plot_common import _scale_auto_value
+from package.plot.plot_common import scale_auto_value
 
 
 class PySpiceModels:
@@ -476,9 +476,9 @@ class PySpice_Handler:
         # --- Getting data
         results = self.__results
         u_in = results["v_in"]
-        scale_u, units_u = _scale_auto_value(u_in)
+        scale_u, units_u = scale_auto_value(u_in)
         i_out = results["i_in"]
-        scale_i, units_i = _scale_auto_value(i_out)
+        scale_i, units_i = scale_auto_value(i_out)
 
         # --- Plotting
         plt.figure()
@@ -542,12 +542,12 @@ class PySpice_Handler:
         # --- Getting data
         results = self.__results
         time = results["time"]
-        scale_t, units_t = _scale_auto_value(time)
+        scale_t, units_t = scale_auto_value(time)
         v_sig = [results["v_in"], results["v_out"]]
-        scale_u, units_u = _scale_auto_value(np.concatenate((v_sig[0], v_sig[1]), axis=0))
+        scale_u, units_u = scale_auto_value(np.concatenate((v_sig[0], v_sig[1]), axis=0))
         v_label = ["Input", "Output"]
         i_in = results["i_in"]
-        scale_i, units_i = _scale_auto_value(i_in)
+        scale_i, units_i = scale_auto_value(i_in)
 
         # --- Plotting
         fig, ax1 = plt.subplots()

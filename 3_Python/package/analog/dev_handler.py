@@ -7,7 +7,7 @@ from scipy.constants import Boltzmann, elementary_charge
 from scipy.optimize import least_squares, curve_fit
 
 from package.structure_builder import _create_folder_general_firstrun
-from package.plot.plot_common import _scale_auto_value
+from package.plot.plot_common import scale_auto_value
 from package.metric import _error_rae, _error_mse
 
 
@@ -508,9 +508,9 @@ def _plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray,
     Returns:
         None
     """
-    scale_i, units_i = _scale_auto_value(i_in)
-    scale_u, units_u = _scale_auto_value(u_in)
-    scale_t, units_t = _scale_auto_value(time)
+    scale_i, units_i = scale_auto_value(i_in)
+    scale_u, units_u = scale_auto_value(u_in)
+    scale_t, units_t = scale_auto_value(time)
 
     signalx = scale_i * i_in if mode_current_input else scale_u * u_in
     signaly = scale_u * u_in if mode_current_input else scale_i * i_in

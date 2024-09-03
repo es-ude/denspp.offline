@@ -21,15 +21,15 @@ if __name__ == "__main__":
     match dnn_handler.mode_train_dnn:
         case 0:
             # --- MNIST (Classifier)
-            from package.dnn.examples.train_mnist import do_train_cl
+            from package.dnn.template.handler.train_mnist import do_train_cl
             do_train_cl(dnn_handler.do_plot, dnn_handler.do_block)
         case 1:
             # --- MNIST (Autoencoder)
-            from package.dnn.examples.train_mnist import do_train_ae
+            from package.dnn.template.handler.train_mnist import do_train_ae
             do_train_ae(dnn_handler.do_plot, dnn_handler.do_block)
         case 2:
             # --- Spike Detection
-            from package.dnn.examples.train_sda import dnn_train_sda
+            from src_dnn.train_sda import dnn_train_sda
             dnn_train_sda(dnn_handler, 4)
         case 3:
             # --- Autoencoder (Normal)

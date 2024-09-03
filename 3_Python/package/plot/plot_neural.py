@@ -1,19 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from package.plot.plot_common import _cm_to_inch, _save_figure
+from package.plot.plot_common import save_figure, sel_color
 
 
 def plot_signals_neural_cluster(dataset, path2save='') -> None:
     """Plotting the mean waveforms of each cluster"""
-    color = 'krbgym'
-
     num_cl = dataset.frames_me.shape[0]
     num_frame_size = dataset.frames_me.shape[1]-1
 
     plt.figure()
     axs = [plt.subplot(2, int(np.ceil(num_cl/2)), 1+idx) for idx in range(num_cl)]
     for idx, frame in enumerate(dataset.frames_me):
-        axs[idx].plot(frame, color=color[idx])
+        axs[idx].plot(frame, color=sel_color[idx % 7])
         axs[idx].grid()
         axs[idx].set_title(dataset.frame_dict[idx])
         axs[idx].set_xlim(0, num_frame_size)
@@ -21,5 +19,5 @@ def plot_signals_neural_cluster(dataset, path2save='') -> None:
 
     plt.tight_layout(pad=0.5)
     if path2save:
-        _save_figure(plt, path2save, f"neural_cluster_waveforms")
+        save_figure(plt, path2save, f"neural_cluster_waveforms")
 

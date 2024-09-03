@@ -1,14 +1,15 @@
 from torch import nn
-import matplotlib.pyplot as plt
 from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
-import package.dnn.models.decoding_utah as models_dec
+import package.dnn.example.models.decoding_utah as models_dec
 
 
 config_data = Config_Dataset(
     # --- Settings of Datasets
     #data_path='../2_Data/00_Merged_Datasets',
     data_path='C:\HomeOffice\Data_Neurosignal\\00_Merged',
+    #data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
+    #data_file_name='2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted',
     data_file_name='2024-02-05_Dataset-KlaesNeuralDecoding.npy',
     # --- Data Augmentation
     data_do_augmentation=False,
@@ -47,7 +48,7 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
         dnn_handler: Handler for configurating the routine selection for train deep neural networks
         length_window_ms: Size of the time window for segmenting the tick interval into firing events
     """
-    from package.dnn.dataset.decoding_utah import prepare_training
+    from package.dnn.example.dataset.decoding_utah import prepare_training
     from package.dnn.pytorch.rnn import train_nn
     from package.plot.plot_dnn import plot_statistic_data
     from package.plot.plot_metric import plot_confusion, plot_loss
@@ -68,8 +69,7 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
 
     # --- Plotting and Ending
     if dnn_handler.do_plot:
-        plt.close("all")
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=data_dict)
-        plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir, cl_dict=data_dict)
-        plt.show(block=dnn_handler.do_block)
+        plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir, cl_dict=data_dict,
+                            show_plot=dnn_handler.do_block)

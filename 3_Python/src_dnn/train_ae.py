@@ -2,7 +2,7 @@ from torch import nn
 import matplotlib.pyplot as plt
 from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
-import package.dnn.models.autoencoder_cnn as ae_models
+import package.dnn.example.models.autoencoder_cnn as ae_models
 
 
 config_data = Config_Dataset(
@@ -47,7 +47,7 @@ def do_train_ae(dnn_handler: dnn_handler, mode_ae: int, noise_std=0.05) -> None:
         mode_ae: Selected model of the Autoencoder (0: normal, 1: Denoising (mean), 2: Denoising (input)) [default:0]
         noise_std: Std of the additional noise added to the input [default: 0.05]
     """
-    from package.dnn.dataset.autoencoder import prepare_training
+    from package.dnn.example.dataset.autoencoder import prepare_training
     from package.dnn.pytorch.autoencoder import train_nn
     from package.plot.plot_dnn import results_training, plot_statistic_data
 

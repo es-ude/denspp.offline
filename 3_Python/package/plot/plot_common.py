@@ -1,23 +1,43 @@
 import numpy as np
 from os.path import join
-import matplotlib.pyplot as plt
 
 
-def _cm_to_inch(value):
+sel_color = ['k', 'r', 'gray', 'b', 'g', 'y', 'c', 'm']
+sel_marker = '.+x_'
+
+
+def get_plot_color(idx: int) -> 'str':
+    """Getting the color string"""
+    return sel_color[idx % len(sel_color)]
+
+
+def cm_to_inch(value: float) -> float:
     """Translation figure size"""
     return value / 2.54
 
 
-def _save_figure(fig, path: str, name: str, formats=('pdf', 'svg')):
-    """Saving figure in given format"""
+def save_figure(fig, path: str, name: str, formats=('pdf', 'svg')) -> None:
+    """Saving figure in given format
+    Args:
+        fig:        Matplot which will be saved
+        path:       Path for saving the figure
+        name:       Name of the plot
+        formats:    List with data formats for saving the figures
+    Returns:
+        None
+    """
     path2fig = join(path, name)
-
     for idx, form in enumerate(formats):
         fig.savefig(f"{path2fig}.{form}", format=form)
 
 
-def _scale_auto_value(data: np.ndarray | float) -> [float, str]:
-    """Getting the scaling value and corresponding string notation for unit scaling in plots"""
+def scale_auto_value(data: np.ndarray | float) -> [float, str]:
+    """Getting the scaling value and corresponding string notation for unit scaling in plots
+    Args:
+        data:   Array or value for calculating the SI scaling value
+    Returns:
+        Tuple with [0] = scaling value and [1] = SI pre-unit
+    """
     if isinstance(data, np.ndarray):
         value = np.max(np.abs(data))
     else:

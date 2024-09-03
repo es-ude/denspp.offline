@@ -1,13 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from package.plot.plot_common import _cm_to_inch, _save_figure
-
-color_label = ['r', 'b', 'y', 'm', 'k']
+from package.plot.plot_common import sel_color, save_figure, cm_to_inch
 
 
 def results_input(signals: list, fs: float | int, label_xpos=(), label_id=(), path2save='', addon='') -> None:
     """"""
-    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(21)))
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(21)))
     plt.subplots_adjust(hspace=0)
     label_avai = not len(label_xpos) == 0
 
@@ -25,8 +23,8 @@ def results_input(signals: list, fs: float | int, label_xpos=(), label_id=(), pa
                 if not id == -1:
                     xpos_sel = np.argwhere(label_id == id).flatten()
                     ylabel = 100 + np.ones(xpos_sel.shape)
-                    ax.plot(label_xpos[idx][xpos_sel] / fs, ylabel, marker=".", markersize=12,
-                            linestyle="None", color=color_label[id])
+                    ax.plot(label_xpos[idx][xpos_sel] / fs, ylabel, marker='.', markersize=12,
+                            linestyle="None", color=sel_color[id % 7])
         tA = np.linspace(0, signals[idx].shape[0], signals[idx].shape[0]) / fs
         ax.plot(tA, signals[idx], 'k')
 
@@ -35,4 +33,4 @@ def results_input(signals: list, fs: float | int, label_xpos=(), label_id=(), pa
     plt.tight_layout()
     # --- saving plots
     if path2save:
-        _save_figure(plt, path2save, f"pipeline_emg_elec{addon}")
+        save_figure(plt, path2save, f"pipeline_emg_elec{addon}")

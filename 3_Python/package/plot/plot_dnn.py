@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from package.plot.plot_common import _cm_to_inch, _save_figure
+from package.plot.plot_common import cm_to_inch, save_figure, sel_color, get_plot_color
 
 
 def results_training(path: str,
@@ -72,15 +72,15 @@ def plot_autoencoder_snr(snr: list, path2save='', do_boxplot=False, show_plot=Fa
 
     # --- Plotting
     for idx, snr0 in enumerate(snr_processed):
-        plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(8)))
+        plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
         plt.rcParams.update({'font.size': 12})
         plt.subplots_adjust(hspace=0, wspace=0.5)
         plt.grid()
 
         if not do_boxplot:
-            plt.plot(snr0[:, 0], color='k', marker='.', label='min')
-            plt.plot(snr0[:, 1], color='r', marker='.', label='mean')
-            plt.plot(snr0[:, 2], color='g', marker='.', label='max')
+            plt.plot(snr0[:, 0], color=sel_color[0], marker='.', label='min')
+            plt.plot(snr0[:, 1], color=sel_color[1], marker='.', label='mean')
+            plt.plot(snr0[:, 2], color=sel_color[2], marker='.', label='max')
             plt.legend()
             pos = np.linspace(0, snr0.shape[0]-1, num=11, endpoint=True, dtype=int)
         else:
@@ -94,7 +94,7 @@ def plot_autoencoder_snr(snr: list, path2save='', do_boxplot=False, show_plot=Fa
 
         plt.tight_layout(pad=0.5)
         if path2save:
-            _save_figure(plt, path2save, f"ai_training_snr_fold{idx:03d}")
+            save_figure(plt, path2save, f"ai_training_snr_fold{idx:03d}")
         if show_plot:
             plt.show(block=True)
 
@@ -102,15 +102,14 @@ def plot_autoencoder_snr(snr: list, path2save='', do_boxplot=False, show_plot=Fa
 def plot_autoencoder_features(cluster_no: np.ndarray, mark_feat: list, idx: [0, 1, 2], data_classname=None,
                               path2save='', show_plot=False) -> None:
     """Plotting the feature space of the autoencoder"""
-    color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
-
-    fig = plt.figure(figsize=(_cm_to_inch(12), _cm_to_inch(9)))
+    fig = plt.figure(figsize=(cm_to_inch(12), cm_to_inch(9)))
     plt.rcParams.update({'font.size': 6})
     Axes3D(fig)
     ax = plt.axes(projection='3d')
 
     for i, id in enumerate(cluster_no):
-        ax.scatter3D(mark_feat[idx[0]][i], mark_feat[idx[1]][i], mark_feat[idx[2]][i], color=color[i % 7], marker='.')
+        ax.scatter3D(mark_feat[idx[0]][i], mark_feat[idx[1]][i], mark_feat[idx[2]][i],
+                     color=get_plot_color(i), marker='.')
     ax.set_xlabel('Feat[0]')
     ax.set_ylabel('Feat[1]')
     ax.set_zlabel('Feat[2]')
@@ -121,7 +120,7 @@ def plot_autoencoder_features(cluster_no: np.ndarray, mark_feat: list, idx: [0, 
     plt.tight_layout(pad=0.5)
     # --- saving plots
     if path2save:
-        _save_figure(plt, path2save, "ai_training_feat")
+        save_figure(plt, path2save, "ai_training_feat")
     if show_plot:
         plt.show(block=True)
 
@@ -131,9 +130,7 @@ def plot_autoencoder_run(mark_feat: list, mark_idx: list,
                          cluster_no: np.ndarray, take_frames: list,
                          data_classname=None, data_labeled=False, path2save='', show_plot=False) -> None:
     """Plotting the autoencoder in-/output for an inference"""
-    color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
-
-    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(8)))
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
     plt.rcParams.update({'font.size': 10})
     plt.subplots_adjust(hspace=0, wspace=0.5)
     row = 1
@@ -152,7 +149,7 @@ def plot_autoencoder_run(mark_feat: list, mark_idx: list,
 
     # Feature extraction
     for i, id in enumerate(cluster_no):
-        axs[1].scatter(mark_feat[mark_idx[0]][i], mark_feat[mark_idx[1]][i], color=color[i % 7], marker='.')
+        axs[1].scatter(mark_feat[mark_idx[0]][i], mark_feat[mark_idx[1]][i], color=get_plot_color(i), marker='.')
     axs[1].set_title('Feature Space')
     axs[1].set_ylabel(f'Feat[{mark_idx[0]}]')
     axs[1].set_xlabel(f'Feat[{mark_idx[1]}]')
@@ -163,7 +160,7 @@ def plot_autoencoder_run(mark_feat: list, mark_idx: list,
     # Denoised output
     if data_labeled:
         for i, id in enumerate(cluster_no):
-            axs[2].plot(frames_mean[id, :], color=color[i % 7], linewidth=2)
+            axs[2].plot(frames_mean[id, :], color=get_plot_color(i), linewidth=2)
     for pos in take_frames:
         axs[2].plot(np.transpose(frames_out[pos, :]), linewidth=0.5)
 
@@ -178,7 +175,7 @@ def plot_autoencoder_run(mark_feat: list, mark_idx: list,
     plt.tight_layout(pad=0.5)
     # --- Saving plots
     if path2save:
-        _save_figure(plt, path2save, f"ai_training_out{mark_idx[0]}-{mark_idx[1]}")
+        save_figure(plt, path2save, f"ai_training_out{mark_idx[0]}-{mark_idx[1]}")
     if show_plot:
         plt.show(block=True)
 
@@ -198,7 +195,7 @@ def plot_statistic_data(train_cl: np.ndarray | list, valid_cl=None, path2save=''
     else:
         xtick_text = 'horizontal'
 
-    plt.figure(figsize=(_cm_to_inch(16), _cm_to_inch(8)))
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
     plt.rcParams.update({'font.size': 12})
     plt.subplots_adjust(hspace=0, wspace=0.5)
     axs = list()
@@ -246,7 +243,7 @@ def plot_statistic_data(train_cl: np.ndarray | list, valid_cl=None, path2save=''
     plt.tight_layout(pad=0.5)
     # --- saving plots
     if path2save:
-        _save_figure(plt, path2save, "ai_training_histdata")
+        save_figure(plt, path2save, "ai_training_histdata")
     if show_plot:
         plt.show(block=True)
 
@@ -266,6 +263,6 @@ def plot_mnist_graphs(data: np.ndarray, label: np.ndarray, title="", path2save="
 
     plt.tight_layout()
     if path2save:
-        _save_figure(plt, path2save, f"mnist_plot{title}")
+        save_figure(plt, path2save, f"mnist_plot{title}")
     if show_plot:
         plt.show(block=True)

@@ -1,7 +1,6 @@
 from torch import nn
-import matplotlib.pyplot as plt
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
-import package.dnn.models.mnist as models
+import package.dnn.template.models.mnist as models
 
 
 config_data = Config_Dataset(
@@ -26,7 +25,7 @@ config_data = Config_Dataset(
 
 config_train_cl = Config_PyTorch(
     # --- Settings of Models/Training
-    model=models.mlp_class_v1(),
+    model=models.mnist_mlp_cl_v1(),
     loss='Cross Entropy Loss',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
@@ -39,7 +38,7 @@ config_train_cl = Config_PyTorch(
 
 config_train_ae = Config_PyTorch(
     # --- Settings of Models/Training
-    model=models.mlp_ae_v1(),
+    model=models.mnist_mlp_ae_v1(),
     loss='MSE',
     loss_fn=nn.MSELoss(),
     optimizer='Adam',
@@ -56,17 +55,17 @@ def do_train_cl(do_plot=True, do_block=True) -> None:
     Args:
         do_plot:            Plotting the results
         do_block:           Blocking the plots for user interactions, otherwise only saving
+    Returns:
+        None
     """
-    from package.dnn.dataset.mnist import prepare_training
+    from package.dnn.template.dataset.mnist import prepare_training
     from package.dnn.pytorch.classifier import train_nn
     from package.plot.plot_dnn import plot_statistic_data, plot_mnist_graphs
     from package.plot.plot_metric import plot_confusion, plot_loss
 
-    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
-
+    print("\nTraining routine for MNIST classification")
     # ---Loading Data, Do Training and getting the results
     dataset = prepare_training(config_data.data_path, config_data.data_do_normalization, True)
-    num_output = 10
     trainhandler = train_nn(config_train_cl, config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
@@ -80,13 +79,10 @@ def do_train_cl(do_plot=True, do_block=True) -> None:
 
     # --- Plotting
     if do_plot:
-        plt.close('all')
-        # --- Plotting full model
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
         plot_mnist_graphs(data_result['input'], data_result['valid_clus'], path2save=logsdir)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir)
-        plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir)
-        plt.show(block=do_block)
+        plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, show_plots=do_block)
     print("\nThe End")
 
 
@@ -95,13 +91,13 @@ def do_train_ae(do_plot=True, do_block=True) -> None:
     Args:
         do_plot:            Plotting the results
         do_block:           Blocking the plots for user interactions, otherwise only saving
+    Returns:
+        None
     """
-    from package.dnn.dataset.mnist import prepare_training
+    from package.dnn.template.dataset.mnist import prepare_training
     from package.dnn.pytorch.autoencoder import train_nn
     from package.plot.plot_dnn import plot_statistic_data, plot_mnist_graphs
     from package.plot.plot_metric import plot_loss
-
-    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
 
     # ---Loading Data, Do Training and getting the results
     dataset = prepare_training(config_data.data_path, config_data.data_do_normalization, False)
@@ -118,11 +114,9 @@ def do_train_ae(do_plot=True, do_block=True) -> None:
 
     # --- Plotting
     if do_plot:
-        plt.close('all')
-        # --- Plotting full model
         plot_loss(epoch_loss, 'Loss', path2save=logsdir)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir)
         plot_mnist_graphs(data_result['input'], data_result['valid_clus'], "_input", path2save=logsdir)
-        plot_mnist_graphs(data_result['pred'], data_result['valid_clus'], "_predicted", path2save=logsdir)
-        plt.show(block=do_block)
+        plot_mnist_graphs(data_result['pred'], data_result['valid_clus'], "_predicted", path2save=logsdir,
+                          show_plot=do_block)
     print("\nThe End")

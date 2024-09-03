@@ -2,15 +2,14 @@ import numpy as np
 from torch import nn
 from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
-import package.dnn.models.autoencoder_cnn as models_ae
-import package.dnn.models.autoencoder_class as models_class
+import package.dnn.template.models.autoencoder_cnn as models_ae
+import package.dnn.template.models.autoencoder_class as models_class
 
 
 config_data = Config_Dataset(
     # --- Settings of Datasets
     data_path='../2_Data/00_Merged_Datasets',
     data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
-    #data_file_name='2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted',
     # --- Data Augmentation
     data_do_augmentation=False,
     data_num_augmentation=0,
@@ -39,8 +38,8 @@ def do_train_ae_classifier(dnn_handler: dnn_handler,
         mode_ae:            Selected model of the Autoencoder (0: normal, 1: Denoising (mean), 2: Denoising (input)) [default:0]
         noise_std:          Std of the additional noise added to the input [default: 0.05]
     """
-    from package.dnn.dataset.autoencoder import prepare_training as get_dataset_ae
-    from package.dnn.dataset.autoencoder_class import prepare_training as get_dataset_class
+    from package.dnn.template.dataset.autoencoder import prepare_training as get_dataset_ae
+    from package.dnn.template.dataset.autoencoder_class import prepare_training as get_dataset_class
     from package.dnn.pytorch.autoencoder import train_nn as train_autoencoder
     from package.dnn.pytorch.classifier import train_nn as train_classifier
     from package.plot.plot_dnn import results_training, plot_statistic_data
