@@ -137,7 +137,7 @@ class PySpiceLoad(PySpice_Handler):
             self.load_circuit_model(self._type_device[self._settings.type]())
 
             self.do_transient_arbitrary_simulation(i_in, self.__sim_time, self._settings.fs_ana)
-            results = self.get_results(3)
+            results = self.__get_results(3)
             vout = results['v_in'] + u_inn
             num_dly = vout.size - i_in.size - 1
             vout = vout[num_dly:]
@@ -145,13 +145,16 @@ class PySpiceLoad(PySpice_Handler):
             print("Error: Model not available - Please check!")
         return vout
 
-    def plot_fit_curve(self, start_value=-5.0, stop_value=+5.0, step_size=0.1, do_ylog=False) -> None:
+    def plot_fit_curve(self, start_value=-5.0, stop_value=+5.0, step_size=0.1, do_logy=False,
+                       path2save='', show_plot=False) -> None:
         """Plotting the output of the polynom fit function
         Args:
             start_value:    Starting point of DC Sweep
             stop_value:     End point of DC Sweep
             step_size:      Step size of DC Sweep
-            do_ylog:        Do logarithmic plotting on y-scale
+            do_logy:        Do logarithmic plotting on y-scale
+            path2save:      Path for saving the plot
+            show_plot:      Showing and blocking the plot
         Returns:
             None
         """
@@ -159,7 +162,7 @@ class PySpiceLoad(PySpice_Handler):
         self.load_circuit_model(self._type_device[self._settings.type]())
 
         self.do_dc_sweep_simulation(start_value, stop_value, step_size)
-        self.plot_iv_curve(do_log=do_ylog)
+        self.plot_iv_curve(do_logy, path2save, show_plot)
 
     # --------------- OVERVIEW OF MODELS -------------------------
     def _resistor(self) -> Circuit:
@@ -274,6 +277,4 @@ if __name__ == "__main__":
 
     # --- Plotting: I-V curve
     print("\nPlotting I-V curve")
-    dev.plot_fit_curve()
-
-    plt.show(block=True)
+    dev.plot_fit_curve(do_logy=do_ylog, show_plot=True)

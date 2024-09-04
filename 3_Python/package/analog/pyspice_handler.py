@@ -1,11 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
 import PySpice.Logging.Logging as Logging
 from PySpice.Spice.Netlist import Circuit, Netlist
 from PySpice.Spice.NgSpice.Shared import NgSpiceShared
-
-from package.plot.plot_common import scale_auto_value
+from package.plot.plot_common import scale_auto_value, save_figure, sel_color
 
 
 class PySpiceModels:
@@ -140,7 +138,7 @@ class PySpice_Handler:
         self.__results = dict()
         self._is_input_voltage = input_voltage
         self._used_temp = temperature
-        self.__plot_color = 'krbg'
+        self.__plot_color = sel_color
         self._circuit = Circuit("Test")
         self._run_ite = 0
         self._arbitrary_signal_ng_spice_instance = NgSpiceShared.new_instance()
@@ -210,7 +208,7 @@ class PySpice_Handler:
                 print(f'Node {str(node)}: {scale * float(node):4.3f} {unit}')
 
         del self.__results
-        self.__results = self.get_results(0, analysis)
+        self.__results = self.__get_results(0, analysis)
         return self.__results
 
     ############################################################################
@@ -243,7 +241,7 @@ class PySpice_Handler:
             results = simulator.dc(Iinput=slice(start_dc, stop_dc, step_dc))
 
         del self.__results
-        self.__results = self.get_results(1, results)
+        self.__results = self.__get_results(1, results)
         return self.__results
 
     ############################################################################
@@ -275,7 +273,7 @@ class PySpice_Handler:
                                number_of_points=num_points, variation='dec')
 
         del self.__results
-        self.__results = self.get_results(2, results)
+        self.__results = self.__get_results(2, results)
         return self.__results
 
     ############################################################################
@@ -315,7 +313,7 @@ class PySpice_Handler:
         results = simulator.transient(step_time=1 / f_samp, end_time=t_sim)
 
         del self.__results
-        self.__results = self.get_results(3, results)
+        self.__results = self.__get_results(3, results)
         return self.__results
 
     ############################################################################
@@ -354,7 +352,7 @@ class PySpice_Handler:
         results = simulator.transient(step_time=1 / f_samp, end_time=t_sim)
 
         del self.__results
-        self.__results = self.get_results(3, results)
+        self.__results = self.__get_results(3, results)
         return self.__results
 
     ############################################################################
@@ -395,7 +393,7 @@ class PySpice_Handler:
 
         # --- Process results
         del self.__results
-        self.__results = self.get_results(4, results)
+        self.__results = self.__get_results(4, results)
 
         _clear_arbfwg(self._arbitrary_signal_ng_spice_instance)
         return self.__results
@@ -423,7 +421,7 @@ class PySpice_Handler:
 
     ############################################################################
 
-    def get_results(self, mode: int, data) -> dict:
+    def __get_results(self, mode: int, data) -> dict:
         """Getting the results from already runned SPICE analysis
         Args:
             mode:   Selection mode for getting results (0 = Operating Point, 1 = DC Sweep, 2 = AC Sweep, 3 = Transient)
@@ -464,12 +462,12 @@ class PySpice_Handler:
 
     ############################################################################
 
-    def plot_iv_curve(self, do_log=False, path2save='', block_plots=False) -> None:
+    def plot_iv_curve(self, do_log=False, path2save='', show_plot=False) -> None:
         """Plotting the I-V relationship/curve of investigated circuit (taking v_in and i_in)
         Args:
             do_log:         Do a logarithmic plotting on y-axis
             path2save:      Optional string for plotting [Default: '' for non-plotting]
-            block_plots:    Blocking plots for showing [Default: False]
+            show_plot:      Blocking plots for showing [Default: False]
         Returns:
           None
         """
@@ -493,15 +491,16 @@ class PySpice_Handler:
         plt.tight_layout()
         plt.grid()
         if path2save:
-            plt.savefig('pyspice_dc_result.svg', format='svg')
-        plt.show(block=block_plots)
+            save_figure(plt, path2save, 'pyspice_dc_result', formats=['svg'])
+        if show_plot:
+            plt.show(block=True)
 
-    def plot_bodeplot(self, mode=0, path2save='', block_plots=False) -> None:
+    def plot_bodeplot(self, mode=0, path2save='', show_plot=False) -> None:
         """Plotting the Bode Diagram (mode == 0) or Impedance Plot (mode == 1) of investigated circuit
         Args:
             mode:           Mode selection (0 = Bode diagram, 1 = Impedance plot)
             path2save:      Optional string for plotting [Default: '' for non-plotting]
-            block_plots:    Blocking plots for showing [Default: False]
+            show_plot:      Blocking plots for showing [Default: False]
         Returns:
           None
         """
@@ -528,14 +527,15 @@ class PySpice_Handler:
         plt.tight_layout()
         plt.subplots_adjust(hspace=0.05)
         if path2save:
-            plt.savefig('pyspice_ac_result.svg', format='svg')
-        plt.show(block=block_plots)
+            save_figure(plt, path2save, 'pyspice_ac_result', ['svg'])
+        if show_plot:
+            plt.show(block=True)
 
-    def plot_transient(self, path2save='', block_plots=False) -> None:
+    def plot_transient(self, path2save='', show_plot=False) -> None:
         """Plotting the results of Transient Simulation of investigated circuit
         Args:
             path2save:  Optional string for plotting [Default: '' for non-plotting]
-            block_plots:    Blocking plots for showing [Default: False]
+            show_plot:  Blocking plots for showing [Default: False]
         Returns:
           None
         """
@@ -574,8 +574,9 @@ class PySpice_Handler:
         plt.tight_layout()
         plt.grid()
         if path2save:
-            plt.savefig('pyspice_transient_result.svg', format='svg')
-        plt.show(block=block_plots)
+            save_figure(plt, path2save, 'pyspice_transient_result', ['svg'])
+        if show_plot:
+            plt.show(block=True)
 
 
 if __name__ == "__main__":
@@ -613,7 +614,5 @@ if __name__ == "__main__":
         elif mode == 5:
             signal0 = pyspice.create_dummy_signal(t_sim, fs)[1]
             pyspice.do_transient_arbitrary_simulation(signal0, t_sim, fs)
-            pyspice.plot_transient()
+            pyspice.plot_transient(show_plot=True)
         pyspice.print_spice_circuit()
-
-    plt.show(block=True)

@@ -1,13 +1,12 @@
 import dataclasses
 from warnings import warn
-from os.path import join
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.constants import Boltzmann, elementary_charge
 from scipy.optimize import least_squares, curve_fit
 
 from package.structure_builder import _create_folder_general_firstrun
-from package.plot.plot_common import scale_auto_value
+from package.plot.plot_common import scale_auto_value, save_figure
 from package.metric import _error_rae, _error_mse
 
 
@@ -241,15 +240,15 @@ class ElectricalLoad_Handler:
         return error
 
     def _plot_fit_curve(self, u_poly: np.ndarray, i_poly: np.ndarray, i_reg: np.ndarray,
-                        metric=(), block_plot=False, title_prefix='', path2save='') -> None:
+                        metric=(), title_prefix='', path2save='', show_plot=False) -> None:
         """Plotting the output of the polynomial fit function
         Args:
             u_poly:         Numpy array with voltage from polynom fit (input)
             i_poly:         Numpy array of current response
             i_reg:          Numpy array of current response from regression
-            block_plot:     Blocking the plots before continuing [Default: False]
             title_prefix:   String with prefix of title
             path2save:      String with path to save the figure
+            show_plot:      Showing and blocking the plots [Default: False]
         Returns:
             None
         """
@@ -276,8 +275,9 @@ class ElectricalLoad_Handler:
             axs[0].set_title(title_prefix + f"{metric[0]} = {metric[1]:.4f} @ N_Poly = {self._fit_options[0]}")
 
         if path2save:
-            plt.savefig(join(path2save, "device_iv_charac.svg"), format='svg')
-        plt.show(block=block_plot)
+            save_figure(plt, path2save, 'device_iv_charac.svg')
+        if show_plot:
+            plt.show(block=True)
 
     def _find_best_poly_order(self, order_start: int, order_stop: int,
                               bounds_voltage: list, params_dev: list,
@@ -496,7 +496,8 @@ def _generate_signal(t_end: float, fs: float, upp: list, fsig: list, uoff=0.0) -
 
 
 def _plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray,
-                       mode_current_input: bool, do_ylog=False, plot_gray=False) -> None:
+                       mode_current_input: bool, do_ylog=False, plot_gray=False,
+                       path2save='', show_plot=False) -> None:
     """Function for plotting transient signal and I-V curve of the used electrical device
     Args:
         time:       Numpy array with time information
@@ -505,6 +506,8 @@ def _plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray,
         mode_current_input: Bool decision for selecting right source and sink value
         do_ylog:    Plotting the current in the I-V-curve normal (False) or logarithmic (True)
         plot_gray:  Plotting the response of device in red dashed (False) or gray dashed (True)
+        path2save:  Path for saving the plot
+        show_plot:  Showing and blocking the plot
     Returns:
         None
     """
@@ -558,3 +561,8 @@ def _plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray,
         axs[1].set_ylabel(label_axisx)
     axs[1].grid()
     plt.tight_layout()
+    if path2save:
+        save_figure(plt, path2save, 'test_signal')
+    if show_plot:
+        plt.show(block=True)
+
