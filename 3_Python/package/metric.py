@@ -8,58 +8,179 @@ def calculate_snr(yin: np.ndarray, ymean: np.ndarray) -> np.ndarray:
     return 10 * np.log10(a0 / b0)
 
 
-def calculate_prd(yin: np.ndarray, ymean: np.ndarray):
-    """Calculating the root-mean-square difference in percentage (PRD)"""
-    a0 = np.sum(np.square(yin - ymean))
-    b0 = np.sum(np.square(yin))
-    return np.sqrt(a0 / b0) * 100
-
-
-def _error_mbe(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
-    """Calculating the distance-based metric with mean bias error"""
+def calculate_error_mbe(y_pred: np.ndarray | float, y_true: np.ndarray | float, do_print=False) -> float:
+    """Calculating the distance-based metric with mean bias error
+    Args:
+        y_pred:     Numpy array or float value from prediction
+        y_true:     Numpy array or float value from true label
+        do_print:   Printing the value into terminal
+    Returns:
+        Float value with error
+    """
     if isinstance(y_true, np.ndarray):
         error = float(np.sum(y_pred - y_true) / y_pred.size)
     else:
         error = y_pred - y_true
+    if do_print:
+        print(f"Mean bias error (MBE) = {error:.4f}")
     return error
 
 
-def _error_mae(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
-    """Calculating the distance-based metric with mean absolute error"""
+def calculate_error_mae(y_pred: np.ndarray | float, y_true: np.ndarray | float, do_print=False) -> float:
+    """Calculating the distance-based metric with mean absolute error
+    Args:
+        y_pred:     Numpy array or float value from prediction
+        y_true:     Numpy array or float value from true label
+        do_print:   Printing the value into terminal
+    Returns:
+        Float value with error
+    """
     if isinstance(y_true, np.ndarray):
         error = float(np.sum(np.abs(y_pred - y_true)) / y_pred.size)
     else:
         error = float(np.abs(y_pred - y_true))
+    if do_print:
+        print(f"Mean absolute error (MAE) = {error:.4f}")
     return error
 
 
-def _error_mse(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
-    """Calculating the distance-based metric with mean squared error"""
+def calculate_error_mse(y_pred: np.ndarray | float, y_true: np.ndarray | float, do_print=False) -> float:
+    """Calculating the distance-based metric with mean squared error
+    Args:
+        y_pred:     Numpy array or float value from prediction
+        y_true:     Numpy array or float value from true label
+        do_print:   Printing the value into terminal
+    Returns:
+        Float value with error
+    """
     if isinstance(y_true, np.ndarray):
         error = float(np.sum((y_pred - y_true) ** 2) / y_pred.size)
     else:
         error = float(y_pred - y_true) ** 2
+    if do_print:
+        print(f"Mean squared error (MSE) = {error:.4f}")
     return error
 
 
-def _error_rae(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
-    """Calculating the distance-based metric with relative absolute error"""
-    mse = _error_mse(y_pred, y_true)
-    if isinstance(y_pred, np.ndarray):
-        error = float(np.sqrt(mse) / _error_mae(np.zeros(shape=y_pred.shape), y_true))
+def calculate_error_mpe(y_pred: np.ndarray | float, y_true: np.ndarray | float, do_print=False) -> float:
+    """Calculating the distance-based metric with mean percentage error
+    Args:
+        y_pred:     Numpy array or float value from prediction
+        y_true:     Numpy array or float value from true label
+        do_print:   Printing the value into terminal
+    Returns:
+        Float value with error
+    """
+    if isinstance(y_true, np.ndarray):
+        error = float(np.sum((y_true - y_pred) / y_true) / y_true.size)
     else:
-        error = float((mse ** 0.5) / _error_mae(0.0, y_pred))
+        error = float((y_true - y_pred) / y_true)
+    if do_print:
+        print(f"Mean percentage error (MPE) = {error:.4f}")
     return error
 
 
-def _error_rse(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
-    """Calculating the distance-based metric with relative squared error"""
-    mse = _error_mse(y_pred, y_true)
+def calculate_error_mape(y_pred: np.ndarray | float, y_true: np.ndarray | float, do_print=False) -> float:
+    """Calculating the distance-based metric with mean absolute percentage error
+    Args:
+        y_pred:     Numpy array or float value from prediction
+        y_true:     Numpy array or float value from true label
+        do_print:   Printing the value into terminal
+    Returns:
+        Float value with error
+    """
+    if isinstance(y_true, np.ndarray):
+        error = float(np.sum(np.abs(y_true - y_pred) / np.abs(y_true)) / y_true.size)
+    else:
+        error = float(abs(y_true - y_pred) / abs(y_true))
+    if do_print:
+        print(f"Mean absolute percentage error (MAPE) = {error:.4f}")
+    return error
+
+
+def calculate_error_rae(y_pred: np.ndarray | float, y_true: np.ndarray | float, do_print=False) -> float:
+    """Calculating the distance-based metric with relative absolute error
+    Args:
+        y_pred:     Numpy array or float value from prediction
+        y_true:     Numpy array or float value from true label
+        do_print:   Printing the value into terminal
+    Returns:
+        Float value with error
+    """
+    mse = calculate_error_mse(y_pred, y_true)
+    if isinstance(y_pred, np.ndarray):
+        error = float(np.sqrt(mse) / calculate_error_mae(np.zeros(shape=y_pred.shape), y_true))
+    else:
+        error = float((mse ** 0.5) / calculate_error_mae(0.0, y_pred))
+    if do_print:
+        print(f"Relative absolute error (RAE) = {error:.4f}")
+    return error
+
+
+def calculate_error_rse(y_pred: np.ndarray | float, y_true: np.ndarray | float, do_print=False) -> float:
+    """Calculating the distance-based metric with relative squared error
+    Args:
+        y_pred:     Numpy array or float value from prediction
+        y_true:     Numpy array or float value from true label
+        do_print:   Printing the value into terminal
+    Returns:
+        Float value with error
+    """
+    mse = calculate_error_mse(y_pred, y_true)
     y_true_mean = np.mean(y_true)
     if isinstance(y_pred, np.ndarray):
         error = float(mse / np.sum((y_pred - y_true_mean) ** 2) / y_pred.size)
     else:
         error = float(mse / (y_pred - y_true_mean) ** 2)
+    if do_print:
+        print(f"Relative squared error (RSE) = {error:.4f}")
+    return error
+
+
+def calculate_error_rmse(y_pred: np.ndarray, y_true: np.ndarray, do_print=False) -> float:
+    """Calculating the Root Mean Squared Error
+    Args:
+        y_pred:     Numpy array or float value from prediction
+        y_true:     Numpy array or float value from true label
+        do_print:   Printing the value into terminal
+    Returns:
+        Float value with error
+    """
+    error = np.sqrt(np.sum(np.abs(y_pred - y_true) ** 2) / y_pred.size)
+    if do_print:
+        print(f"Root mean squared error (MSE) = {error:.4f}")
+    return error
+
+
+def calculate_error_rrmse(y_pred: np.ndarray, y_true: np.ndarray, do_print=False) -> float:
+    """Calculating the Relative Root Mean Squared Error
+    Args:
+        y_pred:     Numpy array or float value from prediction
+        y_true:     Numpy array or float value from true label
+        do_print:   Printing the value into terminal
+    Returns:
+        Float value with error
+    """
+    val0 = np.sum(np.abs(y_true - y_pred) ** 2) / y_pred.size
+    val1 = np.sum(np.abs(y_pred) ** 2)
+    error = np.sqrt(val0/val1)
+    if do_print:
+        print(f"Relative Root Mean squared error (RRMSE) = {error:.4f}")
+    return error
+
+
+def calculate_error_rmsre(y_pred: np.ndarray, y_true: np.ndarray, do_print=False) -> float:
+    """Calculating the Root Mean Squared Relative ErrorArgs:
+        y_pred:     Numpy array or float value from prediction
+        y_true:     Numpy array or float value from true label
+        do_print:   Printing the value into terminal
+    Returns:
+        Float value with error
+    """
+    val0 = np.sum((y_true - y_pred / y_pred) ** 2)
+    error = np.sqrt(val0 / y_pred.size)
+    if do_print:
+        print(f"Root Mean Squared Relative Error (RMSRE) = {error:.4f}")
     return error
 
 
@@ -83,7 +204,7 @@ def compare_timestamps(true_labels: list, pred_labels: list, window=2) -> [float
     for i in range(0, max_value):
         if i in true_labels[0]:
             found = False
-            for j in range(i-window, i+window+1):
+            for j in range(i-int(window), i+int(window)+1):
                 if j in pred_labels[0]:
                     pos_true = true_labels[0].index(i)
                     pos_pred = pred_labels[0].index(j)

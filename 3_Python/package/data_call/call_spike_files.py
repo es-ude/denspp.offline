@@ -278,7 +278,7 @@ class DataLoader(_DataController):
         del loaded_data
 
     def __load_rgc_tdb(self) -> None:
-        """Loading the transient files from the Retinal Ganglian Cell Transient Database (RGC TDB)"""
+        """Loading the transient files from the Retinal Ganglion Cell Transient Database (RGC TDB)"""
         folder_name = "_RGC_TDB"
         data_type = '*.mat'
         self._prepare_access_file(folder_name, data_type)
@@ -309,7 +309,7 @@ class DataLoader(_DataController):
             spike_xpos.append(loaded_data['sp_trains']['sp'][elec][0].astype('int'))
             data_raw.append(loaded_data['sp_trains']['data'][elec][0])
 
-        # Input and meta --- This type are no electrode simultanously. It is more the experiment run
+        # Input and meta --- This type has only one channel. Used for experiment runs
         self.raw_data = DataHandler()
         self.raw_data.data_name = folder_name
         self.raw_data.data_type = "Isolated RGC"

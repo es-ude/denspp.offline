@@ -6,7 +6,7 @@ from tqdm import tqdm
 import numpy.lib.scimath as sm
 
 from package.structure_builder import _create_folder_general_firstrun
-from package.metric import _error_mse
+from package.metric import calculate_error_mse
 
 
 def crossval(wave1, wave2):
@@ -29,7 +29,7 @@ def calc_metric(wave_in, wave_ref):
 
     result = []
     result.append(maxInIndex - maxRefIndex)
-    result.append(_error_mse(wave_in, wave_ref))
+    result.append(calculate_error_mse(wave_in, wave_ref))
     result.append(np.abs(np.trapz(wave_in[:maxInIndex + 1]) - np.trapz(wave_in[maxInIndex:])))
     result.append(maxInIndex)
     result.append(maxIn)

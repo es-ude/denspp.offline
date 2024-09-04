@@ -7,7 +7,7 @@ from scipy.optimize import least_squares, curve_fit
 
 from package.structure_builder import _create_folder_general_firstrun
 from package.plot.plot_common import scale_auto_value, save_figure
-from package.metric import _error_rae, _error_mse
+from package.metric import calculate_error_rae, calculate_error_mse
 
 
 @dataclasses.dataclass
@@ -30,7 +30,7 @@ class SettingsDEV:
 
 
 def _calc_error(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
-    return _error_rae(y_pred, y_true)
+    return calculate_error_rae(y_pred, y_true)
 
 
 def _raise_voltage_violation(du: np.ndarray | float, range_volt: list) -> None:
@@ -435,7 +435,7 @@ class ElectricalLoad_Handler:
             error0 = list()
             for u_top in test_value:
                 i1 = self.get_current(u_top, u_bottom)
-                error0.append(_error_mse(i1, i0))
+                error0.append(calculate_error_mse(i1, i0))
 
             error0 = np.array(error0)
             error0_sign = np.sign(np.diff(error0))
@@ -451,7 +451,7 @@ class ElectricalLoad_Handler:
                 i1 = self.get_current(u_top, u_bottom)
 
                 # Error Logging
-                error.append(_error_mse(i1, i0))
+                error.append(calculate_error_mse(i1, i0))
                 if len(error) > 1:
                     derror.append(error[-1] - error[-2])
                     error_sign.append(np.sign(derror[-1]) == -1.0)
