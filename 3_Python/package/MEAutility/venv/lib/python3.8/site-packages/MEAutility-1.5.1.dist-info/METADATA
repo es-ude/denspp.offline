@@ -1,0 +1,54 @@
+Metadata-Version: 2.1
+Name: MEAutility
+Version: 1.5.1
+Summary: Python package for multi-electrode array (MEA) handling and stimulation.
+Home-page: https://github.com/alejoe91/MEAutility
+Author: Alessio Buccino
+Author-email: alessiop.buccino@gmail.com
+License: UNKNOWN
+Platform: UNKNOWN
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: GNU General Public License v3 (GPLv3)
+Classifier: Operating System :: OS Independent
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: numpy
+Requires-Dist: pyyaml
+Requires-Dist: matplotlib
+
+[![Build Status](https://travis-ci.org/alejoe91/MEAutility.svg?branch=master)](https://travis-ci.org/alejoe91/MEAutility) [![PyPI version](https://badge.fury.io/py/MEAutility.svg)](https://badge.fury.io/py/MEAutility)
+
+# MEAutility
+
+Python package for multi-electrode array (MEA) handling and stimulation.
+
+## Installation
+
+To install run:
+`pip install MEAutility`
+
+If you want to install from sources and be updated with the latest development you can install with:
+```
+git clone https://github.com/alejoe91/MEAutility
+cd MEAutility
+python setup.py install (or develop)
+```
+
+The package can then imported in Python with:
+
+`import MEAutility as MEA`
+
+### Requirements
+- numpy
+- pyyaml
+- matplotlib
+
+## Documentation
+
+Please refer to https://meautility.readthedocs.io/en/latest/ 
+
+## Contact
+
+For any questions or comments, please contact Alessio Buccino: alessiob@ifi.uio.no
+
+
