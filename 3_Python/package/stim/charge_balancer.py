@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from waveform_generator import WaveformGenerator
+from package.stim.waveform_generator import WaveformGenerator
 import matplotlib.pyplot as plt
 
 import numpy as np
@@ -8,10 +8,13 @@ from PySpice.Unit import *
 
 from enum import Enum
 
+from package.analog.comp import *
+
 class CBEval(Enum):
     WINDOW = 1
     PROPORTIONAL = 2
     SIGMOID = 3
+    REAL_WINDOW = 4
 
 class CBStrat(Enum):
     OFFSET_CURRENT = 1
@@ -19,6 +22,7 @@ class CBStrat(Enum):
     ANO_DURATION = 3
     ANO_AMPLITUDE = 4
     ANO_ACLIPPING = 5
+    NONE = 0
 
 @dataclass
 class CBSettings: # --change this!!!--
@@ -39,6 +43,7 @@ class WFGSettings:
     t_end: float
     t_sine: float
     n_waves: int
+    q_step: float
 
 
 class ChargeBalancer:
@@ -50,6 +55,7 @@ class ChargeBalancer:
         self.t_end = wfgsettings.t_end
         self.t_sine = wfgsettings.t_sine
         self.n_waves = wfgsettings.n_waves
+        self.q_step = wfgsettings.q_step
         
         self.t_clip = float(0)
         self.i_offset = float(0)
@@ -75,7 +81,10 @@ class ChargeBalancer:
         self.q_ano_init = 2 * self.t_ano * self.i_amp_ano / np.pi
 
         self.wfg = WaveformGenerator(self.f_samp_wfg)
-        self.waveform = self._generate_waveform()
+        self.waveform = self.__update_waveform()
+
+        if self.cbeval == CBEval.REAL_WINDOW:
+            self.comp = Comp(RecommendedSettingsAMP)
 
     def get_t_rep(self):
         return self.t_start + self.n_waves * self._get_t_wave() + self.t_end
@@ -86,7 +95,7 @@ class ChargeBalancer:
     def _get_t_wave(self):
         return self.t_cat + self.t_ano
 
-    def _generate_waveform(self):
+    def __update_waveform(self):
         tp = []
         td = []
         ws = []
@@ -134,7 +143,19 @@ class ChargeBalancer:
         # noise = np.random.normal(0, 0.01*self.i_amp, len(waveform))
         # noise = np.where(waveform == 0, 0, noise)
 
-        return self.i_offset + waveform
+        waveform += self.i_offset
+
+        waveform = np.where(t < self.t_start, 0, waveform)
+        waveform = np.where(t >= (self.t_start + self.n_waves * self._get_t_wave()), 0, waveform)
+
+        if self.q_step != 0:
+            # truncate = lambda x: int(x / self.q_step) * self.q_step
+            # waveform = np.array([truncate(x) for x in waveform])
+            waveform = np.where(waveform > 0, 
+                                np.floor(waveform / self.q_step) * self.q_step,
+                                np.ceil(waveform / self.q_step) * self.q_step)
+
+        return waveform
     
     def perform_charge_balancing(self, voltage: float):
         # match self.cbstrat:
@@ -151,24 +172,26 @@ class ChargeBalancer:
         #     case _:
         #         print("Invalid strategy!")
 
-
-        factor = self.__evaluate(voltage)
-        change = factor * self.adjust
-
-        if self.memory or self.cbeval == CBEval.WINDOW:
-            self.q_delta += change
+        if self.cbstrat == CBStrat.NONE:
+            pass
         else:
-            self.q_delta = change
+            factor = self.__evaluate(voltage)
+            change = factor * self.adjust
 
-        if self.cbeval == CBEval.WINDOW and not self.memory and change == 0:
-            self.q_delta = 0
+            if self.memory or self.cbeval == CBEval.WINDOW:
+                self.q_delta += change
+            else:
+                self.q_delta = change
 
-        if self.charge:
-            self.__adjust_waveform(self.__to_parameter(self.q_delta))
-        else:
-            self.__adjust_waveform(self.q_delta)
+            if self.cbeval == CBEval.WINDOW and not self.memory and change == 0:
+                self.q_delta = 0
 
-        self.waveform = self._generate_waveform()
+            if self.charge:
+                self.__adjust_waveform(self.__to_parameter(self.q_delta))
+            else:
+                self.__adjust_waveform(self.q_delta)
+
+            self.waveform = self.__update_waveform()
 
     def __evaluate(self, voltage):
         match self.cbeval:
@@ -181,6 +204,18 @@ class ChargeBalancer:
                     return 0
             case CBEval.PROPORTIONAL:
                 return voltage * self.size
+            case CBEval.REAL_WINDOW:
+                over = self.comp.cmp_normal(voltage, self.size)
+                under = self.comp.cmp_normal(-self.size, voltage)
+                if over and under:
+                    print("comp error!")
+                    return 0
+                elif over and not under:
+                    return 1
+                elif not over and under:
+                    return -1
+                else:
+                    return 0
             case _:
                 print("EVAL ERROR!")
                 return 0
@@ -188,7 +223,7 @@ class ChargeBalancer:
     def __to_parameter(self, q_delta):
         match self.cbstrat:
             case CBStrat.OFFSET_CURRENT:
-                return q_delta / self.get_t_rep()
+                return q_delta / (self.n_waves * self._get_t_wave())
             case CBStrat.ANO_DCLIPPING:
                 q_delta /= self.n_waves
                 return self.t_ano * np.arccos(1 - np.pi * q_delta / (self.t_ano * self.i_amp_ano)) / np.pi

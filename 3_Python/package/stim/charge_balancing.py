@@ -6,13 +6,13 @@ from PySpice.Spice.Netlist import Circuit
 from PySpice.Spice.NgSpice.Shared import NgSpiceShared
 from PySpice.Unit import *
 
-from charge_balancer import *
+from package.stim.charge_balancer import *
 
 
 logger = Logging.setup_logging()
 
 # --graphing options--
-graph_signals = False
+graph_signals = True
 
 # --circuit parameters--
 R_tis = 20@u_kOhm
@@ -21,21 +21,22 @@ C_dl = 6@u_nF
 v_cm = 1@u_mV
 
 # --simulation parameters--
-n_rep = 50
+n_rep = 5
 i_amp=12e-6
 f_samp=1e6
 f_samp_wfg=200*f_samp
-t_start=1e-3
-t_end=1e-3
+t_start=2e-3
+t_end=0
 t_sine=2e-3
 n_waves=2
+q_step=0.25e-6
 
-# --charge balancer (includes waveform generation)--
+# --charge balancer parameters--
 
 cb_offset = CBSettings(
     cbstrat=CBStrat.OFFSET_CURRENT,
-    cbeval=CBEval.WINDOW,
-    memory=False,
+    cbeval=CBEval.REAL_WINDOW,
+    memory=True,
     size=0.1,
     charge=True,
     adjust=0.1*float(C_dl)
@@ -91,11 +92,14 @@ wfgsettings = WFGSettings(
     t_start=t_start,
     t_end=t_end,
     t_sine=t_sine,
-    n_waves=n_waves
+    n_waves=n_waves,
+    q_step=q_step
 )
 
-cbal = ChargeBalancer(wfgsettings=wfgsettings, cbsettings=cb_amplitude)
-print("init rep time: ", cbal.get_t_rep())
+# -- initialize charge balancer (includes waveform generation)--
+cbal = ChargeBalancer(wfgsettings=wfgsettings, cbsettings=cb_offset)
+
+# print("init rep time: ", cbal.get_t_rep())
 
 # --current stimulator--
 class SinePulseStimulator(NgSpiceShared):
@@ -106,6 +110,9 @@ class SinePulseStimulator(NgSpiceShared):
 
     def update_waveform(self, waveform):
         self._waveform = waveform
+
+    def update_f_samp_wfg(self,f_samp_wfg):
+        self._f_samp_wfg = f_samp_wfg
 
     def get_vsrc_data(self, voltage, time, node, ngspice_id):
         self._logger.debug('ngspice_id-{} get_vsrc_data @{} node {}'.format(ngspice_id, time, node))
@@ -131,7 +138,9 @@ circuit.Rtis.plus.add_current_probe(circuit)
 circuit.Rfar.plus.add_current_probe(circuit)
 circuit.Cdl.plus.add_current_probe(circuit)
 
-# --iterative simulation--
+# print(circuit)
+
+# --iterative simulation results--
 start_time = 0@u_s
 prev_v_point = v_cm
 time = []
@@ -174,6 +183,9 @@ for rep in range(n_rep):
     start_time += analysis_i.time[-1]
     prev_v_point = analysis_i.point[-1]
     t_iter_points.append(float(start_time))
+
+    # print(analysis_i.time[1], analysis_i.point[1])
+    # print(start_time, prev_v_point)
 
     v_res1.append(prev_v_point-v_cm)
 
@@ -253,6 +265,14 @@ ax1.plot(v_res1, '-o', label=r'$Iterative$')
 ax1.plot(v_res2, '-x', label=r'$One-off$')
 ax1.legend()
 plt.tight_layout()
+
+# figure4, ax = plt.subplots(1)
+# ax.set_title('Input')
+# ax.set_xlabel('Time [s]')
+# ax.set_ylabel('Current [A]')
+# ax.grid()
+# ax.plot(time, i_in, label=r'$I_{in}(t)$')
+# ax.legend()
 
 plt.show()
 
