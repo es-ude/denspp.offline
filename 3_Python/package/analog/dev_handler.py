@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from scipy.constants import Boltzmann, elementary_charge
 from scipy.optimize import least_squares, curve_fit
 
-from package.structure_builder import _create_folder_general_firstrun
+from package.structure_builder import create_folder_general_firstrun
 from package.plot.plot_common import scale_auto_value, save_figure
 from package.metric import calculate_error_rae, calculate_error_mse
 
@@ -66,7 +66,7 @@ class ElectricalLoad_Handler:
         return Boltzmann * self._settings.temp / elementary_charge
 
     def __init__(self) -> None:
-        _create_folder_general_firstrun()
+        create_folder_general_firstrun()
         self._init_class()
 
     def _init_class(self) -> None:

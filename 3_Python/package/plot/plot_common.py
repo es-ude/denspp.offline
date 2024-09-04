@@ -1,5 +1,6 @@
-import numpy as np
 import os
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 sel_color = ['k', 'r', 'gray', 'b', 'g', 'y', 'c', 'm']
@@ -88,3 +89,77 @@ def scale_auto_value(data: np.ndarray | float) -> [float, str]:
             units = 'f'
 
     return scale, units
+
+
+def _get_median(parameter: list) -> float:
+    """Calculating the median of list input"""
+    param = np.zeros(shape=(len(parameter), ), dtype=float)
+    for idx, val in enumerate(parameter):
+        param[idx] = np.median(val)
+    return float(np.median(param))
+
+
+def _get_mean(parameter: list) -> float:
+    """Calculating the mean of list input"""
+    param = np.zeros(shape=(len(parameter), ), dtype=float)
+    for idx, val in enumerate(parameter):
+        param[idx] = np.mean(val)
+
+    return float(np.mean(param))
+
+
+def _autoscale(ax=None, axis='y', margin=0.1):
+    """Autoscales the x or y axis of a given matplotlib ax object
+    to fit the margins set by manually limits of the other axis,
+    with margins in fraction of the width of the plot
+
+    Defaults to current axes object if not specified."""
+
+    if ax is None:
+        ax = plt.gca()
+    newlow, newhigh = np.inf, -np.inf
+
+    for artist in ax.collections + ax.lines:
+        x,y = _get_xy(artist)
+        if axis == 'y':
+            setlim = ax.set_ylim
+            lim = ax.get_xlim()
+            fixed, dependent = x, y
+        else:
+            setlim = ax.set_xlim
+            lim = ax.get_ylim()
+            fixed, dependent = y, x
+
+        low, high = _calculate_new_limit(fixed, dependent, lim)
+        newlow = low if low < newlow else newlow
+        newhigh = high if high > newhigh else newhigh
+
+    margin = margin*(newhigh - newlow)
+    setlim(newlow-margin, newhigh+margin)
+
+
+def _calculate_new_limit(fixed, dependent, limit):
+    """Calculates the min/max of the dependent axis given a fixed axis with limits"""
+    if len(fixed) > 2:
+        mask = (fixed > limit[0]) & (fixed < limit[1])
+        window = dependent[mask]
+        low, high = window.min(), window.max()
+    else:
+        low = dependent[0]
+        high = dependent[-1]
+        if low == 0.0 and high == 1.0:
+            # This is a axhline in the autoscale direction
+            low = np.inf
+            high = -np.inf
+    return low, high
+
+
+def _get_xy(artist):
+    """Gets the xy coordinates of a given artist"""
+    if "Collection" in str(artist):
+        x, y = artist.get_offsets().T
+    elif "Line" in str(artist):
+        x, y = artist.get_xdata(), artist.get_ydata()
+    else:
+        raise ValueError("This type of object isn't implemented yet")
+    return x, y

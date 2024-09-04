@@ -6,7 +6,7 @@ import numpy as np
 from fractions import Fraction
 from scipy.signal import resample_poly
 
-from package.structure_builder import _create_folder_general_firstrun
+from package.structure_builder import create_folder_general_firstrun
 
 
 @dataclasses.dataclass
@@ -44,7 +44,7 @@ class _DataController:
     path2file: str
 
     def __init__(self) -> None:
-        _create_folder_general_firstrun()
+        create_folder_general_firstrun()
         # --- Meta-Information about datasets
         # Information of subfolders and files
         self._no_subfolder = 0

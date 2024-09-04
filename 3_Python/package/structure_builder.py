@@ -4,19 +4,18 @@ from glob import glob
 from shutil import copy
 
 
-def _create_folder_general_firstrun() -> None:
+def create_folder_general_firstrun(start_folder='3_Python') -> None:
     """Generating folder structure in first run"""
-    folder2search = '3_Python'
-    path2start = join(getcwd().split(folder2search)[0], folder2search)
+    path2start = join(getcwd().split(start_folder)[0], start_folder)
 
     folder_structure = ['data', 'runs', 'test', 'config']
     # --- Checking if path to local training handler exists
-    for foldername in folder_structure:
-        if not exists(join(path2start, foldername)):
-            mkdir(join(path2start, foldername))
+    for folder_name in folder_structure:
+        if not exists(join(path2start, folder_name)):
+            mkdir(join(path2start, folder_name))
 
 
-def _create_folder_dnn_firstrun() -> None:
+def create_folder_dnn_firstrun() -> None:
     """Generating a handler dummy for training neural networks"""
     folder2search = '3_Python'
     path2start = join(getcwd().split(folder2search)[0], folder2search)

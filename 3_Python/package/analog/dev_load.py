@@ -1,6 +1,6 @@
 import numpy as np
 
-from package.structure_builder import _create_folder_general_firstrun
+from package.structure_builder import create_folder_general_firstrun
 from package.analog.dev_handler import ElectricalLoad_Handler, SettingsDEV, _generate_signal, _plot_test_results
 from package.analog.dev_noise import ProcessNoise, SettingsNoise
 
@@ -44,7 +44,7 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
     def __init__(self, settings_dev: SettingsDEV, settings_noise=RecommendedSettingsNoise):
         super().__init__(settings_noise, settings_dev.fs_ana)
 
-        _create_folder_general_firstrun()
+        create_folder_general_firstrun()
         self._init_class()
 
         self._settings = settings_dev

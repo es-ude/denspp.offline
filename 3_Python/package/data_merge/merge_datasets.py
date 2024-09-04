@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import numpy.lib.scimath as sm
 
-from package.structure_builder import _create_folder_general_firstrun
+from package.structure_builder import create_folder_general_firstrun
 from package.metric import calculate_error_mse
 
 
@@ -105,7 +105,7 @@ def plot_results(data_packet_X, data_packet_Y, data_packet_mean, path2fig, name)
 
 class SortDataset:
     def __init__(self, path_2_file: str):
-        _create_folder_general_firstrun()
+        create_folder_general_firstrun()
         """Tool for loading and processing dataset to generate a sorted dataset"""
         self.setOptions = dict()
         self.setOptions['do_2nd_run'] = False

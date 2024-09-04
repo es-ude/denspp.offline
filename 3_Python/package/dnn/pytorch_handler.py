@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
 from sklearn.model_selection import KFold
 
-from package.structure_builder import _create_folder_general_firstrun, _create_folder_dnn_firstrun
+from package.structure_builder import create_folder_general_firstrun, create_folder_dnn_firstrun
 
 
 class __model_settings_common(nn.Module):
@@ -121,8 +121,8 @@ class training_pytorch:
     cell_classes: list
 
     def __init__(self, config_train: Config_PyTorch, config_dataset: Config_Dataset, do_train=True) -> None:
-        _create_folder_general_firstrun()
-        _create_folder_dnn_firstrun()
+        create_folder_general_firstrun()
+        create_folder_dnn_firstrun()
 
         self.os_type = platform.system()
         self._writer = None
