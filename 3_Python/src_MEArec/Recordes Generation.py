@@ -8,7 +8,7 @@ loaded_templates = mr.load_templates(templates_file)
 
 # Save the loaded templates to a temporary file
 temp_dir = tempfile.mkdtemp()
-temp_templates_file = os.path.join(temp_dir, 'temp_templates2.h5')
+temp_templates_file = os.path.join(temp_dir, 'temp_templates5.h5')
 mr.save_template_generator(loaded_templates, filename=temp_templates_file)
 
 # Define the parameters
