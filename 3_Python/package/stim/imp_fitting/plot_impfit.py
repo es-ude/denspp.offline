@@ -178,11 +178,11 @@ def plot_impedance(imp_eis=None, imp_fit=None, imp_mod=None,
     axs[0].set_ylabel(r'Impedance $|Z|$ [k$\Omega$]')
     axs[1].set_xlabel(r'Frequency $f$ [Hz]')
     axs[1].set_ylabel(r'Phase $\alpha$ [$\degree$]')
-    axs[1].set_ylim([-60, 0])
-    axs[1].set_yticks([-60, -45, -30, -15, 0])
+    axs[1].set_ylim([-90, 0])
+    axs[1].set_yticks([-90, -75, -60, -45, -30, -15, 0])
 
     xlim_start = np.floor(np.log10(np.array(xval_min).min()))
-    xlim_stop = np.ceil(np.log10(np.array(xval_max).max()))
+    xlim_stop = np.ceil(np.log10(np.array(xval_max).min()))
     axs[1].set_xlim([10 ** xlim_start, 10 ** xlim_stop])
     for ax in axs:
         ax.grid()

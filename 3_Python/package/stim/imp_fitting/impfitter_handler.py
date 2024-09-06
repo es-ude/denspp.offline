@@ -103,7 +103,7 @@ class ImpFit_Handler:
     _path2params: str
     _params_ngsolve = {}
     _index_impedance_result = '_impedance.csv'
-    _index_params_result = '_new_fit.csv'
+    _index_params_result = '_params.csv'
 
     def __init__(self, path2start='', generate_folders=True):
         """Class of Impedance Fitter from transient electrical stimulation signals
@@ -112,29 +112,42 @@ class ImpFit_Handler:
             generate_folders: Generation of dummy folder structure
         """
         create_folder_general_firstrun()
-        if generate_folders:
-            self.__create_folders_impedance(path2start)
+        self.__create_folders_impedance(path2start, generate_folders)
 
         self.__trennzeichen = '\\' if system() == 'Windows' else '/'
         self.take_freq_range = [1e2, 1e5]
         self.__results = dict()
 
-    def __create_folders_impedance(self, folder_start='') -> None:
+    def __create_folders_impedance(self, folder_start='', generate_folder=True) -> None:
         """Creating empty folder structure if impedance fitting is done from transient signal"""
         # --- Finding the start folder
         folder2search = '3_Python'
         folder_run_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_imp_fit' if not folder_start else folder_start
 
-        # --- Generating the folders
+        # --- Definition of folder structure
         self._path2save = join(getcwd().split(folder2search)[0], folder2search, 'runs', folder_run_name)
         self._path2figure = join(self._path2save, 'figure')
         self._path2impfit = join(self._path2save, 'impedance')
         self._path2params = join(self._path2save, 'model_param')
 
-        list_folders = [self._path2save, self._path2figure, self._path2impfit, self._path2params]
-        for folder_name in list_folders:
-            if not exists(folder_name):
-                mkdir(folder_name)
+        # --- Generating the folders
+        if generate_folder:
+            list_folders = [self._path2save, self._path2figure, self._path2impfit, self._path2params]
+            for folder_name in list_folders:
+                if not exists(folder_name):
+                    mkdir(folder_name)
+
+    def load_fitmodel(self, model: str) -> None:
+        """Loading the fitting model"""
+        self.fit_model = model
+
+    def get_results(self) -> dict:
+        """Getting the results from impedance fitting"""
+        return self.__results
+
+    def get_path2save(self) -> str:
+        """Getting the path where data is stored"""
+        return self._path2save
 
     def load_params_ngsolve(self, path2model: str, fix_value=None) -> None:
         """Loading parameter list from electrode simulation via NGsolve"""
@@ -171,25 +184,18 @@ class ImpFit_Handler:
 
         fitter = ifit.Fitter("CSV", fileList=file_list, directory=folder_src, LogLevel='WARNING')
         if not len(self._params_ngsolve) == 0:
-            fitter.run(set_ifitter, parameters=self._params_ngsolve, weighting="modulus", report=do_print_report)
+            fitter.run(self.fit_model, parameters=self._params_ngsolve, weighting="modulus", report=do_print_report)
         else:
-            fitter.run(set_ifitter, weighting="modulus", report=do_print_report)
+            fitter.run(self.fit_model, weighting="modulus", report=do_print_report)
         model_params = fitter.fit_data[f'{file_list[0]}_0']
 
         # --- Saving results
         if save_results:
-            path2file = join(self._path2params, f'{file_list[-1].split(".")[0]}{self._index_impedance_result}')
+            filename_csv = file_name.split(self.__trennzeichen)[-1].split(".")[0]
+            path2file = join(self._path2params, f'{filename_csv}{self._index_params_result}')
             df = pd.DataFrame(model_params, index=[0])
             df.to_csv(path2file, index=False)
         return model_params
-
-    def load_fitmodel(self, model: str) -> None:
-        """Loading the fitting model"""
-        self.fit_model = model
-
-    def get_results(self) -> dict:
-        """Getting the results from impedance fitting"""
-        return self.__results
 
     def __transform_transient_signal(self, transient_used: dict, ratio_amp=10.0) -> [dict, dict]:
         """Transforming the transient input signal
@@ -244,7 +250,7 @@ class ImpFit_Handler:
         fs_used = fs_new if not fs_new == 0.0 else transient_signal['fs']
         transient_quant = _quantize_transient_signal(transient_signal, fs_used, u_lsb)
         spectrum_signal, data_fit = self.__transform_transient_signal(
-            transient_quant, ratio_amp=ratio_amp, look_frange=self.take_freq_range
+            transient_quant, ratio_amp=ratio_amp
         )
 
         self.__results = {'transient_signal': transient_quant, 'spectrum_signal': spectrum_signal}
@@ -306,8 +312,8 @@ class ImpFit_Handler:
         plot_impedance(spectrum_signal['freq'], imp_fit=spectrum_signal['Z'],
                        name=file0, path2save=self._path2figure, show_plot=show_plot)
 
-    def do_impedance_fit_from_params(self, path2params: str, freq: np.ndarray, use_params=True) -> dict:
-        """Extracting the impedance behaviour from impedancefitter
+    def do_impedance_fit_from_params(self, path2params: str, freq: np.ndarray) -> dict:
+        """Extracting the impedance behaviour from predicted model parameters using impedancefitter
         Args:
            path2params:     Path to the extracted model parameters
            freq:            Used frequency values for getting the impedance spectral signal
@@ -316,10 +322,28 @@ class ImpFit_Handler:
             Dictionary with 'freq' frequency and 'Z' spectral impedance value
         """
         # --- Getting data
-        if use_params:
-            params = _load_params(path2params)
-        else:
-            params = self.fit_impedance_to_model(path2params, save_results=False)
+        params = _load_params(path2params)
+        params2dict = _transfer_params_to_detail(params)
+
+        # --- Do impedance fitting
+        fitter = ifit.Fitter("CSV", show=True, LogLevel='WARNING')
+        fitter.run(self.fit_model, parameters=params2dict, report=False, show=True, weighting="modulus",
+                   residual="absolute")
+
+        ecm = ifit.get_equivalent_circuit_model(self.fit_model)
+        imp_fit = ecm.eval(omega=2. * np.pi * freq, **params)
+        return {'freq': freq, 'Z': imp_fit}
+
+    def do_impedance_fit_from_predicted(self, path2imp: str, freq: np.ndarray) -> dict:
+        """Extracting the impedance behaviour from predicted impedance values using impedancefitter
+        Args:
+           path2imp:    Path to the extracted model parameters
+           freq:        Used frequency values for getting the impedance spectral signal
+        Returns:
+            Dictionary with 'freq' frequency and 'Z' spectral impedance value
+        """
+        # --- Getting data
+        params = self.fit_impedance_to_model(path2imp, save_results=False)
         params2dict = _transfer_params_to_detail(params)
 
         # --- Do impedance fitting
@@ -350,9 +374,11 @@ class ImpFit_Handler:
 
 if __name__ == "__main__":
     set_ifitter = "R_tis + W_war + parallel(R_ct, C_dl)"
-    path2imp = 'C:/HomeOffice/Austausch_Rostock/TransienteMessungen/180522_Messung'
-    path2ngsolve = 'C:/GitHub/imp_meas/180522_Messung_solver/impedance_expected.csv'
-    path2test = 'C:/GitHub/spaike_project/3_Python/runs/20240905_210839_impedance_fitting/impedance/tek0000ALL_MATLAB_impedance.csv'
+
+    path2imp = '../../../../2_Data/00_ImpedanceFitter'
+    path2ngsolve = f'{path2imp}/impedance_expected_ngsolve.csv'
+    path2test0 = f'{path2imp}/tek0000ALL_MATLAB_new_fit.csv'
+    path2test1 = f'{path2imp}/tek0000ALL_MATLAB_impedance.csv'
 
     imp_handler = ImpFit_Handler()
     imp_handler.load_fitmodel(set_ifitter)
@@ -361,5 +387,7 @@ if __name__ == "__main__":
     # --- Step #1: Plotting impedance
     fit2freq = np.logspace(0, 6, 101, endpoint=True)
     z_prd = imp_handler.do_impedance_fit_from_params(path2ngsolve, fit2freq)
-    z_fit = imp_handler.do_impedance_fit_from_params(path2test, fit2freq, use_params=False)
-    imp_handler.plot_impedance_results(imp_fit=z_fit, imp_mod=z_prd, plot_name='comparison', show_plot=True)
+    z_fit0 = imp_handler.do_impedance_fit_from_params(path2test0, fit2freq)
+    z_fit1 = imp_handler.do_impedance_fit_from_predicted(path2test1, fit2freq)
+
+    imp_handler.plot_impedance_results(imp_fit=z_fit0, imp_mod=z_prd, plot_name='comparison', show_plot=True)
