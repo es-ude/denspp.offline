@@ -100,3 +100,7 @@ Most package managers only provide the latest version of ngspice which is far gr
 > dnf install libngspice-32
 > ```
 
+## More information about other APIs
+- `PySpice` [Official Documentation](https://pyspice.fabrice-salvaire.fr/releases/v1.5/)
+- `impedancefitter` [Official Documentation](https://impedancefitter.readthedocs.io/en/latest/index.html)
+

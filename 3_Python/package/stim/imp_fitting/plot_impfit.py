@@ -135,10 +135,11 @@ def plot_impedance(imp_stim=None, imp_eis=None, imp_fit=None, imp_mod=None,
 
     data_complete = [imp_eis, imp_fit, imp_mod, imp_stim]
     label = ['EIS', 'EIS (Fit)', 'NGSolve', 'Transient', 'Min-Max']
-    scale_imp = 1e-3
-    do_legend = np.array([data is None for data in data_complete])
+    data_available = np.array([data is not None for data in data_complete])
+    do_legend = np.sum(data_available) > 1
 
     idx = 0
+    scale_imp = 1e-3
     # --- Data plotting
     xval_min = []
     xval_max = []
@@ -173,7 +174,7 @@ def plot_impedance(imp_stim=None, imp_eis=None, imp_fit=None, imp_mod=None,
     axs[1].set_xscale('log')
 
     # --- External stuff
-    if np.sum(do_legend) <= 1:
+    if do_legend:
         axs[0].legend()
     axs[0].set_ylabel(r'Impedance $|Z|$ [k$\Omega$]')
     axs[1].set_xlabel(r'Frequency $f$ [Hz]')

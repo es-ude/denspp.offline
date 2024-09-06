@@ -13,7 +13,7 @@ from package.data_process.transformation import do_fft_withimag
 from package.stim.imp_fitting.plot_impfit import (plot_transient, plot_transient_fft, plot_impedance)
 
 
-def _quantize_transient_signal(transient_orig: dict, fs_new: float, u_lsb: float) -> dict:
+def _quantize_transient_signal(transient_orig: dict, fs_new: float, u_lsb: float, i_gain=2e3) -> dict:
     """Performing a re-quantization of the transient input signal (amplitude and time)
     Args:
         transient_orig:     Input dictionary with transient signal ['V': voltage, 'I': current, 'fs': sampling rate]
@@ -25,7 +25,7 @@ def _quantize_transient_signal(transient_orig: dict, fs_new: float, u_lsb: float
     current0 = __do_resample_time(transient_orig['I'], transient_orig['fs'], fs_new, do_offset_comp=True)
     voltage0 = __do_resample_time(transient_orig['V'], transient_orig['fs'], fs_new)
 
-    current_tran = __do_resample_amplitude(current0, u_lsb)
+    current_tran = __do_resample_amplitude(i_gain * current0, u_lsb) / i_gain
     voltage_tran = __do_resample_amplitude(voltage0, u_lsb)
     return {'I': current_tran, 'V': voltage_tran, 'fs': fs_new}
 
@@ -149,6 +149,10 @@ class ImpFit_Handler:
     def get_path2save(self) -> str:
         """Getting the path where data is stored"""
         return self._path2save
+
+    def get_params_default(self) -> dict:
+        """Getting the default parameters for fitting impedance values to model"""
+        return _transfer_detail_to_params(self._params_default)
 
     def load_params_default(self, path2model: str, fix_value=None) -> dict:
         """Loading parameter list from electrode simulation as default (like initial simulation with NGsolve)"""
@@ -307,6 +311,7 @@ class ImpFit_Handler:
             file_name:          Used file name from which the transient data is extracted
             transient_signal:   Dictionary of used transient signal ['V': voltage, 'I': current, 'fs': sampling rate]
             spectrum_signal:    Dictionary of used spectrum signal ['V': voltage, 'I': current, 'freq': frequency]
+            show_plot:          Showing and plotting the plot
         Returns:
               None
         """
@@ -318,20 +323,9 @@ class ImpFit_Handler:
         plot_impedance(spectrum_signal['freq'], imp_fit=spectrum_signal['Z'],
                        name=file0, path2save=self._path2figure, show_plot=show_plot)
 
-    def do_impedance_fit_from_params(self, path2params: str, freq: np.ndarray) -> dict:
-        """Extracting the impedance behaviour from predicted model parameters using impedancefitter
-        Args:
-           path2params:     Path to the extracted model parameters
-           freq:            Used frequency values for getting the impedance spectral signal
-           use_params:      Using the parameters from previous NGsolve run of electrode array (parameter extraction)
-        Returns:
-            Dictionary with 'freq' frequency and 'Z' spectral impedance value
-        """
-        # --- Getting data
-        params = load_params_from_csv(path2params)
+    def __do_impedance_fitting(self, params: dict, freq: np.ndarray) -> dict:
+        """Do impedance fitting with given parameters"""
         params2dict = _transfer_params_to_detail(params)
-
-        # --- Do impedance fitting
         fitter = ifit.Fitter("CSV", show=True, LogLevel='WARNING')
         fitter.run(self.fit_model, parameters=params2dict, report=False, show=True, weighting="modulus",
                    residual="absolute")
@@ -340,26 +334,37 @@ class ImpFit_Handler:
         imp_fit = ecm.eval(omega=2. * np.pi * freq, **params)
         return {'freq': freq, 'Z': imp_fit}
 
-    def do_impedance_fit_from_predicted(self, path2imp: str, freq: np.ndarray) -> dict:
-        """Extracting the impedance behaviour from predicted impedance values using impedancefitter
+    def do_impedance_fit_from_params(self, params: dict, freq: np.ndarray) -> dict:
+        """Extracting the impedance behaviour from predicted model parameters using impedancefitter, stored in csv file
+        Args:
+           params:  Dictionary with electrical model parameters
+           freq:    Used frequency values for getting the impedance spectral signal
+        Returns:
+            Dictionary with 'freq' frequency and 'Z' spectral impedance value
+        """
+        return self.__do_impedance_fitting(params, freq)
+
+    def do_impedance_fit_from_params_csv(self, path2params: str, freq: np.ndarray) -> dict:
+        """Extracting the impedance behaviour from predicted model parameters using impedancefitter, stored in csv file
+        Args:
+           path2params:     Path to the extracted model parameters
+           freq:            Used frequency values for getting the impedance spectral signal
+        Returns:
+            Dictionary with 'freq' frequency and 'Z' spectral impedance value
+        """
+        params = load_params_from_csv(path2params)
+        return self.__do_impedance_fitting(params, freq)
+
+    def do_impedance_fit_from_predicted_csv(self, path2imp: str, freq: np.ndarray) -> dict:
+        """Extracting the impedance behaviour from predicted impedance values using impedancefitter, stored in csv file
         Args:
            path2imp:    Path to the extracted model parameters
            freq:        Used frequency values for getting the impedance spectral signal
         Returns:
             Dictionary with 'freq' frequency and 'Z' spectral impedance value
         """
-        # --- Getting data
         params = self.fit_impedance_to_model(path2imp, save_results=False)
-        params2dict = _transfer_params_to_detail(params)
-
-        # --- Do impedance fitting
-        fitter = ifit.Fitter("CSV", show=True, LogLevel='WARNING')
-        fitter.run(self.fit_model, parameters=params2dict, report=False, show=True, weighting="modulus",
-                   residual="absolute")
-
-        ecm = ifit.get_equivalent_circuit_model(self.fit_model)
-        imp_fit = ecm.eval(omega=2. * np.pi * freq, **params)
-        return {'freq': freq, 'Z': imp_fit}
+        return self.__do_impedance_fitting(params, freq)
 
     def plot_impedance_results(self, imp_stim=None, imp_fit=None, imp_eis=None, imp_mod=None,
                                plot_name='', save_plot=False, show_plot=False) -> None:
@@ -392,9 +397,9 @@ if __name__ == "__main__":
     imp_handler.load_params_default(path2ngsolve, {'ct_R': 8.33e6})
 
     # --- Step #1: Plotting impedance
-    fit2freq = np.logspace(0, 6, 101, endpoint=True)
-    z_prd = imp_handler.do_impedance_fit_from_params(path2ngsolve, fit2freq)
-    z_fit0 = imp_handler.do_impedance_fit_from_params(path2test0, fit2freq)
-    z_fit1 = imp_handler.do_impedance_fit_from_predicted(path2test1, fit2freq)
+    fit2freq = np.logspace(0, 6, 61, endpoint=True)
+    z_prd = imp_handler.do_impedance_fit_from_params(imp_handler.get_params_default(), fit2freq)
+    z_fit0 = imp_handler.do_impedance_fit_from_params_csv(path2test0, fit2freq)
+    z_fit1 = imp_handler.do_impedance_fit_from_predicted_csv(path2test1, fit2freq)
 
     imp_handler.plot_impedance_results(imp_stim=z_fit0, imp_mod=z_prd, plot_name='comparison', show_plot=True)
