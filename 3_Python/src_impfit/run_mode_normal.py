@@ -16,7 +16,7 @@ def _read_osci_transient_from_mat(path2file: str) -> dict:
     return {'V': voltage, 'I': current, 'fs': fs_orig}
 
 
-def _read_impedance_from_eis(path2data: str, file_name: str) -> dict:
+def read_impedance_from_eis(path2data: str, file_name: str) -> dict:
     """Reading the impedance data"""
     # --- Reading data
     file = open(join(path2data, file_name), 'r')
@@ -42,7 +42,11 @@ def _read_impedance_from_eis(path2data: str, file_name: str) -> dict:
     return {'freq': f0, 'Z': imp0}
 
 
-def _do_eis_calibration(imp_eis: dict, bode_cal: dict) -> dict:
+def read_params_from_eis(path2result: str) -> dict:
+    return {'Cdl': 91.7e-9, 'Rtis': 11.4e3, 'Rct': 8.33e6, 'Zw': 2.3e6, 'n': 0.5}
+
+
+def do_eis_calibration(imp_eis: dict, bode_cal: dict) -> dict:
     """
     Info: Calibration data is used for calibrating the measurement setup without DUT (shorten)
     """
@@ -61,7 +65,7 @@ def _do_eis_calibration(imp_eis: dict, bode_cal: dict) -> dict:
 
 def run_over_dataset(model2fit: str, path2data: str, search_index: str,
                      start_sample=0, stop_sample=-1, exclude_sample=(),
-                     path2ngmodel='', start_folder='',
+                     path2ngmodel='', start_folder='', generate_folders=False,
                      u_lsb=0.0, fs_new=0.0) -> None:
     """"""
     # --- Get a list of all data with optional limiting
@@ -74,7 +78,7 @@ def run_over_dataset(model2fit: str, path2data: str, search_index: str,
         files = transient_files[start_sample:stop_sample + 1]
 
     # --- Init the handler
-    imp_fitter = ImpFit_Handler(start_folder, start_folder == '')
+    imp_fitter = ImpFit_Handler(start_folder, generate_folders)
     imp_fitter.load_fitmodel(model2fit)
     if path2ngmodel:
         imp_fitter.load_params_ngsolve(path2ngmodel, {'ct_R': 8.33e6})
@@ -85,9 +89,7 @@ def run_over_dataset(model2fit: str, path2data: str, search_index: str,
     ite = 0
     for file in tqdm(files):
         transient_orig = _read_osci_transient_from_mat(file)
-        if ite == 74 or ite == 75:
-            print('TEST')
-        do_skip = imp_fitter.calculate_impedance_from_transient_dict(
+        imp_fitter.calculate_impedance_from_transient_dict(
             transient_signal=transient_orig, file_name=file, ratio_amp=10.0,
             u_lsb=u_lsb, fs_new=fs_new,
             create_plot=False, show_plot=False
@@ -105,23 +107,22 @@ if __name__ == "__main__":
 
     path2data_all = 'C:/HomeOffice/Austausch_Rostock/TransienteMessungen/180522_Messung/1_Messdaten'
 
-    # --- Loading handler
+    # --- Loading handler for Impedance Extraction
     imp_hndl = ImpFit_Handler()
     imp_hndl.load_fitmodel(set_ifitter)
     imp_hndl.load_params_ngsolve(path2ngsolve, {'ct_R': 8.33e6})
 
     # --- Reading the impedance data
-    imp_cal0 = _read_impedance_from_eis(path2data_all[:-12], 'MESSUNG_INA_FRA.txt')
-    imp_eis0 = _read_impedance_from_eis(path2data_all[:-12], 'Messung_BiMEA_bm3_2E1-3E1.txt')
-    imp_eis = _do_eis_calibration(imp_eis0, imp_cal0)
+    imp_cal0 = read_impedance_from_eis(path2data_all[:-12], 'Messung_INA_FRA.txt')
+    imp_eis0 = read_impedance_from_eis(path2data_all[:-12], 'Messung_BiMEA_bm3_2E1-3E1.txt')
+    imp_eis = do_eis_calibration(imp_eis0, imp_cal0)
 
     fit2freq = np.logspace(0, 6, 101, endpoint=True)
-    imp_fit = imp_hndl.do_impedance_fit_from_predicted(path2test1, fit2freq)
+    imp_stm = imp_hndl.do_impedance_fit_from_predicted(path2test1, fit2freq)
     imp_prd = imp_hndl.do_impedance_fit_from_params(path2ngsolve, fit2freq)
-    imp_hndl.plot_impedance_results(imp_eis=imp_eis, imp_fit=imp_fit, imp_mod=imp_prd,
+    imp_hndl.plot_impedance_results(imp_eis=imp_eis, imp_stim=imp_stm, imp_mod=imp_prd,
                                     plot_name='spectrum', show_plot=True, save_plot=True)
 
     # --- Processing the transient signal
     run_over_dataset(set_ifitter, path2data_all, '*_MATLAB.mat',
-                     stop_sample=73,
-                     path2ngmodel=path2ngsolve, start_folder=imp_hndl.get_path2save())
+                     stop_sample=73, path2ngmodel=path2ngsolve, start_folder=imp_hndl.get_path2save())

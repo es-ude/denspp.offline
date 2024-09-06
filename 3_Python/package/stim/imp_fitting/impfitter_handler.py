@@ -69,6 +69,11 @@ def _load_params(path2model: str) -> dict:
     return params
 
 
+def load_params_eis(path2params: str) -> dict:
+    params = _load_params(path2params)
+    return params
+
+
 def _fix_param_values(params: dict, params_fix: dict) -> dict:
     """Fixation of key value in params"""
     params_new = deepcopy(params)
@@ -149,12 +154,13 @@ class ImpFit_Handler:
         """Getting the path where data is stored"""
         return self._path2save
 
-    def load_params_ngsolve(self, path2model: str, fix_value=None) -> None:
+    def load_params_ngsolve(self, path2model: str, fix_value=None) -> dict:
         """Loading parameter list from electrode simulation via NGsolve"""
         params = _load_params(path2model)
         params2dict = _transfer_params_to_detail(params)
         params2dict = _fix_param_values(params2dict, fix_value)
         self._params_ngsolve = params2dict
+        return params2dict
 
     def save_impedance_to_csv(self, file_name: str, data: dict) -> None:
         """Saving fitted impedance results from transient analysis into csv"""
@@ -355,12 +361,13 @@ class ImpFit_Handler:
         imp_fit = ecm.eval(omega=2. * np.pi * freq, **params)
         return {'freq': freq, 'Z': imp_fit}
 
-    def plot_impedance_results(self, imp_fit=None, imp_eis=None, imp_mod=None,
+    def plot_impedance_results(self, imp_stim=None, imp_fit=None, imp_eis=None, imp_mod=None,
                                plot_name='', save_plot=False, show_plot=False) -> None:
         """Plotting the impedance results for different input modes
         Args:
-            imp_fit:    Dictionary with impedance and frequency values from transient fitting
+            imp_stim:   Dictionary with impedance and frequency values from transient stimulation signal fitting
             imp_eis:    Dictionary with impedance and frequency values from electrical impedance spectroscopy
+            imp_fit:    Dictionary with impedance and frequency values from electrical impedance spectroscopy (fit)
             imp_mod:    Dictionary with impedance and frequency values from NGsolve simulation
             plot_name:  Name of the plot for saving
             save_plot:  Saving plot
@@ -368,7 +375,7 @@ class ImpFit_Handler:
         Returns:
             None
         """
-        plot_impedance(imp_fit=imp_fit, imp_eis=imp_eis, imp_mod=imp_mod,
+        plot_impedance(imp_fit=imp_fit, imp_eis=imp_eis, imp_mod=imp_mod, imp_stim=imp_stim,
                        name=plot_name, path2save=self._path2figure if save_plot else '', show_plot=show_plot)
 
 
@@ -390,4 +397,4 @@ if __name__ == "__main__":
     z_fit0 = imp_handler.do_impedance_fit_from_params(path2test0, fit2freq)
     z_fit1 = imp_handler.do_impedance_fit_from_predicted(path2test1, fit2freq)
 
-    imp_handler.plot_impedance_results(imp_fit=z_fit0, imp_mod=z_prd, plot_name='comparison', show_plot=True)
+    imp_handler.plot_impedance_results(imp_stim=z_fit0, imp_mod=z_prd, plot_name='comparison', show_plot=True)

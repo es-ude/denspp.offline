@@ -114,12 +114,13 @@ def plot_transient_fft(freq: np.ndarray, voltage: np.ndarray, current: np.ndarra
         plt.show(block=True)
 
 
-def plot_impedance(imp_eis=None, imp_fit=None, imp_mod=None,
+def plot_impedance(imp_stim=None, imp_eis=None, imp_fit=None, imp_mod=None,
                    name='', path2save='', show_plot=False) -> None:
     """Plotting the impedance for different input modes (EIS, fitted and/or predicted)
     Args:
-        imp_eis:    Dictionary of impedance and frequency values from measurement (electrical impedance spectroscopy)
-        imp_fit:    Dictionary of impedance and frequency values from fitting
+        imp_stim:   Dictionary with impedance and frequency values from transient stimulation signal fitting
+        imp_eis:    Dictionary with impedance and frequency values from electrical impedance spectroscopy
+        imp_fit:    Dictionary with impedance and frequency values from electrical impedance spectroscopy (fit)
         imp_mod:    Dictionary of impedance and frequency values from predicted model (using NGsolve)
         name:       Additional name for saving plot
         path2save:  Additional path for saving plot
@@ -132,8 +133,8 @@ def plot_impedance(imp_eis=None, imp_fit=None, imp_mod=None,
     plt.rcParams.update({'font.size': 14, 'font.family': 'serif',
                          "lines.linewidth": 1, "lines.marker": '.', "lines.markersize": 6})
 
-    data_complete = [imp_eis, imp_fit, imp_mod]
-    label = ['EIS', 'NGSolve', 'Transient', 'Min-Max']
+    data_complete = [imp_eis, imp_fit, imp_mod, imp_stim]
+    label = ['EIS', 'EIS (Fit)', 'NGSolve', 'Transient', 'Min-Max']
     scale_imp = 1e-3
     do_legend = np.array([data is None for data in data_complete])
 
@@ -145,14 +146,13 @@ def plot_impedance(imp_eis=None, imp_fit=None, imp_mod=None,
         if data is not None:
             xval_min.append(data['freq'].min())
             xval_max.append(data['freq'].max())
-            if not (ite == 1 and len(data['Z'].shape) == 2):
+            if not (ite == 3 and len(data['Z'].shape) == 2):
                 axs[0].plot(data['freq'], scale_imp * np.abs(data['Z']),
                             color=get_plot_color(idx), label=label[ite], marker='.')
                 axs[1].plot(data['freq'], np.angle(data['Z'], deg=True),
                             color=get_plot_color(idx), label=label[ite], marker='.')
             else:
                 # --- Plotting the amplitude
-                freq = imp_mod['freq']
                 ymean = scale_imp * np.abs(np.mean(data['Z'], axis=0))
                 ymin = scale_imp * np.min(np.abs(data['Z']), axis=0)
                 ymax = scale_imp * np.max(np.abs(data['Z']), axis=0)
