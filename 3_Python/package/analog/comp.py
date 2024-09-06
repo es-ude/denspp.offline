@@ -45,6 +45,10 @@ class Comp:
         self.settings = setting
         self.__noise_dis = 1e-3
 
+    @property
+    def vcm(self) -> float:
+        return (self.settings.vdd + self.settings.vss) / 2
+
     def __gen_noise(self, input: int, scale=0.1) -> np.ndarray:
         """Generate the input noise"""
         return np.random.normal(self.settings.offset, scale, input) if self.settings.noise else self.settings.offset * np.ones(input)
@@ -105,6 +109,8 @@ class Comp:
         Args:
             uinp    - Positive input voltage [V]
             uinn    - Negative input voltage [V]
+        Returns:
+            Corresponding numpy array with boolean values
         """
         u_cmp = self.__cmp_calc(uinp, uinn)
         return self.__voltage_clipping(u_cmp)
@@ -114,6 +120,8 @@ class Comp:
         Args:
             uinp    - Positive input voltage [V]
             uinn    - Negative input voltage [V]
+        Returns:
+            Corresponding numpy array with boolean values
         """
         u_cmp = self.__cmp_calc(uinp, uinn)
         self._unoise = self.__gen_noise(u_cmp.size, self.__noise_dis)
@@ -128,6 +136,8 @@ class Comp:
             uinp: Positive input voltage [V]
             uinn: Negative input voltage [V]
             scale_thr: Scaling value from supply voltage [default = 25%]
+        Returns:
+            Corresponding numpy array with boolean values
         """
         du = uinp - uinn
         self._unoise = self.__gen_noise(du.size, self.__noise_dis)
@@ -143,6 +153,8 @@ class Comp:
             uinp: Positive input voltage [V]
             uinn: Negative input voltage [V]
             scale_thr: Scaling value from supply voltage [default = 25%]
+        Returns:
+            Corresponding numpy array with boolean values
         """
         du = uinp - uinn
         self._unoise = self.__gen_noise(du.size, self.__noise_dis)
@@ -158,6 +170,8 @@ class Comp:
             uinp: Positive input voltage [V]
             uinn: Negative input voltage [V]
             scale_thr: Scaling value from supply voltage [default = 25%]
+        Returns:
+            Corresponding numpy array with boolean values
         """
         du = uinp - uinn
         self._unoise = self.__gen_noise(du.size, self.__noise_dis)
@@ -187,7 +201,8 @@ if __name__ == "__main__":
     cmp.cmp_normal(inp1, vcm)
 
     # --- Plots
-    plt.figure(1)
+    plt.close('all')
+    plt.figure()
     axs = [plt.subplot(2, 1, idx+1) for idx in range(2)]
 
     # --- Transfer function

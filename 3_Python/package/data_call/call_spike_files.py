@@ -3,7 +3,7 @@ import numpy as np
 from scipy.io import loadmat
 from mat73 import loadmat as loadmat_mat73
 from package.data_call.call_cellbib import CellSelector
-from package.data_call.call_handler import DataController, SettingsDATA
+from package.data_call.call_handler import _DataController, SettingsDATA
 
 
 class DataHandler:
@@ -29,14 +29,14 @@ class DataHandler:
         self.behaviour = None
 
 
-class DataLoader(DataController):
+class DataLoader(_DataController):
     """Class for loading and manipulating the used dataset"""
     raw_data: DataHandler
     settings: SettingsDATA
     path2file: str
 
     def __init__(self, setting: SettingsDATA) -> None:
-        DataController.__init__(self)
+        _DataController.__init__(self)
         self.settings = setting
         self.select_electrodes = list()
         self.path2file = str()
@@ -44,40 +44,38 @@ class DataLoader(DataController):
     def do_call(self):
         """Loading the dataset"""
         self._prepare_call()
-        data_set = self.settings.data_case
-        data_point = self.settings.data_point
 
         # --- Data Source Selection
         match self.settings.data_set:
             case 1:
-                self.__load_martinez2009(data_set, data_point)
+                self.__load_martinez2009()
             case 2:
-                self.__load_pedreira2012(data_set, data_point)
+                self.__load_pedreira2012()
             case 3:
-                self.__load_quiroga2020(data_set, data_point)
+                self.__load_quiroga2020()
             case 4:
-                self.__load_seidl2012(data_set, data_point)
+                self.__load_seidl2012()
             case 5:
-                self.__load_marre2018(data_set, data_point)
+                self.__load_marre2018()
             case 6:
-                self.__load_klaes_utah_array(data_set, data_point)
+                self.__load_klaes_utah_array()
             case 7:
-                self.__load_rgc_tdb(data_set, data_point)
+                self.__load_rgc_tdb()
             case 8:
-                self.__load_fzj_mcs(data_set, data_point)
+                self.__load_fzj_mcs()
             case 9:
-                self.__load_musall_neuropixel(data_set, data_point)
+                self.__load_musall_neuropixel()
             case _:
                 print("\nPlease select new input for data_type!")
 
         # --- Post-Processing
         self._transform_rawdata_to_numpy()
 
-    def __load_martinez2009(self, case: int, point: int) -> None:
+    def __load_martinez2009(self) -> None:
         """Loading synthethic files from Quiroga simulation (2009)"""
-        folder_name = "01_SimDaten_Martinez2009"
+        folder_name = "_SimDaten_Martinez2009"
         data_type = 'simulation_*.mat'
-        self._prepare_access_file(folder_name, data_type, point)
+        self._prepare_access_file(folder_name, data_type)
 
         loaded_data = loadmat(self.path2file)
         # Input and meta
@@ -101,11 +99,11 @@ class DataLoader(DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_pedreira2012(self, case: int, point: int) -> None:
+    def __load_pedreira2012(self) -> None:
         """Loading synthethic files from Quiroga simulator (2012)"""
-        folder_name = "02_SimDaten_Pedreira2012"
+        folder_name = "_SimDaten_Pedreira2012"
         data_type = 'simulation_*.mat'
-        self._prepare_access_file(folder_name, data_type, point)
+        self._prepare_access_file(folder_name, data_type)
 
         prep_index = self.path2file.split("_")[-1]
         num_index = int(prep_index[0:2])
@@ -135,11 +133,11 @@ class DataLoader(DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_quiroga2020(self, case: int, point: int) -> None:
+    def __load_quiroga2020(self) -> None:
         """Loading synthetic recordings from Quiroga simulator (Common benchmark)"""
-        folder_name = "03_SimDaten_Quiroga2020"
+        folder_name = "_SimDaten_Quiroga2020"
         data_type = 'C_*.mat'
-        self._prepare_access_folder(folder_name, data_type, case, point)
+        self._prepare_access_file(folder_name, data_type)
         loaded_data = loadmat(self.path2file, mat_dtype=True)
 
         # --- Input and meta
@@ -163,11 +161,11 @@ class DataLoader(DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_seidl2012(self, case: int, point: int) -> None:
+    def __load_seidl2012(self) -> None:
         """Loading the recording files from the Freiburg probes from Karsten Seidl from this PhD"""
-        folder_name = "04_Freiburg_Seidl2014"
+        folder_name = "_Freiburg_Seidl2014"
         data_type = '*.mat'
-        self._prepare_access_file(folder_name, data_type, point)
+        self._prepare_access_file(folder_name, data_type)
         loaded_data = loadmat(self.path2file)
 
         # Input and meta
@@ -195,11 +193,11 @@ class DataLoader(DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_marre2018(self, case: int, point: int) -> None:
+    def __load_marre2018(self) -> None:
         # Link to data: https://zenodo.org/record/1205233#.YrBYrOzP1PZ
-        folder_name = "05_Zenodo_Marre2018"
+        folder_name = "_Zenodo_Marre2018"
         data_type = '*.mat'
-        self._prepare_access_file(folder_name, data_type, point)
+        self._prepare_access_file(folder_name, data_type)
         loaded_data = loadmat(self.path2file)
 
         self.raw_data = DataHandler()
@@ -218,8 +216,7 @@ class DataLoader(DataController):
         self.raw_data.electrode_id = elec_process
         self.raw_data.data_time = loaded_data['data'].shape[0] / self.raw_data.data_fs_orig
 
-        # Groundtruth
-        # TODO: Verarbeitung der Intrazellulären Antwort des juxta_channels
+        # --- Groundtruth
         spike_xoffset = int(0e-6 * self.raw_data.data_fs_orig)
         self.raw_data.label_exist = False
         # Behaviour
@@ -227,12 +224,13 @@ class DataLoader(DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_klaes_utah_array(self, case: int, nsp_device: int) -> None:
+    def __load_klaes_utah_array(self) -> None:
         """Loading the merged data file (from *.ns6 and *.nev files) from recordings with Utah electrode array
-        from Blackrock Neurotechnology (case = experiment, nsp_device)"""
-        folder_name = "06_Klaes_Caltech"
+        from Blackrock Neurotechnology"""
+        folder_name = "_Klaes_Caltech"
         data_type = '*_MERGED.mat'
-        self._prepare_access_folder(folder_name, data_type, case, nsp_device)
+        nsp_device = self.settings.data_set
+        self._prepare_access_file(folder_name, data_type)
         loaded_data = loadmat(self.path2file, mat_dtype=True)
 
         # Input and meta
@@ -279,11 +277,11 @@ class DataLoader(DataController):
         self.raw_data.behaviour = loaded_data['behaviour']
         del loaded_data
 
-    def __load_rgc_tdb(self, case: int, point: int) -> None:
-        """Loading the transient files from the Retinal Ganglian Cell Transient Database (RGC TDB)"""
-        folder_name = "07_RGC_TDB"
+    def __load_rgc_tdb(self) -> None:
+        """Loading the transient files from the Retinal Ganglion Cell Transient Database (RGC TDB)"""
+        folder_name = "_RGC_TDB"
         data_type = '*.mat'
-        self._prepare_access_file(folder_name, data_type, point)
+        self._prepare_access_file(folder_name, data_type)
         loaded_data = loadmat_mat73(self.path2file)
 
         # Pre-Processing: Remove empty entries and runs with only one spike
@@ -311,7 +309,7 @@ class DataLoader(DataController):
             spike_xpos.append(loaded_data['sp_trains']['sp'][elec][0].astype('int'))
             data_raw.append(loaded_data['sp_trains']['data'][elec][0])
 
-        # Input and meta --- This type are no electrode simultanously. It is more the experiment run
+        # Input and meta --- This type has only one channel. Used for experiment runs
         self.raw_data = DataHandler()
         self.raw_data.data_name = folder_name
         self.raw_data.data_type = "Isolated RGC"
@@ -342,11 +340,11 @@ class DataLoader(DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_fzj_mcs(self, case: int, point: int) -> None:
+    def __load_fzj_mcs(self) -> None:
         """Loading the recording files from MCS setup in FZ Juelich (case = experiment, point = file)"""
-        folder_name = "08_RGC_FZJuelich"
+        folder_name = "_RGC_FZJuelich"
         data_type = '*_merged.mat'
-        self._prepare_access_folder(folder_name, data_type, case, point)
+        self._prepare_access_file(folder_name, data_type)
         # loaded_data = loadmat(self.path2file)
         loaded_data = loadmat_mat73(self.path2file)
 
@@ -371,11 +369,11 @@ class DataLoader(DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_musall_neuropixel(self, case: int, point: int) -> None:
+    def __load_musall_neuropixel(self) -> None:
         """Loading the files from recordings with NeuroPixel probes"""
-        folder_name = "07_RGC_TDB"
+        folder_name = "_RGC_TDB"
         data_type = '*.mat'
-        self._prepare_access_folder(folder_name, data_type, case, point)
+        self._prepare_access_file(folder_name, data_type)
         loaded_data = loadmat_mat73(self.path2file)
 
         self.raw_data = DataHandler()

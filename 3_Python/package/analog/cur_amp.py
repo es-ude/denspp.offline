@@ -1,6 +1,6 @@
 import dataclasses
 import numpy as np
-from package.analog.dev_noise import ProcessNoise, SettingsNoise, RecommendedSettingsNoise
+from package.analog.dev_noise import ProcessNoise, SettingsNoise
 
 
 @dataclasses.dataclass
@@ -28,10 +28,6 @@ class SettingsCUR:
     noise_en:       bool
     para_en:        bool
 
-    @property
-    def vcm(self) -> float:
-        return (self.vdd + self.vss) / 2
-
 
 RecommendedSettingsCUR = SettingsCUR(
     vdd=0.9, vss=-0.9,
@@ -42,11 +38,23 @@ RecommendedSettingsCUR = SettingsCUR(
     para_en=False
 )
 
+RecommendedSettingsNoise = SettingsNoise(
+    temp=300,
+    wgn_dB=-120,
+    Fc=10,
+    slope=0.6,
+    do_print=False
+)
+
 
 class CurrentAmplifier(ProcessNoise):
     """Class for emulating an analogue current amplifier"""
-    _settings_noise: SettingsNoise
+    _settings: SettingsCUR
     __print_device = "current amplifier"
+
+    @property
+    def vcm(self) -> float:
+        return (self._settings.vdd + self._settings.vss) / 2
 
     def __init__(self, settings_dev: SettingsCUR, settings_noise=RecommendedSettingsNoise):
         super().__init__(settings_noise, settings_dev.fs_ana)
@@ -58,59 +66,88 @@ class CurrentAmplifier(ProcessNoise):
         uin[uin < self._settings.vss] = self._settings.vss
         return uin
 
-    def __gen_noise(self, size: int) -> np.ndarray:
-        """Generating noise"""
-        return self._gen_noise_awgn(size, True)
-
-    def __add_parasitic(self, size: int) -> np.ndarray:
+    def __add_parasitic(self, size: int, resistance=1.0) -> np.ndarray:
         """"""
         u_para = np.zeros((size, ))
         u_para += self._settings.transimpedance * self._settings.offset_i
         u_para += self._settings.offset_v
-        u_para += self._settings.vcm
+        u_para += self.vcm
         # Adding noise
         if self._settings.noise_en:
-            u_para += self._gen_noise_real(size)
+            u_para += self._gen_noise_real_volt(size, resistance)
 
         return u_para
 
-    def transimpedance_amplifier(self, iin: np.ndarray) -> np.ndarray:
+    def transimpedance_amplifier(self, iin: np.ndarray, uref: np.ndarray | float) -> np.ndarray:
         """Performing the transimpedance amplifier (single, normal) with input signal
-
         Args:
             iin:    Input current [A]
-            uinn:   Negative input voltage [V]
+            uref:   Negative input voltage [V]
         Returns:
-            Test signal
+            Corresponding numpy array with output voltage
         """
-        u_out = self._settings.transimpedance * iin
+        u_out = self._settings.transimpedance * iin + uref
         u_out += self.__add_parasitic(u_out.size)
         return self.__voltage_clipping(u_out)
 
+    def instrumentation_amplifier(self, iin: np.ndarray, uoff: np.ndarray | float, v_gain=1.0) -> np.ndarray:
+        """Using an instrumentation amplifier for current sensing
+        Args:
+            iin:    Input current [A]
+            uoff:   Offset output voltage [V]
+            v_gain: Gain of Amplifier [V/V]
+        Returns:
+            Corresponding numpy array with output voltage
+        """
+        r_sense = self._settings.transimpedance / v_gain
+        u_out = r_sense * iin + uoff
+        u_out += self.__add_parasitic(u_out.size, r_sense)
+        return u_out
+
     def push_amplifier(self, iin: np.ndarray) -> np.ndarray:
-        """Performing the CMOS push/source current amplifier"""
+        """Performing the CMOS push/source current amplifier
+        Args:
+            iin: Input current [A]
+        Returns:
+            Corresponding numpy array with output voltage
+        """
         u_out = np.zeros(iin.shape)
         x_neg = np.argwhere(iin < 0)
         u_out[x_neg,] = iin[x_neg,] * self._settings.transimpedance
-        u_out += self.__add_parasitic(u_out.size)
+        u_out += self.__add_parasitic(u_out.size, self._settings.transimpedance)
         return self.__voltage_clipping(u_out)
 
     def pull_amplifier(self, iin: np.ndarray) -> np.ndarray:
-        """Performing the CMOS pull/sink current amplifier"""
+        """Performing the CMOS pull/sink current amplifier
+        Args:
+            iin: Input current [A]
+        Returns:
+            Corresponding numpy array with output voltage
+        """
         u_out = np.zeros(iin.shape)
         x_pos = np.argwhere(iin >= 0)
         u_out[x_pos, ] = iin[x_pos, ] * self._settings.transimpedance
-        u_out += self.__add_parasitic(u_out.size)
+        u_out += self.__add_parasitic(u_out.size, self._settings.transimpedance)
         return self.__voltage_clipping(u_out)
 
     def push_pull_amplifier(self, iin: np.ndarray) -> [np.ndarray, np.ndarray]:
-        """Performing the CMOS push-pull current amplifier"""
+        """Performing the CMOS push-pull current amplifier
+        Args:
+            iin: Input current [A]
+        Returns:
+            Corresponding numpy array with output voltage
+        """
         u_pos = self.pull_amplifier(iin)
         u_neg = self.push_amplifier(iin)
         return u_pos, u_neg
 
     def push_pull_abs_amplifier(self, iin: np.ndarray) -> np.ndarray:
-        """Performing the CMOS push-pull current absolute amplifier"""
+        """Performing the CMOS push-pull current absolute amplifier
+        Args:
+            iin: Input current [A]
+        Returns:
+            Corresponding numpy array with output voltage
+        """
         u_out = self.pull_amplifier(iin)
         u_out -= self.push_amplifier(iin)
         return u_out
@@ -145,6 +182,7 @@ if __name__ == "__main__":
     u_dict = ["I_in", "Transimpedance", "Push", "Pull", "Push-Pull (Pos.)", "Push-Pull (Neg.)", "Push-Pull (Abs.)"]
 
     # --- Plotten
+    plt.close('all')
     plt.figure()
     plt_size = [2, 4]
     axs = [plt.subplot(plt_size[0], plt_size[1], 1+idx) for idx in range(plt_size[0] * plt_size[1])]

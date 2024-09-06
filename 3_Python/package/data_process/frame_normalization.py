@@ -26,6 +26,7 @@ class DataNormalization:
         self.mode = device
         self.method = method
         self._define_mode(mode)
+        self.__do_hw_mode = {'CPU': self._normalize_cpu, 'GPU': self._normalize_gpu, 'FPGA': self._normalize_fpga}
 
     def _define_mode(self, type: str) -> None:
         """"""
@@ -198,17 +199,15 @@ class DataNormalization:
                 frames_out[i, :] += coeff[3] * frame / (2 ** (division_value + 4))
         return frames_out
 
-    def normalize(self, frames_in: np.ndarray):
-        match self.mode:
-            case "CPU":
-                frames_out = self._normalize_cpu(frames_in)
-            case "GPU":
-                frames_in = torch.from_numpy(frames_in)
-                frames_out = self._normalize_gpu(frames_in)
-            case "FPGA":
-                frames_out = self._normalize_fpga(frames_in)
-            case _:
-                print("Selected mode is not available.")
-                return 0
-
-        return frames_out
+    def normalize(self, frames_in: np.ndarray) -> np.ndarray:
+        """Do normalisation of data
+        Args:
+            Numpy array with frames for normalizing
+        Returns:
+            Numpy array with normalized frames
+        """
+        if self.mode in self.__do_hw_mode.keys():
+            return self.__do_hw_mode[self.mode](frames_in)
+        else:
+            print("Selected mode is not available.")
+            return np.array(0.0)

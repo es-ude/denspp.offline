@@ -1,8 +1,9 @@
 import numpy as np
-from package.analog.adc_basic import adc_basic, SettingsADC, SettingsNon, RecommendedSettingsNon
+from package.analog.adc_basic import _adc_basic, SettingsADC
+from package.analog.adc_basic import SettingsNon, RecommendedSettingsNon
 
 
-class ADC_DeltaSigma(adc_basic):
+class ADC_DeltaSigma(_adc_basic):
     """Class for using Continuous Time Delta Sigma ADC"""
     def __init__(self, settings_adc: SettingsADC, settings_non=RecommendedSettingsNon):
         super().__init__(settings_adc)
@@ -54,7 +55,12 @@ class ADC_DeltaSigma(adc_basic):
         return xout, ufb
 
     def adc_deltasigma_order_one(self, uin: np.ndarray) -> np.ndarray:
-        """"Using the Delta Sigma Topology as an ADC (1-bit, first order)"""
+        """"Using the Delta Sigma Topology as an ADC (1-bit, first order)
+        Args:
+            uin: Input voltage [V]
+        Returns:
+            Corresponding digitized data value from Delta-Sigma ADC
+        """
         # Resampling the input to sampling frequency of ADC with oversampling
         uin_adc = self.clipping_voltage(uin)
         uin0 = self.do_resample(uin_adc)
@@ -82,7 +88,12 @@ class ADC_DeltaSigma(adc_basic):
         return xout
 
     def adc_deltasigma_order_two(self, uin: np.ndarray) -> np.ndarray:
-        """"Using the Delta Sigma Topology as an ADC (1-bit, first order)"""
+        """"Using the Delta Sigma Topology as an ADC (1-bit, second order)
+        Args:
+            uin: Input voltage [V]
+        Returns:
+            Corresponding digitized data value from Delta-Sigma ADC
+        """
         # Resampling the input to sampling frequency of ADC with oversampling
         uin_adc = self.clipping_voltage(uin)
         uin0 = self.do_resample(uin_adc)

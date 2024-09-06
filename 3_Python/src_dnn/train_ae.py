@@ -2,7 +2,7 @@ from torch import nn
 import matplotlib.pyplot as plt
 from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
-import package.dnn.models.autoencoder_cnn as ae_models
+import package.dnn.example.models.autoencoder_cnn as ae_models
 
 
 config_data = Config_Dataset(
@@ -32,6 +32,7 @@ config_train = Config_PyTorch(
     loss_fn=nn.MSELoss(),
     optimizer='Adam',
     num_kfold=1,
+    patience=20,
     num_epochs=10,
     batch_size=256,
     data_split_ratio=0.25,
@@ -46,11 +47,9 @@ def do_train_ae(dnn_handler: dnn_handler, mode_ae: int, noise_std=0.05) -> None:
         mode_ae: Selected model of the Autoencoder (0: normal, 1: Denoising (mean), 2: Denoising (input)) [default:0]
         noise_std: Std of the additional noise added to the input [default: 0.05]
     """
-    from package.dnn.dataset.autoencoder import prepare_training
+    from package.dnn.example.dataset.autoencoder import prepare_training
     from package.dnn.pytorch.autoencoder import train_nn
     from package.plot.plot_dnn import results_training, plot_statistic_data
-
-    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
 
     use_cell_bib = not (dnn_handler.mode_cell_bib == 0)
     use_cell_mode = 0 if not use_cell_bib else dnn_handler.mode_cell_bib - 1
@@ -82,4 +81,3 @@ def do_train_ae(dnn_handler: dnn_handler, mode_ae: int, noise_std=0.05) -> None:
                             path2save=logsdir, cl_dict=data_result['cl_dict'])
 
         plt.show(block=dnn_handler.do_block)
-    print("\nThe End")

@@ -3,11 +3,23 @@ import numpy as np
 from scipy.io import loadmat
 
 from package.data_call.call_spike_files import DataLoader
-from src_neuro.pipeline_data import Settings, Pipeline
+from package.data_call.call_handler import SettingsDATA
+from src_neuro.pipeline_data import Pipeline
 import package.fpga.verilog_translate_frames as verilog_frame
 import package.fpga.verilog_translate_timeseries_1ch as verilog_time
 import package.fpga.veriloga_translate_timeseries_1ch as veriloga_time
 from package.fpga.verilog_translate_weights import read_model_weights
+
+
+settings_data = SettingsDATA(
+    # path='../2_Data',
+    # path='/media/erbsloeh/ExtremeSSD/0_Invasive',
+    path='C:/HomeOffice/Data_Neurosignal',
+    data_set=1, data_case=0, data_point=0,
+    t_range=[0.93, 1.63],
+    ch_sel=[],
+    fs_resample=50e3
+)
 
 
 def do_data_transfer_timeseries_vivado(path: str, bitsize: int) -> None:
@@ -15,14 +27,11 @@ def do_data_transfer_timeseries_vivado(path: str, bitsize: int) -> None:
     (mode = 'Vivado' or 'Cadence')"""
     print('\nTransfering time series signal (raw data) from neural datasets into Vivado testbenches')
     # --- Loading the Settings
-    afe_set = Settings()
-    afe_set.SettingsDATA.t_range = [0.93, 1.63]
-    afe = Pipeline(afe_set)
+    afe = Pipeline(settings_data.fs_resample)
 
-    sampling_rate = afe_set.SettingsADC.fs_adc
     # ------ Loading Data: Getting the data
     print("... loading the datasets")
-    datahandler = DataLoader(afe_set.SettingsDATA)
+    datahandler = DataLoader(settings_data)
     datahandler.do_call()
     datahandler.do_cut()
     datahandler.do_resample()
@@ -40,14 +49,14 @@ def do_data_transfer_timeseries_vivado(path: str, bitsize: int) -> None:
         path2save=path2save,
         output_bitsize=bitsize,
         use_trigger=True,
-        fs=sampling_rate
+        fs=settings_data.fs_resample
     )
     verilog_time.translate_data_memory(
         raw_data=afe.signals.x_adc,
         trigger=xpos,
         path2save=path2save,
         output_bitsize=bitsize,
-        fs=sampling_rate
+        fs=settings_data.fs_resample
     )
 
 
@@ -56,11 +65,11 @@ def do_data_transfer_timeseries_cadence(path: str) -> None:
         (mode = 'Vivado' or 'Cadence')"""
     print('\nTransfering time series signal (raw data) from neural datasets into Vivado testbenches')
     # --- Loading the src_neuro
-    afe_set = Settings()
-    afe_set.SettingsDATA.t_range = [10, 12]
+
+
     # ------ Loading Data: Getting the data
     print("... loading the datasets")
-    datahandler = DataLoader(afe_set.SettingsDATA)
+    datahandler = DataLoader(settings_data)
     datahandler.do_call()
     datahandler.do_cut()
     datahandler.do_resample()

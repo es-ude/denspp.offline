@@ -1,8 +1,7 @@
-import os, shutil
+from os.path import abspath
 import numpy as np
 
-from package.pipeline_signals import PipelineSignal
-from package.data_call.call_handler import SettingsDATA
+from package.pipeline_cmds import PipelineCMD, PipelineSignal
 from package.analog.pre_amp import PreAmp, SettingsAMP
 from package.analog.adc_basic import SettingsADC
 from package.analog.adc_sar import ADC_SAR as ADC0
@@ -21,30 +20,27 @@ def get_envelope(signal: np.ndarray, size_envelope: int) -> np.ndarray:
     return out
 
 
-class Settings:
-    """Settings class for handling the src_neuro setting"""
-    SettingsDATA = SettingsDATA(
-        path='C:/HomeOffice/Data_EMG',
-        data_set=1,
-        data_case=0,
-        data_point=1,
-        t_range=[0],
-        ch_sel=[-1],
-        fs_resample=1e3
-    )
+class _SettingsPipe:
+    """Settings class for setting-up the pipeline"""
+    def __init__(self, fs_ana: float):
+        self.SettingsAMP.fs_ana = fs_ana
+        self.SettingsADC.fs_ana = fs_ana
+
     SettingsAMP = SettingsAMP(
         vss=-0.6, vdd=0.6,
-        fs_ana=SettingsDATA.fs_resample,
+        fs_ana=0.0,
         gain=40,
         n_filt=2, f_filt=[0.1, 450], f_type="band",
-        offset=1e-6, noise_en=False,
-        f_chop=10e3
+        offset=1e-6,
+        f_chop=10e3,
+        noise_en=False,
+        noise_edev=100e-9
     )
     SettingsADC = SettingsADC(
         vdd=0.6, vss=-0.6,
         type_out="signed",
         dvref=0.5,
-        fs_ana=SettingsDATA.fs_resample,
+        fs_ana=0.0,
         fs_dig=1e3, osr=1, Nadc=16
     )
     SettingsDSP_SPK = SettingsDSP(
@@ -56,45 +52,47 @@ class Settings:
     )
 
 
-# --- Setting the src_neuro
-class Pipeline(PipelineSignal):
+class Pipeline(PipelineCMD):
     """"""
-    def __init__(self, settings: Settings):
-        PipelineSignal.__init__(self,
-            fs_ana=settings.SettingsDATA.fs_resample,
-            fs_adc=settings.SettingsADC.fs_adc,
-            osr=settings.SettingsADC.osr
-        )
+    def __init__(self, fs_ana: float):
+        super().__init__()
+        self._path2pipe = abspath(__file__)
+        self.generate_folder('runs', '_emg')
+
+        settings = _SettingsPipe(fs_ana)
+        self.signal = PipelineSignal()
+        self.signal.fs_ana = settings.SettingsADC.fs_ana
+        self.signal.fs_adc = settings.SettingsADC.fs_adc
+        self.signal.fs_dig = settings.SettingsADC.fs_dig
 
         self.preamp0 = PreAmp(settings.SettingsAMP)
         self.adc = ADC0(settings.SettingsADC)
         self.dsp0 = DSP(settings.SettingsDSP_SPK)
 
-        self.path2logs = "logs"
-        self.path2runs = "runs"
-        self.path2figure = None
-        self.path2settings = "src_neuro/pipeline_emg.py"
+    def prepare_saving(self) -> dict:
+        """Getting processing data of selected signals"""
+        mdict = {
+            "fs_ana": self.signal.fs_ana,
+            "fs_adc": self.signal.fs_adc,
+            "fs_dig": self.signal.fs_dig,
+            "u_in": self.signal.u_in,
+            "x_adc": self.signal.x_adc,
+            "x_flt": self.signal.x_spk,
+            "x_env": self.signal.x_sda
+        }
+        return mdict
 
-    def saving_results(self, name: str) -> str:
-        if not os.path.exists(self.path2runs):
-            os.mkdir(self.path2runs)
+    def do_plotting(self, data: PipelineSignal, channel: int) -> None:
+        """Function to plot results from spike sorting"""
+        pass
 
-        path2figure = os.path.join(self.path2runs, name)
-        if not os.path.exists(path2figure):
-            os.mkdir(path2figure)
-
-        # --- Copy settings into this folder
-        shutil.copy(src=self.path2settings, dst=path2figure)
-        self.path2figure = path2figure
-        return path2figure
-
-    def run(self, uin: np.ndarray) -> None:
-        self.u_in = uin
+    def run(self, u_inp: np.ndarray) -> None:
+        self.signal.u_in = u_inp
         u_inn = np.array(self.preamp0.vcm)
         # ---- Analogue Front End Module ----
-        self.u_pre = self.preamp0.pre_amp(self.u_in, u_inn)
-        self.x_adc = self.adc.adc_ideal(self.u_pre)[0]
+        u_pre = self.preamp0.pre_amp(u_inp, u_inn)
+        self.signal.x_adc = self.adc.adc_ideal(u_pre)[0]
         # ---- Digital Pre-processing ----
-        x_filt = self.dsp0.filter(self.x_adc)
-        self.x_spk = np.abs(x_filt)
-        self.x_env = get_envelope(self.x_spk, 200)
+        self.signal.x_spk = self.dsp0.filter(self.signal.x_adc)
+        x0 = np.abs(self.signal.x_spk)
+        self.signal.x_sda = get_envelope(x0, 200)

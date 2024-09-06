@@ -1,11 +1,12 @@
 import sys
-from os import listdir
-from os.path import join, exists, isdir
+from os.path import join, exists
 from glob import glob
 import dataclasses
 import numpy as np
 from fractions import Fraction
 from scipy.signal import resample_poly
+
+from package.structure_builder import create_folder_general_firstrun
 
 
 @dataclasses.dataclass
@@ -36,13 +37,14 @@ RecommendedSettingsDATA = SettingsDATA(
 )
 
 
-class DataController:
+class _DataController:
     """Class for loading and manipulating the used dataset"""
     raw_data: None
     settings: SettingsDATA
     path2file: str
 
     def __init__(self) -> None:
+        create_folder_general_firstrun()
         # --- Meta-Information about datasets
         # Information of subfolders and files
         self._no_subfolder = 0
@@ -124,14 +126,15 @@ class DataController:
 
     def output_meta(self) -> None:
         """Print some meta information into the console"""
-        print(f"... using data set of: {self.raw_data.data_name}")
-        print("... using data point:", self.path2file)
-        print(f"... original sampling rate of {int(1e-3 * self.raw_data.data_fs_orig)} kHz ")
+        print(f"... using data set of: {self.raw_data.data_name}"
+              "\n... using data point:", self.path2file)
         if not self.raw_data.data_fs_used == 0 and not self.raw_data.data_fs_used == self.raw_data.data_fs_orig:
-            print(f"\t(resampling to {int(1e-3 * self.raw_data.data_fs_used)} kHz)")
-        print(f"... using {self.__fill_factor * 100:.2f}% of the data "
+            fs_addon = f" (resampling to {int(1e-3 * self.raw_data.data_fs_used)} kHz)"
+        else:
+            fs_addon = ""
+        print(f"... original sampling rate of {int(1e-3 * self.raw_data.data_fs_orig)} kHz{fs_addon}"
+              f"\n... using {self.__fill_factor * 100:.2f}% of the data "
               f"(time length of {self.raw_data.data_time / self.__fill_factor:.2f} s)")
-        # print(f"... data includes {self.no_channel} number of electrode ({self.raw_data.data_type})")
 
         if self.raw_data.label_exist:
             cluster_array = None
@@ -150,7 +153,7 @@ class DataController:
 
             print(f"... includes labels (noSpikes: {num_spikes} - noCluster: {cluster_no.size})")
         else:
-            print(f"... excludes labels")
+            print(f"... has no labels / groundtruth")
 
     def get_data(self):
         """Calling the raw data with groundtruth of the called data"""
@@ -185,34 +188,36 @@ class DataController:
             print(f"... data path {self.settings.path} is not available! Please check")
             sys.exit()
 
-    def _prepare_access_file(self, folder_name: str, data_type: str, sel_datapoint: int) -> None:
+    def _prepare_access_file(self, folder_name: str, data_type: str) -> None:
         """Getting the file of the corresponding trial"""
-        # Checking for folder
-        folder_content = glob(join(self.settings.path, "*"))
-        folder_content.sort()
-        path = ""
-        for folder in folder_content:
-            if folder_name[1:] in folder:
-                path = join(folder, data_type)
+        sel_datacase = self.settings.data_case
+        sel_datapoint = self.settings.data_point
 
-        folder_content = glob(path)
-        folder_content.sort()
-        self._no_files = len(folder_content)
-        try:
-            self.path2file = folder_content[sel_datapoint]
-        except:
+        # --- Finding the right folder in data storage
+        folder_structure = glob(join(self.settings.path, '*'))
+        path2folder = ""
+        for folder in folder_structure:
+            if folder_name in folder:
+                path2folder = folder
+
+        # --- Checking for subfolder and file
+        if path2folder:
+            folder_structure = glob(join(path2folder, '*'))
+            folder_content = glob(join(path2folder, data_type))
+
+            if len(folder_content) == 0:
+                # --- Taking datacase into account
+                folder_content = glob(join(path2folder, folder_structure[sel_datacase], data_type))
+                folder_content.sort()
+
+            # --- Taking file
+            try:
+                self.path2file = folder_content[sel_datapoint]
+                self._no_files = len(folder_content)
+            except:
+                print("--- Files are not available - Please check folder name! ---")
+        else:
             print("--- Folder not available - Please check folder name! ---")
-
-    def _prepare_access_folder(self, folder_name: str, data_type: str, sel_dataset: int, sel_datapoint: int) -> None:
-        """Getting the file structure within cases/experiments in one data set"""
-        path2data = join(self.settings.path, folder_name)
-        folder_data = [name for name in listdir(path2data) if isdir(join(path2data, name))]
-        folder_data.sort()
-        file_data = folder_data[sel_dataset]
-
-        path2data = join(path2data, file_data)
-        self._prepare_access_file(path2data, data_type, sel_datapoint)
-        self._no_subfolder = len(file_data)
 
     def _read_csv_file(self, path2csv: str, num_channels: int, split_option: str) -> list:
         """"""
@@ -231,11 +236,12 @@ class DataController:
     def _transform_rawdata_from_csv_to_numpy(self, data: list) -> np.ndarray:
         """"""
         # --- Getting meta information
+        num_channels = len(data) + 1
+
         num_samples = list()
         for idx, data0 in enumerate(data):
             num_samples.append(len(data0))
         num_samples = np.array(num_samples)
-        num_channels = idx + 1
 
         # --- Getting data in right format
         data_used = np.zeros((num_channels, num_samples.min()), dtype=float)
@@ -289,5 +295,4 @@ if __name__ == "__main__":
     data_loader.do_resample()
     data = data_loader.get_data()
     del data_loader
-
     print(data)

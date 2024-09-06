@@ -1,20 +1,20 @@
 from os import mkdir
 from os.path import join, exists
-from scipy.io import loadmat
 from package.plot.plot_metric import plot_confusion
 from package.data_call.call_cellbib import logic_combination
 
 from torch import nn
-import matplotlib.pyplot as plt
+from numpy import load
 from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
-import package.dnn.models.rgc_onoff_class as models_rgc
+import package.dnn.example.models.rgc_onoff_class as models_rgc
 
 
 config_data = Config_Dataset(
     # --- Settings of Datasets
     #data_path='../2_Data/00_Merged_Datasets',
-    data_path='C:\HomeOffice\Data_Neurosignal\\00_Merged',
+    data_path='data',
+    #data_path='C:\HomeOffice\Data_Neurosignal\\00_Merged',
     #data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
     #data_file_name='2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted',
     data_file_name='2023-11-24_Dataset-07_RGC_TDB_Merged.mat',
@@ -41,23 +41,24 @@ config_train = Config_PyTorch(
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
-    num_epochs=10,
+    patience=20,
+    num_epochs=2,
     batch_size=256,
     data_split_ratio=0.25,
     data_do_shuffle=True
 )
 
 
-def rgc_logic_combination(logsdir: str, valid_file_name='results_class.mat') -> None:
+def rgc_logic_combination(logsdir: str, valid_file_name='results_class.npy', show_plot=False) -> None:
     """"""
-    data_result = loadmat(join(logsdir, valid_file_name))
+    data_result = load(join(logsdir, valid_file_name), allow_pickle=True).item()
     path2save = join(logsdir, 'logic_comb')
     if not exists(path2save):
         mkdir(path2save)
 
-    cell_dict_orig = data_result['cl_dict'].tolist()
-    true_labels_orig = data_result['valid_clus'].flatten()
-    pred_labels_orig = data_result['yclus'].flatten()
+    cell_dict_orig = data_result['cl_dict']
+    true_labels_orig = data_result['valid_clus']
+    pred_labels_orig = data_result['yclus']
 
     # --- Logical combination for ON/OFF
     cell_dict_onoff = ['OFF', 'ON']
@@ -73,7 +74,7 @@ def rgc_logic_combination(logsdir: str, valid_file_name='results_class.mat') -> 
     true_labels_transus, pred_labels_transus = logic_combination(true_labels_orig, pred_labels_orig, translate_dict)
     plot_confusion(true_labels_transus, pred_labels_transus, 'class',
                    cl_dict=cell_dict_transus, path2save=path2save,
-                   name_addon='_logic_transient-sustained')
+                   name_addon='_logic_transient-sustained', show_plots=show_plot)
 
 
 def do_train_rgc_class(dnn_handler: dnn_handler) -> None:
@@ -81,33 +82,30 @@ def do_train_rgc_class(dnn_handler: dnn_handler) -> None:
     Args:
         dnn_handler: Handler for configurating the routine selection for train deep neural networks
     """
-    from package.dnn.dataset.rgc_classification import prepare_training
+    from package.dnn.example.dataset.rgc_classification import prepare_training
     from package.dnn.pytorch.classifier import train_nn
     from package.plot.plot_dnn import plot_statistic_data
     from package.plot.plot_metric import plot_confusion, plot_loss
 
-    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
     use_cell_bib = not (dnn_handler.mode_cell_bib == 0)
     use_cell_mode = 0 if not use_cell_bib else dnn_handler.mode_cell_bib - 1
 
     # ---Loading Data, Do Training and getting the results
     dataset = prepare_training(config_data, use_cell_bib=use_cell_bib, mode_classes=use_cell_mode)
     frame_dict = dataset.frame_dict
-    num_output = len(frame_dict)
     trainhandler = train_nn(config_train, config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
     del dataset
-    epoch_acc = trainhandler.do_training()[-1][0]
+    epoch_acc = trainhandler.do_training()[-1]
 
     # --- Post-Processing: Getting data, save and plot results
     logsdir = trainhandler.get_saving_path()
-    data_result = trainhandler.do_validation_after_training(num_output)
+    data_result = trainhandler.do_validation_after_training()
     del trainhandler
 
     # --- Plotting
     if dnn_handler.do_plot:
-        plt.close('all')
         # --- Plotting full model
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'],
@@ -116,7 +114,4 @@ def do_train_rgc_class(dnn_handler: dnn_handler) -> None:
                             path2save=logsdir, cl_dict=frame_dict)
 
         # --- Plotting reduced model (ON/OFF and Transient/Sustained)
-        rgc_logic_combination(logsdir)
-
-        plt.show(block=dnn_handler.do_block)
-    print("\nThe End")
+        rgc_logic_combination(logsdir, show_plot=dnn_handler.do_block)

@@ -1,8 +1,8 @@
 import glob
-
 import numpy as np
 from os.path import join
-from package.data_call.call_handler import DataController, SettingsDATA
+
+from package.data_call.call_handler import _DataController, SettingsDATA
 
 
 class DataHandler:
@@ -26,14 +26,14 @@ class DataHandler:
 
 
 # ----- Read Settings -----
-class DataLoader(DataController):
+class DataLoader(_DataController):
     """Class for loading and manipulating the used dataset"""
     raw_data: DataHandler
     settings: SettingsDATA
     path2file: str
 
     def __init__(self, setting: SettingsDATA) -> None:
-        DataController.__init__(self)
+        _DataController.__init__(self)
         self.settings = setting
         self.select_electrodes = list()
         self.path2file = str()
@@ -62,21 +62,21 @@ class DataLoader(DataController):
         # --- Data Source Selection
         match self.settings.data_set:
             case 0:
-                self.__load_Kirchner2023(0, 0)
+                self.__load_Kirchner2023()
             case 1:
-                self.__load_Kirchner2024(0, self.settings.data_point)
+                self.__load_Kirchner2024()
 
         # --- Post-Processing
         self._transform_rawdata_to_numpy()
         self._transform_rawdata_mapping(True, [])
 
-    def __load_Kirchner2023(self, case: int, point: int) -> None:
+    def __load_Kirchner2023(self) -> None:
         """Loading EMG recording files from E. Kirchner (2023) working with an orthese"""
         # --- Part #1: Loading data and label
         folder_name = "*_Kirchner_Orthese2023"
         marker_type = 'Markerfile_*.txt'
         data_type = '*set*.txt'
-        self._prepare_access_file(folder_name, data_type, 0)
+        self._prepare_access_file(folder_name, data_type)
 
         # Read textfile and converting
         num_channels = 10
@@ -109,12 +109,12 @@ class DataLoader(DataController):
         # Return
         self.raw_data = data
 
-    def __load_Kirchner2024(self, case: int, point: int) -> None:
+    def __load_Kirchner2024(self) -> None:
         """Loading EMG recording files from E. Kirchner (2024) working with myo system"""
         # --- Part #1: Loading data and label
         folder_name = "_Kirchner_Myo2024"
         data_type = '*set*.csv'
-        self._prepare_access_file(folder_name, data_type, 0)
+        self._prepare_access_file(folder_name, data_type)
 
         num_channels = 8
         data_preloaded = self._read_csv_file(self.path2file,  8, ",")

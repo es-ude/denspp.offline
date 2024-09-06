@@ -1,13 +1,27 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from package.plot.plot_common import cm_to_inch, save_figure
+from package.plot.plot_common import cm_to_inch, save_figure, sel_color, get_plot_color
 
 
 def results_training(path: str,
                      yin: np.ndarray, ypred: np.ndarray, ymean: np.ndarray,
                      feat: np.ndarray, yclus: np.ndarray, snr: list,
-                     cl_dict=None, xframes=50, num_feat=3) -> None:
+                     cl_dict=None, xframes=50, num_feat=3, show_plot=False) -> None:
+    """Plotting results from Autoencoder Training for Neural Spike Sorting
+    Args:
+        yin:        Input signal with neural spike frames
+        ypred:      Predicted classes
+        ymean:      Mean waveform of all spike classes
+        feat:       Numpy array with features for plotting feature space
+        snr:        List with SNR values
+        cl_dict:    Dict with class labels
+        xframes:    Size of spike frames
+        num_feat:   Number of features
+        show_plot:  Showing plots [Default: False]
+    Returns:
+        None
+    """
     data_labeled = True
 
     # --- Pre-Processing
@@ -40,10 +54,11 @@ def results_training(path: str,
 
     # --- Plotting: Feature Space and Metrics
     plot_autoencoder_snr(snr, path)
-    plot_autoencoder_features(cluster_no, mark_feat, [0, 1, 2], data_classname=cl_dict, path2save=path)
+    plot_autoencoder_features(cluster_no, mark_feat, [0, 1, 2], data_classname=cl_dict, path2save=path,
+                              show_plot=show_plot)
 
 
-def plot_autoencoder_snr(snr: list, path2save='', do_boxplot=False) -> None:
+def plot_autoencoder_snr(snr: list, path2save='', do_boxplot=False, show_plot=False) -> None:
     """Plotting the Signal-to-Noise Ratio (SNR) over the epochs"""
     # --- Processing
     snr_processed = list()
@@ -63,9 +78,9 @@ def plot_autoencoder_snr(snr: list, path2save='', do_boxplot=False) -> None:
         plt.grid()
 
         if not do_boxplot:
-            plt.plot(snr0[:, 0], color='k', marker='.', label='min')
-            plt.plot(snr0[:, 1], color='r', marker='.', label='mean')
-            plt.plot(snr0[:, 2], color='g', marker='.', label='max')
+            plt.plot(snr0[:, 0], color=sel_color[0], marker='.', label='min')
+            plt.plot(snr0[:, 1], color=sel_color[1], marker='.', label='mean')
+            plt.plot(snr0[:, 2], color=sel_color[2], marker='.', label='max')
             plt.legend()
             pos = np.linspace(0, snr0.shape[0]-1, num=11, endpoint=True, dtype=int)
         else:
@@ -80,19 +95,21 @@ def plot_autoencoder_snr(snr: list, path2save='', do_boxplot=False) -> None:
         plt.tight_layout(pad=0.5)
         if path2save:
             save_figure(plt, path2save, f"ai_training_snr_fold{idx:03d}")
+        if show_plot:
+            plt.show(block=True)
 
 
-def plot_autoencoder_features(cluster_no: np.ndarray, mark_feat: list, idx: [0, 1, 2], data_classname=None, path2save='') -> None:
+def plot_autoencoder_features(cluster_no: np.ndarray, mark_feat: list, idx: [0, 1, 2], data_classname=None,
+                              path2save='', show_plot=False) -> None:
     """Plotting the feature space of the autoencoder"""
-    color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
-
     fig = plt.figure(figsize=(cm_to_inch(12), cm_to_inch(9)))
     plt.rcParams.update({'font.size': 6})
     Axes3D(fig)
     ax = plt.axes(projection='3d')
 
     for i, id in enumerate(cluster_no):
-        ax.scatter3D(mark_feat[idx[0]][i], mark_feat[idx[1]][i], mark_feat[idx[2]][i], color=color[i % 7], marker='.')
+        ax.scatter3D(mark_feat[idx[0]][i], mark_feat[idx[1]][i], mark_feat[idx[2]][i],
+                     color=get_plot_color(i), marker='.')
     ax.set_xlabel('Feat[0]')
     ax.set_ylabel('Feat[1]')
     ax.set_zlabel('Feat[2]')
@@ -104,15 +121,15 @@ def plot_autoencoder_features(cluster_no: np.ndarray, mark_feat: list, idx: [0, 
     # --- saving plots
     if path2save:
         save_figure(plt, path2save, "ai_training_feat")
+    if show_plot:
+        plt.show(block=True)
 
 
 def plot_autoencoder_run(mark_feat: list, mark_idx: list,
                          frames_in: np.ndarray, frames_out: np.ndarray, frames_mean: np.ndarray,
                          cluster_no: np.ndarray, take_frames: list,
-                         data_classname=None, data_labeled=False, path2save='') -> None:
+                         data_classname=None, data_labeled=False, path2save='', show_plot=False) -> None:
     """Plotting the autoencoder in-/output for an inference"""
-    color = ['k', 'r', 'b', 'g', 'y', 'c', 'm']
-
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
     plt.rcParams.update({'font.size': 10})
     plt.subplots_adjust(hspace=0, wspace=0.5)
@@ -132,7 +149,7 @@ def plot_autoencoder_run(mark_feat: list, mark_idx: list,
 
     # Feature extraction
     for i, id in enumerate(cluster_no):
-        axs[1].scatter(mark_feat[mark_idx[0]][i], mark_feat[mark_idx[1]][i], color=color[i % 7], marker='.')
+        axs[1].scatter(mark_feat[mark_idx[0]][i], mark_feat[mark_idx[1]][i], color=get_plot_color(i), marker='.')
     axs[1].set_title('Feature Space')
     axs[1].set_ylabel(f'Feat[{mark_idx[0]}]')
     axs[1].set_xlabel(f'Feat[{mark_idx[1]}]')
@@ -143,7 +160,7 @@ def plot_autoencoder_run(mark_feat: list, mark_idx: list,
     # Denoised output
     if data_labeled:
         for i, id in enumerate(cluster_no):
-            axs[2].plot(frames_mean[id, :], color=color[i % 7], linewidth=2)
+            axs[2].plot(frames_mean[id, :], color=get_plot_color(i), linewidth=2)
     for pos in take_frames:
         axs[2].plot(np.transpose(frames_out[pos, :]), linewidth=0.5)
 
@@ -159,9 +176,12 @@ def plot_autoencoder_run(mark_feat: list, mark_idx: list,
     # --- Saving plots
     if path2save:
         save_figure(plt, path2save, f"ai_training_out{mark_idx[0]}-{mark_idx[1]}")
+    if show_plot:
+        plt.show(block=True)
 
 
-def plot_statistic_data(train_cl: np.ndarray | list, valid_cl=None, path2save='', cl_dict=None) -> None:
+def plot_statistic_data(train_cl: np.ndarray | list, valid_cl=None, path2save='',
+                        cl_dict=None, show_plot=False) -> None:
     """Plotting the statistics of the data"""
     do_plots_avai = isinstance(valid_cl, np.ndarray | list)
     dict_available = isinstance(cl_dict, np.ndarray | list | dict)
@@ -224,9 +244,11 @@ def plot_statistic_data(train_cl: np.ndarray | list, valid_cl=None, path2save=''
     # --- saving plots
     if path2save:
         save_figure(plt, path2save, "ai_training_histdata")
+    if show_plot:
+        plt.show(block=True)
 
 
-def plot_mnist_graphs(data: np.ndarray, label: np.ndarray, title="", path2save="") -> None:
+def plot_mnist_graphs(data: np.ndarray, label: np.ndarray, title="", path2save="", show_plot=False) -> None:
     """Plotting the MNIST data"""
     plt.figure()
     axs = [plt.subplot(3, 3, idx + 1) for idx in range(9)]
@@ -242,3 +264,5 @@ def plot_mnist_graphs(data: np.ndarray, label: np.ndarray, title="", path2save="
     plt.tight_layout()
     if path2save:
         save_figure(plt, path2save, f"mnist_plot{title}")
+    if show_plot:
+        plt.show(block=True)

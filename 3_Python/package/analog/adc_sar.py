@@ -1,8 +1,9 @@
 import numpy as np
-from package.analog.adc_basic import adc_basic, SettingsADC, SettingsNon, RecommendedSettingsNon
+from package.analog.adc_basic import _adc_basic, SettingsADC
+from package.analog.adc_basic import RecommendedSettingsNon
 
 
-class ADC_SAR(adc_basic):
+class ADC_SAR(_adc_basic):
     """"Class for applying a Sukzessive Approximation (SAR) Analogue-Digital-Converter (ADC) on the raw data"""
     def __init__(self, settings_adc: SettingsADC, settings_non=RecommendedSettingsNon):
         super().__init__(settings_adc)
@@ -35,11 +36,10 @@ class ADC_SAR(adc_basic):
 
     def adc_sar(self, uin: np.ndarray) -> [np.ndarray, np.ndarray, np.ndarray]:
         """Running the SAR Topology as an ADC
-        input:
-        uin     - Input voltage
-        output:
-        x_out   - Output digital value
-        quant_er - Quantization error
+        Args:
+            uin:    Input voltage
+        Returns:
+            Tuple with three numpy arrays [x_out = Output digital value, u_out = Output digitized voltage, quant_er = Quantization error]
         """
         # Resampling of input
         uin_adc = self.clipping_voltage(uin)
@@ -58,11 +58,10 @@ class ADC_SAR(adc_basic):
 
     def adc_sar_ns_delay(self, uin: np.ndarray) -> [np.ndarray, np.ndarray, np.ndarray]:
         """Running the Noise Shaping SAR Topology (Delay of last sample)
-        input:
-        uin     - Input voltage
-        output:
-        x_out   - Output digital value
-        quant_er - Quantization error
+        Args:
+            uin:    Input voltage
+        Returns:
+            Tuple with three numpy arrays [x_out = Output digital value, u_out = Output digitized voltage, quant_er = Quantization error]
         """
         # Resampling of input
         uin_adc = self.clipping_voltage(uin)
@@ -84,11 +83,10 @@ class ADC_SAR(adc_basic):
 
     def adc_sar_ns_order_one(self, uin: np.ndarray) -> [np.ndarray, np.ndarray, np.ndarray]:
         """Running the Noise Shaping SAR Topology (First order with integration)
-        input:
-        uin     - Input voltage
-        output:
-        x_out   - Output digital value
-        quant_er - Quantization error
+        Args:
+            uin:    Input voltage
+        Returns:
+            Tuple with three numpy arrays [x_out = Output digital value, u_out = Output digitized voltage, quant_er = Quantization error]
         """
         # Resampling of input
         uin_adc = self.clipping_voltage(uin)
@@ -111,11 +109,10 @@ class ADC_SAR(adc_basic):
 
     def adc_sar_ns_order_two(self, uin: np.ndarray) -> [np.ndarray, np.ndarray, np.ndarray]:
         """Running the Noise Shaping SAR Topology (Second order with integration)
-        input:
-        uin         - Input voltage
-        output:
-        x_out       - Output digital value
-        quant_er    - Quantization error
+        Args:
+            uin:    Input voltage
+        Returns:
+            Tuple with three numpy arrays [x_out = Output digital value, u_out = Output digitized voltage, quant_er = Quantization error]
         """
         # Resampling of input
         uin_adc = self.clipping_voltage(uin)
@@ -141,7 +138,7 @@ class ADC_SAR(adc_basic):
 # ------------ TEST ROUTINE -------------
 if __name__ == "__main__":
     from package.analog.dev_noise import noise_real
-    from package.signal_analyse import do_fft
+    from package.data_process.transformation import do_fft
     import matplotlib.pyplot as plt
 
     set_adc = SettingsADC(
@@ -167,6 +164,7 @@ if __name__ == "__main__":
     freq, Yadc = do_fft(uadc_hs, set_adc.fs_adc)
 
     # --- Plotting results
+    plt.close('all')
     plt.figure()
     ax1 = plt.subplot(311)
     ax2 = plt.subplot(312, sharex=ax1)

@@ -224,7 +224,7 @@ class UtahDataHandler:
         return groundtruth_blackrock
 
     def process_behaviour(self, data_dict: dict) -> dict:
-        """Processing the behaviour task of the experiments"""
+        """Processing the behaviour task of the optimize_sda"""
         behaviour = dict()
 
         if not data_dict['Exits_BEHV']:

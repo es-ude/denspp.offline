@@ -7,6 +7,21 @@ class WaveformGenerator:
     def __init__(self, sampling_rate: float):
         self._sampling_rate = sampling_rate
 
+        self.__func_dict = {'RECT': self.__generate_rectangular}
+        self.__func_dict.update({'LIN_RISE': self.__generate_linear_rising})
+        self.__func_dict.update({'LIN_FALL': self.__generate_linear_falling})
+        self.__func_dict.update({'SINE_HALF': self.__generate_sinusoidal_half})
+        self.__func_dict.update({'SINE_HALF_INV': self.__generate_sinusoidal_half_inverse})
+        self.__func_dict.update({'SINE_FULL': self.__generate_sinusoidal_full})
+        self.__func_dict.update({'TRI_HALF': self.__generate_triangle_half})
+        self.__func_dict.update({'TRI_FULL': self.__generate_triangle_full})
+        self.__func_dict.update({'SAW_POS': self.__generate_sawtooth_positive})
+        self.__func_dict.update({'SAW_NEG': self.__generate_sawtooth_negative})
+        self.__func_dict.update({'GAUSS': self.__generate_gaussian})
+        self.__func_dict.update({'NOISE_RAND': self.__generate_random_noise})
+        self.__func_dict.update({'NOISE_ABS_RAND': self.__generate_sawtooth_negative})
+        self.__func_dict.update({'ZERO': self.__generate_zero})
+
     def __switching_polarity(self, signal_in: np.ndarray, do_cathodic: bool) -> np.ndarray:
         """Switching the polarity for cathodic-first (True) or anodic-first (False) waveform"""
         return signal_in if not do_cathodic else (-1) * signal_in
@@ -102,7 +117,14 @@ class WaveformGenerator:
         """Creating an output array with random absolute noise (gaussian distribution)"""
         return np.abs(self.__generate_random_noise(time_duration))
 
-    def select_waveform_template(self, time_duration: float, sel_wfg: int, do_cathodic=False) -> np.ndarray:
+    def get_dictionary_classes(self) -> list:
+        """Getting a list with class names"""
+        out_list = list()
+        for val in self.__func_dict.keys():
+            out_list.append(val)
+        return out_list
+
+    def __select_waveform_template(self, time_duration: float, sel_wfg: int, do_cathodic=False) -> np.ndarray:
         """Selection for generating a waveform template
         Args:
             time_duration:  Time window for the waveform
@@ -113,66 +135,46 @@ class WaveformGenerator:
         Returns:
             Numpy array with selected waveform
         """
-        match sel_wfg:
-            case 0:
-                out = self.__generate_rectangular(time_duration)
-            case 1:
-                out = self.__generate_linear_rising(time_duration)
-            case 2:
-                out = self.__generate_linear_falling(time_duration)
-            case 3:
-                out = self.__generate_sinusoidal_half(time_duration)
-            case 4:
-                out = self.__generate_sinusoidal_half_inverse(time_duration)
-            case 5:
-                out = self.__generate_sinusoidal_full(time_duration)
-            case 6:
-                out = self.__generate_triangle_half(time_duration)
-            case 7:
-                out = self.__generate_triangle_full(time_duration)
-            case 8:
-                out = self.__generate_sawtooth_positive(time_duration)
-            case 9:
-                out = self.__generate_sawtooth_negative(time_duration)
-            case 10:
-                out = self.__generate_gaussian(time_duration)
-            case 11:
-                out = self.__generate_random_noise(time_duration)
-            case 12:
-                out = self.__generate_random_noise_abs(time_duration)
-            case _:
-                out = self.__generate_zero(time_duration)
+        class_name = self.get_dictionary_classes()
 
-        return self.__switching_polarity(out, do_cathodic)
+        if class_name[sel_wfg] in self.__func_dict.keys():
+            signal = self.__func_dict[class_name[sel_wfg]](time_duration)
+        else:
+            print("Signal not available")
+            signal = self.__generate_zero(time_duration)
+
+        return self.__switching_polarity(signal, do_cathodic)
 
     def generate_waveform(self, time_points: list, time_duration: list,
                           waveform_select: list, polarity_cathodic: list) -> list:
-        """Generating the waveform for stimulation
+        """Generating the signal with waveforms for stimulation
         Args:
             time_points:        List of time points for applying a stimulation waveform
             time_duration:      List of stimulation waveform duration
             waveform_select:    List of selected waveforms
             polarity_cathodic:  List for performing cathodic-first generation
         Returns:
-            Two numpy arrays (time, output_signal)
+            List with three numpy arrays (time, output_signal, true rms value)
         """
         if not len(time_points) == len(waveform_select) == len(time_duration):
             print("Please check input! --> Length is not equal")
             return list()
         else:
             # Generate dummy
-            out = self.__generate_zero(time_points[-1] + 2 * time_duration[-1])
+            out = self.__generate_zero(2 * time_points[-1] + time_duration[-1])
             time = np.linspace(0, out.size, out.size, endpoint=True) / self._sampling_rate
+            rms_value = 0.0
 
             # Create waveform
             for idx, time_sec in enumerate(time_points):
                 do_polarity = polarity_cathodic[idx] if not len(polarity_cathodic) == 0 else False
                 time_xpos = int(time_sec * self._sampling_rate)
 
-                waveform = self.select_waveform_template(time_duration[idx], waveform_select[idx], do_polarity)
+                waveform = self.__select_waveform_template(time_duration[idx], waveform_select[idx], do_polarity)
                 out[time_xpos:time_xpos+waveform.size] = waveform
+                rms_value = np.sqrt(np.sum(np.square(waveform)) / waveform.size)
 
-            return [time, out]
+            return [time, out, rms_value]
 
     def generate_biphasic_waveform(self, anodic_mode: int, anodic_duration: float,
                                    cathodic_mode: int, cathodic_duration: float,
@@ -199,7 +201,7 @@ class WaveformGenerator:
         for idx, window in enumerate(width):
             if idx == 1 and not intermediate_duration == 0.0:
                 waveforms.append(self.__generate_zero(intermediate_duration))
-            waveforms.append(self.select_waveform_template(window, mode[idx], poly[idx]))
+            waveforms.append(self.__select_waveform_template(window, mode[idx], poly[idx]))
 
         if do_charge_balancing:
             k = self.__get_charge_balancing_factor(waveforms)
@@ -223,7 +225,7 @@ if __name__ == "__main__":
     # polarity_cathodic = [idx % 3 == 0 for idx in range(num_elements)]
 
     wfg_generator = WaveformGenerator(50e3)
-    t0, signal0 = wfg_generator.generate_waveform(time_points, time_duration, time_wfg, polarity_cathodic)
+    t0, signal0, rms = wfg_generator.generate_waveform(time_points, time_duration, time_wfg, polarity_cathodic)
     t1, signal1 = wfg_generator.generate_biphasic_waveform(0, 0.1, 0, 0.2, 0.05, True, True)
     wfg_generator.check_charge_balancing(signal1)
 

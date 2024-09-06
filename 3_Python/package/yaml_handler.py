@@ -1,0 +1,97 @@
+import types
+import yaml
+from os.path import join, exists
+
+
+def write_dict_to_yaml(config_data: dict, filename: str,
+                       path2save='', print_output=False) -> None:
+    """Writing list with configuration sets to YAML file
+    Args:
+        config_data:    Dict. with configuration
+        filename:       YAML filename
+        path2save:      Optional setting for destination to save
+        print_output:   Printing the data in YAML format
+    Returns:
+        None
+    """
+    path2yaml = join(path2save, f'{filename}.yaml')
+    with open(path2yaml, 'w') as f:
+        yaml.dump(config_data, f, sort_keys=False)
+
+    if print_output:
+        print(yaml.dump(config_data, sort_keys=False))
+
+
+def read_yaml_to_dict(filename: str, path2save='',
+                      print_output=False) -> dict:
+    """Writing list with configuration sets to YAML file
+    Args:
+        filename:       YAML filename
+        path2save:      Optional setting for destination to save
+        print_output:   Printing the data in YAML format
+    Returns:
+        Dict. with configuration
+    """
+    path2yaml = join(path2save, f'{filename}.yaml')
+    if not exists(path2yaml):
+        print("YAML does not exists - Please create one!")
+
+    with open(path2yaml, 'r') as f:
+        config_data = yaml.safe_load(f)
+
+    if print_output:
+        print(yaml.dump(config_data, sort_keys=False))
+    return config_data
+
+
+class yaml_config_handler:
+    __path2yaml: str
+    __yaml_name: str
+    _data: dict
+
+    @property
+    def path2chck(self) -> str:
+        """Getting the path to the desired YAML file"""
+        return join(self.__path2yaml, f"{self.__yaml_name}.yaml")
+
+    def __init__(self, dummy_yaml: dict, path2yaml='', yaml_name='Config_Train'):
+        """Creating a class for handling YAML files
+        Args:
+            dummy_yaml:         Dummy dictionary or class with entries, will be generated if YAML file does not exist
+            path2yaml:          String with path to the YAML file [Default: '']
+            yaml_name:          String with name of the YAML file [Default: 'Config_Train']
+        """
+        self.__path2yaml = path2yaml
+        self.__yaml_name = yaml_name
+
+        if not exists(self.path2chck):
+            data2yaml = dummy_yaml if isinstance(dummy_yaml, dict) else vars(dummy_yaml)
+            write_dict_to_yaml(data2yaml, self.__yaml_name, self.__path2yaml)
+            print("... created new yaml file in folder!")
+
+        self._data = {}
+        self._data = read_yaml_to_dict(
+            self.__yaml_name,
+            self.__path2yaml
+        )
+
+    def list_keys(self) -> None:
+        """Printing all keys and values of available content in dict"""
+        print("\nPrinting the keys and values of existing data")
+        print("=======================================================")
+        for key in self._data.keys():
+            print(f"{key}: {self._data[key]}")
+        print("\n")
+
+    def get_value(self, param: str):
+        """Getting the content of a specific key input
+        Args:
+            param:  String with the input
+        Returns:
+            Value to corresponding key entry
+        """
+        return self._data[param]
+
+    def get_class(self) -> types.SimpleNamespace:
+        """Getting all key inputs from yaml dictionary to a class"""
+        return types.SimpleNamespace(**self._data)

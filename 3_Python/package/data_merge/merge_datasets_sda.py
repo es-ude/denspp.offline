@@ -5,7 +5,7 @@ from datetime import datetime
 from scipy.io import savemat
 from tqdm import tqdm
 
-from package.data_call.call_handler import DataController
+from package.data_call.call_handler import _DataController
 from src_neuro.pipeline_data import Settings, Pipeline
 
 
@@ -22,7 +22,7 @@ def prepare_sda_dataset(path2save: str, slice_size=12, process_points=[]) -> Non
     timepoint_start = time_ns()
     print("\nStart merging datasets for generating a dataset for train spike detection algorithms (SDA)")
     print(f"... loading the datasets")
-    datahandler = DataController(afe_set.SettingsDATA)
+    datahandler = _DataController(afe_set.SettingsDATA)
     datahandler.do_call()
     datahandler.do_resample()
     data = datahandler.get_data()

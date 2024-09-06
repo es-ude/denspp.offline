@@ -1,20 +1,46 @@
 import dataclasses
-import os
+from os import mkdir, remove, getcwd
+from os.path import exists, join
 import platform
-import shutil
 import cpuinfo
 import numpy as np
 from typing import Any
-from os import mkdir, remove
-from os.path import exists, join
 from shutil import rmtree
 from glob import glob
 from datetime import datetime
-from torch import optim, device, cuda, backends
+from torch import optim, device, cuda, backends, nn, from_numpy, Tensor, randn, cat
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
 from sklearn.model_selection import KFold
+
+from package.structure_builder import create_folder_general_firstrun, create_folder_dnn_firstrun
+
+
+class __model_settings_common(nn.Module):
+    model: nn.Sequential
+
+    def __init__(self, type_model: str):
+        super().__init__()
+        self.model_shape = (1, 28, 28)
+        self.model_embedded = False
+        self.out_modeltyp = type_model
+        self.out_modelname = self.__get_modelname()
+
+    def __get_modelname(self) -> str:
+        """"""
+        return self.__class__.__name__ + self.__get_addon()
+
+    def __get_addon(self) -> str:
+        """"""
+        match self.out_modeltyp:
+            case 'Classifier':
+                addon = '_class'
+            case 'Autoencoder':
+                addon = '_ae'
+            case _:
+                addon = '_unknown'
+        return addon
 
 
 @dataclasses.dataclass(frozen=True)
@@ -23,6 +49,7 @@ class Config_PyTorch:
     # --- Settings of Models/Training
     model: Any
     loss_fn: Any
+    patience: int
     optimizer: str
     loss: str
     num_kfold: int
@@ -78,35 +105,11 @@ class Config_Dataset:
         return join(self.data_path, self.data_file_name)
 
 
-def copy_handler_dummy() -> None:
-    """Generating a handler dummy for training neural networks"""
-    path2dst = 'src_dnn'
-    # --- Checking if path to local training handler exists
-    if not exists(path2dst):
-        os.mkdir(path2dst)
-    if not exists(join(path2dst, 'models')):
-        os.mkdir(join(path2dst, 'models'))
-    if not exists(join(path2dst, 'dataset')):
-        os.mkdir(join(path2dst, 'dataset'))
-
-    # --- Copy process
-    if not exists(path2dst):
-        path2src = 'package/dnn/template'
-        print("\nGenerating a template for ML training")
-        for file in glob(join(path2src, "*.py")):
-            print(f"... copied: {file}")
-            if "main" in file:
-                shutil.copy(file, f"")
-            else:
-                shutil.copy(file, f"{path2dst}/")
-        print("Please restart the training routine!")
-
-
 class training_pytorch:
     """Class for Handling Training of Deep Neural Networks in PyTorch
     Args:
-        config_train: Configuration settings for the PyTorch Training
-        do_train: Mention if training should be used (default = True)
+        config_train:   Configuration settings for the PyTorch Training
+        do_train:       Mention if training should be used (default = True)
     """
     used_hw_dev: device
     used_hw_cpu: str
@@ -114,9 +117,13 @@ class training_pytorch:
     used_hw_num: int
     train_loader: list
     valid_loader: list
+    selected_samples: dict
     cell_classes: list
 
     def __init__(self, config_train: Config_PyTorch, config_dataset: Config_Dataset, do_train=True) -> None:
+        create_folder_general_firstrun()
+        create_folder_dnn_firstrun()
+
         self.os_type = platform.system()
         self._writer = None
         self.model = None
@@ -128,8 +135,6 @@ class training_pytorch:
         self._do_kfold = False
         self._do_shuffle = config_train.data_do_shuffle
         self._run_kfold = 0
-        self._samples_train = list()
-        self._samples_valid = list()
 
         # --- Saving options
         self.settings = config_train
@@ -138,26 +143,32 @@ class training_pytorch:
         self._aitype = config_train.model.out_modeltyp
         self._model_name = config_train.model.out_modelname
         self._model_addon = str()
-        self._path2run = 'runs'
+        self._path2run = self.__check_start_folder()
         self._path2save = str()
         self._path2log = str()
         self._path2temp = str()
         self._path2config = str()
 
+    def __check_start_folder(self, start_folder='3_Python', new_folder='runs') -> str:
+        path2start = join(getcwd().split(start_folder)[0], start_folder)
+        path2dst = join(path2start, new_folder)
+        if not exists(path2dst):
+            mkdir(path2dst)
+        return path2dst
+
     def __setup_device(self) -> None:
         """Setup PyTorch for Training"""
-
+        self.used_hw_cpu = (f"{cpuinfo.get_cpu_info()['brand_raw']} "
+                            f"(@ {1e-9 * cpuinfo.get_cpu_info()['hz_actual'][0]:.3f} GHz)")
         # Using GPU
         if cuda.is_available():
             self.used_hw_gpu = cuda.get_device_name()
-            self.used_hw_cpu = (f"{cpuinfo.get_cpu_info()['brand_raw']} "
-                       f"(@ {1e-9 * cpuinfo.get_cpu_info()['hz_actual'][0]:.3f} GHz)")
             self.used_hw_dev = device("cuda")
             self.used_hw_num = cuda.device_count()
             device0 = self.used_hw_gpu
+            cuda.empty_cache()
         # Using Apple M1 Chip
-        elif backends.mps.is_available() and backends.mps.is_built() and self.os_type == "Darwin" and not self.use_only_cpu:
-            self.used_hw_cpu = "MP1"
+        elif backends.mps.is_available() and backends.mps.is_built() and self.os_type == "Darwin":
             self.used_hw_gpu = 'None'
             self.used_hw_num = cuda.device_count()
             self.used_hw_dev = device("mps")
@@ -165,18 +176,11 @@ class training_pytorch:
             device0 = self.used_hw_cpu
         # Using normal CPU
         else:
-            self.used_hw_cpu = (f"{cpuinfo.get_cpu_info()['brand_raw']} "
-                       f"(@ {1e-9 * cpuinfo.get_cpu_info()['hz_actual'][0]:.3f} GHz)")
             self.used_hw_gpu = 'None'
             self.used_hw_dev = device("cpu")
             self.used_hw_num = cpuinfo.get_cpu_info()['count']
             device0 = self.used_hw_cpu
-
-        print(f"... using PyTorch with {device0} device on {self.os_type}")
-
-    def _check_user_config(self) -> None:
-        if not exists("settings_ai"):
-            shutil.copy()
+        print(f"\nUsing PyTorch with {device0} on {self.os_type}")
 
     def _init_train(self, path2save='') -> None:
         """Do init of class for training"""
@@ -219,8 +223,6 @@ class training_pytorch:
                 subsamps_valid = SubsetRandomSampler(idx_valid)
                 out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train))
                 out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
-                self._samples_train.append(subsamps_train.indices.size)
-                self._samples_valid.append(subsamps_valid.indices.size)
         else:
             idx = np.arange(len(data_set))
             if self._do_shuffle:
@@ -233,20 +235,18 @@ class training_pytorch:
             out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train))
             out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
 
-            self._samples_train.append(subsamps_train.indices.size)
-            self._samples_valid.append(subsamps_valid.indices.size)
-
         # --- CUDA support for dataset
         if cuda.is_available():
             for idx, dataset in enumerate(out_train):
                 out_train[idx].pin_memory = True
                 out_train[idx].pin_memory_device = self.used_hw_dev.type
                 out_train[idx].num_workers = num_workers
+
                 out_valid[idx].pin_memory = True
                 out_valid[idx].pin_memory_device = self.used_hw_dev.type
                 out_valid[idx].num_workers = num_workers
 
-        # --- Output
+        # --- Output: Data
         self.train_loader = out_train
         self.valid_loader = out_valid
 
@@ -256,7 +256,9 @@ class training_pytorch:
         self.optimizer = self.settings.load_optimizer(learn_rate=learn_rate)
         self.loss_fn = self.settings.loss_fn
         if print_model:
+            print("\nPrint summary of model")
             summary(self.model, input_size=self.model.model_shape)
+            print("\n\n")
 
     def _save_config_txt(self, addon='') -> None:
         """Writing the content of the configuration class in *.txt-file"""
@@ -328,22 +330,55 @@ class training_pytorch:
         print("\nLook data on TensorBoard -> open Terminal")
         print("Type in: tensorboard serve --logdir ./runs")
 
-    def get_data_points(self, num_output=4, use_train_dataloader=False) -> dict:
-        """Getting data from DataLoader for Plotting Results"""
-        output = [[] for _ in range(num_output)]
-        keys = []
-        mdict = dict()
+    def __get_data_points(self, only_getting_labels=False, use_train_dataloader=False) -> dict:
+        """Getting data from DataLoader for Plotting Results
+        Args:
+            only_getting_labels:    Option for taking only labels
+            use_train_dataloader:   Mode for selecting datatype (True=Training, False=Validation)
+        Returns:
+              Dict with data for plotting
+        """
+        used_dataset = self.train_loader[-1] if use_train_dataloader else self.valid_loader[-1]
 
+        # --- Getting the keys
+        keys = list()
+        for data in used_dataset:
+            keys = list(data.keys())
+            break
+
+        if only_getting_labels:
+            keys.pop(0)
+
+        # --- Extracting data
+        data_extract = [randn(32, 1) for idx in keys]
         first_run = True
-        for data_fold in (self.train_loader if use_train_dataloader else self.valid_loader):
-            for vdata in data_fold:
-                for idx, (key, value) in enumerate(vdata.items()):
-                    output[idx] = value if first_run else np.append(output[idx], value, axis=0)
-                    if key not in keys:
-                        keys.append(key)
-                first_run = False
+        for data in used_dataset:
+            for idx, key in enumerate(keys):
+                if first_run:
+                    data_extract[idx] = data[key]
+                else:
+                    data_extract[idx] = cat((data_extract[idx], data[key]), dim=0)
+            first_run = False
 
-        for key, value in zip(keys, output):
-            mdict.update([(key, value)])
-
+        # --- Prepare output
+        mdict = dict()
+        for idx, data in enumerate(data_extract):
+            mdict.update({keys[idx]: data.numpy()})
         return mdict
+
+    def _getting_data_for_plotting(self, valid_input: np.ndarray, valid_label: np.ndarray, results={}) -> dict:
+        """Getting the raw data for plotting results"""
+        # --- Producing and Saving the output
+        print(f"... preparing results for plot generation")
+        data_train = self.__get_data_points(only_getting_labels=True, use_train_dataloader=True)
+
+        output = dict()
+        output.update({'settings': self.settings, 'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')})
+        output.update({'train_clus': data_train['out'], 'cl_dict': self.cell_classes})
+        output.update({'input': valid_input, 'valid_clus': valid_label})
+        output.update(results)
+
+        data2save = join(self.get_saving_path(), 'results_class.npy')
+        print(f"... saving results: {data2save}")
+        np.save(data2save, output)
+        return output

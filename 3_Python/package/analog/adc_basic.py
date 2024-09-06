@@ -74,7 +74,7 @@ RecommendedSettingsNon = SettingsNon(
 )
 
 
-class adc_basic:
+class _adc_basic:
     """"Basic class for applying an Analogue-Digital-Converter (ADC) on the raw data"""
     def __init__(self, settings_adc: SettingsADC):
         # --- Settings
@@ -119,14 +119,23 @@ class adc_basic:
 
     def do_resample(self, uin: np.ndarray) -> np.ndarray:
         """Do resampling of input values"""
-        uout = uin[0] + resample_poly(uin - uin[0], self.__p_ratio, self.__q_ratio)
+        if uin.size == 1:
+            uout = uin
+        else:
+            uout = uin[0] + resample_poly(uin - uin[0], self.__p_ratio, self.__q_ratio)
         return uout
 
     def clipping_voltage(self, uin: np.ndarray) -> np.ndarray:
         """Do voltage clipping at voltage supply"""
-        uout = uin
-        uout[uin > self.settings.vref[0]] = self.settings.vref[0]
-        uout[uin <= self.settings.vref[1]] = self.settings.vref[1]
+        uout = np.zeros(uin.shape) + uin
+        if uin.size == 1:
+            uout = uout if not uin > self.settings.vdd else self.settings.vdd
+            uout = uout if not uin < self.settings.vss else self.settings.vss
+        else:
+            xpos = np.argwhere(uin > self.settings.vdd)
+            xneg = np.argwhere(uin < self.settings.vss)
+            uout[xpos] = self.settings.vdd
+            uout[xneg] = self.settings.vss
         return uout
 
     def clipping_digital(self, xin: np.ndarray) -> np.ndarray:
@@ -141,17 +150,16 @@ class adc_basic:
         unoise = noise_awgn(
             size=size,
             fs=self.settings.fs_ana,
-            wgndBW=-self.__snr_ideal
+            e_n=-self.__snr_ideal
         )
         return unoise
 
     def adc_ideal(self, uin: np.ndarray) -> [np.ndarray, np.ndarray, np.ndarray]:
         """Using the ideal ADC
-        input:
-        uin     - Input voltage
-        output:
-        x_out   - Output digital value
-        quant_er - Quantization error
+        Args:
+            uin:    Input voltage
+        Returns:
+            Tuple with three numpy arrays [x_out = Output digital value, u_out = Output digitized voltage, uerr = Quantization error]
         """
         # Pre-Processing
         uin_adc = self.clipping_voltage(uin)

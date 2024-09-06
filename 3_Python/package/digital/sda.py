@@ -163,12 +163,12 @@ class SpikeDetection:
         eed = np.array(lfilter(filter[0], filter[1], xin))
         return np.square(eed)
 
-    def sda_spb(self, xin: np.ndarray, fs: float, f_bp=(100.0, 1000.0)) -> [np.ndarray, np.ndarray]:
+    def sda_spb(self, xin: np.ndarray, f_bp=(100.0, 1000.0)) -> [np.ndarray, np.ndarray]:
         """Performing the spike detection with spike band-power estimation [Nason et al., 2020]"""
+        fs = self.settings.fs
         filter = iirfilter(N=2, Wn=2 * np.array(f_bp) / fs, ftype="butter", btype="bandpass", analog=False, output='ba')
         filt0 = lfilter(filter[0], filter[1], xin)
         sbp = smoothing_1d(np.abs(filt0), int(1e-3 * fs), 'Gaussian')
-
         return np.floor(sbp)
 
     def sda_smooth(self, xin: np.ndarray, window_method='Hamming') -> np.ndarray:

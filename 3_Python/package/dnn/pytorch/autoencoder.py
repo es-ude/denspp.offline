@@ -2,9 +2,8 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import Tensor, load, save, from_numpy, tensor, inference_mode, flatten
-from torch import max, min, log10, sum
-from scipy.io import savemat
+from torch import Tensor, from_numpy, load, save, tensor, inference_mode, flatten, cuda, cat
+from torch import max, min, log10, sum, randn
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
 
 
@@ -106,11 +105,13 @@ class train_nn(training_pytorch):
         save(self.model.state_dict(), path2model_init)
         timestamp_start = datetime.now()
         timestamp_string = timestamp_start.strftime('%H:%M:%S')
-        print(f'\nTraining starts on {timestamp_string}')
+        print(f'\nTraining starts on {timestamp_string}'
+              f"\n=====================================================================================")
 
         for fold in np.arange(self.settings.num_kfold):
+            # --- Init fold
             best_loss = np.array((1_000_000., 1_000_000.), dtype=float)
-            # Init fold
+            patience_counter = self.settings.patience
             epoch_loss = list()
             epoch_metric = list()
             self.model.load_state_dict(load(path2model_init))
@@ -135,15 +136,23 @@ class train_nn(training_pytorch):
                 self._writer.add_scalar('Loss_valid (AE)', loss_valid, epoch+1)
                 self._writer.flush()
 
+                # Saving metrics after each epoch
+                epoch_loss.append((loss_train, loss_valid))
+                epoch_metric.append(self.__do_calc_metric(metrics))
+
                 # Tracking the best performance and saving the model
                 if loss_valid < best_loss[1]:
                     best_loss = [loss_train, loss_valid]
                     path2model = join(self._path2temp, f'model_ae_fold{fold:03d}_epoch{epoch:04d}.pth')
                     save(self.model, path2model)
+                    patience_counter = self.settings.patience
+                else:
+                    patience_counter -= 1
 
-                # Saving metrics after each epoch
-                epoch_loss.append((loss_train, loss_valid))
-                epoch_metric.append(self.__do_calc_metric(metrics))
+                # Early Stopping
+                if patience_counter <= 0:
+                    print(f"... training stopped due to no change after {epoch+1} epochs!")
+                    break
 
             # --- Saving metrics after each fold
             run_metric.append((epoch_loss, epoch_metric))
@@ -156,26 +165,37 @@ class train_nn(training_pytorch):
 
     def do_validation_after_training(self) -> dict:
         """Performing the validation with the best model after training for plotting and saving results"""
-
-        # --- Getting data from validation set for inference
-        data_valid = self.get_data_points(use_train_dataloader=False)
-        data_train = self.get_data_points(use_train_dataloader=True)
+        if cuda.is_available():
+            cuda.empty_cache()
 
         # --- Do the Inference with Best Model
-        print(f"\nDoing the inference with validation data on best model")
-        model_test = load(self.get_best_model('ae')[0])
-        feat_out, pred_out = model_test(from_numpy(data_valid['in']))
-        feat_out = feat_out.detach().numpy()
-        pred_out = pred_out.detach().numpy()
+        path2model = self.get_best_model('ae')[0]
+        print("\n================================================================="
+              f"\nDo Validation with best model: {path2model}")
+        model_test = load(path2model)
 
-        # --- Producing the output
-        output = dict()
-        output.update({'settings': self.settings, 'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')})
-        output.update({'train_clus': data_train['class'], 'valid_clus': data_valid['class']})
-        output.update({'input': data_valid['in'], 'feat': feat_out, 'pred': pred_out})
-        output.update({'cl_dict': self.cell_classes})
+        pred_model = randn(32, 1)
+        feat_model = randn(32, 1)
+        clus_orig_list = randn(32, 1)
+        data_orig_list = randn(32, 1)
 
-        # --- Saving dict
-        savemat(join(self.get_saving_path(), 'results_ae.mat'), output,
-                do_compression=True, long_field_names=True)
-        return output
+        first_cycle = True
+        for ite_cycle, vdata in enumerate(self.valid_loader[-1]):
+            feat, pred = model_test(vdata['in'].to(self.used_hw_dev))
+            if first_cycle:
+                feat_model = feat.detach().cpu()
+                pred_model = pred.detach().cpu()
+                clus_orig_list = vdata['class']
+                data_orig_list = vdata['in']
+            else:
+                feat_model = cat((feat_model, feat.detach().cpu()), dim=0)
+                pred_model = cat((pred_model, pred.detach().cpu()), dim=0)
+                clus_orig_list = cat((clus_orig_list, vdata['class']), dim=0)
+                data_orig_list = cat((data_orig_list, vdata['in']), dim=0)
+            first_cycle = False
+
+        # --- Preparing output
+        result_feat = feat_model.numpy()
+        result_pred = pred_model.numpy()
+        return self._getting_data_for_plotting(data_orig_list.numpy(), clus_orig_list.numpy(),
+                                               {'feat': result_feat, 'pred': result_pred})

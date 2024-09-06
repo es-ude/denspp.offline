@@ -1,9 +1,7 @@
-import os
-import shutil
+from os.path import abspath
 import numpy as np
 
-from package.pipeline_signals import PipelineSignal
-from package.data_call.call_handler import SettingsDATA
+from package.pipeline_cmds import PipelineCMD, PipelineSignal
 from package.analog.pre_amp import PreAmp, SettingsAMP
 from package.analog.adc_basic import SettingsADC
 from package.analog.adc_sar import ADC_SAR as ADC0
@@ -11,37 +9,29 @@ from package.digital.dsp import DSP, SettingsDSP
 from package.digital.sda import SpikeDetection, SettingsSDA
 from package.digital.fex import FeatureExtraction, SettingsFeature
 from package.digital.cluster import Clustering, SettingsCluster
-from package.nsp import calc_spiketicks
+from package.nsp.spike_analyse import calc_spiketicks
 
 
-# --- Configuring the src_neuro
-class Settings:
-    """Settings class for handling the src_neuro setting"""
-    SettingsDATA = SettingsDATA(
-        path='C:\HomeOffice\Arbeit\C_MERCUR_SpAIke\Daten',
-        # path='C:\GitHub\spaike_project\\2_Data',
-        data_set=4,
-        data_case=0,
-        data_point=0,
-        t_range=[0],
-        ch_sel=[0, 1, 2],
-        fs_resample=100e3
-    )
+class _SettingsPipe:
+    """Settings class for setting-up the pipeline"""
+    def __init__(self, fs: float):
+        self.SettingsAMP.fs_ana = fs
+        self.SettingsADC.fs_ana = fs
 
     SettingsAMP = SettingsAMP(
         vss=-0.6, vdd=0.6,
-        fs_ana=SettingsDATA.fs_resample,
+        fs_ana=0.0,
         gain=40,
         n_filt=1, f_filt=[0.1, 8e3], f_type="band",
         offset=1e-6, noise_en=True,
-        f_chop=10e3
+        f_chop=10e3,
+        noise_edev=100e-9
     )
-
     SettingsADC = SettingsADC(
         vdd=0.6, vss=-0.6,
         type_out="signed",
         dvref=0.1,
-        fs_ana=SettingsDATA.fs_resample,
+        fs_ana=0.0,
         fs_dig=20e3, osr=1, Nadc=12
     )
     # 20e3 für 40 samples per frame
@@ -78,20 +68,23 @@ class Settings:
         no_features=3
     )
     SettingsCL = SettingsCluster(
+        type="kMeans",
         no_cluster=3
     )
 
 
-# --- Setting the src_neuro
-class Pipeline:
+class Pipeline(PipelineCMD):
     """Processing Pipeline for analysing invasive neural activities"""
-    def __init__(self, settings: Settings):
-        self.settings = settings
-        self.signals = PipelineSignal(
-            fs_ana=settings.SettingsDATA.fs_resample,
-            fs_adc=settings.SettingsADC.fs_adc,
-            osr=settings.SettingsADC.osr
-        )
+    def __init__(self, fs_ana: float):
+        super().__init__()
+        self._path2pipe = abspath(__file__)
+        self.generate_folder('runs', '_neuro')
+
+        settings = _SettingsPipe(fs_ana)
+        self.signals = PipelineSignal()
+        self.signals.fs_ana = settings.SettingsADC.fs_ana
+        self.signals.fs_adc = settings.SettingsADC.fs_adc
+        self.signals.fs_dig = settings.SettingsADC.fs_dig
 
         self.__preamp0 = PreAmp(settings.SettingsAMP)
         self.__adc = ADC0(settings.SettingsADC)
@@ -101,29 +94,36 @@ class Pipeline:
         self.__fe = FeatureExtraction(settings.SettingsFE)
         self.__cl = Clustering(settings.SettingsCL)
 
-        self.path2runs = "runs"
-        self.path2figure = str()
-        self.path2settings = "src_neuro/pipeline_v1.py"
-
-    def generate_folder(self, name: str) -> str:
-        if not os.path.exists(self.path2runs):
-            os.mkdir(self.path2runs)
-
-        path2figure = os.path.join(self.path2runs, name)
-        if not os.path.exists(path2figure):
-            os.mkdir(path2figure)
-
-        # --- Copy settings into this folder
-        shutil.copy(src=self.path2settings, dst=path2figure)
-        self.path2figure = path2figure
-        return path2figure
-
     def prepare_saving(self) -> dict:
-        mdict = {"Settings": self.settings,
+        """Getting processing data of selected signals"""
+        mdict = {"fs_ana": self.signals.fs_ana,
+                 "fs_adc": self.signals.fs_adc,
+                 "fs_dig": self.signals.fs_dig,
+                 "u_in": self.signals.u_in,
+                 "x_spk": self.signals.x_spk,
+                 "x_lfp": self.signals.x_lfp,
                  "frames_out": self.signals.frames_align[0],
                  "frames_pos": self.signals.frames_align[1],
                  "frames_id": self.signals.frames_align[2]}
         return mdict
+
+    def do_plotting(self, data: PipelineSignal, channel: int) -> None:
+        """Function to plot results"""
+        import package.plot.plot_pipeline as plt_neuro
+
+        path2save = self.path2save
+        # --- Spike Sorting output
+        plt_neuro.results_afe1(data, channel, path=path2save)
+        plt_neuro.results_afe2(data, channel, path=path2save)
+        plt_neuro.results_afe2(data, channel, path=path2save, time_cut=[10, 12])
+        plt_neuro.results_fec(data, channel, path=path2save)
+        plt_neuro.results_paper(data, channel, path=path2save)
+
+        # --- NSP block
+        plt_neuro.results_ivt(data, channel, path=path2save)
+        plt_neuro.results_firing_rate(data, channel, path=path2save)
+        # plt_neuro.results_correlogram(data, channel, path=path2save)
+        # plt_neuro.results_cluster_amplitude(data, channel, path=path2save)
 
     def run(self, uinp: np.ndarray) -> None:
         self.signals.u_in = uinp
@@ -136,8 +136,7 @@ class Pipeline:
         self.signals.x_spk = self.__dsp1.filter(self.signals.x_adc)
         # ---- Spike detection incl. thresholding ----
         x_dly = self.__sda.time_delay(self.signals.x_spk)
-        # self.x_sda = self.sda.sda_neo(self.x_spk)
-        self.signals.x_sda, _ = self.__sda.sda_smooth(self.__sda.sda_neo(self.signals.x_spk))
+        self.signals.x_sda = self.__sda.sda_smooth(self.__sda.sda_neo(self.signals.x_spk))
         self.signals.x_thr = self.__sda.thres_blackrock(self.signals.x_sda)
         (self.signals.frames_orig, self.signals.frames_align) = self.__sda.frame_generation(
             x_dly, self.signals.x_sda, self.signals.x_thr
@@ -145,8 +144,8 @@ class Pipeline:
         # ---- Feature Extraction  ----
         self.signals.features = self.__fe.fe_pca(self.signals.frames_align[0])
         # ---- Clustering | Classification ----
-        (self.signals.frames_align[2]) = self.__cl.cluster_kmeans(self.signals.features)
+        self.signals.frames_align[2] = self.__cl.init(self.signals.features)
         self.signals.spike_ticks = calc_spiketicks(self.signals.frames_align)
 
-    def run_nsp(self) -> None:
-        print("NO FURTHER PROCESSING IS INCLUDED")
+        # --- Saving clustering model
+        self.__cl.save_model_to_file('cluster_model', self.path2save)

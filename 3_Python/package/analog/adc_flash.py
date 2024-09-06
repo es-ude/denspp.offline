@@ -1,8 +1,9 @@
 import numpy as np
-from package.analog.adc_basic import adc_basic, SettingsADC, SettingsNon, RecommendedSettingsNon
+from package.analog.adc_basic import _adc_basic, SettingsADC
+from package.analog.adc_basic import SettingsNon, RecommendedSettingsNon
 
 
-class ADC_Nyquist(adc_basic):
+class ADC_Nyquist(_adc_basic):
     """Class for applying a Nyquist Analogue-Digital-Converter (ADC) on the raw data"""
     def __init__(self, settings_adc: SettingsADC, settings_non=RecommendedSettingsNon):
         super().__init__(settings_adc)
@@ -29,11 +30,10 @@ class ADC_Nyquist(adc_basic):
 
     def adc_nyquist(self, uin: np.ndarray) -> [np.ndarray, np.ndarray]:
         """Using the Nyquist Topology as an ADC
-        input:
-        uin     - Input voltage
-        output:
-        x_out   - Output digital value
-        quant_er - Quantization error
+        Args:
+            uin:    Input voltage
+        Returns:
+            Tuple with two numpy arrays [x_out = Output digital value, quant_er = Quantization error]
         """
         # Do resampling and conversion
         uin_adc = self.clipping_voltage(uin)

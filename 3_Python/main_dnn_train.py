@@ -3,10 +3,10 @@ from package.dnn.dnn_handler import dnn_handler
 
 if __name__ == "__main__":
     dnn_handler = dnn_handler(
-        mode_dnn=3,
-        mode_cellbib=0,
+        mode_dnn=4,
+        mode_cellbib=2,
         do_plot=True,
-        do_block=True
+        do_block=False
     )
 
     # --- Configs (AE)
@@ -16,19 +16,21 @@ if __name__ == "__main__":
     num_output = 6
 
     # --- Selecting model for train
+    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)"
+          "\n===========================================================================================")
     match dnn_handler.mode_train_dnn:
         case 0:
             # --- MNIST (Classifier)
-            from src_dnn.train_mnist import do_train_cl
+            from package.dnn.template.handler.train_mnist import do_train_cl
             do_train_cl(dnn_handler.do_plot, dnn_handler.do_block)
         case 1:
             # --- MNIST (Autoencoder)
-            from src_dnn.train_mnist import do_train_ae
+            from package.dnn.template.handler.train_mnist import do_train_ae
             do_train_ae(dnn_handler.do_plot, dnn_handler.do_block)
         case 2:
             # --- Spike Detection
             from src_dnn.train_sda import dnn_train_sda
-            dnn_train_sda(dnn_handler,4)
+            dnn_train_sda(dnn_handler, 4)
         case 3:
             # --- Autoencoder (Normal)
             from src_dnn.train_ae import do_train_ae
@@ -47,3 +49,5 @@ if __name__ == "__main__":
             do_train_decoder_utah(dnn_handler, 500)
         case _:
             print("Wrong model! Please select right model!")
+    print("================================================================"
+          "\nFinish!")
