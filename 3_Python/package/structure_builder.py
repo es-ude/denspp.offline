@@ -9,10 +9,10 @@ def create_folder_general_firstrun(start_folder='3_Python') -> None:
     path2start = join(getcwd().split(start_folder)[0], start_folder)
 
     folder_structure = ['data', 'runs', 'test', 'config']
-    # --- Checking if path to local training handler exists
     for folder_name in folder_structure:
-        if not exists(join(path2start, folder_name)):
-            mkdir(join(path2start, folder_name))
+        folder = join(path2start, folder_name)
+        if not exists(folder):
+            mkdir(folder)
 
 
 def create_folder_dnn_firstrun() -> None:
