@@ -42,10 +42,6 @@ def read_impedance_from_eis(path2data: str, file_name: str) -> dict:
     return {'freq': f0, 'Z': imp0}
 
 
-def read_params_from_eis(path2result: str) -> dict:
-    return {'Cdl': 91.7e-9, 'Rtis': 11.4e3, 'Rct': 8.33e6, 'Zw': 2.3e6, 'n': 0.5}
-
-
 def do_eis_calibration(imp_eis: dict, bode_cal: dict) -> dict:
     """
     Info: Calibration data is used for calibrating the measurement setup without DUT (shorten)
@@ -80,8 +76,7 @@ def run_over_dataset(model2fit: str, path2data: str, search_index: str,
     # --- Init the handler
     imp_fitter = ImpFit_Handler(start_folder, generate_folders)
     imp_fitter.load_fitmodel(model2fit)
-    if path2ngmodel:
-        imp_fitter.load_params_ngsolve(path2ngmodel, {'ct_R': 8.33e6})
+    imp_fitter.define_params_default({'ct_R': 0.0, 'tis_R': 0.0, 'dl_C': 0.0, 'war_Aw': 0.0})
 
     # --- Processing the data
     print(f'\nProcessing stimulation recordings from: {path2data}')
@@ -110,7 +105,7 @@ if __name__ == "__main__":
     # --- Loading handler for Impedance Extraction
     imp_hndl = ImpFit_Handler()
     imp_hndl.load_fitmodel(set_ifitter)
-    imp_hndl.load_params_ngsolve(path2ngsolve, {'ct_R': 8.33e6})
+    imp_hndl.load_params_default(path2ngsolve, {'ct_R': 8.33e6})
 
     # --- Reading the impedance data
     imp_cal0 = read_impedance_from_eis(path2data_all[:-12], 'Messung_INA_FRA.txt')
