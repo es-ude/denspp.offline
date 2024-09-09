@@ -1,12 +1,10 @@
-from glob import glob
-from os import mkdir
-from os.path import join, exists
 import numpy as np
+from glob import glob
 from package.stim.imp_fitting.plot_impfit_hist import plot_boxplot_metric, plot_boxplot_params, plot_heatmap_2d_metric
 
 
-def _get_params_from_mat_sweep(path2file: str) -> dict:
-    """Loading the parameters from previous sweep (saved in numpy file) and transfering into common dictionary
+def _get_params_from_saved_numpy(path2file: str) -> dict:
+    """Loading the parameters from previous sweep (saved in numpy file) and transferring into common dictionary
     Args:
         path2file:  Path to numpy file with sweep results
     Returns:
@@ -35,21 +33,28 @@ def _get_params_from_mat_sweep(path2file: str) -> dict:
     return params_dict
 
 
-def _extract_params_sweep_1d_fs(mdict: dict, name: str, path2save='',
-                                used_metric=('MPE', 'MAPE', 'RMSRE'),
-                                show_plot=True) -> None:
-    """Preparing plotting with results from sweep"""
-    # --- Output
-    sel_val = -1
+def _print_results(mdata: dict) -> None:
+    """Printing results into terminal"""
     unit = ('Cdl', 'Rtis', 'Zw', 'Rct')
     scale = (1e9, 1e-3, 1e-6, 1e-6)
     text_out = ('nF', 'kOhm', 'MOhm/sqrt(Hz)', 'MOhm')
-    for idx, key in enumerate(unit):
-        data_in = np.sort(mdict[key][sel_val], 0)
-        print(f'... expected values of {scale[idx] * np.median(data_in):.3f} '
-              f'(+/- {scale[idx] * np.std(data_in):.3f}) {text_out[idx]}')
 
-    # --- Plotting
+    print(f"\nAnalysing data"
+          f"\n==========================================")
+    for idx, key in enumerate(unit):
+        data_used = list()
+        for data in mdata[key]:
+            if len(data):
+                data_used.append(data)
+        data_used = np.array(data_used)
+
+        print(f'... expected values of {scale[idx] * np.median(data_used):.3f} '
+              f'(+/- {scale[idx] * np.std(data_used):.3f}) {text_out[idx]}')
+
+
+def _plot_results_sweep_1d_fs(mdict: dict, name: str, used_metric: list,
+                              path2save='', show_plot=True) -> None:
+    """Preparing plotting with results from 1D-sweep (only frequency)"""
     fsamp = np.array(mdict['fs'], dtype=float)
     plot_boxplot_params(fsamp, 'fs', mdict['Rtis'], mdict['Zw'], mdict['Cdl'], mdict['Rct'], name,
                         path2save, show_plot=show_plot)
@@ -58,10 +63,9 @@ def _extract_params_sweep_1d_fs(mdict: dict, name: str, path2save='',
         plot_boxplot_metric(fsamp, 'fs', mdict[key], key, name, path2save, show_plot=do_plot)
 
 
-def _extract_sweep_sweep_1d_lsb(mdict: dict, name: str, path2save='',
-                                used_metric=('MPE', 'MAPE', 'RMSRE'),
-                                show_plot=True) -> None:
-    """Preparing plotting with results from sweep"""
+def _plot_results_sweep_1d_lsb(mdict: dict, name: str, used_metric: list,
+                               path2save='', show_plot=True) -> None:
+    """Preparing plotting with results from 1D-sweep (only voltage of lsb)"""
     lsb = np.array(mdict['lsb'], dtype=float)
     plot_boxplot_params(lsb, 'LSB', mdict['Rtis'], mdict['Zw'], mdict['Cdl'], mdict['Rct'], name,
                         path2save, show_plot=show_plot)
@@ -70,10 +74,9 @@ def _extract_sweep_sweep_1d_lsb(mdict: dict, name: str, path2save='',
         plot_boxplot_metric(lsb, 'LSB', mdict[key], key, name, path2save, show_plot=do_plot)
 
 
-def _extract_mat_sweep_2d(mdict: dict, name: str, path2save='',
-                          used_metric=('MPE', 'MAPE', 'RMSRE', 'Rtis'),
-                          mdict_eis=(), show_plot=False) -> None:
-    """"""
+def _plot_results_sweep_2d(mdict: dict, name: str, used_metric: list, mdict_eis=(),
+                           path2save='', show_plot=False) -> None:
+    """Preparing plotting with results from 2D-sweep"""
     fsamp = np.array(mdict['fs'], dtype=int)
     lsb = np.array(mdict['lsb'], dtype=float)
 
@@ -82,49 +85,49 @@ def _extract_mat_sweep_2d(mdict: dict, name: str, path2save='',
         plot_heatmap_2d_metric(fsamp, lsb, mdict[key], key, name, path2save, mdict_eis, show_plot=do_plot)
 
 
-def extract_sweep_results(path2file: str, do_plot: bool,
-                          name='results', path2save='',
-                          eis_params=None, used_metric=('MAPE', 'Rtis'),
+def extract_sweep_results(path2file: str, name='results', path2save='',
+                          used_metric=('MAPE', 'Rtis'), eis_params=None,
                           show_plot=False) -> None:
     """Extracting the results from sweep analysis
     (investigation on hardware resources: sampling rate and smallest voltage resolution)
     Args:
         path2file:      Path to numpy file for doing analysis
-        do_plot:        Boolean for generating plots
         name:           Prefix for naming the plots
         path2save:      Path for saving all plots and results
+        used_metric:    List with used metrics for analysis ('MPE', 'MAPE', 'RMSRE', 'Rtis')
         eis_params:     Dictionary with parameters from the EIS measurement
-        used_metric:    List with used metrics for analysis
         show_plot:      Showing and blocking plots
     Returns:
         None
     """
-    mdict = _get_params_from_mat_sweep(path2file)
+    # --- Getting data
+    sweep_results = _get_params_from_saved_numpy(path2file)
     if isinstance(eis_params, dict):
-        mdict0 = eis_params
+        eis_params = eis_params
     else:
-        mdict0 = dict()
+        eis_params = dict()
 
-    fsamp = np.array(mdict['fs'], dtype=int)
-    lsb = np.array(mdict['lsb'], dtype=float)
+    # --- Plotting
+    _print_results(sweep_results)
 
-    num_fs = np.unique(fsamp).size
-    num_lsb = np.unique(lsb).size
-
+    num_fs = np.unique(np.array(sweep_results['fs'], dtype=int)).size
+    num_lsb = np.unique(np.array(sweep_results['lsb'], dtype=float)).size
     if num_fs == 1 and num_lsb >= 1:
-        _extract_sweep_sweep_1d_lsb(mdict, name, path2save, do_plot, used_metric, show_plot=show_plot)
+        _plot_results_sweep_1d_lsb(sweep_results, name, used_metric, path2save, show_plot)
     elif num_fs >= 1 and num_lsb == 1:
-        _extract_params_sweep_1d_fs(mdict, name, path2save, do_plot, used_metric, show_plot=show_plot)
+        _plot_results_sweep_1d_fs(sweep_results, name, used_metric, path2save, show_plot)
     elif num_fs >= 1 and num_lsb >= 1:
-        _extract_mat_sweep_2d(mdict, name, path2save, used_metric, mdict0, show_plot=show_plot)
+        _plot_results_sweep_2d(sweep_results, name, used_metric, eis_params, path2save, show_plot)
+    else:
+        print("Only sweeps can be done but file contains only one sample")
 
 
 if __name__ == "__main__":
     choose_file = 0
     path2file = '../runs/20240906_173028_imp_fit'
     index = 'results_sweep*.npy'
-    used_metric = ('Rtis', 'Cdl', 'Rct', 'Zw', 'MAPE')
+    used_metrics = ('Rtis', 'Cdl', 'Rct', 'Zw', 'MAPE')
 
     # --- Checking for data
-    folder_content = glob(f'{path2file}/{index}')
-    extract_sweep_results(folder_content[choose_file], name='result', path2save='runs', used_metric=used_metric)
+    used_file = glob(f'{path2file}/{index}')[choose_file]
+    extract_sweep_results(used_file, name='result', path2save='runs', used_metric=used_metrics)
