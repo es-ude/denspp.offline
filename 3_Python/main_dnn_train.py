@@ -3,7 +3,7 @@ from package.dnn.dnn_handler import dnn_handler
 
 if __name__ == "__main__":
     dnn_handler = dnn_handler(
-        mode_dnn=4,
+        mode_dnn=5,
         mode_cellbib=2,
         do_plot=True,
         do_block=False
@@ -13,7 +13,7 @@ if __name__ == "__main__":
     mode_ae = 0
     noise_std_ae = 0.01
     num_hiddenlayer = 5
-    num_output = 6
+    num_output = 4
 
     # --- Selecting model for train
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)"

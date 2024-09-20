@@ -1,7 +1,7 @@
 from torch import nn
 from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
-import package.dnn.example.models.spike_detection as models_sda
+import src_dnn.models.spike_detection as models_sda
 
 
 config_data = Config_Dataset(
@@ -46,7 +46,7 @@ def dnn_train_sda(dnn_handler: dnn_handler, sda_threshold: int) -> None:
         dnn_handler: Handler for configurating the routine selection for train deep neural networks
         sda_threshold: Threshold value for identifying a spike event
     """
-    from package.dnn.example.dataset.spike_detection import prepare_training
+    from src_dnn.dataset.spike_detection import prepare_training
     from package.dnn.pytorch.classifier import train_nn
     from package.plot.plot_dnn import plot_statistic_data
     from package.plot.plot_metric import plot_confusion, plot_loss

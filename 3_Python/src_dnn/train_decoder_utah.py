@@ -1,7 +1,7 @@
 from torch import nn
 from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
-import package.dnn.example.models.decoding_utah as models_dec
+import src_dnn.models.decoding_utah as models_dec
 
 
 config_data = Config_Dataset(
@@ -48,7 +48,7 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms=500) -> Non
         dnn_handler: Handler for configurating the routine selection for train deep neural networks
         length_window_ms: Size of the time window for segmenting the tick interval into firing events
     """
-    from package.dnn.example.dataset.decoding_utah import prepare_training
+    from src_dnn.dataset.decoding_utah import prepare_training
     from package.dnn.pytorch.rnn import train_nn
     from package.plot.plot_dnn import plot_statistic_data
     from package.plot.plot_metric import plot_confusion, plot_loss
