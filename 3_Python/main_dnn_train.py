@@ -1,4 +1,5 @@
 from package.dnn.dnn_handler import dnn_handler
+from package.yaml_handler import yaml_config_handler
 
 
 if __name__ == "__main__":
@@ -14,6 +15,7 @@ if __name__ == "__main__":
     noise_std_ae = 0.01
     num_hiddenlayer = 5
     num_output = 4
+    yaml_handler = yaml_config_handler({}, 'config', 'Config_DNN')
 
     # --- Selecting model for train
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)"

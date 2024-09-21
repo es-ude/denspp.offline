@@ -32,7 +32,7 @@ class dnn_rgc_v1(__model_settings_common):
             nn.ReLU(),
             nn.Dropout(lin_drop[3]),
             nn.Linear(lin_size[4], lin_size[5]),
-            #nn.Softmax(dim=1)
+            # nn.Softmax(dim=1)
         )
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
@@ -74,7 +74,7 @@ class dnn_rgc_v2(__model_settings_common):
             nn.Dropout(lin_drop[4]),
             nn.Linear(lin_size[5], lin_size[6], bias=do_train_bias),
             nn.BatchNorm1d(lin_size[6], affine=do_train_bias),
-            #nn.Softmax(dim=1)
+            # nn.Softmax(dim=1)
         )
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
@@ -88,12 +88,12 @@ class cnn_rgc_onoff_v1(__model_settings_common):
         super().__init__('Classifier')
         self.model_embedded = False
         self.model_shape = (1, input_size)
-        kernel_layer = [24, 32, 24, 12, 6]
-        kernel_size = [2, 2, 3, 3, 3]
+        kernel_layer = [28, 40, 24, 16, 12]
+        kernel_size = [4, 4, 3, 3, 2]
         kernel_stride = [1, 1, 1, 1, 1]
-        kernel_padding = [1, 2, 2, 2, 2]
+        kernel_padding = [3, 3, 2, 2, 1]
         pool_size = [2, 2, 2, 2, 2]
-        lin_size = [12, 40, 20, output_size]
+        lin_size = [24, 20, 12, output_size]
         do_train_bias = True
 
         self.cnn = nn.Sequential(
@@ -111,30 +111,30 @@ class cnn_rgc_onoff_v1(__model_settings_common):
             nn.Conv1d(kernel_layer[1], kernel_layer[2], kernel_size[2],
                       stride=kernel_stride[2], padding=kernel_padding[2], bias=do_train_bias),
             nn.BatchNorm1d(kernel_layer[2], affine=do_train_bias),
-            nn.ReLU(),
+            nn.PReLU(),
             nn.MaxPool1d(pool_size[2]),
             nn.Conv1d(kernel_layer[2], kernel_layer[3], kernel_size[3],
                       stride=kernel_stride[3], padding=kernel_padding[3], bias=do_train_bias),
             nn.BatchNorm1d(kernel_layer[3], affine=do_train_bias),
-            nn.ReLU(),
+            nn.PReLU(),
             nn.MaxPool1d(pool_size[3]),
             nn.Conv1d(kernel_layer[3], kernel_layer[4], kernel_size[4],
                       stride=kernel_stride[4], padding=kernel_padding[4], bias=do_train_bias),
             nn.BatchNorm1d(kernel_layer[4], affine=do_train_bias),
-            nn.ReLU(),
+            nn.PReLU(),
             nn.MaxPool1d(pool_size[4]),
             nn.Flatten(start_dim=1)
         )
         self.classifier = nn.Sequential(
             nn.Linear(lin_size[0], lin_size[1], bias=do_train_bias),
             nn.BatchNorm1d(lin_size[1], affine=do_train_bias),
-            nn.ReLU(),
+            nn.PReLU(),
             nn.Linear(lin_size[1], lin_size[2], bias=do_train_bias),
             nn.BatchNorm1d(lin_size[2], affine=do_train_bias),
-            nn.ReLU(),
+            nn.PReLU(),
             nn.Linear(lin_size[2], lin_size[3], bias=do_train_bias),
             nn.BatchNorm1d(lin_size[3], affine=do_train_bias),
-            #nn.Softmax(dim=1)
+            # nn.Softmax(dim=1)
         )
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
