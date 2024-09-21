@@ -1,17 +1,12 @@
 from package.dnn.dnn_handler import dnn_handler
-
-dnn_handler = dnn_handler(
-    mode_dnn=0,
-    mode_cellbib=0,
-    do_plot=True,
-    do_block=True
-)
+from package.yaml_handler import yaml_config_handler, translate_dataclass_to_dict
 
 
 if __name__ == "__main__":
-    # --- Configs (AE)
-    mode_ae = 0
-    noise_std_ae = 0.01
+    # --- Loading YAML-Settings file
+    yaml_dict = translate_dataclass_to_dict(dnn_handler)
+    yaml_handler = yaml_config_handler(yaml_dict, 'config', 'Config_DNN')
+    dnn_handler = yaml_handler.get_class('dnn_handler')
 
     # --- Selecting model for train
     match dnn_handler.mode_train_dnn:
@@ -26,7 +21,7 @@ if __name__ == "__main__":
         case 2:
             # --- Autoencoder
             from package.dnn.template.handler.train_ae import do_train_ae
-            do_train_ae(dnn_handler, mode_ae, noise_std_ae)
+            do_train_ae(dnn_handler, 0, 0.01)
         case 3:
             # --- Classifier
             from package.dnn.template.handler.train_cl import do_train_classifier
