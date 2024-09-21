@@ -33,6 +33,7 @@ config_train = Config_PyTorch(
     num_kfold=1,
     num_epochs=100,
     batch_size=256,
+    patience=10,
     data_split_ratio=0.25,
     data_do_shuffle=True
 )
