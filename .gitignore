@@ -3,7 +3,8 @@
 .envrc
 
 ### Project ###
-3_Python/Config_*.*
+Config_*.yaml
+3_Python/config
 3_Python/data
 3_Python/runs
 3_Python/src_mem
