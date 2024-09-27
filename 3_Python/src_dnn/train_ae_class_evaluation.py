@@ -26,7 +26,7 @@ config_data = Config_Dataset(
     data_normalization_method='minmax',
     data_normalization_setting='bipolar',
     # --- Dataset Reduction
-    data_do_reduce_samples_per_cluster=True,
+    data_do_reduce_samples_per_cluster=False,
     data_num_samples_per_cluster=5_000,
     data_exclude_cluster=[],
     data_sel_pos=[]
@@ -169,11 +169,11 @@ if __name__ == "__main__":
     metrics_runs = dict()
 
     # List of epoch numbers (adjustable)
-    epoch_numbers = [5] #+ list(range(20, 101, 10))
+    epoch_numbers = [5, 30, 100] #+ list(range(60, 101, 10))
 
     for num_epochs in epoch_numbers:
         if num_epochs <= 50:
-            max_hidden_layer_neurons = 4
+            max_hidden_layer_neurons = 20
         else:
             max_hidden_layer_neurons = 20  # Adjust if needed
 
