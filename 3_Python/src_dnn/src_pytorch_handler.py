@@ -229,12 +229,13 @@ class TrainingPytorch:
             if self._cuda: # Neu eingeführt um Karstens Abfrage Cuda abfrage zu nutzen
                 torch.cuda.manual_seed_all(self._seed)
             random.seed(self._seed)
-            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.deterministic = False
             torch.use_deterministic_algorithms(True)
             print(f"\n\t\t=== Deterministic training with seed: {self._seed} ===")
 
         else:
             self._seed = None
+            torch.use_deterministic_algorithms(False)
             print(f"\n\t\t=== None Deterministic training ===")
 
 
