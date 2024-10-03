@@ -114,8 +114,8 @@ class Pipeline(PipelineCMD):
         path2save = self.path2save
         # --- Spike Sorting output
         plt_neuro.results_afe1(data, channel, path=path2save)
-        plt_neuro.results_afe2(data, channel, path=path2save)
-        plt_neuro.results_afe2(data, channel, path=path2save, time_cut=[10, 12])
+        plt_neuro.results_afe_sorted(data, channel, path=path2save)
+        plt_neuro.results_afe_sorted(data, channel, path=path2save, time_cut=[10, 12])
         plt_neuro.results_fec(data, channel, path=path2save)
         plt_neuro.results_paper(data, channel, path=path2save)
 

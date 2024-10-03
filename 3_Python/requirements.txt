@@ -6,6 +6,7 @@ fxpmath == 0.4.9
 tqdm == 4.66.5
 mat73 == 0.61
 PyYAML == 6.0.2
+mplcursors == 0.5.3
 
 # Libs for electric circuit simulation
 PySpice == 1.5
