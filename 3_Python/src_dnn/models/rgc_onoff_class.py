@@ -144,6 +144,68 @@ class cnn_rgc_onoff_v1(__model_settings_common):
         return val, argmax(val, dim=1)
 
 
+class cnn_rgc_onoff_v2(__model_settings_common):
+    """Classification model"""
+    def __init__(self, input_size=32, output_size=4):
+        super().__init__('Classifier')
+        self.model_embedded = False
+        self.model_shape = (1, input_size)
+        kernel_layer = [28, 40, 24, 16, 12]
+        kernel_size = [4, 4, 3, 3, 2]
+        kernel_stride = [1, 1, 1, 1, 1]
+        kernel_padding = [3, 3, 2, 2, 1]
+        pool_size = [2, 2, 2, 2, 2]
+        lin_size = [24, 20, 12, output_size]
+        do_train_bias = True
+
+        self.cnn = nn.Sequential(
+            nn.Dropout(0.0),
+            nn.Conv1d(1, kernel_layer[0], kernel_size[0],
+                      stride=kernel_stride[0], padding=kernel_padding[0], bias=do_train_bias),
+            nn.BatchNorm1d(kernel_layer[0], affine=do_train_bias),
+            nn.SiLU(),
+            nn.MaxPool1d(pool_size[0]),
+            nn.Conv1d(kernel_layer[0], kernel_layer[1], kernel_size[1],
+                      stride=kernel_stride[1], padding=kernel_padding[1], bias=do_train_bias),
+            nn.BatchNorm1d(kernel_layer[1], affine=do_train_bias),
+            nn.SiLU(),
+            nn.MaxPool1d(pool_size[1]),
+            nn.Conv1d(kernel_layer[1], kernel_layer[2], kernel_size[2],
+                      stride=kernel_stride[2], padding=kernel_padding[2], bias=do_train_bias),
+            nn.BatchNorm1d(kernel_layer[2], affine=do_train_bias),
+            nn.SiLU(),
+            nn.MaxPool1d(pool_size[2]),
+            nn.Conv1d(kernel_layer[2], kernel_layer[3], kernel_size[3],
+                      stride=kernel_stride[3], padding=kernel_padding[3], bias=do_train_bias),
+            nn.BatchNorm1d(kernel_layer[3], affine=do_train_bias),
+            nn.SiLU(),
+            nn.MaxPool1d(pool_size[3]),
+            nn.Conv1d(kernel_layer[3], kernel_layer[4], kernel_size[4],
+                      stride=kernel_stride[4], padding=kernel_padding[4], bias=do_train_bias),
+            nn.BatchNorm1d(kernel_layer[4], affine=do_train_bias),
+            nn.ReLU(),
+            nn.MaxPool1d(pool_size[4]),
+            nn.Flatten(start_dim=1)
+        )
+        self.classifier = nn.Sequential(
+            nn.Linear(lin_size[0], lin_size[1], bias=do_train_bias),
+            nn.BatchNorm1d(lin_size[1], affine=do_train_bias),
+            nn.PReLU(),
+            nn.Linear(lin_size[1], lin_size[2], bias=do_train_bias),
+            nn.BatchNorm1d(lin_size[2], affine=do_train_bias),
+            nn.PReLU(),
+            nn.Linear(lin_size[2], lin_size[3], bias=do_train_bias),
+            nn.BatchNorm1d(lin_size[3], affine=do_train_bias),
+            # nn.Softmax(dim=1)
+        )
+
+    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+        x0 = unsqueeze(x, dim=1)
+        val = self.cnn(x0)
+        val = self.classifier(val)
+        return val, argmax(val, dim=1)
+
+
 Recommended_Config_PytorchSettings = Config_PyTorch(
     model=dnn_rgc_v1(),
     loss='Cross Entropy',
@@ -159,8 +221,8 @@ Recommended_Config_PytorchSettings = Config_PyTorch(
 
 Recommended_Config_DatasetSettings = Config_Dataset(
     # --- Settings of Datasets
-    data_path='../2_Data/00_Merged_Datasets',
-    data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
+    data_path='data',
+    data_file_name='2023-11-24_Dataset-07_RGC_TDB_Merged.mat',
     # --- Data Augmentation
     data_do_augmentation=False,
     data_num_augmentation=0,
