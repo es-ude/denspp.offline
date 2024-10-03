@@ -57,20 +57,20 @@ class DataLoader(_DataController):
         return loaded_type, loaded_marker
 
     def do_call(self):
-        """"""
+        """Loading the dataset"""
         self._prepare_call()
-        # --- Data Source Selection
-        match self.settings.data_set:
-            case 0:
-                self.__load_Kirchner2023()
-            case 1:
-                self.__load_Kirchner2024()
+        # --- Searching the load function for dataset translation
+        methods_list_all = [method for method in dir(DataLoader)]
+        search_param = '_DataLoader'
+        methods_load_data = [method for method in methods_list_all if method[0:len(search_param)] == search_param]
 
-        # --- Post-Processing
-        self._transform_rawdata_to_numpy()
-        self._transform_rawdata_mapping(True, [])
+        # --- Calling the function
+        if self.settings.data_set == 0:
+            raise ValueError("\nPlease select new input for data_type!")
+        else:
+            getattr(self, methods_load_data[self.settings.data_set - 1])()
 
-    def __load_Kirchner2023(self) -> None:
+    def __load_method00_kirchner2023(self) -> None:
         """Loading EMG recording files from E. Kirchner (2023) working with an orthese"""
         # --- Part #1: Loading data and label
         folder_name = "*_Kirchner_Orthese2023"
@@ -109,7 +109,7 @@ class DataLoader(_DataController):
         # Return
         self.raw_data = data
 
-    def __load_Kirchner2024(self) -> None:
+    def __load_method01_kirchner2024(self) -> None:
         """Loading EMG recording files from E. Kirchner (2024) working with myo system"""
         # --- Part #1: Loading data and label
         folder_name = "_Kirchner_Myo2024"

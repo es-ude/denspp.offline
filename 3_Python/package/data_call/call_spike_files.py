@@ -19,7 +19,10 @@ class DataHandler:
         self.device_id = ''
         self.electrode_id = list()
         self.data_raw = list()
+        # --- Electrode Design Information
         self.data_mapping = list()
+        self.array_dimension = [1, 1]  # [row, colomn]
+        self.array_mapping_exist = False
         # --- GroundTruth: Spike Sorting (per Channel)
         self.label_exist = False
         self.evnt_xpos = list()
@@ -44,34 +47,18 @@ class DataLoader(_DataController):
     def do_call(self):
         """Loading the dataset"""
         self._prepare_call()
+        # --- Searching the load function for dataset translation
+        methods_list_all = [method for method in dir(DataLoader)]
+        search_param = '_DataLoader'
+        methods_load_data = [method for method in methods_list_all if method[0:len(search_param)] == search_param]
 
-        # --- Data Source Selection
-        match self.settings.data_set:
-            case 1:
-                self.__load_martinez2009()
-            case 2:
-                self.__load_pedreira2012()
-            case 3:
-                self.__load_quiroga2020()
-            case 4:
-                self.__load_seidl2012()
-            case 5:
-                self.__load_marre2018()
-            case 6:
-                self.__load_klaes_utah_array()
-            case 7:
-                self.__load_rgc_tdb()
-            case 8:
-                self.__load_fzj_mcs()
-            case 9:
-                self.__load_musall_neuropixel()
-            case _:
-                print("\nPlease select new input for data_type!")
+        # --- Calling the function
+        if self.settings.data_set == 0:
+            raise ValueError("\nPlease select new input for data_type!")
+        else:
+            getattr(self, methods_load_data[self.settings.data_set - 1])()
 
-        # --- Post-Processing
-        self._transform_rawdata_to_numpy()
-
-    def __load_martinez2009(self) -> None:
+    def __load_method00_martinez2009(self) -> None:
         """Loading synthethic files from Quiroga simulation (2009)"""
         folder_name = "_SimDaten_Martinez2009"
         data_type = 'simulation_*.mat'
@@ -85,6 +72,7 @@ class DataLoader(_DataController):
         self.raw_data.data_fs_orig = int(1 / loaded_data["samplingInterval"][0][0] * 1000)
 
         self.raw_data.data_mapping = list()
+        self.raw_data.array_dimension = [1, 1]
         self.raw_data.device_id = [0]
         self.raw_data.electrode_id = [int(loaded_data["chan"][0])-1]
         self.raw_data.data_raw = [0.5e-6 * np.float32(loaded_data["data"][0])]
@@ -99,7 +87,7 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_pedreira2012(self) -> None:
+    def __load_method01_pedreira2012(self) -> None:
         """Loading synthethic files from Quiroga simulator (2012)"""
         folder_name = "_SimDaten_Pedreira2012"
         data_type = 'simulation_*.mat'
@@ -119,6 +107,7 @@ class DataLoader(_DataController):
         self.raw_data.data_fs_orig = 24e3
 
         self.raw_data.data_mapping = list()
+        self.raw_data.array_dimension = [1, 1]
         self.raw_data.device_id = [0]
         self.raw_data.electrode_id = [int(loaded_data["data"].shape[0])-1]
         self.raw_data.data_raw = [25e-6 * np.float32(loaded_data["data"][0])]
@@ -133,7 +122,7 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_quiroga2020(self) -> None:
+    def __load_method02_quiroga2020(self) -> None:
         """Loading synthetic recordings from Quiroga simulator (Common benchmark)"""
         folder_name = "_SimDaten_Quiroga2020"
         data_type = 'C_*.mat'
@@ -147,6 +136,7 @@ class DataLoader(_DataController):
         self.raw_data.data_fs_orig = float(1000 / loaded_data["samplingInterval"][0][0])
 
         self.raw_data.data_mapping = list()
+        self.raw_data.array_dimension = [1, 1]
         self.raw_data.device_id = [0]
         self.raw_data.electrode_id = [int(loaded_data["chan"][0][0])-1]
         self.raw_data.data_raw = [100e-6 * np.float32(loaded_data["data"][0])]
@@ -161,7 +151,7 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_seidl2012(self) -> None:
+    def __load_method03_seidl2012(self) -> None:
         """Loading the recording files from the Freiburg probes from Karsten Seidl from this PhD"""
         folder_name = "_Freiburg_Seidl2014"
         data_type = '*.mat'
@@ -176,6 +166,7 @@ class DataLoader(_DataController):
         self.raw_data.data_fs_orig = loaded_data['origFs'][0][0]
 
         self.raw_data.data_mapping = list()
+        self.raw_data.array_dimension = [1, 1]
         self.raw_data.device_id = [0]
         elec_orig = np.arange(0, loaded_data['raw_data'].shape[0]).tolist()
         elec_process = self.select_electrodes if not len(self.select_electrodes) == 0 else elec_orig
@@ -193,7 +184,7 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_marre2018(self) -> None:
+    def __load_method04_marre2018(self) -> None:
         # Link to data: https://zenodo.org/record/1205233#.YrBYrOzP1PZ
         folder_name = "_Zenodo_Marre2018"
         data_type = '*.mat'
@@ -206,6 +197,7 @@ class DataLoader(_DataController):
         self.raw_data.data_fs_orig = int(loaded_data['fs'][0])
 
         self.raw_data.data_mapping = list()
+        self.raw_data.array_dimension = [1, 1]
         self.raw_data.device_id = [0]
         # Information for data structure(Channel No = 255: Müll, No = 254: Intracellular response)
         elec_orig = np.arange(0, loaded_data['juxta_channel'][0]).tolist()
@@ -224,7 +216,7 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_klaes_utah_array(self) -> None:
+    def __load_method05_klaes_utah_array(self) -> None:
         """Loading the merged data file (from *.ns6 and *.nev files) from recordings with Utah electrode array
         from Blackrock Neurotechnology"""
         folder_name = "_Klaes_Caltech"
@@ -254,6 +246,7 @@ class DataLoader(_DataController):
         self.raw_data.data_fs_orig = int(loaded_data['rawdata']['SamplingRate'][0, 0][0])
 
         self.raw_data.data_mapping = list()
+        self.raw_data.array_dimension = [10, 10]
         self.raw_data.device_id = [nsp_device]
         elec_orig = np.arange(0, int(loaded_data['rawdata']['NoElectrodes'][0, 0][0])).tolist()
         elec_process = self.select_electrodes if not len(self.select_electrodes) == 0 else elec_orig
@@ -277,7 +270,7 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = loaded_data['behaviour']
         del loaded_data
 
-    def __load_rgc_tdb(self) -> None:
+    def __load_method06_rgc_tdb(self) -> None:
         """Loading the transient files from the Retinal Ganglion Cell Transient Database (RGC TDB)"""
         folder_name = "_RGC_TDB"
         data_type = '*.mat'
@@ -316,6 +309,7 @@ class DataLoader(_DataController):
         self.raw_data.data_fs_orig = int(loaded_data['sp_trains']['sample_rate'][0][0])
 
         self.raw_data.data_mapping = list()
+        self.raw_data.array_dimension = [1, 1]
         self.raw_data.device_id = [0]
         self.raw_data.electrode_id = np.arange(0, len(elec_process)).tolist()
         for idx, pos_ch in enumerate(elec_process):
@@ -340,7 +334,7 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_fzj_mcs(self) -> None:
+    def __load_method07_fzj_mcs(self) -> None:
         """Loading the recording files from MCS setup in FZ Juelich (case = experiment, point = file)"""
         folder_name = "_RGC_FZJuelich"
         data_type = '*_merged.mat'
@@ -355,6 +349,7 @@ class DataLoader(_DataController):
         self.raw_data.data_fs_orig = float(loaded_data['fs'])
 
         self.raw_data.data_mapping = loaded_data["head_name"]
+        self.raw_data.array_dimension = [8, 8]
         self.raw_data.device_id = [0]
         elec_orig = np.arange(0, loaded_data['electrode'].shape[1]).tolist()
         elec_process = self.select_electrodes if not len(self.select_electrodes) == 0 else elec_orig
@@ -369,7 +364,7 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_musall_neuropixel(self) -> None:
+    def __load_method08_musall_neuropixel(self) -> None:
         """Loading the files from recordings with NeuroPixel probes"""
         folder_name = "_RGC_TDB"
         data_type = '*.mat'
@@ -378,6 +373,10 @@ class DataLoader(_DataController):
 
         self.raw_data = DataHandler()
         # TODO: Auswertung von NeuroPixel probes einlesen
+        self.raw_data.data_name = folder_name
+        self.raw_data.data_type = "NeuroPixel"
+
+        self.raw_data.array_dimension = [2, 480]
         del loaded_data
 
-        print("NOT IMPLEMENTED")
+        raise NotImplemented
