@@ -93,9 +93,9 @@ class cnn_lstm_dec_v3(nn.Module):
             self.model_shape = (1, num_clusters, 10, 10, input_samples)
             do_bias_train = True
 
-        kernel_layer = [num_clusters, 100, 50]
-        # --- Settings for DNN/LSTM
-        dense_layer_size = [1000, 720]
+            kernel_layer = [num_clusters, 100, 50]
+            # --- Settings for DNN/LSTM
+            dense_layer_size = [1000, 720]
 
             self.cnn_1 = nn.Sequential(
                 nn.Conv2d(in_channels=1,
@@ -115,25 +115,25 @@ class cnn_lstm_dec_v3(nn.Module):
                 nn.ReLU(),
             )
 
-        self.dnn_1 = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(
-                in_features= dense_layer_size[0],
-                out_features= dense_layer_size[1],
-                bias=do_bias_train
-            ),
-            nn.Dropout(0.2),
-            nn.BatchNorm1d(dense_layer_size[1]),
-            nn.ReLU(),
-            nn.Linear(
-                in_features= dense_layer_size[1],
-                out_features= output_samples,
-                bias=do_bias_train
-            ),
-            nn.Dropout(0.2),
-            nn.BatchNorm1d(output_samples),
-            nn.Softmax(dim=1)
-        )
+            self.dnn_1 = nn.Sequential(
+                nn.Flatten(),
+                nn.Linear(
+                    in_features=dense_layer_size[0],
+                    out_features=dense_layer_size[1],
+                    bias=do_bias_train
+                ),
+                nn.Dropout(0.2),
+                nn.BatchNorm1d(dense_layer_size[1]),
+                nn.ReLU(),
+                nn.Linear(
+                    in_features=dense_layer_size[1],
+                    out_features=output_samples,
+                    bias=do_bias_train
+                ),
+                nn.Dropout(0.2),
+                nn.BatchNorm1d(output_samples),
+                nn.Softmax(dim=1)
+            )
 
             self.flatten = nn.Flatten()
             self.lstm = nn.LSTM(
@@ -155,12 +155,13 @@ class cnn_lstm_dec_v3(nn.Module):
                 cnn_out = self.cnn_1(img)
                 cnn_out = cnn_out.view(batch_size, -1)  # Flatten
                 video.append(cnn_out.unsqueeze(1))  # Add time dimension
-        lstm_input = torch.cat(video, dim=1)  # Concatenate along the time dimension
-        lstm_output, _ = self.lstm(lstm_input)
-        pred_con = self.dnn_1(lstm_output[:,-1,:])#get last lstm output
-        #print("debug <3")
+            lstm_input = torch.cat(video, dim=1)  # Concatenate along the time dimension
+            lstm_output, _ = self.lstm(lstm_input)
+            pred_con = self.dnn_1(lstm_output[:, -1, :])  # get last lstm output
+            # print("debug <3")
 
-        return pred_con, argmax(pred_con, 1)
+            return pred_con, argmax(pred_con, 1)
+
 class cnn_lstm_dec_v2(nn.Module):
     """Class of a convolutional Decoding for feature extraction"""
     def __init__(self, num_clusters=1, input_samples=12, output_samples=3):

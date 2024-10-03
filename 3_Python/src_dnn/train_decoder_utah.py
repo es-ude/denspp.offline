@@ -34,8 +34,8 @@ config_data = ConfigDataset(
 
 ConfigTrain = ConfigPyTorch(
     # --- Settings of Models/Training
-    model=models_decoding.cnn_lstm_dec_v4(1, 22, 3),
-    #model=models_decoding.cnn_lstm_dec_v3(1, 12, 3),
+    #model=models_decoding.cnn_lstm_dec_v4(1, 22, 3),
+    model=models_decoding.test_model_if_pipeline_running(1, 12, 3),
     loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
@@ -44,7 +44,7 @@ ConfigTrain = ConfigPyTorch(
     batch_size=256,
     data_split_ratio=0.25,
     data_do_shuffle=False,
-    deterministic_training=True,
+    deterministic_training=False,
     seed=133
 )
 
@@ -70,7 +70,7 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms) -> None:
     print("\n\t Train modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
 
     # --- Processing: Loading Data
-    dataset = preprocess_dataset(config_data, length_window_ms, use_cluster=True)
+    dataset = preprocess_dataset(config_data, length_window_ms, use_cluster=False)
     data_deci_label = dataset.lable_dict
     num_output = len(data_deci_label)
 
