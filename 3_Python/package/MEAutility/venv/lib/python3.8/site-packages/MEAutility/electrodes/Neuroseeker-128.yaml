@@ -1,0 +1,9 @@
+electrode_name: Neuroseeker-128
+description: "Neuroseeker probe. 128 square contacts in 4 columns."
+sortlist: null
+pitch: 22.5
+dim: [32,4]
+size: 10.0
+plane: yz
+shape: square
+type: mea

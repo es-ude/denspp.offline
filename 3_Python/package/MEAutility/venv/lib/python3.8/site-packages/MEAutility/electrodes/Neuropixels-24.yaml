@@ -1,0 +1,10 @@
+electrode_name: Neuropixels-24
+description: "Neuropixels probe. 24 square contacts in 4 staggered columns."
+sortlist: null
+pitch: [40.0, 16.0]
+dim: [6, 4]
+stagger: 20
+size: 6.0
+plane: yz
+shape: square
+type: mea

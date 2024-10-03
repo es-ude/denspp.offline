@@ -1,0 +1,10 @@
+electrode_name: tetrode-mea-d
+description: "Silicon tetrode with 4 square contacts in diamond configuration."
+sortlist: null
+pitch: [32, 16]
+dim: [1, 2, 1]
+stagger: -16
+size: 7.0
+shape: square
+type: mea
+plane: yz
