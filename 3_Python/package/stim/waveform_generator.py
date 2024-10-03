@@ -67,19 +67,19 @@ class WaveformGenerator:
     def __generate_sinusoidal_half(self, time_duration: float) -> np.ndarray:
         """Creating an output array with half sinusoidal waveform"""
         num_samples = int(time_duration * self._sampling_rate)
-        out = np.sin(np.pi * np.linspace(0.0, num_samples, num_samples, endpoint=True) / num_samples, dtype=float)
+        out = np.sin(np.pi * np.linspace(0.0, num_samples, num_samples, endpoint=False) / num_samples, dtype=float)
         return out
 
     def __generate_sinusoidal_half_inverse(self, time_duration: float) -> np.ndarray:
         """Creating an output array with half sinusoidal waveform in inverse manner"""
         num_samples = int(time_duration * self._sampling_rate)
-        out = 1.0 - np.sin(np.pi * np.linspace(0.0, num_samples, num_samples, endpoint=True) / num_samples, dtype=float)
+        out = 1.0 - np.sin(np.pi * np.linspace(0.0, num_samples, num_samples, endpoint=False) / num_samples, dtype=float)
         return out
 
     def __generate_sinusoidal_full(self, time_duration: float) -> np.ndarray:
         """Creating an output array with full sinusoidal waveform"""
         num_samples = int(time_duration * self._sampling_rate)
-        out = np.sin(2 * np.pi * np.linspace(0.0, num_samples, num_samples, endpoint=True) / num_samples, dtype=float)
+        out = np.sin(2 * np.pi * np.linspace(0.0, num_samples, num_samples, endpoint=False) / num_samples, dtype=float)
         return out
 
     def __generate_triangle_half(self, time_duration: float) -> np.ndarray:
@@ -162,7 +162,7 @@ class WaveformGenerator:
         else:
             # Generate dummy
             out = self.__generate_zero(2 * time_points[-1] + time_duration[-1])
-            time = np.linspace(0, out.size, out.size, endpoint=True) / self._sampling_rate
+            time = np.linspace(0, out.size, out.size, endpoint=False) / self._sampling_rate
             rms_value = 0.0
 
             # Create waveform
