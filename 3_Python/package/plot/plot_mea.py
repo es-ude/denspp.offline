@@ -1,11 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import mplcursors
-import pickle
 from os import mkdir
-from os.path import exists, join
+from os.path import exists
 
-from package.plot.plot_common import save_figure, cm_to_inch, scale_auto_value
+from package.plot.plot_common import save_figure, scale_auto_value
 from package.data_call.call_handler import DataHandler
 
 
