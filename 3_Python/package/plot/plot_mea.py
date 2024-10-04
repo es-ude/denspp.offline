@@ -25,7 +25,6 @@ def results_mea_transient_total(mea_data: np.ndarray | list, config: DataHandler
             mkdir(path2save)
 
     # --- Preparing the figure
-    plotted_lines = []
     num_rows = config.mapping_dimension[0]
     num_cols = config.mapping_dimension[1]
 
@@ -53,8 +52,10 @@ def results_mea_transient_total(mea_data: np.ndarray | list, config: DataHandler
     for i in range(num_rows):
         for j in range(num_cols):
             ax = axes[i, j]
-            if config.mapping_active[i, j]:
-                line, = ax.plot(scale_xaxis[0] * time_array, yscale * mea_data[i, j], 'k-', linewidth=1.0)
+            if not config.mapping_active[i, j]:
+                ax.plot([0], 'k-', linewidth=0.1)
+            else:
+                ax.plot(scale_xaxis[0] * time_array, yscale * mea_data[i, j], 'k-', linewidth=1.0)
                 ax.set_xlim([scale_xaxis[0] * time_array[0], scale_xaxis[0] * time_array[-1]])
                 yrange_used = mea_yglobal.tolist() if do_global_limit else [mea_yrange[idx, 0], mea_yrange[idx, 1]]
                 ax.set_ylim(yrange_used)
@@ -63,8 +64,6 @@ def results_mea_transient_total(mea_data: np.ndarray | list, config: DataHandler
                     ax.arrow(x=0, y=0, dx=0, dy=1)
                     ax.text(x=-0.25, y=0.5, s=f"{yrange_used[1]-yrange_used[0]:.1f} µV", ha='center', rotation=90)
                 idx += 1
-            else:
-                line, = ax.plot([0], 'k-', linewidth=0.1)
 
             # Remove x-/y-axis ticks and labels
             ax.set_yticklabels([])
@@ -77,13 +76,6 @@ def results_mea_transient_total(mea_data: np.ndarray | list, config: DataHandler
             ax.spines['right'].set_visible(False)
             ax.spines['left'].set_visible(False)
             ax.spines['bottom'].set_visible(False)
-
-            # Store the subplot and the data for the cursor event
-            if config.mapping_active[i, j]:
-                line._mea_data = mea_data[i, j]
-            else:
-                line._mea_data = [0]
-            plotted_lines.append(line)
 
     # Add meta information
     plt.suptitle(f'Neural Activities of {config.data_type} [µV]', y=1)
@@ -102,7 +94,7 @@ def results_mea_transient_total(mea_data: np.ndarray | list, config: DataHandler
 
 
 def results_mea_transient_single(mea_data: np.ndarray | list, config: DataHandler, path2save="") -> None:
-    """Plotting the transient signals of the transient numpy signal with electrode information
+    """Plotting the transient signals of the transient numpy signal with electrode information in single matter
     Args:
         mea_data:           Transient numpy array with neural signal [row, colomn, transient]
         config:             DataHandler which contains mapping informtion
@@ -110,23 +102,12 @@ def results_mea_transient_single(mea_data: np.ndarray | list, config: DataHandle
     Returns:
         None
     """
-    # Function to create a bigger plot when clicking on a subplot
-    def on_click(event):
-        artist = event.artist
-        data = artist._mea_data
-        fig, ax = plt.subplots(figsize=(8, 6))
-        ax.plot(data, 'bo-')
-        ax.set_xlabel('Time')
-        ax.set_ylabel('Voltage')
-        ax.set_title('Channel')
-        plt.show()
+    # --- Preparing the figure
+    num_rows = config.mapping_dimension[0]
+    num_cols = config.mapping_dimension[1]
 
-    # Use mplcursors to enable click events
-    cursor = mplcursors.cursor(plotted_lines, hover=False)
-    cursor.connect("add", on_click)
-
-    with open(join(path2save, 'Plotted_Signals.fig.pickle'), 'wb') as f:
-        pickle.dump(fig, f)
+    time_array = np.linspace(0, mea_data[0, 0].size, mea_data[0, 0].size) / config.data_fs_used
+    scale_xaxis = scale_auto_value(time_array)
 
     # --- Generating subplots of each channel
     for i in range(num_rows):
