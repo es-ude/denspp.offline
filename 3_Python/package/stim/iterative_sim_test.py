@@ -1,17 +1,10 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import sys
-import os
-import math
-from scipy import integrate
 
-import PySpice
 import PySpice.Logging.Logging as Logging
 from PySpice.Spice.Netlist import Circuit
 from PySpice.Spice.NgSpice.Shared import NgSpiceShared
-from PySpice.Unit import *
 
-from waveform_generator import WaveformGenerator
+from package.data_generator.waveform_generator import WaveformGenerator
 
 logger = Logging.setup_logging()
 

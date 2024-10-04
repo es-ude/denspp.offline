@@ -1,10 +1,6 @@
 from dataclasses import dataclass
-from package.stim.waveform_generator import WaveformGenerator
+from package.data_generator.waveform_generator import WaveformGenerator
 import matplotlib.pyplot as plt
-
-import numpy as np
-
-from PySpice.Unit import *
 
 from enum import Enum
 

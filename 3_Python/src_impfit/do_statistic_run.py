@@ -1,6 +1,6 @@
 import numpy as np
 from glob import glob
-from package.stim.imp_fitting.plot_impfit_hist import plot_boxplot_metric, plot_boxplot_params, plot_heatmap_2d_metric
+from package.plot.plot_impfit_hist import plot_boxplot_metric, plot_boxplot_params, plot_heatmap_2d_metric
 
 
 def _get_params_from_saved_numpy(path2file: str) -> dict:

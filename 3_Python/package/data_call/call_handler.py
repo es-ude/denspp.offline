@@ -1,4 +1,3 @@
-from os import mkdir
 from os.path import join, exists, split
 from glob import glob
 import dataclasses
@@ -6,9 +5,6 @@ import numpy as np
 from fractions import Fraction
 from scipy.signal import resample_poly
 import csv
-import mplcursors
-import pickle
-
 from package.structure_builder import create_folder_general_firstrun
 
 
@@ -40,9 +36,83 @@ RecommendedSettingsDATA = SettingsDATA(
 )
 
 
+class DataHandler:
+    """Class with data and meta information of the used neural dataset"""
+    def __init__(self):
+        # --- Meta Information
+        self.data_name = ''
+        self.data_type = ''
+        self.data_fs_orig = 0
+        self.data_fs_used = 0
+        self.data_time = 0.0
+        # --- Raw data
+        self.device_id = ''
+        self.electrode_id = list()
+        self.data_raw = list()
+        # --- Electrode Design Information
+        self.mapping_exist = False
+        self.mapping_dimension = [1, 1]  # [row, colomn]
+        self.mapping_used = self.generate_empty_mapping_array_integer
+        self.mapping_active = self.generate_empty_mapping_array_boolean
+        # --- GroundTruth fpr Event Signal Processing
+        self.label_exist = False
+        self.evnt_xpos = list()
+        self.evnt_id = list()
+        # --- Behaviour
+        self.behaviour_exist = False
+        self.behaviour = None
+
+    @property
+    def generate_empty_mapping_array_integer(self) -> np.ndarray:
+        return np.zeros((self.mapping_dimension[0], self.mapping_dimension[1]), dtype=int)
+
+    @property
+    def generate_empty_mapping_array_boolean(self) -> np.ndarray:
+        return np.zeros((self.mapping_dimension[0], self.mapping_dimension[1]), dtype=bool)
+
+
+def translate_unit_to_scale_value(unit_str: str, pos: int) -> float:
+    """Translating the unit of a value from string to float"""
+    gain_base = 1e0
+    if not len(unit_str) == 1:
+        if unit_str[pos] == 'm':
+            gain_base = 1e-3
+        elif unit_str[pos] == 'u':
+            gain_base = 1e-6
+        elif unit_str[pos] == 'n':
+            gain_base = 1e-9
+    return gain_base
+
+
+def transform_label_from_csv_to_numpy(marker_loaded: list, label_text: list, start_pos: int) -> [list, list]:
+    """Translating the event labels from csv file to numpy
+    Args:
+        marker_loaded:
+        label_text:
+        start_pos:      Start position from reading the csv file
+    Returns:
+        Two list with type information and marker information
+        """
+    loaded_type = list()
+    for idx, label in enumerate(marker_loaded[0]):
+        if idx > start_pos:
+            id = -1
+            for num, type in enumerate(label_text):
+                if type in label:
+                    id = num
+            loaded_type.append(id)
+
+    loaded_marker = list()
+    for idx, label in enumerate(marker_loaded[1]):
+        if idx > 0:
+            loaded_marker.append(int(label[:-1]))
+
+    return loaded_type, loaded_marker
+
+
 class _DataController:
     """Class for loading and manipulating the used dataset"""
-    raw_data: None
+    raw_data: DataHandler
     settings: SettingsDATA
     path2file: str
     path2mapping = ''
@@ -59,13 +129,13 @@ class _DataController:
     def do_cut(self) -> None:
         """Cutting all transient electrode signals in the given range"""
         t_range = np.array(self.settings.t_range)
-        rawdata = self.raw_data.data_raw
-        spikepos_in = self.raw_data.evnt_xpos
-        cluster_in = self.raw_data.evnt_cluster_id
+        rawdata_in = self.raw_data.data_raw
+        evnt_xpos_in = self.raw_data.evnt_xpos
+        cluster_in = self.raw_data.evnt_id
 
         rawdata_out = list()
-        spike_cout = list()
-        spike_xout = list()
+        evnt_xpos_out = list()
+        cluster_out = list()
 
         if self.raw_data.data_fs_used == 0:
             self.raw_data.data_fs_used = self.raw_data.data_fs_orig
@@ -74,24 +144,25 @@ class _DataController:
         if t_range.size == 2:
             idx0 = int(t_range[0] * self.raw_data.data_fs_used)
             idx1 = int(t_range[1] * self.raw_data.data_fs_used)
-            self.__fill_factor = (idx0 - idx1) / rawdata[-1].size
+            self.__fill_factor = (idx0 - idx1) / rawdata_in[-1].size
 
-            for idx, data_in in enumerate(rawdata):
+            for idx, data_in in enumerate(rawdata_in):
                 # --- Cutting specific time range out of raw data
                 rawdata_out.append(data_in[idx0:idx1])
 
                 # --- Cutting labeled information
                 if self.raw_data.label_exist:
                     # Adapting new data
-                    idx2 = int(np.argwhere(spikepos_in[idx] >= idx0)[0])
-                    idx3 = int(np.argwhere(spikepos_in[idx] <= idx1)[-1])
-                    spike_xout.append(spikepos_in[idx][idx2:idx3] - idx0)
-                    spike_cout.append(cluster_in[idx][idx2:idx3])
+                    idx2 = int(np.argwhere(evnt_xpos_in[idx] >= idx0)[0])
+                    idx3 = int(np.argwhere(evnt_xpos_in[idx] <= idx1)[-1])
+                    evnt_xpos_out.append(evnt_xpos_in[idx][idx2:idx3] - idx0)
+                    cluster_out.append(cluster_in[idx][idx2:idx3])
 
             # --- Return adapted data
             self.raw_data.data_raw = rawdata_out
-            self.raw_data.evnt_xpos = spike_xout
-            self.raw_data.evnt_cluster_id = spike_cout
+            self.raw_data.evnt_xpos = evnt_xpos_out
+            self.raw_data.evnt_id = cluster_out
+            self.raw_data.data_time = float(rawdata_out[0].size / self.raw_data.data_fs_used)
 
     def do_resample(self) -> None:
         """Do resampling all transient signals"""
@@ -143,7 +214,7 @@ class _DataController:
         if self.raw_data.label_exist:
             cluster_array = None
             # Extract number of cluster size in all inputs
-            for idx, clid in enumerate(self.raw_data.evnt_cluster_id):
+            for idx, clid in enumerate(self.raw_data.evnt_id):
                 if idx == 0:
                     cluster_array = clid
                 else:
@@ -159,7 +230,7 @@ class _DataController:
         else:
             print(f"... has no labels / groundtruth")
 
-    def get_data(self):
+    def get_data(self) -> DataHandler:
         """Calling the raw data with groundtruth of the called data"""
         self._transform_rawdata_to_numpy()
         return self.raw_data
@@ -313,13 +384,15 @@ class _DataController:
             self.path2mapping = found_mapping_files[0]
         else:
             self.path2mapping = path2csv
-        channel_numbers = self._read_csv_file_mapping()
 
-        self._transform_rawdata_mapping(channel_numbers)
+        # --- Generating mapping information
+        self._generate_electrode_mapping_from_csv()
+        self._generate_electrode_activation_mapping()
+        self._transform_rawdata_mapping()
 
-    def _read_csv_file_mapping(self) -> list:
+    def _generate_electrode_mapping_from_csv(self) -> None:
         """Function for reading the CSV file for electrode mapping of used (non-electrodes = 0)"""
-        numbers_list = []
+        mapping_from_csv = []
         path2csv = self.path2mapping
         # --- Reading CSV file with electrode infos
         if not exists(path2csv):
@@ -332,151 +405,78 @@ class _DataController:
                     sep_row = row.split(';')
                     numbers_row = [int(value) for value in sep_row]
                     if numbers_row:
-                        numbers_list.append(numbers_row)
+                        mapping_from_csv.append(numbers_row)
 
-        return numbers_list
+        # --- Generating numpy array
+        num_rows = len(mapping_from_csv)
+        num_cols = len(mapping_from_csv[0])
 
-    def _transform_rawdata_mapping(self, channel_numbers: list) -> None:
+        electrode_mapping = self.raw_data.generate_empty_mapping_array_integer
+        if not num_rows == self.raw_data.mapping_dimension[0] and not num_cols == self.raw_data.mapping_dimension[1]:
+            raise ValueError("Array dimenson given in DataLoader and from csv file is not identical - Please check!")
+        else:
+            for row_idx, elec_row in enumerate(mapping_from_csv):
+                for col_idx, elec_id in enumerate(elec_row):
+                    if row_idx < electrode_mapping.shape[0] and col_idx < electrode_mapping.shape[1]:
+                        electrode_mapping[row_idx, col_idx] = elec_id
+
+            self.raw_data.mapping_exist = True
+            self.raw_data.mapping_used = electrode_mapping
+
+    def _generate_electrode_activation_mapping(self) -> None:
+        """Generating the electrode activation map (Reference/Empty = False, Activity/Data = True)"""
+        if not self.raw_data.mapping_exist:
+            print("... skipped generation of electrode activitaion map")
+        else:
+            activation_map = self.raw_data.generate_empty_mapping_array_boolean
+            posx, posy = np.where(self.raw_data.mapping_used != 0)
+            for idx, pos_row in enumerate(posx):
+                activation_map[pos_row, posy[idx]] = True
+            self.raw_data.mapping_active = activation_map
+
+    def _transform_rawdata_mapping(self) -> None:
         """Transforming the numpy array input to 2D array with electrode mapping configuration"""
-
         data_in = self.raw_data.data_raw
-        channel_head = self.raw_data.data_mapping
-        channel_design = self.raw_data.array_dimension
+        data_map = self.raw_data.mapping_used
 
-        data_map = np.zeros((channel_design[0], channel_design[1]), dtype=int)
-        if (len(data_in) > 0) and (len(data_in) == len(channel_head)):
-            # Map channel numbers
-            for data_row_index, data_row in enumerate(channel_numbers):
-                # Iterate over each element in the data row
-                for data_col_index, data_value in enumerate(data_row):
-                    # Get the preset number at the same position if available
-                    if data_row_index < data_map.shape[0] and data_col_index < data_map.shape[1]:
-                        data_map[data_row_index, data_col_index] = data_value
-
-            # Read channel data into 2D grid
-            data_out = np.zeros((channel_design[0], channel_design[1], data_in[0].size), dtype=object)
+        if not self.raw_data.mapping_exist:
+            print("... raw data array cannot be transformed into 2D-format")
+            data_out = data_in
+        else:
+            data_out = np.zeros((data_map.shape[0], data_map.shape[1], data_in[0].size), dtype=float)
             for x in range(0, data_map.shape[0]):
                 for y in range(0, data_map.shape[1]):
-                    if data_map[x, y] > 0:
+                    if self.raw_data.mapping_active[x, y]:
                         column = 0
-                        for channel in channel_head:
-                            if int(channel[2:]) == data_map[x, y]:
+                        # Searching the right index of electrode id to map id
+                        for channel in self.raw_data.electrode_id:
+                            if channel == data_map[x, y]:
                                 data_out[x, y, :] = data_in[column]
                                 break
                             column += 1
             print("... transforming raw data array from 1D to 2D")
-            self.raw_data.data_raw = data_out
-            self.raw_data.data_mapping = data_map
-            self.raw_data.array_mapping_exist = True
-        else:
-            print("... raw data array cannot be transformed into 2D-format")
-            self.raw_data.data_raw = data_in
 
-
-def _plot_data(mea: np.ndarray, channel_numbers: list):
-    """Test function for plotting results in right format"""
-    import matplotlib.pyplot as plt
-
-    path2save = "../../runs/plot_test"
-    print("The plotted mea data is:", mea)
-    num_rows, num_cols = mea.shape[0], mea.shape[1]
-    fig, axes = plt.subplots(num_rows, num_cols, figsize=(12, 8), gridspec_kw={'wspace': 0.8, 'hspace': 0.8})
-
-    plotted_lines = []
-
-    for i in range(num_rows):
-        for j in range(num_cols):
-            if isinstance(mea[i, j], np.ndarray):  # Check if element is an array
-                ax = axes[i, j]
-                line, = ax.plot(mea[i, j], 'b-')  # Plot the array as a line plot
-
-                # Set y-axis labels to the minimum and maximum values only
-                ymin, ymax = np.min(mea[i, j]), np.max(mea[i, j])
-                ax.set_yticks([ymin, ymax])
-                ymin = ymin * 10 ** 6
-                ymax = ymax * 10 ** 6
-                ax.set_yticklabels([f'{ymin:.2f}', f'{ymax:.2f}'])
-            else:
-                ax = axes[i, j]
-                line, = ax.plot([0], 'b-')  # Plot the array as a line plot
-                ymin = 0
-                ymax = 0
-                ax.set_yticklabels([f'{ymin:.2f}', f'{ymax:.2f}'])
-                # Remove x-axis ticks and labels
-            ax.set_xticklabels([])
-            ax.set_xticks([])
-
-            # Remove subplot border
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-            ax.spines['left'].set_visible(False)
-            ax.spines['bottom'].set_visible(False)
-
-            if isinstance(mea[i, j], np.ndarray):
-                # Store the subplot and the data for the cursor event
-                line._mea_data = mea[i, j]
-            else:
-                line._mea_data = [0]
-            plotted_lines.append(line)
-
-    plt.suptitle('MCS60 MEA Channel Signals [values upscaled with e5]', y=1)
-    # Adjust layout and display the plot
-    plt.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05)
-    plt.tight_layout()
-
-    # Function to create a bigger plot when clicking on a subplot
-    def on_click(event):
-        artist = event.artist
-        data = artist._mea_data
-        fig, ax = plt.subplots(figsize=(8, 6))
-        ax.plot(data, 'bo-')
-        ax.set_xlabel('Time')
-        ax.set_ylabel('Voltage')
-        ax.set_title('Channel')
-        plt.show()
-
-    # Use mplcursors to enable click events
-    cursor = mplcursors.cursor(plotted_lines, hover=False)
-    cursor.connect("add", on_click)
-
-    # Save the figure
-    if not exists(path2save):
-        mkdir(path2save)
-
-    with open(join(path2save, 'Plotted_Signals.fig.pickle'), 'wb') as f:
-        pickle.dump(fig, f)
-
-    plt.show()
-    plt.close()
-
-    for i in range(num_rows):
-        for j in range(num_cols):
-            if isinstance(mea[i, j], np.ndarray):
-                plt.plot(mea[i, j])
-                channel = channel_numbers[i][j]
-                channel = str(channel)
-                folder_save = path2save
-                path_save = join(folder_save, f'channel_{channel}.png')
-                plt.savefig(path_save)
-                plt.close()
+        self.raw_data.data_raw = data_out
 
 
 ###########################################################################
 if __name__ == "__main__":
     from package.data_call.call_spike_files import DataLoader, SettingsDATA
+    from package.plot.plot_mea import results_mea_transient_total
 
     settings = SettingsDATA(
         path="C:\HomeOffice\Data_Neurosignal",
         data_set=8, data_case=1, data_point=1,
-        t_range=[0, 0.001], ch_sel=[], fs_resample=20e3
+        t_range=[0, 0.5], ch_sel=[], fs_resample=20e3
     )
     data_loader = DataLoader(settings)
     data_loader.do_call()
     data_loader.do_cut()
-    #data_loader.do_resample()
+    # data_loader.do_resample()
     data_loader.do_mapping()
     data = data_loader.get_data()
 
-    _plot_data(data.raw_data, )
+    results_mea_transient_total(data.data_raw, data, '../../runs/test', do_global_limit=True)
+    results_mea_transient_total(data.data_raw, data, '../../runs/test', do_global_limit=False)
     del data_loader
     print(data)

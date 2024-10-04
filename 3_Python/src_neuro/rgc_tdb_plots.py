@@ -111,7 +111,7 @@ if __name__ == "__main__":
         # --- Getting the results
         rawdata0.append(adc_lsb * afe.signals.x_adc)
         frames0.append(adc_lsb * afe.signals.frames_align)
-        for id in np.unique(datahandler.raw_data.evnt_cluster_id[ch]):
+        for id in np.unique(datahandler.raw_data.evnt_id[ch]):
             cell_name0.append(cell_bib.get_celltype_name_from_id(int(id)))
 
     # Delete after runs

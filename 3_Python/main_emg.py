@@ -39,6 +39,6 @@ if __name__ == "__main__":
     plt.close('all')
     results_input(dataIn.data_raw, dataIn.data_fs_orig,
                   path2save=pipe_emg.path2save, addon='_input')
-    results_input(signals_out, dataIn.data_fs_orig, dataIn.evnt_xpos, dataIn.evnt_cluster_id,
+    results_input(signals_out, dataIn.data_fs_orig, dataIn.evnt_xpos, dataIn.evnt_id,
                   path2save=pipe_emg.path2save, addon='_after')
     plt.show()

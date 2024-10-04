@@ -41,8 +41,8 @@ def plot_boxplot_metric(freq: np.ndarray, metric: list, type_name: str, name: st
     plt.grid()
 
     plt.tight_layout(pad=0.2)
-    for type in saving_formats:
-        plt.savefig(join(path2save, f"{name}_metric-box_{type_name}.{type}"), format=type)
+    if path2save:
+        save_figure(plt, path2save, f"{name}_metric-box_{type_name}", saving_formats)
 
 
 def plot_loss(metric: list, metric_type: str, path2save='', epoch_zoom=None) -> None:
