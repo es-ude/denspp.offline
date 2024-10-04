@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import os
 from package.dnn.dnn_handler import dnn_handler  #  hier hab ich nie was geändert, kann aus PACKAGE importiert werden!!
 from src_dnn.src_pytorch_handler import ConfigPyTorch, ConfigDataset
-import src_dnn.models.src_models_decoding_utah as models_decoding
+import src_dnn.models.decoding_utah as models_decoding
 from pathlib import Path
 
 config_data = ConfigDataset(
@@ -56,7 +56,7 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms) -> None:
         dnn_handler: Handler for configurating the routine selection for train deep neural networks
         length_window_ms: Size of the time window for segmenting the tick interval into firing events
     """
-    from src_dnn.dataset.src_dataset_decoding_utah import preprocess_dataset
+    from src_dnn.dataset.decoding_utah import preprocess_dataset
     from src_dnn.pytorch.src_lstm_Decoding import TrainHandlerLstm  # Import der pytorch file
     from package.plot.plot_dnn import plot_statistic_data
     from package.plot.plot_metric import plot_confusion, plot_loss

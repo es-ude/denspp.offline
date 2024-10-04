@@ -1,107 +1,220 @@
+import os
+import sys
+import numpy as np
+
 from torch import is_tensor
 from torch.utils.data import Dataset
+from pathlib import Path
 
-from package.dnn.pytorch_handler import Config_Dataset
+from src_dnn.src_pytorch_handler import ConfigDataset
 from package.data_process.frame_augmentation import *
 
 
-class DatasetDecoder(Dataset):
+class DecoderDataset(Dataset):  #ToDo: Check if inheritance is necessary
     """Dataset Preparation for Training Neural Decoder"""
-    def __init__(self, spike_train: list, classification: list,
-                 cluster_dict: dict, use_patient_dec=True):
-        self.__input = spike_train
-        self.__output = classification
+
+    def __init__(self, dataset_spike_train: list[dict], decision: list[dict],
+                 label_dict: dict, use_patient_dec=True):
+        self.__datset_spike_train = dataset_spike_train
+        self.__decision = decision
         self.__use_patient_dec = use_patient_dec
 
         self.data_type = "Neural Decoder (Utah)"
         self.cluster_name_available = True
-        self.frame_dict = cluster_dict
+        self.lable_dict = label_dict
 
     def __len__(self):
-        return len(self.__input)
+        return len(self.__datset_spike_train)
 
     def __getitem__(self, idx):
         if is_tensor(idx):
             idx = idx.tolist()
 
         if self.__use_patient_dec:
-            decision = self.__output[idx]['patient_says']
+            decision = self.__decision[idx]['patient_says']
         else:
-            decision = self.__output[idx]['exp_says']
+            decision = self.__decision[idx]['exp_says']
 
         output = -1
-        for key in self.frame_dict.keys():
+        for key in self.lable_dict.keys():
             if key in decision:
-                output = self.frame_dict.get(decision)
+                output = self.lable_dict.get(decision)
 
-        return {'in': np.array(self.__input[idx], dtype=np.float32), 'out': output}
+        return {'in': np.array(self.__datset_spike_train[idx], dtype=np.float32), 'out': output}
 
 
-def __generate_stream_empty_array(events: list, cluster: list,
+def preprocess_dataset(settings: ConfigDataset,
+                       length_time_window_ms=500,
+                       use_cluster=True,
+                       ) -> DecoderDataset:
+    """Preparing dataset incl. add time-window feature and counting dataset"""
+    data_raw = load_dataset(settings)
+
+    max_overall_timestamp = get_max_timestamp(data_raw)
+
+    dataset_decision, dataset_timestamps, dataset_waveform, num_ite_skipped = create_feature_dataset(data_raw,
+                                                                                                     length_time_window_ms,
+                                                                                                     max_overall_timestamp,
+                                                                                                     use_cluster)
+    # --- Pre-Processing: Mapping electrode to 2D-placement
+    dataset_spike_train = add_electrode_2d_mapping_to_dataset(data_raw, dataset_timestamps, dataset_waveform)
+
+    # --- Creating lable dictionary
+    label_dict = create_label_dict(dataset_decision)
+
+    # --- Counting dataset
+    label_count_label_free, label_count_label_made, num_samples = counting_dataset(dataset_decision, label_dict)
+
+    # --- Console Output
+    print(f'\t for training are in total {len(label_dict)} classes with {num_samples} samples available')
+    if num_ite_skipped:
+        print(f"\t for training {num_ite_skipped} samples are skipped due to wrong decision values")
+    for idx, label in enumerate(label_dict):
+        print(f"\t\t class {idx} ({label}) --> {label_count_label_made[idx] + label_count_label_free[idx]} samples")
+
+    return DecoderDataset(dataset_spike_train=dataset_spike_train, decision=dataset_decision,
+                          label_dict=label_dict, use_patient_dec=True)
+
+
+def load_dataset(settings):
+    base_path = Path(__file__).parents[2]
+    func_name = load_dataset.__name__
+    # Pfad ab dem Ordner "3_Python" extrahieren
+    shortened_path = Path(__file__).relative_to(base_path)
+    print(
+        f"\n\n=== Executing function --> {func_name} in file --> {shortened_path} === ")
+    print("\n\t loading and preprocessing the dataset")
+
+    # Construct the full path of the dataset
+    full_path = settings.get_path2data()
+    if not os.path.exists(full_path):
+        print("\n File Path not right")
+        sys.exit(1)
+    print(f"\t Constructed Path: {full_path}")
+    data_raw = np.load(settings.get_path2data(), allow_pickle=True).item()
+    return data_raw
+
+
+def get_max_timestamp(data_raw):
+    max_overall_timestamp = 0
+    for _, data_exp in data_raw.items():  # 0-20 experiment
+        for key, data_trial in data_exp.items():
+            if 'trial' in key:
+                trial_timestamps = data_trial['timestamps']
+                for timestamp_in_electrode in trial_timestamps:
+                    if len(timestamp_in_electrode) and max(timestamp_in_electrode) > max_overall_timestamp:
+                        max_overall_timestamp = max(timestamp_in_electrode)
+    return max_overall_timestamp
+
+
+def create_feature_dataset(data_raw, length_time_window_ms, max_overall_timestamp, use_cluster):
+    # --- Pre-Processing: Event --> Transient signal transformation
+    dataset_timestamps = list()
+    dataset_decision = list()
+    dataset_waveform = list()
+    num_ite_skipped = 0
+
+    exp_samplingrate_in_hertz = data_raw['exp_000']['trial_000']['samplingrate']
+    for _, data_exp in data_raw.items():
+
+        for key, data_trial in data_exp.items():
+            if 'trial_' in key and not isinstance(data_trial['label']['patient_says'], np.ndarray):
+                timestamps = data_trial['timestamps']
+                cluster_per_trial = data_trial['cluster']
+
+                timestamp_stream = __determine_firing_rate(timestamps,
+                                                           cluster_per_trial,
+                                                           exp_samplingrate_in_hertz,
+                                                           length_time_window_ms,
+                                                           use_cluster,
+                                                           max_overall_timestamp
+                                                           )
+
+                dataset_timestamps.append(timestamp_stream)
+                dataset_decision.append(data_trial['label'])
+                dataset_waveform.append(data_trial['waveforms'])
+            else:
+                num_ite_skipped += 1
+    return dataset_decision, dataset_timestamps, dataset_waveform, num_ite_skipped
+
+
+def __generate_stream_empty_array(timestamps: list, cluster: list,
                                   samples_time_window: int,
-                                  use_cluster=False,
-                                  use_output_size=0) -> np.ndarray:
-    """Generating an empty array of the transient array of all electrodes
-    Args:
-        events: Lists with all timestamps of each electrode (iteration over electrode)
-        cluster: Lists with all corresponding cluster unit of each timestamp
-        samples_time_window: Size of the window for determining features
-        use_cluster: Decision of cluster information will be used
-        use_output_size: Determined the output array with a given length
-    Return:
-        Zero numpy array for training neural decoding [num. electrodes x num. clusters x num. windows] (Starting clusters with Zero)
+                                  use_cluster=True,
+                                  output_size=0) -> np.ndarray:
+    """Generating an empty array of the transient array of all electrodes Args: timestamps: Lists with all timestamps
+    of each electrode (iteration over electrode) cluster: Lists with all corresponding cluster unit of each timestamp
+    samples_time_window: Size of the window for determining features use_cluster: Decision of cluster information
+    will be used output_size: Determined the output array with a given length Return: Zero numpy array for training
+    neural decoding [num. electrodes x num. clusters x num. windows] (Starting clusters with Zero)
     """
-    length_time_window = np.zeros((len(events, )), dtype=np.uint32)
-    num_clusters = np.zeros((len(events, )), dtype=np.uint32)
-    for idx, event_ch in enumerate(events):
+    length_time_window = np.zeros((len(timestamps, )), dtype=np.uint32)
+    num_clusters = np.zeros((len(timestamps, )), dtype=np.uint32)
+    for idx, event_ch in enumerate(timestamps):
         length_time_window[idx] = 0 if len(event_ch) == 0 else event_ch[-1]
-        num_clusters[idx] = 0 if len(event_ch) == 0 else np.unique(np.array(cluster[idx])).max()+1
+        num_clusters[idx] = 0 if len(event_ch) == 0 else np.unique(np.array(cluster[idx])).max() + 1
 
-    if use_output_size == 0:
+    if output_size == 0:
         num_windows = int(1 + np.ceil(length_time_window.max() / samples_time_window))
     else:
-        num_windows = int(1 + np.ceil(use_output_size / samples_time_window))
-    return np.zeros((len(events), num_clusters.max() if use_cluster else 1, num_windows), dtype=np.uint16)
+        num_windows = int(1 + np.ceil(output_size / samples_time_window))
+    return np.zeros((len(timestamps), num_clusters.max() if use_cluster else 1, num_windows), dtype=np.uint16)
 
 
-def __determine_firing_rate(events: list, cluster: list, samples_time_window: int,
-                            use_cluster=False, use_output_size=0) -> np.ndarray:
+def __determine_firing_rate(timestamps: list, cluster: list, exp_sampling_rate_in_hertz, length_time_window_ms,
+                            use_cluster=False, output_size=0) -> np.ndarray:
     """Pre-Processing Method: Calculating the firing rate for specific
     Args:
-        events: Lists with all timestamps of each electrode (iteration over electrode)
+        timestamps: Lists with all timestamps of each electrode (iteration over electrode).
+            a timestamp is the no of the sample where the spike was detected
         cluster: Lists with all corresponding cluster unit of each timestamp
-        samples_time_window: Size of the window for determining features
+        samples_per_time_window: Size of the window for determining features
         use_cluster: Decision of cluster information will be used
-        use_output_size: Determined the output array with a given length
+        output_size: Determined the output array with a given length
     Return:
         Numpy array with windowed number of detected events for training neural decoding [num. electrodes x num. clusters x num. windows]
     """
-    data_stream0 = __generate_stream_empty_array(events, cluster, samples_time_window, use_cluster, use_output_size)
-    for idx, ch_event in enumerate(events):
-        if len(ch_event) == 0:
+    samples_per_time_window: int = int(1e-3 * exp_sampling_rate_in_hertz * length_time_window_ms)
+
+    cluster_occurrency_per_timewindow = __generate_stream_empty_array(timestamps, cluster, samples_per_time_window, use_cluster, output_size)
+
+    for electrode, timestamps_of_spiketiks_per_electrode in enumerate(timestamps):
+        if len(timestamps_of_spiketiks_per_electrode) == 0:
             # Skip due to empty electrode events
             continue
         else:
-            # "Slicing" the timestamps of choicen electrode
-            ch_event0 = np.array(ch_event)
+            # "Slicing" the timestamps of choice electrode
+            np_timestamps_of_spiketiks_per_electrode = np.array(timestamps_of_spiketiks_per_electrode)
 
             if use_cluster:
-                ch_cluster = np.array(cluster[idx])
-                for cluster_num in np.unique(ch_cluster):
-                    sel_event0 = np.argwhere(ch_cluster == cluster_num).flatten()
-                    event_ch0 = np.array(np.floor(ch_event0[sel_event0] / samples_time_window), dtype=int)
+                all_cluster_of_selected_electrode = np.array(cluster[electrode])
+                for cluster_num in np.unique(all_cluster_of_selected_electrode):
+                    indices_of_selected_cluster_in_all_cluster_per_electrode = np.argwhere(
+                        all_cluster_of_selected_electrode == cluster_num).flatten()
 
-                    event_val = np.unique(event_ch0, return_counts=True)
-                    for idy, pos in enumerate(event_val[0]):
-                        data_stream0[idx, cluster_num, pos] += event_val[1][idy]
+                    no_timewindows_of_selected_cluster_in_electrode = np.array(np.floor(np_timestamps_of_spiketiks_per_electrode[indices_of_selected_cluster_in_all_cluster_per_electrode] / samples_per_time_window),dtype=int)
+
+                    time_windows_with_cluster_and_occurrences = np.unique(no_timewindows_of_selected_cluster_in_electrode, return_counts=True)
+                    for i, time_window in enumerate(time_windows_with_cluster_and_occurrences[0]):
+                        cluster_occurrency_per_timewindow[electrode, cluster_num, time_window] += time_windows_with_cluster_and_occurrences[1][i]
+                        # schreibt in cluster_occurrency_per_timewindow für jede electrode die Anzahl der Cluster in die Zeitfenstern (22 Zeitfenster,
+                        # 2 cluster, Wert im Array ist die häufigkeit des Clusters in diesem Zeitfenster)
             else:
+                no_timewindows_of_selected_cluster_in_electrode = np.array(
+                    np.floor(np_timestamps_of_spiketiks_per_electrode / samples_per_time_window), dtype=int)
+                time_windows_with_cluster_and_occurrences = np.unique(no_timewindows_of_selected_cluster_in_electrode, return_counts=True)
+                for i, time_window in enumerate(time_windows_with_cluster_and_occurrences[0]):
+                    cluster_occurrency_per_timewindow[electrode, 0, time_window] += time_windows_with_cluster_and_occurrences[1][i]
+    return cluster_occurrency_per_timewindow
 
-                event_ch0 = np.array(np.floor(ch_event0 / samples_time_window), dtype=int)
-                event_val = np.unique(event_ch0, return_counts=True)
-                for idy, pos in enumerate(event_val[0]):
-                    data_stream0[idx, 0, pos] += event_val[1][idy]
 
-    return data_stream0
+def add_electrode_2d_mapping_to_dataset(data_raw, dataset_timestamps, dataset_waveform) -> list:
+    """"""
+    # exp_000 is enough because it´s the same for every experiment
+    electrode_mapping = data_raw['exp_000']['orientation']
+    dataset_timestamps0 = translate_ts_datastream_into_picture(dataset_timestamps, electrode_mapping)
+    # dataset_waveform0 = translate_wf_datastream_into_picture(dataset_waveform, electrode_mapping)  #ToDo:
+    return dataset_timestamps0
 
 
 def translate_ts_datastream_into_picture(data_raw: list, configuration: dict) -> list:
@@ -109,21 +222,19 @@ def translate_ts_datastream_into_picture(data_raw: list, configuration: dict) ->
     picture_data_raw = []
     picture_data_point = None
     labels = configuration['label']
-
     for data_point in data_raw:
-        for elecID, data in enumerate(data_point):
+        for electID, data in enumerate(data_point):
             if picture_data_point is None:
                 picture_data_point = np.zeros((data.shape[0], 10, 10, data.shape[1]), dtype=np.uint16)
 
             for label in labels:
-                if f"elec{elecID + 1}" == label:
-                    row = configuration['row'][95 - elecID]
-                    col = configuration['col'][95 - elecID]
+                if f"elec{electID + 1}" == label:  # elec bezieht sich auf den Datensatz nicht ändern!!
+                    row = configuration['row'][95 - electID]
+                    col = configuration['col'][95 - electID]
                     picture_data_point[:, col, row, :] = data
 
         picture_data_raw.append(picture_data_point)
         picture_data_point = None
-
     return picture_data_raw
 
 
@@ -134,69 +245,22 @@ def translate_wf_datastream_into_picture(data_raw: list, configuration: dict) ->
     picture_data_point = [[[] for _ in range(10)] for _ in range(10)]  # array of empty lists
 
     for data_point in data_raw:
-        for elecID, data in enumerate(data_point):
+        for electID, data in enumerate(data_point):
             for label in labels:
-                if f"elec{elecID + 1}" == label:  # electrodes from data start at 0, but in mapping at 1.
-                    row = configuration['row'][95 - elecID] # col, row range from 0-9 and point to the "correct" label from the mapping file
-                    col = configuration['col'][95 - elecID]
+                if f"elec{electID + 1}" == label:  # electrodes from data start at 0, but in mapping at 1.
+                    row = configuration['row'][
+                        95 - electID]  # col, row range from 0-9 and point to the "correct" label from the mapping file
+                    col = configuration['col'][95 - electID]
                     picture_data_point[col][row] = data  # set list of lists as our list at col,row
 
         picture_data_raw.append(picture_data_point)
-        picture_data_point = [[[] for _ in range(10)] for _ in range(10)]  # after each picture_data_point has been added reset array
+        picture_data_point = [[[] for _ in range(10)] for _ in range(10)]
 
     return picture_data_raw
 
 
-def prepare_training(settings: Config_Dataset,
-                     length_time_window_ms=500, use_cluster=False,
-                     use_cell_bib=False, mode_classes=2) -> DatasetDecoder:
-    """Preparing dataset incl. augmentation for spike-frame based training"""
-    print("... loading and processing the dataset")
-    data_raw = np.load(settings.get_path2data(), allow_pickle=True).item()
-
-    # --- Pre-Processing: Determine max. timepoint of events
-    max_value_timepoint = 0
-    for _, data_exp in data_raw.items():
-        for key, data_trial in data_exp.items():
-            if 'trial' in key:
-                events = data_trial['timestamps']
-
-                for event_element in events:
-                    if len(event_element):
-                        max_value_timepoint = max_value_timepoint if max(event_element) < max_value_timepoint else max(event_element)
-
-    # --- Pre-Processing: Event -> Transient signal transformation
-    electrode_mapping = None
-    dataset_timestamps = list()
-    dataset_decision = list()
-    dataset_waveform = list()
-
-    num_ite_skipped = 0
-    for _, data_exp in data_raw.items():
-        if electrode_mapping is None:
-            electrode_mapping = data_exp['orientation']
-
-        for key, data_trial in data_exp.items():
-            if 'trial_' in key and not isinstance(data_trial['label']['patient_says'], np.ndarray):
-                events = data_trial['timestamps']
-                cluster = data_trial['cluster']
-                samples_time_window = int(1e-3 * data_trial['samplingrate'] * length_time_window_ms)
-
-                data_stream = __determine_firing_rate(events, cluster, samples_time_window, use_cluster, max_value_timepoint)
-
-                dataset_timestamps.append(data_stream)
-                dataset_decision.append(data_trial['label'])
-                dataset_waveform.append(data_trial['waveforms'])
-            else:
-                num_ite_skipped += 1
-
-    del data_exp, data_trial, data_stream, key, events, cluster, samples_time_window
-
-    # --- Pre-Processing: Mapping electrode to 2D-placement
-    dataset_timestamps0 = translate_ts_datastream_into_picture(dataset_timestamps, electrode_mapping)
-    dataset_waveform0 = translate_wf_datastream_into_picture(dataset_waveform, electrode_mapping)
-
-    # --- Creating dictionary with numbers
+def create_label_dict(dataset_decision) -> dict:
+    """Creating the dictionary with labels"""
     label_dict = dict()
     num_label_types = 0
     for label in dataset_decision:
@@ -205,9 +269,11 @@ def prepare_training(settings: Config_Dataset,
             if used_label not in label_dict.keys():
                 label_dict.update({used_label: num_label_types})
                 num_label_types += 1
-    del num_label_types, label, used_label
+    return label_dict
 
-    # --- Counting dataset
+
+def counting_dataset(dataset_decision, label_dict):
+    """"""
     label_count_label_free = [0 for _ in label_dict]
     label_count_label_made = [0 for _ in label_dict]
     for label in dataset_decision:
@@ -218,14 +284,5 @@ def prepare_training(settings: Config_Dataset,
                 label_count_label_free[idx] += 1
             else:
                 label_count_label_made[idx] += 1
-
-    # --- Output
     num_samples = sum(label_count_label_free) + sum(label_count_label_made)
-    print(f'... for training are in total {len(label_dict)} classes with {num_samples} samples available')
-    if num_ite_skipped:
-        print(f"... for training {num_ite_skipped} samples are skipped due to wrong decision values")
-    for idx, label in enumerate(label_dict):
-        print(f"\t class {idx} ({label}) --> {label_count_label_made[idx] + label_count_label_free[idx]} samples")
-
-    return DatasetDecoder(spike_train=dataset_timestamps0, classification=dataset_decision,
-                          cluster_dict=label_dict, use_patient_dec=True)
+    return label_count_label_free, label_count_label_made, num_samples

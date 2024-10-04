@@ -8,12 +8,15 @@ from package.data_call.call_handler import DataHandler
 
 
 def results_mea_transient_total(mea_data: np.ndarray | list, config: DataHandler, path2save="",
-                                yscale=1e6, do_global_limit=False) -> None:
+                                yscale=1e6, do_global_limit=False, do_show=False) -> None:
     """Plotting the transient signals of the transient numpy signal with electrode information
     Args:
         mea_data:           Transient numpy array with neural signal [row, colomn, transient]
         config:             DataHandler which contains mapping informtion
         path2save:          Path for saving the figures
+        yscale:             Scaling value for all y-axis
+        do_global_limit:    Doing a global y-range setting
+        do_show:            Show the plots
     Returns:
         None
     """
@@ -88,10 +91,14 @@ def results_mea_transient_total(mea_data: np.ndarray | list, config: DataHandler
     # Plotting and saving
     if path2save:
         save_figure(plt, path2save, 'mea_data' + ('_global' if do_global_limit else '_local'))
-    plt.show()
+    if do_show:
+        plt.show()
+    else:
+        plt.close()
 
 
-def results_mea_transient_single(mea_data: np.ndarray | list, config: DataHandler, path2save="") -> None:
+def results_mea_transient_single(mea_data: np.ndarray | list, config: DataHandler,
+                                 path2save="") -> None:
     """Plotting the transient signals of the transient numpy signal with electrode information in single matter
     Args:
         mea_data:           Transient numpy array with neural signal [row, colomn, transient]
