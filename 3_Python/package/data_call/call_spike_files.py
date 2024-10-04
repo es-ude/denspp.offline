@@ -335,11 +335,10 @@ class DataLoader(_DataController):
         loaded_data = loadmat_mat73(self.path2file)
 
         self.raw_data = DataHandler()
-        # TODO: Auswertung von NeuroPixel probes einlesen
         self.raw_data.data_name = folder_name
         self.raw_data.data_type = "NeuroPixel 1.0"
 
         self.raw_data.mapping_dimension = [2, 480]
         del loaded_data
 
-        raise NotImplemented
+        raise NotImplementedError

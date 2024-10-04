@@ -130,7 +130,6 @@ def do_method_sweep(pipeline, data, spk_amp: float, spk_period: float,
             plot_results_sweep(spk_firing_rate, snr_in, acc, tpr, fpr, pipeline.used_methods, path2save)
 
 
-# TODO: ROC Methode implementieren
 def do_calc_roc(pipeline, data, spk_amp: float, spk_period: float,
                 spk_firing_rate: np.ndarray, spk_snr_in: np.ndarray,
                 mode_sda: list, mode_thr: list,
@@ -147,3 +146,4 @@ def do_calc_roc(pipeline, data, spk_amp: float, spk_period: float,
     spk_in_mean = np.mean(spk_in_frames, axis=0)
     spk_out_frames = data.cut_frames(pipeline.x_adc, spk_pos_true, spk_period)
     spk_out_mean = np.mean(spk_out_frames, axis=0)
+    raise NotImplementedError
