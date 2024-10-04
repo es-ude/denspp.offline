@@ -127,7 +127,7 @@ class MergeDatasets:
                 length_data_in = self.__pipeline.signals.x_adc.size
 
                 frame_new = self.__pipeline.signals.frames_align
-                frame_cl = datahandler.raw_data.evnt_cluster_id[ch]
+                frame_cl = datahandler.raw_data.evnt_id[ch]
 
                 # --- Post-Processing: Checking if same length
                 if frame_new.shape[0] != frame_cl.size:

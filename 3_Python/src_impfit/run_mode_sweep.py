@@ -1,13 +1,12 @@
 import numpy as np
 from glob import glob
-from os.path import join, exists
-from os import mkdir, listdir
+from os.path import join
 
 from src_impfit.run_mode_normal import run_over_dataset, read_impedance_from_eis, do_eis_calibration
 from package.metric import (calculate_error_mae, calculate_error_mse, calculate_error_rmse, calculate_error_rrmse,
                             calculate_error_mape, calculate_error_mpe, calculate_error_rmsre)
 from package.stim.imp_fitting.impfitter_handler import ImpFit_Handler, load_params_from_csv
-from package.stim.imp_fitting.plot_impfit_hist import plot_hist_impedance
+from package.plot.plot_impfit_hist import plot_hist_impedance
 
 
 def do_single_run(fit_model: str, params_default: dict,
@@ -81,24 +80,26 @@ def run_sweep(fit_model: str, default_params: dict,
 
 def extract_csv_metric(files: list, imp_mea: dict) -> dict:
     """Extracting the metric values from csv impfitter runs"""
-    metric = np.zeros(shape=(len(files), 7), dtype=float)
+    # Generating new dict with metrics (first functional call, second empty results)
+    metric_used = {
+        'MAE': calculate_error_mae, 'MSE': calculate_error_mse,
+        'RMSE': calculate_error_rmse, 'RRMSE': calculate_error_rrmse,
+        'MAPE': calculate_error_mape, 'MPE': calculate_error_mpe,
+        'RMSRE': calculate_error_rmsre
+    }
+    metric_dict = {}
+    for key in metric_used.keys():
+        metric_dict.update({key: list()})
+
+    # Extracting metrics from data
     for idx, file in enumerate(files):
         imp_fit = imp_hndl.do_impedance_fit_from_params_csv(file, imp_mea['freq'])
         imp_fit_used = np.abs(imp_fit['Z'])
         imp_mea_used = np.abs(imp_mea['Z'])
+        for key in metric_used:
+            metric_dict[key].append(metric_used[key](imp_mea_used, imp_fit_used))
 
-        metric[idx] = (
-            calculate_error_mae(imp_mea_used, imp_fit_used),
-            calculate_error_mse(imp_mea_used, imp_fit_used),
-            calculate_error_rmse(imp_mea_used, imp_fit_used),
-            calculate_error_rrmse(imp_mea_used, imp_fit_used),
-            calculate_error_mape(imp_mea_used, imp_fit_used),
-            calculate_error_mpe(imp_mea_used, imp_fit_used),
-            calculate_error_rmsre(imp_mea_used, imp_fit_used)
-        )
-
-    return {'MAE': metric[:, 0], 'MSE': metric[:, 1], 'RMSE': metric[:, 2],
-            'RRMSE': metric[:, 3], 'MAPE': metric[:, 4], 'MPE': metric[:, 5], 'RMSRE': metric[:, 6]}
+    return metric_dict
 
 
 def extract_csv_param(files_fit: list, path2save='', do_plot=False, do_print=False) -> dict:

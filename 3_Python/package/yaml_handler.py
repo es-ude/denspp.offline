@@ -1,4 +1,3 @@
-import types
 import yaml
 from os.path import join, exists
 
@@ -42,6 +41,11 @@ def read_yaml_to_dict(filename: str, path2save='',
     if print_output:
         print(yaml.dump(config_data, sort_keys=False))
     return config_data
+
+
+def translate_dataclass_to_dict(class_content) -> dict:
+    """Translating all class variables with default values into dict"""
+    return {key: value for key, value in class_content.__dict__.items() if not key.startswith('__') and not callable(key)}
 
 
 class yaml_config_handler:
@@ -92,6 +96,7 @@ class yaml_config_handler:
         """
         return self._data[param]
 
-    def get_class(self) -> types.SimpleNamespace:
+    def get_class(self, class_name='class'):
         """Getting all key inputs from yaml dictionary to a class"""
-        return types.SimpleNamespace(**self._data)
+        class2generate = type(class_name, (object,), self._data)()
+        return class2generate

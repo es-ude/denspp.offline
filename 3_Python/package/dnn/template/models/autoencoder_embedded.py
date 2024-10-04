@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_handler import ConfigPyTorch, ConfigDataset
 from elasticai.creator.nn import Sequential
 from elasticai.creator.nn.fixed_point import BatchNormedLinear, HardTanh
 from package.dnn.pytorch_handler import __model_settings_common
@@ -43,7 +43,7 @@ class dnn_ae_v2(__model_settings_common):
         return encoded, self.decoder(encoded)
 
 
-Recommended_Config_PytorchSettings = Config_PyTorch(
+Recommended_Config_PytorchSettings = ConfigPyTorch(
     model=dnn_ae_v2(),
     loss='MSE',
     loss_fn=nn.MSELoss(),
@@ -56,7 +56,7 @@ Recommended_Config_PytorchSettings = Config_PyTorch(
     data_split_ratio=0.25
 )
 
-Recommended_Config_DatasetSettings = Config_Dataset(
+Recommended_Config_DatasetSettings = ConfigDataset(
     # --- Settings of Datasets
     data_path='../2_Data/00_Merged_Datasets',
     data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',

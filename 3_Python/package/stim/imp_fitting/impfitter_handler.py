@@ -10,7 +10,7 @@ from platform import system
 
 from package.structure_builder import create_folder_general_firstrun
 from package.data_process.transformation import do_fft_withimag
-from package.stim.imp_fitting.plot_impfit import (plot_transient, plot_transient_fft, plot_impedance)
+from package.plot.plot_impfit import (plot_transient, plot_transient_fft, plot_impedance)
 
 
 def _quantize_transient_signal(transient_orig: dict, fs_new: float, u_lsb: float, i_gain=2e3) -> dict:

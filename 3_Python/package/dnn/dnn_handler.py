@@ -1,12 +1,10 @@
+import dataclasses
+
+
+@dataclasses.dataclass
 class dnn_handler:
     """Handling for training depp neural networks"""
-    mode_train_dnn: int
-    mode_cell_bib: int
-    do_plot: bool
-    do_block: bool
-
-    def __init__(self, mode_dnn: int, mode_cellbib: int, do_plot: bool, do_block=True):
-        self.mode_train_dnn = mode_dnn
-        self.mode_cell_bib = mode_cellbib
-        self.do_plot = do_plot
-        self.do_block = do_block
+    mode_train_dnn = 0
+    mode_cell_bib = 0
+    do_plot = True
+    do_block = True

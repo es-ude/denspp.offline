@@ -1,46 +1,21 @@
 import dataclasses
+from typing import Any
 from os import mkdir, remove, getcwd
 from os.path import exists, join
 import platform
 import cpuinfo
 import numpy as np
-from typing import Any
+
 from shutil import rmtree
 from glob import glob
 from datetime import datetime
-from torch import optim, device, cuda, backends, nn, from_numpy, Tensor, randn, cat
+from torch import optim, device, cuda, backends, nn, randn, cat
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
 from sklearn.model_selection import KFold
 
 from package.structure_builder import create_folder_general_firstrun, create_folder_dnn_firstrun
-
-
-class __model_settings_common(nn.Module):
-    model: nn.Sequential
-
-    def __init__(self, type_model: str):
-        super().__init__()
-        self.model_shape = (1, 28, 28)
-        self.model_embedded = False
-        self.out_modeltyp = type_model
-        self.out_modelname = self.__get_modelname()
-
-    def __get_modelname(self) -> str:
-        """"""
-        return self.__class__.__name__ + self.__get_addon()
-
-    def __get_addon(self) -> str:
-        """"""
-        match self.out_modeltyp:
-            case 'Classifier':
-                addon = '_class'
-            case 'Autoencoder':
-                addon = '_ae'
-            case _:
-                addon = '_unknown'
-        return addon
 
 
 @dataclasses.dataclass(frozen=True)
@@ -105,6 +80,32 @@ class Config_Dataset:
         return join(self.data_path, self.data_file_name)
 
 
+class __model_settings_common(nn.Module):
+    model: nn.Sequential
+
+    def __init__(self, type_model: str):
+        super().__init__()
+        self.model_shape = (1, 28, 28)
+        self.model_embedded = False
+        self.out_modeltyp = type_model
+        self.out_modelname = self.__get_modelname()
+
+    def __get_modelname(self) -> str:
+        """"""
+        return self.__class__.__name__ + self.__get_addon()
+
+    def __get_addon(self) -> str:
+        """"""
+        match self.out_modeltyp:
+            case 'Classifier':
+                addon = '_class'
+            case 'Autoencoder':
+                addon = '_ae'
+            case _:
+                addon = '_unknown'
+        return addon
+
+
 class training_pytorch:
     """Class for Handling Training of Deep Neural Networks in PyTorch
     Args:
@@ -143,18 +144,21 @@ class training_pytorch:
         self._aitype = config_train.model.out_modeltyp
         self._model_name = config_train.model.out_modelname
         self._model_addon = str()
-        self._path2run = self.__check_start_folder()
+
+        # --- Logging paths for saving
+        self.__check_start_folder()
         self._path2save = str()
         self._path2log = str()
         self._path2temp = str()
         self._path2config = str()
 
-    def __check_start_folder(self, start_folder='3_Python', new_folder='runs') -> str:
+    def __check_start_folder(self, start_folder='3_Python', new_folder='runs'):
+        """Checking for starting folder to generate"""
         path2start = join(getcwd().split(start_folder)[0], start_folder)
         path2dst = join(path2start, new_folder)
+        self._path2run = path2dst
         if not exists(path2dst):
             mkdir(path2dst)
-        return path2dst
 
     def __setup_device(self) -> None:
         """Setup PyTorch for Training"""
@@ -289,13 +293,13 @@ class training_pytorch:
             txt_handler.write(f'Exclude cluster: {self.settings_data.data_exclude_cluster}\n')
 
     def _save_train_results(self, last_metric_train: float | np.ndarray,
-                            last_metric_valid: float | np.ndarray, type='Loss') -> None:
+                            last_metric_valid: float | np.ndarray, loss_type='Loss') -> None:
         """Writing some training metrics into txt-file"""
         if self.config_available:
             with open(self._path2config, 'a') as txt_handler:
                 txt_handler.write(f'\n--- Metrics of last epoch in fold #{self._run_kfold} ---')
-                txt_handler.write(f'\nTraining {type} = {last_metric_train}')
-                txt_handler.write(f'\nValidation {type} = {last_metric_valid}\n')
+                txt_handler.write(f'\nTraining {loss_type} = {last_metric_train}')
+                txt_handler.write(f'\nValidation {loss_type} = {last_metric_valid}\n')
 
     def get_saving_path(self) -> str:
         """Getting the path for saving files in aim folder"""
@@ -350,7 +354,7 @@ class training_pytorch:
             keys.pop(0)
 
         # --- Extracting data
-        data_extract = [randn(32, 1) for idx in keys]
+        data_extract = [randn(32, 1) for _ in keys]
         first_run = True
         for data in used_dataset:
             for idx, key in enumerate(keys):
@@ -366,9 +370,12 @@ class training_pytorch:
             mdict.update({keys[idx]: data.numpy()})
         return mdict
 
-    def _getting_data_for_plotting(self, valid_input: np.ndarray, valid_label: np.ndarray, results={}) -> dict:
+    def _getting_data_for_plotting(self, valid_input: np.ndarray, valid_label: np.ndarray, results=None) -> dict:
         """Getting the raw data for plotting results"""
         # --- Producing and Saving the output
+        if results is None:
+            results = {}
+
         print(f"... preparing results for plot generation")
         data_train = self.__get_data_points(only_getting_labels=True, use_train_dataloader=True)
 

@@ -1,19 +1,12 @@
 from package.dnn.dnn_handler import dnn_handler
+from package.yaml_handler import yaml_config_handler, translate_dataclass_to_dict
 
 
 if __name__ == "__main__":
-    dnn_handler = dnn_handler(
-        mode_dnn=4,
-        mode_cellbib=2,
-        do_plot=True,
-        do_block=False
-    )
-
-    # --- Configs (AE)
-    mode_ae = 0
-    noise_std_ae = 0.01
-    num_hiddenlayer = 5
-    num_output = 6
+    # --- Loading YAML-Settings file
+    yaml_dict = translate_dataclass_to_dict(dnn_handler)
+    yaml_handler = yaml_config_handler(yaml_dict, 'config', 'Config_DNN')
+    dnn_handler = yaml_handler.get_class('dnn_handler')
 
     # --- Selecting model for train
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)"
@@ -34,11 +27,11 @@ if __name__ == "__main__":
         case 3:
             # --- Autoencoder (Normal)
             from src_dnn.train_ae import do_train_ae
-            do_train_ae(dnn_handler, mode_ae, noise_std_ae)
+            do_train_ae(dnn_handler, 0, 0.01)
         case 4:
             # --- Autoencoder + Classifier
             from src_dnn.train_ae_class import do_train_ae_classifier
-            do_train_ae_classifier(dnn_handler, num_hiddenlayer, num_output, mode_ae, noise_std_ae)
+            do_train_ae_classifier(dnn_handler, 5, 4, 0, 0.01)
         case 5:
             # --- RGC ON/OFF Classifier
             from src_dnn.train_rgc_class import do_train_rgc_class

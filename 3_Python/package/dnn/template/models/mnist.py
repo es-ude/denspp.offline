@@ -23,7 +23,7 @@ class mnist_mlp_cl_v1(__model_settings_common):
             if not idx == len(config_network)-1:
                 self.model.add_module(f"act_{idx:02d}", nn.ReLU())
             else:
-                #self.model.add_module(f"soft", nn.Softmax(dim=1))
+                # self.model.add_module(f"soft", nn.Softmax(dim=1))
                 pass
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
@@ -32,7 +32,7 @@ class mnist_mlp_cl_v1(__model_settings_common):
         return prob, argmax(prob, 1)
 
 
-class mnist_mlp_ae_v1(nn.Module):
+class mnist_mlp_ae_v1(__model_settings_common):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
     def __init__(self):
         super().__init__('Autoencoder')

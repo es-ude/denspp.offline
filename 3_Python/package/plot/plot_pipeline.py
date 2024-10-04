@@ -109,9 +109,9 @@ def results_afe1(signals: PipelineSignal, no_electrode: int, path="", time_cut=(
         plt.show(block=True)
 
 
-def results_afe2(signals: PipelineSignal, no_electrode: int, path="", time_cut=(),
-                 show_noise=False, show_plot=False) -> None:
-    """Plotting ADC output"""
+def results_afe_sorted(signals: PipelineSignal, no_electrode: int, path="", time_cut=(),
+                       show_noise=False, show_plot=False) -> None:
+    """Plotting ADC output with sorted results"""
     fs_dig = signals.fs_dig
     xadc = signals.x_adc
     time = np.arange(0, xadc.size, 1) / fs_dig
@@ -129,7 +129,7 @@ def results_afe2(signals: PipelineSignal, no_electrode: int, path="", time_cut=(
         tran0.append(xadc[tick_old:sel[0]] if show_noise else np.zeros(shape=(len(xadc[tick_old:sel[0]]), ), dtype=int))
         tran0.append(xadc[sel[0]:sel[1]])
         colo0.append(color_none[0])
-        colo0.append(get_plot_color(ticks_id))
+        colo0.append(get_plot_color(ticks_id[idx]))
         tick_old = sel[1]
 
     # --- Plot generation

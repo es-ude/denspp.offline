@@ -32,6 +32,7 @@ config_train_cl = Config_PyTorch(
     num_kfold=1,
     num_epochs=5,
     batch_size=256,
+    patience=10,
     data_split_ratio=0.25,
     data_do_shuffle=True
 )
@@ -45,6 +46,7 @@ config_train_ae = Config_PyTorch(
     num_kfold=1,
     num_epochs=10,
     batch_size=256,
+    patience=20,
     data_split_ratio=0.25,
     data_do_shuffle=True
 )

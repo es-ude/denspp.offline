@@ -3,11 +3,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-sel_color = ['k', 'r', 'gray', 'b', 'g', 'y', 'c', 'm']
+sel_color = ['k', 'r', 'b', 'g', 'y', 'c', 'm', 'gray']
 sel_marker = '.+x_'
 
 
-def get_plot_color(idx: int) -> 'str':
+def get_plot_color(idx: int) -> str:
     """Getting the color string"""
     return sel_color[idx % len(sel_color)]
 
