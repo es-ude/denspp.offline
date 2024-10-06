@@ -1,33 +1,22 @@
-from package.data_call.call_spike_files import DataLoader, SettingsDATA
-from package.pipeline_cmds import ThreadSettings, ProcessingData
+from package.data_call.call_spike_files import DataLoader
+from package.data_call.call_handler import RecommendedSettingsDATA
+from package.pipeline_cmds import ProcessingData, RecommendedThreadSetting
+from package.yaml_handler import yaml_config_handler
 from src_neuro.pipeline_v1 import Pipeline
 
 
 if __name__ == "__main__":
-    # --- Settings for Processing
-    SettingsDATA = SettingsDATA(
-        # path='../2_Data',
-        path='C:\HomeOffice\Data_Neurosignal',
-        data_set=1,
-        data_case=0,
-        data_point=0,
-        t_range=[0],
-        ch_sel=[],
-        fs_resample=50e3
-    )
-    settings_thr = ThreadSettings(
-        use_multithreading=True,
-        num_max_workers=2,
-        block_plots=True,
-        fs_ana=SettingsDATA.fs_resample,
-        pipeline=Pipeline
-    )
+    # --- Calling YAML config handler
+    yaml_data = yaml_config_handler(RecommendedSettingsDATA, yaml_name='Config_PipelineData')
+    settings_data = yaml_data.get_class('SettingsDATA')
+    yaml_threads = yaml_config_handler(RecommendedThreadSetting, yaml_name='Config_Pipeline')
+    settings_thr = yaml_threads.get_class('ThreadSettings')
 
     # ----- Preparation: Module calling -----
     print("\nRunning framework for end-to-end neural signal processing (DeNSPP)"
           "\n\nStep #1: Loading data"
           "\n=================================================")
-    datahand = DataLoader(SettingsDATA)
+    datahand = DataLoader(settings_data)
     datahand.do_call()
     # datahand.do_cut()
     datahand.do_resample()
@@ -38,7 +27,7 @@ if __name__ == "__main__":
     # --- Thread Preparation: Processing data
     print("\nStep #2: Processing data"
           "\n=================================================")
-    thr_station = ProcessingData(settings_thr, dataIn)
+    thr_station = ProcessingData(Pipeline, settings_thr, dataIn.data_raw, dataIn.electrode_id)
     thr_station.do_processing()
 
     # --- Plot all plots and save results

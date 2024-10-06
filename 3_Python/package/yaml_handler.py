@@ -58,7 +58,7 @@ class yaml_config_handler:
         """Getting the path to the desired YAML file"""
         return join(self.__path2yaml, f"{self.__yaml_name}.yaml")
 
-    def __init__(self, dummy_yaml: dict, path2yaml='', yaml_name='Config_Train'):
+    def __init__(self, dummy_yaml: dict, path2yaml='config', yaml_name='Config_Train'):
         """Creating a class for handling YAML files
         Args:
             dummy_yaml:         Dummy dictionary or class with entries, will be generated if YAML file does not exist
