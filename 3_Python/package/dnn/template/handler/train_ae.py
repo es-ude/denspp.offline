@@ -1,53 +1,43 @@
-from torch import nn
 import matplotlib.pyplot as plt
-
 from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import dnn_handler
-from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_dataclass import (Config_PyTorch, DefaultSettingsTrainMSE,
+                                           Config_Dataset, DefaultSettingsDataset)
 import package.dnn.template.models.autoencoder_dnn as models
 
 
-config_train = Config_PyTorch(
-    # --- Settings of Models/Training
-    model=models.dnn_ae_v1(),
-    loss='MSE',
-    loss_fn=nn.MSELoss(),
-    optimizer='Adam',
-    num_kfold=1,
-    num_epochs=100,
-    batch_size=256,
-    patience=20,
-    data_split_ratio=0.25,
-    data_do_shuffle=True
-)
-
-
-def do_train_ae(dnn_handler: dnn_handler, mode_ae: int, noise_std=0.05) -> None:
+def do_train_ae(settings: dnn_handler, mode_ae: int, noise_std=0.05, add_noise_cluster=False) -> None:
     """Training routine for Autoencoders in Neural Applications (Spike Frames)
     Args:
-        dnn_handler: Handler for configuring the routine selection for train deep neural networks
-        mode_ae: Selected model of the Autoencoder (0: normal, 1: Denoising (mean), 2: Denoising (input)) [default:0]
-        noise_std: Std of the additional noise added to the input [default: 0.05]
+        settings:           Handler for configuring the routine selection for train deep neural networks
+        mode_ae:            Selected model of the Autoencoder (0: normal, 1: Denoising (mean), 2: Denoising (input))
+        noise_std:          Std of the additional noise added to the input
+        add_noise_cluster:  Decision for adding noise cluster activity
+    Returns:
+        None
     """
     from package.dnn.template.dataset.autoencoder import prepare_training
     from package.dnn.pytorch.autoencoder import train_nn
     from package.plot.plot_dnn import results_training, plot_statistic_data
 
-    use_cell_bib = not (dnn_handler.mode_cell_bib == 0)
-    use_cell_mode = 0 if not use_cell_bib else dnn_handler.mode_cell_bib - 1
-
     # --- Loading the YAML files
-    yaml_data = yaml_config_handler(models.Recommended_Config_DatasetSettings, yaml_name='Config_AE_Dataset')
+    yaml_data = yaml_config_handler(DefaultSettingsDataset, yaml_name='Config_AE_Dataset')
     config_data = yaml_data.get_class(Config_Dataset)
+    yaml_nn = yaml_config_handler(DefaultSettingsTrainMSE, yaml_name='Config_AE_Training')
+    config_train = yaml_nn.get_class(Config_PyTorch)
+
+    # --- Building the model from YAML
+    model = models.models_available.build_model(config_train.model_name)
 
     # --- Processing: Loading dataset and Do Training
-    dataset = prepare_training(settings=config_data,
-                               use_cell_bib=use_cell_bib, mode_classes=use_cell_mode,
-                               mode_train_ae=mode_ae, do_classification=False,
-                               noise_std=noise_std)
+    dataset = prepare_training(settings=config_data, do_classification=False,
+                               mode_train_ae=mode_ae, noise_std=noise_std,
+                               add_noise_cluster=add_noise_cluster,
+                               use_median_for_mean=True)
     data_mean = dataset.frames_me
+
     trainhandler = train_nn(config_train, config_data)
-    trainhandler.load_model()
+    trainhandler.load_model(model)
     trainhandler.load_data(dataset)
     del dataset
     loss_ae, snr_train = trainhandler.do_training(metrics='snr')[-1]
@@ -57,7 +47,7 @@ def do_train_ae(dnn_handler: dnn_handler, mode_ae: int, noise_std=0.05) -> None:
     data_result = trainhandler.do_validation_after_training()
 
     # --- Plotting and Ending
-    if dnn_handler.do_plot:
+    if settings.do_plot:
         plt.close('all')
         results_training(
             path=logsdir, cl_dict=data_result['cl_dict'], feat=data_result['feat'],
@@ -65,17 +55,16 @@ def do_train_ae(dnn_handler: dnn_handler, mode_ae: int, noise_std=0.05) -> None:
             yclus=data_result['valid_clus'], snr=snr_train
         )
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
-                            path2save=logsdir, cl_dict=data_result['cl_dict'], show_plot=dnn_handler.do_block)
-
+                            path2save=logsdir, cl_dict=data_result['cl_dict'],
+                            show_plot=settings.do_block)
     print("\nThe End")
 
 
 if __name__ == "__main__":
     dnn_handler = dnn_handler(
-        mode_dnn=1,
-        mode_cellbib=0,
+        mode_train_dnn=1,
+        mode_cell_bib=0,
         do_plot=True,
         do_block=True
     )
-
     do_train_ae(dnn_handler, 0, 0)

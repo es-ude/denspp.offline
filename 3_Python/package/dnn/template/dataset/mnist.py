@@ -4,6 +4,8 @@ from torchvision import datasets, transforms
 from torch import is_tensor, concat
 from torch.utils.data import Dataset
 
+from package.dnn.pytorch_dataclass import Config_Dataset
+
 
 class DatasetMNIST(Dataset):
     """Dataset Preparator for training Autoencoder"""
@@ -67,7 +69,7 @@ def load_mnist(data_path: str) -> [datasets.MNIST, datasets.MNIST]:
     return data_train, data_valid
 
 
-def prepare_training(data_path: str, do_normalization=False, do_classification=True) -> DatasetMNIST:
+def prepare_training(settings: Config_Dataset, do_classification=True) -> DatasetMNIST:
     """Loading and preparing the MNIST dataset for Deep Learning
     Args:
         data_path:          String to the path for loading MNIST
@@ -76,7 +78,7 @@ def prepare_training(data_path: str, do_normalization=False, do_classification=T
     Returns:
         Getting the prepared Dataset for MNIST
     """
-    data_train, data_valid = load_mnist(data_path)
+    data_train, data_valid = load_mnist(settings.data_path)
 
     # --- Translating data to common
     data_raw = concat((data_train.data, data_valid.data), 0).numpy()
@@ -84,8 +86,16 @@ def prepare_training(data_path: str, do_normalization=False, do_classification=T
     data_dict = data_train.classes
 
     # --- Normalization
-    if do_normalization:
+    if settings.normalization_do:
         data_raw = data_raw / 255.0
+        print("... do value normalization on input")
+
+    # --- Augmentation
+    if settings.augmentation_do:
+        print("... augmentation method is not implemented - Ignored!")
+
+    if settings.reduce_samples_per_cluster_do:
+        print(f"... reducing samples is not implemented - Ignored!")
 
     # --- Print Output
     check = np.unique(data_label, return_counts=True)

@@ -1,8 +1,11 @@
 from torch import nn, Tensor, unsqueeze, argmax
-from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
-from package.dnn.pytorch_handler import __model_settings_common
+from package.dnn.pytorch_handler import __model_settings_common, ModelRegistry
 
 
+models_available = ModelRegistry()
+
+
+@models_available.register
 class dnn_sda_v1(__model_settings_common):
     """Class of a dense-layer based spike detection classifier"""
     def __init__(self, input_size=9, output_size=2):
@@ -30,6 +33,7 @@ class dnn_sda_v1(__model_settings_common):
         return xdist, argmax(xdist, dim=1)
 
 
+@models_available.register
 class cnn_sda_v1(__model_settings_common):
     """Class of a convolutional spike detection classifier"""
     def __init__(self, input_size=9, output_size=2):
@@ -64,37 +68,3 @@ class cnn_sda_v1(__model_settings_common):
         xin = unsqueeze(x, dim=1)
         xds = self.detector(xin)
         return xds, argmax(xds, dim=1)
-
-
-Recommended_Config_PytorchSettings = Config_PyTorch(
-    model=dnn_sda_v1(),
-    loss='Cross Entropy',
-    loss_fn=nn.CrossEntropyLoss(),
-    optimizer='Adam',
-    num_kfold=1,
-    patience=20,
-    num_epochs=40,
-    batch_size=256,
-    data_do_shuffle=True,
-    data_split_ratio=0.25
-)
-
-Recommended_Config_DatasetSettings = Config_Dataset(
-    # --- Settings of Datasets
-    data_path='../2_Data/00_Merged_Datasets',
-    data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
-    # --- Data Augmentation
-    data_do_augmentation=False,
-    data_num_augmentation=0,
-    data_do_addnoise_cluster=False,
-    # --- Data Normalization
-    data_do_normalization=False,
-    data_normalization_mode='',
-    data_normalization_method='',
-    data_normalization_setting='',
-    # --- Dataset Preparation
-    data_do_reduce_samples_per_cluster=False,
-    data_num_samples_per_cluster=0,
-    data_exclude_cluster=[],
-    data_sel_pos=[]
-)

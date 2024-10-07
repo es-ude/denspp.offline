@@ -1,6 +1,4 @@
-from torch import nn
 import matplotlib.pyplot as plt
-
 from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
@@ -11,7 +9,6 @@ config_train_sda = Config_PyTorch(
     # --- Settings of Models/Training
     model=models.dnn_sda_v1(16, 5),
     loss='Cross Entropy',
-    loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
     patience=20,

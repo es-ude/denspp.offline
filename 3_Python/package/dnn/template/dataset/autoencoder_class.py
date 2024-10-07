@@ -1,23 +1,22 @@
+import numpy as np
 from os.path import join
 from glob import glob
 from scipy.io import loadmat
 from torch import is_tensor, load, from_numpy
 from torch.utils.data import Dataset
 
-from package.dnn.pytorch_handler import Config_Dataset
+from package.dnn.pytorch_dataclass import Config_Dataset
 from package.data_process.frame_preprocessing import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
-from package.data_process.frame_preprocessing import change_frame_size, reconfigure_cluster_with_cell_lib, generate_zero_frames
+from package.data_process.frame_preprocessing import reconfigure_cluster_with_cell_lib, generate_zero_frames
 from package.data_process.frame_normalization import DataNormalization
-from package.data_process.frame_augmentation import *
+from package.data_process.frame_augmentation import augmentation_change_position, augmentation_reducing_samples
 
 
 class DatasetAE_Class(Dataset):
-    """Dataset Preparation for training autoencoder-based classifications"""
-
     def __init__(self, frames_raw: np.ndarray, frames_feat: np.ndarray,
                  cluster_id: np.ndarray, frames_cluster_me: np.ndarray,
                  cluster_dict=None):
-        self.size_output = 4
+        """Dataset Preparation for training autoencoder-based classifications"""
         # --- Input Parameters
         self.__frames_raw = np.array(frames_raw, dtype=np.float32)
         self.__frames_feat = np.array(frames_feat, dtype=np.float32)
@@ -40,48 +39,55 @@ class DatasetAE_Class(Dataset):
 
 
 def prepare_training(settings: Config_Dataset, path2model: str,
-                     use_cell_bib=False, mode_classes=2,
-                     use_median_for_mean=True) -> DatasetAE_Class:
-    """Preparing dataset incl. augmentation for spike-frame based training"""
+                     add_noise_cluster=False, use_median_for_mean=True) -> DatasetAE_Class:
+    """Preparing dataset incl. augmentation for spike-frame based training
+    Args:
+        settings:               Class for loading the data and do pre-processing
+        path2model:             Path to already-trained autoencoder
+        add_noise_cluster:      Adding the noise cluster to dataset
+        use_median_for_mean:    Using median for calculating mean waveform (Boolean)
+    Returns:
+        Dataloader for training autoencoder-based classifier
+    """
     print("... loading and processing the dataset")
-    npzfile = loadmat(settings.get_path2data())
+    npzfile = loadmat(settings.get_path2data)
     frames_in = npzfile["frames_in"]
     frames_cl = npzfile["frames_cluster"].flatten() if 'frames_cluster' in npzfile else npzfile["frames_cl"].flatten()
     frames_dict = None
 
     # --- Using cell_bib for clustering
-    if use_cell_bib:
-        frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(settings.get_path2data(),
-                                                                              mode_classes, frames_in, frames_cl)
+    if settings.use_cell_library:
+        frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(settings.get_path2data,
+                                                                              settings.use_cell_library,
+                                                                              frames_in, frames_cl)
 
     # --- PART: Reducing samples per cluster (if too large)
-    if settings.data_do_reduce_samples_per_cluster:
+    if settings.reduce_samples_per_cluster_do:
         print("... reducing the samples per cluster (for pre-training on dedicated hardware)")
         frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
-                                                             settings.data_num_samples_per_cluster,
+                                                             settings.reduce_samples_per_cluster_num,
                                                              do_shuffle=False)
 
     # --- PART: Data Normalization
-    if settings.data_do_normalization:
+    if settings.normalization_do:
         print(f"... do data normalization")
-        data_class_frames_in = DataNormalization(device=settings.data_normalization_mode,
-                                                 method=settings.data_normalization_method,
-                                                 mode=settings.data_normalization_setting)
+        data_class_frames_in = DataNormalization(device=settings.normalization_mode,
+                                                 method=settings.normalization_method,
+                                                 mode=settings.normalization_setting)
         frames_in = data_class_frames_in.normalize(frames_in)
 
     # --- PART: Mean waveform calculation and data augmentation
-    frames_in = change_frame_size(frames_in, settings.data_sel_pos)
     if use_median_for_mean:
         frames_me = calculate_frame_median(frames_in, frames_cl)
     else:
         frames_me = calculate_frame_mean(frames_in, frames_cl)
 
     # --- PART: Exclusion of selected clusters
-    if len(settings.data_exclude_cluster) == 0:
+    if len(settings.exclude_cluster) == 0:
         frames_in = frames_in
         frames_cl = frames_cl
     else:
-        for i, id in enumerate(settings.data_exclude_cluster):
+        for i, id in enumerate(settings.exclude_cluster):
             selX = np.where(frames_cl != id)
             frames_in = frames_in[selX[0], :]
             frames_cl = frames_cl[selX]
@@ -93,23 +99,23 @@ def prepare_training(settings: Config_Dataset, path2model: str,
             frames_dict.append(f"Neuron #{id}")
 
     # --- PART: Calculate SNR if desired
-    if settings.data_do_augmentation or settings.data_do_addnoise_cluster:
+    if settings.augmentation_do or add_noise_cluster:
         snr_mean = calculate_frame_snr(frames_in, frames_cl, frames_me)
     else:
         snr_mean = np.zeros(0, dtype=float)
 
     # --- PART: Data Augmentation
-    if settings.data_do_augmentation and not settings.data_do_reduce_samples_per_cluster:
+    if settings.augmentation_do and not settings.reduce_samples_per_cluster_do:
         print("... do data augmentation")
         # new_frames, new_clusters = augmentation_mean_waveform(
         # frames_me, frames_cl, snr_mean, settings.data_num_augmentation)
         new_frames, new_clusters = augmentation_change_position(
-            frames_in, frames_cl, snr_mean, settings.data_num_augmentation)
+            frames_in, frames_cl, snr_mean, settings.augmentation_num)
         frames_in = np.append(frames_in, new_frames, axis=0)
         frames_cl = np.append(frames_cl, new_clusters, axis=0)
 
     # --- PART: Generate and add noise cluster
-    if settings.data_do_addnoise_cluster:
+    if add_noise_cluster:
         snr_range_zero = [np.median(snr_mean[:, 0]), np.median(snr_mean[:, 2])]
         info = np.unique(frames_cl, return_counts=True)
         num_cluster = np.max(info[0]) + 1

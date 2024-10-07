@@ -97,7 +97,7 @@ class train_nn(training_pytorch):
 
         # --- Handling Kfold cross validation training
         if self._do_kfold:
-            print(f"Starting Kfold cross validation training in {self.settings.num_kfold} steps")
+            print(f"Starting Kfold cross validation training in {self.settings_train.num_kfold} steps")
 
         run_metric = list()
         path2model = str()
@@ -108,10 +108,10 @@ class train_nn(training_pytorch):
         print(f'\nTraining starts on {timestamp_string}'
               f"\n=====================================================================================")
 
-        for fold in np.arange(self.settings.num_kfold):
+        for fold in np.arange(self.settings_train.num_kfold):
             # --- Init fold
             best_loss = np.array((1_000_000., 1_000_000.), dtype=float)
-            patience_counter = self.settings.patience
+            patience_counter = self.settings_train.patience
             epoch_loss = list()
             epoch_metric = list()
             self.model.load_state_dict(load(path2model_init))
@@ -121,12 +121,12 @@ class train_nn(training_pytorch):
             if self._do_kfold:
                 print(f'\nStarting with Fold #{fold}')
 
-            for epoch in range(0, self.settings.num_epochs):
+            for epoch in range(0, self.settings_train.num_epochs):
                 loss_train = self.__do_training_epoch()
                 loss_valid = self.__do_valid_epoch()
 
-                print(f'... results of epoch {epoch + 1}/{self.settings.num_epochs} '
-                      f'[{(epoch + 1) / self.settings.num_epochs * 100:.2f} %]: '
+                print(f'... results of epoch {epoch + 1}/{self.settings_train.num_epochs} '
+                      f'[{(epoch + 1) / self.settings_train.num_epochs * 100:.2f} %]: '
                       f'train_loss = {loss_train:.5f},'
                       f'\tvalid_loss = {loss_valid:.5f},'
                       f'\tdelta_loss = {loss_train-loss_valid:.6f}')
@@ -145,7 +145,7 @@ class train_nn(training_pytorch):
                     best_loss = [loss_train, loss_valid]
                     path2model = join(self._path2temp, f'model_ae_fold{fold:03d}_epoch{epoch:04d}.pth')
                     save(self.model, path2model)
-                    patience_counter = self.settings.patience
+                    patience_counter = self.settings_train.patience
                 else:
                     patience_counter -= 1
 

@@ -1,6 +1,4 @@
-from torch import nn
 import matplotlib.pyplot as plt
-
 from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
@@ -29,7 +27,6 @@ def do_train_rgc_ae_cl(dnn_handler: dnn_handler,
         # --- Settings of Models/Training
         model=models.cnn_rgc_ae_v1(32, num_feature_layer),
         loss='MSE',
-        loss_fn=nn.MSELoss(),
         optimizer='Adam',
         num_kfold=1,
         num_epochs=100,
@@ -41,7 +38,6 @@ def do_train_rgc_ae_cl(dnn_handler: dnn_handler,
         # --- Settings of Models/Training
         model=models.rgc_ae_cl_v2(num_feature_layer, num_output),
         loss='Cross Entropy',
-        loss_fn=nn.CrossEntropyLoss(),
         optimizer='Adam',
         num_kfold=1,
         num_epochs=100,
@@ -89,7 +85,7 @@ def do_train_rgc_ae_cl(dnn_handler: dnn_handler,
     # ----------- Step #2: TRAINING CLASSIFIER
     # --- Processing: Loading dataset and Do Classification
     dataset = get_dataset_class(settings=config_data, path2model=path2model,
-                                use_cell_bib=use_cell_bib, mode_classes=use_cell_mode)
+                                use_cell_bib=use_cell_bib, mode_celllib_classes=use_cell_mode)
     num_output = dataset.frames_me.shape[0]
     trainhandler = train_classifier(config_train=config_train_cl, config_data=config_data)
     trainhandler.load_model()

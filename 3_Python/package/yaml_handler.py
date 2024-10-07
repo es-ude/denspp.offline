@@ -39,7 +39,7 @@ def read_yaml_to_dict(filename: str, path2save='',
     # --- Reading YAML file
     with open(path2yaml, 'r') as f:
         config_data = yaml.safe_load(f)
-    print(print(f"... readed YAML file: {path2yaml}"))
+    print(f"... read YAML file: {path2yaml}")
 
     # --- Printing output
     if print_output:

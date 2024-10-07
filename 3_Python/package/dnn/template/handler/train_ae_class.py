@@ -1,75 +1,51 @@
 import numpy as np
-from torch import nn
 import matplotlib.pyplot as plt
 
 from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import dnn_handler
-from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_dataclass import (Config_PyTorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE,
+                                           Config_Dataset, DefaultSettingsDataset)
+
 import package.dnn.template.models.autoencoder_cnn as models_ae
 import package.dnn.template.models.autoencoder_class as models_class
 
 
 def do_train_ae_classifier(dnn_handler: dnn_handler,
-                           num_feature_layer: int, num_output_cl: int,
+                           num_feat_layer: int, num_output_cl: int, add_noise_cluster=False,
                            mode_ae=0, noise_std=0.05) -> dict:
     """Training routine for Autoencoders and Classification after Encoder
     Args:
         dnn_handler:        Handler for configurating the routine selection for train deep neural networks
-        num_feature_layer:  Size of hidden layer from autoencoder
+        num_feat_layer:     Size of hidden layer from autoencoder
         num_output_cl:      Output size of classifier
-        mode_ae:            Selected model of the Autoencoder (0: normal, 1: Denoising (mean), 2: Denoising (input)) [default:0]
+        add_noise_cluster:  Adding noise cluster to dataset [Default: False]
+        mode_ae:            Selected model of the Autoencoder (0: normal, 1: Denoising (mean), 2: Denoising (input))
         noise_std:          Std of the additional noise added to the input [default: 0.05]
+    Returns:
+        Dictionary
     """
     from package.dnn.template.dataset.autoencoder import prepare_training as get_dataset_ae
-    from package.dnn.template.dataset.autoencoder_class import prepare_training as get_dataset_class
+    from package.dnn.template.dataset.autoencoder_class import prepare_training as get_dataset_cl
     from package.dnn.pytorch.autoencoder import train_nn as train_autoencoder
     from package.dnn.pytorch.classifier import train_nn as train_classifier
     from package.plot.plot_dnn import results_training, plot_statistic_data
     from package.plot.plot_metric import plot_confusion, plot_loss
 
     metric_run = dict()
-
-    # --- Definition of settings
-    config_train_ae = Config_PyTorch(
-        # --- Settings of Models/Training
-        model=models_ae.cnn_ae_v4(32, num_feature_layer),
-        loss='MSE',
-        loss_fn=nn.MSELoss(),
-        optimizer='Adam',
-        num_kfold=1,
-        patience=20,
-        num_epochs=100,
-        batch_size=256,
-        data_split_ratio=0.25,
-        data_do_shuffle=True
-    )
-    config_train_cl = Config_PyTorch(
-        # --- Settings of Models/Training
-        model=models_class.classifier_ae_v1(num_feature_layer, num_output_cl),
-        loss='Cross Entropy',
-        loss_fn=nn.CrossEntropyLoss(),
-        optimizer='Adam',
-        num_kfold=1,
-        patience=20,
-        num_epochs=100,
-        batch_size=256,
-        data_split_ratio=0.25,
-        data_do_shuffle=True
-    )
-
-    use_cell_bib = not (dnn_handler.mode_cell_bib == 0)
-    use_cell_mode = 0 if not use_cell_bib else dnn_handler.mode_cell_bib - 1
-
     # --- Loading the YAML files
-    yaml_data = yaml_config_handler(models_ae.Recommended_Config_DatasetSettings, yaml_name='Config_AE+CL_Dataset')
+    yaml_data = yaml_config_handler(DefaultSettingsDataset, yaml_name='Config_AE+CL_Dataset')
     config_data = yaml_data.get_class(Config_Dataset)
+
+    yaml_nn0 = yaml_config_handler(DefaultSettingsTrainMSE, yaml_name='Config_AECL_TrainAE')
+    config_train_ae = yaml_nn0.get_class(Config_PyTorch)
+    model_ae = models_ae.models_available.build_model(config_train_ae.model_name, output_size=num_feat_layer)
 
     # ----------- Step #1: TRAINING AUTOENCODER
     # --- Processing: Loading dataset and Do Autoencoder Training
-    dataset = get_dataset_ae(settings=config_data, use_cell_bib=use_cell_bib, mode_classes=use_cell_mode,
-                             mode_train_ae=mode_ae, noise_std=noise_std, do_classification=False)
+    dataset = get_dataset_ae(settings=config_data, do_classification=False,
+                             mode_train_ae=mode_ae, noise_std=noise_std, add_noise_cluster=add_noise_cluster)
     trainhandler = train_autoencoder(config_train=config_train_ae, config_data=config_data)
-    trainhandler.load_model()
+    trainhandler.load_model(model_ae)
     trainhandler.load_data(dataset)
     loss_ae, snr_ae = trainhandler.do_training(metrics='snr')[-1]
     path2model = trainhandler.get_saving_path()
@@ -91,12 +67,16 @@ def do_train_ae_classifier(dnn_handler: dnn_handler,
     del dataset, trainhandler
 
     # ----------- Step #2: TRAINING CLASSIFIER
+    yaml_nn1 = yaml_config_handler(DefaultSettingsTrainCE, yaml_name='Config_AECL_TrainCL')
+    config_train_cl = yaml_nn1.get_class(Config_PyTorch)
+    model_cl = models_class.models_available.build_model(config_train_cl.model_name,
+                                                         input_size=num_feat_layer, output_size=num_output_cl)
+
     # --- Processing: Loading dataset and Do Classification
-    dataset = get_dataset_class(settings=config_data, path2model=path2model,
-                                use_cell_bib=use_cell_bib, mode_classes=use_cell_mode)
+    dataset = get_dataset_cl(settings=config_data, path2model=path2model, add_noise_cluster=add_noise_cluster)
     num_output = dataset.frames_me.shape[0]
     trainhandler = train_classifier(config_train=config_train_cl, config_data=config_data)
-    trainhandler.load_model()
+    trainhandler.load_model(model_cl)
     trainhandler.load_data(dataset)
     acc_class = trainhandler.do_training()[-1]
 

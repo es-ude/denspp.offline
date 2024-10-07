@@ -1,52 +1,35 @@
-from torch import nn
 import matplotlib.pyplot as plt
-
 from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import dnn_handler
-from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_dataclass import (Config_PyTorch, DefaultSettingsDataset,
+                                           Config_Dataset, DefaultSettingsTrainCE)
 import package.dnn.template.models.autoencoder_class as models
 
 
-config_train = Config_PyTorch(
-    # --- Settings of Models/Training
-    model=models.classifier_ae_v1(32, 5),
-    loss='Cross Entropy',
-    loss_fn=nn.CrossEntropyLoss(),
-    optimizer='Adam',
-    num_kfold=1,
-    num_epochs=100,
-    batch_size=256,
-    patience=10,
-    data_split_ratio=0.25,
-    data_do_shuffle=True
-)
-
-
-def do_train_classifier(dnn_handler: dnn_handler) -> None:
+def do_train_classifier(dnn_handler: dnn_handler, num_output_size=5) -> None:
     """Training routine for Autoencoders
     Args:
-        dnn_handler: Handler for configurating the routine selection for train deep neural networks
-        mode_cell_bib: If the dataset contains a cell library then the mode can be choicen (0: Deactivated, 1: All, 2-...: Reduced) [default: 0]
-        do_plot: Doing the plots during the training routine
-        block_plot: Blocking the plot outputs if do_plot is active
+        dnn_handler:        Handler for configuring the routine selection for train deep neural networks
+        num_output_size:    Size of output layer
+    Returns:
+        None
     """
     from package.dnn.template.dataset.autoencoder import prepare_training
     from package.dnn.pytorch.classifier import train_nn
     from package.plot.plot_dnn import plot_statistic_data
     from package.plot.plot_metric import plot_confusion, plot_loss
 
-    use_cell_bib = not (dnn_handler.mode_cell_bib == 0)
-    use_cell_mode = 0 if not use_cell_bib else dnn_handler.mode_cell_bib - 1
-
     # --- Loading the YAML files
-    yaml_data = yaml_config_handler(models.Recommended_Config_DatasetSettings, yaml_name='Config_CL_Dataset')
+    yaml_data = yaml_config_handler(DefaultSettingsDataset, yaml_name='Config_CL_Dataset')
     config_data = yaml_data.get_class(Config_Dataset)
+    yaml_nn = yaml_config_handler(DefaultSettingsTrainCE, yaml_name='Config_CL_Training')
+    config_train = yaml_nn.get_class(Config_PyTorch)
+    model = models.models_available.build_model(config_train.model_name, output_size=num_output_size)
 
     # ---Loading Data, Do Training and getting the results
-    dataset = prepare_training(config_data, use_cell_bib=use_cell_bib, mode_classes=use_cell_mode,
-                               do_classification=True)
+    dataset = prepare_training(config_data, do_classification=True)
     trainhandler = train_nn(config_train, config_data)
-    trainhandler.load_model()
+    trainhandler.load_model(model)
     trainhandler.load_data(dataset)
     del dataset
     epoch_acc = trainhandler.do_training()[-1]

@@ -20,17 +20,17 @@ if __name__ == "__main__":
             from package.dnn.template.handler.train_mnist import do_train_ae
             do_train_ae(dnn_handler.do_plot, dnn_handler.do_block)
         case 2:
+            # --- Autoencoder (Normal)
+            from package.dnn.template.handler.train_ae import do_train_ae
+            do_train_ae(dnn_handler, 0, 0.01)
+        case 3:
+            # --- Autoencoder + Classifier
+            from package.dnn.template.handler.train_ae_class import do_train_ae_classifier
+            do_train_ae_classifier(dnn_handler, 5, 4, 0, 0.01)
+        case 4:
             # --- Spike Detection
             from src_dnn.train_sda import dnn_train_sda
             dnn_train_sda(dnn_handler, 4)
-        case 3:
-            # --- Autoencoder (Normal)
-            from src_dnn.train_ae import do_train_ae
-            do_train_ae(dnn_handler, 0, 0.01)
-        case 4:
-            # --- Autoencoder + Classifier
-            from src_dnn.train_ae_class import do_train_ae_classifier
-            do_train_ae_classifier(dnn_handler, 5, 4, 0, 0.01)
         case 5:
             # --- RGC ON/OFF Classifier
             from src_dnn.train_rgc_class import do_train_rgc_class

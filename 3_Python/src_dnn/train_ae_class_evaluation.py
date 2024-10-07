@@ -3,8 +3,8 @@ import torch.nn as nn
 from matplotlib.ticker import MaxNLocator
 from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
-import package.dnn.models.autoencoder_cnn as models_ae
-import package.dnn.models.autoencoder_class as models_class
+import package.dnn.template.models.autoencoder_cnn as models_ae
+import package.dnn.template.models.autoencoder_class as models_class
 from package.plot.plot_metric import calculate_class_accuracy
 from sklearn.metrics import precision_recall_fscore_support
 
@@ -17,19 +17,19 @@ config_data = Config_Dataset(
     data_path='../../2_Data/00_Merged_Datasets',
     data_file_name='2023-11-24_Dataset-07_RGC_TDB_Merged.mat',
     # --- Data Augmentation
-    data_do_augmentation=False,
-    data_num_augmentation=0,
-    data_do_addnoise_cluster=False,
+    augmentation_do=False,
+    augmentation_num=0,
+    add_noise_cluster=False,
     # --- Data Normalization
-    data_do_normalization=True,
-    data_normalization_mode='CPU',
-    data_normalization_method='minmax',
-    data_normalization_setting='bipolar',
+    normalization_do=True,
+    normalization_mode='CPU',
+    normalization_method='minmax',
+    normalization_setting='bipolar',
     # --- Dataset Reduction
-    data_do_reduce_samples_per_cluster=False,
-    data_num_samples_per_cluster=5_000,
-    data_exclude_cluster=[],
-    data_sel_pos=[]
+    reduce_samples_per_cluster_do=False,
+    reduce_samples_per_cluster_num=5_000,
+    exclude_cluster=[],
+    reduce_positions_per_sample=[]
 )
 
 

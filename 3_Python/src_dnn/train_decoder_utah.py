@@ -13,7 +13,6 @@ ConfigTrain = ConfigPyTorch(
     # --- Settings of Models/Training
     model=models.test_model_if_pipeline_running(1, 12, 3),
     loss='Cross Entropy',
-    loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
     num_epochs=1,

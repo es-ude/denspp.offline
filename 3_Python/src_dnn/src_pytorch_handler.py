@@ -318,10 +318,10 @@ class TrainingPytorch:
             txt_handler.write(f'Do KFold cross validation?: {self._do_kfold},\n'
                               f'Number of KFold steps: {self.settings.num_kfold}\n')
             txt_handler.write(f'Do shuffle?: {self.settings.data_do_shuffle}\n')
-            txt_handler.write(f'Do data augmentation?: {self.settings_data.data_do_augmentation}\n')
-            txt_handler.write(f'Do input normalization?: {self.settings_data.data_do_normalization}\n')
-            txt_handler.write(f'Do add noise cluster?: {self.settings_data.data_do_addnoise_cluster}\n')
-            txt_handler.write(f'Exclude cluster: {self.settings_data.data_exclude_cluster}\n')
+            txt_handler.write(f'Do data augmentation?: {self.settings_data.augmentation_do}\n')
+            txt_handler.write(f'Do input normalization?: {self.settings_data.normalization_do}\n')
+            txt_handler.write(f'Do add noise cluster?: {self.settings_data.add_noise_cluster}\n')
+            txt_handler.write(f'Exclude cluster: {self.settings_data.exclude_cluster}\n')
 
     def _save_train_results(self, last_metric_train: float | np.ndarray,
                             last_metric_valid: float | np.ndarray, type='Loss') -> None:

@@ -54,20 +54,20 @@ def prepare_training(settings: Config_Dataset, threshold: int) -> DatasetSDA:
     frames_cl = npzfile["sda_pred"]
 
     # --- PART: Exclusion of selected clusters
-    if not len(settings.data_exclude_cluster) == 0:
-        for i, id in enumerate(settings.data_exclude_cluster):
+    if not len(settings.exclude_cluster) == 0:
+        for i, id in enumerate(settings.exclude_cluster):
             selX = np.where(frames_cl != id)
             frames_in = frames_in[selX[0], :]
             frames_cl = frames_cl[selX]
 
     # --- PART: Reducing samples per cluster (if too large)
-    if settings.data_do_reduce_samples_per_cluster:
+    if settings.reduce_samples_per_cluster_do:
         print("... do data augmentation with reducing the samples per cluster")
         frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
-                                                             settings.data_num_samples_per_cluster)
+                                                             settings.reduce_samples_per_cluster_num)
 
     # --- PART: Data Normalization
-    if settings.data_do_normalization:
+    if settings.normalization_do:
         data_class_frames_in = DataNormalization(mode="CPU", method="minmax", do_global=False)
         frames_in = data_class_frames_in.normalize(frames_in)
 

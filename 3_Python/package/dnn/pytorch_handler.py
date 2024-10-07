@@ -1,5 +1,3 @@
-import dataclasses
-from typing import Any
 from os import mkdir, remove, getcwd
 from os.path import exists, join
 import platform
@@ -9,110 +7,81 @@ import numpy as np
 from shutil import rmtree
 from glob import glob
 from datetime import datetime
-from torch import optim, device, cuda, backends, nn, randn, cat
+from torch import device, cuda, backends, nn, randn, cat
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
 from sklearn.model_selection import KFold
 
+from package.dnn.pytorch_dataclass import Config_PyTorch, Config_Dataset
 from package.structure_builder import create_folder_general_firstrun, create_folder_dnn_firstrun
 
 
-@dataclasses.dataclass(frozen=True)
-class Config_PyTorch:
-    """Class for handling the PyTorch training/inference routing"""
-    # --- Settings of Models/Training
-    model: Any
-    loss_fn: Any
-    patience: int
-    optimizer: str
-    loss: str
-    num_kfold: int
-    num_epochs: int
-    batch_size: int
-    data_split_ratio: float
-    data_do_shuffle: bool
+class ModelRegistry:
+    def __init__(self):
+        """Class for building the overview of neural networks"""
+        self.data = {}
 
-    @property
-    def get_topology(self) -> str:
-        """Getting the model name defined in models"""
-        return self.model.out_modeltyp
+    def register(self, fn):
+        """Adding a class with neural network topology to system"""
+        self.data[fn.__name__] = fn
+        return fn
 
-    def load_optimizer(self, learn_rate=0.1) -> Any:
-        """Loading the optimizer function"""
-        if self.optimizer == 'Adam':
-            return self.__set_optimizer_adam()
-        elif self.optimizer == 'SGD':
-            return self.__set_optimizer_sgd(learn_rate=learn_rate)
-        else:
-            return -1
+    def build_model(self, name: str, *args, **kwargs):
+        """Build the model"""
+        model = self.data[name](*args, **kwargs)
+        print(model.__annotations__)
+        return model
 
-    def __set_optimizer_adam(self):
-        """Using the Adam Optimizer"""
-        return optim.Adam(self.model.parameters())
+    def get_model_overview(self, do_print=True) -> list:
+        """Getting an overview of existing models in library"""
+        if do_print:
+            print("\nOverview of available neural network models"
+                  "\n====================================================")
+            idx = 0
+            for key, func in self.data.items():
+                print(f"\t#{idx:02d}: {key}")
+                # print(func.__annotations__)
+                idx += 1
 
-    def __set_optimizer_sgd(self, learn_rate=0.1):
-        """Using the SGD as Optimizer"""
-        return optim.SGD(self.model.parameters(), lr=learn_rate)
-
-
-@dataclasses.dataclass(frozen=True)
-class Config_Dataset:
-    """Class for handling preparation of dataset"""
-    # --- Settings of Datasets
-    data_path: str
-    data_file_name: str
-    # --- Data Augmentation
-    data_do_augmentation: bool
-    data_num_augmentation: int
-    data_do_normalization: bool
-    data_normalization_mode: str
-    data_normalization_method: str
-    data_normalization_setting: str
-    data_do_addnoise_cluster: bool
-    data_do_reduce_samples_per_cluster: bool
-    data_num_samples_per_cluster: int
-    # --- Dataset Preparation
-    data_exclude_cluster: list
-    data_sel_pos: list
-
-    def get_path2data(self) -> str:
-        """Getting the path name to the file"""
-        return join(self.data_path, self.data_file_name)
+        return [key for key in self.data.keys()]
 
 
 class __model_settings_common(nn.Module):
     model: nn.Sequential
 
     def __init__(self, type_model: str):
+        """"""
         super().__init__()
         self.model_shape = (1, 28, 28)
         self.model_embedded = False
         self.out_modeltyp = type_model
-        self.out_modelname = self.__get_modelname()
+        self.out_modelname = self.get_modelname
 
-    def __get_modelname(self) -> str:
-        """"""
-        return self.__class__.__name__ + self.__get_addon()
+    @property
+    def get_modelname(self) -> str:
+        """Getting the name of the model"""
+        return self.__class__.__name__ + self.__get_addon
 
+    @property
     def __get_addon(self) -> str:
-        """"""
+        """Getting the prefix / addon of used network topology"""
         match self.out_modeltyp:
             case 'Classifier':
-                addon = '_class'
+                addon = '_cl'
             case 'Autoencoder':
                 addon = '_ae'
             case _:
                 addon = '_unknown'
         return addon
 
+    @property
+    def get_topology(self) -> str:
+        """Getting the model name defined in models"""
+        return self.out_modeltyp
+
 
 class training_pytorch:
-    """Class for Handling Training of Deep Neural Networks in PyTorch
-    Args:
-        config_train:   Configuration settings for the PyTorch Training
-        do_train:       Mention if training should be used (default = True)
-    """
     used_hw_dev: device
     used_hw_cpu: str
     used_hw_gpu: str
@@ -123,29 +92,34 @@ class training_pytorch:
     cell_classes: list
 
     def __init__(self, config_train: Config_PyTorch, config_dataset: Config_Dataset, do_train=True) -> None:
+        """Class for Handling Training of Deep Neural Networks in PyTorch
+        Args:
+            config_train:   Configuration settings for the PyTorch Training
+            config_dataset: Configuration settings for dataset handling
+            do_train:       Mention if training should be used (default = True)
+        Returns:
+            None
+        """
         create_folder_general_firstrun()
         create_folder_dnn_firstrun()
-
+        # --- Preparing Neural Network
         self.os_type = platform.system()
         self._writer = None
         self.model = None
         self.loss_fn = None
         self.optimizer = None
-
         # --- Preparing options
         self.config_available = False
         self._do_kfold = False
         self._do_shuffle = config_train.data_do_shuffle
         self._run_kfold = 0
-
         # --- Saving options
-        self.settings = config_train
+        self.settings_train = config_train
         self.settings_data = config_dataset
         self._index_folder = 'train' if do_train else 'inference'
-        self._aitype = config_train.model.out_modeltyp
-        self._model_name = config_train.model.out_modelname
+        self._aitype = str()
+        self._model_name = str()
         self._model_addon = str()
-
         # --- Logging paths for saving
         self.__check_start_folder()
         self._path2save = str()
@@ -214,7 +188,7 @@ class training_pytorch:
     def load_data(self, data_set, num_workers=0) -> None:
         """Loading data for training and validation in DataLoader format into class"""
         self.__setup_device()
-        self._do_kfold = True if self.settings.num_kfold > 1 else False
+        self._do_kfold = True if self.settings_train.num_kfold > 1 else False
         self._model_addon = data_set.data_type
         self.cell_classes = data_set.frame_dict if data_set.cluster_name_available else []
 
@@ -222,23 +196,23 @@ class training_pytorch:
         out_train = list()
         out_valid = list()
         if self._do_kfold:
-            kfold = KFold(n_splits=self.settings.num_kfold, shuffle=self._do_shuffle)
+            kfold = KFold(n_splits=self.settings_train.num_kfold, shuffle=self._do_shuffle)
             for idx_train, idx_valid in kfold.split(np.arange(len(data_set))):
                 subsamps_train = SubsetRandomSampler(idx_train)
                 subsamps_valid = SubsetRandomSampler(idx_valid)
-                out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train))
-                out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
+                out_train.append(DataLoader(data_set, batch_size=self.settings_train.batch_size, sampler=subsamps_train))
+                out_valid.append(DataLoader(data_set, batch_size=self.settings_train.batch_size, sampler=subsamps_valid))
         else:
             idx = np.arange(len(data_set))
             if self._do_shuffle:
                 np.random.shuffle(idx)
-            split_pos = int(len(data_set) * (1 - self.settings.data_split_ratio))
+            split_pos = int(len(data_set) * (1 - self.settings_train.data_split_ratio))
             idx_train = idx[0:split_pos]
             idx_valid = idx[split_pos:]
             subsamps_train = SubsetRandomSampler(idx_train)
             subsamps_valid = SubsetRandomSampler(idx_valid)
-            out_train.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_train))
-            out_valid.append(DataLoader(data_set, batch_size=self.settings.batch_size, sampler=subsamps_valid))
+            out_train.append(DataLoader(data_set, batch_size=self.settings_train.batch_size, sampler=subsamps_train))
+            out_valid.append(DataLoader(data_set, batch_size=self.settings_train.batch_size, sampler=subsamps_valid))
 
         # --- CUDA support for dataset
         if cuda.is_available():
@@ -255,11 +229,21 @@ class training_pytorch:
         self.train_loader = out_train
         self.valid_loader = out_valid
 
-    def load_model(self, learn_rate=0.1, print_model=True) -> None:
-        """Loading optimizer, loss_fn into class"""
-        self.model = self.settings.model
-        self.optimizer = self.settings.load_optimizer(learn_rate=learn_rate)
-        self.loss_fn = self.settings.loss_fn
+    def load_model(self, model, learn_rate=0.1, print_model=True) -> None:
+        """Loading optimizer, loss_fn into class
+        Args:
+            model:          PyTorch Neural Network for Training / Inference
+            learn_rate:     Learning rate used for SGD optimier
+            print_model:    Print the model summary [Default: True]
+        Returns:
+            None
+        """
+        self.model = model
+        self._aitype = model.out_modeltyp
+        self._model_name = model.out_modelname
+
+        self.optimizer = self.settings_train.load_optimizer(model, learn_rate=learn_rate)
+        self.loss_fn = self.settings_train.get_loss_func()
         if print_model:
             print("\nPrint summary of model")
             summary(self.model, input_size=self.model.model_shape)
@@ -275,23 +259,23 @@ class training_pytorch:
             txt_handler.write(f'Date: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}\n')
             txt_handler.write(f'Used CPU: {self.used_hw_cpu}\n')
             txt_handler.write(f'Used GPU: {self.used_hw_gpu}\n')
-            txt_handler.write(f'Used dataset: {self.settings_data.get_path2data()}\n')
-            txt_handler.write(f'AI Topology: {self.settings.get_topology()} ({self._model_addon})\n')
+            txt_handler.write(f'Used dataset: {self.settings_data.get_path2data}\n')
+            txt_handler.write(f'AI Topology: {self.model.get_topology} ({self._model_addon})\n')
             txt_handler.write(f'Embedded?: {self.model.model_embedded}\n')
             txt_handler.write('\n')
-            txt_handler.write(f'Used Optimizer: {self.settings.optimizer}\n')
-            txt_handler.write(f'Used Loss Function: {self.settings.loss}\n')
-            txt_handler.write(f'Batchsize: {self.settings.batch_size}\n')
-            txt_handler.write(f'Num. of epochs: {self.settings.num_epochs}\n')
+            txt_handler.write(f'Used Optimizer: {self.settings_train.optimizer}\n')
+            txt_handler.write(f'Used Loss Function: {self.settings_train.loss}\n')
+            txt_handler.write(f'Batchsize: {self.settings_train.batch_size}\n')
+            txt_handler.write(f'Num. of epochs: {self.settings_train.num_epochs}\n')
             txt_handler.write(f'Splitting ratio (Training/Validation): '
-                              f'{1-self.settings.data_split_ratio}/{self.settings.data_split_ratio}\n')
+                              f'{1-self.settings_train.data_split_ratio}/{self.settings_train.data_split_ratio}\n')
             txt_handler.write(f'Do KFold cross validation?: {self._do_kfold},\n'
-                              f'Number of KFold steps: {self.settings.num_kfold}\n')
-            txt_handler.write(f'Do shuffle?: {self.settings.data_do_shuffle}\n')
-            txt_handler.write(f'Do data augmentation?: {self.settings_data.data_do_augmentation}\n')
-            txt_handler.write(f'Do input normalization?: {self.settings_data.data_do_normalization}\n')
-            txt_handler.write(f'Do add noise cluster?: {self.settings_data.data_do_addnoise_cluster}\n')
-            txt_handler.write(f'Exclude cluster: {self.settings_data.data_exclude_cluster}\n')
+                              f'Number of KFold steps: {self.settings_train.num_kfold}\n')
+            txt_handler.write(f'Do shuffle?: {self.settings_train.data_do_shuffle}\n')
+            txt_handler.write(f'Do data augmentation?: {self.settings_data.augmentation_do}\n')
+            txt_handler.write(f'Do input normalization?: {self.settings_data.normalization_do}\n')
+            txt_handler.write(f'Do add noise cluster?: {self.settings_data.add_noise_cluster}\n')
+            txt_handler.write(f'Exclude cluster: {self.settings_data.exclude_cluster}\n')
 
     def _save_train_results(self, last_metric_train: float | np.ndarray,
                             last_metric_valid: float | np.ndarray, loss_type='Loss') -> None:
@@ -381,7 +365,7 @@ class training_pytorch:
         data_train = self.__get_data_points(only_getting_labels=True, use_train_dataloader=True)
 
         output = dict()
-        output.update({'settings': self.settings, 'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')})
+        output.update({'settings': self.settings_train, 'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')})
         output.update({'train_clus': data_train['out'], 'cl_dict': self.cell_classes})
         output.update({'input': valid_input, 'valid_clus': valid_label})
         output.update(results)

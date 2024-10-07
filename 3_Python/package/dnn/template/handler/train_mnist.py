@@ -1,38 +1,8 @@
-from torch import nn
 import matplotlib.pyplot as plt
-
 from package.yaml_handler import yaml_config_handler
-from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_dataclass import (Config_PyTorch, DefaultSettingsTrainCE, DefaultSettingsTrainMSE,
+                                           Config_Dataset, DefaultSettingsDataset)
 import package.dnn.template.models.mnist as models
-
-
-config_train_cl = Config_PyTorch(
-    # --- Settings of Models/Training
-    model=models.mnist_mlp_cl_v1(),
-    loss='Cross Entropy Loss',
-    loss_fn=nn.CrossEntropyLoss(),
-    optimizer='Adam',
-    num_kfold=1,
-    num_epochs=5,
-    batch_size=256,
-    patience=10,
-    data_split_ratio=0.25,
-    data_do_shuffle=True
-)
-
-config_train_ae = Config_PyTorch(
-    # --- Settings of Models/Training
-    model=models.mnist_mlp_ae_v1(),
-    loss='MSE',
-    loss_fn=nn.MSELoss(),
-    optimizer='Adam',
-    num_kfold=1,
-    num_epochs=10,
-    batch_size=256,
-    patience=20,
-    data_split_ratio=0.25,
-    data_do_shuffle=True
-)
 
 
 def do_train_cl(do_plot=True, do_block=True) -> None:
@@ -50,13 +20,19 @@ def do_train_cl(do_plot=True, do_block=True) -> None:
 
     print("\nTraining routine for MNIST classification")
     # --- Loading the YAML files
-    yaml_data = yaml_config_handler(models.Recommended_Config_DatasetSettings, yaml_name='Config_MNIST_Dataset')
+    yaml_data = yaml_config_handler(DefaultSettingsDataset, yaml_name='Config_MNIST_Dataset')
     config_data = yaml_data.get_class(Config_Dataset)
 
+    default_settings = DefaultSettingsTrainCE
+    default_settings.model_name = 'mnist_mlp_cl_v1'
+    yaml_nn = yaml_config_handler(default_settings, yaml_name='Config_MNIST_TrainCL')
+    config_train = yaml_nn.get_class(Config_PyTorch)
+    model = models.models_available.build_model(config_train.model_name)
+
     # ---Loading Data, Do Training and getting the results
-    dataset = prepare_training(config_data.data_path, config_data.data_do_normalization, True)
-    trainhandler = train_nn(config_train_cl, config_data)
-    trainhandler.load_model()
+    dataset = prepare_training(config_data, True)
+    trainhandler = train_nn(config_train, config_data)
+    trainhandler.load_model(model)
     trainhandler.load_data(dataset)
     del dataset
     epoch_acc = trainhandler.do_training()[-1]
@@ -68,6 +44,7 @@ def do_train_cl(do_plot=True, do_block=True) -> None:
 
     # --- Plotting
     if do_plot:
+        plt.close('all')
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
         plot_mnist_graphs(data_result['input'], data_result['valid_clus'], path2save=logsdir)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir)
@@ -88,10 +65,21 @@ def do_train_ae(do_plot=True, do_block=True) -> None:
     from package.plot.plot_dnn import plot_statistic_data, plot_mnist_graphs
     from package.plot.plot_metric import plot_loss
 
+    print("\nTraining routine for MNIST classification")
+    # --- Loading the YAML files
+    yaml_data = yaml_config_handler(DefaultSettingsDataset, aml_name='Config_MNIST_Dataset')
+    config_data = yaml_data.get_class(Config_Dataset)
+
+    default_settings = DefaultSettingsTrainMSE
+    default_settings.model_name = 'mnist_mlp_ae_v1'
+    yaml_nn = yaml_config_handler(default_settings, yaml_name='Config_MNIST_TrainAE')
+    config_train = yaml_nn.get_class(Config_PyTorch)
+    model = models.models_available.build_model(config_train.model_name)
+
     # ---Loading Data, Do Training and getting the results
-    dataset = prepare_training(config_data.data_path, config_data.data_do_normalization, False)
-    trainhandler = train_nn(config_train_ae, config_data)
-    trainhandler.load_model()
+    dataset = prepare_training(config_data,False)
+    trainhandler = train_nn(config_train, config_data)
+    trainhandler.load_model(model)
     trainhandler.load_data(dataset)
     del dataset
     epoch_loss = trainhandler.do_training()[-1][0]
@@ -103,6 +91,7 @@ def do_train_ae(do_plot=True, do_block=True) -> None:
 
     # --- Plotting
     if do_plot:
+        plt.close('all')
         plot_loss(epoch_loss, 'Loss', path2save=logsdir)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir)
         plot_mnist_graphs(data_result['input'], data_result['valid_clus'], "_input", path2save=logsdir)

@@ -1,6 +1,5 @@
 from os import mkdir
 from os.path import join, exists
-from torch import nn
 from numpy import load
 
 from package.yaml_handler import yaml_config_handler
@@ -15,7 +14,6 @@ config_train = Config_PyTorch(
     # --- Settings of Models/Training
     model=models_rgc.cnn_rgc_onoff_v1(32, 4),
     loss='Cross Entropy',
-    loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
     patience=20,

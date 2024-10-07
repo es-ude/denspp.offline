@@ -36,8 +36,8 @@ def prepare_training(settings: Config_Dataset, use_cell_bib=False, mode_classes=
     frames_dict = dict()
 
     # --- PART: Exclusion of selected clusters
-    if not len(settings.data_exclude_cluster) == 0:
-        for i, id in enumerate(settings.data_exclude_cluster):
+    if not len(settings.exclude_cluster) == 0:
+        for i, id in enumerate(settings.exclude_cluster):
             selX = np.where(frames_cl != id)
             frames_in = frames_in[selX[0], :]
             frames_cl = frames_cl[selX]
@@ -48,17 +48,17 @@ def prepare_training(settings: Config_Dataset, use_cell_bib=False, mode_classes=
                                                                               mode_classes, frames_in, frames_cl)
 
     # --- PART: Reducing samples per cluster (if too large)
-    if settings.data_do_reduce_samples_per_cluster:
+    if settings.reduce_samples_per_cluster_do:
         print("... reducing the samples per cluster (for pre-training on dedicated hardware)")
         frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
-                                                             settings.data_num_samples_per_cluster)
+                                                             settings.reduce_samples_per_cluster_num)
 
     # --- PART: Data Normalization
-    if settings.data_do_normalization:
+    if settings.normalization_do:
         print(f"... do data normalization")
-        data_class_frames_in = DataNormalization(device=settings.data_normalization_mode,
-                                                 method=settings.data_normalization_method,
-                                                 mode=settings.data_normalization_setting)
+        data_class_frames_in = DataNormalization(device=settings.normalization_mode,
+                                                 method=settings.normalization_method,
+                                                 mode=settings.normalization_setting)
         frames_in = data_class_frames_in.normalize(frames_in)
 
     # --- Output

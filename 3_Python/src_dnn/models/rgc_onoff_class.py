@@ -1,8 +1,11 @@
 from torch import nn, Tensor, argmax, unsqueeze
-from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
-from package.dnn.pytorch_handler import __model_settings_common
+from package.dnn.pytorch_handler import __model_settings_common, ModelRegistry
 
 
+models_available = ModelRegistry()
+
+
+@models_available.register
 class dnn_rgc_v1(__model_settings_common):
     """Classification model"""
     def __init__(self, input_size=40, output_size=4):
@@ -40,6 +43,7 @@ class dnn_rgc_v1(__model_settings_common):
         return val, argmax(val, dim=1)
 
 
+@models_available.register
 class dnn_rgc_v2(__model_settings_common):
     """Classification model"""
     def __init__(self, input_size=40, output_size=4):
@@ -82,6 +86,7 @@ class dnn_rgc_v2(__model_settings_common):
         return val, argmax(val, dim=1)
 
 
+@models_available.register
 class cnn_rgc_onoff_v1(__model_settings_common):
     """Classification model"""
     def __init__(self, input_size=32, output_size=4):
@@ -144,6 +149,7 @@ class cnn_rgc_onoff_v1(__model_settings_common):
         return val, argmax(val, dim=1)
 
 
+@models_available.register
 class cnn_rgc_onoff_v2(__model_settings_common):
     """Classification model"""
     def __init__(self, input_size=32, output_size=4):
@@ -204,37 +210,3 @@ class cnn_rgc_onoff_v2(__model_settings_common):
         val = self.cnn(x0)
         val = self.classifier(val)
         return val, argmax(val, dim=1)
-
-
-Recommended_Config_PytorchSettings = Config_PyTorch(
-    model=dnn_rgc_v1(),
-    loss='Cross Entropy',
-    loss_fn=nn.CrossEntropyLoss(),
-    optimizer='Adam',
-    num_kfold=1,
-    patience=10,
-    num_epochs=40,
-    batch_size=256,
-    data_do_shuffle=True,
-    data_split_ratio=0.25
-)
-
-Recommended_Config_DatasetSettings = Config_Dataset(
-    # --- Settings of Datasets
-    data_path='data',
-    data_file_name='2023-11-24_Dataset-07_RGC_TDB_Merged.mat',
-    # --- Data Augmentation
-    data_do_augmentation=False,
-    data_num_augmentation=0,
-    data_do_addnoise_cluster=False,
-    # --- Data Normalization
-    data_do_normalization=False,
-    data_normalization_mode='',
-    data_normalization_method='',
-    data_normalization_setting='',
-    # --- Dataset Preparation
-    data_do_reduce_samples_per_cluster=False,
-    data_num_samples_per_cluster=0,
-    data_exclude_cluster=[],
-    data_sel_pos=[]
-)
