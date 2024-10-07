@@ -6,11 +6,12 @@ from torch import is_tensor
 from torch.utils.data import Dataset
 from pathlib import Path
 
-from src_dnn.src_pytorch_handler import ConfigDataset
+from package.dnn.pytorch_handler import Config_Dataset
 from package.data_process.frame_augmentation import *
 
 
-class DecoderDataset(Dataset):  #ToDo: Check if inheritance is necessary
+#ToDo: Check if inheritance is necessary
+class DecoderDataset(Dataset):
     """Dataset Preparation for Training Neural Decoder"""
 
     def __init__(self, dataset_spike_train: list[dict], decision: list[dict],
@@ -43,7 +44,7 @@ class DecoderDataset(Dataset):  #ToDo: Check if inheritance is necessary
         return {'in': np.array(self.__datset_spike_train[idx], dtype=np.float32), 'out': output}
 
 
-def preprocess_dataset(settings: ConfigDataset,
+def preprocess_dataset(settings: Config_Dataset,
                        length_time_window_ms=500,
                        use_cluster=True,
                        ) -> DecoderDataset:

@@ -10,25 +10,6 @@ from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 import src_dnn.models.rgc_onoff_class as models_rgc
 
-config_data = Config_Dataset(
-    # --- Settings of Datasets
-    data_path='data',
-    data_file_name='2023-11-24_Dataset-07_RGC_TDB_Merged.mat',
-    # --- Data Augmentation
-    data_do_augmentation=False,
-    data_num_augmentation=0,
-    data_do_addnoise_cluster=False,
-    # --- Data Normalization
-    data_do_normalization=True,
-    data_normalization_mode='CPU',
-    data_normalization_method='minmax',
-    data_normalization_setting='bipolar',
-    # --- Dataset Reduction
-    data_do_reduce_samples_per_cluster=True,
-    data_num_samples_per_cluster=10_000,
-    data_exclude_cluster=[],
-    data_sel_pos=[]
-)
 
 config_train = Config_PyTorch(
     # --- Settings of Models/Training
@@ -83,7 +64,10 @@ def do_train_rgc_class(dnn_trainhandler: dnn_handler) -> None:
     from package.plot.plot_dnn import plot_statistic_data
     from package.plot.plot_metric import plot_confusion, plot_loss
 
-    yaml_handler = yaml_config_handler({}, 'config', 'Config_TrainRGC')
+    # --- Loading the YAML files
+    yaml_handler = yaml_config_handler(models_rgc.Recommended_Config_DatasetSettings, 'config', 'Config_RGC_Dataset')
+    config_data = yaml_handler.get_class(Config_Dataset)
+
     use_cell_bib = not (dnn_trainhandler.mode_cell_bib == 0)
     use_cell_mode = 0 if not use_cell_bib else dnn_trainhandler.mode_cell_bib - 1
 

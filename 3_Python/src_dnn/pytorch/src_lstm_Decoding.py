@@ -5,7 +5,7 @@ from shutil import copy
 from datetime import datetime
 from torch import Tensor, load, save, from_numpy
 from scipy.io import savemat
-from src_dnn.src_pytorch_handler import ConfigPyTorch, ConfigDataset, TrainingPytorch
+from src_dnn.src_pytorch_handler import ConfigPyTorch, Config_Dataset, TrainingPytorch
 
 
 class TrainHandlerLstm(TrainingPytorch):
@@ -84,7 +84,7 @@ class TrainHandlerLstm(TrainingPytorch):
         self._end_training_routine(timestamp_start)
 
         return metrics_own
-    def __init__(self, config_train: ConfigPyTorch, config_data: ConfigDataset) -> None:
+    def __init__(self, config_train: ConfigPyTorch, config_data: Config_Dataset) -> None:
         TrainingPytorch.__init__(self, config_train, config_data)
 
     def __do_training_epoch(self) -> [float, float]:

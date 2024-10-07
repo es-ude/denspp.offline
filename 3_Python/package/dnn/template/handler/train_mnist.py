@@ -1,27 +1,10 @@
 from torch import nn
+import matplotlib.pyplot as plt
+
+from package.yaml_handler import yaml_config_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 import package.dnn.template.models.mnist as models
 
-
-config_data = Config_Dataset(
-    # --- Settings of Datasets
-    data_path='data',
-    data_file_name="",
-    # --- Data Augmentation
-    data_do_augmentation=False,
-    data_num_augmentation=0,
-    data_do_addnoise_cluster=False,
-    # --- Data Normalization
-    data_do_normalization=True,
-    data_normalization_mode='CPU',
-    data_normalization_method='minmax',
-    data_normalization_setting='bipolar',
-    # --- Dataset Reduction
-    data_do_reduce_samples_per_cluster=False,
-    data_num_samples_per_cluster=0,
-    data_exclude_cluster=[],
-    data_sel_pos=[]
-)
 
 config_train_cl = Config_PyTorch(
     # --- Settings of Models/Training
@@ -66,6 +49,10 @@ def do_train_cl(do_plot=True, do_block=True) -> None:
     from package.plot.plot_metric import plot_confusion, plot_loss
 
     print("\nTraining routine for MNIST classification")
+    # --- Loading the YAML files
+    yaml_data = yaml_config_handler(models.Recommended_Config_DatasetSettings, yaml_name='Config_MNIST_Dataset')
+    config_data = yaml_data.get_class(Config_Dataset)
+
     # ---Loading Data, Do Training and getting the results
     dataset = prepare_training(config_data.data_path, config_data.data_do_normalization, True)
     trainhandler = train_nn(config_train_cl, config_data)

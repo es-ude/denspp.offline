@@ -1,5 +1,7 @@
-from torch import nn, Tensor, argmax
 import torch
+from torch import nn, Tensor, argmax
+from package.dnn.pytorch_handler import Config_Dataset
+
 
 class cnn_lstm_dec_v4(nn.Module):
         """Class of a convolutional Decoding for feature extraction"""
@@ -396,3 +398,21 @@ class cnn2D_v1(nn.Module):
         return self.flatten(encoded), self.flatten(decoded)
 
 
+RecommendedUtahDecoderData = Config_Dataset(
+    data_path='data',
+    data_file_name='2024-02-05_Dataset-KlaesNeuralDecoding.npy',
+    # --- Data Augmentation
+    data_do_augmentation=False,
+    data_num_augmentation=0,
+    data_do_addnoise_cluster=False,
+    # --- Data Normalization
+    data_do_normalization=False,
+    data_normalization_mode='CPU',
+    data_normalization_method='minmax',
+    data_normalization_setting='bipolar',
+    # --- Dataset Reduction
+    data_do_reduce_samples_per_cluster=False,
+    data_num_samples_per_cluster=0,
+    data_exclude_cluster=[],
+    data_sel_pos=[]
+)

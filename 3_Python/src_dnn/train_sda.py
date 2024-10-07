@@ -1,33 +1,15 @@
 from torch import nn
+import matplotlib.pyplot as plt
+
+from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
-import src_dnn.models.spike_detection as models_sda
+import src_dnn.models.spike_detection as models
 
-
-config_data = Config_Dataset(
-    # --- Settings of Datasets
-    data_path='../2_Data/00_Merged_Datasets',
-    data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
-    #data_file_name='2023-06-30_Dataset03_SimDaten_Quiroga2020_Sorted',
-    # --- Data Augmentation
-    data_do_augmentation=False,
-    data_num_augmentation=0,
-    data_do_addnoise_cluster=False,
-    # --- Data Normalization
-    data_do_normalization=False,
-    data_normalization_mode='',
-    data_normalization_method='',
-    data_normalization_setting='',
-    # --- Dataset Reduction
-    data_do_reduce_samples_per_cluster=False,
-    data_num_samples_per_cluster=50_000,
-    data_exclude_cluster=[],
-    data_sel_pos=[]
-)
 
 config_train_sda = Config_PyTorch(
     # --- Settings of Models/Training
-    model=models_sda.dnn_sda_v1(16, 5),
+    model=models.dnn_sda_v1(16, 5),
     loss='Cross Entropy',
     loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
@@ -51,6 +33,10 @@ def dnn_train_sda(dnn_handler: dnn_handler, sda_threshold: int) -> None:
     from package.plot.plot_dnn import plot_statistic_data
     from package.plot.plot_metric import plot_confusion, plot_loss
 
+    # --- Loading the YAML files
+    yaml_data = yaml_config_handler(models.Recommended_Config_DatasetSettings, yaml_name='Config_SDA_Dataset')
+    config_data = yaml_data.get_class(Config_Dataset)
+
     # --- Processing: Loading Data and Do Training
     dataset = prepare_training(config_data, sda_threshold)
     data_dict = dataset.sda_dict
@@ -67,6 +53,7 @@ def dnn_train_sda(dnn_handler: dnn_handler, sda_threshold: int) -> None:
 
     # --- Plotting
     if dnn_handler.do_plot:
+        plt.close('all')
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=data_dict)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir,

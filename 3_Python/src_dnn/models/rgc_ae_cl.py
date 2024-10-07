@@ -137,3 +137,22 @@ class rgc_ae_cl_v1(nn.Module):
         return val, argmax(val, dim=1)
 
 
+RecommendedRGCDataset = Config_Dataset(
+    # --- Settings of Datasets
+    data_path='data',
+    data_file_name='2023-11-24_Dataset-07_RGC_TDB_Merged.mat',
+    # --- Data Augmentation
+    data_do_augmentation=False,
+    data_num_augmentation=0,
+    data_do_addnoise_cluster=False,
+    # --- Data Normalization
+    data_do_normalization=True,
+    data_normalization_mode='CPU',
+    data_normalization_method='minmax',
+    data_normalization_setting='bipolar',
+    # --- Dataset Reduction
+    data_do_reduce_samples_per_cluster=False,
+    data_num_samples_per_cluster=500,
+    data_exclude_cluster=[],
+    data_sel_pos=[]
+)

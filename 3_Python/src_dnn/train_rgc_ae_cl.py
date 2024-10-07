@@ -1,44 +1,24 @@
-import numpy as np
 from torch import nn
 import matplotlib.pyplot as plt
+
+from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
 import src_dnn.models.rgc_ae_cl as models
 from src_dnn.train_rgc_class import rgc_logic_combination
 
 
-config_data = Config_Dataset(
-    # --- Settings of Datasets
-    data_path='data',
-    data_file_name='2023-11-24_Dataset-07_RGC_TDB_Merged.mat',
-    # --- Data Augmentation
-    data_do_augmentation=False,
-    data_num_augmentation=0,
-    data_do_addnoise_cluster=False,
-    # --- Data Normalization
-    data_do_normalization=True,
-    data_normalization_mode='CPU',
-    data_normalization_method='minmax',
-    data_normalization_setting='bipolar',
-    # --- Dataset Reduction
-    data_do_reduce_samples_per_cluster=False,
-    data_num_samples_per_cluster=500,
-    data_exclude_cluster=[],
-    data_sel_pos=[]
-)
-
-
 def do_train_rgc_ae_cl(dnn_handler: dnn_handler,
-                           num_feature_layer: int, num_output: int,
-                           mode_ae: int, noise_std=0.05) -> None:
+                       num_feature_layer: int, num_output: int,
+                       mode_ae: int, noise_std=0.05) -> None:
     """Training routine for Autoencoders and Classification after Encoder
     Args:
         dnn_handler: Handler for configurating the routine selection for train deep neural networks
         mode_ae: Selected model of the Autoencoder (0: normal, 1: Denoising (mean), 2: Denoising (input)) [default:0]
         noise_std: Std of the additional noise added to the input [default: 0.05]
     """
-    from package.dnn.dataset.autoencoder import prepare_training as get_dataset_ae
-    from package.dnn.dataset.autoencoder_class import prepare_training as get_dataset_class
+    from package.dnn.template.dataset.autoencoder import prepare_training as get_dataset_ae
+    from package.dnn.template.dataset.autoencoder_class import prepare_training as get_dataset_class
     from package.dnn.pytorch.autoencoder import train_nn as train_autoencoder
     from package.dnn.pytorch.classifier import train_nn as train_classifier
     from package.plot.plot_dnn import results_training, plot_statistic_data
@@ -74,6 +54,10 @@ def do_train_rgc_ae_cl(dnn_handler: dnn_handler,
     use_cell_bib = not (dnn_handler.mode_cell_bib == 0)
     use_cell_mode = 0 if not use_cell_bib else dnn_handler.mode_cell_bib - 1
 
+    # --- Loading the YAML files
+    yaml_data = yaml_config_handler(models.RecommendedRGCDataset, yaml_name='Config_RGC_Dataset')
+    config_data = yaml_data.get_class(Config_Dataset)
+
     metric_snr_run = list()
     # ----------- Step #1: TRAINING AUTOENCODER
     # --- Processing: Loading dataset and Do Autoencoder Training
@@ -86,6 +70,7 @@ def do_train_rgc_ae_cl(dnn_handler: dnn_handler,
     path2model = trainhandler.get_saving_path()
 
     if dnn_handler.do_plot:
+        plt.close('all')
         logsdir = trainhandler.get_saving_path()
         data_result = trainhandler.do_validation_after_training()
         data_mean = dataset.frames_me
@@ -122,10 +107,7 @@ def do_train_rgc_ae_cl(dnn_handler: dnn_handler,
                        name_addon="training")
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                             path2save=logsdir, cl_dict=data_result['cl_dict'])
-
-        # --- Plotting reduced model (ON/OFF and Transient/Sustained)
-        rgc_logic_combination(logsdir)
-        plt.show(block=dnn_handler.do_block)
+        rgc_logic_combination(logsdir, show_plot=dnn_handler.do_block)
 
     del dataset, trainhandler
     print("\nThe End")

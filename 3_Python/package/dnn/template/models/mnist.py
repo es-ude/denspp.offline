@@ -96,7 +96,7 @@ Recommended_Config_AE = Config_PyTorch(
 
 Recommended_Config_DatasetSettings = Config_Dataset(
     # --- Settings of Datasets
-    data_path='../2_Data',
+    data_path='data',
     data_file_name='',
     # --- Data Augmentation
     data_do_augmentation=False,

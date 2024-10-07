@@ -36,9 +36,12 @@ def read_yaml_to_dict(filename: str, path2save='',
     if not exists(path2yaml):
         print("YAML does not exists - Please create one!")
 
+    # --- Reading YAML file
     with open(path2yaml, 'r') as f:
         config_data = yaml.safe_load(f)
+    print(print(f"... readed YAML file: {path2yaml}"))
 
+    # --- Printing output
     if print_output:
         print(yaml.dump(config_data, sort_keys=False))
     return config_data

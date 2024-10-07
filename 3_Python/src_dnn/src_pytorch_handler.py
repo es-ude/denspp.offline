@@ -36,7 +36,8 @@ class ConfigPyTorch:
     batch_size: int
     data_split_ratio: float
     data_do_shuffle: bool
-    deterministic_training: bool  # ToDo hinzufügen von Deterministic Möglichkeit im Training
+    #ToDo: hinzufügen von Deterministic Möglichkeit im Training
+    deterministic_training: bool
     seed: int
 
     def get_topology(self) -> str:
@@ -59,31 +60,6 @@ class ConfigPyTorch:
     def __set_optimizer_sgd(self, learn_rate=0.1):
         """Using the SGD as Optimizer"""
         return optim.SGD(self.model.parameters(), lr=learn_rate)
-
-
-@dataclasses.dataclass(frozen=True)
-class ConfigDataset:
-    """Class for handling preparation of dataset"""
-    # --- Settings of Datasets
-    data_path: str
-    data_file_name: str
-    # --- Data Augmentation
-    data_do_augmentation: bool
-    data_num_augmentation: int
-    data_do_normalization: bool
-    data_normalization_mode: str
-    data_normalization_method: str
-    data_normalization_setting: str
-    data_do_addnoise_cluster: bool
-    data_do_reduce_samples_per_cluster: bool
-    data_num_samples_per_cluster: int
-    # --- Dataset Preparation
-    data_exclude_cluster: list
-    data_sel_pos: list
-
-    def get_path2data(self) -> str:
-        """Getting the path name to the file"""
-        return join(self.data_path, self.data_file_name)
 
 
 def copy_handler_dummy() -> None:
@@ -128,7 +104,7 @@ class TrainingPytorch:
     valid_loader: list
     cell_classes: list
 
-    def __init__(self, config_train: ConfigPyTorch, config_dataset: ConfigDataset) -> None:
+    def __init__(self, config_train: ConfigPyTorch, config_dataset: Config_Dataset) -> None:
         self.os_type = platform.system()
         self._writer = None
         self.model = None
