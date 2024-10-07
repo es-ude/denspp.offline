@@ -1,4 +1,5 @@
 import yaml
+from os import getcwd
 from os.path import join, exists
 
 
@@ -58,14 +59,15 @@ class yaml_config_handler:
         """Getting the path to the desired YAML file"""
         return join(self.__path2yaml, f"{self.__yaml_name}.yaml")
 
-    def __init__(self, dummy_yaml: dict, path2yaml='config', yaml_name='Config_Train'):
+    def __init__(self, dummy_yaml: dict, path2yaml='config', yaml_name='Config_Train', start_folder='3_Python'):
         """Creating a class for handling YAML files
         Args:
             dummy_yaml:         Dummy dictionary or class with entries, will be generated if YAML file does not exist
             path2yaml:          String with path to the YAML file [Default: '']
             yaml_name:          String with name of the YAML file [Default: 'Config_Train']
+            start_folder:       Folder to start looking for configuration folder
         """
-        self.__path2yaml = path2yaml
+        self.__path2yaml = join(getcwd().split(start_folder)[0], start_folder, path2yaml)
         self.__yaml_name = yaml_name
 
         if not exists(self.path2chck):
