@@ -8,7 +8,7 @@ import csv
 from package.structure_builder import create_folder_general_firstrun
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class SettingsDATA:
     """Class for configuring the dataloader
     input:

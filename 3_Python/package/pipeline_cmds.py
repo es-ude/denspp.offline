@@ -114,7 +114,7 @@ class ThreadProcessor(Thread):
         self.output_save = self.pipeline.prepare_saving()
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class ThreadSettings:
     """Class for handling the processor"""
     use_multithreading: bool

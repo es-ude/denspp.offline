@@ -1,12 +1,11 @@
-from package.dnn.dnn_handler import dnn_handler
-from package.yaml_handler import yaml_config_handler, translate_dataclass_to_dict
+from package.dnn.dnn_handler import dnn_handler, RecommendedDNNHandler
+from package.yaml_handler import yaml_config_handler
 
 
 if __name__ == "__main__":
     # --- Loading YAML-Settings file
-    yaml_dict = translate_dataclass_to_dict(dnn_handler)
-    yaml_handler = yaml_config_handler(yaml_dict, 'config', 'Config_DNN')
-    dnn_handler = yaml_handler.get_class('dnn_handler')
+    yaml_handler = yaml_config_handler(RecommendedDNNHandler, 'config', 'Config_DNN')
+    dnn_handler = yaml_handler.get_class(dnn_handler)
 
     # --- Selecting model for train
     match dnn_handler.mode_train_dnn:

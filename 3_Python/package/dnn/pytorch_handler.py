@@ -33,6 +33,7 @@ class Config_PyTorch:
     data_split_ratio: float
     data_do_shuffle: bool
 
+    @property
     def get_topology(self) -> str:
         """Getting the model name defined in models"""
         return self.model.out_modeltyp
