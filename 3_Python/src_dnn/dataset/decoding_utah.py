@@ -1,21 +1,23 @@
 import os
 import sys
 import numpy as np
-
 from torch import is_tensor
 from torch.utils.data import Dataset
 from pathlib import Path
 
 from package.dnn.pytorch_handler import Config_Dataset
-from package.data_process.frame_augmentation import *
 
 
-#ToDo: Check if inheritance is necessary
 class DecoderDataset(Dataset):
-    """Dataset Preparation for Training Neural Decoder"""
-
-    def __init__(self, dataset_spike_train: list[dict], decision: list[dict],
-                 label_dict: dict, use_patient_dec=True):
+    def __init__(self, dataset_spike_train: list[dict], decision: list[dict], label_dict: dict, use_patient_dec=True):
+        """Dataset Preparation for Training Neural Decoder
+        Args:
+            dataset_spike_train:    List with firing rate activity
+            decision:               List with labeled information
+            label_dict:             Dictionary of what kind of labels are available
+            use_patient_dec:        Boolean for label extraction (False = Experiment, True =
+            Patient)
+        """
         self.__datset_spike_train = dataset_spike_train
         self.__decision = decision
         self.__use_patient_dec = use_patient_dec
@@ -44,19 +46,25 @@ class DecoderDataset(Dataset):
         return {'in': np.array(self.__datset_spike_train[idx], dtype=np.float32), 'out': output}
 
 
-def preprocess_dataset(settings: Config_Dataset,
-                       length_time_window_ms=500,
-                       use_cluster=True,
-                       ) -> DecoderDataset:
-    """Preparing dataset incl. add time-window feature and counting dataset"""
+def preprocess_dataset(settings: Config_Dataset, length_time_window_ms=500, use_cluster=True) -> DecoderDataset:
+    """Preparing dataset incl. add time-window feature and counting dataset
+    Args:
+        settings:               Configuration/Settings for handling data
+        length_time_window_ms   Time window for looking on neural activity (firing rate)
+        use_cluster:            Using the cluster results for more-detailed classification
+    Returns:
+        Modified DataLoader for Neural Decoding of Movement Ambitions using Utah Array
+    """
     data_raw = load_dataset(settings)
 
     max_overall_timestamp = get_max_timestamp(data_raw)
-
-    dataset_decision, dataset_timestamps, dataset_waveform, num_ite_skipped = create_feature_dataset(data_raw,
-                                                                                                     length_time_window_ms,
-                                                                                                     max_overall_timestamp,
-                                                                                                     use_cluster)
+    (dataset_decision, dataset_timestamps,
+     dataset_waveform, num_ite_skipped) = create_feature_dataset(
+        data_raw=data_raw,
+        length_time_window_ms=length_time_window_ms,
+        max_overall_timestamp=max_overall_timestamp,
+        use_cluster=use_cluster
+    )
     # --- Pre-Processing: Mapping electrode to 2D-placement
     dataset_spike_train = add_electrode_2d_mapping_to_dataset(data_raw, dataset_timestamps, dataset_waveform)
 
@@ -65,6 +73,22 @@ def preprocess_dataset(settings: Config_Dataset,
 
     # --- Counting dataset
     label_count_label_free, label_count_label_made, num_samples = counting_dataset(dataset_decision, label_dict)
+
+    # --- Using cell library
+    if settings.use_cell_library:
+        raise NotImplementedError("No cell library for this case is available - Please disable flag!")
+
+    # --- Do normalization method
+    if settings.normalization_do:
+        raise NotImplementedError("No normalization method is implemented - Please disable flag!")
+
+    # Do data augmentation
+    if settings.augmentation_do:
+        raise NotImplementedError("No data augmentation method is implemented - Please disable flag!")
+    if settings.reduce_samples_per_cluster_do:
+        raise NotImplementedError("No reducing sample technique is implemented - Please disable flag!")
+    if len(settings.exclude_cluster):
+        raise NotImplementedError("No class excluding method is implemented - Please remove content!")
 
     # --- Console Output
     print(f'\t for training are in total {len(label_dict)} classes with {num_samples} samples available')
@@ -77,7 +101,8 @@ def preprocess_dataset(settings: Config_Dataset,
                           label_dict=label_dict, use_patient_dec=True)
 
 
-def load_dataset(settings):
+def load_dataset(settings: Config_Dataset) -> np.ndarray:
+    """Loading the raw data from Utah recording"""
     base_path = Path(__file__).parents[2]
     func_name = load_dataset.__name__
     # Pfad ab dem Ordner "3_Python" extrahieren
@@ -87,16 +112,17 @@ def load_dataset(settings):
     print("\n\t loading and preprocessing the dataset")
 
     # Construct the full path of the dataset
-    full_path = settings.get_path2data()
+    full_path = settings.get_path2data
     if not os.path.exists(full_path):
         print("\n File Path not right")
         sys.exit(1)
     print(f"\t Constructed Path: {full_path}")
-    data_raw = np.load(settings.get_path2data(), allow_pickle=True).item()
+    data_raw = np.load(settings.get_path2data, allow_pickle=True).item()
     return data_raw
 
 
-def get_max_timestamp(data_raw):
+def get_max_timestamp(data_raw) -> int:
+    """"""
     max_overall_timestamp = 0
     for _, data_exp in data_raw.items():  # 0-20 experiment
         for key, data_trial in data_exp.items():
@@ -109,6 +135,7 @@ def get_max_timestamp(data_raw):
 
 
 def create_feature_dataset(data_raw, length_time_window_ms, max_overall_timestamp, use_cluster):
+    """"""
     # --- Pre-Processing: Event --> Transient signal transformation
     dataset_timestamps = list()
     dataset_decision = list()
@@ -143,11 +170,14 @@ def __generate_stream_empty_array(timestamps: list, cluster: list,
                                   samples_time_window: int,
                                   use_cluster=True,
                                   output_size=0) -> np.ndarray:
-    """Generating an empty array of the transient array of all electrodes Args: timestamps: Lists with all timestamps
-    of each electrode (iteration over electrode) cluster: Lists with all corresponding cluster unit of each timestamp
-    samples_time_window: Size of the window for determining features use_cluster: Decision of cluster information
-    will be used output_size: Determined the output array with a given length Return: Zero numpy array for training
-    neural decoding [num. electrodes x num. clusters x num. windows] (Starting clusters with Zero)
+    """Generating an empty array of the transient array of all electrodes
+    Args:
+        timestamps:             Lists with all timestamps of each electrode (iteration over electrode)
+        cluster:                Lists with all corresponding cluster unit of each timestamp
+        samples_time_window:    Size of the window for determining features use_cluster: Decision of cluster information
+                                will be used output_size: Determined the output array with a given length
+    Return:
+        Zero numpy array for training neural decoding [num. electrodes x num. clusters x num. windows]
     """
     length_time_window = np.zeros((len(timestamps, )), dtype=np.uint32)
     num_clusters = np.zeros((len(timestamps, )), dtype=np.uint32)
@@ -167,13 +197,14 @@ def __determine_firing_rate(timestamps: list, cluster: list, exp_sampling_rate_i
     """Pre-Processing Method: Calculating the firing rate for specific
     Args:
         timestamps: Lists with all timestamps of each electrode (iteration over electrode).
-            a timestamp is the no of the sample where the spike was detected
+                    a timestamp is the no of the sample where the spike was detected
         cluster: Lists with all corresponding cluster unit of each timestamp
         samples_per_time_window: Size of the window for determining features
         use_cluster: Decision of cluster information will be used
         output_size: Determined the output array with a given length
     Return:
-        Numpy array with windowed number of detected events for training neural decoding [num. electrodes x num. clusters x num. windows]
+        Numpy array with windowed number of detected events for training neural decoding
+        [num. electrodes x num. clusters x num. windows]
     """
     samples_per_time_window: int = int(1e-3 * exp_sampling_rate_in_hertz * length_time_window_ms)
 
@@ -198,8 +229,6 @@ def __determine_firing_rate(timestamps: list, cluster: list, exp_sampling_rate_i
                     time_windows_with_cluster_and_occurrences = np.unique(no_timewindows_of_selected_cluster_in_electrode, return_counts=True)
                     for i, time_window in enumerate(time_windows_with_cluster_and_occurrences[0]):
                         cluster_occurrency_per_timewindow[electrode, cluster_num, time_window] += time_windows_with_cluster_and_occurrences[1][i]
-                        # schreibt in cluster_occurrency_per_timewindow für jede electrode die Anzahl der Cluster in die Zeitfenstern (22 Zeitfenster,
-                        # 2 cluster, Wert im Array ist die häufigkeit des Clusters in diesem Zeitfenster)
             else:
                 no_timewindows_of_selected_cluster_in_electrode = np.array(
                     np.floor(np_timestamps_of_spiketiks_per_electrode / samples_per_time_window), dtype=int)
@@ -214,7 +243,7 @@ def add_electrode_2d_mapping_to_dataset(data_raw, dataset_timestamps, dataset_wa
     # exp_000 is enough because it´s the same for every experiment
     electrode_mapping = data_raw['exp_000']['orientation']
     dataset_timestamps0 = translate_ts_datastream_into_picture(dataset_timestamps, electrode_mapping)
-    # dataset_waveform0 = translate_wf_datastream_into_picture(dataset_waveform, electrode_mapping)  #ToDo:
+    # dataset_waveform0 = translate_wf_datastream_into_picture(dataset_waveform, electrode_mapping)
     return dataset_timestamps0
 
 
