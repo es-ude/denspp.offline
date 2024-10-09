@@ -142,7 +142,7 @@ class Pipeline(PipelineCMD):
             x_dly, self.signals.x_sda, self.signals.x_thr
         )
         # ---- Feature Extraction  ----
-        self.signals.features = self.__fe.fe_pca(self.signals.frames_align[0])
+        self.signals.features = self.__fe.pca(self.signals.frames_align[0])
         # ---- Clustering | Classification ----
         self.signals.frames_align[2] = self.__cl.init(self.signals.features)
         self.signals.spike_ticks = calc_spiketicks(self.signals.frames_align)

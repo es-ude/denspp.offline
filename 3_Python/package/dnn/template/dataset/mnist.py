@@ -88,14 +88,26 @@ def prepare_training(settings: Config_Dataset, do_classification=True) -> Datase
     # --- Normalization
     if settings.normalization_do:
         data_raw = data_raw / 255.0
-        print("... do value normalization on input")
+        print("... do data normalization on input")
 
-    # --- Augmentation
+    # --- Exclusion of selected clusters
+    if len(settings.exclude_cluster):
+        for i, id in enumerate(settings.exclude_cluster):
+            selX = np.where(data_label != id)
+            data_raw = data_raw[selX[0], :]
+            data_label = data_label[selX]
+        print(f"... class reduction done to {np.unique(data_label).size} classes")
+
+    # --- Using cell library
+    if settings.use_cell_library:
+        raise NotImplementedError("No cell library for this case is available - Please disable flag!")
+
+    # --- Data Augmentation
     if settings.augmentation_do:
-        print("... augmentation method is not implemented - Ignored!")
+        raise NotImplementedError("No augmentation method is implemented - Please disable flag!")
 
     if settings.reduce_samples_per_cluster_do:
-        print(f"... reducing samples is not implemented - Ignored!")
+        raise NotImplementedError(f"No reducing samples technique is implemented - Please disable flag!")
 
     # --- Print Output
     check = np.unique(data_label, return_counts=True)

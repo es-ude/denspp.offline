@@ -49,12 +49,12 @@ def prepare_training(settings: Config_Dataset, threshold: int) -> DatasetSDA:
     print("... loading the datasets")
 
     # --- MATLAB reading file
-    npzfile = loadmat(settings.get_path2data())
+    npzfile = loadmat(settings.get_path2data)
     frames_in = npzfile["sda_in"]
     frames_cl = npzfile["sda_pred"]
 
     # --- PART: Exclusion of selected clusters
-    if not len(settings.exclude_cluster) == 0:
+    if len(settings.exclude_cluster):
         for i, id in enumerate(settings.exclude_cluster):
             selX = np.where(frames_cl != id)
             frames_in = frames_in[selX[0], :]
@@ -70,6 +70,14 @@ def prepare_training(settings: Config_Dataset, threshold: int) -> DatasetSDA:
     if settings.normalization_do:
         data_class_frames_in = DataNormalization(mode="CPU", method="minmax", do_global=False)
         frames_in = data_class_frames_in.normalize(frames_in)
+
+    # --- Using cell library
+    if settings.use_cell_library:
+        raise NotImplementedError("No cell library for this case is available - Please disable flag!")
+
+    # --- Data Augmentation
+    if settings.augmentation_do:
+        raise NotImplementedError("No augmentation method is implemented - Please disable flag!")
 
     # --- Output
     check = np.unique(frames_cl, return_counts=True)

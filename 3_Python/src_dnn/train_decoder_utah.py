@@ -1,12 +1,11 @@
-from torch import nn
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import dnn_handler
-from package.dnn.pytorch_handler import Config_Dataset
+from package.dnn.pytorch_dataclass import Config_Dataset, DefaultSettingsDataset, Config_PyTorch, DefaultSettingsTrainCE
 from src_dnn.src_pytorch_handler import ConfigPyTorch
 import src_dnn.models.decoding_utah as models
-from pathlib import Path
 
 
 ConfigTrain = ConfigPyTorch(
@@ -44,7 +43,7 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms) -> None:
     print("\n\t Train modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
 
     # --- Loading the YAML files
-    yaml_data = yaml_config_handler(models.RecommendedUtahDecoderData, yaml_name='Config_Utah_Data')
+    yaml_data = yaml_config_handler(DefaultSettingsDataset, yaml_name='Config_Utah_Data')
     config_data = yaml_data.get_class(Config_Dataset)
 
     # --- Processing: Loading Data
