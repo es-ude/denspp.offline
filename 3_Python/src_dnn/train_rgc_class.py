@@ -3,31 +3,28 @@ from os.path import join, exists
 from numpy import load
 
 from package.yaml_handler import yaml_config_handler
-from package.plot.plot_metric import plot_confusion
+from package.plot.plot_dnn import plot_statistic_data
+from package.plot.plot_metric import plot_confusion, plot_loss
 from package.data_call.call_cellbib import logic_combination
 from package.dnn.dnn_handler import dnn_handler
-from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
-import src_dnn.models.rgc_onoff_class as models_rgc
+from package.dnn.pytorch.classifier import train_nn
+from package.dnn.pytorch_dataclass import Config_Dataset, DefaultSettingsDataset, Config_PyTorch, DefaultSettingsTrainCE
+
+from src_dnn.dataset.rgc_classification import prepare_training
+import src_dnn.models.rgc_onoff_class as models
 
 
-config_train = Config_PyTorch(
-    # --- Settings of Models/Training
-    model=models_rgc.cnn_rgc_onoff_v1(32, 4),
-    loss='Cross Entropy',
-    optimizer='Adam',
-    num_kfold=1,
-    patience=20,
-    num_epochs=100,
-    batch_size=256,
-    data_split_ratio=0.2,
-    data_do_shuffle=True
-)
-
-
-def rgc_logic_combination(logsdir: str, valid_file_name='results_class.npy', show_plot=False) -> None:
-    """"""
-    data_result = load(join(logsdir, valid_file_name), allow_pickle=True).item()
-    path2save = join(logsdir, 'logic_comb')
+def rgc_logic_combination(path2valid_data: str, valid_file_name='results_class.npy', show_plot=False) -> None:
+    """Post-Classification of Retinal Ganglion Celltype Classifier (RGC) after NN training
+    Args:
+        path2valid_data:    Path to validation data (generated after training)
+        valid_file_name:    Filename of validation data [Default: 'results_class.npy']
+        show_plot:          Showing all plots
+    Return:
+        None
+    """
+    data_result = load(join(path2valid_data, valid_file_name), allow_pickle=True).item()
+    path2save = join(path2valid_data, 'logic_comb')
     if not exists(path2save):
         mkdir(path2save)
 
@@ -57,23 +54,27 @@ def do_train_rgc_class(dnn_trainhandler: dnn_handler) -> None:
     Args:
         dnn_trainhandler: Handler for configuring the routine selection to train deep neural networks
     """
-    from src_dnn.dataset.rgc_classification import prepare_training
-    from package.dnn.pytorch.classifier import train_nn
-    from package.plot.plot_dnn import plot_statistic_data
-    from package.plot.plot_metric import plot_confusion, plot_loss
-
     # --- Loading the YAML files
-    yaml_handler = yaml_config_handler(models_rgc.Recommended_Config_DatasetSettings, 'config', 'Config_RGC_Dataset')
-    config_data = yaml_handler.get_class(Config_Dataset)
+    default_data = DefaultSettingsDataset
+    default_data.data_path = 'data'
+    default_data.data_file_name = '2023-11-24_Dataset-07_RGC_TDB_Merged.mat'
+    yaml_data = yaml_config_handler(default_data, 'config', 'Config_RGC_Dataset')
+    config_data = yaml_data.get_class(Config_Dataset)
+    del default_data, yaml_data
 
-    use_cell_bib = not (dnn_trainhandler.mode_cell_bib == 0)
-    use_cell_mode = 0 if not use_cell_bib else dnn_trainhandler.mode_cell_bib - 1
+    default_train = DefaultSettingsTrainCE
+    default_train.model_name = models.dnn_rgc_v1.__name__
+    yaml_train = yaml_config_handler(default_train, 'config', 'Config_RGC_TrainCL')
+    config_train = yaml_train.get_class(Config_PyTorch)
+    del default_train, yaml_train
 
     # ---Loading Data, Do Training and getting the results
-    dataset = prepare_training(config_data, use_cell_bib=use_cell_bib, mode_classes=use_cell_mode)
+    dataset = prepare_training(config_data)
     frame_dict = dataset.frame_dict
+
     trainhandler = train_nn(config_train, config_data)
-    trainhandler.load_model()
+    model = models.models_available.build_model(config_train.model_name)
+    trainhandler.load_model(model)
     trainhandler.load_data(dataset)
     del dataset
     epoch_acc = trainhandler.do_training()[-1]

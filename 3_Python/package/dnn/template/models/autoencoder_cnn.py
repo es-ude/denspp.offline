@@ -7,8 +7,8 @@ models_available = ModelRegistry()
 
 @models_available.register
 class cnn_ae_v1(__model_settings_common):
-    """Class of a convolutional autoencoder for feature extraction"""
-    def __init__(self):
+    def __init__(self, input_size=32, output_size=5):
+        """Class of a convolutional autoencoder for feature extraction"""
         super().__init__('Autoencoder')
         self.model_shape = (1, 32)
         self.model_embedded = False
@@ -57,8 +57,8 @@ class cnn_ae_v1(__model_settings_common):
 
 @models_available.register
 class cnn_ae_v2(__model_settings_common):
-    """Class of a convolutional autoencoder for feature extraction"""
-    def __init__(self):
+    def __init__(self, input_size=32, output_size=5):
+        """Class of a convolutional autoencoder for feature extraction"""
         super().__init__('Autoencoder')
         self.model_embedded = False
         self.model_shape = (1, 32)
@@ -117,11 +117,11 @@ class cnn_ae_v2(__model_settings_common):
 
 @models_available.register
 class cnn_ae_v3(__model_settings_common):
-    """Class of a convolutional autoencoder for feature extraction"""
     def __init__(self, input_size=32, output_size=6):
+        """Class of a convolutional autoencoder for feature extraction"""
         super().__init__('Autoencoder')
         self.model_embedded = False
-        self.model_shape = (1, input_size)
+        self.model_shape = (1, 32)
         do_bias_train = True
         kernel_layer = [1, 40, 22, 8]
         kernel_size = [4, 3, 3]
@@ -194,11 +194,11 @@ class cnn_ae_v3(__model_settings_common):
 
 @models_available.register
 class cnn_ae_v4(__model_settings_common):
-    """Class of a convolutional autoencoder for feature extraction"""
     def __init__(self, input_size=32, output_size=8):
+        """Class of a convolutional autoencoder for feature extraction"""
         super().__init__('Autoencoder')
         self.model_embedded = False
-        self.model_shape = (1, input_size)
+        self.model_shape = (1, 32)
         do_bias_train = True
         kernel_layer = [1, 42, 22, output_size]
         kernel_size = [3, 3, 3]
@@ -206,7 +206,7 @@ class cnn_ae_v4(__model_settings_common):
         kernel_padding = [0, 0, 0]
         kernel_pool_size = [2, 2, 2]
         kernel_pool_stride = [1, 2, 2]
-        fcnn_layer = [output_size, 12, 16, 22, 26, input_size]
+        fcnn_layer = [output_size, 12, 16, 22, 26, 32]
 
         # Encoder setup
         self.encoder = nn.Sequential(
@@ -250,34 +250,3 @@ class cnn_ae_v4(__model_settings_common):
         decoded = self.decoder(encoded)
 
         return encoded, decoded
-
-
-@models_available.register
-class classifier_ae_v1(__model_settings_common):
-    """Classification model of autoencoder output"""
-    def __init__(self, input_size=6, output_size=5):
-        super().__init__('Classifier')
-        self.model_shape = (1, input_size)
-        self.model_embedded = False
-        lin_size = [input_size, 16, 12, output_size]
-        lin_drop = [0.0, 0.0]
-        do_train_bias = True
-
-        self.classifier = nn.Sequential(
-            nn.Dropout(0.0),
-            nn.Linear(lin_size[0], lin_size[1]),
-            nn.BatchNorm1d(lin_size[1], affine=do_train_bias),
-            nn.ReLU(),
-            nn.Dropout(lin_drop[0]),
-            nn.Linear(lin_size[1], lin_size[2]),
-            nn.BatchNorm1d(lin_size[2], affine=do_train_bias),
-            nn.ReLU(),
-            nn.Dropout(lin_drop[1]),
-            nn.Linear(lin_size[2], lin_size[3]),
-            nn.BatchNorm1d(lin_size[3], affine=do_train_bias),
-            nn.Softmax(dim=1)
-        )
-
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
-        val = self.classifier(x)
-        return val, argmax(val, dim=1)

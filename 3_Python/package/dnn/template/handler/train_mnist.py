@@ -2,6 +2,12 @@ import matplotlib.pyplot as plt
 from package.yaml_handler import yaml_config_handler
 from package.dnn.pytorch_dataclass import (Config_PyTorch, DefaultSettingsTrainCE, DefaultSettingsTrainMSE,
                                            Config_Dataset, DefaultSettingsDataset)
+from package.plot.plot_dnn import plot_statistic_data, plot_mnist_graphs
+from package.plot.plot_metric import plot_confusion, plot_loss
+
+from package.dnn.template.dataset.mnist import prepare_training
+from package.dnn.pytorch.autoencoder import train_nn as train_nn_ae
+from package.dnn.pytorch.classifier import train_nn as train_nn_cl
 import package.dnn.template.models.mnist as models
 
 
@@ -13,27 +19,24 @@ def do_train_cl(do_plot=True, do_block=True) -> None:
     Returns:
         None
     """
-    from package.dnn.template.dataset.mnist import prepare_training
-    from package.dnn.pytorch.classifier import train_nn
-    from package.plot.plot_dnn import plot_statistic_data, plot_mnist_graphs
-    from package.plot.plot_metric import plot_confusion, plot_loss
-
-    print("\nTraining routine for MNIST classification")
     # --- Loading the YAML files
     default_data = DefaultSettingsDataset
     default_data.data_path = 'data'
     yaml_data = yaml_config_handler(default_data, yaml_name='Config_MNIST_Dataset')
     config_data = yaml_data.get_class(Config_Dataset)
+    del default_data, yaml_data
 
     default_train = DefaultSettingsTrainCE
-    default_train.model_name = 'mnist_mlp_cl_v1'
-    yaml_nn = yaml_config_handler(default_train, yaml_name='Config_MNIST_TrainCL')
-    config_train = yaml_nn.get_class(Config_PyTorch)
+    default_train.model_name = models.mnist_mlp_cl_v1.__name__
+    yaml_train = yaml_config_handler(default_train, yaml_name='Config_MNIST_TrainCL')
+    config_train = yaml_train.get_class(Config_PyTorch)
     model = models.models_available.build_model(config_train.model_name)
+    del default_train, yaml_train
 
     # ---Loading Data, Do Training and getting the results
     dataset = prepare_training(config_data, True)
-    trainhandler = train_nn(config_train, config_data)
+
+    trainhandler = train_nn_cl(config_train, config_data)
     trainhandler.load_model(model)
     trainhandler.load_data(dataset)
     del dataset
@@ -62,27 +65,24 @@ def do_train_ae(do_plot=True, do_block=True) -> None:
     Returns:
         None
     """
-    from package.dnn.template.dataset.mnist import prepare_training
-    from package.dnn.pytorch.autoencoder import train_nn
-    from package.plot.plot_dnn import plot_statistic_data, plot_mnist_graphs
-    from package.plot.plot_metric import plot_loss
-
-    print("\nTraining routine for MNIST classification")
     # --- Loading the YAML files
     default_data = DefaultSettingsDataset
     default_data.data_path = 'data'
     yaml_data = yaml_config_handler(default_data, aml_name='Config_MNIST_Dataset')
     config_data = yaml_data.get_class(Config_Dataset)
+    del default_data, yaml_data
 
     default_train = DefaultSettingsTrainMSE
-    default_train.model_name = 'mnist_mlp_ae_v1'
-    yaml_nn = yaml_config_handler(default_train, yaml_name='Config_MNIST_TrainAE')
-    config_train = yaml_nn.get_class(Config_PyTorch)
-    model = models.models_available.build_model(config_train.model_name)
+    default_train.model_name = models.mnist_mlp_ae_v1.__name__
+    yaml_train = yaml_config_handler(default_train, yaml_name='Config_MNIST_TrainAE')
+    config_train = yaml_train.get_class(Config_PyTorch)
+    del default_train, yaml_train
 
     # ---Loading Data, Do Training and getting the results
     dataset = prepare_training(config_data,False)
-    trainhandler = train_nn(config_train, config_data)
+
+    trainhandler = train_nn_ae(config_train, config_data)
+    model = models.models_available.build_model(config_train.model_name)
     trainhandler.load_model(model)
     trainhandler.load_data(dataset)
     del dataset
@@ -102,3 +102,8 @@ def do_train_ae(do_plot=True, do_block=True) -> None:
         plot_mnist_graphs(data_result['pred'], data_result['valid_clus'], "_predicted", path2save=logsdir,
                           show_plot=do_block)
     print("\nThe End")
+
+
+if __name__ == "__main__":
+    do_train_cl(True, False)
+    do_train_ae(True, True)

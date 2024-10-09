@@ -72,8 +72,7 @@ def load_mnist(data_path: str) -> [datasets.MNIST, datasets.MNIST]:
 def prepare_training(settings: Config_Dataset, do_classification=True) -> DatasetMNIST:
     """Loading and preparing the MNIST dataset for Deep Learning
     Args:
-        data_path:          String to the path for loading MNIST
-        do_normalization:   Option for normalization of pictures
+        settings:           Class for loading and pre-processing the data for DataLoader
         do_classification:  Option for doing a classification, otherwise Autoencoder
     Returns:
         Getting the prepared Dataset for MNIST
