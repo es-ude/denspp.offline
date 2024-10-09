@@ -20,12 +20,14 @@ def do_train_cl(do_plot=True, do_block=True) -> None:
 
     print("\nTraining routine for MNIST classification")
     # --- Loading the YAML files
-    yaml_data = yaml_config_handler(DefaultSettingsDataset, yaml_name='Config_MNIST_Dataset')
+    default_data = DefaultSettingsDataset
+    default_data.data_path = 'data'
+    yaml_data = yaml_config_handler(default_data, yaml_name='Config_MNIST_Dataset')
     config_data = yaml_data.get_class(Config_Dataset)
 
-    default_settings = DefaultSettingsTrainCE
-    default_settings.model_name = 'mnist_mlp_cl_v1'
-    yaml_nn = yaml_config_handler(default_settings, yaml_name='Config_MNIST_TrainCL')
+    default_train = DefaultSettingsTrainCE
+    default_train.model_name = 'mnist_mlp_cl_v1'
+    yaml_nn = yaml_config_handler(default_train, yaml_name='Config_MNIST_TrainCL')
     config_train = yaml_nn.get_class(Config_PyTorch)
     model = models.models_available.build_model(config_train.model_name)
 
@@ -67,12 +69,14 @@ def do_train_ae(do_plot=True, do_block=True) -> None:
 
     print("\nTraining routine for MNIST classification")
     # --- Loading the YAML files
-    yaml_data = yaml_config_handler(DefaultSettingsDataset, aml_name='Config_MNIST_Dataset')
+    default_data = DefaultSettingsDataset
+    default_data.data_path = 'data'
+    yaml_data = yaml_config_handler(default_data, aml_name='Config_MNIST_Dataset')
     config_data = yaml_data.get_class(Config_Dataset)
 
-    default_settings = DefaultSettingsTrainMSE
-    default_settings.model_name = 'mnist_mlp_ae_v1'
-    yaml_nn = yaml_config_handler(default_settings, yaml_name='Config_MNIST_TrainAE')
+    default_train = DefaultSettingsTrainMSE
+    default_train.model_name = 'mnist_mlp_ae_v1'
+    yaml_nn = yaml_config_handler(default_train, yaml_name='Config_MNIST_TrainAE')
     config_train = yaml_nn.get_class(Config_PyTorch)
     model = models.models_available.build_model(config_train.model_name)
 

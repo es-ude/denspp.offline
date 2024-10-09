@@ -5,7 +5,7 @@ from os.path import join
 from torch import optim, nn
 
 
-@dataclass(frozen=True)
+@dataclass
 class Config_PyTorch:
     """Class for handling the PyTorch training/inference pipeline"""
     model_name: str
@@ -73,7 +73,7 @@ DefaultSettingsTrainCE = Config_PyTorch(
 )
 
 
-@dataclass(frozen=True)
+@dataclass
 class Config_Dataset:
     """Class for handling preparation of dataset"""
     # --- Settings of Datasets

@@ -13,8 +13,9 @@ from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
 from sklearn.model_selection import KFold
 
-from package.dnn.pytorch_dataclass import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_dataclass import Config_Dataset, Config_PyTorch
 from package.structure_builder import create_folder_general_firstrun, create_folder_dnn_firstrun
+from package.yaml_handler import translate_dataclass_to_dict, write_dict_to_yaml
 
 
 class ModelRegistry:
@@ -66,13 +67,12 @@ class __model_settings_common(nn.Module):
     @property
     def __get_addon(self) -> str:
         """Getting the prefix / addon of used network topology"""
-        match self.out_modeltyp:
-            case 'Classifier':
-                addon = '_cl'
-            case 'Autoencoder':
-                addon = '_ae'
-            case _:
-                addon = '_unknown'
+        search_space = {'Classifier': '_cl', 'Autoencoder': '_ae', 'CNN+LSTM': '_2d'}
+
+        addon = '_unknown'
+        for key, addon in search_space.items():
+            if self.out_modeltyp in key:
+                break
         return addon
 
     @property
@@ -177,8 +177,15 @@ class training_pytorch:
 
         self._path2temp = join(self._path2save, f'temp')
         mkdir(self._path2temp)
-
         self.model.to(device=self.used_hw_dev)
+
+        # --- Copy settings to YAML file
+        write_dict_to_yaml(translate_dataclass_to_dict(self.settings_data),
+                           filename='Config_Dataset',
+                           path2save=self._path2save)
+        write_dict_to_yaml(translate_dataclass_to_dict(self.settings_train),
+                           filename='Config_Training',
+                           path2save=self._path2save)
 
     def _init_writer(self) -> None:
         """Do init of writer"""
@@ -274,7 +281,6 @@ class training_pytorch:
             txt_handler.write(f'Do shuffle?: {self.settings_train.data_do_shuffle}\n')
             txt_handler.write(f'Do data augmentation?: {self.settings_data.augmentation_do}\n')
             txt_handler.write(f'Do input normalization?: {self.settings_data.normalization_do}\n')
-            txt_handler.write(f'Do add noise cluster?: {self.settings_data.add_noise_cluster}\n')
             txt_handler.write(f'Exclude cluster: {self.settings_data.exclude_cluster}\n')
 
     def _save_train_results(self, last_metric_train: float | np.ndarray,
