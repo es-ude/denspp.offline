@@ -98,7 +98,7 @@ class Config_Dataset:
         if isabs(self.data_path):
             return join(self.data_path, self.data_file_name)
         elif self.data_path == 'data':
-            return self.get_path2folder_data
+            return join(self.get_path2folder_data, self.data_file_name)
         elif not self.data_path == '':
             return join(self.get_path2folder_project, self.data_path, self.data_file_name)
         else:

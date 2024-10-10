@@ -9,7 +9,7 @@ from package.dnn.pytorch_dataclass import Config_Dataset, DefaultSettingsDataset
 
 from src_dnn.src_pytorch_handler import ConfigPyTorch
 import src_dnn.models.decoding_utah as models
-from src_dnn.dataset.decoding_utah import preprocess_dataset
+from src_dnn.dataset.decoding_utah import prepare_training
 from src_dnn.pytorch.src_lstm_Decoding import TrainHandlerLstm
 
 
@@ -57,7 +57,7 @@ def do_train_decoder_utah(settings: Config_ML_Pipeline, length_window_ms=500) ->
     del default_train, yaml_train
 
     # --- Processing: Loading Data
-    dataset = preprocess_dataset(config_data, length_window_ms, use_cluster=False)
+    dataset = prepare_training(config_data, length_window_ms, use_cluster=False)
     data_deci_label = dataset.get_dictionary
     num_output = len(data_deci_label)
 
