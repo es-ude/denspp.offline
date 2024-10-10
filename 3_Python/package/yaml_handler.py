@@ -1,4 +1,5 @@
 import yaml
+from os import getcwd
 from os.path import join, exists
 
 
@@ -35,17 +36,21 @@ def read_yaml_to_dict(filename: str, path2save='',
     if not exists(path2yaml):
         print("YAML does not exists - Please create one!")
 
+    # --- Reading YAML file
     with open(path2yaml, 'r') as f:
         config_data = yaml.safe_load(f)
+    print(f"... read YAML file: {path2yaml}")
 
+    # --- Printing output
     if print_output:
         print(yaml.dump(config_data, sort_keys=False))
     return config_data
 
 
-def translate_dataclass_to_dict(class_content) -> dict:
+def translate_dataclass_to_dict(class_content: type) -> dict:
     """Translating all class variables with default values into dict"""
-    return {key: value for key, value in class_content.__dict__.items() if not key.startswith('__') and not callable(key)}
+    return {key: value for key, value in class_content.__dict__.items()
+            if not key.startswith('__') and not callable(key)}
 
 
 class yaml_config_handler:
@@ -58,18 +63,19 @@ class yaml_config_handler:
         """Getting the path to the desired YAML file"""
         return join(self.__path2yaml, f"{self.__yaml_name}.yaml")
 
-    def __init__(self, dummy_yaml: dict, path2yaml='', yaml_name='Config_Train'):
+    def __init__(self, dummy_class: type | dict, path2yaml='config', yaml_name='Config_Train', start_folder='3_Python'):
         """Creating a class for handling YAML files
         Args:
-            dummy_yaml:         Dummy dictionary or class with entries, will be generated if YAML file does not exist
+            dummy_class:        Dummy dataclass with entries or dictionary (is only generated if YAML not exist)
             path2yaml:          String with path to the YAML file [Default: '']
             yaml_name:          String with name of the YAML file [Default: 'Config_Train']
+            start_folder:       Folder to start looking for configuration folder
         """
-        self.__path2yaml = path2yaml
+        self.__path2yaml = join(getcwd().split(start_folder)[0], start_folder, path2yaml)
         self.__yaml_name = yaml_name
 
         if not exists(self.path2chck):
-            data2yaml = dummy_yaml if isinstance(dummy_yaml, dict) else vars(dummy_yaml)
+            data2yaml = dummy_class if isinstance(dummy_class, dict) else translate_dataclass_to_dict(dummy_class)
             write_dict_to_yaml(data2yaml, self.__yaml_name, self.__path2yaml)
             print("... created new yaml file in folder!")
 
@@ -96,7 +102,6 @@ class yaml_config_handler:
         """
         return self._data[param]
 
-    def get_class(self, class_name='class'):
+    def get_class(self, class_constructor: type):
         """Getting all key inputs from yaml dictionary to a class"""
-        class2generate = type(class_name, (object,), self._data)()
-        return class2generate
+        return class_constructor(**self._data)

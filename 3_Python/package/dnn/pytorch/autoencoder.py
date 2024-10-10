@@ -79,27 +79,33 @@ class train_nn(training_pytorch):
                 inc_snr.extend((snr1_0 - snr0_0))
         return tensor(inc_snr)
 
-    def __do_calc_metric(self, used_metrics: str) -> Tensor:
+    def __do_calc_metric(self, do_metrics: str) -> Tensor:
         """Determination of additional metrics during training"""
-        out = Tensor()
-        match used_metrics:
-            case 'snr':
-                out = self.__do_snr_epoch()
-            case '':
-                out = Tensor()
+        metric_calc = {'snr': self.__do_snr_epoch}
 
+        out = Tensor()
+        for metric_avai, func in metric_calc.items():
+            if metric_avai in do_metrics:
+                out = func()
+                break
         return out
 
-    def do_training(self, path2save='', metrics='') -> list:
-        """Start model training incl. validation and custom-own metric calculation"""
-        self._init_train(path2save=path2save)
+    def do_training(self, path2save='', metrics=()) -> dict:
+        """Start model training incl. validation and custom-own metric calculation
+        Args:
+            path2save:      Path for saving the results [Default: '' --> generate new folder]
+            metrics:        List with strings of used metric [Default: empty]
+        Returns:
+            Dictionary with metrics from training (loss_train, loss_valid, own_metrics)
+        """
+        self._init_train(path2save=path2save, addon='_AE')
         self._save_config_txt('_ae')
 
         # --- Handling Kfold cross validation training
         if self._do_kfold:
-            print(f"Starting Kfold cross validation training in {self.settings.num_kfold} steps")
+            print(f"Starting Kfold cross validation training in {self.settings_train.num_kfold} steps")
 
-        run_metric = list()
+        metric_out = dict()
         path2model = str()
         path2model_init = join(self._path2save, f'model_ae_reset.pth')
         save(self.model.state_dict(), path2model_init)
@@ -108,12 +114,14 @@ class train_nn(training_pytorch):
         print(f'\nTraining starts on {timestamp_string}'
               f"\n=====================================================================================")
 
-        for fold in np.arange(self.settings.num_kfold):
+        for fold in np.arange(self.settings_train.num_kfold):
             # --- Init fold
             best_loss = np.array((1_000_000., 1_000_000.), dtype=float)
-            patience_counter = self.settings.patience
-            epoch_loss = list()
-            epoch_metric = list()
+            patience_counter = self.settings_train.patience
+            metric_fold = dict()
+            epoch_loss_train = list()
+            epoch_loss_valid = list()
+            epoch_metric = [[] for _ in metrics]
             self.model.load_state_dict(load(path2model_init))
             self._run_kfold = fold
             self._init_writer()
@@ -121,12 +129,12 @@ class train_nn(training_pytorch):
             if self._do_kfold:
                 print(f'\nStarting with Fold #{fold}')
 
-            for epoch in range(0, self.settings.num_epochs):
+            for epoch in range(0, self.settings_train.num_epochs):
                 loss_train = self.__do_training_epoch()
                 loss_valid = self.__do_valid_epoch()
 
-                print(f'... results of epoch {epoch + 1}/{self.settings.num_epochs} '
-                      f'[{(epoch + 1) / self.settings.num_epochs * 100:.2f} %]: '
+                print(f'... results of epoch {epoch + 1}/{self.settings_train.num_epochs} '
+                      f'[{(epoch + 1) / self.settings_train.num_epochs * 100:.2f} %]: '
                       f'train_loss = {loss_train:.5f},'
                       f'\tvalid_loss = {loss_valid:.5f},'
                       f'\tdelta_loss = {loss_train-loss_valid:.6f}')
@@ -137,15 +145,18 @@ class train_nn(training_pytorch):
                 self._writer.flush()
 
                 # Saving metrics after each epoch
-                epoch_loss.append((loss_train, loss_valid))
-                epoch_metric.append(self.__do_calc_metric(metrics))
+                epoch_loss_train.append(loss_train)
+                epoch_loss_valid.append(loss_valid)
+
+                for idx, metric_used in enumerate(metrics):
+                    epoch_metric[idx].append(self.__do_calc_metric(metric_used))
 
                 # Tracking the best performance and saving the model
                 if loss_valid < best_loss[1]:
                     best_loss = [loss_train, loss_valid]
                     path2model = join(self._path2temp, f'model_ae_fold{fold:03d}_epoch{epoch:04d}.pth')
                     save(self.model, path2model)
-                    patience_counter = self.settings.patience
+                    patience_counter = self.settings_train.patience
                 else:
                     patience_counter -= 1
 
@@ -154,14 +165,18 @@ class train_nn(training_pytorch):
                     print(f"... training stopped due to no change after {epoch+1} epochs!")
                     break
 
-            # --- Saving metrics after each fold
-            run_metric.append((epoch_loss, epoch_metric))
             copy(path2model, self._path2save)
             self._save_train_results(best_loss[0], best_loss[1], 'Loss')
 
+            # --- Saving results
+            metric_fold.update({'loss_train': epoch_loss_train, 'loss_valid': epoch_loss_valid})
+            for key, data in zip(metrics, epoch_metric):
+                metric_fold.update({key: data})
+            metric_out.update({f"fold_{fold:03d}": metric_fold})
+
         # --- Ending of all trainings phases
         self._end_training_routine(timestamp_start)
-        return run_metric
+        return metric_out
 
     def do_validation_after_training(self) -> dict:
         """Performing the validation with the best model after training for plotting and saving results"""
@@ -198,4 +213,4 @@ class train_nn(training_pytorch):
         result_feat = feat_model.numpy()
         result_pred = pred_model.numpy()
         return self._getting_data_for_plotting(data_orig_list.numpy(), clus_orig_list.numpy(),
-                                               {'feat': result_feat, 'pred': result_pred})
+                                               {'feat': result_feat, 'pred': result_pred}, addon='ae')

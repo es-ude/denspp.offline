@@ -1,7 +1,11 @@
 from torch import nn, Tensor, unsqueeze, argmax, cuda
-from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_handler import __model_settings_common, ModelRegistry
 
 
+models_available = ModelRegistry()
+
+
+@models_available.register
 class cnn_rgc_ae_v1(nn.Module):
     """Class of a convolutional autoencoder for feature extraction"""
     def __init__(self, input_size=32, output_size=8):
@@ -62,6 +66,7 @@ class cnn_rgc_ae_v1(nn.Module):
         return encoded, decoded
 
 
+@models_available.register
 class rgc_ae_cl_v2(nn.Module):
     """Classification model"""
     def __init__(self, input_size=6, output_size=4):
@@ -105,6 +110,7 @@ class rgc_ae_cl_v2(nn.Module):
         return val, argmax(val, dim=1)
 
 
+@models_available.register
 class rgc_ae_cl_v1(nn.Module):
     """Classification model of autoencoder output"""
     def __init__(self, input_size=6, output_size=5):
@@ -135,5 +141,3 @@ class rgc_ae_cl_v1(nn.Module):
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
         val = self.classifier(x)
         return val, argmax(val, dim=1)
-
-

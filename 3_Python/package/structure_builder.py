@@ -15,20 +15,19 @@ def create_folder_general_firstrun(start_folder='3_Python') -> None:
             mkdir(folder)
 
 
-def create_folder_dnn_firstrun() -> None:
+def create_folder_dnn_firstrun(project_start_folder='3_Python', dnn_folder='src_dnn') -> None:
     """Generating a handler dummy for training neural networks"""
-    folder2search = '3_Python'
-    path2start = join(getcwd().split(folder2search)[0], folder2search)
+    path2start = join(getcwd().split(project_start_folder)[0], project_start_folder)
 
     # --- Checking if path to local training handler exists
-    path2dst = join(path2start, 'src_dnn')
+    path2dst = join(path2start, dnn_folder)
     if not exists(path2dst):
         mkdir(path2dst)
 
     folder_structure = ['models', 'dataset', 'config']
-    for foldername in folder_structure:
-        if not exists(join(path2start, foldername)):
-            mkdir(join(path2start, foldername))
+    for folder_name in folder_structure:
+        if not exists(join(path2dst, folder_name)):
+            mkdir(join(path2dst, folder_name))
 
     # --- Copy process
     if not exists(path2dst):

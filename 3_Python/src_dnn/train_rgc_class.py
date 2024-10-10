@@ -1,54 +1,29 @@
 from os import mkdir
 from os.path import join, exists
-from torch import nn
 from numpy import load
 
-from package.yaml_handler import yaml_config_handler
-from package.plot.plot_metric import plot_confusion
 from package.data_call.call_cellbib import logic_combination
-from package.dnn.dnn_handler import dnn_handler
-from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
-import src_dnn.models.rgc_onoff_class as models_rgc
+from package.yaml_handler import yaml_config_handler
+from package.dnn.dnn_handler import Config_ML_Pipeline
+from package.dnn.pytorch_dataclass import Config_Dataset, DefaultSettingsDataset, Config_PyTorch, DefaultSettingsTrainCE
+from package.dnn.pytorch_pipeline import do_train_classifier
 
-config_data = Config_Dataset(
-    # --- Settings of Datasets
-    data_path='data',
-    data_file_name='2023-11-24_Dataset-07_RGC_TDB_Merged.mat',
-    # --- Data Augmentation
-    data_do_augmentation=False,
-    data_num_augmentation=0,
-    data_do_addnoise_cluster=False,
-    # --- Data Normalization
-    data_do_normalization=True,
-    data_normalization_mode='CPU',
-    data_normalization_method='minmax',
-    data_normalization_setting='bipolar',
-    # --- Dataset Reduction
-    data_do_reduce_samples_per_cluster=True,
-    data_num_samples_per_cluster=10_000,
-    data_exclude_cluster=[],
-    data_sel_pos=[]
-)
-
-config_train = Config_PyTorch(
-    # --- Settings of Models/Training
-    model=models_rgc.cnn_rgc_onoff_v1(32, 4),
-    loss='Cross Entropy',
-    loss_fn=nn.CrossEntropyLoss(),
-    optimizer='Adam',
-    num_kfold=1,
-    patience=20,
-    num_epochs=100,
-    batch_size=256,
-    data_split_ratio=0.2,
-    data_do_shuffle=True
-)
+from package.plot.plot_metric import plot_confusion
+from src_dnn.dataset.rgc_classification import prepare_training
+import src_dnn.models.rgc_onoff_class as models
 
 
-def rgc_logic_combination(logsdir: str, valid_file_name='results_class.npy', show_plot=False) -> None:
-    """"""
-    data_result = load(join(logsdir, valid_file_name), allow_pickle=True).item()
-    path2save = join(logsdir, 'logic_comb')
+def rgc_logic_combination(path2valid_data: str, valid_file_name='results_cl.npy', show_plot=False) -> None:
+    """Post-Classification of Retinal Ganglion Celltype Classifier (RGC) after NN training
+    Args:
+        path2valid_data:    Path to validation data (generated after training)
+        valid_file_name:    Filename of validation data [Default: 'results_cl.npy']
+        show_plot:          Showing all plots
+    Return:
+        None
+    """
+    data_result = load(join(path2valid_data, valid_file_name), allow_pickle=True).item()
+    path2save = join(path2valid_data, 'logic_comb')
     if not exists(path2save):
         mkdir(path2save)
 
@@ -73,42 +48,38 @@ def rgc_logic_combination(logsdir: str, valid_file_name='results_class.npy', sho
                    name_addon='_logic_transient-sustained', show_plots=show_plot)
 
 
-def do_train_rgc_class(dnn_trainhandler: dnn_handler) -> None:
+def do_train_rgc_class(settings: Config_ML_Pipeline, yaml_name_index='Config_RGC') -> None:
     """Training routine for classifying RGC ON/OFF and Transient/Sustained Types (Classification)
     Args:
-        dnn_trainhandler: Handler for configuring the routine selection to train deep neural networks
+        settings:           Handler for configuring the routine selection to train deep neural networks
+        yaml_name_index:    Index of yaml file name
     """
-    from src_dnn.dataset.rgc_classification import prepare_training
-    from package.dnn.pytorch.classifier import train_nn
-    from package.plot.plot_dnn import plot_statistic_data
-    from package.plot.plot_metric import plot_confusion, plot_loss
+    # --- Loading the YAML file: Dataset
+    default_data = DefaultSettingsDataset
+    default_data.data_path = 'data'
+    default_data.data_file_name = '2023-11-24_Dataset-07_RGC_TDB_Merged.mat'
+    yaml_data = yaml_config_handler(default_data, settings.get_path2config, f'{yaml_name_index}_Dataset')
+    config_data = yaml_data.get_class(Config_Dataset)
 
-    yaml_handler = yaml_config_handler({}, 'config', 'Config_TrainRGC')
-    use_cell_bib = not (dnn_trainhandler.mode_cell_bib == 0)
-    use_cell_mode = 0 if not use_cell_bib else dnn_trainhandler.mode_cell_bib - 1
+    # --- Loading the YAML file: Model training
+    default_train = DefaultSettingsTrainCE
+    default_train.model_name = models.dnn_rgc_v1.__name__
+    yaml_train = yaml_config_handler(default_train, settings.get_path2config, f'{yaml_name_index}_TrainCL')
+    config_train = yaml_train.get_class(Config_PyTorch)
 
-    # ---Loading Data, Do Training and getting the results
-    dataset = prepare_training(config_data, use_cell_bib=use_cell_bib, mode_classes=use_cell_mode)
-    frame_dict = dataset.frame_dict
-    trainhandler = train_nn(config_train, config_data)
-    trainhandler.load_model()
-    trainhandler.load_data(dataset)
-    del dataset
-    epoch_acc = trainhandler.do_training()[-1]
+    # ---Loading Data, Build Model and Do Training
+    used_dataset = prepare_training(config_data)
+    used_model = models.models_available.build_model(config_train.model_name)
+    _, _, path2folder = do_train_classifier(
+        config_ml=settings, config_data=config_data, config_train=config_train,
+        used_dataset=used_dataset, used_model=used_model, path2save=''
+    )
 
-    # --- Post-Processing: Getting data, save and plot results
-    logsdir = trainhandler.get_saving_path()
-    data_result = trainhandler.do_validation_after_training()
-    del trainhandler
+    # --- Plotting reduced model (ON/OFF and Transient/Sustained)
+    if settings.do_plot:
+        rgc_logic_combination(path2folder, show_plot=settings.do_block)
 
-    # --- Plotting
-    if dnn_trainhandler.do_plot:
-        # --- Plotting full model
-        plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
-        plot_confusion(data_result['valid_clus'], data_result['yclus'],
-                       path2save=logsdir, cl_dict=frame_dict)
-        plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
-                            path2save=logsdir, cl_dict=frame_dict)
 
-        # --- Plotting reduced model (ON/OFF and Transient/Sustained)
-        rgc_logic_combination(logsdir, show_plot=dnn_trainhandler.do_block)
+if __name__ == "__main__":
+    from package.dnn.dnn_handler import DefaultSettings_MLPipe
+    do_train_rgc_class(DefaultSettings_MLPipe)

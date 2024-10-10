@@ -4,7 +4,9 @@ from tqdm import tqdm
 from glob import glob
 from scipy.io import loadmat
 
-from package.stim.imp_fitting.impfitter_handler import ImpFit_Handler
+from package.stim.imp_fitting.impfitter_handler import (ImpFit_Handler, Settings_ImpFit, RecommendedSettingsImpFit,
+                                                        splitting_stimulation_waveforms_into_single_trials)
+from package.yaml_handler import yaml_config_handler
 
 
 def _read_osci_transient_from_mat(path2file: str, i_gain=1e4) -> dict:
@@ -107,6 +109,8 @@ def run_over_dataset(model2fit: str, default_params: dict,
     ite = 0
     for file in tqdm(files):
         transient_orig = _read_osci_transient_from_mat(file)
+        transient_split = splitting_stimulation_waveforms_into_single_trials(transient_orig)
+
         imp_fitter.calculate_impedance_from_transient_dict(
             transient_signal=transient_orig, file_name=file, ratio_amp=10.0,
             u_lsb=ulsb_new, fs_new=fs_new,
@@ -117,23 +121,23 @@ def run_over_dataset(model2fit: str, default_params: dict,
 
 if __name__ == "__main__":
     # --- Settings
-    set_ifitter = "R_tis + W_war + parallel(R_ct, C_dl)"
+    yaml_config = yaml_config_handler(RecommendedSettingsImpFit, yaml_name="Config_ImpFit_Normal")
+    settings_impfit = yaml_config.get_class(Settings_ImpFit)
 
-    path2data = '../../2_Data/00_ImpedanceFitter'
+    # --- Make all files
+    path2data = settings_impfit.path2fits
     path2ngsolve = f'{path2data}/impedance_expected_ngsolve.csv'
     path2test0 = f'{path2data}/tek0000ALL_MATLAB_new_fit.csv'
     path2test1 = f'{path2data}/tek0000ALL_MATLAB_impedance.csv'
 
-    path2data_all = 'C:/HomeOffice/Austausch_Rostock/TransienteMessungen/180522_Messung/1_Messdaten'
-
     # --- Step #0: Loading handler for Impedance Extraction
     imp_hndl = ImpFit_Handler()
-    imp_hndl.load_fitmodel(set_ifitter)
+    imp_hndl.load_fitmodel(settings_impfit.model)
     imp_hndl.load_params_default(path2ngsolve, {'ct_R': 8.33e6})
 
     # --- Step #1: Reading the impedance data
-    imp_cal0 = read_impedance_from_eis(path2data_all[:-12], 'Messung_INA_FRA.txt')
-    imp_eis0 = read_impedance_from_eis(path2data_all[:-12], 'Messung_BiMEA_bm3_2E1-3E1.txt')
+    imp_cal0 = read_impedance_from_eis(settings_impfit.path2tran[:-12], 'Messung_INA_FRA.txt')
+    imp_eis0 = read_impedance_from_eis(settings_impfit.path2tran[:-12], 'Messung_BiMEA_bm3_2E1-3E1.txt')
     imp_eis = do_eis_calibration(imp_eis0, imp_cal0)
 
     fit2freq = np.logspace(0, 6, 101, endpoint=True)
@@ -145,6 +149,6 @@ if __name__ == "__main__":
     # --- Step #2: Processing the transient signal
     print(f'\nProcessing stimulation recordings from: {path2data}')
     print('======================================================================================================')
-    run_over_dataset(set_ifitter, imp_hndl.get_params_default(),
-                     path2data_all, '*_MATLAB.mat',
+    run_over_dataset(settings_impfit.model, imp_hndl.get_params_default(),
+                     settings_impfit.path2tran, '*_MATLAB.mat',
                      stop_sample=73, start_folder=imp_hndl.get_path2save())

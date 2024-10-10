@@ -1,66 +1,42 @@
-from torch import nn
 import matplotlib.pyplot as plt
-import os
-from package.dnn.dnn_handler import dnn_handler  #  hier hab ich nie was geändert, kann aus PACKAGE importiert werden!!
-from src_dnn.src_pytorch_handler import ConfigPyTorch, ConfigDataset
-import src_dnn.models.decoding_utah as models_decoding
 from pathlib import Path
 
-config_data = ConfigDataset(
-    # --- Settings of Datasets
-    #TODO make path not hardcoded, get filename from os
-    #data_path=r'C:\Users\jo-di\PycharmProjects\git\3_Python\data',  # Jo
-    #data_path=r'C:\Users\Haris\Git\CpsProjekt\denspp.offline\3_Python\data', # Haris
-    data_path=r'C:\spaikeDenSppDataset', # Jannik
-    #data_path='/home/muskel/Documents/cpsDEC/data',  # Jannik - Ubuntu
+from package.yaml_handler import yaml_config_handler
+from package.plot.plot_dnn import plot_statistic_data
+from package.plot.plot_metric import plot_confusion, plot_loss
+from package.dnn.dnn_handler import Config_ML_Pipeline
+from package.dnn.pytorch_dataclass import Config_Dataset, DefaultSettingsDataset, Config_PyTorch, DefaultSettingsTrainCE
 
-    data_file_name='2024-02-05_Dataset-KlaesNeuralDecoding.npy',
+from src_dnn.src_pytorch_handler import ConfigPyTorch
+import src_dnn.models.decoding_utah as models
+from src_dnn.dataset.decoding_utah import prepare_training
+from src_dnn.pytorch.src_lstm_Decoding import TrainHandlerLstm
 
-    # --- Data Augmentation
-    data_do_augmentation=False,
-    data_num_augmentation=0,
-    data_do_addnoise_cluster=False,
-    # --- Data Normalization
-    data_do_normalization=False,
-    data_normalization_mode='CPU',
-    data_normalization_method='minmax',
-    data_normalization_setting='bipolar',
-    # --- Dataset Reduction
-    data_do_reduce_samples_per_cluster=False,
-    data_num_samples_per_cluster=0,
-    data_exclude_cluster=[],
-    data_sel_pos=[]
-)
 
-ConfigTrain = ConfigPyTorch(
+DefaultUtahTrain = ConfigPyTorch(
     # --- Settings of Models/Training
-    #model=models_decoding.cnn_lstm_dec_v4(1, 22, 3),
-    model=models_decoding.test_model_if_pipeline_running(1, 12, 3),
+    model=models.test_model_if_pipeline_running,
     loss='Cross Entropy',
-    loss_fn=nn.CrossEntropyLoss(),
     optimizer='Adam',
     num_kfold=1,
     num_epochs=1,
     batch_size=256,
     data_split_ratio=0.25,
     data_do_shuffle=False,
+    # ToDo: Letzten beiden Einträge separieren
     deterministic_training=False,
     seed=133
 )
 
 
-def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms) -> None:
-    # ToDo -> dnn_handler übergibt nur Einstellungen --> in Settings.yaml übertragen
+def do_train_decoder_utah(settings: Config_ML_Pipeline, length_window_ms=500) -> None:
     """Training routine for Neural Decoding of recordings from Utah array (KlaesLab)
     Args:
-        dnn_handler: Handler for configurating the routine selection for train deep neural networks
-        length_window_ms: Size of the time window for segmenting the tick interval into firing events
+        settings:           Handler for configuring the routine selection for train deep neural networks
+        length_window_ms:   Size of the time window for segmenting the tick interval into firing events
+    Return:
+        None
     """
-    from src_dnn.dataset.decoding_utah import preprocess_dataset
-    from src_dnn.pytorch.src_lstm_Decoding import TrainHandlerLstm  # Import der pytorch file
-    from package.plot.plot_dnn import plot_statistic_data
-    from package.plot.plot_metric import plot_confusion, plot_loss
-
     base_path = Path(__file__).parents[2]
     func_name = do_train_decoder_utah.__name__
     # Pfad ab dem Ordner "3_Python" extrahieren
@@ -69,14 +45,27 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms) -> None:
         f"\n\n=== Executing function --> {func_name} in file --> {shortened_path} ===")
     print("\n\t Train modules of end-to-end neural signal pre-processing frame-work (DeNSPP)")
 
+    # --- Loading the YAML files
+    yaml_data = yaml_config_handler(DefaultSettingsDataset, yaml_name='Config_Utah_Data')
+    config_data = yaml_data.get_class(Config_Dataset)
+    del yaml_data
+
+    default_train = DefaultSettingsTrainCE
+    default_train.model_name = models.cnn_lstm_dec_v2.__name__
+    yaml_train = yaml_config_handler(default_train, yaml_name='Config_Utah_Train')
+    config_train = yaml_train.get_class(Config_PyTorch)
+    del default_train, yaml_train
+
     # --- Processing: Loading Data
-    dataset = preprocess_dataset(config_data, length_window_ms, use_cluster=False)
-    data_deci_label = dataset.lable_dict
+    dataset = prepare_training(config_data, length_window_ms, use_cluster=False)
+    data_deci_label = dataset.get_dictionary
     num_output = len(data_deci_label)
 
-    trainhandler = TrainHandlerLstm(ConfigTrain, config_data)
+    # ToDo: Checken, wo die Unterschiede der beiden Handler sind
+    trainhandler = TrainHandlerLstm(config_train, config_data)
     trainhandler.preperation_for_training()
-    trainhandler.load_model()
+    model_used = models.models_available.build_model(config_train.model_name)
+    trainhandler.load_model(model_used)
     trainhandler.load_data(dataset)
     del dataset
     epoch_acc = trainhandler.do_training()[-1]
@@ -87,13 +76,16 @@ def do_train_decoder_utah(dnn_handler: dnn_handler, length_window_ms) -> None:
     del trainhandler
 
     # --- Plotting and Ending
-    if dnn_handler.do_plot:
+    if settings.do_plot:
         plt.close("all")
         plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=data_deci_label)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir,
-                            cl_dict=data_deci_label)
-
-        #plt.show(block=dnn_handler.do_block)
+                            cl_dict=data_deci_label, show_plot=settings.do_block)
 
     print("\nThe End")
+
+
+if __name__ == "__main__":
+    from package.dnn.dnn_handler import DefaultSettings_MLPipe
+    do_train_decoder_utah(DefaultSettings_MLPipe)

@@ -224,8 +224,9 @@ class DataLoader(_DataController):
         self.raw_data.label_exist = int(loaded_data['nev_detected']['Exits'][0, 0][0])
         spike_xoffset = int(-0.1e-6 * self.raw_data.data_fs_orig)
         for elec in elec_process:
-            self.raw_data.evnt_xpos.append(loaded_data['nev_detected'][f'Elec{1 + elec}'][0, 0]['timestamps'][0, 0][0, :] - spike_xoffset)
-            self.raw_data.evnt_id.append(loaded_data['nev_detected'][f'Elec{1 + elec}'][0, 0]['cluster'][0, 0][0, :])
+            data = loaded_data['nev_detected'][f'Elec{1 + elec}'][0, 0]
+            self.raw_data.evnt_xpos.append(data['timestamps'][0, 0][0, :] - spike_xoffset)
+            self.raw_data.evnt_id.append(data['cluster'][0, 0][0, :])
 
         # --- Behaviour
         self.raw_data.behaviour_exist = True

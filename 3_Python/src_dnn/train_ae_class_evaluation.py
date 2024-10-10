@@ -1,15 +1,24 @@
+import os
+from datetime import datetime
 import numpy as np
 import torch.nn as nn
 from matplotlib.ticker import MaxNLocator
-from package.dnn.dnn_handler import dnn_handler
-from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
-import package.dnn.models.autoencoder_cnn as models_ae
-import package.dnn.models.autoencoder_class as models_class
-from package.plot.plot_metric import calculate_class_accuracy
 from sklearn.metrics import precision_recall_fscore_support
 
-import os  # Added to handle directory operations
-from datetime import datetime  # Added to handle timestamp
+from package.yaml_handler import yaml_config_handler
+from package.dnn.dnn_handler import Config_ML_Pipeline
+from package.dnn.pytorch_dataclass import (Config_Dataset, DefaultSettingsDataset,
+                                           Config_PyTorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE)
+from package.plot.plot_metric import plot_confusion, calculate_class_accuracy
+from package.plot.plot_dnn import plot_statistic_data
+
+from package.dnn.template.dataset.autoencoder import prepare_training as get_dataset_ae
+from package.dnn.template.dataset.autoencoder_class import prepare_training as get_dataset_class
+from package.dnn.pytorch.autoencoder import train_nn as train_autoencoder
+from package.dnn.pytorch.classifier import train_nn as train_classifier
+import package.dnn.template.models.autoencoder_cnn as models_ae
+import package.dnn.template.models.autoencoder_class as models_class
+
 
 # Configuration for the dataset
 config_data = Config_Dataset(
@@ -17,33 +26,27 @@ config_data = Config_Dataset(
     data_path='../../2_Data/00_Merged_Datasets',
     data_file_name='2023-11-24_Dataset-07_RGC_TDB_Merged.mat',
     # --- Data Augmentation
-    data_do_augmentation=False,
-    data_num_augmentation=0,
-    data_do_addnoise_cluster=False,
+    augmentation_do=False,
+    augmentation_num=0,
+    add_noise_cluster=False,
     # --- Data Normalization
-    data_do_normalization=True,
-    data_normalization_mode='CPU',
-    data_normalization_method='minmax',
-    data_normalization_setting='bipolar',
+    normalization_do=True,
+    normalization_mode='CPU',
+    normalization_method='minmax',
+    normalization_setting='bipolar',
     # --- Dataset Reduction
-    data_do_reduce_samples_per_cluster=False,
-    data_num_samples_per_cluster=5_000,
-    data_exclude_cluster=[],
-    data_sel_pos=[]
+    reduce_samples_per_cluster_do=False,
+    reduce_samples_per_cluster_num=5_000,
+    exclude_cluster=[],
+    reduce_positions_per_sample=[]
 )
 
 
-def do_train_ae_classifier(dnn_handler: dnn_handler, num_feature_layer: int, num_output_cl: int,
+def do_train_ae_classifier(settings: Config_ML_Pipeline,
+                           num_feature_layer: int, num_output_cl: int,
                            mode_ae=0, noise_std=0.05, path2save_base='',
                            num_epochs=5) -> dict:
     """Training routine for Autoencoders and Classification after Encoder"""
-    from package.dnn.dataset.autoencoder import prepare_training as get_dataset_ae
-    from package.dnn.dataset.autoencoder_class import prepare_training as get_dataset_class
-    from package.dnn.pytorch.autoencoder import train_nn as train_autoencoder
-    from package.dnn.pytorch.classifier import train_nn as train_classifier
-    from package.plot.plot_dnn import plot_statistic_data
-    from package.plot.plot_metric import plot_confusion, plot_loss
-
     metric_run = dict()
 
     # --- Definition of settings
@@ -70,12 +73,11 @@ def do_train_ae_classifier(dnn_handler: dnn_handler, num_feature_layer: int, num
         data_do_shuffle=True
     )
 
-    use_cell_bib = not (dnn_handler.mode_cell_bib == 0)
-    use_cell_mode = 0 if not use_cell_bib else dnn_handler.mode_cell_bib - 1
+    # --- Loading YAML files
+
 
     # ----------- Step #1: TRAINING AUTOENCODER
-    dataset = get_dataset_ae(settings=config_data, use_cell_bib=use_cell_bib, mode_classes=use_cell_mode,
-                             mode_train_ae=mode_ae, noise_std=noise_std, do_classification=False)
+    dataset = get_dataset_ae(settings=config_data, mode_train_ae=mode_ae, noise_std=noise_std, do_classification=False)
     trainhandler = train_autoencoder(config_train=config_train_ae, config_data=config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
@@ -92,9 +94,8 @@ def do_train_ae_classifier(dnn_handler: dnn_handler, num_feature_layer: int, num
     path2model = trainhandler.get_saving_path()
 
     # ----------- Step #2: TRAINING CLASSIFIER
-    dataset = get_dataset_class(settings=config_data, path2model=path2model,
-                                use_cell_bib=use_cell_bib, mode_classes=use_cell_mode)
-    num_output = dataset.frames_me.shape[0]
+    dataset = get_dataset_class(settings=config_data, path2model=path2model)
+    num_output = dataset.__frames_me.shape[0]
     trainhandler = train_classifier(config_train=config_train_cl, config_data=config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
@@ -121,14 +122,13 @@ def do_train_ae_classifier(dnn_handler: dnn_handler, num_feature_layer: int, num
         "path2save": logsdir
     })
 
-    if dnn_handler.do_plot:
-        plot_loss(acc_class_valid, 'Acc.', path2save=logsdir)  # Using validation accuracy for plotting
+    if settings.do_plot:
         plot_confusion(data_result['valid_clus'], data_result['yclus'],
                        cl_dict=data_result['cl_dict'], path2save=logsdir,
                        name_addon="training")
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                             path2save=logsdir, cl_dict=data_result['cl_dict'])
-        plt.show(block=dnn_handler.do_block)
+        plt.show(block=settings.do_block)
 
     del dataset, trainhandler
 
@@ -136,10 +136,10 @@ def do_train_ae_classifier(dnn_handler: dnn_handler, num_feature_layer: int, num
 
 
 if __name__ == "__main__":
-    from package.dnn.dnn_handler import dnn_handler
+    from package.dnn.dnn_handler import Config_ML_Pipeline
     import matplotlib.pyplot as plt
 
-    dnn_handler = dnn_handler(
+    dnn_handler = Config_ML_Pipeline(
         mode_dnn=4,
         mode_cellbib=2,
         do_plot=False,

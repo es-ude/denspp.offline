@@ -133,7 +133,7 @@ class Pipeline(PipelineCMD):
         if self.signals.frames_align[1].size == 0:
             print("No frames available!")
         else:
-            self.signals.features = self.__fe.fe_pca(self.signals.frames_align[0])
+            self.signals.features = self.__fe.pca(self.signals.frames_align[0])
             # ---- Clustering | Classification ----
             (self.signals.frames_align[2]) = self.__cl.cluster_kmeans(self.signals.features)
             self.signals.spike_ticks = calc_spiketicks(self.signals.frames_align)

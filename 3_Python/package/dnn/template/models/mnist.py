@@ -1,9 +1,11 @@
-import torch
-from torch import nn, Tensor, argmax
-from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
-from package.dnn.pytorch_handler import __model_settings_common
+from torch import nn, Tensor, argmax, flatten, reshape
+from package.dnn.pytorch_handler import __model_settings_common, ModelRegistry
 
 
+models_available = ModelRegistry()
+
+
+@models_available.register
 class mnist_mlp_cl_v1(__model_settings_common):
     """Class of a classifier with Dense-Layer for feature extraction"""
     def __init__(self):
@@ -27,11 +29,12 @@ class mnist_mlp_cl_v1(__model_settings_common):
                 pass
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
-        x = torch.flatten(x, start_dim=1)
+        x = flatten(x, start_dim=1)
         prob = self.model(x)
         return prob, argmax(prob, 1)
 
 
+@models_available.register
 class mnist_mlp_ae_v1(__model_settings_common):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
     def __init__(self):
@@ -62,54 +65,6 @@ class mnist_mlp_ae_v1(__model_settings_common):
                 self.decoder.add_module(f"act_{idx:02d}", nn.ReLU())
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
-        x = torch.flatten(x, start_dim=1)
+        x = flatten(x, start_dim=1)
         encoded = self.encoder(x)
-        return encoded, torch.reshape(self.decoder(encoded), (x.shape[0], 28, 28))
-
-
-# --- Recommended Configurations for Training
-Recommended_Config_Classifier = Config_PyTorch(
-    model=mnist_mlp_cl_v1(),
-    loss='Cross Entropy Loss',
-    loss_fn=nn.CrossEntropyLoss(),
-    optimizer='Adam',
-    num_kfold=1,
-    patience=20,
-    num_epochs=20,
-    batch_size=256,
-    data_do_shuffle=True,
-    data_split_ratio=0.25
-)
-
-Recommended_Config_AE = Config_PyTorch(
-    model=mnist_mlp_ae_v1(),
-    loss='MSE',
-    loss_fn=nn.MSELoss(),
-    optimizer='Adam',
-    num_kfold=1,
-    patience=20,
-    num_epochs=20,
-    batch_size=256,
-    data_do_shuffle=True,
-    data_split_ratio=0.25
-)
-
-Recommended_Config_DatasetSettings = Config_Dataset(
-    # --- Settings of Datasets
-    data_path='../2_Data',
-    data_file_name='',
-    # --- Data Augmentation
-    data_do_augmentation=False,
-    data_num_augmentation=0,
-    data_do_addnoise_cluster=False,
-    # --- Data Normalization
-    data_do_normalization=False,
-    data_normalization_mode='',
-    data_normalization_method='',
-    data_normalization_setting='',
-    # --- Dataset Preparation
-    data_do_reduce_samples_per_cluster=False,
-    data_num_samples_per_cluster=0,
-    data_exclude_cluster=[],
-    data_sel_pos=[]
-)
+        return encoded, reshape(self.decoder(encoded), (x.shape[0], 28, 28))

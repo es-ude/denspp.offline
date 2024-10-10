@@ -9,13 +9,16 @@ from package.data_process.frame_normalization import DataNormalization
 
 
 class DatasetRGC(Dataset):
-    """Dataset Loader for Retinal Ganglion Cells ON-/OFF Cell Classification"""
     def __init__(self, frame: np.ndarray, cluster_id: np.ndarray, cluster_dict=None):
+        """Dataset Loader for Retinal Ganglion Cells ON-/OFF Cell Classification
+        Args:
+            frame:          Numpy array with all frames
+            cluster_id:     Corresponding spike label of each frame
+            cluster_dict:   Corresponding dictionary with id label (optional)
+        """
         self.__frame_input = np.array(frame, dtype=np.float32)
         self.__frame_cellid = np.array(cluster_id, dtype=np.uint8)
-        self.cluster_name_available = isinstance(cluster_dict, list)
-        self.frame_dict = cluster_dict
-        self.data_type = 'RGC Classification'
+        self.__labeled_dictionary = cluster_dict if isinstance(cluster_dict, list) else []
 
     def __len__(self):
         return self.__frame_input.shape[0]
@@ -26,39 +29,58 @@ class DatasetRGC(Dataset):
 
         return {'in': self.__frame_input[idx], 'out': self.__frame_cellid[idx]}
 
+    @property
+    def get_dictionary(self) -> list:
+        """Getting the dictionary of labeled dataset"""
+        return self.__labeled_dictionary
 
-def prepare_training(settings: Config_Dataset, use_cell_bib=False, mode_classes=0) -> DatasetRGC:
-    """Preparing dataset incl. augmentation for spike-detection-based training"""
+    @property
+    def get_topology_type(self) -> str:
+        """Getting the information of used Autoencoder topology"""
+        return 'RGC Classification'
+
+
+def prepare_training(settings: Config_Dataset) -> DatasetRGC:
+    """Preparing dataset incl. augmentation for spike-detection-based training
+    Args:
+        settings:       Settings for loading data
+    Return:
+        Dataloader with retinal ganglion cell types for classification tasks
+    """
     print("... loading and processing the dataset")
-    npzfile = loadmat(settings.get_path2data())
+    npzfile = loadmat(settings.get_path2data)
     frames_in = npzfile["frames_in"]
     frames_cl = npzfile["frames_cluster"].flatten() if 'frames_cluster' in npzfile else npzfile["frames_cl"].flatten()
     frames_dict = dict()
 
     # --- PART: Exclusion of selected clusters
-    if not len(settings.data_exclude_cluster) == 0:
-        for i, id in enumerate(settings.data_exclude_cluster):
+    if len(settings.exclude_cluster):
+        for i, id in enumerate(settings.exclude_cluster):
             selX = np.where(frames_cl != id)
             frames_in = frames_in[selX[0], :]
             frames_cl = frames_cl[selX]
+        print(f"... class reduction done to {np.unique(frames_cl).size} classes")
 
     # --- PART: Using a cell bib with option to reduce cluster
-    if use_cell_bib:
-        frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(settings.get_path2data(),
-                                                                              mode_classes, frames_in, frames_cl)
+    if settings.use_cell_library:
+        frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(settings.get_path2data,
+                                                                              settings.use_cell_library,
+                                                                              frames_in, frames_cl)
 
     # --- PART: Reducing samples per cluster (if too large)
-    if settings.data_do_reduce_samples_per_cluster:
+    if settings.reduce_samples_per_cluster_do:
         print("... reducing the samples per cluster (for pre-training on dedicated hardware)")
         frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
-                                                             settings.data_num_samples_per_cluster)
+                                                             settings.reduce_samples_per_cluster_num)
 
     # --- PART: Data Normalization
-    if settings.data_do_normalization:
+    if settings.normalization_do:
         print(f"... do data normalization")
-        data_class_frames_in = DataNormalization(device=settings.data_normalization_mode,
-                                                 method=settings.data_normalization_method,
-                                                 mode=settings.data_normalization_setting)
+        data_class_frames_in = DataNormalization(
+            device=settings.normalization_mode,
+            method=settings.normalization_method,
+            mode=settings.normalization_setting
+        )
         frames_in = data_class_frames_in.normalize(frames_in)
 
     # --- Output

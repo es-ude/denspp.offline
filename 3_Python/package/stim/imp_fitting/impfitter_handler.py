@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 import impedancefitter as ifit
@@ -8,6 +9,7 @@ from datetime import datetime
 from fractions import Fraction
 from platform import system
 
+from package.yaml_handler import yaml_config_handler
 from package.structure_builder import create_folder_general_firstrun
 from package.data_process.transformation import do_fft_withimag
 from package.plot.plot_impfit import (plot_transient, plot_transient_fft, plot_impedance)
@@ -93,6 +95,122 @@ def _transfer_params_to_detail(params: dict) -> dict:
         params2dict[p] = {}
         params2dict[p]["value"] = params[p]
     return params2dict
+
+
+def find_stimlation_waveform_position(signals: dict, split_on_voltage=False) -> dict:
+    """Find the positions in which a transient stimulation waveform is available
+    Args:
+        signals:            Dictionary with stimulation signals ['V': voltage, 'I': current]
+        split_on_voltage:   Boolean for making single stimulation trails on voltage [True] or current [False]
+    Returns:
+        Dictionary with position of stimulation phases from input transient stimulation waveform
+    """
+    # --- Internal function
+    def find_start_stopp_position(list_positions: np.ndarray, condition, type: int) -> [list, list]:
+        """Find all positions of start and stop of continous signal"""
+        if type == 0:
+            xpos_all = np.argwhere(list_positions == condition).flatten()
+        elif type == 1:
+            xpos_all = np.argwhere(list_positions >= condition).flatten()
+        else:
+            xpos_all = np.argwhere(list_positions <= condition).flatten()
+
+        xpos_pos = np.argwhere(np.diff(xpos_all) > 1).flatten()
+        xpos_start = [pos for pos in xpos_all[xpos_pos + 1]]
+        xpos_start.insert(0, xpos_all[0])
+        xpos_stopp = [pos for pos in xpos_all[xpos_pos]]
+        xpos_stopp.append(xpos_all[-1])
+        return xpos_start, xpos_stopp
+
+    # --- Preparing signals
+    input_signal_nml = signals['V'] if split_on_voltage else signals['I']
+    input_signal_abs = np.abs(input_signal_nml)
+
+    # --- Determining positions of absolute signal incl. state
+    xpos_stim_start, xpos_stim_stopp = find_start_stopp_position(input_signal_abs, 0.6 * input_signal_abs.max(), 1)
+    state_cathodic = np.zeros((len(xpos_stim_start), ), dtype=bool)
+    for idx in range(len(xpos_stim_start)):
+        signal_mean = np.mean(input_signal_nml[xpos_stim_start[idx]:xpos_stim_stopp[idx]])
+        state_cathodic[idx] = np.sign(signal_mean) == -1.0
+    del signal_mean, idx
+    
+    # --- Determining overall stimulation pattern
+    xpos_ano_start, xpos_ano_stopp = find_start_stopp_position(state_cathodic, False, 0)
+    xpos_cat_start, xpos_cat_stopp = find_start_stopp_position(state_cathodic, True, 1)
+
+    is_cathodic_first = xpos_ano_start[0] > xpos_cat_start[0]
+    xpos_cat_phase = [[xpos_stim_start[xpos_cat_start[idx]]-10, xpos_stim_stopp[xpos_cat_stopp[idx]]+10] for idx in range(len(xpos_cat_start))]
+    xpos_ano_phase = [[xpos_stim_start[xpos_ano_start[idx]]-10, xpos_stim_stopp[xpos_ano_stopp[idx]]+10] for idx in range(len(xpos_ano_start))]
+
+    # --- Splitting signals
+    run_dict_positions = {'cathodic_first': is_cathodic_first,
+                          'xpos_cat': xpos_cat_phase,
+                          'xpos_ano': xpos_ano_phase}
+    return run_dict_positions
+
+
+def splitting_stimulation_waveforms_into_single_trials(signals_input: dict,
+                                                       split_on_voltage=False, do_offset_comp=False) -> dict:
+    """
+    Args:
+        signals_input:      Dictionary with stimulation signals ['V': voltage, 'I': current]
+        positions:          Dictionary from
+        split_on_voltage:   Boolean for making single stimulation trails on voltage [True] or current [False]
+        do_offset_comp:     Do offset compensation [Default: False]
+    Returns:
+        Dictionary with position of stimulation phases from input transient stimulation waveform
+    """
+    # --- Getting positions of stimulation phase
+    phase_positions = find_stimlation_waveform_position(signals_input, split_on_voltage)
+
+    # --- Preparing signals
+    input_signal_nml = signals_input['V'] if split_on_voltage else signals_input['I']
+    is_cathodic_first = phase_positions['cathodic_first']
+    xpos_cat_phase = phase_positions['xpos_cat']
+    xpos_ano_phase = phase_positions['xpos_ano']
+
+    # --- Offset compensation
+    mean_value = np.mean(input_signal_nml[0:int(0.8 * xpos_cat_phase[0][0])] if is_cathodic_first else input_signal_nml[0:xpos_ano_phase[0][0]-10])
+    input_signal_nml -= mean_value if do_offset_comp else 0
+
+    # --- Splitting signals
+    positions_old = 0
+    voltage_separated = list()
+    current_separated = list()
+    for pos_cat, pos_ano in zip(xpos_cat_phase, xpos_ano_phase):
+        positions_delta = (pos_cat[0] if is_cathodic_first else pos_ano[0]) - positions_old
+        position_start = (pos_cat[0] if is_cathodic_first else pos_ano[0]) - int(0.5 * positions_delta)
+        position_stopp = pos_ano[1] if is_cathodic_first else pos_cat[1] + int(0.5 * positions_delta)
+        positions_old = (pos_ano[1] if is_cathodic_first else pos_cat[1])
+
+        voltage_separated.append(signals_input['V'][position_start:position_stopp])
+        current_separated.append(signals_input['I'][position_start:position_stopp])
+
+    # --- Translating information into dictionary
+    signals_separated = dict()
+    for key, data in signals_input.items():
+        if key == 'V':
+            signals_separated.update({key: voltage_separated})
+        elif key == 'I':
+            signals_separated.update({key: current_separated})
+        else:
+            signals_separated.update({key: data})
+    return signals_separated
+
+
+@dataclass(frozen=True)
+class Settings_ImpFit:
+    """Configuration class for handling the impedance fitting processing pipeline"""
+    model:      str
+    path2fits:  str
+    path2tran:  str
+
+
+RecommendedSettingsImpFit = Settings_ImpFit(
+    model="R_tis + W_war + parallel(R_ct, C_dl)",
+    path2fits='../../2_Data/00_ImpedanceFitter',
+    path2tran='C:/HomeOffice/Austausch_Rostock/TransienteMessungen/180522_Messung/1_Messdaten'
+)
 
 
 class ImpFit_Handler:
@@ -385,7 +503,9 @@ class ImpFit_Handler:
 
 
 if __name__ == "__main__":
-    set_ifitter = "R_tis + W_war + parallel(R_ct, C_dl)"
+    # --- Settings
+    yaml_config = yaml_config_handler(RecommendedSettingsImpFit, yaml_name="Config_ImpFit_Test")
+    settings_impfit = yaml_config.get_class(Settings_ImpFit)
 
     path2imp = '../../../../2_Data/00_ImpedanceFitter'
     path2ngsolve = f'{path2imp}/impedance_expected_ngsolve.csv'
@@ -393,7 +513,7 @@ if __name__ == "__main__":
     path2test1 = f'{path2imp}/tek0000ALL_MATLAB_impedance.csv'
 
     imp_handler = ImpFit_Handler()
-    imp_handler.load_fitmodel(set_ifitter)
+    imp_handler.load_fitmodel(settings_impfit.model)
     imp_handler.load_params_default(path2ngsolve, {'ct_R': 8.33e6})
 
     # --- Step #1: Plotting impedance

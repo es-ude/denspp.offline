@@ -1,7 +1,11 @@
 from torch import nn, Tensor, argmax, flatten, reshape
-from package.dnn.pytorch_handler import __model_settings_common
+from package.dnn.pytorch_handler import __model_settings_common, ModelRegistry
 
 
+models_available = ModelRegistry()
+
+
+@models_available.register
 class mnist_gki_v0(__model_settings_common):
     def __init__(self):
         super().__init__('Classifier')
@@ -15,6 +19,7 @@ class mnist_gki_v0(__model_settings_common):
         return prob, argmax(prob, 1)
 
 
+@models_available.register
 class mnist_gki_v1(__model_settings_common):
     def __init__(self):
         super().__init__('Classifier')
@@ -29,6 +34,7 @@ class mnist_gki_v1(__model_settings_common):
         return prob, argmax(prob, 1)
 
 
+@models_available.register
 class mnist_gki_v2(__model_settings_common):
     def __init__(self):
         super().__init__('Classifier')
@@ -43,6 +49,7 @@ class mnist_gki_v2(__model_settings_common):
         return prob, argmax(prob, 1)
 
 
+@models_available.register
 class mnist_gki_v3(__model_settings_common):
     def __init__(self):
         super().__init__('Classifier')
@@ -58,6 +65,7 @@ class mnist_gki_v3(__model_settings_common):
         return prob, argmax(prob, 1)
 
 
+@models_available.register
 class mnist_gki_v4(__model_settings_common):
     def __init__(self):
         super().__init__('Classifier')
@@ -73,6 +81,7 @@ class mnist_gki_v4(__model_settings_common):
         return prob, argmax(prob, 1)
 
 
+@models_available.register
 class mnist_gki_v5(__model_settings_common):
     def __init__(self):
         super().__init__('Classifier')
@@ -91,6 +100,7 @@ class mnist_gki_v5(__model_settings_common):
         return prob, argmax(prob, 1)
 
 
+@models_available.register
 class mnist_gki_v6(__model_settings_common):
     def __init__(self):
         super().__init__('Classifier')
@@ -115,6 +125,7 @@ class mnist_gki_v6(__model_settings_common):
         return prob, argmax(prob, 1)
 
 
+@models_available.register
 class mnist_gki_v7(__model_settings_common):
     def __init__(self):
         super().__init__('Classifier')
@@ -154,6 +165,7 @@ class mnist_gki_v7(__model_settings_common):
         return prob, argmax(prob, 1)
 
 
+@models_available.register
 class mnist_gki_v8(__model_settings_common):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
     def __init__(self):
