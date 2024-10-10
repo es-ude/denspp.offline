@@ -1,4 +1,5 @@
 from os.path import join, exists, split
+from os import walk
 from glob import glob
 import dataclasses
 import numpy as np
@@ -153,10 +154,17 @@ class _DataController:
                 # --- Cutting labeled information
                 if self.raw_data.label_exist:
                     # Adapting new data
-                    idx2 = int(np.argwhere(evnt_xpos_in[idx] >= idx0)[0])
-                    idx3 = int(np.argwhere(evnt_xpos_in[idx] <= idx1)[-1])
-                    evnt_xpos_out.append(evnt_xpos_in[idx][idx2:idx3] - idx0)
-                    cluster_out.append(cluster_in[idx][idx2:idx3])
+                    pos_start = np.argwhere(evnt_xpos_in[idx] >= idx0).flatten()
+                    idx2 = int(pos_start[0]) if pos_start.size > 0 else -1
+                    pos_stopp = np.argwhere(evnt_xpos_in[idx] <= idx1).flatten()
+                    idx3 = int(pos_stopp[-1]) if pos_stopp.size > 0 else -1
+
+                    if idx2 == -1 or idx3 == -1:
+                        evnt_xpos_out.append([])
+                        cluster_out.append([])
+                    else:
+                        evnt_xpos_out.append(evnt_xpos_in[idx][idx2:idx3] - idx0)
+                        cluster_out.append(cluster_in[idx][idx2:idx3])
 
             # --- Return adapted data
             self.raw_data.data_raw = rawdata_out
@@ -380,8 +388,22 @@ class _DataController:
         """
         # --- Checking if mapping file is available
         if path2csv == "":
-            found_mapping_files = glob(join(split(self.path2file)[0], '*.csv'))
-            self.path2mapping = found_mapping_files[0]
+            # --- Getting the csv mapping files from folder
+            from re import search
+            list_with_csv = list()
+            for dirpath, dirnames, filenames in walk(self.settings.path):
+                for filename in [f for f in filenames if f.endswith(".csv")]:
+                    list_with_csv.append(join(dirpath, filename))
+
+            list_with_mapping = list()
+            for csv_file in list_with_csv:
+                if search('Mapping_', csv_file):
+                    list_with_mapping.append(csv_file)
+
+            for csv_file in list_with_mapping:
+                if search(f'{self.settings.data_set:02d}', csv_file):
+                    self.path2mapping = csv_file
+                    break
         else:
             self.path2mapping = path2csv
 
@@ -466,7 +488,7 @@ if __name__ == "__main__":
 
     settings = SettingsDATA(
         path="C:\HomeOffice\Data_Neurosignal",
-        data_set=8, data_case=1, data_point=1,
+        data_set=6, data_case=1, data_point=0,
         t_range=[0, 0.5], ch_sel=[], fs_resample=20e3
     )
     data_loader = DataLoader(settings)
