@@ -6,12 +6,18 @@ from matplotlib.ticker import MaxNLocator
 from sklearn.metrics import precision_recall_fscore_support
 
 from package.yaml_handler import yaml_config_handler
-from package.dnn.dnn_handler import dnn_handler
+from package.dnn.dnn_handler import Config_ML_Pipeline
 from package.dnn.pytorch_dataclass import (Config_Dataset, DefaultSettingsDataset,
                                            Config_PyTorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE)
+from package.plot.plot_metric import plot_confusion, calculate_class_accuracy
+from package.plot.plot_dnn import plot_statistic_data
+
+from package.dnn.template.dataset.autoencoder import prepare_training as get_dataset_ae
+from package.dnn.template.dataset.autoencoder_class import prepare_training as get_dataset_class
+from package.dnn.pytorch.autoencoder import train_nn as train_autoencoder
+from package.dnn.pytorch.classifier import train_nn as train_classifier
 import package.dnn.template.models.autoencoder_cnn as models_ae
 import package.dnn.template.models.autoencoder_class as models_class
-from package.plot.plot_metric import calculate_class_accuracy
 
 
 # Configuration for the dataset
@@ -36,18 +42,11 @@ config_data = Config_Dataset(
 )
 
 
-def do_train_ae_classifier(settings: dnn_handler,
+def do_train_ae_classifier(settings: Config_ML_Pipeline,
                            num_feature_layer: int, num_output_cl: int,
                            mode_ae=0, noise_std=0.05, path2save_base='',
                            num_epochs=5) -> dict:
     """Training routine for Autoencoders and Classification after Encoder"""
-    from package.dnn.template.dataset.autoencoder import prepare_training as get_dataset_ae
-    from package.dnn.template.dataset.autoencoder_class import prepare_training as get_dataset_class
-    from package.dnn.pytorch.autoencoder import train_nn as train_autoencoder
-    from package.dnn.pytorch.classifier import train_nn as train_classifier
-    from package.plot.plot_dnn import plot_statistic_data
-    from package.plot.plot_metric import plot_confusion, plot_loss
-
     metric_run = dict()
 
     # --- Definition of settings
@@ -95,9 +94,8 @@ def do_train_ae_classifier(settings: dnn_handler,
     path2model = trainhandler.get_saving_path()
 
     # ----------- Step #2: TRAINING CLASSIFIER
-    dataset = get_dataset_class(settings=config_data, path2model=path2model,
-                                use_cell_bib=use_cell_bib, mode_classes=use_cell_mode)
-    num_output = dataset.frames_me.shape[0]
+    dataset = get_dataset_class(settings=config_data, path2model=path2model)
+    num_output = dataset.__frames_me.shape[0]
     trainhandler = train_classifier(config_train=config_train_cl, config_data=config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
@@ -125,7 +123,6 @@ def do_train_ae_classifier(settings: dnn_handler,
     })
 
     if settings.do_plot:
-        plot_loss(acc_class_valid, 'Acc.', path2save=logsdir)  # Using validation accuracy for plotting
         plot_confusion(data_result['valid_clus'], data_result['yclus'],
                        cl_dict=data_result['cl_dict'], path2save=logsdir,
                        name_addon="training")
@@ -139,10 +136,10 @@ def do_train_ae_classifier(settings: dnn_handler,
 
 
 if __name__ == "__main__":
-    from package.dnn.dnn_handler import dnn_handler
+    from package.dnn.dnn_handler import Config_ML_Pipeline
     import matplotlib.pyplot as plt
 
-    dnn_handler = dnn_handler(
+    dnn_handler = Config_ML_Pipeline(
         mode_dnn=4,
         mode_cellbib=2,
         do_plot=False,

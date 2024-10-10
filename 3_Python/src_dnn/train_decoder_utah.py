@@ -4,7 +4,7 @@ from pathlib import Path
 from package.yaml_handler import yaml_config_handler
 from package.plot.plot_dnn import plot_statistic_data
 from package.plot.plot_metric import plot_confusion, plot_loss
-from package.dnn.dnn_handler import dnn_handler
+from package.dnn.dnn_handler import Config_ML_Pipeline
 from package.dnn.pytorch_dataclass import Config_Dataset, DefaultSettingsDataset, Config_PyTorch, DefaultSettingsTrainCE
 
 from src_dnn.src_pytorch_handler import ConfigPyTorch
@@ -29,7 +29,7 @@ DefaultUtahTrain = ConfigPyTorch(
 )
 
 
-def do_train_decoder_utah(settings: dnn_handler, length_window_ms=500) -> None:
+def do_train_decoder_utah(settings: Config_ML_Pipeline, length_window_ms=500) -> None:
     """Training routine for Neural Decoding of recordings from Utah array (KlaesLab)
     Args:
         settings:           Handler for configuring the routine selection for train deep neural networks
@@ -58,7 +58,7 @@ def do_train_decoder_utah(settings: dnn_handler, length_window_ms=500) -> None:
 
     # --- Processing: Loading Data
     dataset = preprocess_dataset(config_data, length_window_ms, use_cluster=False)
-    data_deci_label = dataset.lable_dict
+    data_deci_label = dataset.get_dictionary
     num_output = len(data_deci_label)
 
     # ToDo: Checken, wo die Unterschiede der beiden Handler sind
@@ -84,3 +84,8 @@ def do_train_decoder_utah(settings: dnn_handler, length_window_ms=500) -> None:
                             cl_dict=data_deci_label, show_plot=settings.do_block)
 
     print("\nThe End")
+
+
+if __name__ == "__main__":
+    from package.dnn.dnn_handler import DefaultSettings_MLPipe
+    do_train_decoder_utah(DefaultSettings_MLPipe)

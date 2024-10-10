@@ -18,14 +18,7 @@ class DatasetMNIST(Dataset):
         self.__cluster_id = np.array(label, dtype=np.uint8)
         self.__do_classification = do_classification
         # --- Parameters for Confusion Matrix for Classification
-        self.cluster_name_available = isinstance(cluster_dict, list)
-        self.frame_dict = cluster_dict
-
-        self.data_type = "MNIST"
-        if do_classification:
-            self.data_type += " (Classification)"
-        else:
-            self.data_type += " (Autoencoder)"
+        self.__labeled_dictionary = cluster_dict if isinstance(cluster_dict, list) else []
 
     def __len__(self):
         return self.__cluster_id.shape[0]
@@ -38,6 +31,16 @@ class DatasetMNIST(Dataset):
         frame_in = self.__frames_orig[idx, :]
         frame_out = self.__frames_orig[idx, :] if not self.__do_classification else cluster_id
         return {'in': frame_in, 'out': frame_out, 'class': cluster_id}
+
+    @property
+    def get_dictionary(self) -> list:
+        """Getting the dictionary of labeled dataset"""
+        return self.__labeled_dictionary
+
+    @property
+    def get_topology_type(self) -> str:
+        """Getting the information of used Autoencoder topology"""
+        return "MNIST" + (" (Classification)" if self.__do_classification else " (Autoencoder)")
 
 
 def load_mnist(data_path: str) -> [datasets.MNIST, datasets.MNIST]:
@@ -77,7 +80,7 @@ def prepare_training(settings: Config_Dataset, do_classification=True) -> Datase
     Returns:
         Getting the prepared Dataset for MNIST
     """
-    data_train, data_valid = load_mnist(settings.data_path)
+    data_train, data_valid = load_mnist(settings.get_path2folder_data)
 
     # --- Translating data to common
     data_raw = concat((data_train.data, data_valid.data), 0).numpy()
@@ -119,7 +122,3 @@ def prepare_training(settings: Config_Dataset, do_classification=True) -> Datase
         print(f"\tclass {id}{addon} --> {check[1][idx]} samples")
 
     return DatasetMNIST(data_raw, data_label, data_dict, do_classification)
-
-
-if __name__ == "__main__":
-    prepare_training("../data")

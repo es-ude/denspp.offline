@@ -465,15 +465,15 @@ def results_paper(signals: PipelineSignal, no_electrode: int, path="", time_cut=
 
 def plot_signals_neural_cluster(dataset, path2save='', show_plot=False) -> None:
     """Plotting the mean waveforms of each cluster"""
-    num_cl = dataset.frames_me.shape[0]
-    num_frame_size = dataset.frames_me.shape[1]-1
+    num_cl = dataset.__frames_me.shape[0]
+    num_frame_size = dataset.__frames_me.shape[1] - 1
 
     plt.figure()
     axs = [plt.subplot(2, int(np.ceil(num_cl/2)), 1+idx) for idx in range(num_cl)]
-    for idx, frame in enumerate(dataset.frames_me):
+    for idx, frame in enumerate(dataset.__frames_me):
         axs[idx].plot(frame, color=sel_color[idx % 7])
         axs[idx].grid()
-        axs[idx].set_title(dataset.frame_dict[idx])
+        axs[idx].set_title(dataset.__labeled_dictionary[idx])
         axs[idx].set_xlim(0, num_frame_size)
         axs[idx].set_xticks(np.linspace(0, num_frame_size, 5, dtype=int))
 

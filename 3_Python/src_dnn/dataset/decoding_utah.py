@@ -15,16 +15,12 @@ class DecoderDataset(Dataset):
             dataset_spike_train:    List with firing rate activity
             decision:               List with labeled information
             label_dict:             Dictionary of what kind of labels are available
-            use_patient_dec:        Boolean for label extraction (False = Experiment, True =
-            Patient)
+            use_patient_dec:        Boolean for label extraction (False = Experiment, True = Patient)
         """
         self.__datset_spike_train = dataset_spike_train
         self.__decision = decision
         self.__use_patient_dec = use_patient_dec
-
-        self.data_type = "Neural Decoder (Utah)"
-        self.cluster_name_available = True
-        self.lable_dict = label_dict
+        self.__labeled_dictionary = label_dict
 
     def __len__(self):
         return len(self.__datset_spike_train)
@@ -39,11 +35,21 @@ class DecoderDataset(Dataset):
             decision = self.__decision[idx]['exp_says']
 
         output = -1
-        for key in self.lable_dict.keys():
+        for key in self.__labeled_dictionary.keys():
             if key in decision:
-                output = self.lable_dict.get(decision)
+                output = self.__labeled_dictionary.get(decision)
 
         return {'in': np.array(self.__datset_spike_train[idx], dtype=np.float32), 'out': output}
+
+    @property
+    def get_dictionary(self) -> list:
+        """Getting the dictionary of labeled dataset"""
+        return [key for key in self.__labeled_dictionary.keys()]
+
+    @property
+    def get_topology_type(self) -> str:
+        """Getting the information of used Autoencoder topology"""
+        return "Neural Decoder (Utah)"
 
 
 def preprocess_dataset(settings: Config_Dataset, length_time_window_ms=500, use_cluster=True) -> DecoderDataset:

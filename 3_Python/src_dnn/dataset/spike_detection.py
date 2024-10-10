@@ -13,8 +13,6 @@ class DatasetSDA(Dataset):
         self.__frame_slice = np.array(frame, dtype=np.float32)
         self.__sda_class = np.array(sda, dtype=bool)
         self.__sda_thr = threshold
-        self.sda_dict = ['Non-Spike', 'Spike']
-        self.data_type = 'Spike Detection Algorithm'
 
     def __len__(self):
         return self.__frame_slice.shape[0]
@@ -26,6 +24,16 @@ class DatasetSDA(Dataset):
 
         return {'in': self.__frame_slice[idx], 'sda': self.__sda_class[idx],
                 'out': np.array(decision, dtype=np.uint8)}
+
+    @property
+    def get_dictionary(self) -> list:
+        """Getting the dictionary of labeled inputs"""
+        return ['Non-Spike', 'Spike']
+
+    @property
+    def get_topology_type(self) -> str:
+        """Getting the information of used Autoencoder topology"""
+        return 'Spike Detection Algorithm'
 
 
 def prepare_plotting(data_in: DataLoader) -> tuple[np.ndarray, np.ndarray, np.ndarray]:

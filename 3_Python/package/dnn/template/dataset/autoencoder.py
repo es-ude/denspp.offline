@@ -20,26 +20,13 @@ class DatasetAE(Dataset):
         self.__frames_orig = np.array(frames_raw, dtype=np.float32)
         self.__frames_size = frames_raw.shape[1]
         self.__cluster_id = np.array(cluster_id, dtype=np.uint8)
-        self.frames_me = np.array(frames_cluster_me, dtype=np.float32)
+        self.__frames_me = np.array(frames_cluster_me, dtype=np.float32)
         # --- Parameters for Denoising Autoencoder
         self.__frames_noise_std = noise_std
         self.__do_classification = do_classification
         # --- Parameters for Confusion Matrix for Classification
-        self.cluster_name_available = isinstance(cluster_dict, list)
-        self.frame_dict = cluster_dict
-
-        self.mode_train = mode_train
-        if mode_train == 1:
-            self.data_type = "Denoising Autoencoder (mean)"
-        elif mode_train == 2:
-            self.data_type = "Denoising Autoencoder (Add random noise)"
-        elif mode_train == 3:
-            self.data_type = "Denoising Autoencoder (Add gaussian noise)"
-        else:
-            self.data_type = "Autoencoder"
-
-        if do_classification:
-            self.data_type += " for Classification"
+        self.__labeled_dictionary = cluster_dict if isinstance(cluster_dict, list) else []
+        self.__mode_train = mode_train
 
     def __len__(self):
         return self.__cluster_id.shape[0]
@@ -49,15 +36,15 @@ class DatasetAE(Dataset):
             idx = idx.tolist()
 
         cluster_id = self.__cluster_id[idx]
-        if self.mode_train == 1:
+        if self.__mode_train == 1:
             # Denoising Autoencoder Training with mean
             frame_in = self.__frames_orig[idx, :]
-            frame_out = self.frames_me[cluster_id, :] if not self.__do_classification else cluster_id
-        elif self.mode_train == 2:
+            frame_out = self.__frames_me[cluster_id, :] if not self.__do_classification else cluster_id
+        elif self.__mode_train == 2:
             # Denoising Autoencoder Training with adding random noise on input
             frame_in = self.__frames_orig[idx, :] + np.array(self.__frames_noise_std * np.random.randn(self.__frames_size), dtype=np.float32)
             frame_out = self.__frames_orig[idx, :] if not self.__do_classification else cluster_id
-        elif self.mode_train == 3:
+        elif self.__mode_train == 3:
             # Denoising Autoencoder Training with adding gaussian noise on input
             frame_out = self.__frames_orig[idx, :] if not self.__do_classification else cluster_id
             frame_in = self.__frames_orig[idx, :] + np.array(self.__frames_noise_std * np.random.normal(size=self.__frames_size), dtype=np.float32)
@@ -67,7 +54,34 @@ class DatasetAE(Dataset):
             frame_out = self.__frames_orig[idx, :] if not self.__do_classification else cluster_id
 
         return {'in': frame_in, 'out': frame_out, 'class': cluster_id,
-                'mean': self.frames_me[cluster_id, :]}
+                'mean': self.__frames_me[cluster_id, :]}
+
+    @property
+    def get_mean_waveforms(self) -> np.ndarray:
+        """Getting the mean waveforms of dataset"""
+        return self.__frames_me
+
+
+    @property
+    def get_dictionary(self) -> list:
+        """Getting the dictionary of labeled dataset"""
+        return self.__labeled_dictionary
+
+    @property
+    def get_topology_type(self) -> str:
+        """Getting the information of used Autoencoder topology"""
+        match self.__mode_train:
+            case 1:
+                out = "Denoising Autoencoder (mean)"
+            case 2:
+                out = "Denoising Autoencoder (Add random noise)"
+            case 3:
+                out = "Denoising Autoencoder (Add gaussian noise)"
+            case _:
+                out = "Autoencoder"
+        if self.__do_classification:
+            out += " for Classification"
+        return out
 
 
 def prepare_training(settings: Config_Dataset, do_classification=False,

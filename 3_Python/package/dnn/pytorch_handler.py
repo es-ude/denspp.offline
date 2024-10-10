@@ -196,8 +196,8 @@ class training_pytorch:
         """Loading data for training and validation in DataLoader format into class"""
         self.__setup_device()
         self._do_kfold = True if self.settings_train.num_kfold > 1 else False
-        self._model_addon = data_set.data_type
-        self.cell_classes = data_set.frame_dict if data_set.cluster_name_available else []
+        self._model_addon = data_set.get_topology_type
+        self.cell_classes = data_set.get_dictionary
 
         # --- Preparing datasets
         out_train = list()
@@ -267,7 +267,8 @@ class training_pytorch:
             txt_handler.write(f'Used CPU: {self.used_hw_cpu}\n')
             txt_handler.write(f'Used GPU: {self.used_hw_gpu}\n')
             txt_handler.write(f'Used dataset: {self.settings_data.get_path2data}\n')
-            txt_handler.write(f'AI Topology: {self.model.get_topology} ({self._model_addon})\n')
+            txt_handler.write(f'AI Topology: {self.model.get_topology}\n')
+            txt_handler.write(f'Used Dataset: {self._model_addon}\n')
             txt_handler.write(f'Embedded?: {self.model.model_embedded}\n')
             txt_handler.write('\n')
             txt_handler.write(f'Used Optimizer: {self.settings_train.optimizer}\n')

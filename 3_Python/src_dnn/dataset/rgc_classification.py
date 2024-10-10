@@ -18,9 +18,7 @@ class DatasetRGC(Dataset):
         """
         self.__frame_input = np.array(frame, dtype=np.float32)
         self.__frame_cellid = np.array(cluster_id, dtype=np.uint8)
-        self.cluster_name_available = isinstance(cluster_dict, list)
-        self.frame_dict = cluster_dict
-        self.data_type = 'RGC Classification'
+        self.__labeled_dictionary = cluster_dict if isinstance(cluster_dict, list) else []
 
     def __len__(self):
         return self.__frame_input.shape[0]
@@ -30,6 +28,16 @@ class DatasetRGC(Dataset):
             idx = idx.tolist()
 
         return {'in': self.__frame_input[idx], 'out': self.__frame_cellid[idx]}
+
+    @property
+    def get_dictionary(self) -> list:
+        """Getting the dictionary of labeled dataset"""
+        return self.__labeled_dictionary
+
+    @property
+    def get_topology_type(self) -> str:
+        """Getting the information of used Autoencoder topology"""
+        return 'RGC Classification'
 
 
 def prepare_training(settings: Config_Dataset) -> DatasetRGC:

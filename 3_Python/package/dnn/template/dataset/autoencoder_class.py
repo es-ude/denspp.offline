@@ -21,11 +21,9 @@ class DatasetAE_Class(Dataset):
         self.__frames_raw = np.array(frames_raw, dtype=np.float32)
         self.__frames_feat = np.array(frames_feat, dtype=np.float32)
         self.__cluster_id = np.array(cluster_id, dtype=np.uint8)
-        self.frames_me = np.array(frames_cluster_me, dtype=np.float32)
+        self.__frames_me = np.array(frames_cluster_me, dtype=np.float32)
         # --- Parameters for Confusion Matrix for Classification
-        self.cluster_name_available = not len(cluster_dict) == 0
-        self.frame_dict = cluster_dict
-        self.data_type = "Autoencoder-based Classification"
+        self.__labeled_dictionary = cluster_dict if isinstance(cluster_dict, list) else []
 
     def __len__(self):
         return self.__cluster_id.shape[0]
@@ -36,6 +34,21 @@ class DatasetAE_Class(Dataset):
 
         return {'in': self.__frames_feat[idx, :],
                 'out': self.__cluster_id[idx]}
+
+    @property
+    def get_mean_waveforms(self) -> np.ndarray:
+        """Getting the mean waveforms of dataset"""
+        return self.__frames_me
+
+    @property
+    def get_dictionary(self) -> list:
+        """Getting the dictionary of labeled dataset"""
+        return self.__labeled_dictionary
+
+    @property
+    def get_topology_type(self) -> str:
+        """Getting the information of used Autoencoder topology"""
+        return "Autoencoder-based Classification"
 
 
 def prepare_training(settings: Config_Dataset, path2model: str,
