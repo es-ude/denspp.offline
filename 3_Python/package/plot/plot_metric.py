@@ -45,12 +45,22 @@ def plot_boxplot_metric(freq: np.ndarray, metric: list, type_name: str, name: st
         save_figure(plt, path2save, f"{name}_metric-box_{type_name}", saving_formats)
 
 
-def plot_loss(metric: list, metric_type: str, path2save='', epoch_zoom=None) -> None:
-    """Plotting the loss of any DNN-based learning method"""
+def plot_loss(loss_train: list, loss_valid: list, type: str, path2save='', epoch_zoom=None, show_plot=False) -> None:
+    """Plotting the loss of any DNN-based learning method
+    Args:
+        loss_train:     List with loss values from training
+        loss_valid:     List with loss values from validation
+        type:           Name of the metric type
+        path2save:      Path to save the figure
+        epoch_zoom:     Do zoom on defined range [list]
+        show_plot:      Showing and blocking the plots
+    Return:
+        None
+    """
     # --- Pre-Processing
-    plot_metrics = np.zeros(shape=(len(metric), 2), dtype=float)
-    for idx, val in enumerate(metric):
-        plot_metrics[idx, :] = np.array(val, dtype=float)
+    plot_metrics = np.zeros((len(loss_train), 2), dtype=float)
+    plot_metrics[:, 0] = np.array(loss_train)
+    plot_metrics[:, 1] = np.array(loss_valid)
 
     # --- Plotting
     plt.figure(figsize=(cm_to_inch(10), cm_to_inch(8)))
@@ -60,9 +70,9 @@ def plot_loss(metric: list, metric_type: str, path2save='', epoch_zoom=None) -> 
     axs[0].plot(plot_metrics[:, 1], color='r', marker='.', label='Valid.')
     plt.grid()
     plt.legend()
-    plt.title(f"{metric_type} = {plot_metrics.max() if 'Acc' in metric_type else plot_metrics.min():.3f}")
+    plt.title(f"{type} = {plot_metrics.max() if 'Acc' in type else plot_metrics.min():.3f}")
     plt.xlabel('Epoch')
-    plt.ylabel(f'{metric_type}')
+    plt.ylabel(f'{type}')
 
     # --- Plot zooming component
     if isinstance(epoch_zoom, list) and len(epoch_zoom) > 0:
@@ -72,11 +82,8 @@ def plot_loss(metric: list, metric_type: str, path2save='', epoch_zoom=None) -> 
         min_value = np.min((plot_metrics[pos, 0], plot_metrics[pos, 1]))
         max_value = np.max((plot_metrics[pos, 0], plot_metrics[pos, 1]))
 
-        axins0 = axs[0].inset_axes(
-            [0.45, 0.02, 0.5, 0.43],
-            xticklabels=[],
-            # yticklabels=[],
-            xlim=(x0-0.5, x1+0.5), ylim=(0.99 * min_value, 1.01 * max_value))
+        axins0 = axs[0].inset_axes([0.45, 0.02, 0.5, 0.43], xticklabels=[],
+                                   xlim=(x0-0.5, x1+0.5), ylim=(0.99 * min_value, 1.01 * max_value))
         axins0.plot(plot_metrics[:, 0], color='k', marker='.', label='Train.')
         axins0.plot(plot_metrics[:, 1], color='r', marker='.', label='Valid.')
         axins0.grid()
@@ -88,7 +95,9 @@ def plot_loss(metric: list, metric_type: str, path2save='', epoch_zoom=None) -> 
 
     plt.tight_layout()
     if path2save:
-        save_figure(plt, path2save, f"loss_metric_{metric_type}" + addon)
+        save_figure(plt, path2save, f"loss_metric_{type}" + addon)
+    if show_plot:
+        plt.show(block=True)
 
 
 def plot_confusion(true_labels: list | np.ndarray,
@@ -175,7 +184,7 @@ def plot_confusion(true_labels: list | np.ndarray,
         )
 
     # --- Plotting the results of the class confusion matrix
-    fig, ax = plt.subplots(figsize=(cm_to_inch(12), cm_to_inch(12.5)))
+    ax = plt.subplots(figsize=(cm_to_inch(12), cm_to_inch(12.5)))[1]
     cmp.plot(ax=ax, colorbar=False, values_format='.3f',
              text_kw={'fontsize': 8}, cmap=plt.cm.Blues,
              xticks_rotation=('vertical' if do_xticks_vertical else 'horizontal')

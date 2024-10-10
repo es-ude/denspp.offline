@@ -40,7 +40,7 @@ def do_train_cl(do_plot=True, do_block=True) -> None:
     trainhandler.load_model(model)
     trainhandler.load_data(dataset)
     del dataset
-    epoch_acc = trainhandler.do_training()[-1]
+    metrics = trainhandler.do_training()
 
     # --- Post-Processing: Getting data, save and plot results
     logsdir = trainhandler.get_saving_path()
@@ -50,7 +50,12 @@ def do_train_cl(do_plot=True, do_block=True) -> None:
     # --- Plotting
     if do_plot:
         plt.close('all')
-        plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
+        used_first_fold = [key for key in metrics.keys()][0]
+
+        plot_loss(metrics[used_first_fold]['train_acc'], metrics[used_first_fold]['valid_acc'],
+                  type='Acc.', path2save=logsdir)
+        plot_loss(metrics[used_first_fold]['train_loss'], metrics[used_first_fold]['valid_loss'],
+                  type=f'{config_train.loss} (CL)', path2save=logsdir)
         plot_mnist_graphs(data_result['input'], data_result['valid_clus'], path2save=logsdir)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, show_plots=do_block)
@@ -68,7 +73,7 @@ def do_train_ae(do_plot=True, do_block=True) -> None:
     # --- Loading the YAML files
     default_data = DefaultSettingsDataset
     default_data.data_path = 'data'
-    yaml_data = yaml_config_handler(default_data, aml_name='Config_MNIST_Dataset')
+    yaml_data = yaml_config_handler(default_data, yaml_name='Config_MNIST_Dataset')
     config_data = yaml_data.get_class(Config_Dataset)
     del default_data, yaml_data
 
@@ -79,25 +84,29 @@ def do_train_ae(do_plot=True, do_block=True) -> None:
     del default_train, yaml_train
 
     # ---Loading Data, Do Training and getting the results
-    dataset = prepare_training(config_data,False)
+    dataset = prepare_training(config_data, False)
 
-    trainhandler = train_nn_ae(config_train, config_data)
+    train_handler = train_nn_ae(config_train, config_data)
     model = models.models_available.build_model(config_train.model_name)
-    trainhandler.load_model(model)
-    trainhandler.load_data(dataset)
+    train_handler.load_model(model)
+    train_handler.load_data(dataset)
     del dataset
-    epoch_loss = trainhandler.do_training()[-1][0]
+    metrics = train_handler.do_training()
 
     # --- Post-Processing: Getting data, save and plot results
-    logsdir = trainhandler.get_saving_path()
-    data_result = trainhandler.do_validation_after_training()
-    del trainhandler
+    logsdir = train_handler.get_saving_path()
+    data_result = train_handler.do_validation_after_training()
+    del train_handler
 
     # --- Plotting
     if do_plot:
         plt.close('all')
-        plot_loss(epoch_loss, 'Loss', path2save=logsdir)
-        plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir)
+        used_first_fold = [key for key in metrics.keys()][0]
+
+        plot_loss(loss_train=metrics[used_first_fold]['loss_train'],
+                  loss_valid=metrics[used_first_fold]['loss_valid'],
+                  type=config_train.loss, path2save=logsdir)
+        plot_statistic_data(data_result['valid_clus'], data_result['valid_clus'], path2save=logsdir)
         plot_mnist_graphs(data_result['input'], data_result['valid_clus'], "_input", path2save=logsdir)
         plot_mnist_graphs(data_result['pred'], data_result['valid_clus'], "_predicted", path2save=logsdir,
                           show_plot=do_block)

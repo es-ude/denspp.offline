@@ -1,6 +1,7 @@
 from os import mkdir
 from os.path import join, exists
 from numpy import load
+import matplotlib.pyplot as plt
 
 from package.yaml_handler import yaml_config_handler
 from package.plot.plot_dnn import plot_statistic_data
@@ -14,11 +15,11 @@ from src_dnn.dataset.rgc_classification import prepare_training
 import src_dnn.models.rgc_onoff_class as models
 
 
-def rgc_logic_combination(path2valid_data: str, valid_file_name='results_class.npy', show_plot=False) -> None:
+def rgc_logic_combination(path2valid_data: str, valid_file_name='results_cl.npy', show_plot=False) -> None:
     """Post-Classification of Retinal Ganglion Celltype Classifier (RGC) after NN training
     Args:
         path2valid_data:    Path to validation data (generated after training)
-        valid_file_name:    Filename of validation data [Default: 'results_class.npy']
+        valid_file_name:    Filename of validation data [Default: 'results_cl.npy']
         show_plot:          Showing all plots
     Return:
         None
@@ -72,22 +73,27 @@ def do_train_rgc_class(dnn_trainhandler: dnn_handler) -> None:
     dataset = prepare_training(config_data)
     frame_dict = dataset.frame_dict
 
-    trainhandler = train_nn(config_train, config_data)
+    train_handler = train_nn(config_train, config_data)
     model = models.models_available.build_model(config_train.model_name)
-    trainhandler.load_model(model)
-    trainhandler.load_data(dataset)
+    train_handler.load_model(model)
+    train_handler.load_data(dataset)
     del dataset
-    epoch_acc = trainhandler.do_training()[-1]
+    metrics = train_handler.do_training()
 
     # --- Post-Processing: Getting data, save and plot results
-    logsdir = trainhandler.get_saving_path()
-    data_result = trainhandler.do_validation_after_training()
-    del trainhandler
+    logsdir = train_handler.get_saving_path()
+    data_result = train_handler.do_validation_after_training()
+    del train_handler
 
     # --- Plotting
     if dnn_trainhandler.do_plot:
-        # --- Plotting full model
-        plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
+        plt.close('all')
+        used_first_fold = [key for key in metrics.keys()][0]
+
+        plot_loss(metrics[used_first_fold]['train_acc'], metrics[used_first_fold]['valid_acc'],
+                  type='Acc.', path2save=logsdir)
+        plot_loss(metrics[used_first_fold]['train_loss'], metrics[used_first_fold]['valid_loss'],
+                  type=f'{config_train.loss} (CL)', path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'],
                        path2save=logsdir, cl_dict=frame_dict)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
@@ -95,3 +101,13 @@ def do_train_rgc_class(dnn_trainhandler: dnn_handler) -> None:
 
         # --- Plotting reduced model (ON/OFF and Transient/Sustained)
         rgc_logic_combination(logsdir, show_plot=dnn_trainhandler.do_block)
+    print("The End")
+
+
+if __name__ == "__main__":
+    dnn_handler = dnn_handler(
+        mode_train_dnn=0,
+        do_plot=True,
+        do_block=True
+    )
+    do_train_rgc_class(dnn_handler)

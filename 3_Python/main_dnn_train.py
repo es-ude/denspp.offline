@@ -25,7 +25,7 @@ if __name__ == "__main__":
             do_train_ae(dnn_handler)
         case 3:
             # --- Autoencoder + Classifier
-            from package.dnn.template.handler.train_ae_class import do_train_ae_classifier
+            from package.dnn.template.handler.train_aecl import do_train_ae_classifier
             do_train_ae_classifier(dnn_handler)
         case 4:
             # --- Spike Detection

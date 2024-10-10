@@ -1,6 +1,6 @@
 import numpy as np
 from package.dnn.dnn_handler import dnn_handler
-from package.dnn.template.handler.train_ae_class import do_train_ae_classifier
+from package.dnn.template.handler.train_aecl import do_train_ae_classifier
 
 
 if __name__ == "__main__":

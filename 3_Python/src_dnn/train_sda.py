@@ -13,7 +13,7 @@ import src_dnn.models.spike_detection as models
 def dnn_train_sda(settings: dnn_handler, sda_threshold=4) -> None:
     """Training routine for Spike Detection
     Args:
-        settings:       Handler for configurating the routine selection for train deep neural networks
+        settings:       Handler for configuring the routine selection for train deep neural networks
         sda_threshold:  Threshold value for identifying a spike event
     Return:
         None
@@ -38,7 +38,7 @@ def dnn_train_sda(settings: dnn_handler, sda_threshold=4) -> None:
     trainhandler.load_model(model_used)
     trainhandler.load_data(dataset)
     del dataset
-    epoch_acc = trainhandler.do_training()[-1]
+    metrics = trainhandler.do_training()
 
     # --- Post-Processing: Getting data, save and plot results
     data_result = trainhandler.do_validation_after_training()
@@ -48,7 +48,22 @@ def dnn_train_sda(settings: dnn_handler, sda_threshold=4) -> None:
     # --- Plotting
     if settings.do_plot:
         plt.close('all')
-        plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
+        used_first_fold = [key for key in metrics.keys()][0]
+
+        plot_loss(metrics[used_first_fold]['train_acc'], metrics[used_first_fold]['valid_acc'],
+                  type='Acc.', path2save=logsdir)
+        plot_loss(metrics[used_first_fold]['train_loss'], metrics[used_first_fold]['valid_loss'],
+                  type=f'{config_train.loss} (CL)', path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'], path2save=logsdir, cl_dict=data_dict)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'], path2save=logsdir,
                             cl_dict=data_dict, show_plot=settings.do_block)
+    print("The End")
+
+
+if __name__ == "__main__":
+    dnn_handler = dnn_handler(
+        mode_train_dnn=0,
+        do_plot=True,
+        do_block=True
+    )
+    dnn_train_sda(dnn_handler)

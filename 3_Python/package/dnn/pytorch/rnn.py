@@ -158,37 +158,5 @@ class train_nn(training_pytorch):
 
         # --- Preparing output
         result_pred = clus_pred_list.numpy()
-        return self._getting_data_for_plotting(data_orig_list.numpy(), clus_orig_list.numpy(), {'yclus': result_pred})
-
-    def do_validation_after_training(self, num_output: int) -> dict:
-        """Performing the validation with the best model after training"""
-        # --- Getting data from validation set for inference
-        data_train = self.get_data_points(num_output, use_train_dataloader=True)
-        data_valid = self.get_data_points(num_output, use_train_dataloader=False)
-
-        # --- Do the Inference with Best Model
-        print(f"\nDoing the inference with validation data on best model")
-        model_inference = load(self.get_best_model('rnn')[0])
-        if not isinstance(data_valid['in'], Tensor):
-            data_train = from_numpy(data_train['out'])
-            data_input = from_numpy(data_valid['in'])
-            data_output = from_numpy(data_valid['out'])
-        else:
-            data_train = data_train['out']
-            data_input = data_valid['in']
-            data_output = data_valid['out']
-
-        yclus = model_inference(data_input)[1]
-        yclus = yclus.detach().numpy()
-
-        # --- Producing the output
-        output = dict()
-        output.update({'settings': self.settings_train, 'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')})
-        output.update({'train_clus': data_train, 'valid_clus': data_output})
-        output.update({'input': data_input, 'yclus': yclus})
-        output.update({'cl_dict': self.cell_classes})
-
-        # --- Saving dict
-        np.save(join(self.get_saving_path(), 'results.mat'), output,
-                do_compression=True, long_field_names=True)
-        return output
+        return self._getting_data_for_plotting(data_orig_list.numpy(), clus_orig_list.numpy(),
+                                               {'yclus': result_pred}, addon='rnn')

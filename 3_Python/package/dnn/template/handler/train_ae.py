@@ -4,6 +4,7 @@ from package.dnn.dnn_handler import dnn_handler
 from package.dnn.pytorch_dataclass import (Config_PyTorch, DefaultSettingsTrainMSE,
                                            Config_Dataset, DefaultSettingsDataset)
 from package.plot.plot_dnn import results_training, plot_statistic_data
+from package.plot.plot_metric import plot_loss
 
 from package.dnn.template.dataset.autoencoder import prepare_training
 from package.dnn.pytorch.autoencoder import train_nn
@@ -39,28 +40,33 @@ def do_train_ae(settings: dnn_handler, mode_ae=0, noise_std=0.05, num_feat_layer
                                use_median_for_mean=True)
     data_mean = dataset.frames_me
 
-    trainhandler = train_nn(config_train, config_data)
+    train_handler = train_nn(config_train, config_data)
     if num_feat_layer:
         model = models.models_available.build_model(config_train.model_name, output_size=num_feat_layer)
     else:
         model = models.models_available.build_model(config_train.model_name)
-    trainhandler.load_model(model)
-    trainhandler.load_data(dataset)
+    train_handler.load_model(model)
+    train_handler.load_data(dataset)
     del dataset
-    loss_ae, snr_train = trainhandler.do_training(metrics='snr')[-1]
+    metrics = train_handler.do_training(metrics=['snr'])
 
     # --- Post-Processing: Validation after training
-    logsdir = trainhandler.get_saving_path()
-    data_result = trainhandler.do_validation_after_training()
+    logsdir = train_handler.get_saving_path()
+    data_result = train_handler.do_validation_after_training()
 
     # --- Plotting and Ending
     if settings.do_plot:
         plt.close('all')
+        used_first_fold = [key for key in metrics.keys()][0]
+
         results_training(
             path=logsdir, cl_dict=data_result['cl_dict'], feat=data_result['feat'],
             yin=data_result['input'], ypred=data_result['pred'], ymean=data_mean,
-            yclus=data_result['valid_clus'], snr=snr_train
+            yclus=data_result['valid_clus'], snr=metrics[used_first_fold]['snr']
         )
+        plot_loss(loss_train=metrics[used_first_fold]['loss_train'],
+                  loss_valid=metrics[used_first_fold]['loss_valid'],
+                  type=config_train.loss, path2save=logsdir)
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                             path2save=logsdir, cl_dict=data_result['cl_dict'],
                             show_plot=settings.do_block)

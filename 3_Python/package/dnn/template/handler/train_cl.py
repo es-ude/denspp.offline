@@ -8,11 +8,11 @@ from package.plot.plot_metric import plot_confusion, plot_loss
 
 from package.dnn.template.dataset.autoencoder import prepare_training
 from package.dnn.pytorch.classifier import train_nn
-import package.dnn.template.models.autoencoder_class as models
+import package.dnn.template.models.spike_classifier as models
 
 
-def do_train_classifier(settings: dnn_handler) -> None:
-    """Training routine for Autoencoders
+def do_train_cl(settings: dnn_handler) -> None:
+    """Training routine for Classification DL models
     Args:
         settings:           Handler for configuring the routine selection for train deep neural networks
     Returns:
@@ -24,7 +24,7 @@ def do_train_classifier(settings: dnn_handler) -> None:
     del yaml_data
 
     default_train = DefaultSettingsTrainCE
-    default_train.model_name = models.classifier_ae_v1.__name__
+    default_train.model_name = models.spike_cl_v1.__name__
     yaml_train = yaml_config_handler(default_train, yaml_name='Config_CL_Training')
     config_train = yaml_train.get_class(Config_PyTorch)
     del default_train, yaml_train
@@ -32,23 +32,27 @@ def do_train_classifier(settings: dnn_handler) -> None:
     # ---Loading Data, Do Training and getting the results
     dataset = prepare_training(config_data, do_classification=True)
 
-    trainhandler = train_nn(config_train, config_data)
+    train_handler = train_nn(config_train, config_data)
     model = models.models_available.build_model(config_train.model_name)
-    trainhandler.load_model(model)
-    trainhandler.load_data(dataset)
+    train_handler.load_model(model)
+    train_handler.load_data(dataset)
     del dataset
-    epoch_acc = trainhandler.do_training()[-1]
+    metrics = train_handler.do_training()
 
     # --- Post-Processing: Getting data, save and plot results
-    logsdir = trainhandler.get_saving_path()
-    data_result = trainhandler.do_validation_after_training()
-    del trainhandler
+    logsdir = train_handler.get_saving_path()
+    data_result = train_handler.do_validation_after_training()
+    del train_handler
 
     # --- Plotting
     if settings.do_plot:
         plt.close('all')
-        plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
-        plot_loss(epoch_acc, 'Acc.', path2save=logsdir)
+        used_first_fold = [key for key in metrics.keys()][0]
+
+        plot_loss(metrics[used_first_fold]['train_acc'], metrics[used_first_fold]['valid_acc'],
+                  type='Acc.', path2save=logsdir)
+        plot_loss(metrics[used_first_fold]['train_loss'], metrics[used_first_fold]['valid_loss'],
+                  type=f'{config_train.loss} (CL)', path2save=logsdir)
         plot_confusion(data_result['valid_clus'], data_result['yclus'],
                        path2save=logsdir, cl_dict=data_result['cl_dict'])
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
@@ -62,5 +66,4 @@ if __name__ == "__main__":
         do_plot=True,
         do_block=True
     )
-
-    do_train_classifier(dnn_handler)
+    do_train_cl(dnn_handler)

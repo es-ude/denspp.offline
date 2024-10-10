@@ -23,11 +23,11 @@ if __name__ == "__main__":
             do_train_ae(dnn_handler, 0, 0.01)
         case 3:
             # --- Classifier
-            from package.dnn.template.handler.train_cl import do_train_classifier
-            do_train_classifier(dnn_handler)
+            from package.dnn.template.handler.train_cl import do_train_cl
+            do_train_cl(dnn_handler)
         case 4:
             # --- Autoencoder + Classifier
-            from package.dnn.template.handler.train_ae_class import do_train_ae_classifier
+            from package.dnn.template.handler.train_aecl import do_train_ae_classifier
             do_train_ae_classifier(dnn_handler, 5, 5)
         case _:
             print("Wrong model! Please select right model!")

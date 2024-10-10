@@ -50,55 +50,62 @@ def do_train_ae_classifier(settings: dnn_handler, num_feat_layer=0, num_output_c
     dataset = get_dataset_ae(settings=config_data, do_classification=False,
                              mode_train_ae=mode_ae, noise_std=noise_std, add_noise_cluster=add_noise_cluster)
 
-    trainhandler = train_autoencoder(config_train=config_train_ae, config_data=config_data)
+    train_handler = train_autoencoder(config_train=config_train_ae, config_data=config_data)
     if num_feat_layer:
-        model_ae = models_ae.models_available.build_model(config_train_ae.model_name)
+        used_model_ae = models_ae.models_available.build_model(config_train_ae.model_name)
     else:
-        model_ae = models_ae.models_available.build_model(config_train_ae.model_name, output_size=num_feat_layer)
-    trainhandler.load_model(model_ae)
-    trainhandler.load_data(dataset)
-    loss_ae, snr_ae = trainhandler.do_training(metrics='snr')[-1]
-    path2model = trainhandler.get_saving_path()
+        used_model_ae = models_ae.models_available.build_model(config_train_ae.model_name, output_size=num_feat_layer)
+    train_handler.load_model(used_model_ae)
+    train_handler.load_data(dataset)
+    metrics_ae = train_handler.do_training(metrics=['snr'])
+    path2save = train_handler.get_saving_path()
 
     if settings.do_plot:
         plt.close('all')
-        logsdir = trainhandler.get_saving_path()
-        data_result = trainhandler.do_validation_after_training()
+        used_first_fold = [key for key in metrics_ae.keys()][0]
+        data_result = train_handler.do_validation_after_training()
         data_mean = dataset.frames_me
 
+        plot_loss(loss_train=metrics_ae[used_first_fold]['loss_train'],
+                  loss_valid=metrics_ae[used_first_fold]['loss_valid'],
+                  type=config_train_ae.loss, path2save=path2save)
         results_training(
-            path=logsdir, cl_dict=data_result['cl_dict'], feat=data_result['feat'],
+            path=path2save, cl_dict=data_result['cl_dict'], feat=data_result['feat'],
             yin=data_result['input'], ypred=data_result['pred'], ymean=data_mean,
-            yclus=data_result['valid_clus'], snr=snr_ae
+            yclus=data_result['valid_clus'], snr=metrics_ae[used_first_fold]['snr']
         )
-    del dataset, trainhandler
+    del dataset, train_handler
 
     print("\n# ----------- Step #2: TRAINING CLASSIFIER")
     # --- Processing: Loading dataset and Do Classification
-    dataset = get_dataset_cl(settings=config_data, path2model=path2model, add_noise_cluster=add_noise_cluster)
+    dataset = get_dataset_cl(settings=config_data, path2model=path2save, add_noise_cluster=add_noise_cluster)
 
-    trainhandler = train_classifier(config_train=config_train_cl, config_data=config_data)
+    train_handler = train_classifier(config_train=config_train_cl, config_data=config_data)
     num_feat = dataset[0]['in'].shape[0] if not num_feat_layer else num_feat_layer
-    model_cl = models_cl.models_available.build_model(config_train_cl.model_name, input_size=num_feat)
-    trainhandler.load_model(model_cl)
-    trainhandler.load_data(dataset)
-    acc_class = trainhandler.do_training()[-1]
+    used_model_cl = models_cl.models_available.build_model(config_train_cl.model_name, input_size=num_feat)
+    train_handler.load_model(used_model_cl)
+    train_handler.load_data(dataset)
+    metrics_cl = train_handler.do_training(path2save)
 
     if settings.do_plot:
-        logsdir = trainhandler.get_saving_path()
-        data_result = trainhandler.do_validation_after_training()
+        data_result = train_handler.do_validation_after_training()
+        used_first_fold = [key for key in metrics_ae.keys()][0]
 
-        plot_loss(acc_class, 'Acc.', path2save=logsdir)
+        plot_loss(metrics_cl[used_first_fold]['train_acc'], metrics_cl[used_first_fold]['valid_acc'],
+                  type='Acc. (CL)', path2save=path2save)
+        plot_loss(metrics_cl[used_first_fold]['train_loss'], metrics_cl[used_first_fold]['valid_loss'],
+                  type=f'{config_train_cl.loss} (CL)', path2save=path2save)
         plot_confusion(data_result['valid_clus'], data_result['yclus'],
-                       cl_dict=data_result['cl_dict'], path2save=logsdir,
+                       cl_dict=data_result['cl_dict'], path2save=path2save,
                        name_addon="training")
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
-                            path2save=logsdir, cl_dict=data_result['cl_dict'],
+                            path2save=path2save, cl_dict=data_result['cl_dict'],
                             show_plot=settings.do_block)
-    del dataset, trainhandler
+    del dataset, train_handler
 
     # --- Generierung output
-    metric_run.update({"path2save": logsdir})
+    metric_run.update({"path2model_ae": path2save,
+                       'metric_ae': metrics_ae, 'metrics_cl': metrics_cl})
     return metric_run
 
 

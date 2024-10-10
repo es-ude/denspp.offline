@@ -1,15 +1,18 @@
+import os
+from datetime import datetime
 import numpy as np
 import torch.nn as nn
 from matplotlib.ticker import MaxNLocator
+from sklearn.metrics import precision_recall_fscore_support
+
+from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import dnn_handler
-from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset
+from package.dnn.pytorch_dataclass import (Config_Dataset, DefaultSettingsDataset,
+                                           Config_PyTorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE)
 import package.dnn.template.models.autoencoder_cnn as models_ae
 import package.dnn.template.models.autoencoder_class as models_class
 from package.plot.plot_metric import calculate_class_accuracy
-from sklearn.metrics import precision_recall_fscore_support
 
-import os  # Added to handle directory operations
-from datetime import datetime  # Added to handle timestamp
 
 # Configuration for the dataset
 config_data = Config_Dataset(
@@ -33,12 +36,13 @@ config_data = Config_Dataset(
 )
 
 
-def do_train_ae_classifier(dnn_handler: dnn_handler, num_feature_layer: int, num_output_cl: int,
+def do_train_ae_classifier(settings: dnn_handler,
+                           num_feature_layer: int, num_output_cl: int,
                            mode_ae=0, noise_std=0.05, path2save_base='',
                            num_epochs=5) -> dict:
     """Training routine for Autoencoders and Classification after Encoder"""
-    from package.dnn.dataset.autoencoder import prepare_training as get_dataset_ae
-    from package.dnn.dataset.autoencoder_class import prepare_training as get_dataset_class
+    from package.dnn.template.dataset.autoencoder import prepare_training as get_dataset_ae
+    from package.dnn.template.dataset.autoencoder_class import prepare_training as get_dataset_class
     from package.dnn.pytorch.autoencoder import train_nn as train_autoencoder
     from package.dnn.pytorch.classifier import train_nn as train_classifier
     from package.plot.plot_dnn import plot_statistic_data
@@ -70,12 +74,11 @@ def do_train_ae_classifier(dnn_handler: dnn_handler, num_feature_layer: int, num
         data_do_shuffle=True
     )
 
-    use_cell_bib = not (dnn_handler.mode_cell_bib == 0)
-    use_cell_mode = 0 if not use_cell_bib else dnn_handler.mode_cell_bib - 1
+    # --- Loading YAML files
+
 
     # ----------- Step #1: TRAINING AUTOENCODER
-    dataset = get_dataset_ae(settings=config_data, use_cell_bib=use_cell_bib, mode_classes=use_cell_mode,
-                             mode_train_ae=mode_ae, noise_std=noise_std, do_classification=False)
+    dataset = get_dataset_ae(settings=config_data, mode_train_ae=mode_ae, noise_std=noise_std, do_classification=False)
     trainhandler = train_autoencoder(config_train=config_train_ae, config_data=config_data)
     trainhandler.load_model()
     trainhandler.load_data(dataset)
@@ -121,14 +124,14 @@ def do_train_ae_classifier(dnn_handler: dnn_handler, num_feature_layer: int, num
         "path2save": logsdir
     })
 
-    if dnn_handler.do_plot:
+    if settings.do_plot:
         plot_loss(acc_class_valid, 'Acc.', path2save=logsdir)  # Using validation accuracy for plotting
         plot_confusion(data_result['valid_clus'], data_result['yclus'],
                        cl_dict=data_result['cl_dict'], path2save=logsdir,
                        name_addon="training")
         plot_statistic_data(data_result['train_clus'], data_result['valid_clus'],
                             path2save=logsdir, cl_dict=data_result['cl_dict'])
-        plt.show(block=dnn_handler.do_block)
+        plt.show(block=settings.do_block)
 
     del dataset, trainhandler
 

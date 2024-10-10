@@ -1,5 +1,4 @@
-import torch
-from torch import nn, Tensor, argmax
+from torch import nn, Tensor, argmax, flatten, reshape
 from package.dnn.pytorch_handler import __model_settings_common, ModelRegistry
 
 
@@ -30,7 +29,7 @@ class mnist_mlp_cl_v1(__model_settings_common):
                 pass
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
-        x = torch.flatten(x, start_dim=1)
+        x = flatten(x, start_dim=1)
         prob = self.model(x)
         return prob, argmax(prob, 1)
 
@@ -66,6 +65,6 @@ class mnist_mlp_ae_v1(__model_settings_common):
                 self.decoder.add_module(f"act_{idx:02d}", nn.ReLU())
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
-        x = torch.flatten(x, start_dim=1)
+        x = flatten(x, start_dim=1)
         encoded = self.encoder(x)
-        return encoded, torch.reshape(self.decoder(encoded), (x.shape[0], 28, 28))
+        return encoded, reshape(self.decoder(encoded), (x.shape[0], 28, 28))

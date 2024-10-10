@@ -57,16 +57,15 @@ class train_nn(training_pytorch):
         valid_loss = float(valid_loss / total_batches)
         return valid_loss, valid_acc
 
-    def do_training(self, path2save='') -> list:
+    def do_training(self, path2save='') -> dict:
         """Start model training incl. validation and custom-own metric calculation"""
-        self._init_train(path2save=path2save)
+        self._init_train(path2save=path2save, addon='_CL')
         self._save_config_txt('_class')
 
         # --- Handling Kfold cross validation training
         if self._do_kfold:
             print(f"Starting Kfold cross validation training in {self.settings_train.num_kfold} steps")
 
-        metrics_own = list()
         path2model = str()
         path2model_init = join(self._path2save, f'model_class_reset.pth')
         save(self.model.state_dict(), path2model_init)
@@ -75,12 +74,16 @@ class train_nn(training_pytorch):
         print(f'\nTraining starts on {timestamp_string}'
               f"\n=====================================================================================")
 
+        metric_out = dict()
         for fold in np.arange(self.settings_train.num_kfold):
             # --- Init fold
             best_loss = [1e6, 1e6]
             best_acc = [0.0, 0.0]
             patience_counter = self.settings_train.patience
-            epoch_metric = list()
+            epoch_train_acc = list()
+            epoch_valid_acc = list()
+            epoch_train_loss = list()
+            epoch_valid_loss = list()
             self.model.load_state_dict(load(path2model_init))
             self._run_kfold = fold
             self._init_writer()
@@ -106,7 +109,10 @@ class train_nn(training_pytorch):
                 self._writer.flush()
 
                 # Saving metrics after each epoch
-                epoch_metric.append(np.array((train_acc, valid_acc), dtype=float))
+                epoch_train_acc.append(train_acc)
+                epoch_train_loss.append(train_loss)
+                epoch_valid_acc.append(valid_acc)
+                epoch_valid_loss.append(valid_loss)
 
                 # Tracking the best performance and saving the model
                 if valid_loss < best_loss[1]:
@@ -124,14 +130,15 @@ class train_nn(training_pytorch):
                     break
 
             # --- Saving metrics after each fold
-            metrics_own.append(epoch_metric)
+            metric_out.update({f"fold_{fold:03d}": {"train_acc": epoch_train_acc, "train_loss": epoch_train_loss,
+                                                    'valid_acc': epoch_valid_acc, 'valid_loss': epoch_valid_loss}})
             copy(path2model, self._path2save)
             self._save_train_results(best_loss[0], best_loss[1], 'Loss')
             self._save_train_results(best_acc[0], best_acc[1], 'Acc.')
 
         # --- Ending of all trainings phases
         self._end_training_routine(timestamp_start)
-        return metrics_own
+        return metric_out
 
     def do_validation_after_training(self) -> dict:
         """Performing the training with the best model after"""
@@ -163,4 +170,5 @@ class train_nn(training_pytorch):
 
         # --- Preparing output
         result_pred = clus_pred_list.numpy()
-        return self._getting_data_for_plotting(data_orig_list.numpy(), clus_orig_list.numpy(), {'yclus': result_pred})
+        return self._getting_data_for_plotting(data_orig_list.numpy(), clus_orig_list.numpy(),
+                                               {'yclus': result_pred}, addon='cl')

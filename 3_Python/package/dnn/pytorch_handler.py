@@ -161,7 +161,7 @@ class training_pytorch:
             device0 = self.used_hw_cpu
         print(f"\nUsing PyTorch with {device0} on {self.os_type}")
 
-    def _init_train(self, path2save='') -> None:
+    def _init_train(self, path2save='', addon='') -> None:
         """Do init of class for training"""
         if not exists(self._path2run):
             mkdir(self._path2run)
@@ -184,7 +184,7 @@ class training_pytorch:
                            filename='Config_Dataset',
                            path2save=self._path2save)
         write_dict_to_yaml(translate_dataclass_to_dict(self.settings_train),
-                           filename='Config_Training',
+                           filename=f'Config_Training{addon}',
                            path2save=self._path2save)
 
     def _init_writer(self) -> None:
@@ -361,7 +361,8 @@ class training_pytorch:
             mdict.update({keys[idx]: data.numpy()})
         return mdict
 
-    def _getting_data_for_plotting(self, valid_input: np.ndarray, valid_label: np.ndarray, results=None) -> dict:
+    def _getting_data_for_plotting(self, valid_input: np.ndarray, valid_label: np.ndarray,
+                                   results=None, addon='cl') -> dict:
         """Getting the raw data for plotting results"""
         # --- Producing and Saving the output
         if results is None:
@@ -376,7 +377,7 @@ class training_pytorch:
         output.update({'input': valid_input, 'valid_clus': valid_label})
         output.update(results)
 
-        data2save = join(self.get_saving_path(), 'results_class.npy')
+        data2save = join(self.get_saving_path(), f'results_{addon}.npy')
         print(f"... saving results: {data2save}")
         np.save(data2save, output)
         return output

@@ -10,10 +10,12 @@ def results_training(path: str,
                      cl_dict=None, xframes=50, num_feat=3, show_plot=False) -> None:
     """Plotting results from Autoencoder Training for Neural Spike Sorting
     Args:
+        path:       Path for saving the results of plots
         yin:        Input signal with neural spike frames
         ypred:      Predicted classes
         ymean:      Mean waveform of all spike classes
         feat:       Numpy array with features for plotting feature space
+        yclus:      Numpy array with cluster results
         snr:        List with SNR values
         cl_dict:    Dict with class labels
         xframes:    Size of spike frames
