@@ -1,11 +1,13 @@
 from package.dnn.dnn_handler import Config_ML_Pipeline, DefaultSettings_MLPipe
 from package.yaml_handler import yaml_config_handler
+from package.structure_builder import create_folder_general_firstrun
 
 
 if __name__ == "__main__":
     print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)"
           "\n===========================================================================================")
 
+    create_folder_general_firstrun()
     # --- Loading YAML-Settings file
     yaml_handler = yaml_config_handler(DefaultSettings_MLPipe, 'config', 'Config_DNN')
     dnn_handler = yaml_handler.get_class(Config_ML_Pipeline)

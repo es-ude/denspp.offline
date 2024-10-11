@@ -5,7 +5,7 @@ tqdm == 4.66.5
 fxpmath == 0.4.9
 tqdm == 4.66.5
 mat73 == 0.61
-PyYAML == 6.0.2
+PyYAML == 6.0.1
 mplcursors == 0.5.3
 
 # Libs for electric circuit simulation
