@@ -1,3 +1,4 @@
+from copy import deepcopy
 from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import Config_ML_Pipeline
 from package.dnn.pytorch_dataclass import (Config_PyTorch, DefaultSettingsTrainMSE,
@@ -24,7 +25,7 @@ def do_train_neural_autoencoder(settings: Config_ML_Pipeline, add_noise_cluster=
     config_data = yaml_data.get_class(Config_Dataset)
 
     # --- Loading the YAML file: Model training
-    default_train = DefaultSettingsTrainMSE
+    default_train = deepcopy(DefaultSettingsTrainMSE)
     default_train.model_name = models.dnn_ae_v1.__name__
     yaml_nn = yaml_config_handler(default_train, settings.get_path2config, f'{yaml_name_index}_Training')
     config_train = yaml_nn.get_class(Config_PyTorch)

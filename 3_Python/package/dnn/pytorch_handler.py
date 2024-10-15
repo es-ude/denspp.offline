@@ -194,7 +194,7 @@ class training_pytorch:
         self._path2log = join(self._path2save, f'logs')
         self._writer = SummaryWriter(self._path2log, comment=f"event_log_kfold{self._kfold_run:03d}")
 
-    def __deterministic_training_preperation(self) -> None:
+    def __deterministic_training_preparation(self) -> None:
         """Preparing the CUDA hardware for deterministic training"""
         if self.settings_train.deterministic_do:
             np.random.seed(self.settings_train.deterministic_seed)

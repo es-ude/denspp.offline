@@ -1,3 +1,4 @@
+from copy import deepcopy
 from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import Config_ML_Pipeline
 from package.dnn.pytorch_dataclass import (Config_PyTorch, DefaultSettingsTrainCE, DefaultSettingsTrainMSE,
@@ -18,14 +19,14 @@ def do_train_cl(settings: Config_ML_Pipeline, yaml_name_index='Config_MNIST') ->
         None
     """
     # --- Loading the YAML files: Dataset
-    default_data = DefaultSettingsDataset
+    default_data = deepcopy(DefaultSettingsDataset)
     default_data.data_path = 'data'
     yaml_data = yaml_config_handler(default_data,
                                     path2yaml=settings.get_path2config, yaml_name=f'{yaml_name_index}_Dataset')
     config_data = yaml_data.get_class(Config_Dataset)
 
     # --- Loading the YAML file: Model training
-    default_train = DefaultSettingsTrainCE
+    default_train = deepcopy(DefaultSettingsTrainCE)
     default_train.model_name = models.mnist_mlp_cl_v1.__name__
     yaml_train = yaml_config_handler(default_train,
                                      path2yaml=settings.get_path2config, yaml_name=f'{yaml_name_index}_TrainCL')
