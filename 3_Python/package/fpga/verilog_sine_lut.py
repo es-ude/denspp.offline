@@ -95,7 +95,7 @@ def generate_sinelut(bitsize_lut: int,
     Return:
         None
     """
-    sine_lut = generation_sinusoidal_waveform(bitsize_lut, f_rpt, f_sine, do_optimized)
+    sine_lut = generation_sinusoidal_waveform(bitsize_lut, f_rpt, f_sine, do_optimized=do_optimized)
 
     # Bitwidth declaration
     num_cntsize = f_sys / f_rpt

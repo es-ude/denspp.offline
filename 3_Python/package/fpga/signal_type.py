@@ -1,12 +1,14 @@
 import numpy as np
 
 
-def generation_sinusoidal_waveform(bitsize_lut: int, f_rpt: float, f_sine: float, do_optimized=False) -> np.ndarray:
+def generation_sinusoidal_waveform(bitsize_lut: int, f_rpt: float, f_sine: float,
+                                   bitsize_chck=-1, do_optimized=False) -> np.ndarray:
     """Generating the sinusoidal waveform for building LUT file
     Args:
         bitsize_lut:    Used quantization level for generating sinusoidal waveform LUT
         f_rpt:          Frequency of the timer interrupt
         f_sine:         Target frequency of the sinusoidal waveform at output
+        bitsize_chck:   Used bitwidth for checking [Default: -1 --> take bitsize_lut]
         do_optimized:   Decision if LUT resources should be minimized [only quarter and mirroring]
     Return:
         Numpy array with waveform [np.int32]
@@ -20,9 +22,10 @@ def generation_sinusoidal_waveform(bitsize_lut: int, f_rpt: float, f_sine: float
     sine_lut = (2 ** (bitsize_lut - 1) * (offset + np.sin(x0)))
 
     # Limitations to output range
-    if sine_lut.max() > (2 ** (bitsize_lut - 1) - 1):
+    chck_val = bitsize_lut if bitsize_chck == -1 else bitsize_chck
+    if sine_lut.max() > (2 ** (chck_val - 1) - 1):
         xpos = np.argmax(sine_lut)
-        sine_lut[xpos] = (2 ** (bitsize_lut - 1) - 1)
+        sine_lut[xpos] = (2 ** (chck_val - 1) - 1)
     if sine_lut.min() < 0:
         xpos = np.argmin(sine_lut)
         sine_lut[xpos] = 0
