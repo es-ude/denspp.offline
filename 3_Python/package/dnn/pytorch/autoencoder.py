@@ -102,7 +102,7 @@ class train_nn(training_pytorch):
         self._save_config_txt('_ae')
 
         # --- Handling Kfold cross validation training
-        if self._do_kfold:
+        if self._kfold_do:
             print(f"Starting Kfold cross validation training in {self.settings_train.num_kfold} steps")
 
         metric_out = dict()
@@ -126,10 +126,13 @@ class train_nn(training_pytorch):
             self._run_kfold = fold
             self._init_writer()
 
-            if self._do_kfold:
+            if self._kfold_do:
                 print(f'\nStarting with Fold #{fold}')
 
             for epoch in range(0, self.settings_train.num_epochs):
+                if self.settings_train.deterministic_do:
+                    self.deterministic_generator.manual_seed(self.settings_train.deterministic_seed + epoch)
+
                 loss_train = self.__do_training_epoch()
                 loss_valid = self.__do_valid_epoch()
 

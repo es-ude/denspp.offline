@@ -12,6 +12,8 @@ class Config_PyTorch:
     patience: int
     optimizer: str
     loss: str
+    deterministic_do: bool
+    deterministic_seed: int
     num_kfold: int
     num_epochs: int
     batch_size: int
@@ -54,6 +56,8 @@ DefaultSettingsTrainMSE = Config_PyTorch(
     patience=20,
     optimizer='Adam',
     loss='MSE',
+    deterministic_do=False,
+    deterministic_seed=42,
     num_kfold=1,
     num_epochs=10,
     batch_size=256,

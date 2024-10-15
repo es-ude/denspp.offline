@@ -3,11 +3,12 @@ from os.path import exists, join
 import platform
 import cpuinfo
 import numpy as np
+from random import seed
 
 from shutil import rmtree
 from glob import glob
 from datetime import datetime
-from torch import device, cuda, backends, nn, randn, cat
+from torch import device, cuda, backends, nn, randn, cat, Generator, manual_seed, use_deterministic_algorithms
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
@@ -82,6 +83,7 @@ class __model_settings_common(nn.Module):
 
 
 class training_pytorch:
+    deterministic_generator: Generator
     used_hw_dev: device
     used_hw_cpu: str
     used_hw_gpu: str
@@ -110,9 +112,9 @@ class training_pytorch:
         self.optimizer = None
         # --- Preparing options
         self.config_available = False
-        self._do_kfold = False
-        self._do_shuffle = config_train.data_do_shuffle
-        self._run_kfold = 0
+        self._kfold_do = False
+        self._shuffle_do = config_train.data_do_shuffle
+        self._kfold_run = 0
         # --- Saving options
         self.settings_train = config_train
         self.settings_data = config_dataset
@@ -190,36 +192,83 @@ class training_pytorch:
     def _init_writer(self) -> None:
         """Do init of writer"""
         self._path2log = join(self._path2save, f'logs')
-        self._writer = SummaryWriter(self._path2log, comment=f"event_log_kfold{self._run_kfold:03d}")
+        self._writer = SummaryWriter(self._path2log, comment=f"event_log_kfold{self._kfold_run:03d}")
+
+    def __deterministic_training_preperation(self) -> None:
+        """Preparing the CUDA hardware for deterministic training"""
+        if self.settings_train.deterministic_do:
+            np.random.seed(self.settings_train.deterministic_seed)
+            manual_seed(self.settings_train.deterministic_seed)
+            if cuda.is_available():
+                cuda.manual_seed_all(self.settings_train.deterministic_seed)
+            seed(self.settings_train.deterministic_seed)
+            backends.cudnn.deterministic = True
+
+            use_deterministic_algorithms(True)
+            print(f"\n\t\t=== DL Training with Deterministic @seed: {self.settings_train.deterministic_seed} ===")
+        else:
+            use_deterministic_algorithms(False)
+            print(f"\n\t\t=== Normal DL Training ===")
+
+    def __deterministic_get_dataloader_params(self) -> dict:
+        """Getting the parameters for preparing the Training and Validation DataLoader for Deterministic Training"""
+        if self.settings_train.deterministic_do:
+            self.deterministic_generator = Generator()
+            self.deterministic_generator.manual_seed(self.settings_train.deterministic_seed)
+            worker_init_fn = lambda worker_id: np.random.seed(self.settings_train.deterministic_seed)
+            return {'worker_init_fn': worker_init_fn, 'generator': self.deterministic_generator}
+        else:
+            return {}
 
     def load_data(self, data_set, num_workers=0) -> None:
-        """Loading data for training and validation in DataLoader format into class"""
+        """Loading data for training and validation in DataLoader format into class
+        Args:
+            data_set:       DataLoader of used dataset
+            num_workers:    Number of workers for calculation [Default: 0 --> single core]
+        Return:
+            None
+        """
         self.__setup_device()
-        self._do_kfold = True if self.settings_train.num_kfold > 1 else False
+        self._kfold_do = True if self.settings_train.num_kfold > 1 else False
         self._model_addon = data_set.get_topology_type
         self.cell_classes = data_set.get_dictionary
+        params_deterministic = self.__deterministic_get_dataloader_params()
 
         # --- Preparing datasets
         out_train = list()
         out_valid = list()
-        if self._do_kfold:
-            kfold = KFold(n_splits=self.settings_train.num_kfold, shuffle=self._do_shuffle)
+        # ToDo: SubsetRandomSampler works valid with deterministic training? - Please check!
+        if self._kfold_do:
+            kfold = KFold(n_splits=self.settings_train.num_kfold,
+                          shuffle=self._shuffle_do and not self.settings_train.deterministic_do)
             for idx_train, idx_valid in kfold.split(np.arange(len(data_set))):
                 subsamps_train = SubsetRandomSampler(idx_train)
                 subsamps_valid = SubsetRandomSampler(idx_valid)
-                out_train.append(DataLoader(data_set, batch_size=self.settings_train.batch_size, sampler=subsamps_train))
-                out_valid.append(DataLoader(data_set, batch_size=self.settings_train.batch_size, sampler=subsamps_valid))
+                out_train.append(DataLoader(data_set,
+                                            batch_size=self.settings_train.batch_size,
+                                            sampler=subsamps_train,
+                                            **params_deterministic))
+                out_valid.append(DataLoader(data_set,
+                                            batch_size=self.settings_train.batch_size,
+                                            sampler=subsamps_valid,
+                                            **params_deterministic))
         else:
             idx = np.arange(len(data_set))
-            if self._do_shuffle:
+            if self._shuffle_do and not self.settings_train.deterministic_do:
                 np.random.shuffle(idx)
             split_pos = int(len(data_set) * (1 - self.settings_train.data_split_ratio))
             idx_train = idx[0:split_pos]
             idx_valid = idx[split_pos:]
             subsamps_train = SubsetRandomSampler(idx_train)
             subsamps_valid = SubsetRandomSampler(idx_valid)
-            out_train.append(DataLoader(data_set, batch_size=self.settings_train.batch_size, sampler=subsamps_train))
-            out_valid.append(DataLoader(data_set, batch_size=self.settings_train.batch_size, sampler=subsamps_valid))
+            out_train.append(DataLoader(data_set,
+                                        batch_size=self.settings_train.batch_size,
+                                        sampler=subsamps_train,
+                                        **params_deterministic))
+            out_valid.append(DataLoader(data_set,
+                                        batch_size=self.settings_train.batch_size,
+                                        sampler=subsamps_valid,
+                                        **params_deterministic))
 
         # --- CUDA support for dataset
         if cuda.is_available():
@@ -248,9 +297,14 @@ class training_pytorch:
         self.model = model
         self._aitype = model.out_modeltyp
         self._model_name = model.out_modelname
-
         self.optimizer = self.settings_train.load_optimizer(model, learn_rate=learn_rate)
         self.loss_fn = self.settings_train.get_loss_func()
+
+        # --- Init. hardware for deterministic training
+        if self.settings_train.deterministic_do:
+            self.__deterministic_training_preperation()
+
+        # --- Print model
         if print_model:
             print("\nPrint summary of model")
             summary(self.model, input_size=self.model.model_shape)
@@ -277,19 +331,21 @@ class training_pytorch:
             txt_handler.write(f'Num. of epochs: {self.settings_train.num_epochs}\n')
             txt_handler.write(f'Splitting ratio (Training/Validation): '
                               f'{1-self.settings_train.data_split_ratio}/{self.settings_train.data_split_ratio}\n')
-            txt_handler.write(f'Do KFold cross validation?: {self._do_kfold},\n'
+            txt_handler.write(f'Do KFold cross validation?: {self._kfold_do},\n'
                               f'Number of KFold steps: {self.settings_train.num_kfold}\n')
             txt_handler.write(f'Do shuffle?: {self.settings_train.data_do_shuffle}\n')
             txt_handler.write(f'Do data augmentation?: {self.settings_data.augmentation_do}\n')
             txt_handler.write(f'Do input normalization?: {self.settings_data.normalization_do}\n')
             txt_handler.write(f'Exclude cluster: {self.settings_data.exclude_cluster}\n')
+            txt_handler.write(f'Do deterministic training: {self.settings_train.deterministic_do}\n')
+            txt_handler.write(f'Deterministic Training, Seed: {self.settings_train.deterministic_seed}\n')
 
     def _save_train_results(self, last_metric_train: float | np.ndarray,
                             last_metric_valid: float | np.ndarray, loss_type='Loss') -> None:
         """Writing some training metrics into txt-file"""
         if self.config_available:
             with open(self._path2config, 'a') as txt_handler:
-                txt_handler.write(f'\n--- Metrics of last epoch in fold #{self._run_kfold} ---')
+                txt_handler.write(f'\n--- Metrics of last epoch in fold #{self._kfold_run} ---')
                 txt_handler.write(f'\nTraining {loss_type} = {last_metric_train}')
                 txt_handler.write(f'\nValidation {loss_type} = {last_metric_valid}\n')
 
