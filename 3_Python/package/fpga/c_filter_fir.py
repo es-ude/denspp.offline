@@ -101,7 +101,5 @@ def generate_filter_fir_template(do_opt: bool) -> dict:
 if __name__ == '__main__':
     path2save = '../../runs'
 
-    generate_fir_filter_files(14, True, 0, 21, 1e3, [100],
-                              do_optimized=False, path2save=path2save)
     generate_fir_filter_files(14, True, 1, 21, 1e3, [100],
                               do_optimized=True, path2save=path2save)
