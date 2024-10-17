@@ -1,7 +1,6 @@
-import os
+from copy import deepcopy
 from datetime import datetime
 import numpy as np
-import torch.nn as nn
 from matplotlib.ticker import MaxNLocator
 from sklearn.metrics import precision_recall_fscore_support
 
@@ -17,64 +16,34 @@ from package.dnn.template.dataset.autoencoder_class import prepare_training as g
 from package.dnn.pytorch.autoencoder import train_nn as train_autoencoder
 from package.dnn.pytorch.classifier import train_nn as train_classifier
 import package.dnn.template.models.autoencoder_cnn as models_ae
-import package.dnn.template.models.autoencoder_class as models_class
-
-
-# Configuration for the dataset
-config_data = Config_Dataset(
-    # --- Settings of Datasets
-    data_path='../../2_Data/00_Merged_Datasets',
-    data_file_name='2023-11-24_Dataset-07_RGC_TDB_Merged.mat',
-    # --- Data Augmentation
-    augmentation_do=False,
-    augmentation_num=0,
-    add_noise_cluster=False,
-    # --- Data Normalization
-    normalization_do=True,
-    normalization_mode='CPU',
-    normalization_method='minmax',
-    normalization_setting='bipolar',
-    # --- Dataset Reduction
-    reduce_samples_per_cluster_do=False,
-    reduce_samples_per_cluster_num=5_000,
-    exclude_cluster=[],
-    reduce_positions_per_sample=[]
-)
+import package.dnn.template.models.autoencoder_class as models_cl
 
 
 def do_train_ae_classifier(settings: Config_ML_Pipeline,
                            num_feature_layer: int, num_output_cl: int,
                            mode_ae=0, noise_std=0.05, path2save_base='',
-                           num_epochs=5) -> dict:
+                           num_epochs=5, yaml_name_index='Config_AETopo') -> dict:
     """Training routine for Autoencoders and Classification after Encoder"""
     metric_run = dict()
 
-    # --- Definition of settings
-    config_train_ae = Config_PyTorch(
-        model=models_ae.cnn_ae_v4(32, num_feature_layer),
-        loss='MSE',
-        loss_fn=nn.MSELoss(),
-        optimizer='Adam',
-        num_kfold=1,
-        num_epochs=num_epochs,  # Using the same variable
-        batch_size=256,
-        data_split_ratio=0.25,
-        data_do_shuffle=True
-    )
-    config_train_cl = Config_PyTorch(
-        model=models_class.classifier_ae_v1(num_feature_layer, num_output_cl),
-        loss='Cross Entropy',
-        loss_fn=nn.CrossEntropyLoss(),
-        optimizer='Adam',
-        num_kfold=1,
-        num_epochs=num_epochs,  # Defined
-        batch_size=256,
-        data_split_ratio=0.25,
-        data_do_shuffle=True
-    )
+    # --- Loading the YAML file: Dataset
+    default_data = deepcopy(DefaultSettingsDataset)
+    default_data.data_path = 'data'
+    default_data.data_file_name = '2023-11-24_Dataset-07_RGC_TDB_Merged.mat'
+    yaml_data = yaml_config_handler(default_data, settings.get_path2config, f'{yaml_name_index}_Dataset')
+    config_data = yaml_data.get_class(Config_Dataset)
 
-    # --- Loading YAML files
+    # --- Loading the YAML file: Autoencoder Training
+    default_ae = deepcopy(DefaultSettingsTrainMSE)
+    default_ae.model_name = models_ae.cnn_ae_v1.__name__
+    yaml_train_ae = yaml_config_handler(default_ae, settings.get_path2config, f'{yaml_name_index}_TrainAE')
+    config_train_ae = yaml_train_ae.get_class(Config_PyTorch)
 
+    # --- Loading the YAML file: Classifier Training
+    default_ae = deepcopy(DefaultSettingsTrainCE)
+    default_ae.model_name = models_cl.classifier_ae_v1.__name__
+    yaml_train_ae = yaml_config_handler(default_ae, settings.get_path2config, f'{yaml_name_index}_TrainCL')
+    config_train_ae = yaml_train_ae.get_class(Config_PyTorch)
 
     # ----------- Step #1: TRAINING AUTOENCODER
     dataset = get_dataset_ae(settings=config_data, mode_train_ae=mode_ae, noise_std=noise_std, do_classification=False)
