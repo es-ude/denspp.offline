@@ -8,8 +8,10 @@ from fxpmath import Fxp
 class filter_stage:
     __filter_type = {'low': 'lowpass', 'high': 'highpass', 'all': 'allpass', 'bandpass': 'bandpass',
                    'bandstop': 'bandstop', 'notch': 'notch'}
+    __coeff_a: np.ndarray
+    __coeff_b: np.ndarray
 
-    def __init__(self, N: int, fs: float, f_filter: float, btype: str, use_iir_filter: bool):
+    def __init__(self, N: int, fs: float, f_filter: list, btype: str, use_iir_filter: bool):
         """Class for filtering and getting the filter coefficient
         Args:
             N:                  Order number of used filter
@@ -22,18 +24,14 @@ class filter_stage:
         self.fs = fs
         self.f_filter = np.array(f_filter, dtype='float')
         self.f_coeff = 2 * self.f_filter / self.fs
-
-        self.__coeff_a = None
-        self.__coeff_b = None
-
+        self.__coeffb_defined = False
+        self.__coeffa_defined = False
         self.do_analog = False
         self.use_filtfilt = False
+        self.type_iir_used = use_iir_filter
         self.type_iir = 'butter'
         self.type0 = self.__process_type(btype)
-        self.type1 = self.__process_filter(use_iir_filter)
-
-        self.value = 0.4995 #2 * math.pi
-        self.value_quant = Fxp(self.value, signed=True, n_word=8, n_frac=8)
+        self.__process_filter()
 
     def filter(self, xin: np.ndarray) -> np.ndarray:
         """Performing the filtering of input data
@@ -67,13 +65,13 @@ class filter_stage:
             None
         """
         print("\nAusgabe der Filterkoeffizienten:")
-        if self.__coeff_a is not None:
+        if self.__coeffa_defined:
             for id, coeff in enumerate(self.__coeff_a):
                 quant = Fxp(coeff, signed=signed, n_word=bit_size, n_frac=bit_frac)
                 error = coeff - float(quant)
                 print(f".. Coeff_A{id}: {float(quant):.8f} = {quant.hex()} (Delta = {error:.6f})")
 
-        if self.__coeff_a is not None:
+        if self.__coeffb_defined:
             for id, coeff in enumerate(self.__coeff_b):
                 quant = Fxp(coeff, signed=signed, n_word=bit_size, n_frac=bit_frac)
                 error = coeff - float(quant)
@@ -93,13 +91,13 @@ class filter_stage:
         coeffb = list()
         coeffb_error = list()
 
-        if self.__coeff_a is not None:
+        if self.__coeffa_defined:
             for id, coeff in enumerate(self.__coeff_a):
                 quant = Fxp(coeff, signed=signed, n_word=bit_size, n_frac=bit_frac)
                 coeffa.append(quant)
                 coeffa_error.append(coeff - float(quant))
 
-        if self.__coeff_a is not None:
+        if self.__coeffb_defined:
             for id, coeff in enumerate(self.__coeff_b):
                 quant = Fxp(coeff, signed=signed, n_word=bit_size, n_frac=bit_frac)
                 coeffb.append(quant)
@@ -119,11 +117,11 @@ class filter_stage:
         coeffb = list()
         coeffb_error = list()
 
-        if self.__coeff_a is not None:
+        if self.__coeffa_defined:
             coeffa = self.__coeff_a.tolist()
             coeffa_error.append([0.0 for idx in self.__coeff_a])
 
-        if self.__coeff_a is not None:
+        if self.__coeffb_defined:
             coeffb = self.__coeff_b.tolist()
             coeffb_error.append([0.0 for idx in self.__coeff_b])
 
@@ -141,7 +139,7 @@ class filter_stage:
         """
         print_out = list()
         print(f"\n//--- Used filter coefficients for {self.type_iir, self.type0} with {self.f_filter / 1000:.3f} kHz @ {self.fs / 1000:.3f} kHz")
-        if not self.type1 == 'fir':
+        if self.type_iir_used:
             coeffa_size = len(self.__coeff_a)
             print_out.append(f"wire signed [{bit_size - 1:d}:0] coeff_a [{coeffa_size - 1:d}:0];")
             for id, coeff in enumerate(self.__coeff_a):
@@ -170,7 +168,7 @@ class filter_stage:
         Return:
             Tuple with [frequency, gain, phase]
         """
-        if self.type1 == 'iir':
+        if self.type_iir_used:
             fout = scft.iirfilter(
                 N=self.n_order, Wn=self.f_filter, #rs=60, rp=1,
                 btype=self.type0, ftype=self.type_iir, analog=True,
@@ -183,7 +181,7 @@ class filter_stage:
                 b=b, a=a,
                 worN=f0
             )
-        elif self.type1 == 'fir':
+        else:
             w, h = scft.freqz(
                 b=self.__coeff_b, a=1,
                 fs=20000, worN=f0
@@ -195,25 +193,28 @@ class filter_stage:
         phase = np.angle(h, deg=True)
         return w, gain, phase
 
-    def __process_filter(self, use_iir_filter: bool) -> str:
+    def __process_filter(self) -> None:
         """Extracting the filter coefficient with used settings"""
-        if use_iir_filter:
+        if self.type_iir_used:
             # --- Einstellen eines IIR Filters
-            filter = scft.iirfilter(
+            filter_params = scft.iirfilter(
                 N=self.n_order, Wn=self.f_coeff,
                 btype=self.type0, ftype='butter',
                 analog=self.do_analog, output='ba'
             )
-            self.__coeff_b = filter[0]
-            self.__coeff_a = filter[1]
+            self.__coeff_b = filter_params[0]
+            self.__coeffb_defined = True
+            self.__coeff_a = filter_params[1]
+            self.__coeffa_defined = True
         else:
             # --- Einstellen eines FIR Filters
-            filter = scft.firwin(
+            filter_params = scft.firwin(
                 numtaps=self.n_order, cutoff=self.f_coeff
             )
-            self.__coeff_b = filter
+            self.__coeff_b = filter_params
+            self.__coeffb_defined = True
             self.__coeff_a = np.array(1.0)
-        return 'iir' if use_iir_filter else 'fir'
+            self.__coeffa_defined = False
 
     def __process_type(self, type: str) -> str:
         """Definition of the filter type used in scipy function"""
