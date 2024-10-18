@@ -2,36 +2,85 @@ import numpy as np
 import scipy.signal as scft
 import matplotlib.pyplot as plt
 from fxpmath import Fxp
+from package.plot.plot_common import save_figure
 
 
-# TODO: Filtertyp außer 'butter' noch einfügen
 class filter_stage:
-    __filter_type = {'low': 'lowpass', 'high': 'highpass', 'all': 'allpass', 'bandpass': 'bandpass',
-                   'bandstop': 'bandstop', 'notch': 'notch'}
+    __filter_btype = {'low': 'lowpass', 'high': 'highpass', 'bandpass': 'bandpass', 'bandstop': 'bandstop'}
+    __filter_ftype = {'butter': 'butter', 'cheby1': 'cheby1', 'cheby2': 'cheby2', 'ellip': 'ellip', 'bessel': 'bessel'}
     __coeff_a: np.ndarray
     __coeff_b: np.ndarray
 
-    def __init__(self, N: int, fs: float, f_filter: list, btype: str, use_iir_filter: bool):
+    def __init__(self, N: int, fs: float, f_filter: list, use_iir_filter: bool,
+                 btype='low', ftype='butter', use_filtfilt=False):
         """Class for filtering and getting the filter coefficient
         Args:
             N:                  Order number of used filter
             fs:                 Sampling rate of data stream
             f_filter:           Filter coefficient
-            btype:              Used filter type ['low', 'high', 'bandpass', 'bandstop', 'notch', 'all']
+            btype:              Used filter type ['low', 'high', 'bandpass', 'bandstop']
+            ftype:              Used filter type ['butter', 'cheby1', 'cheby2', 'ellip', 'bessel']
             use_iir_filter:     Used filter topology [True: IIR, False: FIR]
+            use_filtfilt:       Using filtfilt functionality from scipy.signal (Zero-phase filtering)
         """
-        self.n_order = N
-        self.fs = fs
-        self.f_filter = np.array(f_filter, dtype='float')
-        self.f_coeff = 2 * self.f_filter / self.fs
+        self.__sampling_rate = fs
         self.__coeffb_defined = False
         self.__coeffa_defined = False
-        self.do_analog = False
-        self.use_filtfilt = False
-        self.type_iir_used = use_iir_filter
-        self.type_iir = 'butter'
-        self.type0 = self.__process_type(btype)
-        self.__process_filter()
+        self.__use_filtfilt = use_filtfilt
+
+        self.__filter_type_iir_used = use_iir_filter
+        self.__filter_order = N
+        self.__filter_corner = np.array(f_filter, dtype='float')
+        self.__filter_ftype = self.__get_filter_ftype(ftype)
+        self.__filter_btype = self.__get_filter_btype(btype)
+        self.__extract_filter_params()
+
+    def __extract_filter_params(self) -> None:
+        """Extracting the filter coefficient with used settings"""
+        if self.__filter_type_iir_used:
+            # --- Defining an IIR filter
+            filter_params = scft.iirfilter(
+                N=self.__filter_order, Wn=2 * self.__filter_corner / self.__sampling_rate,
+                btype=self.__filter_btype, ftype=self.__filter_ftype,
+                analog=False, output='ba'
+            )
+            self.__coeff_b = filter_params[0]
+            self.__coeffb_defined = True
+            self.__coeff_a = filter_params[1]
+            self.__coeffa_defined = True
+        else:
+            # --- Defining a FIR filter
+            filter_params = scft.firwin(
+                numtaps=self.__filter_order,
+                cutoff=self.__filter_corner, fs=self.__sampling_rate,
+                pass_zero=self.__filter_btype
+            )
+            self.__coeff_b = filter_params
+            self.__coeffb_defined = True
+            self.__coeff_a = np.array(1.0)
+            self.__coeffa_defined = False
+
+    def __get_filter_btype(self, type_used: str) -> str:
+        """Definition of the filter type used in scipy function"""
+        type_out = ''
+        for key, type0 in self.__filter_btype.items():
+            if type_used is key:
+                type_out = type0
+                break
+        if type_out == '':
+            raise NotImplementedError("Type of used filter type is not available")
+        return type_out
+
+    def __get_filter_ftype(self, type_used: str) -> str:
+        """Definition of the filter type used in scipy function"""
+        type_out = ''
+        for key, type0 in self.__filter_ftype.items():
+            if type_used is key:
+                type_out = type0
+                break
+        if type_out == '':
+            raise NotImplementedError("Type of used filter type is not available")
+        return type_out
 
     def filter(self, xin: np.ndarray) -> np.ndarray:
         """Performing the filtering of input data
@@ -40,20 +89,8 @@ class filter_stage:
         Returns:
             Numpy array with filtered output
         """
-        if not self.use_filtfilt:
-            xout = scft.lfilter(
-                b=self.__coeff_b,
-                a=self.__coeff_a,
-                x=xin
-            )
-        else:
-            xout = scft.filtfilt(
-                b=self.__coeff_b,
-                a=self.__coeff_a,
-                x=xin
-            )
-
-        return xout
+        return scft.lfilter(b=self.__coeff_b, a=self.__coeff_a, x=xin) if not self.__use_filtfilt \
+            else scft.filtfilt(b=self.__coeff_b, a=self.__coeff_a, x=xin)
 
     def coeff_print(self, bit_size: int, bit_frac: int, signed=True) -> None:
         """Printing the filter coefficient in quantized matter
@@ -138,8 +175,8 @@ class filter_stage:
             List with string output
         """
         print_out = list()
-        print(f"\n//--- Used filter coefficients for {self.type_iir, self.type0} with {self.f_filter / 1000:.3f} kHz @ {self.fs / 1000:.3f} kHz")
-        if self.type_iir_used:
+        print(f"\n//--- Used filter coefficients for {self.__filter_ftype, self.__filter_btype} with {self.__filter_corner / 1000:.3f} kHz @ {self.__sampling_rate / 1000:.3f} kHz")
+        if self.__filter_type_iir_used:
             coeffa_size = len(self.__coeff_a)
             print_out.append(f"wire signed [{bit_size - 1:d}:0] coeff_a [{coeffa_size - 1:d}:0];")
             for id, coeff in enumerate(self.__coeff_a):
@@ -161,83 +198,70 @@ class filter_stage:
                 print(line)
         return print_out
 
-    def freq_response(self, f0: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def freq_response(self, freq: np.ndarray, do_plot=False) -> dict:
         """Getting the frequency response of the filter for specific frequency values
         Args:
-            f0:     Numpy array with frequency values
+            freq:       Numpy array with frequency values
+            do_plot:    Plotting the results
         Return:
-            Tuple with [frequency, gain, phase]
+            Dict with ['freq': frequency, 'gain': gain, 'phase': phase]
         """
-        if self.type_iir_used:
+        if self.__filter_type_iir_used:
             fout = scft.iirfilter(
-                N=self.n_order, Wn=self.f_filter, #rs=60, rp=1,
-                btype=self.type0, ftype=self.type_iir, analog=True,
+                N=self.__filter_order, Wn=self.__filter_corner,
+                btype=self.__filter_btype, ftype=self.__filter_ftype, analog=True,
                 output='ba'
             )
-            b = fout[0]
-            a = fout[1]
-
-            w, h = scft.freqs(
-                b=b, a=a,
-                worN=f0
-            )
+            w, h = scft.freqs(b=fout[0], a=fout[1], worN=freq)
         else:
-            w, h = scft.freqz(
-                b=self.__coeff_b, a=1,
-                fs=20000, worN=f0
-            )
+            w, h = scft.freqz(b=self.__coeff_b, a=1, fs=self.__sampling_rate, worN=freq)
 
-        # --- Output
         h0 = np.array(h)
         gain = np.abs(h0)
-        phase = np.angle(h, deg=True)
-        return w, gain, phase
+        phase = np.angle(h0, deg=True)
 
-    def __process_filter(self) -> None:
-        """Extracting the filter coefficient with used settings"""
-        if self.type_iir_used:
-            # --- Einstellen eines IIR Filters
-            filter_params = scft.iirfilter(
-                N=self.n_order, Wn=self.f_coeff,
-                btype=self.type0, ftype='butter',
-                analog=self.do_analog, output='ba'
-            )
-            self.__coeff_b = filter_params[0]
-            self.__coeffb_defined = True
-            self.__coeff_a = filter_params[1]
-            self.__coeffa_defined = True
-        else:
-            # --- Einstellen eines FIR Filters
-            filter_params = scft.firwin(
-                numtaps=self.n_order, cutoff=self.f_coeff
-            )
-            self.__coeff_b = filter_params
-            self.__coeffb_defined = True
-            self.__coeff_a = np.array(1.0)
-            self.__coeffa_defined = False
+        # --- Figure generation
+        if do_plot:
+            plot_bode_diagramm(w, gain, phase)
+        return {'freq': w, 'gain': gain, 'phase': phase}
 
-    def __process_type(self, type: str) -> str:
-        """Definition of the filter type used in scipy function"""
-        type_out = ''
-        for key, type0 in self.__filter_type.items():
-            if type is key:
-                type_out = type0
-                break
-        if type_out == '':
-            raise NotImplementedError("Type of used filter type is not available")
-        return type_out
+
+def plot_bode_diagramm(freq: np.ndarray, gain: np.ndarray, phase: np.ndarray, path2save='') -> None:
+    """Plotting the Bode diagramm of defined filter characteristics
+    Args:
+        freq:       Numpy array of used frequency
+        gain:       Numpy array of available gain from filter
+        phase:      Numpy array of available phase from filter
+        path2save:  Optional string for plotting [Default: '' for non-plotting]
+    Return:
+        None
+    """
+    axs = plt.subplots(2, 1, sharex="all")[1]
+    axs[0].semilogx(freq, 20 * np.log10(np.array(gain)), 'k', linewidth=1, marker='.', label="Gain")
+    axs[0].set_ylabel(r"Gain $v_U$ / dB")
+    axs[0].set_xlim([freq[0], freq[-1]])
+
+    axs[1].semilogx(freq, np.array(phase), 'r', linewidth=1, marker='.', label="Phase")
+    axs[1].set_ylabel(r"Phase $\alpha$ / °")
+    axs[1].set_xlabel(r'Frequency $f$ / Hz')
+    axs[1].set_xlim([freq[0], freq[-1]])
+
+    for ax in axs:
+        ax.set_xlim([freq[0], freq[-1]])
+        ax.grid(which='both', linestyle='--')
+
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=0.05)
+    if path2save:
+        save_figure(plt, path2save, 'filter_charac_bode')
+    plt.show(block=True)
 
 
 if __name__ == "__main__":
     fs = 100
-    f_low = np.arange(0.1, 50, 0.1)
-    Nfilt = 2
-
-    N = 12
-    Ndec = 2
-    dec = 2**(Ndec-1)
-    lsb = 1/(2**(N-Ndec)-1)
-    print(f"Kleinste Dezimalstellung: +/-{dec} und Kommastelle: {lsb}")
+    freq = np.logspace(-2, 2, 101)
+    f_low = np.arange(1, 50, 0.1)
+    Nfilt = 2001
 
     # --- Koeffizienten herleiten
     coeff_a = []
@@ -245,9 +269,10 @@ if __name__ == "__main__":
     coeff_b = []
     coeff_bsum = []
     for i, ftp in enumerate(f_low):
-        filter = filter_stage(Nfilt, fs, ftp, 'high', True)
-
+        filter = filter_stage(Nfilt, fs, [ftp], False, 'high')
+        filter.freq_response(freq, True)
         coeff = filter.get_coeff_full()
+
         coeff_a.append(coeff['coeffa'])
         coeff_asum.append(np.sum(coeff['coeffa']))
         coeff_b.append(coeff['coeffb'])
