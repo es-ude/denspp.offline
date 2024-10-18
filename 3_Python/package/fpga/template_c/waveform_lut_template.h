@@ -78,11 +78,15 @@ input_type read_waveform_value_runtime (WaveformSettings *filter, bool skip_last
         data = -lut_values[filter->lut_position]; \
         filter->lut_position--; \
         if(filter->lut_position == 0){ \
-            filter->state = 4; \
+            if(skip_last_point){ \
+                filter->state = 0; \
+            } else { \
+                filter->state = 4; \
+            } \
         } else { \
             filter->state = 3; \
         }; \
-    } else if((filter->state == 4) && !skip_last_point){ \
+    } else if(filter->state == 4){ \
         data = lut_values[0]; \
         filter->lut_position = 0; \
         filter->state = 0; \
