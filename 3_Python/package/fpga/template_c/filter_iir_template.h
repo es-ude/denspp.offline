@@ -12,7 +12,8 @@ typedef struct {
 } IirFilter;
 
 
-#define DEF_CALC_IIR(input_type) input_type calc_filter_iir (input_type data, IirFilter *filter) { \
+#define DEF_CALC_IIR(input_type) \
+input_type calc_filter_iir (input_type data, IirFilter *filter) { \
     uint16_t filter_tap_start = filter->tap_start; \
     double* filter_coeff = filter->coefficient; \
     uint8_t filter_coeff_length = filter->coefficient_length; \

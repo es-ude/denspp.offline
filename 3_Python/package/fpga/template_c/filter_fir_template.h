@@ -13,7 +13,8 @@ typedef struct {
 
 
 
-#define DEF_CALC_FIR(input_type) input_type calc_filter_fir (input_type data, FirFilter *filter) { \
+#define DEF_CALC_FIR(input_type) \
+input_type calc_filter_fir (input_type data, FirFilter *filter) { \
     uint16_t filter_tap_start = filter->tap_start; \
     double* filter_coeff = filter->coefficients; \
     uint16_t filter_coeff_length = filter->coefficient_length; \

@@ -12,7 +12,8 @@ typedef struct {
 
 
 
-#define DEF_CALC_MAVG(input_type) input_type calc_moving_average (input_type data, MavgFilter *filter) { \
+#define DEF_CALC_MAVG(input_type) \
+input_type calc_moving_average (input_type data, MavgFilter *filter) { \
     uint16_t filter_tap_start = filter->tap_start; \
     uint16_t filter_tap_length = filter->tap_length; \
 \
