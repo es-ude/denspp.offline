@@ -3,7 +3,7 @@ from shutil import copyfile
 from os.path import join, isdir
 from datetime import datetime
 
-from package.fpga.c_helper import get_embedded_datatype, replace_variables_with_parameters
+from package.fpga.helper.translate_c import get_embedded_datatype, replace_variables_with_parameters
 
 
 def generate_moving_avg_files(data_bitsize: int, data_signed: bool, module_id: int,
@@ -15,14 +15,14 @@ def generate_moving_avg_files(data_bitsize: int, data_signed: bool, module_id: i
         data_signed:    Decision if LUT values are signed [otherwise unsigned]
         module_id:      ID of used filter structure
         filter_order:   Order of the filter
-        sampling_rate:  Sampling clock of data stream
+        sampling_rate:  Sampling clock of data stream processing
         file_name:      Name of the generated files
         path2save:      Path for saving the verilog output files
     Return:
         None
     """
     data_type_filter = get_embedded_datatype(data_bitsize, data_signed)
-    template_c = generate_filter_fir_template()
+    template_c = __generate_filter_mavg_template()
 
     params = {
         'path2include': 'lib',
@@ -55,8 +55,8 @@ def generate_moving_avg_files(data_bitsize: int, data_signed: bool, module_id: i
     v_handler.close()
 
 
-def generate_filter_fir_template() -> dict:
-    """Generate the template for writing *.c and *.h file for generate a FIR filter on MCUs
+def __generate_filter_mavg_template() -> dict:
+    """Generate the template for writing *.c and *.h file for generate a moving average FIR on MCUs
     Args:
         None
     Return:

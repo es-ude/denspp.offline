@@ -2,7 +2,7 @@ from os import mkdir
 from os.path import join, isdir
 from datetime import datetime
 import numpy as np
-from package.fpga.signal_type import generation_sinusoidal_waveform
+from package.fpga.helper.signal_type import generation_sinusoidal_waveform
 
 
 def create_testbench(bitsize_lut: int,

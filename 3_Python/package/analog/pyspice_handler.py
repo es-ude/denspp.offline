@@ -517,7 +517,7 @@ class PySpice_Handler:
 
         axs[1].semilogx(freq, np.angle(transfer_function, deg=True), 'r', linewidth=1, marker='.', label="Phase")
         axs[1].set_ylabel(r"Phase $\alpha$ / °")
-        axs[1].set_xlabel(r'Frequency $f$ / dB')
+        axs[1].set_xlabel(r'Frequency $f$ / Hz')
         axs[1].set_xlim([freq[0], freq[-1]])
 
         for ax in axs:

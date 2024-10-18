@@ -5,10 +5,9 @@ from scipy.io import loadmat
 from package.data_call.call_spike_files import DataLoader
 from package.data_call.call_handler import SettingsDATA
 from src_neuro.pipeline_data import Pipeline
-import package.fpga.verilog_translate_frames as verilog_frame
-import package.fpga.verilog_translate_timeseries_1ch as verilog_time
-import package.fpga.veriloga_translate_timeseries_1ch as veriloga_time
-from package.fpga.verilog_translate_weights import read_model_weights
+import package.fpga.translate_frames_verilog as verilog_frame
+import package.fpga.translate_timeseries_verilog as verilog_time
+import package.fpga.translate_timeseries_veriloga as veriloga_time
 
 
 settings_data = SettingsDATA(

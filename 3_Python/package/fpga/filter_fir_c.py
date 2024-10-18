@@ -3,8 +3,8 @@ from shutil import copyfile
 from os.path import join, isdir
 from datetime import datetime
 
-from package.fpga.emulator_filter import filter_stage
-from package.fpga.c_helper import get_embedded_datatype, replace_variables_with_parameters
+from package.fpga.helper.emulator_filter import filter_stage
+from package.fpga.helper.translate_c import get_embedded_datatype, replace_variables_with_parameters
 
 
 def generate_fir_filter_files(data_bitsize: int, data_signed: bool, filter_id: int,
@@ -16,9 +16,9 @@ def generate_fir_filter_files(data_bitsize: int, data_signed: bool, filter_id: i
         data_signed:    Decision if LUT values are signed [otherwise unsigned]
         filter_id:      ID of used filter structure
         filter_order:   Order of the filter
-        sampling_rate:  Sampling clock of data stream
+        sampling_rate:  Sampling clock of data stream processing
         filter_corner:  List with corner frequency of the used filter
-        filter_type:    Type of the filter used ['low', 'high', 'bandpass', 'bandstop', 'notch', 'all']
+        filter_type:    Type of the filter used ['low', 'high', 'bandpass', 'bandstop', 'notch']
         do_optimized:   Decision if LUT resources should be minimized [only quarter and mirroring]
         file_name:      Name of the generated files
         path2save:      Path for saving the verilog output files
@@ -28,12 +28,12 @@ def generate_fir_filter_files(data_bitsize: int, data_signed: bool, filter_id: i
     if do_optimized and filter_order % 2 == 0:
         raise NotImplementedError("Please add an odd number to filter order!")
 
-    filter_emulator = filter_stage(filter_order, sampling_rate, filter_corner, filter_type, False)
+    filter_emulator = filter_stage(filter_order, sampling_rate, filter_corner, False, btype=filter_type)
     filter_coeff = filter_emulator.get_coeff_full()
     filter_coeff_used = filter_coeff['coeffb'] if not do_optimized else filter_coeff['coeffb'][:int(filter_order/2)+1]
 
     data_type_filter = get_embedded_datatype(data_bitsize, data_signed)
-    template_c = generate_filter_fir_template(do_optimized)
+    template_c = __generate_filter_fir_template(do_optimized)
 
     params = {
         'path2include': 'lib',
@@ -67,7 +67,7 @@ def generate_fir_filter_files(data_bitsize: int, data_signed: bool, filter_id: i
     v_handler.close()
 
 
-def generate_filter_fir_template(do_opt: bool) -> dict:
+def __generate_filter_fir_template(do_opt: bool) -> dict:
     """Generate the template for writing *.c and *.h file for generate a FIR filter on MCUs
     Args:
         do_opt:     Boolean decision if optimized version is used (odd version)

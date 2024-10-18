@@ -1,11 +1,10 @@
 from os import mkdir
 from os.path import join, isdir, abspath
-from datetime import datetime
 import numpy as np
 
-from package.fpga.signal_type import generation_sinusoidal_waveform
-from package.fpga.c_helper import (get_embedded_datatype,
-                                   slicing_data_intro_string_array, replace_variables_with_parameters)
+from package.fpga.helper.signal_type import generation_sinusoidal_waveform
+from package.fpga.helper.translate_c import (get_embedded_datatype,
+                                             slicing_data_intro_string_array, replace_variables_with_parameters)
 
 
 def generate_lut_files(bitsize_lut: int, f_sys: float, f_rpt: float, f_sine: float,
