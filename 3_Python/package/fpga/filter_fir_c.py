@@ -4,7 +4,8 @@ from os.path import join, isdir
 from datetime import datetime
 
 from package.fpga.helper.emulator_filter import filter_stage
-from package.fpga.helper.translate_c import get_embedded_datatype, replace_variables_with_parameters
+from package.fpga.helper.translate_c import (get_embedded_datatype, replace_variables_with_parameters,
+                                             generate_params_list)
 
 
 def generate_fir_filter_files(data_bitsize: int, data_signed: bool, filter_id: int,
@@ -27,7 +28,6 @@ def generate_fir_filter_files(data_bitsize: int, data_signed: bool, filter_id: i
     Return:
         None
     """
-    filter_ftype = 'butter'
     if do_optimized and filter_order % 2 == 0:
         raise NotImplementedError("Please add an odd number to filter order!")
 
@@ -80,8 +80,6 @@ def __generate_filter_fir_template(do_opt: bool) -> dict:
         Dictionary with infos for prototype ['head'], implementation ['func'] and used parameters ['params']
     """
     version_fir = 'full' if not do_opt else 'opt'
-    params_temp = ['path2include', 'template_name', 'device_id', 'data_type',
-                   'fs', 'filter_corner', 'filter_order', 'coeffs_string']
     header_temp = [
         f'// --- Generating a FIR filter template ({version_fir})',
         '// Copyright @ UDE-IES',
@@ -100,6 +98,11 @@ def __generate_filter_fir_template(do_opt: bool) -> dict:
         '# include "{$path2include}/{$template_name}"',
         'DEF_NEW_FIR_FILTER_IMPL({$device_id}, {$data_type}, {$filter_order}, {$coeffs_string})'
     ]
+
+    # --- Generate list with all metrics
+    params_temp = generate_params_list(header_temp)
+    params_temp = generate_params_list(func_temp, params_temp)
+
     return {'head': header_temp, 'func': func_temp, 'params': params_temp}
 
 

@@ -59,3 +59,44 @@ def replace_variables_with_parameters(string_input: list, parameters: dict) -> l
                         break
         string_output.append(used_line)
     return string_output
+
+
+def chck_key_in_list_available(key_chck: str, library: list) -> list:
+    """Function for checking if key is in library available
+    Args:
+        key_chck:   String with key for checking and adding to library
+        library:    Library with keys
+    Return:
+        List of library
+    """
+    # --- Checking if key in list is available
+    value_avai = False
+    for key in library:
+        if key_chck in key:
+            value_avai = True
+            break
+    # --- Generate output
+    if not value_avai:
+        library.append(key_chck)
+    return library
+
+
+def generate_params_list(template_list: list, old_library_list=None) -> list:
+    """
+    Function for generating a parameter list from template files
+    Args:
+        template_list:      List with template for extracting parameters
+        old_library_list:   List with old parameters [Default: None -> Generate new list]
+    Returns:
+        List with common parameters
+    """
+    new_params_list = old_library_list if old_library_list is not None else list()
+
+    for line in template_list:
+        if '{$' in line:
+            overview_split = line.split('{$')
+            for split_param in overview_split[1:]:
+                param_search = split_param.split('}')[0]
+                new_params_list = chck_key_in_list_available(param_search, new_params_list)
+
+    return new_params_list

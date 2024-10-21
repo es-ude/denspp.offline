@@ -3,51 +3,37 @@ from shutil import copyfile
 from os.path import join, isdir
 from datetime import datetime
 
-from package.fpga.helper.emulator_filter import filter_stage
 from package.fpga.helper.translate_c import (get_embedded_datatype, replace_variables_with_parameters,
                                              generate_params_list)
 
 
-def generate_iir_filter_files(data_bitsize: int, data_signed: bool, filter_id: int,
-                              filter_order: int, sampling_rate: float, filter_corner: list,
-                              filter_btype='low', filter_ftype='butter',
-                              file_name='filter_iir', path2save='') -> None:
+def generate_fir_allpass_files(data_bitsize: int, data_signed: bool, filter_id: int,
+                               sampling_rate: float, t_dly: float,
+                               file_name='filter_fir_all', path2save='') -> None:
     """Generating C files for IIR filtering on microcontroller
     Args:
         data_bitsize:   Used quantization level for data stream
         data_signed:    Decision if LUT values are signed [otherwise unsigned]
-        filter_id:      ID of used filter
-        filter_order:   Order of the filter
+        filter_id:      ID of used filter structure
         sampling_rate:  Sampling clock of data stream processing
-        filter_corner:  list with corner frequency for used filter
-        filter_btype:   Used filter type ['low', 'high', 'bandpass', 'bandstop', 'all' (only 1st, 2nd order)]
-        filter_ftype:   Used filter design ['butter', 'cheby1', 'cheby2', 'ellip', 'bessel']
+        t_dly:          Value of achievable time delay [in s]
         file_name:      Name of the generated files
         path2save:      Path for saving the verilog output files
     Return:
         None
     """
-    filter_emulator = filter_stage(filter_order, sampling_rate, filter_corner, True,
-                                   ftype=filter_ftype, btype=filter_btype)
-    filter_coeff = filter_emulator.get_coeff_full()
-    filter_coeff_used = ', '.join(map(str, filter_coeff['coeffa'])) + ', ' + ', '.join(map(str, filter_coeff['coeffb']))
-
     data_type_filter = get_embedded_datatype(data_bitsize, data_signed)
-    template_c = __generate_filter_iir_template()
+    template_c = __generate_filter_fir_allpass_template()
+    filter_order = int(sampling_rate * t_dly)
 
     params = {
         'path2include': 'lib',
-        'template_name': 'filter_iir_template.h',
+        'template_name': 'filter_fir_all_template.h',
         'device_id': str(filter_id),
         'data_type': data_type_filter,
         'fs': f'{sampling_rate}',
-        'filter_type': f'{filter_btype}, butter',
-        'filter_corner': ', '.join(map(str, filter_corner)),
+        't_dly': str(t_dly * 1e6),
         'filter_order': str(filter_order),
-        'coeff_order': str(filter_order+1),
-        'tap_order': str(filter_order),
-        'coeffs_string': filter_coeff_used
-
     }
     proto_file = replace_variables_with_parameters(template_c['head'], params)
     imple_file = replace_variables_with_parameters(template_c['func'], params)
@@ -71,28 +57,26 @@ def generate_iir_filter_files(data_bitsize: int, data_signed: bool, filter_id: i
     v_handler.close()
 
 
-def __generate_filter_iir_template() -> dict:
-    """Generate the template for writing *.c and *.h file for generate an IIR filter on MCUs
+def __generate_filter_fir_allpass_template() -> dict:
+    """Generate the template for writing *.c and *.h file for generate a FIR filter on MCUs
     Return:
         Dictionary with infos for prototype ['head'], implementation ['func'] and used parameters ['params']
     """
     header_temp = [
-        '// --- Generating an IIR filter template (Direct Form II)',
+        f'// --- Generating a FIR-Allpass filter template',
         '// Copyright @ UDE-IES',
         f'// Code generated on: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}',
-        '// Params: N = {$filter_order}, f_c = [{$filter_corner}] Hz @ {$fs} Hz ({$filter_type})',
-        '// Used filter coefficient order (b_0, b_1, b_2, ..., b_N)',
+        '// Params: N = {$filter_order}, t_dly = {$t_dly} us @ {$fs} Hz',
         '# include "{$path2include}/{$template_name}"',
-        'DEF_NEW_IIR_FILTER_PROTO({$device_id}, {$data_type})'
+        'DEF_NEW_FIR_FILTER_PROTO({$device_id}, {$data_type})'
     ]
     func_temp = [
-        '// --- Generating an IIR filter template (Direct Form II)',
+        f'// --- Generating a FIR-Allpass filter template',
         '// Copyright @ UDE-IES',
         f'// Code generated on: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}',
-        '// Params: N = {$filter_order}, f_c = [{$filter_corner}] Hz @ {$fs} Hz ({$filter_type})',
-        '// Used filter coefficient order (a_0, a_1, ... a_N, b_0, b_1, ..., b_N)',
+        '// Params: N = {$filter_order}, t_dly = {$t_dly} us @ {$fs} Hz',
         '# include "{$path2include}/{$template_name}"',
-        'DEF_NEW_IIR_FILTER_IMPL({$device_id}, {$data_type}, {$coeff_order}, {$tap_order}, {$coeffs_string})'
+        'DEF_NEW_FIR_FILTER_IMPL({$device_id}, {$data_type}, {$filter_order})'
     ]
 
     # --- Generate list with all metrics
@@ -103,6 +87,6 @@ def __generate_filter_iir_template() -> dict:
 
 
 if __name__ == '__main__':
-    path2save_out = '../../runs'
+    path2save = '../../runs'
 
-    generate_iir_filter_files(16, True, 0, 2, 1e3, [100], path2save=path2save_out)
+    generate_fir_allpass_files(14, True, 1, 1e3, 10e-3, path2save=path2save)
