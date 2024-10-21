@@ -52,17 +52,20 @@ class DatasetAE_Class(Dataset):
 
 
 def prepare_training(settings: Config_Dataset, path2model: str,
-                     add_noise_cluster=False, use_median_for_mean=True) -> DatasetAE_Class:
+                     add_noise_cluster=False, use_median_for_mean=True,
+                     print_state=True) -> DatasetAE_Class:
     """Preparing dataset incl. augmentation for spike-frame based training
     Args:
         settings:               Class for loading the data and do pre-processing
         path2model:             Path to already-trained autoencoder
         add_noise_cluster:      Adding the noise cluster to dataset
         use_median_for_mean:    Using median for calculating mean waveform (Boolean)
+        print_state:            Printing state and results into Terminal
     Returns:
         Dataloader for training autoencoder-based classifier
     """
-    print("... loading and processing the dataset")
+    if print_state:
+        print("... loading and processing the dataset")
     npzfile = loadmat(settings.get_path2data)
     frames_in = npzfile["frames_in"]
     frames_cl = npzfile["frames_cluster"].flatten() if 'frames_cluster' in npzfile else npzfile["frames_cl"].flatten()
@@ -76,14 +79,16 @@ def prepare_training(settings: Config_Dataset, path2model: str,
 
     # --- PART: Reducing samples per cluster (if too large)
     if settings.reduce_samples_per_cluster_do:
-        print("... reducing the samples per cluster (for pre-training on dedicated hardware)")
+        if print_state:
+            print("... reducing the samples per cluster (for pre-training on dedicated hardware)")
         frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
                                                              settings.reduce_samples_per_cluster_num,
                                                              do_shuffle=False)
 
     # --- PART: Data Normalization
     if settings.normalization_do:
-        print(f"... do data normalization")
+        if print_state:
+            print(f"... do data normalization")
         data_class_frames_in = DataNormalization(device=settings.normalization_mode,
                                                  method=settings.normalization_method,
                                                  mode=settings.normalization_setting)
@@ -119,7 +124,8 @@ def prepare_training(settings: Config_Dataset, path2model: str,
 
     # --- PART: Data Augmentation
     if settings.augmentation_do and not settings.reduce_samples_per_cluster_do:
-        print("... do data augmentation")
+        if print_state:
+            print("... do data augmentation")
         # new_frames, new_clusters = augmentation_mean_waveform(
         # frames_me, frames_cl, snr_mean, settings.data_num_augmentation)
         new_frames, new_clusters = augmentation_change_position(
@@ -133,7 +139,8 @@ def prepare_training(settings: Config_Dataset, path2model: str,
         info = np.unique(frames_cl, return_counts=True)
         num_cluster = np.max(info[0]) + 1
         num_frames = np.max(info[1])
-        print(f"... adding a non-neural noise-cluster with index #{num_cluster} and with {num_frames} samples")
+        if print_state:
+            print(f"... adding a non-neural noise-cluster with index #{num_cluster} and with {num_frames} samples")
 
         new_mean, new_clusters, new_frames = generate_zero_frames(frames_in.shape[1], num_frames, snr_range_zero)
         frames_in = np.append(frames_in, new_frames, axis=0)
@@ -149,11 +156,12 @@ def prepare_training(settings: Config_Dataset, path2model: str,
 
     # --- Output
     check = np.unique(frames_cl, return_counts=True)
-    print("... for training are", frames_in.shape[0], "frames with each", frames_in.shape[1], "points available")
-    print(f"... used data points for training: in total {check[0].size} classes with {np.sum(check[1])} samples")
-    for idx, id in enumerate(check[0]):
-        addon = f'' if len(frames_dict) == 0 else f' ({frames_dict[id]})'
-        print(f"\tclass {id}{addon} --> {check[1][idx]} samples")
+    if print_state:
+        print("... for training are", frames_in.shape[0], "frames with each", frames_in.shape[1], "points available")
+        print(f"... used data points for training: in total {check[0].size} classes with {np.sum(check[1])} samples")
+        for idx, id in enumerate(check[0]):
+            addon = f'' if len(frames_dict) == 0 else f' ({frames_dict[id]})'
+            print(f"\tclass {id}{addon} --> {check[1][idx]} samples")
 
     return DatasetAE_Class(frames_raw=frames_in, frames_feat=frames_feat, cluster_id=frames_cl,
                            frames_cluster_me=frames_me, cluster_dict=frames_dict)

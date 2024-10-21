@@ -93,12 +93,14 @@ class training_pytorch:
     selected_samples: dict
     cell_classes: list
 
-    def __init__(self, config_train: Config_PyTorch, config_dataset: Config_Dataset, do_train=True) -> None:
+    def __init__(self, config_train: Config_PyTorch, config_dataset: Config_Dataset,
+                 do_train=True, do_print=True) -> None:
         """Class for Handling Training of Deep Neural Networks in PyTorch
         Args:
             config_train:   Configuration settings for the PyTorch Training
             config_dataset: Configuration settings for dataset handling
             do_train:       Mention if training should be used (default = True)
+            do_print:       Printing the state and results into Terminal
         Returns:
             None
         """
@@ -119,6 +121,7 @@ class training_pytorch:
         self.settings_train = config_train
         self.settings_data = config_dataset
         self._index_folder = 'train' if do_train else 'inference'
+        self._do_print_state = do_print
         self._aitype = str()
         self._model_name = str()
         self._model_addon = str()
@@ -161,7 +164,9 @@ class training_pytorch:
             self.used_hw_dev = device("cpu")
             self.used_hw_num = cpuinfo.get_cpu_info()['count']
             device0 = self.used_hw_cpu
-        print(f"\nUsing PyTorch with {device0} on {self.os_type}")
+
+        if self._do_print_state:
+            print(f"\nUsing PyTorch with {device0} on {self.os_type}")
 
     def _init_train(self, path2save='', addon='') -> None:
         """Do init of class for training"""
@@ -205,10 +210,12 @@ class training_pytorch:
             backends.cudnn.deterministic = True
 
             use_deterministic_algorithms(True)
-            print(f"\n\t\t=== DL Training with Deterministic @seed: {self.settings_train.deterministic_seed} ===")
+            if self._do_print_state:
+                print(f"\n\t\t=== DL Training with Deterministic @seed: {self.settings_train.deterministic_seed} ===")
         else:
             use_deterministic_algorithms(False)
-            print(f"\n\t\t=== Normal DL Training ===")
+            if self._do_print_state:
+                print(f"\n\t\t=== Normal DL Training ===")
 
     def __deterministic_get_dataloader_params(self) -> dict:
         """Getting the parameters for preparing the Training and Validation DataLoader for Deterministic Training"""
@@ -364,8 +371,9 @@ class training_pytorch:
         diff_time = timestamp_end - timestamp_start
         diff_string = diff_time
 
-        print(f'\nTraining ends on: {timestamp_string}')
-        print(f'Training runs: {diff_string}')
+        if self._do_print_state:
+            print(f'\nTraining ends on: {timestamp_string}')
+            print(f'Training runs: {diff_string}')
 
         # Delete init model
         init_model = glob(join(self._path2save, '*_reset.pth'))
@@ -379,8 +387,9 @@ class training_pytorch:
                 rmtree(folder, ignore_errors=True)
 
         # Give the option to open TensorBoard
-        print("\nLook data on TensorBoard -> open Terminal")
-        print("Type in: tensorboard serve --logdir ./runs")
+        if self._do_print_state:
+            print("\nLook data on TensorBoard -> open Terminal")
+            print("Type in: tensorboard serve --logdir ./runs")
 
     def __get_data_points(self, only_getting_labels=False, use_train_dataloader=False) -> dict:
         """Getting data from DataLoader for Plotting Results
@@ -425,7 +434,8 @@ class training_pytorch:
         if results is None:
             results = {}
 
-        print(f"... preparing results for plot generation")
+        if self._do_print_state:
+            print(f"... preparing results for plot generation")
         data_train = self.__get_data_points(only_getting_labels=True, use_train_dataloader=True)
 
         output = dict()
@@ -435,6 +445,7 @@ class training_pytorch:
         output.update(results)
 
         data2save = join(self.get_saving_path(), f'results_{addon}.npy')
-        print(f"... saving results: {data2save}")
+        if self._do_print_state:
+            print(f"... saving results: {data2save}")
         np.save(data2save, output)
         return output

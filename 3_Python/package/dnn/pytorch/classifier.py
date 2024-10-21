@@ -7,9 +7,18 @@ from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training
 
 
 class train_nn(training_pytorch):
-    """Class for Handling the Training of Classifiers"""
-    def __init__(self, config_train: Config_PyTorch, config_data: Config_Dataset, do_train=True) -> None:
-        training_pytorch.__init__(self, config_train, config_data, do_train)
+    def __init__(self, config_train: Config_PyTorch, config_data: Config_Dataset,
+                 do_train=True, do_print=True) -> None:
+        """Class for Handling Training of Classifiers
+        Args:
+            config_data:            Settings for handling and loading the dataset (just for saving)
+            config_train:           Settings for handling the PyTorch Trainings Routine
+            do_train:               Do training of model otherwise only inference
+            do_print:               Printing the state and results into Terminal
+        Return:
+            None
+        """
+        training_pytorch.__init__(self, config_train, config_data, do_train, do_print)
 
     def __do_training_epoch(self) -> [float, float]:
         """Do training during epoch of training"""
@@ -63,7 +72,7 @@ class train_nn(training_pytorch):
         self._save_config_txt('_class')
 
         # --- Handling Kfold cross validation training
-        if self._kfold_do:
+        if self._kfold_do and self._do_print_state:
             print(f"Starting Kfold cross validation training in {self.settings_train.num_kfold} steps")
 
         path2model = str()
@@ -71,8 +80,9 @@ class train_nn(training_pytorch):
         save(self.model.state_dict(), path2model_init)
         timestamp_start = datetime.now()
         timestamp_string = timestamp_start.strftime('%H:%M:%S')
-        print(f'\nTraining starts on {timestamp_string}'
-              f"\n=====================================================================================")
+        if self._do_print_state:
+            print(f'\nTraining starts on {timestamp_string}'
+                  f"\n=====================================================================================")
 
         metric_out = dict()
         for fold in np.arange(self.settings_train.num_kfold):
@@ -88,7 +98,7 @@ class train_nn(training_pytorch):
             self._run_kfold = fold
             self._init_writer()
 
-            if self._kfold_do:
+            if self._kfold_do and self._do_print_state:
                 print(f'\nStarting with Fold #{fold}')
 
             for epoch in range(0, self.settings_train.num_epochs):
@@ -100,8 +110,7 @@ class train_nn(training_pytorch):
 
                 print(f'... results of epoch {epoch + 1}/{self.settings_train.num_epochs} '
                       f'[{(epoch + 1) / self.settings_train.num_epochs * 100:.2f} %]: '
-                      f'train_loss = {train_loss:.5f}, train_acc = {100 * train_acc:.2f} % - '
-                      f'valid_loss = {valid_loss:.5f}, valid_acc = {100 * valid_acc:.2f} % - '
+                      
                       f'delta_loss = {train_loss-valid_loss:.5f}, delta_acc = {100 * (train_acc-valid_acc):.4f} %')
 
                 # Log the running loss averaged per batch for both training and validation

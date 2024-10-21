@@ -18,9 +18,17 @@ def _calculate_snr(vdata_in: Tensor, vdata_mean: Tensor) -> Tensor:
 
 
 class train_nn(training_pytorch):
-    """Class for Handling Training of Autoencoders"""
-    def __init__(self, config_train: Config_PyTorch, config_data: Config_Dataset, do_train=True) -> None:
-        training_pytorch.__init__(self, config_train, config_data, do_train)
+    def __init__(self, config_train: Config_PyTorch, config_data: Config_Dataset, do_train=True, do_print=True) -> None:
+        """Class for Handling Training of Autoencoders
+        Args:
+            config_data:            Settings for handling and loading the dataset (just for saving)
+            config_train:           Settings for handling the PyTorch Trainings Routine
+            do_train:               Do training of model otherwise only inference
+            do_print:               Printing the state and results into Terminal
+        Return:
+            None
+        """
+        training_pytorch.__init__(self, config_train, config_data, do_train, do_print)
 
     def __do_training_epoch(self) -> float:
         """Do training during epoch of training"""
@@ -102,7 +110,7 @@ class train_nn(training_pytorch):
         self._save_config_txt('_ae')
 
         # --- Handling Kfold cross validation training
-        if self._kfold_do:
+        if self._kfold_do and self._do_print_state:
             print(f"Starting Kfold cross validation training in {self.settings_train.num_kfold} steps")
 
         metric_out = dict()
@@ -111,8 +119,9 @@ class train_nn(training_pytorch):
         save(self.model.state_dict(), path2model_init)
         timestamp_start = datetime.now()
         timestamp_string = timestamp_start.strftime('%H:%M:%S')
-        print(f'\nTraining starts on {timestamp_string}'
-              f"\n=====================================================================================")
+        if self._do_print_state:
+            print(f'\nTraining starts on {timestamp_string}'
+                  f"\n=====================================================================================")
 
         for fold in np.arange(self.settings_train.num_kfold):
             # --- Init fold
@@ -126,7 +135,7 @@ class train_nn(training_pytorch):
             self._run_kfold = fold
             self._init_writer()
 
-            if self._kfold_do:
+            if self._kfold_do and self._do_print_state:
                 print(f'\nStarting with Fold #{fold}')
 
             for epoch in range(0, self.settings_train.num_epochs):
@@ -136,11 +145,12 @@ class train_nn(training_pytorch):
                 loss_train = self.__do_training_epoch()
                 loss_valid = self.__do_valid_epoch()
 
-                print(f'... results of epoch {epoch + 1}/{self.settings_train.num_epochs} '
-                      f'[{(epoch + 1) / self.settings_train.num_epochs * 100:.2f} %]: '
-                      f'train_loss = {loss_train:.5f},'
-                      f'\tvalid_loss = {loss_valid:.5f},'
-                      f'\tdelta_loss = {loss_train-loss_valid:.6f}')
+                if self._do_print_state:
+                    print(f'... results of epoch {epoch + 1}/{self.settings_train.num_epochs} '
+                          f'[{(epoch + 1) / self.settings_train.num_epochs * 100:.2f} %]: '
+                          f'train_loss = {loss_train:.5f},'
+                          f'\tvalid_loss = {loss_valid:.5f},'
+                          f'\tdelta_loss = {loss_train-loss_valid:.6f}')
 
                 # Log the running loss averaged per batch for both training and validation
                 self._writer.add_scalar('Loss_train (AE)', loss_train, epoch+1)
@@ -165,7 +175,8 @@ class train_nn(training_pytorch):
 
                 # Early Stopping
                 if patience_counter <= 0:
-                    print(f"... training stopped due to no change after {epoch+1} epochs!")
+                    if self._do_print_state:
+                        print(f"... training stopped due to no change after {epoch+1} epochs!")
                     break
 
             copy(path2model, self._path2save)
@@ -188,8 +199,9 @@ class train_nn(training_pytorch):
 
         # --- Do the Inference with Best Model
         path2model = self.get_best_model('ae')[0]
-        print("\n================================================================="
-              f"\nDo Validation with best model: {path2model}")
+        if self._do_print_state:
+            print("\n================================================================="
+                  f"\nDo Validation with best model: {path2model}")
         model_test = load(path2model)
 
         pred_model = randn(32, 1)

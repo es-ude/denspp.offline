@@ -73,7 +73,9 @@ DefaultSettingsTrainCE = Config_PyTorch(
     num_epochs=10,
     batch_size=256,
     data_do_shuffle=True,
-    data_split_ratio=0.2
+    data_split_ratio=0.2,
+    deterministic_do=False,
+    deterministic_seed=42
 )
 
 
