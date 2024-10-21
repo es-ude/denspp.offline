@@ -68,7 +68,7 @@ def __generate_filter_fir_allpass_template() -> dict:
         f'// Code generated on: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}',
         '// Params: N = {$filter_order}, t_dly = {$t_dly} us @ {$fs} Hz',
         '# include "{$path2include}/{$template_name}"',
-        'DEF_NEW_FIR_FILTER_PROTO({$device_id}, {$data_type})'
+        'DEF_NEW_FIR_ALL_FILTER_PROTO({$device_id}, {$data_type})'
     ]
     func_temp = [
         f'// --- Generating a FIR-Allpass filter template',
@@ -76,7 +76,7 @@ def __generate_filter_fir_allpass_template() -> dict:
         f'// Code generated on: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}',
         '// Params: N = {$filter_order}, t_dly = {$t_dly} us @ {$fs} Hz',
         '# include "{$path2include}/{$template_name}"',
-        'DEF_NEW_FIR_FILTER_IMPL({$device_id}, {$data_type}, {$filter_order})'
+        'DEF_NEW_FIR_ALL_FILTER_IMPL({$device_id}, {$data_type}, {$filter_order})'
     ]
 
     # --- Generate list with all metrics

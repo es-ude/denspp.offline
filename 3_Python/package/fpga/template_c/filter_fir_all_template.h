@@ -36,8 +36,8 @@ input_type calc_filter_fir_all (input_type data, FirAllFilter *filter) { \
 }
 
 
-#define DEF_NEW_FIR_ALL_FILTER_IMPL(id, input_type, order, ...) \
-    static DEF_CALC_FIR_ALL(input_type) \
+#define DEF_NEW_FIR_ALL_FILTER_IMPL(id, input_type, order) \
+    static DEF_CALC_FIR_ALLPASS(input_type) \
     \
     input_type calc_filter_fir_all_ ## id (input_type data) { \
         static input_type filter_taps [order] = {0}; \
@@ -52,7 +52,7 @@ input_type calc_filter_fir_all (input_type data, FirAllFilter *filter) { \
     }
 
 
-#define DEF_NEW_FIR_FILTER_PROTO(id, input_type) \
+#define DEF_NEW_FIR_ALL_FILTER_PROTO(id, input_type) \
     input_type calc_filter_fir_all_ ## id (input_type data);
 
 
