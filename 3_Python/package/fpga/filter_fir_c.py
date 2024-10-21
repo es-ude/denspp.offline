@@ -4,8 +4,8 @@ from os.path import join, isdir
 from datetime import datetime
 
 from package.fpga.helper.emulator_filter import filter_stage
-from package.fpga.helper.translate_c import (get_embedded_datatype, replace_variables_with_parameters,
-                                             generate_params_list)
+from package.fpga.helper.translater import (get_embedded_datatype, replace_variables_with_parameters,
+                                            generate_params_list)
 
 
 def generate_fir_filter_files(data_bitsize: int, data_signed: bool, filter_id: int,
@@ -40,6 +40,7 @@ def generate_fir_filter_files(data_bitsize: int, data_signed: bool, filter_id: i
     template_c = __generate_filter_fir_template(do_optimized)
 
     params = {
+        'datetime_created': datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
         'path2include': 'lib',
         'template_name': 'filter_fir_template.h',
         'device_id': str(filter_id),
@@ -83,7 +84,7 @@ def __generate_filter_fir_template(do_opt: bool) -> dict:
     header_temp = [
         f'// --- Generating a FIR filter template ({version_fir})',
         '// Copyright @ UDE-IES',
-        f'// Code generated on: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}',
+        '// Code generated on: {$datetime_created}',
         '// Params: N = {$filter_order}, f_c = [{$filter_corner}] Hz @ {$fs} Hz ({$filter_type})',
         '// Used filter coefficient order (b_0, b_1, b_2, ..., b_N)',
         '# include "{$path2include}/{$template_name}"',
@@ -92,7 +93,7 @@ def __generate_filter_fir_template(do_opt: bool) -> dict:
     func_temp = [
         f'// --- Generating a FIR filter template ({version_fir})',
         '// Copyright @ UDE-IES',
-        f'// Code generated on: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}',
+        '// Code generated on: {$datetime_created}',
         '// Params: N = {$filter_order}, f_c = [{$filter_corner}] Hz @ {$fs} Hz ({$filter_type})',
         '// Used filter coefficient order (b_0, b_1, b_2, ..., b_N)',
         '# include "{$path2include}/{$template_name}"',

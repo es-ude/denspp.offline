@@ -3,7 +3,8 @@ from shutil import copyfile
 from os.path import join, isdir
 from datetime import datetime
 
-from package.fpga.helper.translate_c import get_embedded_datatype, replace_variables_with_parameters
+from package.fpga.helper.translater import (get_embedded_datatype, replace_variables_with_parameters,
+                                            generate_params_list)
 
 
 def generate_moving_avg_files(data_bitsize: int, data_signed: bool, module_id: int,
@@ -25,6 +26,7 @@ def generate_moving_avg_files(data_bitsize: int, data_signed: bool, module_id: i
     template_c = __generate_filter_mavg_template()
 
     params = {
+        'datetime_created': datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
         'path2include': 'lib',
         'template_name': 'filter_mavg_template.h',
         'device_id': str(module_id),
@@ -62,12 +64,10 @@ def __generate_filter_mavg_template() -> dict:
     Return:
         Dictionary with infos for prototype ['head'], implementation ['func'] and used parameters ['params']
     """
-    params_temp = ['path2include', 'template_name', 'device_id', 'data_type',
-                   'fs', 'filter_order', 'filter_coeff']
     header_temp = [
         f'// --- Generating a moving average',
         '// Copyright @ UDE-IES',
-        f'// Code generated on: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}',
+        '// Code generated on: {$datetime_created}',
         '// Params: N = {$filter_order}, f_s = {$fs} Hz',
         '# include "{$path2include}/{$template_name}"',
         'DEF_NEW_MAVG_FILTER_PROTO({$device_id}, {$data_type})'
@@ -75,11 +75,16 @@ def __generate_filter_mavg_template() -> dict:
     func_temp = [
         f'// --- Generating a moving average filter',
         '// Copyright @ UDE-IES',
-        f'// Code generated on: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}',
+        '// Code generated on: {$datetime_created}',
         '// Params: N = {$filter_order}, f_s = {$fs} Hz',
         '# include "{$path2include}/{$template_name}"',
         'DEF_NEW_MAVG_FILTER_IMPL({$device_id}, {$data_type}, {$filter_order}, {$filter_coeff})'
     ]
+
+    # --- Generate list with all metrics
+    params_temp = generate_params_list(header_temp)
+    params_temp = generate_params_list(func_temp, params_temp)
+
     return {'head': header_temp, 'func': func_temp, 'params': params_temp}
 
 

@@ -3,8 +3,8 @@ from shutil import copyfile
 from os.path import join, isdir
 from datetime import datetime
 
-from package.fpga.helper.translate_c import (get_embedded_datatype, replace_variables_with_parameters,
-                                             generate_params_list)
+from package.fpga.helper.translater import (get_embedded_datatype, replace_variables_with_parameters,
+                                            generate_params_list)
 
 
 def generate_fir_allpass_files(data_bitsize: int, data_signed: bool, filter_id: int,
@@ -27,6 +27,7 @@ def generate_fir_allpass_files(data_bitsize: int, data_signed: bool, filter_id: 
     filter_order = int(sampling_rate * t_dly)
 
     params = {
+        'datetime_created': datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
         'path2include': 'lib',
         'template_name': 'filter_fir_all_template.h',
         'device_id': str(filter_id),
@@ -65,7 +66,7 @@ def __generate_filter_fir_allpass_template() -> dict:
     header_temp = [
         f'// --- Generating a FIR-Allpass filter template',
         '// Copyright @ UDE-IES',
-        f'// Code generated on: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}',
+        '// Code generated on: {$datetime_created}',
         '// Params: N = {$filter_order}, t_dly = {$t_dly} us @ {$fs} Hz',
         '# include "{$path2include}/{$template_name}"',
         'DEF_NEW_FIR_ALL_FILTER_PROTO({$device_id}, {$data_type})'
@@ -73,7 +74,7 @@ def __generate_filter_fir_allpass_template() -> dict:
     func_temp = [
         f'// --- Generating a FIR-Allpass filter template',
         '// Copyright @ UDE-IES',
-        f'// Code generated on: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}',
+        '// Code generated on: {$datetime_created}',
         '// Params: N = {$filter_order}, t_dly = {$t_dly} us @ {$fs} Hz',
         '# include "{$path2include}/{$template_name}"',
         'DEF_NEW_FIR_ALL_FILTER_IMPL({$device_id}, {$data_type}, {$filter_order})'

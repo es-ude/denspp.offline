@@ -5,7 +5,7 @@ from datetime import datetime
 from shutil import copyfile
 
 from package.fpga.helper.signal_type import generation_sinusoidal_waveform
-from package.fpga.helper.translate_c import get_embedded_datatype, replace_variables_with_parameters
+from package.fpga.helper.translater import get_embedded_datatype, replace_variables_with_parameters
 
 
 def generate_lut_files(bitsize_lut: int, f_sys: float, f_rpt: float, f_sine: float,
@@ -34,6 +34,7 @@ def generate_lut_files(bitsize_lut: int, f_sys: float, f_rpt: float, f_sine: flo
 
     # --- Step #2: Generating the values for parameter dict
     params = {
+        'datetime_created': datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
         'path2include':     'lib',
         'template_name':    'waveform_lut_template.h',
         'device_id':        str(device_id),
@@ -84,7 +85,7 @@ def __generate_waveform_lut_template(do_full_opt: bool) -> dict:
     header_temp = [
         f'// --- Generating a Waveform LUT Caller ({use_option})',
         '// Copyright @ UDE-IES',
-        f'// Code generated on: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}',
+        '// Code generated on: {$datetime_created}',
         '// Params: N_LUT = {$num_lutsine}',
         '// Used LUT data order (a_0, a_1, ... a_N)',
         '# include "{$path2include}/{$template_name}"',
@@ -93,7 +94,7 @@ def __generate_waveform_lut_template(do_full_opt: bool) -> dict:
     func_temp = [
         f'// --- Generating a Waveform LUT Caller ({use_option})',
         '// Copyright @ UDE-IES',
-        f'// Code generated on: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}',
+        '// Code generated on: {$datetime_created}',
         '// Params: N_LUT = {$num_lutsine}',
         '// Used LUT data order (a_0, a_1, ... a_N)',
         '# include "{$path2include}/{$template_name}"',

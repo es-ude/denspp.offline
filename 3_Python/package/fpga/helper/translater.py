@@ -100,3 +100,18 @@ def generate_params_list(template_list: list, old_library_list=None) -> list:
                 new_params_list = chck_key_in_list_available(param_search, new_params_list)
 
     return new_params_list
+
+
+def read_template_design_file(path2template: str) -> dict:
+    """Function for reading a design template file with changed inputs
+    Args:
+        path2template:  Path to design template file
+    Return:
+        Dictionary with infos for prototype ['head'] (opt.), implementation ['func'] and used parameters ['params']
+    """
+    func_temp = list()
+    with open(path2template, 'r') as v_handler:
+        for line in v_handler:
+            func_temp.append(line)
+    v_handler.close()
+    return {'func': func_temp, 'params': generate_params_list(func_temp)}
