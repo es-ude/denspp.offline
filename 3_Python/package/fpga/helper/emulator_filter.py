@@ -6,20 +6,24 @@ from package.plot.plot_common import save_figure
 
 
 class filter_stage:
-    __filter_btype = {'low': 'lowpass', 'high': 'highpass', 'bandpass': 'bandpass', 'bandstop': 'bandstop'}
-    __filter_ftype = {'butter': 'butter', 'cheby1': 'cheby1', 'cheby2': 'cheby2', 'ellip': 'ellip', 'bessel': 'bessel'}
+    __filt_btype = {'low': 'lowpass', 'high': 'highpass', 'bandpass': 'bandpass',
+                    'bandstop': 'bandstop', 'all': 'allpass'}
+    __filt_ftype = {'butter': 'butter', 'cheby1': 'cheby1', 'cheby2': 'cheby2',
+                    'ellip': 'ellip', 'bessel': 'bessel'}
     __coeff_a: np.ndarray
     __coeff_b: np.ndarray
 
     def __init__(self, N: int, fs: float, f_filter: list, use_iir_filter: bool,
                  btype='low', ftype='butter', use_filtfilt=False):
         """Class for filtering and getting the filter coefficient
+        (If using Allpass
         Args:
             N:                  Order number of used filter
             fs:                 Sampling rate of data stream
-            f_filter:           Filter coefficient
-            btype:              Used filter type ['low', 'high', 'bandpass', 'bandstop']
-            ftype:              Used filter type ['butter', 'cheby1', 'cheby2', 'ellip', 'bessel']
+            f_filter:           Filter corner frequency as list ('low', 'high', 'all' (1st order) = [f_c]
+                                and 'bandpass', 'bandstop' = [f_c0, f_c1] and 'all' (2nd order)' = [f_dly and f_b])
+            btype:              Used filter type ['low', 'high', 'bandpass', 'bandstop', 'all' (IIR, 1st/2nd Order)]
+            ftype:              Used filter design ['butter', 'cheby1', 'cheby2', 'ellip', 'bessel']
             use_iir_filter:     Used filter topology [True: IIR, False: FIR]
             use_filtfilt:       Using filtfilt functionality from scipy.signal (Zero-phase filtering)
         """
@@ -31,29 +35,49 @@ class filter_stage:
         self.__filter_type_iir_used = use_iir_filter
         self.__filter_order = N
         self.__filter_corner = np.array(f_filter, dtype='float')
-        self.__filter_ftype = self.__get_filter_ftype(ftype)
-        self.__filter_btype = self.__get_filter_btype(btype)
+        self.__filt_ftype = self.__get_filter_ftype(ftype)
+        self.__filt_btype = self.__get_filter_btype(btype)
         self.__extract_filter_params()
 
     def __extract_filter_params(self) -> None:
         """Extracting the filter coefficient with used settings"""
-        if self.__filter_type_iir_used:
-            # --- Defining an IIR filter
+        if self.__filter_type_iir_used and not self.__filt_btype == 'allpass':
+            # --- Defining an IIR filter (excluding allpass)
             filter_params = scft.iirfilter(
                 N=self.__filter_order, Wn=2 * self.__filter_corner / self.__sampling_rate,
-                btype=self.__filter_btype, ftype=self.__filter_ftype,
+                btype=self.__filt_btype, ftype=self.__filt_ftype,
                 analog=False, output='ba'
             )
             self.__coeff_b = filter_params[0]
             self.__coeffb_defined = True
-            self.__coeff_a = filter_params[1]
+            self.__coeff_a = np.array(filter_params[1])
             self.__coeffa_defined = True
+        elif self.__filter_type_iir_used and self.__filt_btype == 'allpass':
+            match self.__filter_order:
+                case 1:
+                    # --- Getting the coefficient (First Order)
+                    val = np.tan(np.pi * self.__filter_corner[0] / self.__sampling_rate)
+                    iir_c0 = (val - 1) / (val + 1)
+                    self.__coeff_b = np.array([iir_c0, 1.0])
+                    self.__coeff_a = np.array([1.0, iir_c0])
+                case 2:
+                    # --- Getting the coefficient (Second Order)
+                    val = np.tan(np.pi * self.__filter_corner[1] / self.__sampling_rate)
+                    iir_c0 = (val - 1) / (val + 1)
+                    iir_c1 = -np.cos(2 * np.pi * self.__filter_corner[0] / self.__sampling_rate)
+                    self.__coeff_b = np.array([-iir_c0, iir_c1 * (1 - iir_c0), 1.0])
+                    self.__coeff_a = np.array([1.0, iir_c1 * (1 - iir_c0), -iir_c0])
+                case _:
+                    raise NotImplementedError("Allpass IIR-filters are only implemented for 1st and 2nd order! "
+                                              "- Please change!")
+        elif self.__filter_type_iir_used and self.__filt_btype == 'allpass':
+            raise NotImplementedError("Allpass Filter is only implemented for IIR filter types!")
         else:
             # --- Defining a FIR filter
             filter_params = scft.firwin(
                 numtaps=self.__filter_order,
                 cutoff=self.__filter_corner, fs=self.__sampling_rate,
-                pass_zero=self.__filter_btype
+                pass_zero=self.__filt_btype
             )
             self.__coeff_b = filter_params
             self.__coeffb_defined = True
@@ -63,7 +87,7 @@ class filter_stage:
     def __get_filter_btype(self, type_used: str) -> str:
         """Definition of the filter type used in scipy function"""
         type_out = ''
-        for key, type0 in self.__filter_btype.items():
+        for key, type0 in self.__filt_btype.items():
             if type_used is key:
                 type_out = type0
                 break
@@ -74,7 +98,7 @@ class filter_stage:
     def __get_filter_ftype(self, type_used: str) -> str:
         """Definition of the filter type used in scipy function"""
         type_out = ''
-        for key, type0 in self.__filter_ftype.items():
+        for key, type0 in self.__filt_ftype.items():
             if type_used is key:
                 type_out = type0
                 break
@@ -162,7 +186,8 @@ class filter_stage:
             coeffb = self.__coeff_b.tolist()
             coeffb_error.append([0.0 for idx in self.__coeff_b])
 
-        return {'coeffa': coeffa, 'coeffa_error': coeffa_error, 'coeffb': coeffb, 'coeffb_error': coeffb_error}
+        return {'coeffa': np.array(coeffa), 'coeffa_error': np.array(coeffa_error),
+                'coeffb': np.array(coeffb), 'coeffb_error': np.array(coeffb_error)}
 
     def get_coeff_verilog(self, bit_size: int, bit_frac: int, signed=True, do_print=False) -> list:
         """Printing the filter coefficient for Verilog in quantized matter
@@ -175,7 +200,8 @@ class filter_stage:
             List with string output
         """
         print_out = list()
-        print(f"\n//--- Used filter coefficients for {self.__filter_ftype, self.__filter_btype} with {self.__filter_corner / 1000:.3f} kHz @ {self.__sampling_rate / 1000:.3f} kHz")
+        print(f"\n//--- Used filter coefficients for {self.__filt_ftype, self.__filt_btype} with "
+              f"{self.__filter_corner / 1000:.3f} kHz @ {self.__sampling_rate / 1000:.3f} kHz")
         if self.__filter_type_iir_used:
             coeffa_size = len(self.__coeff_a)
             print_out.append(f"wire signed [{bit_size - 1:d}:0] coeff_a [{coeffa_size - 1:d}:0];")
@@ -209,7 +235,7 @@ class filter_stage:
         if self.__filter_type_iir_used:
             fout = scft.iirfilter(
                 N=self.__filter_order, Wn=self.__filter_corner,
-                btype=self.__filter_btype, ftype=self.__filter_ftype, analog=True,
+                btype=self.__filt_btype, ftype=self.__filt_ftype, analog=True,
                 output='ba'
             )
             w, h = scft.freqs(b=fout[0], a=fout[1], worN=freq)

@@ -8,7 +8,8 @@ from package.fpga.helper.translate_c import get_embedded_datatype, replace_varia
 
 
 def generate_iir_filter_files(data_bitsize: int, data_signed: bool, filter_id: int,
-                              filter_order: int, sampling_rate: float, filter_corner: list, filter_type='low',
+                              filter_order: int, sampling_rate: float, filter_corner: list,
+                              filter_btype='low', filter_ftype='butter',
                               file_name='filter_iir', path2save='') -> None:
     """Generating C files for IIR filtering on microcontroller
     Args:
@@ -18,13 +19,15 @@ def generate_iir_filter_files(data_bitsize: int, data_signed: bool, filter_id: i
         filter_order:   Order of the filter
         sampling_rate:  Sampling clock of data stream processing
         filter_corner:  list with corner frequency for used filter
-        filter_type:    Type of the filter used ['low', 'high', 'bandpass', 'bandstop', 'notch', 'all']
+        filter_btype:   Used filter type ['low', 'high', 'bandpass', 'bandstop', 'all' (only 1st, 2nd order)]
+        filter_ftype:   Used filter design ['butter', 'cheby1', 'cheby2', 'ellip', 'bessel']
         file_name:      Name of the generated files
         path2save:      Path for saving the verilog output files
     Return:
         None
     """
-    filter_emulator = filter_stage(filter_order, sampling_rate, filter_corner, True, btype=filter_type)
+    filter_emulator = filter_stage(filter_order, sampling_rate, filter_corner, True,
+                                   ftype=filter_ftype, btype=filter_btype)
     filter_coeff = filter_emulator.get_coeff_full()
     filter_coeff_used = ', '.join(map(str, filter_coeff['coeffa'])) + ', ' + ', '.join(map(str, filter_coeff['coeffb']))
 
@@ -37,6 +40,7 @@ def generate_iir_filter_files(data_bitsize: int, data_signed: bool, filter_id: i
         'device_id': str(filter_id),
         'data_type': data_type_filter,
         'fs': f'{sampling_rate}',
+        'filter_type': f'{filter_btype}, butter',
         'filter_corner': ', '.join(map(str, filter_corner)),
         'filter_order': str(filter_order),
         'coeff_order': str(filter_order+1),
@@ -80,7 +84,7 @@ def __generate_filter_iir_template() -> dict:
         '// --- Generating an IIR filter template (Direct Form II)',
         '// Copyright @ UDE-IES',
         f'// Code generated on: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}',
-        '// Params: N = {$filter_order}, f_c = [{$filter_corner}] Hz @ {$fs} Hz',
+        '// Params: N = {$filter_order}, f_c = [{$filter_corner}] Hz @ {$fs} Hz ({$filter_type})',
         '// Used filter coefficient order (b_0, b_1, b_2, ..., b_N)',
         '# include "{$path2include}/{$template_name}"',
         'DEF_NEW_IIR_FILTER_PROTO({$device_id}, {$data_type})'
@@ -89,7 +93,7 @@ def __generate_filter_iir_template() -> dict:
         '// --- Generating an IIR filter template (Direct Form II)',
         '// Copyright @ UDE-IES',
         f'// Code generated on: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}',
-        '// Params: N = {$filter_order}, f_c = [{$filter_corner}] Hz @ {$fs} Hz',
+        '// Params: N = {$filter_order}, f_c = [{$filter_corner}] Hz @ {$fs} Hz ({$filter_type})',
         '// Used filter coefficient order (a_0, a_1, ... a_N, b_0, b_1, ..., b_N)',
         '# include "{$path2include}/{$template_name}"',
         'DEF_NEW_IIR_FILTER_IMPL({$device_id}, {$data_type}, {$coeff_order}, {$tap_order}, {$coeffs_string})'
