@@ -90,4 +90,4 @@ def __generate_filter_fir_allpass_template() -> dict:
 if __name__ == '__main__':
     path2save = '../../runs'
 
-    generate_fir_allpass_files(14, True, 1, 1e3, 10e-3, path2save=path2save)
+    generate_fir_allpass_files(16, True, 0, 1e3, 10e-3, path2save=path2save)
