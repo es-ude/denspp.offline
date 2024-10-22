@@ -106,4 +106,6 @@ def __generate_filter_iir_template() -> dict:
 if __name__ == '__main__':
     path2save_out = '../../runs'
 
-    generate_iir_filter_files(16, True, 0, 2, 1e3, [100], path2save=path2save_out)
+    # generate_iir_filter_files(16, True, 0, 2, 1e3, [100], path2save=path2save_out)
+    generate_iir_filter_files(16, True, 1, 2, 1e3, [100, 200],
+                              filter_btype='all', path2save=path2save_out)

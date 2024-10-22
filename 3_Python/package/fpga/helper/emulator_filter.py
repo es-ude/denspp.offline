@@ -20,8 +20,8 @@ class filter_stage:
         Args:
             N:                  Order number of used filter
             fs:                 Sampling rate of data stream
-            f_filter:           Filter corner frequency as list ('low', 'high', 'all' (1st order) = [f_c]
-                                and 'bandpass', 'bandstop' = [f_c0, f_c1] and 'all' (2nd order)' = [f_dly and f_b])
+            f_filter:           Filter corner frequency as list ('low', 'high', 'all' (1st order) = [f_brk]
+                                and 'bandpass', 'bandstop' = [f_c0, f_c1] and 'all' (2nd order)' = [f_brk and f_bw])
             btype:              Used filter type ['low', 'high', 'bandpass', 'bandstop', 'all' (IIR, 1st/2nd Order)]
             ftype:              Used filter design ['butter', 'cheby1', 'cheby2', 'ellip', 'bessel']
             use_iir_filter:     Used filter topology [True: IIR, False: FIR]
@@ -59,14 +59,18 @@ class filter_stage:
                     val = np.tan(np.pi * self.__filter_corner[0] / self.__sampling_rate)
                     iir_c0 = (val - 1) / (val + 1)
                     self.__coeff_b = np.array([iir_c0, 1.0])
+                    self.__coeffb_defined = True
                     self.__coeff_a = np.array([1.0, iir_c0])
+                    self.__coeffa_defined = True
                 case 2:
                     # --- Getting the coefficient (Second Order)
                     val = np.tan(np.pi * self.__filter_corner[1] / self.__sampling_rate)
                     iir_c0 = (val - 1) / (val + 1)
                     iir_c1 = -np.cos(2 * np.pi * self.__filter_corner[0] / self.__sampling_rate)
                     self.__coeff_b = np.array([-iir_c0, iir_c1 * (1 - iir_c0), 1.0])
+                    self.__coeffb_defined = True
                     self.__coeff_a = np.array([1.0, iir_c1 * (1 - iir_c0), -iir_c0])
+                    self.__coeffa_defined = True
                 case _:
                     raise NotImplementedError("Allpass IIR-filters are only implemented for 1st and 2nd order! "
                                               "- Please change!")
