@@ -2,7 +2,6 @@ import numpy as np
 import scipy.signal as scft
 import matplotlib.pyplot as plt
 from fxpmath import Fxp
-from package.plot.plot_common import save_figure
 
 
 class filter_stage:
@@ -205,7 +204,7 @@ class filter_stage:
         """
         print_out = list()
         print(f"\n//--- Used filter coefficients for {self.__filt_ftype, self.__filt_btype} with "
-              f"{self.__filter_corner / 1000:.3f} kHz @ {self.__sampling_rate / 1000:.3f} kHz")
+              f"{self.__filter_corner[0] / 1000:.3f} kHz @ {self.__sampling_rate / 1000:.3f} kHz")
         if self.__filter_type_iir_used:
             coeffa_size = len(self.__coeff_a)
             print_out.append(f"wire signed [{bit_size - 1:d}:0] coeff_a [{coeffa_size - 1:d}:0];")
@@ -213,7 +212,7 @@ class filter_stage:
                 quant = Fxp(-coeff, signed=signed, n_word=bit_size, n_frac=bit_frac)
                 print_out.append(f"assign coeff_a[{id}] = {bit_size}'b{quant.bin(False)}; "
                                  f"//coeff_a[{id}] = {float(quant):.6f} = {quant.hex()}")
-            print_out.append('\fn')
+            print_out.append('\n')
 
         coeffb_size = len(self.__coeff_b)
         print_out.append(f"wire signed [{bit_size - 1:d}:0] coeff_b [{coeffb_size - 1:d}:0];")
@@ -282,8 +281,8 @@ def plot_bode_diagramm(freq: np.ndarray, gain: np.ndarray, phase: np.ndarray, pa
 
     plt.tight_layout()
     plt.subplots_adjust(hspace=0.05)
-    if path2save:
-        save_figure(plt, path2save, 'filter_charac_bode')
+    # if path2save:
+        # save_figure(plt, path2save, 'filter_charac_bode')
     plt.show(block=True)
 
 
