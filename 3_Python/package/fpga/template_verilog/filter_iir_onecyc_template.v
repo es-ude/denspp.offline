@@ -25,7 +25,7 @@
 
 // Input values are integer or unsigned with size of BITWIDTH_DATA (no fixed point)
 // Internal operation with signed values and all weights have fraction width of BITWIDTH_DATA-'d2;
-module Filter_IIR_OneCyc#(
+module Filter_IIR_{$device_id}#(
     parameter BITWIDTH_DATA = 6'd{$bitwidth_data},
     parameter uint_io = 1'b{$signed_data},
     parameter BITWIDTH_WEIGHTS = 6'd{$bitwidth_weights}
