@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any
 from os import getcwd
-from os.path import join, isabs
+from os.path import join, isabs, abspath
 from torch import optim, nn
 
 
@@ -102,28 +102,29 @@ class Config_Dataset:
     def get_path2data(self) -> str:
         """Getting the path name to the file"""
         if isabs(self.data_path):
-            return join(self.data_path, self.data_file_name)
+            path = join(self.data_path, self.data_file_name)
         elif self.data_path == 'data':
-            return join(self.get_path2folder_data, self.data_file_name)
+            path = join(self.get_path2folder_data, self.data_file_name)
         elif not self.data_path == '':
-            return join(self.get_path2folder_project, self.data_path, self.data_file_name)
+            path = join(self.get_path2folder_project, self.data_path, self.data_file_name)
         else:
-            return join(self.get_path2folder_examples, self.data_file_name)
+            path = join(self.get_path2folder_examples, self.data_file_name)
+        return abspath(path)
 
     @property
     def get_path2folder_data(self) -> str:
         """Getting the default path of the data inside the Python Project"""
-        return join(self.get_path2folder_project, 'data')
+        return abspath(join(self.get_path2folder_project, 'data'))
 
     @property
     def get_path2folder_project(self, start_folder='3_Python') -> str:
         """Getting the default path of the Python Project"""
-        return join(getcwd().split(start_folder)[0], start_folder)
+        return abspath(join(getcwd().split(start_folder)[0], start_folder))
 
     @property
     def get_path2folder_examples(self, start_folder='3_Python') -> str:
         """Getting the default path to data from repository"""
-        return join(getcwd().split(start_folder)[0], '2_Data', '00_Merged_Datasets')
+        return abspath(join(getcwd().split(start_folder)[0], '2_Data', '00_Merged_Datasets'))
 
 
 DefaultSettingsDataset = Config_Dataset(
