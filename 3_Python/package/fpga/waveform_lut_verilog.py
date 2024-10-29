@@ -96,6 +96,7 @@ def generate_sinelut(bitsize_lut: int,
         None
     """
     sine_lut = generation_sinusoidal_waveform(bitsize_lut, f_rpt, f_sine, do_optimized=do_optimized)
+    template_sinelut = __generate_lut_verilog_module(do_optimized)
 
     # Bitwidth declaration
     num_cntsize = f_sys / f_rpt
@@ -111,35 +112,10 @@ def generate_sinelut(bitsize_lut: int,
     if path2save and not isdir(path2save):
         mkdir(path2save)
 
-    file_content = [
-        f'`timescale 1ns / 1ps',
-        f'// ---------------------------------------------------',
-        f'// Company: UDE-ES',
-        f'// Design Name: SineLUT Generator',
-        f'// Generate file on: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}',
-        f'// Original sinusoidal frequency = {f_sine / 1e3: .1f} kHz',
-        f'// Size of SineLUT array: {sine_lut.size} ({size_lut_sine} bit)',
-        f'// ---------------------------------------------------\n',
-        f'module SineWFG_LUT#(',
-        f'\tparameter CNT_VAL_SIZE = 6\'d{size_cnt_wait}',
-        f')(',
-        f'\tinput wire CLK_SYS,',
-        f'\tinput wire nRST,',
-        f'\tinput wire EN,',
-        f'\tinput wire [CNT_VAL_SIZE-\'d1:0] CNT_VAL,'
-        f'\toutput wire' + 'signed' if out_signed else '' + f'[{bitsize_lut - 1}:0] SINE',
-        f');\n',
-        f'localparam SIZE_SINE_LUT = 8\'d{sine_lut.size};\n',
-        f'reg [1:0] cnt_phase;\n' if do_optimized else '',
-        f'reg [{size_cnt_sine - 1}:0] cnt_sine;',
-        f'reg [CNT_VAL_SIZE-\'d1:0] cnt_wait;',
-        f'wire' + 'signed' if out_signed else '' + f'[{size_ram}:0] sine_lutram [{sine_lut.size - 1}:0];'
-    ]
-
     # --- Generating verilog files
     print('... create verilog file for handling data (*.v)')
     with open(join(path2save, 'SINE_WFG.v'), 'w') as v_handler:
-        for line in file_content:
+        for line in template_sinelut:
             v_handler.write(line + '\n')
 
         if do_optimized and not out_signed:
@@ -186,6 +162,38 @@ def generate_sinelut(bitsize_lut: int,
         # --- End of module
         v_handler.write(f'\nendmodule\n')
     v_handler.close()
+
+
+def __generate_lut_verilog_module(do_optimized: bool) -> list:
+    """Generating the Code for writing in verilog file for testbench the code"""
+    params = [
+        'num_sinelut', 'bitsize_lut', 'wait_cntval', 'signed_type', 'num_cntsize', 'size_ram'
+    ]
+    file_content = [
+        '`timescale 1ns / 1ps',
+        '// ---------------------------------------------------',
+        '// Company: UDE-ES',
+        '// Design Name: SineLUT Generator',
+        f'// Generate file on: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}',
+        '// Original sinusoidal frequency = {f_sine / 1e3: .1f} kHz',
+        '// Size of SineLUT array: {$num_sinelut} ({$bitsize_lut} bit)',
+        '// ---------------------------------------------------\n',
+        'module SineWFG_LUT#(',
+        '\tparameter CNT_VAL_SIZE = 6\'d{$wait_cntval}',
+        ')(',
+        '\tinput wire CLK_SYS,',
+        '\tinput wire nRST,',
+        '\tinput wire EN,',
+        '\tinput wire [CNT_VAL_SIZE-\'d1:0] CNT_VAL,'
+        '\toutput wire {$signed_type} [{$bitsize_lut}-1:0] SINE',
+        ');\n',
+        'localparam SIZE_SINE_LUT = 8\'d{$num_sinelut};\n',
+        'reg [1:0] cnt_phase;\n' if do_optimized else '',
+        'reg [{$num_cntsize}-1:0] cnt_sine;',
+        'reg [CNT_VAL_SIZE-\'d1:0] cnt_wait;',
+        'wire {$signed_type} [{$size_ram}:0] sine_lutram [{$num_sinelut}-1:0];'
+    ]
+    return file_content
 
 
 if __name__ == '__main__':
