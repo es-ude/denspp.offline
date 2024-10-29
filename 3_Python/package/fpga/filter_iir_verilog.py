@@ -15,6 +15,7 @@ def generate_iir_filter_files(data_bitsize: int, data_signed: bool,
                               mode_multiplier=0, use_fast_iir=False, use_ram_coeff=False, weights_bitsize=0,
                               file_name='filter_iir', path2save='') -> None:
     """Generating Verilog files for IIR filtering (SOS structure / 2nd filter order) on FPGAs/ASICs
+    (Fraction of all weights have data_bitsize-2)
     Args:
         data_bitsize:       Used quantization level for data stream
         data_bitfrac:       Fraction size of used bitwidth

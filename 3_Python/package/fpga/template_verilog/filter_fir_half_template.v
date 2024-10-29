@@ -7,10 +7,10 @@
 // Module Name:     FIR Filter (Half weights, with One Multiplier)
 // Target Devices:  ASIC (using own multiplier with //'define *_USE_OWN_MULT)
 //                  FPGA (using multiplier from DSP slice)
-// Tool Versions:   1v0
+// Tool Versions:   1v1
 // Description:     Performing a FIR filtering on FPGA with custom made filter coefficients (Half coefficient implementation)
 // Processing:      Data applied on posedge clk --> sampling on negedge clk
-// Dependencies:    mutArrayS if using own multiplier
+// Dependencies:    MULT_LUT_SIGNED if using own multiplier
 //
 // State: 	        Works! (System Test done: 29.10.2024 on Arty A7-35T with 20% usage)
 // Improvements:    None
@@ -74,7 +74,7 @@ module Filter_FIR_{$device_id}#(
     //Choicing the multiplier module
     wire signed [BITWIDTH_DATA+BITWIDTH_WEIGHTS-'d1:0] mul_out;
     `ifdef FIR_{$device_id}_USE_LUT_MULT
-        mutArrayS#(BITWIDTH_DATA) MUT(
+        MULT_LUT_SIGNED#(BITWIDTH_DATA) MUT(
             .A(mul_ina),
             .B(mul_inb),
             .Q(mul_out)
