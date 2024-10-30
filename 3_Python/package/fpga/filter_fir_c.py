@@ -8,10 +8,10 @@ from package.fpga.helper.translater import (get_embedded_datatype, replace_varia
                                             generate_params_list)
 
 
-def generate_fir_filter_files(data_bitsize: int, data_signed: bool, filter_id: int,
+def generate_fir_filter_files(data_bitsize: int, data_signed: bool,
                               filter_order: int, sampling_rate: float, filter_corner: list,
                               filter_btype='low', filter_ftype='butter',
-                              do_optimized=False, file_name='filter_fir', path2save='') -> None:
+                              do_optimized=False, filter_id='', file_name='filter_fir', path2save='') -> None:
     """Generating C files for IIR filtering on microcontroller
     Args:
         data_bitsize:   Used quantization level for data stream
@@ -28,6 +28,7 @@ def generate_fir_filter_files(data_bitsize: int, data_signed: bool, filter_id: i
     Return:
         None
     """
+    module_id_used = filter_id if filter_id else '0'
     if do_optimized and filter_order % 2 == 0:
         raise NotImplementedError("Please add an odd number to filter order!")
 
@@ -40,16 +41,16 @@ def generate_fir_filter_files(data_bitsize: int, data_signed: bool, filter_id: i
     template_c = __generate_filter_fir_template(do_optimized)
 
     params = {
-        'datetime_created': datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
-        'path2include': 'lib',
-        'template_name': 'filter_fir_template.h',
-        'device_id': str(filter_id),
-        'data_type': data_type_filter,
-        'fs': f'{sampling_rate}',
-        'filter_type': f'{filter_btype}, {filter_ftype}',
-        'filter_corner': ', '.join(map(str, filter_corner)),
-        'filter_order': str(filter_order),
-        'coeffs_string': ', '.join(map(str, filter_coeff_used))
+        'datetime_created':     datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
+        'path2include':         'lib',
+        'template_name':        'filter_fir_template.h',
+        'device_id':            module_id_used.upper(),
+        'data_type':            data_type_filter,
+        'fs':                   f'{sampling_rate}',
+        'filter_type':          f'{filter_btype}, {filter_ftype}',
+        'filter_corner':        ', '.join(map(str, filter_corner)),
+        'filter_order':         str(filter_order),
+        'coeffs_string':        ', '.join(map(str, filter_coeff_used))
     }
     proto_file = replace_variables_with_parameters(template_c['head'], params)
     imple_file = replace_variables_with_parameters(template_c['func'], params)
@@ -62,12 +63,12 @@ def generate_fir_filter_files(data_bitsize: int, data_signed: bool, filter_id: i
         mkdir(path2save)
 
     # --- Write lines to file
-    with open(join(path2save, f'{file_name}{filter_id}.h'), 'w') as v_handler:
+    with open(join(path2save, f'{file_name}{module_id_used.lower()}.h'), 'w') as v_handler:
         for line in proto_file:
             v_handler.write(line + '\n')
     v_handler.close()
 
-    with open(join(path2save, f'{file_name}{filter_id}.c'), 'w') as v_handler:
+    with open(join(path2save, f'{file_name}{module_id_used.lower()}.c'), 'w') as v_handler:
         for line in imple_file:
             v_handler.write(line + '\n')
     v_handler.close()
@@ -110,5 +111,5 @@ def __generate_filter_fir_template(do_opt: bool) -> dict:
 if __name__ == '__main__':
     path2save = '../../runs'
 
-    generate_fir_filter_files(14, True, 1, 21, 1e3, [100],
+    generate_fir_filter_files(14, True, 21, 1e3, [100],
                               do_optimized=True, path2save=path2save)

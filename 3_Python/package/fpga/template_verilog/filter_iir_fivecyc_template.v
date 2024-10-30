@@ -4,7 +4,7 @@
 // 
 // Create Date:     15.10.2024 13:26:51
 // Copied on: 	    {$date_copy_created}
-// Module Name:     IIR Filter (1st and 2nd Order / SOS-Filter, (five clock with one multiplier))
+// Module Name:     IIR Filter (1st and 2nd Order / SOS-Filter, five clock with one multiplier)
 // Target Devices:  ASIC (Implementing and using the mutArrayS module)
 //                  FPGA (Using DSP block for multiplication)
 // Tool Versions:   1v1
@@ -25,7 +25,7 @@
 
 // Input values are integer or unsigned with size of BITWIDTH_DATA (no fixed point)
 // Internal operation with signed values and all weights have fraction width of BITWIDTH_DATA-'d2;
-module Filter_IIR_{$device_id}#(
+module IIR_ONE_MULT_{$device_id}#(
     parameter BITWIDTH_DATA = 6'd{$bitwidth_data},
     parameter uint_io = 1'b{$signed_data},
     parameter BITWIDTH_WEIGHTS = 6'd{$bitwidth_weights}

@@ -107,4 +107,4 @@ if __name__ == "__main__":
 
     # List of epoch numbers (adjustable)
     path2save_base_epoch = ''
-    do_train_ae_cl_sweep(dnn_handler, 1)
+    do_train_ae_cl_sweep(dnn_handler, 1, 32, 1)

@@ -4,7 +4,7 @@
 // 
 // Create Date:     15.10.2024 14:16:08
 // Copied on: 	    {$date_copy_created}
-// Module Name:     FIR Filter (Half weights, with One Multiplier)
+// Module Name:     FIR Filter (Half weights, one Multiplier)
 // Target Devices:  ASIC (using own multiplier with //'define *_USE_OWN_MULT)
 //                  FPGA (using multiplier from DSP slice)
 // Tool Versions:   1v1
@@ -26,7 +26,7 @@
 
 // Input values are integer or unsigned with size of BITWIDTH_DATA (no fixed point)
 // Internal operation with signed values and all weights have fraction width of BITWIDTH_DATA;
-module Filter_FIR_{$device_id}#(
+module FIR_HALF_{$device_id}#(
 	parameter BITWIDTH_DATA = 6'd{$bitwidth_data}, 
 	parameter LENGTH = 9'd{$filter_order}, 
 	parameter uint_io = 1'b{$signed_data},

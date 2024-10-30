@@ -8,9 +8,9 @@ from package.fpga.helper.translater import (get_embedded_datatype, replace_varia
                                             generate_params_list)
 
 
-def generate_iir_filter_files(data_bitsize: int, data_signed: bool, filter_id: int,
+def generate_iir_filter_files(data_bitsize: int, data_signed: bool,
                               filter_order: int, sampling_rate: float, filter_corner: list,
-                              filter_btype='low', filter_ftype='butter',
+                              filter_btype='low', filter_ftype='butter', filter_id='',
                               file_name='filter_iir', path2save='') -> None:
     """Generating C files for IIR filtering on microcontroller
     Args:
@@ -27,6 +27,7 @@ def generate_iir_filter_files(data_bitsize: int, data_signed: bool, filter_id: i
     Return:
         None
     """
+    module_id_used = filter_id if filter_id else '0'
     filter_emulator = filter_stage(filter_order, sampling_rate, filter_corner, True,
                                    ftype=filter_ftype, btype=filter_btype)
     filter_coeff = filter_emulator.get_coeff_full()
@@ -36,18 +37,18 @@ def generate_iir_filter_files(data_bitsize: int, data_signed: bool, filter_id: i
     template_c = __generate_filter_iir_template()
 
     params = {
-        'datetime_created': datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
-        'path2include': 'lib',
-        'template_name': 'filter_iir_template.h',
-        'device_id': str(filter_id),
-        'data_type': data_type_filter,
-        'fs': f'{sampling_rate}',
-        'filter_type': f'{filter_btype}, butter',
-        'filter_corner': ', '.join(map(str, filter_corner)),
-        'filter_order': str(filter_order),
-        'coeff_order': str(filter_order+1),
-        'tap_order': str(filter_order),
-        'coeffs_string': filter_coeff_used
+        'datetime_created':     datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
+        'path2include':         'lib',
+        'template_name':        'filter_iir_template.h',
+        'device_id':            module_id_used.upper(),
+        'data_type':            data_type_filter,
+        'fs':                   f'{sampling_rate}',
+        'filter_type':          f'{filter_btype}, butter',
+        'filter_corner':        ', '.join(map(str, filter_corner)),
+        'filter_order':         str(filter_order),
+        'coeff_order':          str(filter_order+1),
+        'tap_order':            str(filter_order),
+        'coeffs_string':        filter_coeff_used
 
     }
     proto_file = replace_variables_with_parameters(template_c['head'], params)
@@ -61,12 +62,12 @@ def generate_iir_filter_files(data_bitsize: int, data_signed: bool, filter_id: i
         mkdir(path2save)
 
     # --- Write lines to file
-    with open(join(path2save, f'{file_name}{filter_id}.h'), 'w') as v_handler:
+    with open(join(path2save, f'{file_name}{module_id_used.lower()}.h'), 'w') as v_handler:
         for line in proto_file:
             v_handler.write(line + '\n')
     v_handler.close()
 
-    with open(join(path2save, f'{file_name}{filter_id}.c'), 'w') as v_handler:
+    with open(join(path2save, f'{file_name}{module_id_used.lower()}.c'), 'w') as v_handler:
         for line in imple_file:
             v_handler.write(line + '\n')
     v_handler.close()
@@ -107,5 +108,5 @@ if __name__ == '__main__':
     path2save_out = '../../runs'
 
     # generate_iir_filter_files(16, True, 0, 2, 1e3, [100], path2save=path2save_out)
-    generate_iir_filter_files(16, True, 1, 2, 1e3, [100, 200],
+    generate_iir_filter_files(16, True, 2, 1e3, [100, 200],
                               filter_btype='all', path2save=path2save_out)

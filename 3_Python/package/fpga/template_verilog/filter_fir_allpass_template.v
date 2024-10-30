@@ -1,24 +1,3 @@
-`timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 13.11.2020 14:08:53
-// Design Name:     UDE-ES, AE
-// Module Name:     FIR (OneMultiplier)
-// Project Name: 
-// Target Devices:  ASIC (Implementing and using the mutArrayS module)
-//                  FPGA (Entfernen des mutArray und Einsetzen des DSP-Blocks)
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:        
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
 // Company:         University of Duisburg-Essen, Intelligent Embedded Systems Lab
 // Engineer:        AE
@@ -29,18 +8,18 @@
 // Target Devices:  ASIC
 //                  FPGA
 // Tool Versions:   1v0
-// Description:     Performing a FIR all-pass filtering on FPGA with custom made filter coefficients
+// Description:     Performing a delay filter / FIR all-pass filter on FPGA
 // Processing:      Data applied on posedge clk
 // Dependencies:    None
 //
 // State: 	        Works! (System Test done: 29.10.2024 on Arty A7-35T with 20% usage)
 // Improvements:    None
 // Parameters:      BITWIDTH_DATA --> Bitwidth of input data
-//                  LENGTH --> Length of used taps (=FIR filter order)
+//                  LENGTH --> Length of used taps (= FIR filter order)
 //////////////////////////////////////////////////////////////////////////////////
 
 // Used taps order of {$filter_order} @ a sampling rate of {sampling_rate} Hz;
-module Filter_FIR_ALL_{$device_id}#(
+module FIR_DELAY_{$device_id}#(
     parameter BITWIDTH_DATA = 6'd{$bitwidth_data},
     parameter LENGTH = 10'd{$filter_order}
 )(

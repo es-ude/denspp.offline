@@ -1,28 +1,17 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 24.10.2024 23:32:06
-// Design Name: 
-// Module Name: TB_FIR
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
+// Company:         University of Duisburg-Essen, Intelligent Embedded Systems Lab
+// Engineer:        AE
+//
+// Create Date:     22.10.2024 14:16:08
+// Copied on: 	    {$date_copy_created}
+// Module Name:     Testbench for Moving Average Filter
 //////////////////////////////////////////////////////////////////////////////////
 
 
 module TB_MAVG();
     localparam CLK_SYS = 15'd5;
-    localparam BITSIZE = 6'd16, LENGTH=6'd5;
+    localparam BITSIZE = 6'd{$bitwidth_data}, LENGTH=6'd{$length_mavg};
     localparam CLK_CYC = 2* LENGTH * CLK_SYS;
 
     reg clk_sys, clk_adc, nrst, en_dut;
@@ -42,7 +31,7 @@ module TB_MAVG();
 	end	
 	
 	// --- Using DUT
-	Filter_MAVG_{$device_id}#(BITSIZE, LENGTH, 1'd1, 'd31) DUT(
+	MAVG_{$device_id} DUT(
 	   .CLK(clk_sys),
 	   .nRST(nrst),
 	   .EN(en_dut),

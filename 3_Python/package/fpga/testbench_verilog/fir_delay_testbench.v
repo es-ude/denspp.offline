@@ -1,28 +1,17 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 24.10.2024 23:32:06
-// Design Name: 
-// Module Name: TB_FIR
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
+// Company:         University of Duisburg-Essen, Intelligent Embedded Systems Lab
+// Engineer:        AE
+//
+// Create Date:     22.10.2024 14:16:08
+// Copied on: 	    {$date_copy_created}
+// Module Name:     Testbench for FIR Delay Filter
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module TB_BUFFER();
+module TB_FIR_DELAY();
     localparam CLK_SYS = 15'd5;
-    localparam BITSIZE = 6'd16, LENGTH=6'd10;
+    localparam BITSIZE = 6'd{$bitwidth_data}, LENGTH=6'd{$length_order};
     localparam F_SINE = 12'd256, NUM_PERIODS = 8'd8;
     localparam CLK_CYC = 8* CLK_SYS;
 
@@ -43,7 +32,7 @@ module TB_BUFFER();
 	end	
 	
 	// --- Using DUT
-	Filter_FIR_ALL_{$device_id}#(BITSIZE, LENGTH) DUT(
+	FIR_DELAY_{$device_id}#(BITSIZE, LENGTH) DUT(
 	   .CLK(clk_sys),
 	   .nRST(nrst),
 	   .EN(en_dut),

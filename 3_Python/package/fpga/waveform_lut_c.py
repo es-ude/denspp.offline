@@ -9,7 +9,7 @@ from package.fpga.helper.translater import get_embedded_datatype, replace_variab
 
 
 def generate_lut_files(bitsize_lut: int, f_sys: float, f_rpt: float, f_sine: float,
-                       out_signed=False, do_optimized=False, device_id=0,
+                       out_signed=False, do_optimized=False, device_id='',
                        file_name='waveform_lut', path2save='') -> None:
     """Generating C file with SINE_LUT for sinusoidal waveform generation
     Args:
@@ -25,6 +25,7 @@ def generate_lut_files(bitsize_lut: int, f_sys: float, f_rpt: float, f_sine: flo
     Return:
         None
     """
+    module_id_used = device_id if device_id else '0'
     # --- Step #1: Building template and data
     datatype_data_ext = get_embedded_datatype(bitsize_lut, out_signed)
     bitwidth_mcu = int(datatype_data_ext.split('int')[-1].split('_')[0])
@@ -37,7 +38,7 @@ def generate_lut_files(bitsize_lut: int, f_sys: float, f_rpt: float, f_sine: flo
         'datetime_created': datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
         'path2include':     'lib',
         'template_name':    'waveform_lut_template.h',
-        'device_id':        str(device_id),
+        'device_id':        module_id_used.upper(),
         'datatype_cnt':     get_embedded_datatype(np.log2(lut_data.size), out_signed=False),
         'datatype_int':     get_embedded_datatype(bitsize_lut),
         'num_cntsize':      str(int(f_sys / f_rpt)),
@@ -59,12 +60,12 @@ def generate_lut_files(bitsize_lut: int, f_sys: float, f_rpt: float, f_sine: flo
     used_template_name = params["template_name"]
     copyfile(f'template_c/{used_template_name}', join(path2save, f'{used_template_name}'))
     print("\nCreating the C files\n====================================")
-    with open(join(path2save, f'{file_name}{device_id}.h'), 'w') as v_handler:
+    with open(join(path2save, f'{file_name}{module_id_used.lower()}.h'), 'w') as v_handler:
         for line in head:
             v_handler.write(line + '\n')
     v_handler.close()
 
-    with open(join(path2save, f'{file_name}{device_id}.c'), 'w') as v_handler:
+    with open(join(path2save, f'{file_name}{module_id_used.lower()}.c'), 'w') as v_handler:
         for line in func:
             v_handler.write(line + '\n')
     v_handler.close()

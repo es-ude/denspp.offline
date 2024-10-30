@@ -1,6 +1,5 @@
 from os import mkdir, getcwd
 from os.path import join, isdir
-from numpy import log2, ceil
 from datetime import datetime
 from fxpmath import Fxp
 from shutil import copyfile
@@ -11,9 +10,10 @@ from package.fpga.helper.translater import replace_variables_with_parameters, re
 
 def generate_iir_filter_files(data_bitsize: int, data_signed: bool,
                               filter_order: int, sampling_rate: float, filter_corner: list,
-                              module_id='0', filter_btype='low', filter_ftype='butter',
+                              filter_btype='low', filter_ftype='butter',
                               mode_multiplier=0, use_fast_iir=False, use_ram_coeff=False, weights_bitsize=0,
-                              file_name='filter_iir', path2save='') -> None:
+                              copy_testbench=False,
+                              module_id='', file_name='filter_iir', path2save='') -> None:
     """Generating Verilog files for IIR filtering (SOS structure / 2nd filter order) on FPGAs/ASICs
     (Fraction of all weights have data_bitsize-2)
     Args:
@@ -29,11 +29,13 @@ def generate_iir_filter_files(data_bitsize: int, data_signed: bool,
         use_ram_coeff:      Using a RAM for saving the filter coefficients inside
         mode_multiplier:    Mode of multiplier (0= DSP slice from FPGA, 1= LUT Multiplier, 2= Ext. multiplier)
         weights_bitsize:    Bitsize of all weights [Default: 0 --> data_bitsize]
+        copy_testbench:     Copy the template testbench file to output folder
         file_name:          Name of the generated files
         path2save:          Path for saving the verilog output files
     Return:
         None
     """
+    module_id_used = module_id if module_id else '0'
     used_bitsize_weights = data_bitsize if weights_bitsize == 0 else weights_bitsize
     if filter_order > 2:
         raise NotImplementedError("Please reduce filter_order to 1 or 2!")
@@ -63,17 +65,15 @@ def generate_iir_filter_files(data_bitsize: int, data_signed: bool,
         'use_ram_coeff':        '' if not use_ram_coeff else '//',
         'use_ext_mult':         '' if mode_multiplier == 2 else '//',
         'use_lut_mult':         '' if mode_multiplier == 1 else '//',
-        'device_id':            str(module_id),
+        'device_id':            module_id_used.upper(),
         'bitwidth_data':        str(data_bitsize),
         'bitwidth_weights':     str(used_bitsize_weights),
         'signed_data':          '0' if data_signed else '1',
-        'filter_order':         str(filter_order),
         'filter_type':          f'{filter_btype}, {filter_ftype}',
         'filter_corner':        ', '.join(map(str, filter_corner)),
         'sampling_rate':        f'{sampling_rate}',
         'coeff_data':           coeff_string,
     }
-    imple_file = replace_variables_with_parameters(template_file['func'], params)
 
     # --- Write new design to file
     # Checking if path is available
@@ -83,10 +83,23 @@ def generate_iir_filter_files(data_bitsize: int, data_signed: bool,
     if mode_multiplier == 1:
         copyfile('template_verilog/mult_lut_signed.v', f'{path2save}/mult_lut_signed.v')
 
-    with open(join(path2save, f'{file_name}_{module_id}.v'), 'w') as v_handler:
+    # Design file
+    imple_file = replace_variables_with_parameters(template_file['func'], params)
+    with open(join(path2save, f'{file_name}{module_id_used.lower()}.v'), 'w') as v_handler:
         for line in imple_file:
             v_handler.write(line)
     v_handler.close()
+
+    # Testbench file
+    if copy_testbench:
+        path2testbench = join(getcwd(), f'testbench_verilog/iir_testbench.v')
+        testbench_file = read_template_design_file(path2testbench)
+        tb_file = read_template_design_file(testbench_file['func'], params)
+
+        with open(join(path2save, f'iir_testbench_{module_id_used.lower()}.v'), 'w') as v_handler:
+            for line in tb_file:
+                v_handler.write(line)
+        v_handler.close()
 
 
 if __name__ == '__main__':

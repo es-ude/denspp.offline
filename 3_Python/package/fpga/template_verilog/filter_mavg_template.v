@@ -4,7 +4,7 @@
 // 
 // Create Date: 	21.10.2024 12:38:44
 // Copied on: 	    {$date_copy_created}
-// Module Name:     FIR (OneMultiplier) for Moving Average
+// Module Name:     Moving Average Filter
 // Target Devices:  ASIC (using own multiplier with //'define *_USE_OWN_MULT)
 //                  FPGA (using multiplier from DSP slice)
 // Tool Versions:   1v0
@@ -24,7 +24,7 @@
 
 
 // Internal operation with signed values and scaling weight has fraction width of bitwidth (BITFRAC_WEIGHTS = BITWIDTH_WEIGHT);
-module Filter_MAVG_{$device_id}#(
+module MAVG_{$device_id}#(
     parameter BITWIDTH_DATA = 6'd{$bitwidth_data},
     parameter LENGTH = 9'd{$length_mavg},
     parameter uint_io = 1'b{$signed_data},

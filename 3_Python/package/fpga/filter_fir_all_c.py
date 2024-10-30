@@ -7,34 +7,34 @@ from package.fpga.helper.translater import (get_embedded_datatype, replace_varia
                                             generate_params_list)
 
 
-def generate_fir_allpass_files(data_bitsize: int, data_signed: bool, filter_id: int,
-                               sampling_rate: float, t_dly: float,
-                               file_name='filter_fir_all', path2save='') -> None:
+def generate_fir_allpass_files(data_bitsize: int, data_signed: bool, sampling_rate: float, t_dly: float,
+                               filter_id='', file_name='filter_fir_all', path2save='') -> None:
     """Generating C files for IIR filtering on microcontroller
     Args:
         data_bitsize:   Used quantization level for data stream
         data_signed:    Decision if LUT values are signed [otherwise unsigned]
-        filter_id:      ID of used filter structure
         sampling_rate:  Sampling clock of data stream processing
         t_dly:          Value of achievable time delay [in s]
+        filter_id:      ID of used filter structure
         file_name:      Name of the generated files
         path2save:      Path for saving the verilog output files
     Return:
         None
     """
+    module_id_used = filter_id if filter_id else '0'
     data_type_filter = get_embedded_datatype(data_bitsize, data_signed)
     template_c = __generate_filter_fir_allpass_template()
     filter_order = int(sampling_rate * t_dly)
 
     params = {
-        'datetime_created': datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
-        'path2include': 'lib',
-        'template_name': 'filter_fir_all_template.h',
-        'device_id': str(filter_id),
-        'data_type': data_type_filter,
-        'fs': f'{sampling_rate}',
-        't_dly': str(t_dly * 1e6),
-        'filter_order': str(filter_order),
+        'datetime_created':     datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
+        'path2include':         'lib',
+        'template_name':        'filter_fir_all_template.h',
+        'device_id':            module_id_used.upper(),
+        'data_type':            data_type_filter,
+        'fs':                   f'{sampling_rate}',
+        't_dly':                str(t_dly * 1e6),
+        'filter_order':         str(filter_order),
     }
     proto_file = replace_variables_with_parameters(template_c['head'], params)
     imple_file = replace_variables_with_parameters(template_c['func'], params)
@@ -47,12 +47,12 @@ def generate_fir_allpass_files(data_bitsize: int, data_signed: bool, filter_id: 
         mkdir(path2save)
 
     # --- Write lines to file
-    with open(join(path2save, f'{file_name}{filter_id}.h'), 'w') as v_handler:
+    with open(join(path2save, f'{file_name}{module_id_used.lower()}.h'), 'w') as v_handler:
         for line in proto_file:
             v_handler.write(line + '\n')
     v_handler.close()
 
-    with open(join(path2save, f'{file_name}{filter_id}.c'), 'w') as v_handler:
+    with open(join(path2save, f'{file_name}{module_id_used.lower()}.c'), 'w') as v_handler:
         for line in imple_file:
             v_handler.write(line + '\n')
     v_handler.close()
@@ -90,4 +90,4 @@ def __generate_filter_fir_allpass_template() -> dict:
 if __name__ == '__main__':
     path2save = '../../runs'
 
-    generate_fir_allpass_files(16, True, 0, 1e3, 10e-3, path2save=path2save)
+    generate_fir_allpass_files(16, True, 1e3, 10e-3, path2save=path2save)

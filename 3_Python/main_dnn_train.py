@@ -31,18 +31,22 @@ if __name__ == "__main__":
             from package.dnn.handler.train_aecl import do_train_ae_classifier
             do_train_ae_classifier(dnn_handler)
         case 4:
+            # --- Autoencoder + Classifier (Sweep Run of Hidden Layer Size)
+            from src_dnn.train_ae_class_evaluation import do_train_ae_classifier
+            do_train_ae_classifier(dnn_handler)
+        case 5:
             # --- Spike Detection
             from src_dnn.train_sda import dnn_train_sda
             dnn_train_sda(dnn_handler)
-        case 5:
+        case 6:
             # --- RGC ON/OFF Classifier
             from src_dnn.train_rgc_class import do_train_rgc_class
             do_train_rgc_class(dnn_handler)
-        case 6:
+        case 7:
             # --- RGC ON/OFF Autoencoder + Classifier
             from src_dnn.train_rgc_ae_cl import do_train_rgc_ae_cl
             do_train_rgc_ae_cl(dnn_handler)
-        case 7:
+        case 8:
             # --- Neural Decoder (Utah Array)
             from src_dnn.train_decoder_utah import do_train_decoder_utah
             do_train_decoder_utah(dnn_handler)

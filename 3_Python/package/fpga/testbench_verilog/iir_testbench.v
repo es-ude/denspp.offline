@@ -1,28 +1,17 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 24.10.2024 23:32:06
-// Design Name: 
-// Module Name: TB_FIR
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
+// Company:         University of Duisburg-Essen, Intelligent Embedded Systems Lab
+// Engineer:        AE
+//
+// Create Date:     22.10.2024 14:16:08
+// Copied on: 	    {$date_copy_created}
+// Module Name:     Testbench for IIR Filter
 //////////////////////////////////////////////////////////////////////////////////
 
 
 module TB_IIR();
     localparam CLK_SYS = 15'd5;
-    localparam BITSIZE = 6'd16;
+    localparam BITSIZE = 6'd{$bitwidth_data};
     localparam F_SINE = 12'd256, NUM_PERIODS = 8'd8;
     localparam CLK_CYC = 24 * CLK_SYS;
 
@@ -42,7 +31,7 @@ module TB_IIR();
 	end
 	
 	// --- Using DUT
-	Filter_IIR_{$device_id}#(BITSIZE, 1'd1) DUT0(
+	IIR_{$iir_type}_MULT_{$device_id} DUT(
 	   .CLK(clk_sys),
 	   .nRST(nrst),
 	   .EN(en_dut),
