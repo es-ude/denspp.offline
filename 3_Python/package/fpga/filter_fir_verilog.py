@@ -78,6 +78,8 @@ def generate_fir_filter_files(data_bitsize: int, data_signed: bool,
 
     # Design file
     if mode_multiplier == 1:
+        copyfile(join(getcwd(), f'testbench_verilog/mult_lut_signed_testbench.v'),
+                 f'{path2save}/mult_lut_signed_testbench.v')
         copyfile('template_verilog/mult_lut_signed.v', f'{path2save}/mult_lut_signed.v')
 
     imple_file = replace_variables_with_parameters(template_file['func'], params)

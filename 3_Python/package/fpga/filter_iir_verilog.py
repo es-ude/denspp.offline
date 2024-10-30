@@ -81,6 +81,8 @@ def generate_iir_filter_files(data_bitsize: int, data_signed: bool,
         mkdir(path2save)
 
     if mode_multiplier == 1:
+        copyfile(join(getcwd(), f'testbench_verilog/mult_lut_signed_testbench.v'),
+                 f'{path2save}/mult_lut_signed_testbench.v')
         copyfile('template_verilog/mult_lut_signed.v', f'{path2save}/mult_lut_signed.v')
 
     # Design file
