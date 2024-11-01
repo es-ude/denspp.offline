@@ -2,7 +2,7 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import Tensor, from_numpy, load, save, inference_mode, sum, cuda, cat, randn
+from torch import Tensor, tensor, zeros, load, save, inference_mode, sum, cuda, cat, randn, eq, float32, add
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
 
 
@@ -38,7 +38,7 @@ class train_nn(training_pytorch):
 
             train_loss += loss.item()
             total_batches += 1
-            total_correct += sum(dec_cl == tdata_out)
+            total_correct += self.__calculate_metric_accuracy(dec_cl, tdata_out)
             total_samples += len(tdata['in'])
 
         train_acc = float(int(total_correct) / total_samples)
@@ -59,15 +59,23 @@ class train_nn(training_pytorch):
 
                 valid_loss += self.loss_fn(pred_cl, vdata['out'].to(self.used_hw_dev)).item()
                 total_batches += 1
-                total_correct += sum(dec_cl == vdata['out'].to(self.used_hw_dev))  # hier optimieren
+                total_correct += self.__calculate_metric_accuracy(dec_cl, vdata['out'].to(self.used_hw_dev))
                 total_samples += len(vdata['in'])
 
         valid_acc = float(int(total_correct) / total_samples)
         valid_loss = float(valid_loss / total_batches)
         return valid_loss, valid_acc
 
-    def do_training(self, path2save='') -> dict:
-        """Start model training incl. validation and custom-own metric calculation"""
+    def do_training(self, path2save='', metrics=None) -> dict:
+        """Start model training incl. validation and custom-own metric calculation
+        Args:
+            path2save:      Path for saving the results [Default: '' --> generate new folder]
+            metrics:        List with strings of used metric ['acc'] [Default: empty]
+        Returns:
+            Dictionary with metrics from training (loss_train, loss_valid, own_metrics)
+        """
+        if metrics is None:
+            metrics = ['acc']
         self._init_train(path2save=path2save, addon='_CL')
         self._save_config_txt('_class')
 
@@ -90,10 +98,14 @@ class train_nn(training_pytorch):
             best_loss = [1e6, 1e6]
             best_acc = [0.0, 0.0]
             patience_counter = self.settings_train.patience
+
+            metric_fold = dict()
             epoch_train_acc = list()
             epoch_valid_acc = list()
             epoch_train_loss = list()
             epoch_valid_loss = list()
+            epoch_metric = [[] for _ in metrics]
+
             self.model.load_state_dict(load(path2model_init))
             self._run_kfold = fold
             self._init_writer()
@@ -107,7 +119,6 @@ class train_nn(training_pytorch):
 
                 train_loss, train_acc = self.__do_training_epoch()
                 valid_loss, valid_acc = self.__do_valid_epoch()
-
                 print(f'... results of epoch {epoch + 1}/{self.settings_train.num_epochs} '
                       f'[{(epoch + 1) / self.settings_train.num_epochs * 100:.2f} %]: '
                       
@@ -125,6 +136,8 @@ class train_nn(training_pytorch):
                 epoch_train_loss.append(train_loss)
                 epoch_valid_acc.append(valid_acc)
                 epoch_valid_loss.append(valid_loss)
+                for idx, metric_used in enumerate(metrics):
+                    epoch_metric[idx].append(self.__do_calc_metric(metric_used))
 
                 # Tracking the best performance and saving the model
                 if valid_loss < best_loss[1]:
@@ -141,12 +154,16 @@ class train_nn(training_pytorch):
                     print(f"... training stopped due to no change after {epoch+1} epochs!")
                     break
 
-            # --- Saving metrics after each fold
-            metric_out.update({f"fold_{fold:03d}": {"train_acc": epoch_train_acc, "train_loss": epoch_train_loss,
-                                                    'valid_acc': epoch_valid_acc, 'valid_loss': epoch_valid_loss}})
             copy(path2model, self._path2save)
             self._save_train_results(best_loss[0], best_loss[1], 'Loss')
             self._save_train_results(best_acc[0], best_acc[1], 'Acc.')
+
+            # --- Saving metrics after each fold
+            metric_fold.update({"train_acc": epoch_train_acc, "train_loss": epoch_train_loss,
+                                "valid_acc": epoch_valid_acc, "valid_loss": epoch_valid_loss})
+            for key, data in zip(metrics, epoch_metric):
+                metric_fold.update({key: data})
+            metric_out.update({f"fold_{fold:03d}": metric_fold})
 
         # --- Ending of all trainings phases
         self._end_training_routine(timestamp_start)
@@ -184,3 +201,34 @@ class train_nn(training_pytorch):
         result_pred = clus_pred_list.numpy()
         return self._getting_data_for_plotting(data_orig_list.numpy(), clus_orig_list.numpy(),
                                                {'yclus': result_pred}, addon='cl')
+
+    def __determine_precision_per_class(self) -> Tensor:
+        """Calculation of precision split per class/label in each epoch"""
+        self.model.eval()
+        with inference_mode():
+            cnt_val = zeros((len(self.cell_classes), ), dtype=float32)
+            cnt_total = zeros((len(self.cell_classes), ), dtype=float32)
+            for vdata in self.valid_loader[self._run_kfold]:
+                true = vdata['class'].to(self.used_hw_dev)
+                pred = self.model(vdata['in'].to(self.used_hw_dev))[1]
+
+                out = self._separate_classes_from_label(pred, true, self.__calculate_metric_accuracy)
+                cnt_val = add(cnt_val, out[0])
+                cnt_total = add(cnt_total, out[1])
+
+        return tensor(cnt_val / cnt_total, dtype=float32)
+
+    def __calculate_metric_accuracy(self, pred: Tensor, true: Tensor) -> Tensor:
+        """"""
+        return sum(eq(pred, true))
+
+    def __do_calc_metric(self, do_metrics: str) -> Tensor:
+        """Determination of additional metrics during training"""
+        metric_calc = {'acc': self.__determine_precision_per_class}
+
+        out = Tensor()
+        for metric_avai, func in metric_calc.items():
+            if metric_avai in do_metrics:
+                out = func()
+                break
+        return out

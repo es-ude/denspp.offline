@@ -8,7 +8,9 @@ from random import seed
 from shutil import rmtree
 from glob import glob
 from datetime import datetime
-from torch import device, cuda, backends, nn, randn, cat, Generator, manual_seed, use_deterministic_algorithms
+
+from torch import (Tensor, zeros, unique, argwhere, device, cuda, backends, float32,
+                   nn, randn, cat, Generator, manual_seed, use_deterministic_algorithms)
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
@@ -309,7 +311,7 @@ class training_pytorch:
 
         # --- Init. hardware for deterministic training
         if self.settings_train.deterministic_do:
-            self.__deterministic_training_preperation()
+            self.__deterministic_training_preparation()
 
         # --- Print model
         if print_model:
@@ -449,3 +451,21 @@ class training_pytorch:
             print(f"... saving results: {data2save}")
         np.save(data2save, output)
         return output
+
+    def _separate_classes_from_label(self, pred: Tensor, true: Tensor, *args) -> [Tensor, Tensor]:
+        """Separating the classes for further metric processing
+        Args:
+            pred:   Torch Tensor from prediction
+            true:   Torch Tensor from labeled dataset (groundtruth)
+            func:   Function for metric calculation
+        Return:
+            Calculated metric results in Tensor array and total samples of each class
+        """
+        metric_out = zeros((len(self.cell_classes), ), dtype=float32)
+        length_out = zeros((len(self.cell_classes),), dtype=float32)
+        for idx, id in enumerate(unique(true)):
+            xpos = argwhere(pred == id).flatten()
+            length_out[idx] = len(xpos)
+            metric_out[idx] = args[0](pred[xpos], true[xpos])
+
+        return metric_out, length_out

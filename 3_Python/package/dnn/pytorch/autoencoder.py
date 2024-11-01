@@ -131,6 +131,7 @@ class train_nn(training_pytorch):
             epoch_loss_train = list()
             epoch_loss_valid = list()
             epoch_metric = [[] for _ in metrics]
+
             self.model.load_state_dict(load(path2model_init))
             self._run_kfold = fold
             self._init_writer()
@@ -160,7 +161,6 @@ class train_nn(training_pytorch):
                 # Saving metrics after each epoch
                 epoch_loss_train.append(loss_train)
                 epoch_loss_valid.append(loss_valid)
-
                 for idx, metric_used in enumerate(metrics):
                     epoch_metric[idx].append(self.__do_calc_metric(metric_used))
 
