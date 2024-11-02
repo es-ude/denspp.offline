@@ -1,6 +1,5 @@
 from os import mkdir, getcwd
 from os.path import join, isdir
-from numpy import log2, ceil
 from datetime import datetime
 from fxpmath import Fxp
 from shutil import copyfile
