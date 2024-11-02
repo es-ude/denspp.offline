@@ -7,14 +7,19 @@ from torch import max, min, log10, sum, randn
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
 
 
-def _calculate_snr(vdata_in: Tensor, vdata_mean: Tensor) -> Tensor:
-    """a0 = ((max(ymean) - min(ymean))**2"""
-    max_values, _ = max(vdata_mean, dim=1)
-    min_values, _ = min(vdata_mean, dim=1)
+def _calculate_snr(data: Tensor, mean: Tensor) -> Tensor:
+    """Calculating the Signal-to-Noise (SNR) ratio of the input data
+    Args:
+        data:   Tensor with raw data / frame
+        mean:   Tensor with class-specific mean data / frame
+    Return:
+        Tensor with SNR value
+    """
+    max_values, _ = max(mean, dim=1)
+    min_values, _ = min(mean, dim=1)
     a0 = (max_values - min_values) ** 2
-    b0 = sum((vdata_in - vdata_mean) ** 2, dim=1)
-    result = 10 * log10(a0 / b0)
-    return result
+    b0 = sum((data - mean) ** 2, dim=1)
+    return 10 * log10(a0 / b0)
 
 
 class train_nn(training_pytorch):
@@ -29,6 +34,8 @@ class train_nn(training_pytorch):
             None
         """
         training_pytorch.__init__(self, config_train, config_data, do_train, do_print)
+        self._metric_methods = {'snr': self.__determine_snr_all,
+                                'snr_cl': self.__determine_snr_per_class}
 
     def __do_training_epoch(self) -> float:
         """Do training during epoch of training"""
@@ -72,8 +79,11 @@ class train_nn(training_pytorch):
                     valid_loss += self.loss_fn(data_p, data_y).item()
         return float(valid_loss / total_batches)
 
-    def __do_snr_epoch(self) -> Tensor:
-        """Do metric calculation during validation step of training"""
+    def __determine_snr_all(self) -> Tensor:
+        """Calculation of class-specific calculating metrics in each epoch using validation dataset
+        Return:
+            Tensor with Signal-to-Noise ratio (SNR) of all data
+        """
         self.model.eval()
         inc_snr = list()
         with inference_mode():
@@ -87,16 +97,23 @@ class train_nn(training_pytorch):
                 inc_snr.extend((snr1_0 - snr0_0))
         return tensor(inc_snr)
 
-    def __do_calc_metric(self, do_metrics: str) -> Tensor:
-        """Determination of additional metrics during training"""
-        metric_calc = {'snr': self.__do_snr_epoch}
+    def __determine_snr_per_class(self) -> Tensor:
+        """Calculation of class-specific calculating metrics in each epoch using validation dataset
+        Return:
+            Tensor with class-specific Signal-to-Noise ratio (SNR)
+        """
+        self.model.eval()
+        inc_snr = list()
+        with inference_mode():
+            for vdata in self.valid_loader[self._run_kfold]:
+                data_mean = vdata['mean'].to(self.used_hw_dev)
+                data_in = vdata['in'].to(self.used_hw_dev)
+                pred_out = self.model(vdata['in'].to(self.used_hw_dev))[1]
 
-        out = Tensor()
-        for metric_avai, func in metric_calc.items():
-            if metric_avai in do_metrics:
-                out = func()
-                break
-        return out
+                snr0_0 = _calculate_snr(data_in, data_mean)
+                snr1_0 = _calculate_snr(pred_out, data_mean)
+                inc_snr.extend((snr1_0 - snr0_0))
+        return tensor(inc_snr)
 
     def do_training(self, path2save='', metrics=()) -> dict:
         """Start model training incl. validation and custom-own metric calculation
@@ -162,7 +179,7 @@ class train_nn(training_pytorch):
                 epoch_loss_train.append(loss_train)
                 epoch_loss_valid.append(loss_valid)
                 for idx, metric_used in enumerate(metrics):
-                    epoch_metric[idx].append(self.__do_calc_metric(metric_used))
+                    epoch_metric[idx].append(self._determine_epoch_metrics(metric_used))
 
                 # Tracking the best performance and saving the model
                 if loss_valid < best_loss[1]:

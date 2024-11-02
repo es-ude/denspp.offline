@@ -37,7 +37,7 @@ def do_train_cl(settings: Config_ML_Pipeline, yaml_name_index='Config_MNIST') ->
     used_model = models.models_available.build_model(config_train.model_name)
     do_train_classifier(
         config_ml=settings, config_data=config_data, config_train=config_train,
-        used_dataset=dataset, used_model=used_model
+        used_dataset=dataset, used_model=used_model, calc_custom_metrics=['acc', 'pre']
     )
 
 

@@ -15,8 +15,8 @@ import package.dnn.template.models.autoencoder_class as models_cl
 def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
                          feat_layer_start: int, feat_layer_inc: int, feat_layer_stop: int,
                          add_noise_cluster=False,
-                         num_epochs_trial=5, num_epochs_full=100,
-                         yaml_name_index='Config_AECL_Sweep') -> dict:
+                         num_epochs_trial=5,
+                         yaml_name_index='Config_AECL_Sweep') -> [dict, dict]:
     """Training routine for Autoencoders and Classification after Encoder (Sweep)
     Args:
         settings:           Handler for configuring the routine selection for train deep neural networks
@@ -25,7 +25,6 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
         feat_layer_stop:    Increasement value for feature layer
         add_noise_cluster:  Adding noise cluster to dataset [Default: False]
         num_epochs_trial:   Number of epochs of each run
-        num_epochs_full:    Number of epochs of best run
         yaml_name_index:    Index of yaml file name
     Return:
         Dictionary with results
@@ -54,8 +53,8 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
     config_train_cl = yaml_train.get_class(Config_PyTorch)
     del yaml_train, default_cl
 
-    metric_run = dict()
     path2save_base = ''
+    metrics_runs = list()
     for feat_size in range(feat_layer_start, feat_layer_stop, feat_layer_inc):
         # ----------- Step #1: TRAINING AUTOENCODER
         used_dataset_ae = get_dataset_ae(
@@ -89,13 +88,15 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
             config_train=config_train_cl,
             config_data=config_data,
             path2save=path2save_base,
-            used_dataset=used_dataset_cl
+            used_dataset=used_dataset_cl,
+            calc_custom_metrics=['acc']
         )[0]
         del used_dataset_cl, used_model_cl
+        metrics_runs.append([metrics_ae, metrics_cl])
 
     # ----------- Step #3: Merge results
     print("Run done")
-    return metric_run
+    return metrics_runs
 
 
 if __name__ == "__main__":

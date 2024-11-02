@@ -94,6 +94,7 @@ class training_pytorch:
     valid_loader: list
     selected_samples: dict
     cell_classes: list
+    _metric_methods: dict
 
     def __init__(self, config_train: Config_PyTorch, config_dataset: Config_Dataset,
                  do_train=True, do_print=True) -> None:
@@ -451,6 +452,20 @@ class training_pytorch:
             print(f"... saving results: {data2save}")
         np.save(data2save, output)
         return output
+
+    def _determine_epoch_metrics(self, do_metrics: str) -> Tensor:
+        """Determination of additional metrics during training
+        Args:
+            do_metrics:     String with index for calculating epoch metric
+        Return:
+            Tensor with determined metric
+        """
+        out = Tensor()
+        for metric_avai, func in self._metric_methods.items():
+            if metric_avai in do_metrics:
+                out = func()
+                break
+        return out
 
     def _separate_classes_from_label(self, pred: Tensor, true: Tensor, *args) -> [Tensor, Tensor]:
         """Separating the classes for further metric processing

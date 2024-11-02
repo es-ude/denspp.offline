@@ -2,8 +2,56 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import Tensor, tensor, zeros, load, save, inference_mode, sum, cuda, cat, randn, eq, float32, add
+from sklearn.metrics import precision_recall_fscore_support
+
+from torch import (Tensor, tensor, zeros, load, save, concatenate,
+                   inference_mode, sum, cuda, cat, randn, eq, float32, add)
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
+
+
+def _calculate_number_true_predictions(pred: Tensor, true: Tensor) -> Tensor:
+    """Function for determining the true predicted values
+    Args:
+        pred:   Tensor with predicted values from model
+        true:   Tensor with true labels from dataset
+    Return
+        Tensor with metric
+    """
+    return sum(eq(pred, true))
+
+
+def _calculate_precision(pred: Tensor, true: Tensor) -> Tensor:
+    """Function for determining the precision metric
+    Args:
+        pred:   Tensor with predicted values from model
+        true:   Tensor with true labels from dataset
+    Return
+        Tensor with metrics [precision]
+    """
+    return precision_recall_fscore_support(true, pred, average="weighted")[0]
+
+
+def _calculate_recall(pred: Tensor, true: Tensor) -> Tensor:
+    """Function for determining the precision metric
+    Args:
+        pred:   Tensor with predicted values from model
+        true:   Tensor with true labels from dataset
+    Return
+        Tensor with metrics [precision]
+    """
+    return precision_recall_fscore_support(true, pred, average="weighted")[1]
+
+
+def _calculate_fbeta(pred: Tensor, true: Tensor, beta=1.0) -> Tensor:
+    """Function for determining the precision metric
+    Args:
+        pred:   Tensor with predicted values from model
+        true:   Tensor with true labels from dataset
+        beta:   Beta value for getting Fbeta metric
+    Return
+        Tensor with metrics [precision]
+    """
+    return precision_recall_fscore_support(true, pred, beta=beta, average="weighted")[2]
 
 
 class train_nn(training_pytorch):
@@ -19,9 +67,52 @@ class train_nn(training_pytorch):
             None
         """
         training_pytorch.__init__(self, config_train, config_data, do_train, do_print)
+        self._metric_methods = {'acc': self.__determine_accuracy_per_class,
+                                'pre': self.__determine_precision_per_class}
+
+    def __determine_accuracy_per_class(self) -> Tensor:
+        """Calculation of class-specific calculating metrics in each epoch using validation dataset
+        Return:
+            Tensor with class-specific accuracy
+        """
+        self.model.eval()
+        with inference_mode():
+            cnt_val = zeros((len(self.cell_classes),), dtype=float32)
+            cnt_total = zeros((len(self.cell_classes),), dtype=float32)
+            for vdata in self.valid_loader[self._run_kfold]:
+                true = vdata['class'].to(self.used_hw_dev)
+                pred = self.model(vdata['in'].to(self.used_hw_dev))[1]
+
+                out = self._separate_classes_from_label(pred, true, _calculate_number_true_predictions)
+                cnt_val = add(cnt_val, out[0])
+                cnt_total = add(cnt_total, out[1])
+
+        return tensor(cnt_val / cnt_total, dtype=float32)
+
+    def __determine_precision_per_class(self) -> Tensor:
+        """Calculation of class-specific calculating metrics in each epoch using validation dataset
+        Return:
+            Tensor with class-specific precision [precision, recall, fbeta]
+        """
+        self.model.eval()
+        with inference_mode():
+            first_run = True
+            for vdata in self.valid_loader[self._run_kfold]:
+                if first_run:
+                    data_true = vdata['class'].to(self.used_hw_dev)
+                    data_pred = self.model(vdata['in'].to(self.used_hw_dev))[1]
+                else:
+                    data_true = concatenate((data_true, vdata['class'].to(self.used_hw_dev)), dim=0)
+                    data_pred = concatenate((data_pred, self.model(vdata['in'].to(self.used_hw_dev))[1]), dim=0)
+                first_run = False
+            out = self._separate_classes_from_label(data_pred, data_true, _calculate_precision)
+        return out[0]
 
     def __do_training_epoch(self) -> [float, float]:
-        """Do training during epoch of training"""
+        """Do training during epoch of training
+        Return:
+            Floating value of training loss and accuracy of used epoch
+        """
         train_loss = 0.0
         total_batches = 0
         total_correct = 0
@@ -38,7 +129,7 @@ class train_nn(training_pytorch):
 
             train_loss += loss.item()
             total_batches += 1
-            total_correct += self.__calculate_metric_accuracy(dec_cl, tdata_out)
+            total_correct += _calculate_number_true_predictions(dec_cl, tdata_out)
             total_samples += len(tdata['in'])
 
         train_acc = float(int(total_correct) / total_samples)
@@ -46,7 +137,10 @@ class train_nn(training_pytorch):
         return train_loss, train_acc
 
     def __do_valid_epoch(self) -> [float, float]:
-        """Do validation during epoch of training"""
+        """Do validation during epoch of training
+        Return:
+            Floating value of validation loss and validation accuracy of used epoch
+        """
         valid_loss = 0.0
         total_batches = 0
         total_correct = 0
@@ -59,14 +153,14 @@ class train_nn(training_pytorch):
 
                 valid_loss += self.loss_fn(pred_cl, vdata['out'].to(self.used_hw_dev)).item()
                 total_batches += 1
-                total_correct += self.__calculate_metric_accuracy(dec_cl, vdata['out'].to(self.used_hw_dev))
+                total_correct += _calculate_number_true_predictions(dec_cl, vdata['out'].to(self.used_hw_dev))
                 total_samples += len(vdata['in'])
 
         valid_acc = float(int(total_correct) / total_samples)
         valid_loss = float(valid_loss / total_batches)
         return valid_loss, valid_acc
 
-    def do_training(self, path2save='', metrics=None) -> dict:
+    def do_training(self, path2save='', metrics=()) -> dict:
         """Start model training incl. validation and custom-own metric calculation
         Args:
             path2save:      Path for saving the results [Default: '' --> generate new folder]
@@ -74,8 +168,6 @@ class train_nn(training_pytorch):
         Returns:
             Dictionary with metrics from training (loss_train, loss_valid, own_metrics)
         """
-        if metrics is None:
-            metrics = ['acc']
         self._init_train(path2save=path2save, addon='_CL')
         self._save_config_txt('_class')
 
@@ -121,7 +213,6 @@ class train_nn(training_pytorch):
                 valid_loss, valid_acc = self.__do_valid_epoch()
                 print(f'... results of epoch {epoch + 1}/{self.settings_train.num_epochs} '
                       f'[{(epoch + 1) / self.settings_train.num_epochs * 100:.2f} %]: '
-                      
                       f'delta_loss = {train_loss-valid_loss:.5f}, delta_acc = {100 * (train_acc-valid_acc):.4f} %')
 
                 # Log the running loss averaged per batch for both training and validation
@@ -137,7 +228,7 @@ class train_nn(training_pytorch):
                 epoch_valid_acc.append(valid_acc)
                 epoch_valid_loss.append(valid_loss)
                 for idx, metric_used in enumerate(metrics):
-                    epoch_metric[idx].append(self.__do_calc_metric(metric_used))
+                    epoch_metric[idx].append(self._determine_epoch_metrics(metric_used))
 
                 # Tracking the best performance and saving the model
                 if valid_loss < best_loss[1]:
@@ -201,34 +292,3 @@ class train_nn(training_pytorch):
         result_pred = clus_pred_list.numpy()
         return self._getting_data_for_plotting(data_orig_list.numpy(), clus_orig_list.numpy(),
                                                {'yclus': result_pred}, addon='cl')
-
-    def __determine_precision_per_class(self) -> Tensor:
-        """Calculation of precision split per class/label in each epoch"""
-        self.model.eval()
-        with inference_mode():
-            cnt_val = zeros((len(self.cell_classes), ), dtype=float32)
-            cnt_total = zeros((len(self.cell_classes), ), dtype=float32)
-            for vdata in self.valid_loader[self._run_kfold]:
-                true = vdata['class'].to(self.used_hw_dev)
-                pred = self.model(vdata['in'].to(self.used_hw_dev))[1]
-
-                out = self._separate_classes_from_label(pred, true, self.__calculate_metric_accuracy)
-                cnt_val = add(cnt_val, out[0])
-                cnt_total = add(cnt_total, out[1])
-
-        return tensor(cnt_val / cnt_total, dtype=float32)
-
-    def __calculate_metric_accuracy(self, pred: Tensor, true: Tensor) -> Tensor:
-        """"""
-        return sum(eq(pred, true))
-
-    def __do_calc_metric(self, do_metrics: str) -> Tensor:
-        """Determination of additional metrics during training"""
-        metric_calc = {'acc': self.__determine_precision_per_class}
-
-        out = Tensor()
-        for metric_avai, func in metric_calc.items():
-            if metric_avai in do_metrics:
-                out = func()
-                break
-        return out

@@ -12,16 +12,17 @@ from package.dnn.pytorch.autoencoder import train_nn as train_nn_ae
 
 def do_train_classifier(config_ml: Config_ML_Pipeline, config_data: Config_Dataset,
                         config_train: Config_PyTorch, used_dataset, used_model,
-                        path2save='', print_results=True) -> [dict, dict, str]:
+                        path2save='', calc_custom_metrics=(), print_results=True) -> [dict, dict, str]:
     """Template for training DL classifiers using PyTorch (incl. plotting)
     Args:
-        config_ml:      Settings for handling the ML Pipeline
-        config_data:    Settings for handling and loading the dataset (just for saving)
-        config_train:   Settings for handling the PyTorch Trainings Routine
-        used_dataset:   Used custom-made DataLoader with data set
-        used_model:     Used custom-made PyTorch DL model
-        path2save:      Path for saving the results [Default: '' --> generate new subfolder in runs]
-        print_results:  Printing the results into Terminal
+        config_ml:          Settings for handling the ML Pipeline
+        config_data:        Settings for handling and loading the dataset (just for saving)
+        config_train:       Settings for handling the PyTorch Trainings Routine
+        used_dataset:       Used custom-made DataLoader with data set
+        used_model:         Used custom-made PyTorch DL model
+        path2save:          Path for saving the results [Default: '' --> generate new subfolder in runs]
+        calc_custom_metrics:List with metric names (custom-made) to determine during trainings process
+        print_results:      Printing the results into Terminal
     Returns:
         Dictionaries with results from training [metrics, validation data] + String to path for saving plots
     """
@@ -31,7 +32,7 @@ def do_train_classifier(config_ml: Config_ML_Pipeline, config_data: Config_Datas
     train_handler.load_data(data_set=used_dataset)
 
     # --- Processing Step #2: Do Training and Validation
-    metrics = train_handler.do_training(path2save=path2save)
+    metrics = train_handler.do_training(path2save=path2save, metrics=calc_custom_metrics)
     path2folder = train_handler.get_saving_path()
     data_result = train_handler.do_validation_after_training()
 
