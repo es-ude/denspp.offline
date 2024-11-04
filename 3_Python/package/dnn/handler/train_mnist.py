@@ -10,11 +10,12 @@ import package.dnn.template.models.mnist as models
 from package.plot.plot_dnn import plot_mnist_graphs
 
 
-def do_train_cl(settings: Config_ML_Pipeline, yaml_name_index='Config_MNIST') -> None:
+def do_train_cl(settings: Config_ML_Pipeline, yaml_name_index='Config_MNIST', custom_metrics=()) -> None:
     """Training routine for classifying neural activations
     Args:
         settings:           Handler for configuring the routine selection for train deep neural networks
-        yaml_name_index:
+        yaml_name_index:    Index of yaml file name for saving and configure configuration
+        custom_metrics:     List with metrics for calculation during validation phase ['accuracy', 'precision', 'recall', 'fbeta']
     Returns:
         None
     """
@@ -37,7 +38,7 @@ def do_train_cl(settings: Config_ML_Pipeline, yaml_name_index='Config_MNIST') ->
     used_model = models.models_available.build_model(config_train.model_name)
     do_train_classifier(
         config_ml=settings, config_data=config_data, config_train=config_train,
-        used_dataset=dataset, used_model=used_model, calc_custom_metrics=['acc', 'pre']
+        used_dataset=dataset, used_model=used_model, calc_custom_metrics=custom_metrics
     )
 
 

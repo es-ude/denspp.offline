@@ -4,8 +4,7 @@ from shutil import copy
 from datetime import datetime
 from sklearn.metrics import precision_recall_fscore_support
 
-from torch import (Tensor, tensor, zeros, load, save, concatenate,
-                   inference_mode, sum, cuda, cat, randn, eq, float32, add)
+from torch import Tensor, tensor, zeros, load, save, concatenate, inference_mode, sum, cuda, cat, randn, eq, add
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
 
 
@@ -67,46 +66,12 @@ class train_nn(training_pytorch):
             None
         """
         training_pytorch.__init__(self, config_train, config_data, do_train, do_print)
-        self._metric_methods = {'acc': self.__determine_accuracy_per_class,
-                                'pre': self.__determine_precision_per_class}
-
-    def __determine_accuracy_per_class(self) -> Tensor:
-        """Calculation of class-specific calculating metrics in each epoch using validation dataset
-        Return:
-            Tensor with class-specific accuracy
-        """
-        self.model.eval()
-        with inference_mode():
-            cnt_val = zeros((len(self.cell_classes),), dtype=float32)
-            cnt_total = zeros((len(self.cell_classes),), dtype=float32)
-            for vdata in self.valid_loader[self._run_kfold]:
-                true = vdata['class'].to(self.used_hw_dev)
-                pred = self.model(vdata['in'].to(self.used_hw_dev))[1]
-
-                out = self._separate_classes_from_label(pred, true, _calculate_number_true_predictions)
-                cnt_val = add(cnt_val, out[0])
-                cnt_total = add(cnt_total, out[1])
-
-        return tensor(cnt_val / cnt_total, dtype=float32)
-
-    def __determine_precision_per_class(self) -> Tensor:
-        """Calculation of class-specific calculating metrics in each epoch using validation dataset
-        Return:
-            Tensor with class-specific precision [precision, recall, fbeta]
-        """
-        self.model.eval()
-        with inference_mode():
-            first_run = True
-            for vdata in self.valid_loader[self._run_kfold]:
-                if first_run:
-                    data_true = vdata['class'].to(self.used_hw_dev)
-                    data_pred = self.model(vdata['in'].to(self.used_hw_dev))[1]
-                else:
-                    data_true = concatenate((data_true, vdata['class'].to(self.used_hw_dev)), dim=0)
-                    data_pred = concatenate((data_pred, self.model(vdata['in'].to(self.used_hw_dev))[1]), dim=0)
-                first_run = False
-            out = self._separate_classes_from_label(data_pred, data_true, _calculate_precision)
-        return out[0]
+        self._metric_methods = {'accuracy': self.__determine_accuracy_per_class,
+                                'precision': self.__determine_buffer_per_class,
+                                'recall': self.__determine_buffer_per_class,
+                                'fbeta': self.__determine_buffer_per_class}
+        self.__metric_buffer = dict()
+        self.__metric_result = dict()
 
     def __do_training_epoch(self) -> [float, float]:
         """Do training during epoch of training
@@ -123,6 +88,7 @@ class train_nn(training_pytorch):
             self.optimizer.zero_grad()
             tdata_out = tdata['out'].to(self.used_hw_dev)
             pred_cl, dec_cl = self.model(tdata['in'].to(self.used_hw_dev))
+
             loss = self.loss_fn(pred_cl, tdata_out)
             loss.backward()
             self.optimizer.step()
@@ -136,8 +102,10 @@ class train_nn(training_pytorch):
         train_loss = float(train_loss / total_batches)
         return train_loss, train_acc
 
-    def __do_valid_epoch(self) -> [float, float]:
+    def __do_valid_epoch(self, epoch_custom_metrics: list) -> [float, float]:
         """Do validation during epoch of training
+        Args:
+            epoch_custom_metrics:   List with entries of custom-made metric calculations
         Return:
             Floating value of validation loss and validation accuracy of used epoch
         """
@@ -149,16 +117,113 @@ class train_nn(training_pytorch):
         self.model.eval()
         with inference_mode():
             for vdata in self.valid_loader[self._run_kfold]:
+                # --- Validation phase of model
                 pred_cl, dec_cl = self.model(vdata['in'].to(self.used_hw_dev))
+                true_cl = vdata['out'].to(self.used_hw_dev)
 
-                valid_loss += self.loss_fn(pred_cl, vdata['out'].to(self.used_hw_dev)).item()
+                valid_loss += self.loss_fn(pred_cl, true_cl).item()
                 total_batches += 1
-                total_correct += _calculate_number_true_predictions(dec_cl, vdata['out'].to(self.used_hw_dev))
+                total_correct += _calculate_number_true_predictions(dec_cl, true_cl)
                 total_samples += len(vdata['in'])
+
+                # --- Calculating custom made metrics
+                for metric_used in epoch_custom_metrics:
+                    self._determine_epoch_metrics(metric_used)(dec_cl, true_cl, metric_used)
 
         valid_acc = float(int(total_correct) / total_samples)
         valid_loss = float(valid_loss / total_batches)
         return valid_loss, valid_acc
+
+    def __process_epoch_metrics_calculation(self, init_phase: bool, custom_made_metrics: list) -> None:
+        """Function for preparing the custom-made metric calculation
+        Args:
+            init_phase:         Boolean decision if processing part is in init (True) or in post-training phase (False)
+            custom_made_metrics:List with custom metrics for calculation during validation phase
+        Return:
+            None
+        """
+        # --- Init phase for generating empty data structure
+        if init_phase:
+            for key0 in custom_made_metrics:
+                # --- Checking if called metric calculation is in method available
+                method_avai = False
+                for key1 in self._metric_methods.keys():
+                    if key0 == key1:
+                        method_avai = True
+                        break
+
+                # --- Generating dummy
+                if method_avai:
+                    self.__metric_result.update({key0: list()})
+                    match key0:
+                        case 'accuracy':
+                            self.__metric_buffer.update(
+                                {key0: [zeros((len(self.cell_classes), )), zeros((len(self.cell_classes), ))]}
+                            )
+                        case 'precision':
+                            self.__metric_buffer.update({key0: [[], []]})
+                        case 'recall':
+                            self.__metric_buffer.update({key0: [[], []]})
+                        case 'fbeta':
+                            self.__metric_buffer.update({key0: [[], []]})
+                else:
+                    raise NotImplementedError(f"Used custom metric ({key0}) is not implemented - Please check!")
+        # --- Processing results
+        else:
+            for key0 in self.__metric_buffer.keys():
+                match key0:
+                    case 'accuracy':
+                        self.__metric_result[key0].append(tensor(self.__metric_buffer[key0][0] / self.__metric_buffer[key0][1]))
+                        self.__metric_buffer.update({key0: [zeros((len(self.cell_classes),)), zeros((len(self.cell_classes), ))]})
+                    case 'precision':
+                        out = self._separate_classes_from_label(
+                            self.__metric_buffer[key0][0], self.__metric_buffer[key0][1],
+                            _calculate_precision
+                        )
+                        self.__metric_result[key0].append(out[0])
+                        self.__metric_buffer.update({key0: [[], []]})
+                    case 'recall':
+                        out = self._separate_classes_from_label(
+                            self.__metric_buffer[key0][0], self.__metric_buffer[key0][1],
+                            _calculate_recall
+                        )
+                        self.__metric_result[key0].append(out[0])
+                        self.__metric_buffer.update({key0: [[], []]})
+                    case 'fbeta':
+                        out = self._separate_classes_from_label(
+                            self.__metric_buffer[key0][0], self.__metric_buffer[key0][1],
+                            _calculate_fbeta
+                        )
+                        self.__metric_result[key0].append(out[0])
+                        self.__metric_buffer.update({key0: [[], []]})
+
+    def __determine_accuracy_per_class(self, pred: Tensor, true: Tensor, *args) -> None:
+        """Calculation of class-specific calculating metrics in each epoch using validation dataset
+        Args:
+            pred:   Tensor with predicted values from model
+            true:   Tensor with true labels from dataset
+        Return:
+            None
+        """
+        out = self._separate_classes_from_label(pred, true, _calculate_number_true_predictions)
+        for idx in range(2):
+            self.__metric_buffer['accuracy'][idx] = add(self.__metric_buffer['accuracy'][idx], out[idx])
+
+    def __determine_buffer_per_class(self, pred: Tensor, true: Tensor, *args) -> None:
+        """Buffering all predicted and labeled data for later metric calculation
+        Args:
+            pred:   Tensor with predicted values from model
+            true:   Tensor with true labels from dataset
+            metric: Short name of used metric as args[0]
+        Return:
+            None
+        """
+        if len(self.__metric_buffer[args[0]][0]) == 0:
+            self.__metric_buffer[args[0]][0] = true
+            self.__metric_buffer[args[0]][1] = pred
+        else:
+            self.__metric_buffer[args[0]][0] = concatenate((self.__metric_buffer[args[0]][0], true), dim=0)
+            self.__metric_buffer[args[0]][1] = concatenate((self.__metric_buffer[args[0]][1], pred), dim=0)
 
     def do_training(self, path2save='', metrics=()) -> dict:
         """Start model training incl. validation and custom-own metric calculation
@@ -185,6 +250,7 @@ class train_nn(training_pytorch):
                   f"\n=====================================================================================")
 
         metric_out = dict()
+        self.__process_epoch_metrics_calculation(True, metrics)
         for fold in np.arange(self.settings_train.num_kfold):
             # --- Init fold
             best_loss = [1e6, 1e6]
@@ -196,7 +262,6 @@ class train_nn(training_pytorch):
             epoch_valid_acc = list()
             epoch_train_loss = list()
             epoch_valid_loss = list()
-            epoch_metric = [[] for _ in metrics]
 
             self.model.load_state_dict(load(path2model_init))
             self._run_kfold = fold
@@ -210,7 +275,7 @@ class train_nn(training_pytorch):
                     self.deterministic_generator.manual_seed(self.settings_train.deterministic_seed + epoch)
 
                 train_loss, train_acc = self.__do_training_epoch()
-                valid_loss, valid_acc = self.__do_valid_epoch()
+                valid_loss, valid_acc = self.__do_valid_epoch(metrics)
                 print(f'... results of epoch {epoch + 1}/{self.settings_train.num_epochs} '
                       f'[{(epoch + 1) / self.settings_train.num_epochs * 100:.2f} %]: '
                       f'delta_loss = {train_loss-valid_loss:.5f}, delta_acc = {100 * (train_acc-valid_acc):.4f} %')
@@ -227,8 +292,7 @@ class train_nn(training_pytorch):
                 epoch_train_loss.append(train_loss)
                 epoch_valid_acc.append(valid_acc)
                 epoch_valid_loss.append(valid_loss)
-                for idx, metric_used in enumerate(metrics):
-                    epoch_metric[idx].append(self._determine_epoch_metrics(metric_used))
+                self.__process_epoch_metrics_calculation(False, metrics)
 
                 # Tracking the best performance and saving the model
                 if valid_loss < best_loss[1]:
@@ -252,8 +316,8 @@ class train_nn(training_pytorch):
             # --- Saving metrics after each fold
             metric_fold.update({"train_acc": epoch_train_acc, "train_loss": epoch_train_loss,
                                 "valid_acc": epoch_valid_acc, "valid_loss": epoch_valid_loss})
-            for key, data in zip(metrics, epoch_metric):
-                metric_fold.update({key: data})
+            if len(metrics) != 0:
+                metric_fold.update(self.__metric_result)
             metric_out.update({f"fold_{fold:03d}": metric_fold})
 
         # --- Ending of all trainings phases

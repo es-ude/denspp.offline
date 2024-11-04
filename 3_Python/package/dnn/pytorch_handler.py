@@ -453,19 +453,18 @@ class training_pytorch:
         np.save(data2save, output)
         return output
 
-    def _determine_epoch_metrics(self, do_metrics: str) -> Tensor:
+    def _determine_epoch_metrics(self, do_metrics: str):
         """Determination of additional metrics during training
         Args:
             do_metrics:     String with index for calculating epoch metric
         Return:
-            Tensor with determined metric
+            Function for metric calculation
         """
-        out = Tensor()
+        func = Tensor
         for metric_avai, func in self._metric_methods.items():
             if metric_avai in do_metrics:
-                out = func()
                 break
-        return out
+        return func
 
     def _separate_classes_from_label(self, pred: Tensor, true: Tensor, *args) -> [Tensor, Tensor]:
         """Separating the classes for further metric processing
