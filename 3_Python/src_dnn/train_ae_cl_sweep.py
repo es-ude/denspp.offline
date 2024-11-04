@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from copy import deepcopy
 from package.yaml_handler import yaml_config_handler
@@ -15,8 +16,8 @@ import package.dnn.template.models.autoencoder_class as models_cl
 def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
                          feat_layer_start: int, feat_layer_inc: int, feat_layer_stop: int,
                          add_noise_cluster=False,
-                         num_epochs_trial=5,
-                         yaml_name_index='Config_AECL_Sweep') -> [dict, dict]:
+                         num_epochs_trial=50,
+                         yaml_name_index='Config_AECL_Sweep') -> dict:
     """Training routine for Autoencoders and Classification after Encoder (Sweep)
     Args:
         settings:           Handler for configuring the routine selection for train deep neural networks
@@ -32,8 +33,6 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
     # ------------ STEP #0: Loading YAML files
     # --- Loading the YAML file: Dataset
     default_data = deepcopy(DefaultSettingsDataset)
-    # default_data.data_path = 'data'
-    # default_data.data_file_name = '2023-11-24_Dataset-07_RGC_TDB_Merged.mat'
     yaml_data = yaml_config_handler(default_data, settings.get_path2config, f'{yaml_name_index}_Dataset')
     config_data = yaml_data.get_class(Config_Dataset)
 
@@ -53,9 +52,15 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
     config_train_cl = yaml_train.get_class(Config_PyTorch)
     del yaml_train, default_cl
 
-    path2save_base = ''
-    metrics_runs = list()
-    for feat_size in range(feat_layer_start, feat_layer_stop, feat_layer_inc):
+    path2save = os.path.join(config_data.get_path2folder_project, 'runs', 'ae_cl_sweep')
+    if os.path.exists(path2save):
+        os.remove(path2save)
+
+    metrics_runs = dict()
+    sweep_val = [idx for idx in range(feat_layer_start, feat_layer_stop, feat_layer_inc)]
+    sweep_val.append(feat_layer_stop)
+    for idx, feat_size in enumerate(sweep_val):
+        path2save_base = f"{path2save}/sweep_{idx:02d}_size{feat_size}"
         # ----------- Step #1: TRAINING AUTOENCODER
         used_dataset_ae = get_dataset_ae(
             settings=config_data,
@@ -72,7 +77,7 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
             path2save=path2save_base,
             used_dataset=used_dataset_ae,
             used_model=used_model_ae,
-            calc_custom_metrics=['snr']
+            calc_custom_metrics=['snr_in', 'snr_in_cl', 'dsnr_all', 'dsnr_cl']
         )
         del used_dataset_ae, used_model_ae
 
@@ -89,23 +94,30 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
             config_data=config_data,
             path2save=path2save_base,
             used_dataset=used_dataset_cl,
-            calc_custom_metrics=['acc']
-        )[0]
+            used_model=used_model_cl,
+            calc_custom_metrics=['precision']
+        )
         del used_dataset_cl, used_model_cl
-        metrics_runs.append([metrics_ae, metrics_cl])
+        metrics_runs.update({f"feat_{feat_size:03d}_ae": metrics_ae, f"feat_{feat_size:03d}_cl": metrics_cl})
 
-    # ----------- Step #3: Merge results
-    print("Run done")
+    # ----------- Step #3: Output results
+    np.save(f"{path2save}/metrics_ae_cl_sweep", metrics_runs, allow_pickle=True)
     return metrics_runs
 
 
 if __name__ == "__main__":
     from package.dnn.dnn_handler import Config_ML_Pipeline
+    from glob import glob
+
     yaml_handler = yaml_config_handler(DefaultSettings_MLPipe, 'config', 'Config_DNN')
     dnn_handler = yaml_handler.get_class(Config_ML_Pipeline)
+    dnn_handler.do_plot = False
+    dnn_handler.do_block = False
 
-    metrics_runs = dict()
+    # --- Step #1: Run results
+    print("===========================================\n Sweep Run for Training Autoencoder + Classification System\n")
+    metrics_run = do_train_ae_cl_sweep(dnn_handler, 1, 4, 16)
 
-    # List of epoch numbers (adjustable)
-    path2save_base_epoch = ''
-    do_train_ae_cl_sweep(dnn_handler, 1, 32, 1)
+    # --- Step #2: Plot results
+    print("===========================================\n Printing results and plot results\n")
+    print(metrics_run.keys())

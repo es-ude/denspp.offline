@@ -279,7 +279,8 @@ class train_nn(training_pytorch):
                 valid_loss, valid_acc = self.__do_valid_epoch(metrics)
                 print(f'... results of epoch {epoch + 1}/{self.settings_train.num_epochs} '
                       f'[{(epoch + 1) / self.settings_train.num_epochs * 100:.2f} %]: '
-                      f'delta_loss = {train_loss-valid_loss:.5f}, delta_acc = {100 * (train_acc-valid_acc):.4f} %')
+                      f'train_loss = {train_loss:.5f}, delta_loss = {train_loss-valid_loss:.5f}, '
+                      f'train_acc = {100* train_acc:.4f} %, delta_acc = {100 * (train_acc-valid_acc):.4f} %')
 
                 # Log the running loss averaged per batch for both training and validation
                 self._writer.add_scalar('Loss_train (CL)', train_loss, epoch+1)

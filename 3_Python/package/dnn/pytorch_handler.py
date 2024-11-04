@@ -1,4 +1,4 @@
-from os import mkdir, remove, getcwd
+from os import remove, getcwd, makedirs
 from os.path import exists, join
 import platform
 import cpuinfo
@@ -140,8 +140,8 @@ class training_pytorch:
         path2start = join(getcwd().split(start_folder)[0], start_folder)
         path2dst = join(path2start, new_folder)
         self._path2run = path2dst
-        if not exists(path2dst):
-            mkdir(path2dst)
+        makedirs(path2dst, exist_ok=True)
+
 
     def __setup_device(self) -> None:
         """Setup PyTorch for Training"""
@@ -173,29 +173,27 @@ class training_pytorch:
 
     def _init_train(self, path2save='', addon='') -> None:
         """Do init of class for training"""
-        if not exists(self._path2run):
-            mkdir(self._path2run)
-
+        # --- Generate links
         if not path2save:
             folder_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{self._index_folder}_{self._model_name}'
             self._path2save = join(self._path2run, folder_name)
         else:
             self._path2save = path2save
-
-        if not exists(self._path2save):
-            mkdir(self._path2save)
-
         self._path2temp = join(self._path2save, f'temp')
-        mkdir(self._path2temp)
+
+        # --- Generate folders
+        makedirs(self._path2run, exist_ok=True)
+        makedirs(self._path2save, exist_ok=True)
+        makedirs(self._path2temp, exist_ok=True)
+
+        # --- Transfer model to hardware
         self.model.to(device=self.used_hw_dev)
 
         # --- Copy settings to YAML file
         write_dict_to_yaml(translate_dataclass_to_dict(self.settings_data),
-                           filename='Config_Dataset',
-                           path2save=self._path2save)
+                           filename='Config_Dataset', path2save=self._path2save)
         write_dict_to_yaml(translate_dataclass_to_dict(self.settings_train),
-                           filename=f'Config_Training{addon}',
-                           path2save=self._path2save)
+                           filename=f'Config_Training{addon}', path2save=self._path2save)
 
     def _init_writer(self) -> None:
         """Do init of writer"""
@@ -481,7 +479,7 @@ class training_pytorch:
             xpos = argwhere(true == id).flatten()
             length_out[idx] = len(xpos)
             if args:
-                metric_out[idx].extend(args[0](pred[xpos], true[xpos]))
+                metric_out[idx].append(args[0](pred[xpos], true[xpos]))
             else:
                 metric_out[idx].extend(pred[xpos])
 
