@@ -1,6 +1,6 @@
-numpy
+numpy==1.26.4
 matplotlib
-scipy == 1.11.4
+scipy == 1.14.1
 tqdm == 4.66.5
 fxpmath == 0.4.9
 tqdm == 4.66.5
@@ -11,7 +11,7 @@ mplcursors == 0.5.3
 # Libs for electric circuit simulation
 PySpice == 1.5
 # Lib for impedance fitting from electrical stimulation signals
-impedancefitter == 2.0.8
+impedancefitter == 2.0.11
 # Libs for reading electrophysiology datasets
 neo == 0.13.0
 # Libs for using DNN (PyTorch)
