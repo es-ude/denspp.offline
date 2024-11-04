@@ -32,8 +32,8 @@ if __name__ == "__main__":
             do_train_ae_classifier(dnn_handler)
         case 4:
             # --- Autoencoder + Classifier (Sweep Run of Hidden Layer Size)
-            from src_dnn.train_ae_class_evaluation import do_train_ae_classifier
-            do_train_ae_classifier(dnn_handler)
+            from src_dnn.train_ae_class_evaluation import do_train_ae_cl_sweep
+            do_train_ae_cl_sweep(dnn_handler)
         case 5:
             # --- Spike Detection
             from src_dnn.train_sda import dnn_train_sda

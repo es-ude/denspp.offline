@@ -486,3 +486,7 @@ class training_pytorch:
                 metric_out[idx].extend(pred[xpos])
 
         return metric_out, length_out
+
+    def get_metric_methods(self) -> None:
+        """Function for calling the functions to calculate metrics during training phase"""
+        print(self._metric_methods.keys())

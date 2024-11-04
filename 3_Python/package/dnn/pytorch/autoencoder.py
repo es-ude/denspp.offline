@@ -22,9 +22,19 @@ def _calculate_snr(data: Tensor, mean: Tensor) -> Tensor:
     return 10 * log10(a0 / b0)
 
 
-def _calculate_snr_waveform(input_waveform: Tensor, pred_waveform: Tensor,
-                            mean_waveform: Tensor) -> Tensor:
-    """Calculation of class-specific calculating metrics in each epoch using validation dataset
+def _calculate_snr_waveform(input_waveform: Tensor, mean_waveform: Tensor) -> Tensor:
+    """Calculation of metric Signal-to-Noise ratio (SNR) of defined input and reference waveform
+    Args:
+        input_waveform:     Tensor array with input waveform
+        mean_waveform:      Tensor array with real mean waveform from dataset
+    Return:
+        Tensor with differential Signal-to-Noise ratio (SNR) of applied waveforms
+    """
+    return _calculate_snr(input_waveform, mean_waveform)
+
+
+def _calculate_dsnr_waveform(input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor) -> Tensor:
+    """Calculation of metric different Signal-to-Noise ratio (SNR) between defined input and predicted to reference waveform
     Args:
         input_waveform:     Tensor array with input waveform
         pred_waveform:      Tensor array with predicted waveform from model
@@ -52,7 +62,9 @@ class train_nn(training_pytorch):
         # --- Structure for calculating custom metrics during training
         self.__metric_buffer = dict()
         self.__metric_result = dict()
-        self._metric_methods = {'dsnr_all': self.__determine_snr_all, 'dsnr_cl': self.__determine_snr_class}
+        self._metric_methods = {'snr_in': self.__determine_snr_input, 'snr_in_cl': self.__determine_snr_input_class,
+                                'snr_out': self.__determine_snr_output, 'snr_out_cl': self.__determine_snr_output_class,
+                                'dsnr_all': self.__determine_dsnr_all, 'dsnr_cl': self.__determine_dsnr_class}
 
     def __do_training_epoch(self) -> float:
         """Do training during epoch of training
@@ -128,31 +140,92 @@ class train_nn(training_pytorch):
                     if key0 == key1:
                         method_avai = True
                         break
-
                 # --- Generating dummy
                 if method_avai:
                     self.__metric_result.update({key0: list()})
-                    match key0:
-                        case 'dsnr_all':
-                            self.__metric_buffer.update({key0: []})
-                        case 'dsnr_cl':
-                            self.__metric_buffer.update({key0: []})
-
+                    self.__metric_buffer.update({key0: []})
                 else:
                     raise NotImplementedError(f"Used custom metric ({key0}) is not implemented - Please check!")
         # --- Processing results
         else:
             for key0 in self.__metric_buffer.keys():
-                match key0:
-                    case 'dsnr_all':
-                        self.__metric_result[key0].append(self.__metric_buffer[key0])
-                        self.__metric_buffer.update({key0: []})
-                    case 'dsnr_cl':
-                        self.__metric_result[key0].append(self.__metric_buffer[key0])
-                        self.__metric_buffer.update({key0: []})
+                self.__metric_result[key0].append(self.__metric_buffer[key0])
+                self.__metric_buffer.update({key0: []})
 
-    def __determine_snr_all(self, input_waveform: Tensor, pred_waveform: Tensor,
-                            mean_waveform: Tensor, *args) -> None:
+    def __determine_snr_input(self, input_waveform: Tensor, pred_waveform: Tensor,
+                              mean_waveform: Tensor, *args) -> None:
+        """Calculation of SNR in each epoch using validation dataset
+        Args:
+            input_waveform:     Tensor array with input waveform
+            pred_waveform:      Tensor array with predicted waveform from model
+            mean_waveform:      Tensor array with real mean waveform from dataset
+        Return:
+            None
+        """
+        out = _calculate_snr_waveform(input_waveform, mean_waveform)
+        if isinstance(self.__metric_buffer[args[0]], list):
+            self.__metric_buffer[args[0]] = out
+        else:
+            self.__metric_buffer[args[0]] = concatenate((self.__metric_buffer[args[0]], out), dim=0)
+
+    def __determine_snr_input_class(self, input_waveform: Tensor, pred_waveform: Tensor,
+                              mean_waveform: Tensor, *args) -> None:
+        """Calculation of SNR in each epoch using validation dataset
+        Args:
+            input_waveform:     Tensor array with input waveform
+            pred_waveform:      Tensor array with predicted waveform from model
+            mean_waveform:      Tensor array with real mean waveform from dataset
+        Return:
+            None
+        """
+        out = self._separate_classes_from_label(
+            pred=_calculate_snr_waveform(input_waveform, mean_waveform),
+            true=args[1]
+        )
+        if len(self.__metric_buffer[args[0]]) == 0:
+            self.__metric_buffer[args[0]] = out[0]
+        else:
+            for idx, snr_class in enumerate(out[0]):
+                self.__metric_buffer[args[0]][idx].extend(snr_class)
+
+    def __determine_snr_output(self, input_waveform: Tensor, pred_waveform: Tensor,
+                              mean_waveform: Tensor, *args) -> None:
+        """Calculation of SNR in each epoch using validation dataset
+        Args:
+            input_waveform:     Tensor array with input waveform
+            pred_waveform:      Tensor array with predicted waveform from model
+            mean_waveform:      Tensor array with real mean waveform from dataset
+        Return:
+            None
+        """
+        out = _calculate_snr_waveform(pred_waveform, mean_waveform)
+        if isinstance(self.__metric_buffer[args[0]], list):
+            self.__metric_buffer[args[0]] = out
+        else:
+            self.__metric_buffer[args[0]] = concatenate((self.__metric_buffer[args[0]], out), dim=0)
+
+    def __determine_snr_output_class(self, input_waveform: Tensor, pred_waveform: Tensor,
+                              mean_waveform: Tensor, *args) -> None:
+        """Calculation of SNR in each epoch using validation dataset
+        Args:
+            input_waveform:     Tensor array with input waveform
+            pred_waveform:      Tensor array with predicted waveform from model
+            mean_waveform:      Tensor array with real mean waveform from dataset
+        Return:
+            None
+        """
+        out = self._separate_classes_from_label(
+            pred=_calculate_snr_waveform(pred_waveform, mean_waveform),
+            true=args[1]
+        )
+        if len(self.__metric_buffer[args[0]]) == 0:
+            self.__metric_buffer[args[0]] = out[0]
+        else:
+            for idx, snr_class in enumerate(out[0]):
+                self.__metric_buffer[args[0]][idx].extend(snr_class)
+
+    def __determine_dsnr_all(self, input_waveform: Tensor, pred_waveform: Tensor,
+                             mean_waveform: Tensor, *args) -> None:
         """Calculation of dSNR in each epoch using validation dataset
         Args:
             input_waveform:     Tensor array with input waveform
@@ -161,14 +234,14 @@ class train_nn(training_pytorch):
         Return:
             None
         """
-        out = _calculate_snr_waveform(input_waveform, pred_waveform, mean_waveform)
+        out = _calculate_dsnr_waveform(input_waveform, pred_waveform, mean_waveform)
         if isinstance(self.__metric_buffer[args[0]], list):
             self.__metric_buffer[args[0]] = out
         else:
             self.__metric_buffer[args[0]] = concatenate((self.__metric_buffer[args[0]], out), dim=0)
 
-    def __determine_snr_class(self, input_waveform: Tensor, pred_waveform: Tensor,
-                              mean_waveform: Tensor, *args) -> None:
+    def __determine_dsnr_class(self, input_waveform: Tensor, pred_waveform: Tensor,
+                               mean_waveform: Tensor, *args) -> None:
         """Calculation of class-specific dSNR in each epoch using validation dataset
         Args:
             input_waveform:     Tensor array with input waveform
@@ -177,7 +250,10 @@ class train_nn(training_pytorch):
         Return:
             None
         """
-        out = self._separate_classes_from_label(_calculate_snr_waveform(input_waveform, pred_waveform, mean_waveform), args[1])
+        out = self._separate_classes_from_label(
+            pred=_calculate_dsnr_waveform(input_waveform, pred_waveform, mean_waveform),
+            true=args[1]
+        )
         if len(self.__metric_buffer[args[0]]) == 0:
             self.__metric_buffer[args[0]] = out[0]
         else:
@@ -241,11 +317,11 @@ class train_nn(training_pytorch):
                           f'[{(epoch + 1) / self.settings_train.num_epochs * 100:.2f} %]: '
                           f'train_loss = {loss_train:.5f},'
                           f'\tvalid_loss = {loss_valid:.5f},'
-                          f'\tdelta_loss = {loss_train-loss_valid:.6f}')
+                          f'\tdelta_loss = {loss_train - loss_valid:.6f}')
 
                 # Log the running loss averaged per batch for both training and validation
-                self._writer.add_scalar('Loss_train (AE)', loss_train, epoch+1)
-                self._writer.add_scalar('Loss_valid (AE)', loss_valid, epoch+1)
+                self._writer.add_scalar('Loss_train (AE)', loss_train, epoch + 1)
+                self._writer.add_scalar('Loss_valid (AE)', loss_valid, epoch + 1)
                 self._writer.flush()
 
                 # Tracking the best performance and saving the model
@@ -260,7 +336,7 @@ class train_nn(training_pytorch):
                 # Early Stopping
                 if patience_counter <= 0:
                     if self._do_print_state:
-                        print(f"... training stopped due to no change after {epoch+1} epochs!")
+                        print(f"... training stopped due to no change after {epoch + 1} epochs!")
                     break
 
             copy(path2model, self._path2save)

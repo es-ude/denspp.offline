@@ -30,6 +30,7 @@ def do_train_classifier(config_ml: Config_ML_Pipeline, config_data: Config_Datas
     train_handler = train_nn_cl(config_train=config_train, config_data=config_data, do_train=True)
     train_handler.load_model(model=used_model, print_model=print_results)
     train_handler.load_data(data_set=used_dataset)
+    train_handler.get_metric_methods()
 
     # --- Processing Step #2: Do Training and Validation
     metrics = train_handler.do_training(path2save=path2save, metrics=calc_custom_metrics)
@@ -76,6 +77,7 @@ def do_train_autoencoder(config_ml: Config_ML_Pipeline, config_data: Config_Data
     train_handler.load_data(data_set=used_dataset)
 
     # --- Processing Step #2: Do Training and Validation
+    train_handler.get_metric_methods()
     metrics = train_handler.do_training(path2save=path2save, metrics=calc_custom_metrics)
     path2folder = train_handler.get_saving_path()
     data_result = train_handler.do_validation_after_training()
