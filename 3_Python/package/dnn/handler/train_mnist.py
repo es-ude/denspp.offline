@@ -15,7 +15,8 @@ def do_train_cl(settings: Config_ML_Pipeline, yaml_name_index='Config_MNIST', cu
     Args:
         settings:           Handler for configuring the routine selection for train deep neural networks
         yaml_name_index:    Index of yaml file name for saving and configure configuration
-        custom_metrics:     List with metrics for calculation during validation phase ['accuracy', 'precision', 'recall', 'fbeta']
+        custom_metrics:     List with metrics for calculation during validation phase
+                            ['accuracy', 'precision', 'recall', 'fbeta']
     Returns:
         None
     """

@@ -2,7 +2,7 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import Tensor, from_numpy, load, save, tensor, inference_mode, flatten, cuda, cat
+from torch import Tensor, load, save, inference_mode, flatten, cuda, cat, sub, concatenate
 from torch import max, min, log10, sum, randn
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
 
@@ -22,6 +22,21 @@ def _calculate_snr(data: Tensor, mean: Tensor) -> Tensor:
     return 10 * log10(a0 / b0)
 
 
+def _calculate_snr_waveform(input_waveform: Tensor, pred_waveform: Tensor,
+                            mean_waveform: Tensor) -> Tensor:
+    """Calculation of class-specific calculating metrics in each epoch using validation dataset
+    Args:
+        input_waveform:     Tensor array with input waveform
+        pred_waveform:      Tensor array with predicted waveform from model
+        mean_waveform:      Tensor array with real mean waveform from dataset
+    Return:
+        Tensor with differential Signal-to-Noise ratio (SNR) of applied waveforms
+    """
+    snr_in = _calculate_snr(input_waveform, mean_waveform)
+    snr_out = _calculate_snr(pred_waveform, mean_waveform)
+    return sub(snr_out, snr_in)
+
+
 class train_nn(training_pytorch):
     def __init__(self, config_train: Config_PyTorch, config_data: Config_Dataset, do_train=True, do_print=True) -> None:
         """Class for Handling Training of Autoencoders
@@ -34,11 +49,16 @@ class train_nn(training_pytorch):
             None
         """
         training_pytorch.__init__(self, config_train, config_data, do_train, do_print)
-        self._metric_methods = {'snr': self.__determine_snr_all,
-                                'snr_cl': self.__determine_snr_per_class}
+        # --- Structure for calculating custom metrics during training
+        self.__metric_buffer = dict()
+        self.__metric_result = dict()
+        self._metric_methods = {'dsnr_all': self.__determine_snr_all, 'dsnr_cl': self.__determine_snr_class}
 
     def __do_training_epoch(self) -> float:
-        """Do training during epoch of training"""
+        """Do training during epoch of training
+        Return:
+            Floating value with training loss value
+        """
         train_loss = 0.0
         total_batches = 0
 
@@ -60,8 +80,13 @@ class train_nn(training_pytorch):
             total_batches += 1
         return float(train_loss / total_batches)
 
-    def __do_valid_epoch(self) -> float:
-        """Do validation during epoch of training"""
+    def __do_valid_epoch(self, epoch_custom_metrics: list) -> float:
+        """Do validation during epoch of training
+        Args:
+            epoch_custom_metrics:   List with entries of custom-made metric calculations
+        Return:
+            Floating value with validation loss value
+        """
         total_batches = 0
         valid_loss = 0.0
 
@@ -70,6 +95,8 @@ class train_nn(training_pytorch):
             for vdata in self.valid_loader[self._run_kfold]:
                 data_x = vdata['in'].to(self.used_hw_dev)
                 data_y = vdata['out'].to(self.used_hw_dev)
+                data_m = vdata['mean'].to(self.used_hw_dev)
+                data_id = vdata['class'].to(self.used_hw_dev)
                 data_p = self.model(data_x)[1]
 
                 total_batches += 1
@@ -77,43 +104,85 @@ class train_nn(training_pytorch):
                     valid_loss += self.loss_fn(flatten(data_p, 1), flatten(data_y, 1)).item()
                 else:
                     valid_loss += self.loss_fn(data_p, data_y).item()
+
+                # --- Calculating custom made metrics
+                for metric_used in epoch_custom_metrics:
+                    self._determine_epoch_metrics(metric_used)(data_x, data_p, data_m, metric_used, data_id)
+
         return float(valid_loss / total_batches)
 
-    def __determine_snr_all(self) -> Tensor:
-        """Calculation of class-specific calculating metrics in each epoch using validation dataset
+    def __process_epoch_metrics_calculation(self, init_phase: bool, custom_made_metrics: list) -> None:
+        """Function for preparing the custom-made metric calculation
+        Args:
+            init_phase:         Boolean decision if processing part is in init (True) or in post-training phase (False)
+            custom_made_metrics:List with custom metrics for calculation during validation phase
         Return:
-            Tensor with Signal-to-Noise ratio (SNR) of all data
+            None
         """
-        self.model.eval()
-        inc_snr = list()
-        with inference_mode():
-            for vdata in self.valid_loader[self._run_kfold]:
-                data_mean = vdata['mean'].to(self.used_hw_dev)
-                data_in = vdata['in'].to(self.used_hw_dev)
-                pred_out = self.model(vdata['in'].to(self.used_hw_dev))[1]
+        # --- Init phase for generating empty data structure
+        if init_phase:
+            for key0 in custom_made_metrics:
+                # --- Checking if called metric calculation is in method available
+                method_avai = False
+                for key1 in self._metric_methods.keys():
+                    if key0 == key1:
+                        method_avai = True
+                        break
 
-                snr0_0 = _calculate_snr(data_in, data_mean)
-                snr1_0 = _calculate_snr(pred_out, data_mean)
-                inc_snr.extend((snr1_0 - snr0_0))
-        return tensor(inc_snr)
+                # --- Generating dummy
+                if method_avai:
+                    self.__metric_result.update({key0: list()})
+                    match key0:
+                        case 'dsnr_all':
+                            self.__metric_buffer.update({key0: []})
+                        case 'dsnr_cl':
+                            self.__metric_buffer.update({key0: []})
 
-    def __determine_snr_per_class(self) -> Tensor:
-        """Calculation of class-specific calculating metrics in each epoch using validation dataset
+                else:
+                    raise NotImplementedError(f"Used custom metric ({key0}) is not implemented - Please check!")
+        # --- Processing results
+        else:
+            for key0 in self.__metric_buffer.keys():
+                match key0:
+                    case 'dsnr_all':
+                        self.__metric_result[key0].append(self.__metric_buffer[key0])
+                        self.__metric_buffer.update({key0: []})
+                    case 'dsnr_cl':
+                        self.__metric_result[key0].append(self.__metric_buffer[key0])
+                        self.__metric_buffer.update({key0: []})
+
+    def __determine_snr_all(self, input_waveform: Tensor, pred_waveform: Tensor,
+                            mean_waveform: Tensor, *args) -> None:
+        """Calculation of dSNR in each epoch using validation dataset
+        Args:
+            input_waveform:     Tensor array with input waveform
+            pred_waveform:      Tensor array with predicted waveform from model
+            mean_waveform:      Tensor array with real mean waveform from dataset
         Return:
-            Tensor with class-specific Signal-to-Noise ratio (SNR)
+            None
         """
-        self.model.eval()
-        inc_snr = list()
-        with inference_mode():
-            for vdata in self.valid_loader[self._run_kfold]:
-                data_mean = vdata['mean'].to(self.used_hw_dev)
-                data_in = vdata['in'].to(self.used_hw_dev)
-                pred_out = self.model(vdata['in'].to(self.used_hw_dev))[1]
+        out = _calculate_snr_waveform(input_waveform, pred_waveform, mean_waveform)
+        if isinstance(self.__metric_buffer[args[0]], list):
+            self.__metric_buffer[args[0]] = out
+        else:
+            self.__metric_buffer[args[0]] = concatenate((self.__metric_buffer[args[0]], out), dim=0)
 
-                snr0_0 = _calculate_snr(data_in, data_mean)
-                snr1_0 = _calculate_snr(pred_out, data_mean)
-                inc_snr.extend((snr1_0 - snr0_0))
-        return tensor(inc_snr)
+    def __determine_snr_class(self, input_waveform: Tensor, pred_waveform: Tensor,
+                              mean_waveform: Tensor, *args) -> None:
+        """Calculation of class-specific dSNR in each epoch using validation dataset
+        Args:
+            input_waveform:     Tensor array with input waveform
+            pred_waveform:      Tensor array with predicted waveform from model
+            mean_waveform:      Tensor array with real mean waveform from dataset
+        Return:
+            None
+        """
+        out = self._separate_classes_from_label(_calculate_snr_waveform(input_waveform, pred_waveform, mean_waveform), args[1])
+        if len(self.__metric_buffer[args[0]]) == 0:
+            self.__metric_buffer[args[0]] = out[0]
+        else:
+            for idx, snr_class in enumerate(out[0]):
+                self.__metric_buffer[args[0]][idx].extend(snr_class)
 
     def do_training(self, path2save='', metrics=()) -> dict:
         """Start model training incl. validation and custom-own metric calculation
@@ -140,6 +209,7 @@ class train_nn(training_pytorch):
             print(f'\nTraining starts on {timestamp_string}'
                   f"\n=====================================================================================")
 
+        self.__process_epoch_metrics_calculation(True, metrics)
         for fold in np.arange(self.settings_train.num_kfold):
             # --- Init fold
             best_loss = np.array((1_000_000., 1_000_000.), dtype=float)
@@ -161,7 +231,10 @@ class train_nn(training_pytorch):
                     self.deterministic_generator.manual_seed(self.settings_train.deterministic_seed + epoch)
 
                 loss_train = self.__do_training_epoch()
-                loss_valid = self.__do_valid_epoch()
+                loss_valid = self.__do_valid_epoch(metrics)
+                epoch_loss_train.append(loss_train)
+                epoch_loss_valid.append(loss_valid)
+                self.__process_epoch_metrics_calculation(False, metrics)
 
                 if self._do_print_state:
                     print(f'... results of epoch {epoch + 1}/{self.settings_train.num_epochs} '
@@ -174,12 +247,6 @@ class train_nn(training_pytorch):
                 self._writer.add_scalar('Loss_train (AE)', loss_train, epoch+1)
                 self._writer.add_scalar('Loss_valid (AE)', loss_valid, epoch+1)
                 self._writer.flush()
-
-                # Saving metrics after each epoch
-                epoch_loss_train.append(loss_train)
-                epoch_loss_valid.append(loss_valid)
-                for idx, metric_used in enumerate(metrics):
-                    epoch_metric[idx].append(self._determine_epoch_metrics(metric_used))
 
                 # Tracking the best performance and saving the model
                 if loss_valid < best_loss[1]:
@@ -201,8 +268,7 @@ class train_nn(training_pytorch):
 
             # --- Saving results
             metric_fold.update({'loss_train': epoch_loss_train, 'loss_valid': epoch_loss_valid})
-            for key, data in zip(metrics, epoch_metric):
-                metric_fold.update({key: data})
+            metric_fold.update(self.__metric_result)
             metric_out.update({f"fold_{fold:03d}": metric_fold})
 
         # --- Ending of all trainings phases

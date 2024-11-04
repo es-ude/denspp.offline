@@ -475,11 +475,14 @@ class training_pytorch:
         Return:
             Calculated metric results in Tensor array and total samples of each class
         """
-        metric_out = zeros((len(self.cell_classes), ), dtype=float32)
-        length_out = zeros((len(self.cell_classes),), dtype=float32)
+        metric_out = [[] for _ in self.cell_classes]
+        length_out = zeros((len(self.cell_classes), ), dtype=float32)
         for idx, id in enumerate(unique(true)):
-            xpos = argwhere(pred == id).flatten()
+            xpos = argwhere(true == id).flatten()
             length_out[idx] = len(xpos)
-            metric_out[idx] = args[0](pred[xpos], true[xpos])
+            if args:
+                metric_out[idx].extend(args[0](pred[xpos], true[xpos]))
+            else:
+                metric_out[idx].extend(pred[xpos])
 
         return metric_out, length_out
