@@ -147,25 +147,25 @@ class training_pytorch:
         """Setup PyTorch for Training"""
         self.used_hw_cpu = (f"{cpuinfo.get_cpu_info()['brand_raw']} "
                             f"(@ {1e-9 * cpuinfo.get_cpu_info()['hz_actual'][0]:.3f} GHz)")
-        # Using GPU
+
         if cuda.is_available():
+            # Using GPU
             self.used_hw_gpu = cuda.get_device_name()
             self.used_hw_dev = device("cuda")
             self.used_hw_num = cuda.device_count()
             device0 = self.used_hw_gpu
             cuda.empty_cache()
-        # Using Apple M1 Chip
         elif backends.mps.is_available() and backends.mps.is_built() and self.os_type == "Darwin":
+            # Using Apple M1 Chip
             self.used_hw_gpu = 'None'
             self.used_hw_num = cuda.device_count()
             self.used_hw_dev = device("mps")
-            self.used_hw_num = 1
             device0 = self.used_hw_cpu
-        # Using normal CPU
         else:
+            # Using normal CPU
             self.used_hw_gpu = 'None'
             self.used_hw_dev = device("cpu")
-            self.used_hw_num = cpuinfo.get_cpu_info()['count']
+            self.used_hw_num = 1 # cpuinfo.get_cpu_info()['count']
             device0 = self.used_hw_cpu
 
         if self._do_print_state:
@@ -460,7 +460,7 @@ class training_pytorch:
         """
         func = Tensor
         for metric_avai, func in self._metric_methods.items():
-            if metric_avai in do_metrics:
+            if metric_avai == do_metrics:
                 break
         return func
 

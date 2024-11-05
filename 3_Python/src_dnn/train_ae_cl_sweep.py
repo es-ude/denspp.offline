@@ -1,4 +1,5 @@
 import os
+from shutil import rmtree
 import numpy as np
 from copy import deepcopy
 from package.yaml_handler import yaml_config_handler
@@ -54,7 +55,7 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
 
     path2save = os.path.join(config_data.get_path2folder_project, 'runs', 'ae_cl_sweep')
     if os.path.exists(path2save):
-        os.remove(path2save)
+        rmtree(path2save)
 
     metrics_runs = dict()
     sweep_val = [idx for idx in range(feat_layer_start, feat_layer_stop, feat_layer_inc)]
@@ -101,13 +102,12 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
         metrics_runs.update({f"feat_{feat_size:03d}_ae": metrics_ae, f"feat_{feat_size:03d}_cl": metrics_cl})
 
     # ----------- Step #3: Output results
-    np.save(f"{path2save}/metrics_ae_cl_sweep", metrics_runs, allow_pickle=True)
+    # np.save(f"{path2save}/metrics_ae_cl_sweep", metrics_runs, allow_pickle=True)
     return metrics_runs
 
 
 if __name__ == "__main__":
     from package.dnn.dnn_handler import Config_ML_Pipeline
-    from glob import glob
 
     yaml_handler = yaml_config_handler(DefaultSettings_MLPipe, 'config', 'Config_DNN')
     dnn_handler = yaml_handler.get_class(Config_ML_Pipeline)
@@ -115,9 +115,8 @@ if __name__ == "__main__":
     dnn_handler.do_block = False
 
     # --- Step #1: Run results
-    print("===========================================\n Sweep Run for Training Autoencoder + Classification System\n")
+    print("========================================\n Sweep Run for Training Autoencoder + Classification System\n")
     metrics_run = do_train_ae_cl_sweep(dnn_handler, 1, 4, 16)
 
     # --- Step #2: Plot results
     print("===========================================\n Printing results and plot results\n")
-    print(metrics_run.keys())

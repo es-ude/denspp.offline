@@ -323,6 +323,7 @@ class train_nn(training_pytorch):
 
         # --- Ending of all trainings phases
         self._end_training_routine(timestamp_start)
+        np.save(f"{self._path2save}/metric_cl", metric_out, allow_pickle=True)
         return metric_out
 
     def do_validation_after_training(self) -> dict:
