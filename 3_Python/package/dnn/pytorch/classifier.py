@@ -1,10 +1,11 @@
 import numpy as np
+from copy import deepcopy
 from os.path import join
 from shutil import copy
 from datetime import datetime
 from sklearn.metrics import precision_recall_fscore_support
 
-from torch import Tensor, tensor, zeros, load, save, concatenate, inference_mode, sum, cuda, cat, randn, eq, add, div
+from torch import Tensor, is_tensor, zeros, load, save, concatenate, inference_mode, sum, cuda, cat, randn, eq, add, div
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
 
 
@@ -27,7 +28,7 @@ def _calculate_precision(pred: Tensor, true: Tensor) -> Tensor:
     Return
         Tensor with metrics [precision]
     """
-    return precision_recall_fscore_support(true, pred, average="weighted", warn_for=tuple())[0]
+    return precision_recall_fscore_support(true, pred, average="micro", warn_for=tuple())[0]
 
 
 def _calculate_recall(pred: Tensor, true: Tensor) -> Tensor:
@@ -38,7 +39,7 @@ def _calculate_recall(pred: Tensor, true: Tensor) -> Tensor:
     Return
         Tensor with metrics [precision]
     """
-    return precision_recall_fscore_support(true, pred, average="weighted", warn_for=tuple())[1]
+    return precision_recall_fscore_support(true, pred, average="micro", warn_for=tuple())[1]
 
 
 def _calculate_fbeta(pred: Tensor, true: Tensor, beta=1.0) -> Tensor:
@@ -50,7 +51,7 @@ def _calculate_fbeta(pred: Tensor, true: Tensor, beta=1.0) -> Tensor:
     Return
         Tensor with metrics [precision]
     """
-    return precision_recall_fscore_support(true, pred, beta=beta, average="weighted", warn_for=tuple())[2]
+    return precision_recall_fscore_support(true, pred, beta=beta, average="micro", warn_for=tuple())[2]
 
 
 class train_nn(training_pytorch):
@@ -207,7 +208,7 @@ class train_nn(training_pytorch):
             None
         """
         out = self._separate_classes_from_label(pred, true, _calculate_number_true_predictions)
-        self.__metric_buffer[args[0]][0] = add(tensor(self.__metric_buffer[args[0]][0]), out[0])
+        self.__metric_buffer[args[0]][0] = add(self.__metric_buffer[args[0]][0], out[0])
         self.__metric_buffer[args[0]][1] = add(self.__metric_buffer[args[0]][1], out[1])
 
     def __determine_buffering_metric_calculation(self, pred: Tensor, true: Tensor, *args) -> None:
@@ -323,8 +324,17 @@ class train_nn(training_pytorch):
 
         # --- Ending of all trainings phases
         self._end_training_routine(timestamp_start)
-        np.save(f"{self._path2save}/metric_cl", metric_out, allow_pickle=True)
-        return metric_out
+
+        # --- Metric out for saving (converting from tensor to numpy)
+        metric_save = deepcopy(metric_out)
+        for key0, data0 in metric_out.items():
+            for key1, data1 in data0.items():
+                for idx, data2 in enumerate(data1):
+                    if is_tensor(data2):
+                        metric_save[key0][key1][idx] = data2.cpu().detach().numpy()
+
+        np.save(f"{self._path2save}/metric_cl", metric_save, allow_pickle=True)
+        return metric_save
 
     def do_validation_after_training(self) -> dict:
         """Performing the training with the best model after"""

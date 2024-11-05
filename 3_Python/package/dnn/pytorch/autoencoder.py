@@ -1,8 +1,9 @@
 import numpy as np
+from copy import deepcopy
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import Tensor, load, save, inference_mode, flatten, cuda, cat, sub, concatenate
+from torch import Tensor, is_tensor, load, save, inference_mode, flatten, cuda, cat, sub, concatenate
 from torch import max, min, log10, sum, randn
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
 
@@ -349,7 +350,16 @@ class train_nn(training_pytorch):
 
         # --- Ending of all trainings phases
         self._end_training_routine(timestamp_start)
-        np.save(f"{self._path2save}/metric_ae", metric_out, allow_pickle=True)
+
+        # --- Metric out for saving (converting from tensor to numpy)
+        metric_save = deepcopy(metric_out)
+        for key0, data0 in metric_out.items():
+            for key1, data1 in data0.items():
+                for idx, data2 in enumerate(data1):
+                    if is_tensor(data2):
+                        metric_save[key0][key1][idx] = data2.cpu().detach().numpy()
+
+        np.save(f"{self._path2save}/metric_cl", metric_save, allow_pickle=True)
         return metric_out
 
     def do_validation_after_training(self) -> dict:
