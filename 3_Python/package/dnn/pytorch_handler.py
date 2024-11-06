@@ -1,6 +1,7 @@
 from os import remove, getcwd, makedirs
-from os.path import exists, join
+from os.path import join
 import platform
+from copy import deepcopy
 import cpuinfo
 import numpy as np
 from random import seed
@@ -9,7 +10,7 @@ from shutil import rmtree
 from glob import glob
 from datetime import datetime
 
-from torch import (Tensor, zeros, unique, argwhere, device, cuda, backends, float32,
+from torch import (Tensor, is_tensor, zeros, unique, argwhere, device, cuda, backends, float32,
                    nn, randn, cat, Generator, manual_seed, use_deterministic_algorithms)
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader, SubsetRandomSampler
@@ -464,26 +465,46 @@ class training_pytorch:
                 break
         return func
 
-    def _separate_classes_from_label(self, pred: Tensor, true: Tensor, *args) -> [Tensor, Tensor]:
+    def _separate_classes_from_label(self, pred: Tensor, true: Tensor, label: str, *args) -> [Tensor, Tensor]:
         """Separating the classes for further metric processing
         Args:
-            pred:   Torch Tensor from prediction
-            true:   Torch Tensor from labeled dataset (groundtruth)
-            func:   Function for metric calculation
+            pred:           Torch Tensor from prediction
+            true:           Torch Tensor from labeled dataset (ground-truth)
+            key:            String with processing metric
+            func:           Function for metric calculation
         Return:
             Calculated metric results in Tensor array and total samples of each class
         """
-        metric_out = [[] for _ in self.cell_classes]
-        length_out = zeros((len(self.cell_classes), ), dtype=float32)
+        if args or not "cl" in label:
+            metric_out = zeros((len(self.cell_classes),), dtype=float32)
+        else:
+            metric_out = [zeros((1,)) for _ in self.cell_classes]
+
+        length_out = zeros((len(self.cell_classes),), dtype=float32)
         for idx, id in enumerate(unique(true)):
             xpos = argwhere(true == id).flatten()
             length_out[idx] = len(xpos)
             if args:
-                metric_out[idx].append(args[0](pred[xpos], true[xpos]))
+                metric_out[idx] += args[0](pred[xpos], true[xpos])
             else:
-                metric_out[idx].extend(pred[xpos])
-
+                metric_out[idx] = pred[xpos]
         return metric_out, length_out
+
+    def _converting_tensor_to_numpy(self, metric_used: dict) -> dict:
+        """Converting tensor array to numpy for later processing"""
+        # --- Metric out for saving (converting from tensor to numpy)
+        metric_save = deepcopy(metric_used)
+        for key0, data0 in metric_used.items():
+            for key1, data1 in data0.items():
+                for idx2, data2 in enumerate(data1):
+                    if isinstance(data2, list):
+                        for idx3, data3 in enumerate(data2):
+                            if is_tensor(data3):
+                                metric_save[key0][key1][idx2][idx3] = data3.cpu().detach().numpy()
+                    else:
+                        if is_tensor(data2):
+                            metric_save[key0][key1][idx2] = data2.cpu().detach().numpy()
+        return metric_save
 
     def get_metric_methods(self) -> None:
         """Function for calling the functions to calculate metrics during training phase"""

@@ -1,11 +1,10 @@
 import numpy as np
-from copy import deepcopy
 from os.path import join
 from shutil import copy
 from datetime import datetime
 from sklearn.metrics import precision_recall_fscore_support
 
-from torch import Tensor, is_tensor, zeros, load, save, concatenate, inference_mode, sum, cuda, cat, randn, eq, add, div
+from torch import Tensor, zeros, load, save, concatenate, inference_mode, sum, cuda, cat, randn, eq, add, div
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
 
 
@@ -179,21 +178,21 @@ class train_nn(training_pytorch):
                         self.__metric_buffer.update({key0: [zeros((len(self.cell_classes),)), zeros((len(self.cell_classes), ))]})
                     case 'precision':
                         out = self._separate_classes_from_label(
-                            self.__metric_buffer[key0][0], self.__metric_buffer[key0][1],
+                            self.__metric_buffer[key0][0], self.__metric_buffer[key0][1], key0,
                             _calculate_precision
                         )
                         self.__metric_result[key0].append(out[0])
                         self.__metric_buffer.update({key0: [[], []]})
                     case 'recall':
                         out = self._separate_classes_from_label(
-                            self.__metric_buffer[key0][0], self.__metric_buffer[key0][1],
+                            self.__metric_buffer[key0][0], self.__metric_buffer[key0][1], key0,
                             _calculate_recall
                         )
                         self.__metric_result[key0].append(out[0])
                         self.__metric_buffer.update({key0: [[], []]})
                     case 'fbeta':
                         out = self._separate_classes_from_label(
-                            self.__metric_buffer[key0][0], self.__metric_buffer[key0][1],
+                            self.__metric_buffer[key0][0], self.__metric_buffer[key0][1], key0,
                             _calculate_fbeta
                         )
                         self.__metric_result[key0].append(out[0])
@@ -207,7 +206,7 @@ class train_nn(training_pytorch):
         Return:
             None
         """
-        out = self._separate_classes_from_label(pred, true, _calculate_number_true_predictions)
+        out = self._separate_classes_from_label(pred, true, args[0], _calculate_number_true_predictions)
         self.__metric_buffer[args[0]][0] = add(self.__metric_buffer[args[0]][0], out[0])
         self.__metric_buffer[args[0]][1] = add(self.__metric_buffer[args[0]][1], out[1])
 
@@ -324,15 +323,7 @@ class train_nn(training_pytorch):
 
         # --- Ending of all trainings phases
         self._end_training_routine(timestamp_start)
-
-        # --- Metric out for saving (converting from tensor to numpy)
-        metric_save = deepcopy(metric_out)
-        for key0, data0 in metric_out.items():
-            for key1, data1 in data0.items():
-                for idx, data2 in enumerate(data1):
-                    if is_tensor(data2):
-                        metric_save[key0][key1][idx] = data2.cpu().detach().numpy()
-
+        metric_save = self._converting_tensor_to_numpy(metric_out)
         np.save(f"{self._path2save}/metric_cl", metric_save, allow_pickle=True)
         return metric_save
 

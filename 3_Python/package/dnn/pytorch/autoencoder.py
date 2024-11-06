@@ -1,9 +1,8 @@
 import numpy as np
-from copy import deepcopy
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import Tensor, is_tensor, load, save, inference_mode, flatten, cuda, cat, sub, concatenate
+from torch import Tensor, load, save, inference_mode, flatten, cuda, cat, sub, concatenate
 from torch import max, min, log10, sum, randn
 from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
 
@@ -144,14 +143,14 @@ class train_nn(training_pytorch):
                 # --- Generating dummy
                 if method_avai:
                     self.__metric_result.update({key0: list()})
-                    self.__metric_buffer.update({key0: []})
+                    self.__metric_buffer.update({key0: list()})
                 else:
                     raise NotImplementedError(f"Used custom metric ({key0}) is not implemented - Please check!")
         # --- Processing results
         else:
             for key0 in self.__metric_buffer.keys():
                 self.__metric_result[key0].append(self.__metric_buffer[key0])
-                self.__metric_buffer.update({key0: []})
+                self.__metric_buffer.update({key0: list()})
 
     def __determine_snr_input(self, input_waveform: Tensor, pred_waveform: Tensor,
                               mean_waveform: Tensor, *args) -> None:
@@ -181,13 +180,14 @@ class train_nn(training_pytorch):
         """
         out = self._separate_classes_from_label(
             pred=_calculate_snr_waveform(input_waveform, mean_waveform),
-            true=args[1]
+            true=args[1], label=args[0]
         )
         if len(self.__metric_buffer[args[0]]) == 0:
             self.__metric_buffer[args[0]] = out[0]
         else:
             for idx, snr_class in enumerate(out[0]):
-                self.__metric_buffer[args[0]][idx].extend(snr_class)
+                old = self.__metric_buffer[args[0]][idx]
+                self.__metric_buffer[args[0]][idx] = concatenate((old, snr_class), dim=0)
 
     def __determine_snr_output(self, input_waveform: Tensor, pred_waveform: Tensor,
                               mean_waveform: Tensor, *args) -> None:
@@ -217,13 +217,14 @@ class train_nn(training_pytorch):
         """
         out = self._separate_classes_from_label(
             pred=_calculate_snr_waveform(pred_waveform, mean_waveform),
-            true=args[1]
+            true=args[1], label=args[0]
         )
         if len(self.__metric_buffer[args[0]]) == 0:
             self.__metric_buffer[args[0]] = out[0]
         else:
             for idx, snr_class in enumerate(out[0]):
-                self.__metric_buffer[args[0]][idx].extend(snr_class)
+                old = self.__metric_buffer[args[0]][idx][0]
+                self.__metric_buffer[args[0]][idx] = concatenate((old, snr_class), dim=0)
 
     def __determine_dsnr_all(self, input_waveform: Tensor, pred_waveform: Tensor,
                              mean_waveform: Tensor, *args) -> None:
@@ -253,13 +254,14 @@ class train_nn(training_pytorch):
         """
         out = self._separate_classes_from_label(
             pred=_calculate_dsnr_waveform(input_waveform, pred_waveform, mean_waveform),
-            true=args[1]
+            true=args[1], label=args[0]
         )
         if len(self.__metric_buffer[args[0]]) == 0:
             self.__metric_buffer[args[0]] = out[0]
         else:
             for idx, snr_class in enumerate(out[0]):
-                self.__metric_buffer[args[0]][idx].extend(snr_class)
+                old = self.__metric_buffer[args[0]][idx]
+                self.__metric_buffer[args[0]][idx] = concatenate((old, snr_class), dim=0)
 
     def do_training(self, path2save='', metrics=()) -> dict:
         """Start model training incl. validation and custom-own metric calculation
@@ -350,16 +352,8 @@ class train_nn(training_pytorch):
 
         # --- Ending of all trainings phases
         self._end_training_routine(timestamp_start)
-
-        # --- Metric out for saving (converting from tensor to numpy)
-        metric_save = deepcopy(metric_out)
-        for key0, data0 in metric_out.items():
-            for key1, data1 in data0.items():
-                for idx, data2 in enumerate(data1):
-                    if is_tensor(data2):
-                        metric_save[key0][key1][idx] = data2.cpu().detach().numpy()
-
-        np.save(f"{self._path2save}/metric_cl", metric_save, allow_pickle=True)
+        metric_save = self._converting_tensor_to_numpy(metric_out)
+        np.save(f"{self._path2save}/metric_ae", metric_save, allow_pickle=True)
         return metric_out
 
     def do_validation_after_training(self) -> dict:
