@@ -1,199 +1,83 @@
-from os import mkdir
+from os import mkdir, getcwd
 from os.path import join, isdir
 from datetime import datetime
 import numpy as np
 from package.fpga.helper.signal_type import generation_sinusoidal_waveform
+from package.fpga.helper.translater import replace_variables_with_parameters, read_template_design_file
 
 
-def create_testbench(bitsize_lut: int,
-                     f_sys: float, f_rpt: float, f_sine: float,
-                     path2save='', num_periods=2) -> None:
-    """Creating the testbench environment in Verilog for using in digital design software (frames)
+def generate_waveform_lut(lut_bitsize: int, lut_signed: bool,
+                          f_sys: float, f_rpt: float, f_wvf: float,
+                          module_id='', copy_testbench=False, do_optimized=False,
+                          file_name='waveform_lut', path2save='') -> None:
+    """Generating Verilog file for generating waveform using LUTs
     Args:
-        bitsize_lut:    Used quantization level for generating sinusoidal waveform LUT
+        lut_bitsize:    Used quantization level for generating sinusoidal waveform LUT
+        lut_signed:     Decision if LUT values are signed [otherwise unsigned]
         f_sys:          System clock used in FPGA design
         f_rpt:          Frequency of the timer interrupt
-        f_sine:         Target frequency of the sinusoidal waveform at output
-        path2save:      Path for saving the verilog output files
-        num_periods:    Number of periods
-    Return:
-        None
-    """
-    cnt_wait_val = int(f_sys / f_rpt)
-    period_smp = int(1e9 / f_sine)
-    period_clk = int(0.5 * 1e9 / f_sys)
-
-    size_cnt_runs = int(period_smp/period_clk)
-    if path2save != '' and not isdir(path2save):
-        mkdir(path2save)
-
-    file_content = [
-        f'`timescale 1ns / 1ps',
-        f'// --------------------------------------------------------------------------------------',
-        f'// Company: UDE-ES',
-        f'// Design Name: Testbench for running SineWFG emulator',
-        f'// Generate file on: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}',
-        f'// Target Devices: Simulation file',
-        f'// Comments: Multply CNT_VAL_WAIT with (1 + 1/(size(sine_lutram)-1)) for right timing',
-        f'// ------------------------------------------------------------------------------------\n',
-        f'module TB_SineLUT();',
-        f'\tlocalparam CLK_CYC_NS = \'d{period_clk}, CNT_VAL_WAIT = \'d{cnt_wait_val};',
-        f'\tlocalparam CNT_PERIODS = \'d{size_cnt_runs}, NUM_PERIODS = \'d{num_periods};\n',
-        f'\treg CLK_SYS, nRST, EN_LUT;',
-        f'\treg [$clog2(CNT_VAL_WAIT):0] cnt_lut;',
-        f'\twire [{bitsize_lut - 1}:0] SINE_LUT;\n',
-        f'\tSineWFG_LUT#($clog2(CNT_VAL_WAIT)) DUT0(',
-        f'\t\t.CLK_SYS(CLK_SYS),',
-        f'\t\t.nRST(nRST),',
-        f'\t\t.EN(EN_LUT),',
-        f'\t\t.CNT_VAL(cnt_lut),',
-        f'\t\t.SINE(SINE_LUT)',
-        f'\t);\n',
-        f'\t// Control scheme for getting the data dependent on the sampling clock',
-        f'\talways begin',
-        f'\t\t#(CLK_CYC_NS) CLK_SYS = ~CLK_SYS;',
-        f'\tend\n',
-        f'\tinitial begin',
-        f'\t\tCLK_SYS = 1\'d0;',
-        f'\t\tnRST = 1\'d1;',
-        f'\t\tEN_LUT = 1\'d0;',
-        f'\t\tcnt_lut = CNT_VAL_WAIT;\n',
-        f'\t\t//Step #1: Reset-Phase',
-        f'\t\t# (7* CLK_CYC_NS);   nRST <= 1\'b1;',
-        f'\t\trepeat(2) begin',
-        f'\t\t\t# (10* CLK_CYC_NS);   nRST <= 1\'b0;',
-        f'\t\t\t# (10* CLK_CYC_NS);   nRST <= 1\'b1;',
-        f'\t\tend\n',
-        f'\t\t//Step #2: Enable SineLUT',
-        f'\t\t#(10* CLK_CYC_NS);   EN_LUT = 1\'b1;\n',
-        f'\t\t//Step #3: End simulation',
-        f'\t\t#(NUM_PERIODS* CNT_PERIODS* CLK_CYC_NS) $stop;',
-        f'\tend\n',
-        f'endmodule'
-    ]
-
-    # --- Write to file
-    print('... create testbench verilog file (*.v)')
-    with open(join(path2save, f'TB_SineLUT.v'), 'w') as tb_handler:
-        for line in file_content:
-            tb_handler.write(line + '\n')
-    tb_handler.close()
-
-
-def generate_sinelut(bitsize_lut: int,
-                     f_sys: float, f_rpt: float, f_sine: float, out_signed=False, do_optimized=False,
-                     path2save='') -> None:
-    """Generating Verilog file with SINE_LUT for sinusoidal waveform generation
-    Args:
-        bitsize_lut:    Used quantization level for generating sinusoidal waveform LUT
-        f_sys:          System clock used in FPGA design
-        f_rpt:          Frequency of the timer interrupt
-        f_sine:         Target frequency of the sinusoidal waveform at output
-        out_signed:     Decision if LUT values are signed [otherwise unsigned]
+        f_wvf:          Target frequency of the sinusoidal waveform at output
+        module_id:      ID of generated waveform LUT generator
+        copy_testbench: Copy the template testbench file to output folder
         do_optimized:   Decision if LUT resources should be minimized [only quarter and mirroring]
+        file_name:      Name of the generated files
         path2save:      Path for saving the verilog output files
     Return:
         None
     """
-    sine_lut = generation_sinusoidal_waveform(bitsize_lut, f_rpt, f_sine, do_optimized=do_optimized)
-    template_sinelut = __generate_lut_verilog_module(do_optimized)
+    do_cnt_external = False
+    do_read_external = False
 
-    # Bitwidth declaration
-    num_cntsize = f_sys / f_rpt
-    new_cnt_wait = num_cntsize * (1 + 1 / (sine_lut.size - 1))
-    size_cnt_wait = int(np.ceil(np.log2(new_cnt_wait)))
+    module_id_used = module_id if module_id else '0'
+    # --- Getting the design template
+    use_template_part = 'full' if not do_optimized else 'opt'
+    path2template = join(getcwd(), f'template_verilog/waveform_lut_{use_template_part}_template.v')
+    template_file = read_template_design_file(path2template)
 
-    num_lutsine = (1.0 if not do_optimized else 0.25) * f_rpt / f_sine
-    size_cnt_sine = int(np.ceil(np.log2(num_lutsine)))
-    size_lut_sine = int(np.log2(sine_lut.size))
-    size_ram = bitsize_lut - (1 if not do_optimized else 2)
+    # --- Definition of used parameters and replacement
+    lut_data = generation_sinusoidal_waveform(lut_bitsize, f_rpt, f_wvf,
+                                              do_signed=lut_signed, do_optimized=do_optimized)
+    lut_string = ''
+    lut_bitwidth_array = lut_bitsize if not do_optimized else lut_bitsize-1
+    for idx, value in enumerate(lut_data):
+        lut_string += f'\tassign lut_ram[{idx}] = {lut_bitwidth_array}\'d{value};\n'
+    params = {
+        'num_sinelut':              str(lut_data.size),
+        'bitsize_lut':              str(lut_bitsize),
+        'do_read_lut_external':     '//' if not do_read_external else '',
+        'device_id':                module_id_used,
+        'do_cnt_external':          '//' if not do_cnt_external else '',
+        'wait_cycles':              str(int(np.ceil(f_sys / f_rpt))),
+        'wait_cnt_width':           str(int(np.ceil(np.log2(np.ceil(f_sys / f_rpt))))),
+        'signed_type':              'signed' if lut_signed and not do_optimized else '',
+        'lut_data':                 lut_string,
+        'do_unsigned_call':         '//' if lut_signed else '',
+        'do_signed_call':           '//' if not lut_signed else '',
+        'period_cycles':            str(int(np.ceil(f_sys / f_wvf))),
+    }
 
+    # --- Generating files
     # Checking if path is available
     if path2save and not isdir(path2save):
         mkdir(path2save)
 
-    # --- Generating verilog files
-    print('... create verilog file for handling data (*.v)')
-    with open(join(path2save, 'SINE_WFG.v'), 'w') as v_handler:
-        for line in template_sinelut:
-            v_handler.write(line + '\n')
-
-        if do_optimized and not out_signed:
-            v_handler.write('assign SINE = (cnt_phase == 2\'d0) ? {1\'d1, sine_lutram[cnt_sine]} : \n')
-            v_handler.write('\t\t\t (cnt_phase == 2\'d1) ? {1\'d1, sine_lutram[SIZE_SINE_LUT-cnt_sine-\'d1]} : \n')
-            v_handler.write('\t\t\t (cnt_phase == 2\'d2) ? {1\'d0, {(' + str(bitsize_lut - 1) + '){1\'d1}}} - sine_lutram[cnt_sine] : \n'
-                            '\t\t\t {1\'d0, {(' + str(bitsize_lut - 1) + '){1\'d1}}} - sine_lutram[SIZE_SINE_LUT-cnt_sine-\'d1];\n\n')
-        else:
-            v_handler.write(f'assign SINE = sine_lutram[cnt_sine];\n\n')
-
-        # Control Routine
-        v_handler.write(f'//--- Counter\n')
-        v_handler.write(f'always@(posedge CLK_SYS) begin\n')
-        v_handler.write(f'\tif(~(nRST && EN)) begin\n')
-        if do_optimized:
-            v_handler.write(f'\t\tcnt_phase <= 2\'d0;\n')
-        v_handler.write(f'\t\tcnt_sine <= {size_cnt_sine}\'d0;\n')
-        v_handler.write(f'\t\tcnt_wait <= \'d0;\n')
-        v_handler.write(f'\tend else begin\n')
-        v_handler.write(f'\t\tif(cnt_wait == CNT_VAL) begin\n')
-        if do_optimized:
-            v_handler.write(
-                f'\t\t\tcnt_phase <= cnt_phase + ((cnt_sine == {size_cnt_sine}\'d{sine_lut.size - 1}) ? 2\'d1 : 2\'d0);\n')
-        v_handler.write(f'\t\t\tcnt_sine <= (cnt_sine == {size_cnt_sine}\'d{sine_lut.size-1}) ? {size_cnt_sine}\'d1 : cnt_sine + {size_cnt_sine}\'d1;\n')
-        v_handler.write(f'\t\t\tcnt_wait <= \'d0;\n')
-        v_handler.write(f'\t\tend else begin\n')
-        if do_optimized:
-            v_handler.write(f'\t\t\tcnt_phase <= cnt_phase;\n')
-        v_handler.write(f'\t\t\tcnt_sine <= cnt_sine;\n')
-        v_handler.write(f'\t\t\tcnt_wait <= cnt_wait + \'d1;\n')
-        v_handler.write(f'\t\tend\n')
-        v_handler.write(f'\tend\n')
-        v_handler.write(f'end\n\n')
-
-        # --- Code: Data values
-        v_handler.write(f'// --- Data save in BRAM\n')
-        for idx, val in enumerate(sine_lut):
-            if val >= 0:
-                out_string = f'{size_ram+1}\'d{val};\n'
-            else:
-                out_string = f'-{size_ram+1}\'d{np.abs(val)};\n'
-
-            v_handler.write(f'assign sine_lutram[{idx}] = ' + out_string)
-        # --- End of module
-        v_handler.write(f'\nendmodule\n')
+    # Design file
+    imple_file = replace_variables_with_parameters(template_file['func'], params)
+    with open(join(path2save, f'{file_name}{module_id_used.lower()}.v'), 'w') as v_handler:
+        for line in imple_file:
+            v_handler.write(line)
     v_handler.close()
 
+    # Testbench file
+    if copy_testbench:
+        path2testbench = join(getcwd(), f'testbench_verilog/waveform_lut_tb.v')
+        testbench_file = read_template_design_file(path2testbench)
+        tb_file = replace_variables_with_parameters(testbench_file['func'], params)
 
-def __generate_lut_verilog_module(do_optimized: bool) -> list:
-    """Generating the Code for writing in verilog file for testbench the code"""
-    params = [
-        'num_sinelut', 'bitsize_lut', 'wait_cntval', 'signed_type', 'num_cntsize', 'size_ram'
-    ]
-    file_content = [
-        '`timescale 1ns / 1ps',
-        '// ---------------------------------------------------',
-        '// Company: UDE-ES',
-        '// Design Name: SineLUT Generator',
-        f'// Generate file on: {datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}',
-        '// Original sinusoidal frequency = {f_sine / 1e3: .1f} kHz',
-        '// Size of SineLUT array: {$num_sinelut} ({$bitsize_lut} bit)',
-        '// ---------------------------------------------------\n',
-        'module SineWFG_LUT#(',
-        '\tparameter CNT_VAL_SIZE = 6\'d{$wait_cntval}',
-        ')(',
-        '\tinput wire CLK_SYS,',
-        '\tinput wire nRST,',
-        '\tinput wire EN,',
-        '\tinput wire [CNT_VAL_SIZE-\'d1:0] CNT_VAL,'
-        '\toutput wire {$signed_type} [{$bitsize_lut}-1:0] SINE',
-        ');\n',
-        'localparam SIZE_SINE_LUT = 8\'d{$num_sinelut};\n',
-        'reg [1:0] cnt_phase;\n' if do_optimized else '',
-        'reg [{$num_cntsize}-1:0] cnt_sine;',
-        'reg [CNT_VAL_SIZE-\'d1:0] cnt_wait;',
-        'wire {$signed_type} [{$size_ram}:0] sine_lutram [{$num_sinelut}-1:0];'
-    ]
-    return file_content
+        with open(join(path2save, f'waveform_lut_{module_id_used.lower()}_tb.v'), 'w') as v_handler:
+            for line in tb_file:
+                v_handler.write(line)
+        v_handler.close()
 
 
 if __name__ == '__main__':
@@ -201,8 +85,9 @@ if __name__ == '__main__':
     n_bit = 8
     f_sys = 100e6
     f_rpt = 200e3
-    f_sine = 1e3
+    f_sine = 10e3
 
-    print("\nCreating the verilog files\n====================================")
-    create_testbench(n_bit, f_sys, f_rpt, f_sine, path2save=path2save)
-    generate_sinelut(n_bit, f_sys, f_rpt, f_sine, do_optimized=True, path2save=path2save)
+    generate_waveform_lut(n_bit, False, f_sys, f_rpt, f_sine, module_id='0',
+                          do_optimized=False, copy_testbench=True, path2save=path2save)
+    generate_waveform_lut(n_bit, True, f_sys, f_rpt, f_sine, module_id='1',
+                          do_optimized=True, copy_testbench=False, path2save=path2save)
