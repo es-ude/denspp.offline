@@ -27,6 +27,7 @@ def generate_waveform_lut(lut_bitsize: int, lut_signed: bool,
     """
     do_cnt_external = False
     do_read_external = False
+    do_trgg_external = False
 
     module_id_used = module_id if module_id else '0'
     # --- Getting the design template
@@ -58,8 +59,10 @@ def generate_waveform_lut(lut_bitsize: int, lut_signed: bool,
         'do_unsigned_call':         '//' if lut_signed else '',
         'do_signed_call':           '//' if not lut_signed else '',
         'period_cycles':            str(int(np.ceil(f_sys / f_wvf))),
-        'do_read_lut_external': '//' if not do_read_external else '',
-        'do_cnt_external': '//' if not do_cnt_external else '',
+        'do_read_lut_external':     '//' if not do_read_external else '',
+        'do_cnt_external':          '//' if not do_cnt_external else '',
+        'do_trgg_external':         '//' if not do_trgg_external else '',
+        'date_copy_created':        datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
     }
 
     # --- Generating files
