@@ -47,9 +47,9 @@ def generate_fir_allpass_files(data_bitsize: int, t_dly: float, sampling_rate: f
 
     # Testbench file
     if copy_testbench:
-        path2testbench = join(getcwd(), f'testbench_verilog/fir_delay_testbench.v')
+        path2testbench = join(getcwd(), f'testbench_verilog/fir_delay_tb.v')
         testbench_file = read_template_design_file(path2testbench)
-        tb_file = read_template_design_file(testbench_file['func'], params)
+        tb_file = replace_variables_with_parameters(testbench_file['func'], params)
 
         with open(join(path2save, f'fir_delay_testbench{module_id_used.lower()}.v'), 'w') as v_handler:
             for line in tb_file:

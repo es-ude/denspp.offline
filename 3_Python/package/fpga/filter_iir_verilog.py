@@ -81,7 +81,7 @@ def generate_iir_filter_files(data_bitsize: int, data_signed: bool,
         mkdir(path2save)
 
     if mode_multiplier == 1:
-        copyfile(join(getcwd(), f'testbench_verilog/mult_lut_signed_testbench.v'),
+        copyfile(join(getcwd(), f'testbench_verilog/mult_lut_signed_tb.v'),
                  f'{path2save}/mult_lut_signed_testbench.v')
         copyfile('template_verilog/mult_lut_signed.v', f'{path2save}/mult_lut_signed.v')
 
@@ -94,9 +94,9 @@ def generate_iir_filter_files(data_bitsize: int, data_signed: bool,
 
     # Testbench file
     if copy_testbench:
-        path2testbench = join(getcwd(), f'testbench_verilog/iir_testbench.v')
+        path2testbench = join(getcwd(), f'testbench_verilog/iir_tb.v')
         testbench_file = read_template_design_file(path2testbench)
-        tb_file = read_template_design_file(testbench_file['func'], params)
+        tb_file = replace_variables_with_parameters(testbench_file['func'], params)
 
         with open(join(path2save, f'iir_testbench_{module_id_used.lower()}.v'), 'w') as v_handler:
             for line in tb_file:
