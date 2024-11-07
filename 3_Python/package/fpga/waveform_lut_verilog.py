@@ -37,23 +37,29 @@ def generate_waveform_lut(lut_bitsize: int, lut_signed: bool,
     # --- Definition of used parameters and replacement
     lut_data = generation_sinusoidal_waveform(lut_bitsize, f_rpt, f_wvf,
                                               do_signed=lut_signed, do_optimized=do_optimized)
-    lut_string = ''
-    lut_bitwidth_array = lut_bitsize if not do_optimized else lut_bitsize-1
+    lut_bitsize_array = lut_bitsize if not do_optimized else lut_bitsize - 1
+    lut_string_array = ''
+    lut_string_stream = ''
     for idx, value in enumerate(lut_data):
-        lut_string += f'\tassign lut_ram[{idx}] = {lut_bitwidth_array}\'d{value};\n'
+        lut_string_array += f'\t\tassign lut_ram[{idx}] = {lut_bitsize_array}\'d{value};\n'
+    for value in reversed(lut_data):
+        lut_string_stream += f'{lut_bitsize_array}\'d{value}, '
+    lut_string_stream = lut_string_stream[:-2]
+
     params = {
         'num_sinelut':              str(lut_data.size),
         'bitsize_lut':              str(lut_bitsize),
-        'do_read_lut_external':     '//' if not do_read_external else '',
         'device_id':                module_id_used,
-        'do_cnt_external':          '//' if not do_cnt_external else '',
         'wait_cycles':              str(int(np.ceil(f_sys / f_rpt))),
         'wait_cnt_width':           str(int(np.ceil(np.log2(np.ceil(f_sys / f_rpt))))),
         'signed_type':              'signed' if lut_signed and not do_optimized else '',
-        'lut_data':                 lut_string,
+        'lut_data_array':           lut_string_array,
+        'lut_data_stream':          lut_string_stream,
         'do_unsigned_call':         '//' if lut_signed else '',
         'do_signed_call':           '//' if not lut_signed else '',
         'period_cycles':            str(int(np.ceil(f_sys / f_wvf))),
+        'do_read_lut_external': '//' if not do_read_external else '',
+        'do_cnt_external': '//' if not do_cnt_external else '',
     }
 
     # --- Generating files

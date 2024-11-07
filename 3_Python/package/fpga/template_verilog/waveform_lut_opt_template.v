@@ -8,8 +8,9 @@
 {$do_read_lut_external}`define LUT{$device_id}_ACCESS_EXTERNAL
 {$do_cnt_external}`define LUT{$device_id}_COUNT_EXTERNAL
 
-//CODE FOR READING AND SLICING DATA FROM EXTERNAL
-//
+// --- CODE FOR READING DATA FROM EXTERNAL
+// wire {$signed_type} [{$num_sinelut} * {$bitsize_lut} - 'd1:0] LUT_ROM = {{$lut_data_stream}};
+
 
 module LUT_WVF_GEN{$device_id}#(
 	parameter LUT_WIDTH = 10'd{$num_sinelut},
@@ -41,12 +42,22 @@ module LUT_WVF_GEN{$device_id}#(
     `endif
     reg [1:0] cnt_phase;
 
+    // --- Processing LUT data
     assign LUT_END = (cnt_sine == (LUT_WIDTH-'d1)) && (cnt_phase == 2'd3);
     wire {$signed_type} [BIT_WIDTH-'d2:0] lut_ram [LUT_WIDTH-'d1:0];
     //Unsigned Processing
     {$do_unsigned_call}assign LUT_VALUE =  (cnt_phase == 2'd0) ? {1'd1, lut_ram[cnt_sine]} : ((cnt_phase == 2'd1) ? {1'd1, lut_ram[LUT_WIDTH-cnt_sine-'d1]} : ((cnt_phase == 2'd2) ? {1'd0, {(BIT_WIDTH-'d2){1'd1}}} - lut_ram[cnt_sine] : ({1'd0, {(BIT_WIDTH-'d2){1'd1}}} - lut_ram[LUT_WIDTH-cnt_sine-'d1])));
-   //Signed Processing
+    //Signed Processing
     {$do_unsigned_call}assign LUT_VALUE =  (cnt_phase == 2'd0) ? {1'd0, lut_ram[cnt_sine]} : ((cnt_phase == 2'd1) ? {1'd0, lut_ram[LUT_WIDTH-cnt_sine-'d1]} : ((cnt_phase == 2'd2) ? {1'd1, -lut_ram[cnt_sine]-'d1} : ({1'd1, -lut_ram[LUT_WIDTH-cnt_sine-'d1]-'d1})));
+    `ifdef LUT{$device_id}_ACCESS_EXTERNAL
+        integer i0;
+        for(i0 = 'd0; i0 < LUT_WIDTH; i0 = i0 + 'd1) begin
+            lut_ram[i0] = LUT_ROM[i0+:BIT_WIDTH-'d1];
+        end
+    `else
+        // --- Data save in BRAM
+{$lut_data_array}
+    `endif
 
     //--- Counter for Quarter Wave Reading (Symmetric)
     always@(posedge CLK_SYS) begin
@@ -66,7 +77,4 @@ module LUT_WVF_GEN{$device_id}#(
             end
         end
     end
-
-    // --- Data save in BRAM
-{$lut_data}
 endmodule

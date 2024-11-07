@@ -8,8 +8,9 @@
 {$do_read_lut_external}`define LUT{$device_id}_ACCESS_EXTERNAL
 {$do_cnt_external}`define LUT{$device_id}_COUNT_EXTERNAL
 
-//CODE FOR READING AND SLICING DATA FROM EXTERNAL
-//
+// --- CODE FOR READING DATA FROM EXTERNAL
+// wire {$signed_type} [{$num_sinelut} * {$bitsize_lut} - 'd1:0] LUT_ROM = {{$lut_data_stream}};
+
 
 module LUT_WVF_GEN{$device_id}#(
 	parameter LUT_WIDTH = 10'd{$num_sinelut},
@@ -40,11 +41,21 @@ module LUT_WVF_GEN{$device_id}#(
         reg [$clog2(WAIT_CYC)-'d1:0] cnt_wait;
     `endif
 
+    // --- Processing LUT data
     assign LUT_END = (cnt_sine == (LUT_WIDTH-'d1));
     wire {$signed_type} [BIT_WIDTH-'d1:0] lut_ram [LUT_WIDTH-'d1:0];
     assign LUT_VALUE = lut_ram[cnt_sine];
+    `ifdef LUT{$device_id}_ACCESS_EXTERNAL
+        integer i0;
+        for(i0 = 'd0; i0 < LUT_WIDTH; i0 = i0 + 'd1) begin
+            lut_ram[i0] = LUT_ROM[i0+:BIT_WIDTH];
+        end
+    `else
+        // --- Data save in BRAM
+{$lut_data_array}
+    `endif
 
-    //--- Counter for Full LUT Reading
+    // --- Counter for Full LUT Reading
     always@(posedge CLK_SYS) begin
         if(~(nRST && EN)) begin
             cnt_sine <= 'd0;
@@ -60,6 +71,4 @@ module LUT_WVF_GEN{$device_id}#(
         end
     end
 
-    // --- Data save in BRAM
-{$lut_data}
 endmodule
