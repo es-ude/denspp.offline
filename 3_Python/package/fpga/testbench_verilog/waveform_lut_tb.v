@@ -20,7 +20,7 @@ module TB_LUT_WVF();
 
     // --- Control lines
 	reg CLK_SYS, nRST, EN_LUT, TRGG_LUT;
-	wire {$signed_type} [{$bitsize_lut}-'d1:0] LUT_DATA;
+	wire  [8-'d1:0] LUT_DATA;
     wire END_LUT;
 
 	LUT_WVF_GEN{$device_id} DUT(
@@ -40,10 +40,12 @@ module TB_LUT_WVF();
 		#(CLK_CYC_NS) CLK_SYS = ~CLK_SYS;
 	end
 
+	integer i0;
 	initial begin
 		CLK_SYS = 1'd0;
 		nRST = 1'd1;
 		EN_LUT = 1'd0;
+		TRGG_LUT = 1'd0;
 
 		//Step #1: Reset-Phase
 		# (7* CLK_CYC_NS);   nRST <= 1'b1;
@@ -56,7 +58,11 @@ module TB_LUT_WVF();
 		#(10* CLK_CYC_NS);   EN_LUT = 1'b1;
 
 		//Step #3: End simulation
-		#(NUM_PERIODS* CNT_PERIODS* CLK_CYC_NS);
+		for(i0='d0; i0 < 100; i0 = i0 + 'd1) begin
+            #(2* CNT_VAL_WAIT* CLK_CYC_NS - 2*CLK_CYC_NS);    TRGG_LUT = 1'd1;
+            #(2* CLK_CYC_NS);                                 TRGG_LUT = 1'd0;
+        end
+        #(48* CLK_CYC_NS);
 		$stop;
 	end
 
