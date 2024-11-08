@@ -22,7 +22,8 @@
 {$do_trgg_external}`define LUT{$device_id}_TRGG_EXTERNAL
 
 // --- CODE FOR READING DATA FROM EXTERNAL
-// wire {$signed_type} [{$num_sinelut} * {$bitsize_lut} - 'd1:0] LUT_ROM = {{$lut_data_stream}};
+// wire {$signed_type} [{$num_sinelut} * ({$bitsize_lut}-'d1) - 'd1:0] LUT_ROM;
+// assign LUT_ROM = {{$lut_data_stream}};
 
 
 module LUT_WVF_GEN{$device_id}#(
@@ -37,30 +38,43 @@ module LUT_WVF_GEN{$device_id}#(
 	input wire CLK_SYS,
 	input wire nRST,
 	input wire EN,
-	`ifdef LUT{$device_id}_COUNT_EXTERNAL
-	    input wire [$clog2(LUT_WIDTH)-'d1:0] WAIT_CYC,
-	`endif
-	`ifdef LUT{$device_id}_ACCESS_INTERNAL
-	    input wire {$signed_type} [BIT_WIDTH * LUT_WIDTH - 'd1:0] LUT_ROM,
-	`endif
 	`ifdef LUT{$device_id}_TRGG_EXTERNAL
 	    input wire TRGG_CNT_FLAG,
-	`endif
+    `elsif LUT{$device_id}_COUNT_EXTERNAL
+        input wire [$clog2(LUT_WIDTH)-'d1:0] WAIT_CYC,
+    `endif
+    `ifdef LUT{$device_id}_ACCESS_EXTERNAL
+        input wire {$signed_type} [(BIT_WIDTH-'d1) * LUT_WIDTH - 'd1:0] LUT_ROM,
+    `endif
 	output wire {$signed_type} [BIT_WIDTH-'d1:0] LUT_VALUE,
 	output wire LUT_END
 );
 
     // --- Registers for counting and controlling
+    wire increase_cnt_sine;
     reg [$clog2(LUT_WIDTH)-'d1:0] cnt_sine;
-    `ifdef LUT{$device_id}_COUNT_EXTERNAL
-        reg [WAIT_WIDTH-'d1:0] cnt_wait;
-    `else
-        reg [$clog2(WAIT_CYC)-'d1:0] cnt_wait;
-    `endif
     reg [1:0] cnt_phase;
     `ifndef LUT{$device_id}_TRGG_EXTERNAL
-        wire TRGG_CNT_FLAG;
-        assign TRGG_CNT_FLAG = 1'd0;
+        `ifdef LUT{$device_id}_COUNT_EXTERNAL
+            reg [WAIT_WIDTH-'d1:0] cnt_wait;
+        `else
+            reg [$clog2(WAIT_CYC)-'d1:0] cnt_wait;
+        `endif
+        // --- Counter for Downsampling System Clock
+        always@(posedge CLK_SYS) begin
+            if(~(nRST && EN)) begin
+                cnt_wait <= 'd0;
+            end else begin
+                if(cnt_wait == WAIT_CYC-'d1) begin
+                    cnt_wait <= 'd0;
+                end else begin
+                    cnt_wait <= cnt_wait + 'd1;
+                end
+            end
+        end
+        assign increase_cnt_sine = (cnt_wait == WAIT_CYC-'d1);
+    `else
+        assign increase_cnt_sine = TRGG_CNT_FLAG;
     `endif
 
     // --- Processing LUT data
@@ -69,11 +83,11 @@ module LUT_WVF_GEN{$device_id}#(
     //Unsigned Processing
     {$do_unsigned_call}assign LUT_VALUE = (cnt_phase == 2'd0) ? {1'd1, lut_ram[cnt_sine]} : ((cnt_phase == 2'd1) ? {1'd1, lut_ram[LUT_WIDTH-cnt_sine-'d1]} : ((cnt_phase == 2'd2) ? {1'd0, {(BIT_WIDTH-'d2){1'd1}}} - lut_ram[cnt_sine] : ({1'd0, {(BIT_WIDTH-'d2){1'd1}}} - lut_ram[LUT_WIDTH-cnt_sine-'d1])));
     //Signed Processing
-    {$do_unsigned_call}assign LUT_VALUE = (cnt_phase == 2'd0) ? {1'd0, lut_ram[cnt_sine]} : ((cnt_phase == 2'd1) ? {1'd0, lut_ram[LUT_WIDTH-cnt_sine-'d1]} : ((cnt_phase == 2'd2) ? {1'd1, -lut_ram[cnt_sine]-'d1} : ({1'd1, -lut_ram[LUT_WIDTH-cnt_sine-'d1]-'d1})));
+    {$do_signed_call}assign LUT_VALUE = (cnt_phase == 2'd0) ? {1'd0, lut_ram[cnt_sine]} : ((cnt_phase == 2'd1) ? {1'd0, lut_ram[LUT_WIDTH-cnt_sine-'d1]} : ((cnt_phase == 2'd2) ? {1'd1, -lut_ram[cnt_sine]-'d1} : ({1'd1, -lut_ram[LUT_WIDTH-cnt_sine-'d1]-'d1})));
     `ifdef LUT{$device_id}_ACCESS_EXTERNAL
-        integer i0;
+        genvar i0;
         for(i0 = 'd0; i0 < LUT_WIDTH; i0 = i0 + 'd1) begin
-            lut_ram[i0] = LUT_ROM[i0+:BIT_WIDTH-'d1];
+            assign lut_ram[i0] = LUT_ROM[i0*(BIT_WIDTH-'d1)+:BIT_WIDTH-'d1];
         end
     `else
         // --- Data save in BRAM
@@ -85,16 +99,13 @@ module LUT_WVF_GEN{$device_id}#(
         if(~(nRST && EN)) begin
             cnt_phase <= 2'd0;
             cnt_sine <= 'd0;
-            cnt_wait <= 'd0;
         end else begin
-            if(cnt_wait == WAIT_CYC-'d1 || TRG_CNT_FLAG) begin
+            if(increase_cnt_sine) begin
                 cnt_phase <= cnt_phase + ((cnt_sine == LUT_WIDTH-'d1) ? 2'd1 : 2'd0);
                 cnt_sine <= (cnt_sine == (LUT_WIDTH-'d1)) ? 'd1 : cnt_sine + 'd1;
-                cnt_wait <= 'd0;
             end else begin
                 cnt_phase <= cnt_phase;
                 cnt_sine <= cnt_sine;
-                cnt_wait <= (TRG_CNT_FLAG) ? 'd0 : cnt_wait + 'd1;
             end
         end
     end
