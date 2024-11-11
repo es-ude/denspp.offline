@@ -205,34 +205,41 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     # --- Settings
-    bitwidth = 16
+    bitwidth = [6, 8, 10, 12, 16]
     fs = 2e6
     Ntmp = [9, 11, 13, 15, 17, 21, 23, 25, 27, 31]
     fsine = 1e3
     t_end = 0.5
     lut_optimized = False
+    do_plot = False
 
+    results = dict()
     print(f"\nLUT generation and analysis for different configurations\n==============================================")
-    for Nsine in Ntmp:
-        # --- Transient signal generation incl. reference
-        lut_waveform_opt = generation_sinusoidal_waveform(bitwidth, Nsine* fsine, fsine, do_signed=True, do_optimized=True)
-        lut_waveform_full = generation_sinusoidal_waveform(bitwidth, Nsine * fsine, fsine, do_signed=True, do_optimized=False)
-        lut_used = lut_waveform_opt if lut_optimized else lut_waveform_full
+    for bitwidth_used in bitwidth:
+        for Nsine in Ntmp:
+            # --- Transient signal generation incl. reference
+            lut_waveform_opt = generation_sinusoidal_waveform(bitwidth_used, Nsine* fsine, fsine, do_signed=True, do_optimized=True)
+            lut_waveform_full = generation_sinusoidal_waveform(bitwidth_used, Nsine * fsine, fsine, do_signed=True, do_optimized=False)
+            lut_used = lut_waveform_opt if lut_optimized else lut_waveform_full
 
-        tran_signals = creating_timeseries_waveform(fs, (Nsine-1)* fsine, t_end, lut_used, lut_optimized=lut_optimized)
-        tran_ref = (2 ** (bitwidth - 1) - 1) * np.sin(2 * np.pi * fsine * tran_signals['t'] - np.pi / Nsine)
+            tran_signals = creating_timeseries_waveform(fs, (Nsine-1)* fsine, t_end, lut_used, lut_optimized=lut_optimized)
+            tran_ref = (2 ** (bitwidth_used - 1) - 1) * np.sin(2 * np.pi * fsine * tran_signals['t'] - np.pi / Nsine)
 
-        # --- Spectral Transformation and metric calculation
-        freq, Y = do_fft(tran_signals['wvf'], tran_signals['fs'])
-        tran_signals.update({'freq': freq, 'Y': Y})
+            # --- Spectral Transformation and metric calculation
+            freq, Y = do_fft(tran_signals['wvf'], tran_signals['fs'])
+            tran_signals.update({'freq': freq, 'Y': Y})
 
-        # --- Plotting
-        metrics = calculate_metrics(tran_signals, tran_ref, fsine)
-        plot_waveform_results(tran_signals, lut_used, tran_ref, Nsine == Ntmp[-1], metrics)
+            # --- Plotting
+            metrics = calculate_metrics(tran_signals, tran_ref, fsine)
+            if do_plot:
+                plot_waveform_results(tran_signals, lut_used, tran_ref,
+                                      Nsine == Ntmp[-1] and bitwidth_used == bitwidth[-1], metrics)
 
-        # --- Print results
-        sim = metrics['SIM']
-        thd = metrics['THD']
-        mae = metrics['MBE']
-        mape = metrics['MAPE']
-        print(f"LUT_SIZE = {Nsine}: MAE = {mae:.4f}, MAPE = {mape:.4f}, Similarity = {100 * sim:.4f} % and THD = {thd:.2f} dB")
+            # --- Print results
+            results.update({f'run_b{bitwidth_used:02d}_l{Nsine:03d}': metrics})
+            sim = metrics['SIM']
+            thd = metrics['THD']
+            mae = metrics['MBE']
+            mape = metrics['MAPE']
+            print(f"LUT_SIZE = {Nsine} @ {bitwidth_used} bit: MAE = {mae:.4f}, MAPE = {mape:.4f}, "
+                  f"Similarity = {100 * sim:.4f} % and THD = {thd:.2f} dB")
