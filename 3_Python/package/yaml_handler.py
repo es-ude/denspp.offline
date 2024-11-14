@@ -66,7 +66,7 @@ class yaml_config_handler:
     def __init__(self, yaml_template: type | dict, path2yaml='config', yaml_name='Config_Train', start_folder='3_Python'):
         """Creating a class for handling YAML files
         Args:
-            yaml_template:        Dummy dataclass with entries or dictionary (is only generated if YAML not exist)
+            yaml_template:      Dummy dataclass with entries or dictionary (is only generated if YAML not exist)
             path2yaml:          String with path to the folder which has the YAML file [Default: '']
             yaml_name:          String with name of the YAML file [Default: 'Config_Train']
             start_folder:       Folder to start looking for configuration folder
@@ -79,11 +79,11 @@ class yaml_config_handler:
             write_dict_to_yaml(data2yaml, self.__yaml_name, self.__path2yaml)
             print("... created new yaml file in folder!")
 
-        self._data = {}
         self._data = read_yaml_to_dict(
             self.__yaml_name,
             self.__path2yaml
         )
+        self.__check_scheme_validation(yaml_template, self._data)
 
     def __remove_ending_from_filename(self, file_name: str) -> str:
         """Function for removing data type ending
@@ -99,7 +99,21 @@ class yaml_config_handler:
                 break
         return yaml_file_name
 
-    def __check
+    def __check_scheme_validation(self, template: type | dict, real_file: type | dict) -> bool:
+        """Function for validating the key entries from template yaml and real yaml file
+        :param template:    Dictionary or class from the template for generating yaml file
+        :param real_file:   Dictionary from real_file
+        :return:
+            Boolean decision if both key are equal
+        """
+        template_used = translate_dataclass_to_dict(template) if not isinstance(template, dict) else template
+        real_used = translate_dataclass_to_dict(real_file) if not isinstance(real_file, dict) else real_file
+
+        equal_chck = template_used.keys() == real_used.keys()
+        if not equal_chck:
+            raise RuntimeError("Config file not valid! - Please check and remove actual config file!")
+        else:
+            return template_used.keys() == real_used.keys()
 
     def list_keys(self) -> None:
         """Printing all keys and values of available content in dict"""
