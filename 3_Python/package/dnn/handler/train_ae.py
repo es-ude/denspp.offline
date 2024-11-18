@@ -7,6 +7,7 @@ from package.dnn.pytorch_pipeline import do_train_autoencoder
 from package.plot.plot_dnn import results_training
 from package.dnn.template.dataset.autoencoder import prepare_training
 import package.dnn.template.models.autoencoder_dnn as models
+from datetime import date
 
 
 def do_train_neural_autoencoder(settings: Config_ML_Pipeline, add_noise_cluster=False,
@@ -40,9 +41,11 @@ def do_train_neural_autoencoder(settings: Config_ML_Pipeline, add_noise_cluster=
     else:
         used_model = models.models_available.build_model(config_train.model_name)
 
+    path4vhdl = f'vhdl/run_{date.today()}'
+
     metrics, data_result, path2folder = do_train_autoencoder(
         config_ml=settings, config_data=config_data, config_train=config_train,
-        used_dataset=dataset, used_model=used_model, calc_custom_metrics=['snr']
+        used_dataset=dataset, used_model=used_model, calc_custom_metrics=['snr'], save_vhdl=True, path4vhdl=path4vhdl
     )
 
     if settings.do_plot:
@@ -53,6 +56,9 @@ def do_train_neural_autoencoder(settings: Config_ML_Pipeline, add_noise_cluster=
             yclus=data_result['valid_clus'], snr=metrics[used_first_fold]['snr'],
             show_plot=settings.do_block
         )
+
+
+
     return metrics, data_result
 
 

@@ -54,7 +54,7 @@ def do_train_classifier(config_ml: Config_ML_Pipeline, config_data: Config_Datas
 
 def do_train_autoencoder(config_ml: Config_ML_Pipeline, config_data: Config_Dataset,
                          config_train: Config_PyTorch, used_dataset, used_model,
-                         path2save='', calc_custom_metrics=()) -> [dict, dict, str]:
+                         path2save='', calc_custom_metrics=(), save_vhdl=False, path4vhdl='', print_model=False) -> [dict, dict, str]:
     """Template for training DL classifiers using PyTorch (incl. plotting)
     Args:
         config_ml:              Settings for handling the ML Pipeline
@@ -69,13 +69,17 @@ def do_train_autoencoder(config_ml: Config_ML_Pipeline, config_data: Config_Data
     """
     # ---Processing Step #1: Preparing Trainings Handler, Build Model
     train_handler = train_nn_ae(config_train=config_train, config_data=config_data, do_train=True)
-    train_handler.load_model(model=used_model)
+    train_handler.load_model(model=used_model, print_model=print_model)
     train_handler.load_data(data_set=used_dataset)
 
     # --- Processing Step #2: Do Training and Validation
     metrics = train_handler.do_training(path2save=path2save, metrics=calc_custom_metrics)
     path2folder = train_handler.get_saving_path()
     data_result = train_handler.do_validation_after_training()
+
+    # --- Save VHDL Code
+    if save_vhdl:
+        train_handler.save_model_to_vhdl(path4vhdl=path4vhdl)
 
     # --- Processing Step #3: Plotting
     if config_ml.do_plot:
