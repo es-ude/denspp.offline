@@ -1,3 +1,4 @@
+from copy import deepcopy
 from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import Config_ML_Pipeline
 from package.dnn.pytorch_dataclass import Config_Dataset, DefaultSettingsDataset, Config_PyTorch, DefaultSettingsTrainCE
@@ -20,7 +21,7 @@ def dnn_train_sda(settings: Config_ML_Pipeline, sda_threshold=4) -> None:
     config_data = yaml_data.get_class(Config_Dataset)
 
     # --- Loading the YAML file: Model training
-    default_train = DefaultSettingsTrainCE
+    default_train = deepcopy(DefaultSettingsTrainCE)
     default_train.model_name = models.dnn_sda_v1.__name__
     yaml_train = yaml_config_handler(default_train, 'config', 'Config_SDA_Train')
     config_train = yaml_train.get_class(Config_PyTorch)

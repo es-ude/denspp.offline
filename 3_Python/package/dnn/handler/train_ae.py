@@ -1,3 +1,4 @@
+from copy import deepcopy
 from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import Config_ML_Pipeline
 from package.dnn.pytorch_dataclass import (Config_PyTorch, DefaultSettingsTrainMSE,
@@ -24,7 +25,7 @@ def do_train_neural_autoencoder(settings: Config_ML_Pipeline, add_noise_cluster=
     config_data = yaml_data.get_class(Config_Dataset)
 
     # --- Loading the YAML file: Model training
-    default_train = DefaultSettingsTrainMSE
+    default_train = deepcopy(DefaultSettingsTrainMSE)
     default_train.model_name = models.dnn_ae_v1.__name__
     yaml_nn = yaml_config_handler(default_train, settings.get_path2config, f'{yaml_name_index}_Training')
     config_train = yaml_nn.get_class(Config_PyTorch)
@@ -42,7 +43,7 @@ def do_train_neural_autoencoder(settings: Config_ML_Pipeline, add_noise_cluster=
 
     metrics, data_result, path2folder = do_train_autoencoder(
         config_ml=settings, config_data=config_data, config_train=config_train,
-        used_dataset=dataset, used_model=used_model, calc_custom_metrics=['snr']
+        used_dataset=dataset, used_model=used_model, calc_custom_metrics=['dsnr_all']
     )
 
     if settings.do_plot:
@@ -50,7 +51,7 @@ def do_train_neural_autoencoder(settings: Config_ML_Pipeline, add_noise_cluster=
         results_training(
             path=path2folder, cl_dict=data_result['cl_dict'], feat=data_result['feat'],
             yin=data_result['input'], ypred=data_result['pred'], ymean=dataset.get_mean_waveforms,
-            yclus=data_result['valid_clus'], snr=metrics[used_first_fold]['snr'],
+            yclus=data_result['valid_clus'], snr=metrics[used_first_fold]['dsnr_all'],
             show_plot=settings.do_block
         )
     return metrics, data_result

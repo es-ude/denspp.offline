@@ -1,3 +1,4 @@
+from copy import deepcopy
 from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import Config_ML_Pipeline
 from package.dnn.pytorch_dataclass import (Config_PyTorch, DefaultSettingsDataset,
@@ -21,7 +22,7 @@ def do_train_neural_spike_classification(settings: Config_ML_Pipeline, yaml_name
     config_data = yaml_data.get_class(Config_Dataset)
 
     # --- Loading the YAML file: Model training
-    default_train = DefaultSettingsTrainCE
+    default_train = deepcopy(DefaultSettingsTrainCE)
     default_train.model_name = models.spike_cl_v1.__name__
     yaml_train = yaml_config_handler(default_train, settings.get_path2config, f'{yaml_name_index}_TrainCL')
     config_train = yaml_train.get_class(Config_PyTorch)

@@ -1,14 +1,12 @@
 import os
-import numpy as np
 from scipy.io import loadmat
 
 from package.data_call.call_spike_files import DataLoader
 from package.data_call.call_handler import SettingsDATA
 from src_neuro.pipeline_data import Pipeline
-import package.fpga.verilog_translate_frames as verilog_frame
-import package.fpga.verilog_translate_timeseries_1ch as verilog_time
-import package.fpga.veriloga_translate_timeseries_1ch as veriloga_time
-from package.fpga.verilog_translate_weights import read_model_weights
+import package.fpga.translate_frames_verilog as verilog_frame
+import package.fpga.translate_timeseries_verilog as verilog_time
+import package.fpga.translate_timeseries_veriloga as veriloga_time
 
 
 settings_data = SettingsDATA(
@@ -66,7 +64,6 @@ def do_data_transfer_timeseries_cadence(path: str) -> None:
     print('\nTransfering time series signal (raw data) from neural datasets into Vivado testbenches')
     # --- Loading the src_neuro
 
-
     # ------ Loading Data: Getting the data
     print("... loading the datasets")
     datahandler = DataLoader(settings_data)
@@ -106,13 +103,6 @@ def do_read_frames(path2read_mat: str, path2save: str, bitsize_frame: int) -> No
     )
 
 
-def do_read_dnn_weights(path2model: str) -> None:
-    """Routine for reading DNN weights from trained model"""
-    read_model_weights(path2model)
-
-
 if __name__ == "__main__":
-    do_data_transfer_timeseries_vivado('data')
+    do_data_transfer_timeseries_vivado('../../data')
     # do_data_transfer_timeseries_cadence('data')
-    # do_read_frames('data')
-    # do_read_dnn_weights()

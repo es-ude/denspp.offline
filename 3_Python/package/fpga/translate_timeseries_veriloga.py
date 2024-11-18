@@ -4,8 +4,6 @@ from datetime import datetime
 import numpy as np
 
 
-# TODO: Write the code for verilogA testings
-# TODO: Check if delay and smoothing via VerilogA commands can be included
 def translate_data(raw_data: np.ndarray,
                    path2save='data/asic_sim', username='<user>',
                    trigger=np.zeros(shape=(1,), dtype=int),

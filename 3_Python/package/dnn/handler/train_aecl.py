@@ -1,3 +1,4 @@
+from copy import deepcopy
 from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import Config_ML_Pipeline
 from package.dnn.pytorch_dataclass import (Config_PyTorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE,
@@ -26,14 +27,14 @@ def do_train_ae_classifier(settings: Config_ML_Pipeline, yaml_name_index='Config
     del yaml_data
 
     # --- Loading the YAML file: Autoencoder Model training
-    default_train_ae = DefaultSettingsTrainMSE
+    default_train_ae = deepcopy(DefaultSettingsTrainMSE)
     default_train_ae.model_name = models_ae.cnn_ae_v1.__name__
     yaml_nn0 = yaml_config_handler(default_train_ae, settings.get_path2config, f'{yaml_name_index}_TrainAE')
     config_train_ae = yaml_nn0.get_class(Config_PyTorch)
     del default_train_ae, yaml_nn0
 
     # --- Loading the YAML file: Classifier Model training
-    default_train_cl = DefaultSettingsTrainCE
+    default_train_cl = deepcopy(DefaultSettingsTrainCE)
     default_train_cl.model_name = models_cl.classifier_ae_v1.__name__
     yaml_nn1 = yaml_config_handler(default_train_cl, settings.get_path2config, f'{yaml_name_index}_TrainCL')
     config_train_cl = yaml_nn1.get_class(Config_PyTorch)
