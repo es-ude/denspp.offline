@@ -8,7 +8,7 @@ from package.fpga.helper.translater import (get_embedded_datatype, replace_varia
 
 
 def generate_fir_allpass_files(data_bitsize: int, data_signed: bool, sampling_rate: float, t_dly: float,
-                               filter_id='', file_name='filter_fir_all', path2save='') -> None:
+                               filter_id='', file_name='filter_fir_all', path2save='', define_path='src') -> None:
     """Generating C files for IIR filtering on microcontroller
     Args:
         data_bitsize:   Used quantization level for data stream
@@ -18,6 +18,7 @@ def generate_fir_allpass_files(data_bitsize: int, data_signed: bool, sampling_ra
         filter_id:      ID of used filter structure
         file_name:      Name of the generated files
         path2save:      Path for saving the verilog output files
+        define_path:    Path for loading the header file in IDE [Default: 'src']
     Return:
         None
     """
@@ -28,7 +29,7 @@ def generate_fir_allpass_files(data_bitsize: int, data_signed: bool, sampling_ra
 
     params = {
         'datetime_created':     datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
-        'path2include':         'lib',
+        'path2include':         define_path,
         'template_name':        'filter_fir_all_template.h',
         'device_id':            module_id_used.upper(),
         'data_type':            data_type_filter,
