@@ -281,7 +281,7 @@ class DataLoader(_DataController):
         self.raw_data.data_time = self.raw_data.data_raw[0].shape[0] / self.raw_data.data_fs_orig
         # Groundtruth
         spike_xoffset = int(-0.5e-6 * self.raw_data.data_fs_orig)
-        rgc_translator = CellSelector(1)
+        rgc_translator = CellSelector(1, 0)
         self.raw_data.label_exist = True
         for idx, pos_ch in enumerate(elec_process):
             self.raw_data.evnt_xpos.append(spike_xpos[idx] - spike_xoffset)
