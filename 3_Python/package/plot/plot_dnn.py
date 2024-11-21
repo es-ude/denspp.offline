@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from package.plot.plot_common import cm_to_inch, save_figure, sel_color, get_plot_color
+from package.plot.plot_common import cm_to_inch, save_figure, get_plot_color
 
 
 def results_training(path: str,
@@ -80,9 +80,9 @@ def plot_autoencoder_snr(snr: list, path2save='', do_boxplot=False, show_plot=Fa
         plt.grid()
 
         if not do_boxplot:
-            plt.plot(snr0[:, 0], color=sel_color[0], marker='.', label='min')
-            plt.plot(snr0[:, 1], color=sel_color[1], marker='.', label='mean')
-            plt.plot(snr0[:, 2], color=sel_color[2], marker='.', label='max')
+            plt.plot(snr0[:, 0], color=get_plot_color(0), marker='.', label='min')
+            plt.plot(snr0[:, 1], color=get_plot_color(1), marker='.', label='mean')
+            plt.plot(snr0[:, 2], color=get_plot_color(2), marker='.', label='max')
             plt.legend()
             pos = np.linspace(0, snr0.shape[0]-1, num=11, endpoint=True, dtype=int)
         else:
