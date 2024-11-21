@@ -90,7 +90,7 @@ def do_train_autoencoder(config_ml: Config_ML_Pipeline, config_data: Config_Data
         plot_loss(loss_train=metrics[used_first_fold]['loss_train'],
                   loss_valid=metrics[used_first_fold]['loss_valid'],
                   type=config_train.loss, path2save=path2folder)
-        plot_statistic_data(train_cl=data_result['valid_clus'], valid_cl=data_result['valid_clus'],
+        plot_statistic_data(train_cl=data_result['train_clus'], valid_cl=data_result['valid_clus'],
                             path2save=path2folder, cl_dict=used_dataset.get_dictionary)
     # --- Output
     return metrics, data_result, path2folder

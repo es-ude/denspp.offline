@@ -79,18 +79,18 @@ def plot_autoencoder_snr(snr: list, path2save='', do_boxplot=False, show_plot=Fa
         plt.subplots_adjust(hspace=0, wspace=0.5)
         plt.grid()
 
+        epochs_ite = np.array([idx+1 for idx in range(snr0[:, 0].size)])
         if not do_boxplot:
-            plt.plot(snr0[:, 0], color=get_plot_color(0), marker='.', label='min')
-            plt.plot(snr0[:, 1], color=get_plot_color(1), marker='.', label='mean')
-            plt.plot(snr0[:, 2], color=get_plot_color(2), marker='.', label='max')
+            plt.plot(epochs_ite,snr0[:, 0], color=get_plot_color(0), marker='.', label='min')
+            plt.plot(epochs_ite, snr0[:, 1], color=get_plot_color(1), marker='.', label='mean')
+            plt.plot(epochs_ite, snr0[:, 2], color=get_plot_color(2), marker='.', label='max')
             plt.legend()
-            pos = np.linspace(0, snr0.shape[0]-1, num=11, endpoint=True, dtype=int)
         else:
             plt.boxplot(snr, patch_artist=True, showfliers=False)
-            pos = np.linspace(0, len(snr0)-1, num=11, endpoint=True, dtype=int)
 
+        pos = np.linspace(epochs_ite[0], epochs_ite[-1], num=11, endpoint=True, dtype=int)
         plt.xticks(pos)
-        plt.xlim([pos[0]-1, pos[-1]+1])
+        plt.xlim([pos[0], pos[-1]])
         plt.xlabel("Epoch")
         plt.ylabel("Improved SNR (dB)")
 
