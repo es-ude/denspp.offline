@@ -107,5 +107,7 @@ def __generate_waveform_lut_template(do_full_opt: bool) -> dict:
 
 if __name__ == '__main__':
     path2save = '../../runs'
-    generate_lut_files(14, 32e6, 250e3, 10e3, device_id=0, do_optimized=False, out_signed=True, path2save=path2save)
-    generate_lut_files(14, 32e6, 250e3, 10e3, device_id=1, do_optimized=True, out_signed=True, path2save=path2save)
+    generate_lut_files(14, 32e6, 250e3, 10e3, device_id="0",
+                       do_optimized=False, out_signed=True, path2save=path2save)
+    generate_lut_files(16, 125e6, 250e3, 1e3, device_id="1",
+                       do_optimized=True, out_signed=True, path2save=path2save)
