@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.io import loadmat
+
 from torch import is_tensor
 from torch.utils.data import Dataset
 
@@ -101,10 +101,10 @@ def prepare_training(settings: Config_Dataset, do_classification=False,
         Dataloader for training autoencoder-based classifier
     """
     print("... loading and processing the dataset")
-    npzfile = loadmat(settings.get_path2data)
-    frames_in = npzfile["frames_in"]
-    frames_cl = npzfile["frames_cluster"].flatten() if 'frames_cluster' in npzfile else npzfile["frames_cl"].flatten()
-    frames_dict = None
+    rawdata = settings.load_dataset()
+    frames_in = rawdata['data']
+    frames_cl = rawdata['class']
+    frames_dict = rawdata['dict']
 
     # --- Using cell_bib for clustering
     if settings.use_cell_library:

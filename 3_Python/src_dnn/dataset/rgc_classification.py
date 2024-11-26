@@ -48,10 +48,10 @@ def prepare_training(settings: Config_Dataset) -> DatasetRGC:
         Dataloader with retinal ganglion cell types for classification tasks
     """
     print("... loading and processing the dataset")
-    npzfile = loadmat(settings.get_path2data)
-    frames_in = npzfile["frames_in"]
-    frames_cl = npzfile["frames_cluster"].flatten() if 'frames_cluster' in npzfile else npzfile["frames_cl"].flatten()
-    frames_dict = dict()
+    rawdata = settings.load_dataset()
+    frames_in = rawdata['data']
+    frames_cl = rawdata['class']
+    frames_dict = rawdata['dict']
 
     # --- PART: Exclusion of selected clusters
     if len(settings.exclude_cluster):

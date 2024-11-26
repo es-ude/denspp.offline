@@ -10,6 +10,7 @@ from package.data_process.frame_preprocessing import calculate_frame_snr, calcul
 from package.data_process.frame_preprocessing import reconfigure_cluster_with_cell_lib, generate_zero_frames
 from package.data_process.frame_normalization import DataNormalization
 from package.data_process.frame_augmentation import augmentation_change_position, augmentation_reducing_samples
+from package.fpga.transfer_data_verilog import settings_data
 
 
 class DatasetAE_Class(Dataset):
@@ -66,10 +67,10 @@ def prepare_training(settings: Config_Dataset, path2model: str,
     """
     if print_state:
         print("... loading and processing the dataset")
-    npzfile = loadmat(settings.get_path2data)
-    frames_in = npzfile["frames_in"]
-    frames_cl = npzfile["frames_cluster"].flatten() if 'frames_cluster' in npzfile else npzfile["frames_cl"].flatten()
-    frames_dict = None
+    data = settings.load_dataset()
+    frames_in = data['data']
+    frames_cl = data['class']
+    frames_dict = data['dict']
 
     # --- Using cell_bib for clustering
     if settings.use_cell_library:

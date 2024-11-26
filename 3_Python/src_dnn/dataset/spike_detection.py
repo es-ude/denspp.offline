@@ -57,9 +57,9 @@ def prepare_training(settings: Config_Dataset, threshold: int) -> DatasetSDA:
     print("... loading the datasets")
 
     # --- MATLAB reading file
-    npzfile = loadmat(settings.get_path2data)
-    frames_in = npzfile["sda_in"]
-    frames_cl = npzfile["sda_pred"]
+    data = settings.load_dataset()
+    frames_in = data["data"]
+    frames_cl = data["class"]
 
     # --- PART: Exclusion of selected clusters
     if len(settings.exclude_cluster):

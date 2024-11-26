@@ -3,6 +3,8 @@ from typing import Any
 from os import getcwd
 from os.path import join, isabs, abspath
 from torch import optim, nn
+from scipy.io import loadmat
+import numpy as np
 
 
 @dataclass
@@ -123,6 +125,39 @@ class Config_Dataset:
     def get_path2folder_examples(self, start_folder='3_Python') -> str:
         """Getting the default path to data from repository"""
         return abspath(join(getcwd().split(start_folder)[0], '2_Data', '00_Merged_Datasets'))
+
+    def load_dataset(self) -> dict:
+        """Loading the dataset from defined data file"""
+        methods = {'martinez': self._load_custom_merged, 'quiroga': self._load_custom_merged, 'sda': self.__load_sda,
+                   'rgc_tdb': self.__load_rgc_tdb, 'fzj_mcs': self.__load_rgc_fzj}
+        for key in methods.keys():
+            if key in self.get_path2data.lower():
+                return methods[key]()
+
+    def _load_custom_merged(self) -> dict:
+        npzfile = loadmat(self.get_path2data)
+        frames_in = npzfile["frames_in"]
+        frames_cl = npzfile["frames_cluster"].flatten() if 'frames_cluster' in npzfile else npzfile["frames_cl"].flatten()
+        return {'data': frames_in, 'class': frames_cl, 'dict': None}
+
+    def __load_rgc_tdb(self) -> dict:
+        npzfile = loadmat(self.get_path2data)
+        frames_in = npzfile["frames_in"]
+        frames_cl = npzfile["frames_cluster"].flatten() if 'frames_cluster' in npzfile else npzfile["frames_cl"].flatten()
+        return {'data': frames_in, 'class': frames_cl, 'dict': dict()}
+
+    def __load_rgc_fzj(self) -> dict:
+        npzfile = np.load(self.get_path2data, allow_pickle=True)
+        frames_in = npzfile["frames_in"]
+        frames_cl = npzfile["frames_cluster"].flatten() if 'frames_cluster' in npzfile else npzfile[
+            "frames_cl"].flatten()
+        return {'data': frames_in, 'class': frames_cl, 'dict': dict()}
+
+    def __load_sda(self) -> dict:
+        npzfile = np.load(self.get_path2data, allow_pickle=True)
+        frames_in = npzfile["sda_in"]
+        frames_cl = npzfile["sda_pred"]
+        return {'data': frames_in, 'class': frames_cl, 'dict': None}
 
 
 DefaultSettingsDataset = Config_Dataset(

@@ -302,7 +302,6 @@ class DataLoader(_DataController):
         folder_name = "_RGC_FZJuelich"
         data_type = '*_merged.mat'
         self._prepare_access_file(folder_name, data_type)
-        # loaded_data = loadmat(self.path2file)
         loaded_data = loadmat_mat73(self.path2file)
 
         self.raw_data = DataHandler()
@@ -333,7 +332,7 @@ class DataLoader(_DataController):
         folder_name = "_RGC_TDB"
         data_type = '*.mat'
         self._prepare_access_file(folder_name, data_type)
-        loaded_data = loadmat_mat73(self.path2file)
+        loaded_data = loadmat(self.path2file)
 
         self.raw_data = DataHandler()
         self.raw_data.data_name = folder_name

@@ -63,7 +63,6 @@ def prepare_training(settings: Config_Dataset, length_time_window_ms=500, use_cl
         Modified DataLoader for Neural Decoding of Movement Ambitions using Utah Array
     """
     data_raw = __load_dataset(settings)
-
     max_overall_timestamp = __get_max_timestamp(data_raw)
     (dataset_decision, dataset_timestamps,
      dataset_waveform, num_ite_skipped) = __create_feature_dataset(

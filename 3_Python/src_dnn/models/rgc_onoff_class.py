@@ -8,7 +8,7 @@ models_available = ModelRegistry()
 @models_available.register
 class dnn_rgc_v1(__model_settings_common):
     """Classification model"""
-    def __init__(self, input_size=40, output_size=4):
+    def __init__(self, input_size=32, output_size=4):
         super().__init__('Classifier')
         self.model_shape = (1, input_size)
         self.model_embedded = False
@@ -46,7 +46,7 @@ class dnn_rgc_v1(__model_settings_common):
 @models_available.register
 class dnn_rgc_v2(__model_settings_common):
     """Classification model"""
-    def __init__(self, input_size=40, output_size=4):
+    def __init__(self, input_size=32, output_size=4):
         super().__init__('Classifier')
         self.model_shape = (1, input_size)
         self.model_embedded = False
