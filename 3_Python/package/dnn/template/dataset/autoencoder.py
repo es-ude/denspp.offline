@@ -108,22 +108,28 @@ def prepare_training(settings: Config_Dataset, do_classification=False,
 
     # --- Using cell_bib for clustering
     if settings.use_cell_library:
-        frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(settings.get_path2data,
-                                                                              settings.use_cell_library,
-                                                                              frames_in, frames_cl)
+        frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(
+            settings.get_path2data,
+            settings.use_cell_library,
+            frames_in,
+            frames_cl
+        )
 
     # --- PART: Reducing samples per cluster (if too large)
     if settings.reduce_samples_per_cluster_do:
         if print_state:
             print("... do data augmentation with reducing the samples per cluster")
-        frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
-                                                             settings.reduce_samples_per_cluster_num, False)
+        frames_in, frames_cl = augmentation_reducing_samples(
+            frames_in, frames_cl,
+            settings.reduce_samples_per_cluster_num,
+            do_shuffle=False
+        )
 
     # --- PART: Data Normalization
     if settings.normalization_do:
         if print_state:
             print(f"... do data normalization")
-        data_class_frames_in = DataNormalization(device=settings.normalization_mode,
+        data_class_frames_in = DataNormalization(device="CPU",
                                                  method=settings.normalization_method,
                                                  mode=settings.normalization_setting)
         frames_in = data_class_frames_in.normalize(frames_in)

@@ -90,7 +90,6 @@ class Config_Dataset:
     augmentation_do: bool
     augmentation_num: int
     normalization_do: bool
-    normalization_mode: str
     normalization_method: str
     normalization_setting: str
     reduce_samples_per_cluster_do: bool
@@ -134,7 +133,6 @@ DefaultSettingsDataset = Config_Dataset(
     augmentation_do=False,
     augmentation_num=0,
     normalization_do=False,
-    normalization_mode='CPU',
     normalization_method='minmax',
     normalization_setting='bipolar',
     reduce_samples_per_cluster_do=False,

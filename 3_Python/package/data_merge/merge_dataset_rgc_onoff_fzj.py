@@ -57,7 +57,12 @@ def load_fzj_onoff_waveforms(path2folder: str, path2save='', quantize_bitwidth=1
 
 
 def get_data_and_label_from_rawdata(data_raw: dict) -> dict:
-    """"""
+    """Function for bringing spike frames and label from rawdata (read from MCS FZJ data structure)
+    Args:
+        data_raw:   Dictionary with raw data, should contain key 'amp_peak_uV' (Frame Peaks), 'raw' (all spike frames)
+    Return:
+        Dictionary for generating dataset for DNN training with keys 'peak' (spike frame amplitude), 'raw' (spike frames) and 'label' (available labels)
+    """
     data_keys = ['OFFsus', 'OFFtra', 'ONsus', 'ONtra', 'ONOFF']
 
     dict_dataset = {'raw': np.zeros((1, 1)), 'label': np.zeros((1, 1)), 'peak': np.zeros((1, 1)), 'class': dict()}
@@ -75,12 +80,15 @@ def get_data_and_label_from_rawdata(data_raw: dict) -> dict:
             dict_dataset['peak'] = np.concatenate((dict_dataset['peak'], used_peak), axis=0)
             dict_dataset['raw'] = np.concatenate((dict_dataset['raw'], used_data), axis=0)
             dict_dataset['label'] = np.concatenate((dict_dataset['label'], used_label), axis=0)
-
     return dict_dataset
 
 
 def plot_results(data: dict, take_samples=50) -> None:
-    """Plotting the results"""
+    """Plotting the results
+    Args:
+        data:           Dictionary with spike frames, peak amplitudes and labels
+        take_samples:   Only take random N samples from each class
+    """
     scale_yval = 32767
     xmid_pos = int(len(data['class']) / 2)
     xstart = 16

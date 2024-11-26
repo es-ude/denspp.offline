@@ -89,7 +89,7 @@ def prepare_training(settings: Config_Dataset, path2model: str,
     if settings.normalization_do:
         if print_state:
             print(f"... do data normalization")
-        data_class_frames_in = DataNormalization(device=settings.normalization_mode,
+        data_class_frames_in = DataNormalization(device="CPU",
                                                  method=settings.normalization_method,
                                                  mode=settings.normalization_setting)
         frames_in = data_class_frames_in.normalize(frames_in)
