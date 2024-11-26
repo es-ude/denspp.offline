@@ -5,17 +5,17 @@ from glob import glob
 from matplotlib import pyplot as plt
 from datetime import datetime
 from tqdm import tqdm
+from package.data_process.frame_normalization import DataNormalization
 
 
-def load_fzj_onoff_waveforms(path2folder: str, path2save='', quantize_bitwidth=16, mode_norm=1) -> None:
+def load_fzj_onoff_waveforms(path2folder: str, path2data: str='', quantize_bitwidth: int=16) -> None:
     """Processing the spike frames from the wildtype experiment with Research Center Juelich
     Args:
         path2folder:        Path to folder which contains the originial data
-        path2save:          Path for saving the output dictionary
+        path2data:          Path for saving the output dictionary
         quantize_bitwidth:  Bitwidth of quantization after min/max normalisation
-        mode_norm:          Mode for normalization (0: max, 1: min, 2: abs-max
     Return:
-        Dictionary with quantised spike frames, sampling rate and amplitudes
+        Dictionary with quantized spike frames, sampling rate and amplitudes
     """
     file_index = 'waveforms_*.mat'
     file_list = glob(os.path.join(path2folder, file_index))
@@ -33,27 +33,22 @@ def load_fzj_onoff_waveforms(path2folder: str, path2save='', quantize_bitwidth=1
         data0 = np.array(hndlr.get('tot_spike_matrix'))
         data1 = np.transpose(data0)
         del data0
-        # --- Processing for DataSize reduction
-        if mode_norm == 0:
-            amp_array = np.max(data1, axis=1)
-        elif mode_norm == 1:
-            amp_array = np.abs(np.min(data1, axis=1))
-        else:
-            amp_array = np.max(np.abs(data1), axis=1)
 
-        amp_scale = np.expand_dims(amp_array, 1)
-        scale_val = (2**(quantize_bitwidth-1)-1) / np.repeat(amp_scale, data1.shape[1], axis=1)
-        data_dig = np.array(scale_val * data1, dtype=np.int16)
+        # --- Processing for DataSize reduction
+        norm_hndl = DataNormalization("minmax", "bipolar")
+        pre_scaler = 2 ** (quantize_bitwidth-1) - 1
+        data_dig = np.array(pre_scaler * norm_hndl.normalize(data1), dtype=np.int16)
+        amp_array = norm_hndl.get_peak_amplitude_values()
 
         hndlr.close()
-        del data1, hndlr
+        del data1, hndlr, norm_hndl
 
         label = file.split('.')[0].split("_")[-1]
         data_temp.update({label: {'raw': data_dig, 'amp_peak_uV': amp_array}})
 
     data_right_format = get_data_and_label_from_rawdata(data_temp)
     data_onoff.update(data_right_format)
-    np.save(os.path.join(path2save, 'fzj_onoff_waveforms.npy'), data_onoff, allow_pickle=True)
+    np.save(os.path.join(path2data, 'fzj_onoff_waveforms.npy'), data_onoff, allow_pickle=True)
 
 
 def get_data_and_label_from_rawdata(data_raw: dict) -> dict:
@@ -123,9 +118,9 @@ def plot_results(data: dict, take_samples=50) -> None:
 
 
 if __name__ == "__main__":
-    path2save = "C:\\GitHub\\spaike_project\\3_Python\\data"
-    # load_fzj_onoff_waveforms("C:\\HomeOffice\\Data_Neurosignal\\09_RGC_FZJuelich\\07_RGC_ON-OFF_FZJ", path2save)
+    path2save = "C:\\GitHub\\spaike_project\\3_Python\\data\\test"
+    load_fzj_onoff_waveforms("C:\\HomeOffice\\Data_Neurosignal\\0A_RGC_FZJ_ONOFF", path2save)
 
     data = np.load(os.path.join(path2save, "fzj_onoff_waveforms.npy"), allow_pickle=True).flatten()[0]
     plot_results(data)
-    print("DONE")
+    print(".done")

@@ -76,11 +76,7 @@ def prepare_training(settings: Config_Dataset) -> DatasetRGC:
     # --- PART: Data Normalization
     if settings.normalization_do:
         print(f"... do data normalization")
-        data_class_frames_in = DataNormalization(
-            device="CPU",
-            method=settings.normalization_method,
-            mode=settings.normalization_setting
-        )
+        data_class_frames_in = DataNormalization('minmax', mode=settings.normalization_method)
         frames_in = data_class_frames_in.normalize(frames_in)
 
     # --- Output

@@ -76,8 +76,7 @@ def prepare_training(settings: Config_Dataset, threshold: int) -> DatasetSDA:
 
     # --- PART: Data Normalization
     if settings.normalization_do:
-        data_class_frames_in = DataNormalization(mode="CPU", method=settings.normalization_method,
-                                                 do_global=settings.normalization_setting)
+        data_class_frames_in = DataNormalization('minmax', mode=settings.normalization_method)
         frames_in = data_class_frames_in.normalize(frames_in)
 
     # --- Using cell library
