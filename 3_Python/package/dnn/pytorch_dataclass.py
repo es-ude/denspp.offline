@@ -3,7 +3,6 @@ from typing import Any
 from os import getcwd
 from os.path import join, isabs, abspath
 from torch import optim, nn
-from scipy.io import loadmat
 import numpy as np
 
 
@@ -128,41 +127,22 @@ class Config_Dataset:
 
     def load_dataset(self) -> dict:
         """Loading the dataset from defined data file"""
-        methods = {'martinez': self._load_custom_merged, 'quiroga': self._load_custom_merged, 'sda': self.__load_sda,
-                   'rgc_tdb': self.__load_rgc_tdb, 'fzj_mcs': self.__load_rgc_fzj}
-        for key in methods.keys():
+        valid_filenames = ['martinez', 'quiroga', 'sda', 'rgc_tdb', 'fzj_mcs']
+
+        valid_file_exists = False
+        for key in valid_filenames:
             if key in self.get_path2data.lower():
-                return methods[key]()
-
-    def _load_custom_merged(self) -> dict:
-        npzfile = loadmat(self.get_path2data)
-        frames_in = npzfile["frames_in"]
-        frames_cl = npzfile["frames_cluster"].flatten() if 'frames_cluster' in npzfile else npzfile["frames_cl"].flatten()
-        return {'data': frames_in, 'class': frames_cl, 'dict': None}
-
-    def __load_rgc_tdb(self) -> dict:
-        npzfile = loadmat(self.get_path2data)
-        frames_in = npzfile["frames_in"]
-        frames_cl = npzfile["frames_cluster"].flatten() if 'frames_cluster' in npzfile else npzfile["frames_cl"].flatten()
-        return {'data': frames_in, 'class': frames_cl, 'dict': dict()}
-
-    def __load_rgc_fzj(self) -> dict:
-        npzfile = np.load(self.get_path2data, allow_pickle=True)
-        frames_in = npzfile["frames_in"]
-        frames_cl = npzfile["frames_cluster"].flatten() if 'frames_cluster' in npzfile else npzfile[
-            "frames_cl"].flatten()
-        return {'data': frames_in, 'class': frames_cl, 'dict': dict()}
-
-    def __load_sda(self) -> dict:
-        npzfile = np.load(self.get_path2data, allow_pickle=True)
-        frames_in = npzfile["sda_in"]
-        frames_cl = npzfile["sda_pred"]
-        return {'data': frames_in, 'class': frames_cl, 'dict': None}
+                valid_file_exists = True
+                break
+        if valid_file_exists:
+            return np.load(self.get_path2data, allow_pickle=True).flatten()[0]
+        else:
+            raise NotImplementedError("Dataset Structure is not defined - Please check!")
 
 
 DefaultSettingsDataset = Config_Dataset(
     data_path='',
-    data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.mat',
+    data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.npy',
     use_cell_library=0,
     augmentation_do=False,
     augmentation_num=0,

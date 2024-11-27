@@ -1,9 +1,10 @@
 from collections import defaultdict
 import numpy as np
-from scipy.io import loadmat, savemat
+from scipy.io import loadmat
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import numpy.lib.scimath as sm
+from datetime import datetime
 
 from package.structure_builder import create_folder_general_firstrun
 from package.metric import calculate_error_mse
@@ -130,10 +131,18 @@ class SortDataset:
             self.criterion_Run0 = 0.98
             self.criterion_Resort = 0.98
 
+    def _loading_data(self):
+        match self.setOptions['path2file'].split('.')[-1]:
+            case 'npy':
+                data_out = np.load(self.setOptions['path2file'], allow_pickle=True)
+            case _:
+                data_out = loadmat(self.setOptions['path2file'])
+        return data_out
+
     def sort_dataset(self):
         """Sort the frames to each cluster and dismiss unfitting frames"""
         # region Pre-Processing: Input structuring
-        mat_file = loadmat(self.setOptions['path2file'])
+        mat_file = self._loading_data()
 
         frames_cluster = mat_file['frames_cl']
         frames_in = mat_file['frames_in']
@@ -368,34 +377,27 @@ class SortDataset:
 
     def prepare_data_for_saving(self, data_x: defaultdict, data_y: defaultdict):
         """Prepare the processed frames for saving as a matlab file"""
-        output = {'frames_in': np.empty((0, 32), dtype=np.float64), 'frames_cluster': np.empty((0,), dtype=np.int16)}
+        create_time = datetime.now().strftime("%Y-%m-%d")
+        output = {'data': np.empty((0, 32), dtype=np.float64), 'class': np.empty((0,), dtype=np.int16),
+                  'dict': dict(), "create_time": create_time, "settings": self.setOptions}
         data_process_num = 0
         tqdm.write("preparing data for saving")
 
         for idx, value in tqdm(enumerate(data_x), ncols=100, desc="Saved Frames: ", unit="frames"):
             X = np.array(value, dtype=np.int16) * np.ones(len(data_x[value]), dtype=np.int16)
             Z = data_y[value]
-
-            output['frames_in'] = np.concatenate([output['frames_in'], Z])
-            output['frames_cluster'] = np.concatenate([output['frames_cluster'], X])
+            output['data'] = np.concatenate((output['data'], Z))
+            output['class'] = np.concatenate((output['class'], X))
 
             data_process_num += len(X)
         return output, data_process_num
 
-    def save_output_as_matfile(self, out: dict, processed_num: int, frames_in_num: int) -> None:
-        """Saving output as a matlab file"""
-        data_ratio_merged = processed_num / frames_in_num
-        data_ratio_dismiss = 1 - data_ratio_merged
-        out['data_ratio_merged'] = data_ratio_merged
-        print(f"Percentage of overall kept frames: {data_ratio_merged * 100:.2f}")
-        print(f"Percentage of overall dismissed frames: {data_ratio_dismiss * 100:.2f}")
-        savemat(self.setOptions['path2save'], out, appendmat=False, oned_as='column')
 
     def save_output_as_npyfile(self, out: dict, processed_num: int, frames_in_num: int) -> None:
-        """Saving output as a matlab file"""
+        """Saving output as a numpy file"""
         data_ratio_merged = processed_num / frames_in_num
         data_ratio_dismiss = 1 - data_ratio_merged
         out['data_ratio_merged'] = data_ratio_merged
         print(f"Percentage of overall kept frames: {data_ratio_merged * 100:.2f}")
         print(f"Percentage of overall dismissed frames: {data_ratio_dismiss * 100:.2f}")
-        np.save(self.setOptions['path2save'], out, appendmat=False, oned_as='column')
+        np.save(self.setOptions['path2save'], out, allow_pickle=True)

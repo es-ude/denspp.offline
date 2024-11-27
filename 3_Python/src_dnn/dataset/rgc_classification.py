@@ -50,7 +50,7 @@ def prepare_training(settings: Config_Dataset) -> DatasetRGC:
     print("... loading and processing the dataset")
     rawdata = settings.load_dataset()
     frames_in = rawdata['data']
-    frames_cl = rawdata['class']
+    frames_cl = rawdata['label']
     frames_dict = rawdata['dict']
 
     # --- PART: Exclusion of selected clusters

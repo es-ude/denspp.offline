@@ -23,8 +23,8 @@ def load_fzj_onoff_waveforms(path2folder: str, path2data: str='', quantize_bitwi
     if len(file_list) == 0:
         raise RuntimeError("Path or data does not exist. Please check the path!")
 
-    data_onoff = {'date_created': datetime.now().strftime("%Y%m%d_%H%M%S"), 'sampling_rate_khz': 25}
-    data_onoff.update({'electrode': 'mcs60mea'})
+    data_onoff = {'date_created': datetime.now().strftime("%Y%m%d_%H%M%S"),
+                  'sampling_rate_khz': 25, 'electrode': 'mcs60mea'}
 
     data_temp = dict()
     for file in tqdm(file_list):
@@ -42,7 +42,6 @@ def load_fzj_onoff_waveforms(path2folder: str, path2data: str='', quantize_bitwi
 
         hndlr.close()
         del data1, hndlr, norm_hndl
-
         label = file.split('.')[0].split("_")[-1]
         data_temp.update({label: {'raw': data_dig, 'amp_peak_uV': amp_array}})
 
@@ -59,21 +58,23 @@ def get_data_and_label_from_rawdata(data_raw: dict) -> dict:
         Dictionary for generating dataset for DNN training with keys 'peak' (spike frame amplitude), 'raw' (spike frames) and 'label' (available labels)
     """
     data_keys = ['OFFsus', 'OFFtra', 'ONsus', 'ONtra', 'ONOFF']
+    data_list = ['OFF sustained', 'OFF transient', 'ON sustained', 'ON transient', 'ONOFF']
 
-    dict_dataset = {'raw': np.zeros((1, 1)), 'label': np.zeros((1, 1)), 'peak': np.zeros((1, 1)), 'class': dict()}
+    create_time = datetime.now().strftime("%Y-%m-%d")
+    dict_dataset = {'data': np.zeros((1, 1)), 'label': np.zeros((1, 1)), 'peak': np.zeros((1, 1)),
+                    'dict': data_list, 'create_on': create_time}
     for idx, key in enumerate(data_keys):
         used_peak = data_raw[key]['amp_peak_uV']
         used_data = data_raw[key]['raw']
         used_label = np.zeros((data_raw[key]['raw'].shape[0], ), dtype=np.uint8) + idx
 
-        dict_dataset['class'].update({key: idx})
         if idx == 0:
             dict_dataset['peak'] = used_peak
-            dict_dataset['raw'] = used_data
+            dict_dataset['data'] = used_data
             dict_dataset['label'] = used_label
         else:
             dict_dataset['peak'] = np.concatenate((dict_dataset['peak'], used_peak), axis=0)
-            dict_dataset['raw'] = np.concatenate((dict_dataset['raw'], used_data), axis=0)
+            dict_dataset['data'] = np.concatenate((dict_dataset['data'], used_data), axis=0)
             dict_dataset['label'] = np.concatenate((dict_dataset['label'], used_label), axis=0)
     return dict_dataset
 
@@ -85,18 +86,18 @@ def plot_results(data: dict, take_samples=50) -> None:
         take_samples:   Only take random N samples from each class
     """
     scale_yval = 32767
-    xmid_pos = int(len(data['class']) / 2)
+    xmid_pos = int(len(data['dict']) / 2)
     xstart = 16
     xstop = 80
 
     # --- Figure #1: Spike Frames
-    axs = plt.subplots(1, len(data['class']), sharex=True)[1]
-    for key, id in data['class'].items():
+    axs = plt.subplots(1, len(data['dict']), sharex=True)[1]
+    for id, key in enumerate(data['dict']):
         pos_id = np.argwhere(data['label'] == id).flatten()
         pos_random = pos_id[np.random.randint(0, pos_id.size, take_samples)]
 
-        frame_raw = data['raw'][pos_random, xstart:xstop+1]
-        frame_mean = np.mean(data['raw'][pos_id, xstart:xstop+1], axis=0)
+        frame_raw = data['data'][pos_random, xstart:xstop+1]
+        frame_mean = np.mean(data['data'][pos_id, xstart:xstop+1], axis=0)
 
         axs[id].plot(np.transpose(frame_raw / scale_yval))
         axs[id].plot(frame_mean / scale_yval, 'r')
@@ -118,9 +119,9 @@ def plot_results(data: dict, take_samples=50) -> None:
 
 
 if __name__ == "__main__":
-    path2save = "C:\\GitHub\\spaike_project\\3_Python\\data\\test"
-    load_fzj_onoff_waveforms("C:\\HomeOffice\\Data_Neurosignal\\0A_RGC_FZJ_ONOFF", path2save)
+    path2save = "C:\\HomeOffice\\Data_Neurosignal\\00_Merged"
+    # load_fzj_onoff_waveforms("C:\\HomeOffice\\Data_Neurosignal\\0A_RGC_FZJ_ONOFF", path2save)
 
-    data = np.load(os.path.join(path2save, "fzj_onoff_waveforms.npy"), allow_pickle=True).flatten()[0]
+    data = np.load(os.path.join(path2save, "2024-11-25_Dataset-FZJ-MCS-RGC-ONOFF.npy"), allow_pickle=True).flatten()[0]
     plot_results(data)
     print(".done")

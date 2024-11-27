@@ -69,7 +69,7 @@ def prepare_training(settings: Config_Dataset, path2model: str,
         print("... loading and processing the dataset")
     data = settings.load_dataset()
     frames_in = data['data']
-    frames_cl = data['class']
+    frames_cl = data['label']
     frames_dict = data['dict']
 
     # --- Using cell_bib for clustering

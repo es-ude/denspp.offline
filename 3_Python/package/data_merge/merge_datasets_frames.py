@@ -4,7 +4,6 @@ from os.path import join, exists
 from shutil import rmtree
 import numpy as np
 from datetime import datetime
-from scipy.io import savemat, loadmat
 from tqdm import tqdm
 import platform
 from package.data_call.call_spike_files import DataLoader, SettingsDATA
@@ -233,17 +232,9 @@ class MergeDatasets:
 
         # --- Transfer in common structure
         create_time = datetime.now().strftime("%Y-%m-%d")
-        self.__data_merged.update({"frames_in": frame_in, "frames_cl": frame_cl})
+        self.__data_merged.update({"data": frame_in, "class": frame_cl})
         self.__data_merged.update({"create_time": create_time, "settings": settings})
         self.__data_merged.update({"file_name": file_name})
-
-    def save_merged_data_in_matfile(self) -> str:
-        """Saving the results in *.mat-file"""
-        self.__output_meta(True)
-        path2file = join(self.__path2save, self.__data_merged["file_name"]) + "_Merged.mat"
-        savemat(path2file, self.__data_merged, do_compression=True, long_field_names=True)
-        print(f'Saving file in: {path2file}')
-        return path2file
 
     def save_merged_data_in_npyfile(self) -> str:
         """Saving the results in *.npy-file"""

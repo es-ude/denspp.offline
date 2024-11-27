@@ -59,7 +59,7 @@ def prepare_training(settings: Config_Dataset, threshold: int) -> DatasetSDA:
     # --- MATLAB reading file
     data = settings.load_dataset()
     frames_in = data["data"]
-    frames_cl = data["class"]
+    frames_cl = data["label"]
 
     # --- PART: Exclusion of selected clusters
     if len(settings.exclude_cluster):
