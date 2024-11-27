@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 from typing import Any
-from os import getcwd
-from os.path import join, isabs, abspath
+from os import getcwd, makedirs
+from os.path import join, abspath, exists
+from pathlib import Path
 from torch import optim, nn
 import numpy as np
+import owncloud
 
 
 @dataclass
@@ -100,14 +102,17 @@ class Config_Dataset:
     @property
     def get_path2data(self) -> str:
         """Getting the path name to the file"""
-        if isabs(self.data_path):
-            path = join(self.data_path, self.data_file_name)
-        elif self.data_path == 'data':
-            path = join(self.get_path2folder_data, self.data_file_name)
+        return abspath(join(self.get_path2folder, self.data_file_name))
+
+    @property
+    def get_path2folder(self) -> str:
+        """Getting the path name to the file"""
+        if self.data_path == 'data':
+            path = join(self.get_path2folder_data)
         elif not self.data_path == '':
-            path = join(self.get_path2folder_project, self.data_path, self.data_file_name)
+            path = join(self.get_path2folder_project, self.data_path)
         else:
-            path = join(self.get_path2folder_examples, self.data_file_name)
+            path = join(self.data_path)
         return abspath(path)
 
     @property
@@ -128,6 +133,7 @@ class Config_Dataset:
     def load_dataset(self) -> dict:
         """Loading the dataset from defined data file"""
         valid_filenames = ['martinez', 'quiroga', 'sda', 'rgc_tdb', 'fzj_mcs']
+        self.__download_if_missing()
 
         valid_file_exists = False
         for key in valid_filenames:
@@ -138,6 +144,20 @@ class Config_Dataset:
             return np.load(self.get_path2data, allow_pickle=True).flatten()[0]
         else:
             raise NotImplementedError("Dataset Structure is not defined - Please check!")
+
+    def __download_if_missing(self) -> None:
+        """"""
+        if not exists(self.get_path2data):
+            public_link = 'https://uni-duisburg-essen.sciebo.de/s/JegLJuj1SADBSp0'
+            path2folder_remote = '/00_Merged/'
+
+            makedirs(self.get_path2folder, exist_ok=True)
+            path_remote_file = path2folder_remote + self.data_file_name
+
+            oc = owncloud.Client.from_public_link(public_link)
+            print("... downloading file from sciebo")
+            oc.get_file(path_remote_file, self.get_path2data)
+            print("... download done")
 
 
 DefaultSettingsDataset = Config_Dataset(
@@ -155,5 +175,4 @@ DefaultSettingsDataset = Config_Dataset(
 
 
 if __name__ == "__main__":
-    print(DefaultSettingsDataset.get_path2folder_examples)
     print(DefaultSettingsDataset.get_path2data)
