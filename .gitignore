@@ -5,6 +5,7 @@ Config_*.yaml
 3_Python/runs
 3_Python/src_mem
 3_Python/test
+**/uv.lock
 
 ### venv template
 # Virtualenv
