@@ -158,6 +158,7 @@ class Config_Dataset:
             print("... downloading file from sciebo")
             oc.get_file(path_remote_file, self.get_path2data)
             print("... download done")
+            oc.logout()
 
 
 DefaultSettingsDataset = Config_Dataset(

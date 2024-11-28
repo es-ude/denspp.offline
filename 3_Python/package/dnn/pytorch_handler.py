@@ -12,7 +12,6 @@ from datetime import datetime
 
 from torch import (Tensor, is_tensor, zeros, unique, argwhere, device, cuda, backends, float32,
                    nn, randn, cat, Generator, manual_seed, use_deterministic_algorithms)
-from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
 from sklearn.model_selection import KFold
@@ -112,7 +111,6 @@ class training_pytorch:
         create_folder_dnn_firstrun()
         # --- Preparing Neural Network
         self.os_type = platform.system()
-        self._writer = None
         self.model = None
         self.loss_fn = None
         self.optimizer = None
@@ -195,11 +193,6 @@ class training_pytorch:
                            filename='Config_Dataset', path2save=self._path2save)
         write_dict_to_yaml(translate_dataclass_to_dict(self.settings_train),
                            filename=f'Config_Training{addon}', path2save=self._path2save)
-
-    def _init_writer(self) -> None:
-        """Do init of writer"""
-        self._path2log = join(self._path2save, f'logs')
-        self._writer = SummaryWriter(self._path2log, comment=f"event_log_kfold{self._kfold_run:03d}")
 
     def __deterministic_training_preparation(self) -> None:
         """Preparing the CUDA hardware for deterministic training"""
