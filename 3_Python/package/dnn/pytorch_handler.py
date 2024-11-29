@@ -381,11 +381,6 @@ class training_pytorch:
             for folder in folder_logs:
                 rmtree(folder, ignore_errors=True)
 
-        # Give the option to open TensorBoard
-        if self._do_print_state:
-            print("\nLook data on TensorBoard -> open Terminal")
-            print("Type in: tensorboard serve --logdir ./runs")
-
     def __get_data_points(self, only_getting_labels=False, use_train_dataloader=False) -> dict:
         """Getting data from DataLoader for Plotting Results
         Args:
@@ -502,3 +497,8 @@ class training_pytorch:
     def get_metric_methods(self) -> None:
         """Function for calling the functions to calculate metrics during training phase"""
         print(self._metric_methods.keys())
+
+    @property
+    def get_number_parameters_from_model(self) -> int:
+        """Getting the number of used parameters of used DNN model"""
+        return int(sum(p.numel() for p in self.model.parameters()))

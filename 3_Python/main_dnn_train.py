@@ -33,7 +33,12 @@ if __name__ == "__main__":
         case 4:
             # --- Autoencoder + Classifier (Sweep Run of Hidden Layer Size)
             from src_dnn.train_ae_cl_sweep import do_train_ae_cl_sweep
-            do_train_ae_cl_sweep(dnn_handler, 1, 4, 16)
+            from src_dnn.train_ae_cl_sweep_plot import extract_data_from_files, plot_common_loss, plot_common_params, plot_architecture_metrics_isolated
+            path2data = do_train_ae_cl_sweep(dnn_handler, 1, 4, 16)
+            data = extract_data_from_files(path2data)
+            plot_common_loss(data, path2save=path2data)
+            plot_common_params(data, path2save=path2data)
+            plot_architecture_metrics_isolated(data, show_plots=True, path2save=path2data)
         case 5:
             # --- Spike Detection
             from src_dnn.train_sda import dnn_train_sda

@@ -1,6 +1,6 @@
 import os
-from shutil import rmtree
 import numpy as np
+from shutil import rmtree
 from copy import deepcopy
 from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import Config_ML_Pipeline, DefaultSettings_MLPipe
@@ -18,7 +18,7 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
                          feat_layer_start: int, feat_layer_inc: int, feat_layer_stop: int,
                          add_noise_cluster=False,
                          num_epochs_trial=50,
-                         yaml_name_index='Config_AECL_Sweep') -> dict:
+                         yaml_name_index='Config_AECL_Sweep') -> str:
     """Training routine for Autoencoders and Classification after Encoder (Sweep)
     Args:
         settings:           Handler for configuring the routine selection for train deep neural networks
@@ -29,7 +29,7 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
         num_epochs_trial:   Number of epochs of each run
         yaml_name_index:    Index of yaml file name
     Return:
-        Dictionary with results
+        String with path in which the data is saved
     """
     # ------------ STEP #0: Loading YAML files
     # --- Loading the YAML file: Dataset
@@ -102,12 +102,14 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
         metrics_runs.update({f"feat_{feat_size:03d}_ae": metrics_ae, f"feat_{feat_size:03d}_cl": metrics_cl})
 
     # ----------- Step #3: Output results
-    # np.save(f"{path2save}/metrics_ae_cl_sweep", metrics_runs, allow_pickle=True)
-    return metrics_runs
+    path2save = f"{path2save}/metrics_ae_cl_sweep"
+    np.save(path2save, metrics_runs, allow_pickle=True)
+    return path2save
 
 
 if __name__ == "__main__":
     from package.dnn.dnn_handler import Config_ML_Pipeline
+    from src_dnn.train_ae_cl_sweep_plot import extract_data_from_files, plot_common_loss, plot_common_params, plot_architecture_metrics_isolated
 
     yaml_handler = yaml_config_handler(DefaultSettings_MLPipe, 'config', 'Config_DNN')
     dnn_handler = yaml_handler.get_class(Config_ML_Pipeline)
@@ -116,7 +118,12 @@ if __name__ == "__main__":
 
     # --- Step #1: Run results
     print("========================================\n Sweep Run for Training Autoencoder + Classification System\n")
-    metrics_run = do_train_ae_cl_sweep(dnn_handler, 1, 4, 16)
+    path2save = do_train_ae_cl_sweep(dnn_handler, 1, 4, 16)
 
     # --- Step #2: Plot results
     print("===========================================\n Printing results and plot results\n")
+    data = extract_data_from_files(path2save)
+    plot_common_loss(data, path2save=path2save)
+    plot_common_params(data, path2save=path2save)
+    plot_architecture_metrics_isolated(data, show_plots=True, path2save=path2save)
+    print("\n.done")
