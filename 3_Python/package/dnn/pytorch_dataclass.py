@@ -1,8 +1,7 @@
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, SupportsInt
 from os import getcwd, makedirs
 from os.path import join, abspath, exists
-from pathlib import Path
 from torch import optim, nn
 import numpy as np
 import owncloud
@@ -130,40 +129,94 @@ class Config_Dataset:
         """Getting the default path to data from repository"""
         return abspath(join(getcwd().split(start_folder)[0], '2_Data', '00_Merged_Datasets'))
 
+    def print_overview_datasets(self, do_print=True) -> list:
+        """"""
+        oc_handler = ScieboDownloadHandler()
+        list_datasets = oc_handler.get_overview_data()
+        if do_print:
+            print("\nNo local dataset is available. Enter the number of available datasets from remote:"
+                  "\n==============================================================================")
+            for idx, file in enumerate(list_datasets):
+                print(f"\t{idx}: \t{file}")
+
+        oc_handler.close()
+        return list_datasets
+
     def load_dataset(self) -> dict:
         """Loading the dataset from defined data file"""
-        valid_filenames = ['martinez', 'quiroga', 'sda', 'rgc_tdb', 'fzj_mcs']
         self.__download_if_missing()
-
-        valid_file_exists = False
-        for key in valid_filenames:
-            if key in self.get_path2data.lower():
-                valid_file_exists = True
-                break
-        if valid_file_exists:
-            return np.load(self.get_path2data, allow_pickle=True).flatten()[0]
-        else:
-            raise NotImplementedError("Dataset Structure is not defined - Please check!")
+        return np.load(self.get_path2data, allow_pickle=True).flatten()[0]
 
     def __download_if_missing(self) -> None:
         """"""
+        if self.data_file_name == '':
+            list_datasets = self.print_overview_datasets(True)
+            sel_data = input()
+            self.data_file_name = list_datasets[int(sel_data)]
+        else:
+            list_datasets = self.print_overview_datasets(False)
+            for file in list_datasets:
+                if self.data_file_name.lower() in file.lower():
+                    self.data_file_name = file
+                    break
+
         if not exists(self.get_path2data):
-            public_link = 'https://uni-duisburg-essen.sciebo.de/s/JegLJuj1SADBSp0'
-            path2folder_remote = '/00_Merged/'
-
             makedirs(self.get_path2folder, exist_ok=True)
-            path_remote_file = path2folder_remote + self.data_file_name
 
-            oc = owncloud.Client.from_public_link(public_link)
-            print("... downloading file from sciebo")
-            oc.get_file(path_remote_file, self.get_path2data)
-            print("... download done")
-            oc.logout()
+            oc_handler = ScieboDownloadHandler()
+            oc_handler.download_file(self.data_file_name, self.get_path2data)
+            oc_handler.close()
+
+
+class ScieboDownloadHandler:
+    __oc_handler: owncloud.Client
+
+    def __init__(self, link: str = 'https://uni-duisburg-essen.sciebo.de/s/JegLJuj1SADBSp0',
+                 path2folder_remote: str = '/00_Merged/') -> None:
+        """Class for handling sciebo repository for getting datasets remotely
+        Args:
+            link:                   String with link to used owncloud repository
+            path2folder_remote:     Used folder on remote source
+        Return:
+            None
+        """
+        self.__public_sciebo_link = link
+        self.__path2folder_remote = path2folder_remote
+
+    def get_overview_data(self, formats: list = ('.npy', '.mat')) -> list:
+        """Getting an overview of available files for downloading"""
+        self.__oc_handler = owncloud.Client.from_public_link(self.__public_sciebo_link)
+        dict_list = self.__oc_handler.list(self.__path2folder_remote, 1)
+        self.__oc_handler.logout()
+
+        files_available = list()
+        for file in dict_list:
+            for format in formats:
+                if format in file.name:
+                    files_available.append(file.name)
+        return files_available
+
+    def download_file(self, file_name: str, destination_download: str) -> None:
+        """Downloading a file from remote server
+        Args:
+            file_name:  File name (for downloading remote file)
+            destination_download:   Folder name to save the data locally
+        Return:
+            None
+        """
+        self.__oc_handler = owncloud.Client.from_public_link(self.__public_sciebo_link)
+        print("... downloading file from sciebo")
+        self.__oc_handler.get_file(join(self.__path2folder_remote, file_name), destination_download)
+        print("... download done")
+
+    def close(self) -> None:
+        self.__oc_handler.logout()
+
 
 
 DefaultSettingsDataset = Config_Dataset(
-    data_path='',
-    data_file_name='2023-05-15_Dataset01_SimDaten_Martinez2009_Sorted.npy',
+    data_path='data',
+    data_file_name='quiroga',
     use_cell_library=0,
     augmentation_do=False,
     augmentation_num=0,
@@ -176,4 +229,9 @@ DefaultSettingsDataset = Config_Dataset(
 
 
 if __name__ == "__main__":
+    och = ScieboDownloadHandler()
+    overview = och.get_overview_data()
+
     print(DefaultSettingsDataset.get_path2data)
+    data = DefaultSettingsDataset.load_dataset()
+    print(".done")

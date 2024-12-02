@@ -61,6 +61,10 @@ class DatasetAE(Dataset):
         """Getting the mean waveforms of dataset"""
         return self.__frames_me
 
+    @property
+    def get_cluster_num(self) -> int:
+        """"""
+        return int(np.unique(self.__cluster_id).size)
 
     @property
     def get_dictionary(self) -> list:

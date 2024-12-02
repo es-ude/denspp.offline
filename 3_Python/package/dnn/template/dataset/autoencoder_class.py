@@ -42,6 +42,11 @@ class DatasetAE_Class(Dataset):
         return self.__frames_me
 
     @property
+    def get_cluster_num(self) -> int:
+        """"""
+        return int(np.unique(self.__cluster_id).size)
+
+    @property
     def get_dictionary(self) -> list:
         """Getting the dictionary of labeled dataset"""
         return self.__labeled_dictionary
@@ -110,7 +115,7 @@ def prepare_training(settings: Config_Dataset, path2model: str,
             frames_cl = frames_cl[selX]
 
     # --- Generate dict with labeled names
-    if frames_dict is None:
+    if isinstance(frames_dict, dict):
         frames_dict = list()
         for id in np.unique(frames_cl):
             frames_dict.append(f"Neuron #{id}")

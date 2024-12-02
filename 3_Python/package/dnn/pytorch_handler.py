@@ -422,7 +422,7 @@ class training_pytorch:
         """Getting the raw data for plotting results"""
         # --- Producing and Saving the output
         if results is None:
-            results = {}
+            results = dict()
 
         if self._do_print_state:
             print(f"... preparing results for plot generation")
@@ -430,7 +430,7 @@ class training_pytorch:
 
         output = dict()
         output.update({'settings': self.settings_train, 'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')})
-        output.update({'train_clus': data_train['class'], 'cl_dict': self.cell_classes})
+        output.update({'train_clus': data_train['class'] if addon == 'ae' else data_train['out'], 'cl_dict': self.cell_classes})
         output.update({'input': valid_input, 'valid_clus': valid_label})
         output.update(results)
 

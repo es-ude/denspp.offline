@@ -50,9 +50,16 @@ def extract_features_from_metric(metric: dict, index_model: str) -> dict:
     for key in key_metrics:
         metric_out.update({key: list()})
 
+    num_clusters = 0
     for key0 in key_feat:
         for key1 in key_metrics:
-            metric_out[key1].append(metric[key0][key1])
+            if key1 == 'num_clusters' and num_clusters == 0:
+                num_clusters = metric[key0][key1]
+                metric_out[key1].append(num_clusters)
+            elif key1 == 'num_clusters' and num_clusters > 0:
+                metric_out[key1].append(num_clusters)
+            else:
+                metric_out[key1].append(metric[key0][key1])
 
     return metric_out
 
@@ -79,7 +86,10 @@ def extract_data_from_files(path2folder: str, folder_split_symbol='\\') -> dict:
             data_loaded = np.load(file, allow_pickle=True).flatten()[0]['fold_000']
             cont_data = dict()
             for key, data in data_loaded.items():
-                cont_data.update({key: data[get_best_epoch]})
+                if key == 'num_clusters':
+                    cont_data.update({key: data})
+                else:
+                    cont_data.update({key: data[get_best_epoch]})
             cont_data.update({"feat_size": int(feat_size), 'model_params': get_model_params})
             data_metrics.update({f"feat{int(feat_size):03d}_{type_data}": cont_data})
 
@@ -163,7 +173,7 @@ def plot_architecture_violin(metric: dict, path2save: str = '', show_plots: bool
     keys_ae = ['dsnr_cl']
     keys_cl = ['precision']
 
-    num_cluster = len(metric['ae'][keys_ae[-1]])
+    num_cluster = metric['ae']['num_clusters'][-1]
     if label_dict is None:
         label_dict = [f'Neuron #{idx}' for idx in range(num_cluster)]
 
@@ -212,56 +222,68 @@ def plot_architecture_metrics_isolated(metric: dict, path2save: str = '', show_p
     keys_ae = ['dsnr_cl']
     keys_cl = ['precision']
 
-    num_cluster = len(metric['ae'][keys_ae[-1]])
+    num_cluster = metric['ae']['num_clusters'][-1]
     if label_dict is None:
         label_dict = [f'Neuron #{idx}' for idx in range(num_cluster)]
 
     num_rows = 2
     num_cols = 3
-    for key0, key1 in zip(keys_ae, keys_cl):
+
+    # --- Figure #1: Autoencoder
+    for key0 in keys_ae:
         _, axs = plt.subplots(nrows=num_rows, ncols=num_cols, sharex=True)
         data_ae = metric['ae'][key0]
-        data_cl = metric['cl'][key1]
-
-        # --- Processing AE Data
         transformed_data_ae_cluster = [[] for idx in range(num_cluster)]
         transformed_data_ae_median = np.zeros((num_cluster, len(feat_size)))
         for idy, data_feat in enumerate(data_ae):
             for idx, data_cluster in enumerate(data_feat):
                 transformed_data_ae_cluster[idx].append(data_cluster)
-                transformed_data_ae_median[idy, idx] = np.median(data_cluster)
+                transformed_data_ae_median[idx, idy] = np.median(data_cluster)
                 pass
 
         for idx, data_boxplot in enumerate(transformed_data_ae_cluster):
-            axs[int(idx / num_cols), idx % num_cols].plot(feat_size, transformed_data_ae_median[:, idx], 'k.--', linewidth=1.0)
+            axs[int(idx / num_cols), idx % num_cols].plot(feat_size, transformed_data_ae_median[idx, :], 'k.--', linewidth=1.0)
             axs[int(idx/num_cols), idx % num_cols].violinplot(data_boxplot, showmedians=True, positions=feat_size)
             axs[int(idx/num_cols), idx % num_cols].set_ylabel(f'{key0} ({label_dict[idx]})', fontsize=14)
             axs[int(idx/num_cols), idx % num_cols].grid()
 
+        ## --- End processing
+        axs[1, 1].set_xlabel('Feature Size', fontsize=14)
+        axs[0, 0].set_xticks(feat_size)
+        axs[0, 0].set_xlim([feat_size[0] - 0.25, feat_size[-1] + 0.25])
+
+    plt.subplots_adjust(wspace=0.3, hspace=0.05)
+    if path2save:
+        save_figure(plt, path2save, 'sweep_dnn_architecture_ae', ['svg'])
+
+    # --- Figure #2: Classifier
+    for key1 in keys_cl:
+        _, axs = plt.subplots(nrows=1, ncols=len(keys_cl), sharex=True)
         # --- Processing CL Data
+        data_cl = metric['cl'][key1]
         transformed_data_cl_cluster = np.zeros((num_cluster, len(feat_size)))
         for idx, data_cluster in enumerate(data_cl):
             transformed_data_cl_cluster[:, idx] = data_cluster
         for idx, data_plot in enumerate(transformed_data_cl_cluster):
-            axs[-1, -1].plot(feat_size, data_plot, f'{get_plot_color(idx)}.-', label=label_dict[idx])
-        axs[-1, -1].set_ylabel(key1, fontsize=14)
-        axs[-1, -1].legend()
-        axs[-1, -1].grid()
+            axs.plot(feat_size, data_plot, f'{get_plot_color(idx)}.-', label=label_dict[idx])
+        axs.set_ylabel(key1, fontsize=14)
+        axs.legend()
+        axs.grid()
 
         ## --- End processing
-        axs[1, 1].set_xlabel('Feature Size', fontsize=14)
-        axs[0, 0].set_xticks(feat_size)
-        axs[0, 0].set_xlim([feat_size[0]-0.25, feat_size[-1]+0.25])
+        axs.set_xlabel('Feature Size', fontsize=14)
+        axs.set_xticks(feat_size)
+        axs.set_xlim([feat_size[0]-0.25, feat_size[-1]+0.25])
 
     plt.subplots_adjust(wspace=0.3, hspace=0.05)
     if path2save:
-        save_figure(plt, path2save, 'sweep_dnn_architecture', ['svg'])
+        save_figure(plt, path2save, 'sweep_dnn_architecture_cl', ['svg'])
     if show_plots:
         plt.show(block=True)
 
 
 if __name__ == "__main__":
-    path2run = "./../runs/ae_cl_sweep"
+    path2run = "./../runs/20241201_230123_cnn_ae_v4_sweep"
     data = extract_data_from_files(path2run)
 
     plot_common_loss(data, path2save=path2run)
