@@ -5,7 +5,7 @@ from package.dnn.pytorch_dataclass import Config_Dataset, DefaultSettingsDataset
 from package.dnn.pytorch_pipeline import do_train_classifier
 from package.data_process.rgc_combination import rgc_logic_combination
 
-from src_dnn.dataset.rgc_classification import prepare_training
+from package.dnn.template.dataset.classifier import prepare_training
 import src_dnn.models.rgc_onoff_class as models
 
 

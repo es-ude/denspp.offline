@@ -1,7 +1,6 @@
 import numpy as np
 from os.path import join
 from glob import glob
-from scipy.io import loadmat
 from torch import is_tensor, load, from_numpy
 from torch.utils.data import Dataset
 
@@ -10,7 +9,6 @@ from package.data_process.frame_preprocessing import calculate_frame_snr, calcul
 from package.data_process.frame_preprocessing import reconfigure_cluster_with_cell_lib, generate_zero_frames
 from package.data_process.frame_normalization import DataNormalization
 from package.data_process.frame_augmentation import augmentation_change_position, augmentation_reducing_samples
-from package.fpga.transfer_data_verilog import settings_data
 
 
 class DatasetAE_Class(Dataset):
@@ -23,6 +21,7 @@ class DatasetAE_Class(Dataset):
         self.__frames_feat = np.array(frames_feat, dtype=np.float32)
         self.__cluster_id = np.array(cluster_id, dtype=np.uint8)
         self.__frames_me = np.array(frames_cluster_me, dtype=np.float32)
+
         # --- Parameters for Confusion Matrix for Classification
         self.__labeled_dictionary = cluster_dict if isinstance(cluster_dict, list) else []
 

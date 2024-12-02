@@ -118,7 +118,7 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
 
 if __name__ == "__main__":
     from package.dnn.dnn_handler import Config_ML_Pipeline
-    from src_dnn.train_ae_cl_sweep_plot import extract_data_from_files, plot_common_loss, plot_common_params, plot_architecture_metrics_isolated
+    from package.plot.plot_ae_cl_sweep import extract_data_from_files, plot_common_loss, plot_common_params, plot_architecture_metrics_isolated
 
     yaml_handler = yaml_config_handler(DefaultSettings_MLPipe, 'config', 'Config_DNN')
     dnn_handler = yaml_handler.get_class(Config_ML_Pipeline)

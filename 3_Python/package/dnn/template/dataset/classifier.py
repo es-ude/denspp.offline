@@ -8,7 +8,7 @@ from package.data_process.frame_preprocessing import reconfigure_cluster_with_ce
 from package.data_process.frame_normalization import DataNormalization
 
 
-class DatasetRGC(Dataset):
+class DatasetClassifier(Dataset):
     def __init__(self, frame: np.ndarray, cluster_id: np.ndarray, cluster_dict=None):
         """Dataset Loader for Retinal Ganglion Cells ON-/OFF Cell Classification
         Args:
@@ -37,10 +37,10 @@ class DatasetRGC(Dataset):
     @property
     def get_topology_type(self) -> str:
         """Getting the information of used Autoencoder topology"""
-        return 'RGC Classification'
+        return 'Classification'
 
 
-def prepare_training(settings: Config_Dataset) -> DatasetRGC:
+def prepare_training(settings: Config_Dataset) -> DatasetClassifier:
     """Preparing dataset incl. augmentation for spike-detection-based training
     Args:
         settings:       Settings for loading data
@@ -87,4 +87,4 @@ def prepare_training(settings: Config_Dataset) -> DatasetRGC:
         addon = f'' if len(frames_dict) == 0 else f' ({frames_dict[id]})'
         print(f"\tclass {id}{addon} --> {check[1][idx]} samples")
 
-    return DatasetRGC(frames_in, frames_cl, frames_dict)
+    return DatasetClassifier(frames_in, frames_cl, frames_dict)
