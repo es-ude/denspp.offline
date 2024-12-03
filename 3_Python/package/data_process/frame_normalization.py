@@ -3,16 +3,15 @@ import numpy as np
 
 
 class DataNormalization:
-    _do_bipolar: bool
     _do_global: bool
     __params: dict = {}
     __extract_peak_mode: int = 2
 
-    def __init__(self, method: str = "minmax", mode: str = "bipolar", peak_mode=2):
+    def __init__(self, method: str = "minmax", do_global_scaling=False, peak_mode=2):
         """Normalizing the input data to enhance classification performance.
         Args:
             method (str):   The normalization method ["minmax", "norm", "zscore", "medianmad", or "meanmad"]
-            mode (str):     Defining the normalization mode ['bipolar', 'global', 'combined']
+            do_global_scaling (bool):  Applied global scaling in normalization else sample scaling
         Methods:
             normalize(): Normalize the input data based on the selected mode and method.
         Examples:
@@ -24,9 +23,9 @@ class DataNormalization:
 
         """
         self.__method = method
-        self._define_mode(mode)
+        self._do_global = do_global_scaling
         self.__extract_peak_mode = peak_mode
-        self.__list_norm_methods = {'minmax': self._normalize_minmax, 'norm': self._normalize_norm,
+        self.__list_norm_methods = {'zeroone': self._normalize_zeroone, 'minmax': self._normalize_minmax, 'norm': self._normalize_norm,
                                     'zscore': self._normalize_zscore, 'medianmad': self._normalize_medianmad,
                                     'meanmad': self._normalize_medianmad}
 
@@ -60,21 +59,6 @@ class DataNormalization:
     def _generate_numpy_full(self, data: np.ndarray, num_repeats: int) -> np.ndarray:
         return np.repeat(np.expand_dims(data, axis=-1), num_repeats, axis=-1)
 
-    def _define_mode(self, type: str) -> None:
-        match type:
-            case 'bipolar':
-                self._do_bipolar = True
-                self._do_global = False
-            case 'global':
-                self._do_bipolar = False
-                self._do_global = True
-            case 'combined':
-                self._do_bipolar = True
-                self._do_global = True
-            case _:
-                self._do_bipolar = False
-                self._do_global = False
-
     def _get_data_peak_value_numpy(self, raw_dataset: np.ndarray) -> np.ndarray:
         match self.__extract_peak_mode:
             case 0:
@@ -101,18 +85,26 @@ class DataNormalization:
         else:
             scale = np.max(np.abs(raw_dataset)) if self._do_global else self._get_data_peak_value_numpy(raw_dataset)
 
-        mean_val = 0.0 if self._do_bipolar else 0.5
-        scale_mean = 1.0 if self._do_bipolar else 2.0
-        self.__params = {'offset_start': mean_val, 'scale_used': scale_mean * scale}
+        self.__params = {'scale_used': scale}
+
+    def _normalize_zeroone(self, dataset: np.ndarray | torch.Tensor) -> np.ndarray | torch.Tensor:
+        self._get_scaling_value_minmax(dataset)
+        if isinstance(dataset, np.ndarray):
+            scale_norm = self._generate_numpy_full(self.__params['scale_used'], dataset.shape[-1])
+            dataset_norm = 0.5 + dataset / scale_norm
+        else:
+            scale_norm = self._generate_tensor_full(self.__params['scale_used'], dataset.shape[-1])
+            dataset_norm = torch.divide(torch.add(0.5, dataset), scale_norm)
+        return dataset_norm
 
     def _normalize_minmax(self, dataset: np.ndarray | torch.Tensor) -> np.ndarray | torch.Tensor:
         self._get_scaling_value_minmax(dataset)
         if isinstance(dataset, np.ndarray):
-            scale_norm = self._generate_numpy_full(self.__params['scale_used'], dataset.shape[-1])
-            dataset_norm = self.__params['offset_start'] + dataset / scale_norm
+            scale_norm = self._generate_numpy_full(2 * self.__params['scale_used'], dataset.shape[-1])
+            dataset_norm = dataset / scale_norm
         else:
-            scale_norm = self._generate_tensor_full(self.__params['scale_used'], dataset.shape[-1])
-            dataset_norm = torch.divide(torch.add(self.__params['offset_start'], dataset), scale_norm)
+            scale_norm = self._generate_tensor_full(2 * self.__params['scale_used'], dataset.shape[-1])
+            dataset_norm = torch.divide(dataset, scale_norm)
         return dataset_norm
 
     def _get_scaling_value_norm(self, raw_dataset: np.ndarray | torch.Tensor) -> None:
@@ -225,7 +217,7 @@ if __name__ == "__main__":
         return data
 
     used_method = 'minmax'
-    hndl = DataNormalization(used_method, 'global')
+    hndl = DataNormalization(used_method)
     hndl.list_normalization_methods()
     num_samples = 100
     num_points = 31
