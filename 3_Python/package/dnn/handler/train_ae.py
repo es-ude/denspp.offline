@@ -10,8 +10,7 @@ from package.dnn.template.dataset.autoencoder import prepare_training
 import package.dnn.template.models.autoencoder_dnn as models
 
 
-def do_train_neural_autoencoder(settings: Config_ML_Pipeline, add_noise_cluster=False,
-                                yaml_name_index='Config_AE') -> [dict, dict]:
+def do_train_neural_autoencoder(settings: Config_ML_Pipeline, yaml_name_index='Config_AE') -> [dict, dict]:
     """Training routine for Autoencoders in Neural Applications (Spike Frames)
     Args:
         settings:           Handler for configuring the routine selection for train deep neural networks
@@ -33,9 +32,7 @@ def do_train_neural_autoencoder(settings: Config_ML_Pipeline, add_noise_cluster=
 
     # --- Loading Data, Build Model and Do Training
     dataset = prepare_training(settings=config_data, do_classification=False,
-                               mode_train_ae=settings.autoencoder_mode, noise_std=settings.autoencoder_noise_std,
-                               add_noise_cluster=add_noise_cluster,
-                               use_median_for_mean=True)
+                               mode_train_ae=settings.autoencoder_mode, noise_std=settings.autoencoder_noise_std)
     if settings.autoencoder_feat_size:
         used_model = models.models_available.build_model(config_train.model_name, output_size=settings.autoencoder_feat_size)
     else:

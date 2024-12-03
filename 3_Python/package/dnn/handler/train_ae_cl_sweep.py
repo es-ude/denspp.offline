@@ -17,15 +17,14 @@ import package.dnn.template.models.autoencoder_class as models_cl
 
 def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
                          feat_layer_start: int, feat_layer_inc: int, feat_layer_stop: int,
-                         add_noise_cluster=False,
                          num_epochs_trial=50,
                          yaml_name_index='Config_AECL_Sweep') -> str:
     """Training routine for Autoencoders and Classification after Encoder (Sweep)
     Args:
         settings:           Handler for configuring the routine selection for train deep neural networks
-        feat_layer_start:   Increasement value for feature layer
-        feat_layer_inc:     Increasement value for feature layer
-        feat_layer_stop:    Increasement value for feature layer
+        feat_layer_start:   Increasing value for feature layer
+        feat_layer_inc:     Increasing value for feature layer
+        feat_layer_stop:    Increasing value for feature layer
         add_noise_cluster:  Adding noise cluster to dataset [Default: False]
         num_epochs_trial:   Number of epochs of each run
         yaml_name_index:    Index of yaml file name
@@ -71,8 +70,7 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
             settings=config_data,
             mode_train_ae=settings.autoencoder_mode,
             noise_std=settings.autoencoder_noise_std,
-            do_classification=False,
-            add_noise_cluster=add_noise_cluster
+            do_classification=False
         )
         used_model_ae = models_ae.models_available.build_model(config_train_ae.model_name, output_size=feat_size)
         metrics_ae, valid_data_ae, path2folder = do_train_autoencoder(
@@ -89,8 +87,7 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
         # ----------- Step #2: TRAINING CLASSIFIER
         used_dataset_cl = get_dataset_cl(
             settings=config_data,
-            path2model=path2folder,
-            add_noise_cluster=add_noise_cluster
+            path2model=path2folder
         )
         used_model_cl = models_cl.models_available.build_model(config_train_cl.model_name,
                                                                input_size=feat_size,

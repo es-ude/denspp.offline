@@ -32,7 +32,7 @@ if __name__ == "__main__":
             do_train_neural_spike_classification(dnn_handler)
         case 4:
             # --- Autoencoder + Classifier
-            from package.dnn.handler.train_aecl import do_train_ae_classifier
+            from package.dnn.handler.train_ae_cl import do_train_ae_classifier
             do_train_ae_classifier(dnn_handler)
         case _:
             raise NotImplementedError("Wrong model! Please select right model!")

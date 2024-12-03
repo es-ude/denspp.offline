@@ -264,7 +264,7 @@ class train_nn(training_pytorch):
             epoch_train_loss = list()
             epoch_valid_loss = list()
 
-            self.model.load_state_dict(load(path2model_init))
+            self.model.load_state_dict(load(path2model_init, weights_only=False))
             self._run_kfold = fold
 
             if self._kfold_do and self._do_print_state:
@@ -326,7 +326,7 @@ class train_nn(training_pytorch):
 
         # --- Do the Inference with Best Model
         path2model = self.get_best_model('class')[0]
-        model_test = load(path2model)
+        model_test = load(path2model, weights_only=False)
         print("\n================================================================="
               f"\nDo Validation with best model: {path2model}")
 

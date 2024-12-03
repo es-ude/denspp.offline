@@ -69,90 +69,15 @@ def prepare_training(settings: Config_Dataset, path2model: str,
     Returns:
         Dataloader for training autoencoder-based classifier
     """
-    if print_state:
-        print("... loading and processing the dataset")
     data = settings.load_dataset()
     frames_in = data['data']
     frames_cl = data['label']
     frames_dict = data['dict']
-
-    # --- Using cell_bib for clustering
-    if settings.use_cell_library:
-        frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(settings.get_path2data,
-                                                                              settings.use_cell_library,
-                                                                              frames_in, frames_cl)
-
-    # --- PART: Reducing samples per cluster (if too large)
-    if settings.reduce_samples_per_cluster_do:
-        if print_state:
-            print("... reducing the samples per cluster (for pre-training on dedicated hardware)")
-        frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
-                                                             settings.reduce_samples_per_cluster_num,
-                                                             do_shuffle=False)
-
-    # --- PART: Data Normalization
-    if settings.normalization_do:
-        if print_state:
-            print(f"... do data normalization")
-        data_class_frames_in = DataNormalization('minmax', mode=settings.normalization_method)
-        frames_in = data_class_frames_in.normalize(frames_in)
-
-    # --- PART: Mean waveform calculation and data augmentation
-    if use_median_for_mean:
-        frames_me = calculate_frame_median(frames_in, frames_cl)
-    else:
-        frames_me = calculate_frame_mean(frames_in, frames_cl)
-
-    # --- PART: Exclusion of selected clusters
-    if len(settings.exclude_cluster) == 0:
-        frames_in = frames_in
-        frames_cl = frames_cl
-    else:
-        for i, id in enumerate(settings.exclude_cluster):
-            selX = np.where(frames_cl != id)
-            frames_in = frames_in[selX[0], :]
-            frames_cl = frames_cl[selX]
-
-    # --- Generate dict with labeled names
-    if isinstance(frames_dict, dict):
-        frames_dict = list()
-        for id in np.unique(frames_cl):
-            frames_dict.append(f"Neuron #{id}")
-
-    # --- PART: Calculate SNR if desired
-    if settings.augmentation_do or add_noise_cluster:
-        snr_mean = calculate_frame_snr(frames_in, frames_cl, frames_me)
-    else:
-        snr_mean = np.zeros(0, dtype=float)
-
-    # --- PART: Data Augmentation
-    if settings.augmentation_do and not settings.reduce_samples_per_cluster_do:
-        if print_state:
-            print("... do data augmentation")
-        # new_frames, new_clusters = augmentation_mean_waveform(
-        # frames_me, frames_cl, snr_mean, settings.data_num_augmentation)
-        new_frames, new_clusters = augmentation_change_position(
-            frames_in, frames_cl, snr_mean, settings.augmentation_num)
-        frames_in = np.append(frames_in, new_frames, axis=0)
-        frames_cl = np.append(frames_cl, new_clusters, axis=0)
-
-    # --- PART: Generate and add noise cluster
-    if add_noise_cluster:
-        snr_range_zero = [np.median(snr_mean[:, 0]), np.median(snr_mean[:, 2])]
-        info = np.unique(frames_cl, return_counts=True)
-        num_cluster = np.max(info[0]) + 1
-        num_frames = np.max(info[1])
-        if print_state:
-            print(f"... adding a non-neural noise-cluster with index #{num_cluster} and with {num_frames} samples")
-
-        new_mean, new_clusters, new_frames = generate_zero_frames(frames_in.shape[1], num_frames, snr_range_zero)
-        frames_in = np.append(frames_in, new_frames, axis=0)
-        frames_cl = np.append(frames_cl, num_cluster + new_clusters, axis=0)
-        frames_me = np.vstack([frames_me, new_mean])
+    frames_me = data['mean']
 
     # --- PART: Calculating the features with given Autoencoder model
     overview_model = glob(join(path2model, '*.pth'))
-    model_ae = load(overview_model[0])
+    model_ae = load(overview_model[0], weights_only=False)
     model_ae = model_ae.to("cpu")
     feat = model_ae(from_numpy(np.array(frames_in, dtype=np.float32)))[0]
     frames_feat = feat.detach().numpy()

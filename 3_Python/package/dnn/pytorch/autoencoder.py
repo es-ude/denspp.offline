@@ -359,7 +359,7 @@ class train_nn(training_pytorch):
         if self._do_print_state:
             print("\n================================================================="
                   f"\nDo Validation with best model: {path2model}")
-        model_test = load(path2model)
+        model_test = load(path2model, weights_only=False)
 
         pred_model = randn(32, 1)
         feat_model = randn(32, 1)

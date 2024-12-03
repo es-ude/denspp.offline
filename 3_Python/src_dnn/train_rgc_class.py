@@ -17,7 +17,7 @@ def do_train_rgc_class(settings: Config_ML_Pipeline, yaml_name_index='Config_RGC
     """
     # --- Loading the YAML file: Dataset
     default_data = deepcopy(DefaultSettingsDataset)
-    default_data.data_file_name = '2023-11-24_Dataset-07_RGC_TDB_Merged.npy'
+    default_data.data_file_name = 'rgc_tdb'
     yaml_data = yaml_config_handler(default_data, settings.get_path2config, f'{yaml_name_index}_Dataset')
     config_data = yaml_data.get_class(Config_Dataset)
 

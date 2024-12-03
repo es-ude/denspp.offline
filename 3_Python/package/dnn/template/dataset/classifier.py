@@ -47,37 +47,10 @@ def prepare_training(settings: Config_Dataset) -> DatasetClassifier:
     Return:
         Dataloader with retinal ganglion cell types for classification tasks
     """
-    print("... loading and processing the dataset")
     rawdata = settings.load_dataset()
     frames_in = rawdata['data']
     frames_cl = rawdata['label']
     frames_dict = rawdata['dict']
-
-    # --- PART: Exclusion of selected clusters
-    if len(settings.exclude_cluster):
-        for i, id in enumerate(settings.exclude_cluster):
-            selX = np.where(frames_cl != id)
-            frames_in = frames_in[selX[0], :]
-            frames_cl = frames_cl[selX]
-        print(f"... class reduction done to {np.unique(frames_cl).size} classes")
-
-    # --- PART: Using a cell bib with option to reduce cluster
-    if settings.use_cell_library:
-        frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(settings.get_path2data,
-                                                                              settings.use_cell_library,
-                                                                              frames_in, frames_cl)
-
-    # --- PART: Reducing samples per cluster (if too large)
-    if settings.reduce_samples_per_cluster_do:
-        print("... reducing the samples per cluster (for pre-training on dedicated hardware)")
-        frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
-                                                             settings.reduce_samples_per_cluster_num)
-
-    # --- PART: Data Normalization
-    if settings.normalization_do:
-        print(f"... do data normalization")
-        data_class_frames_in = DataNormalization('minmax', mode=settings.normalization_method)
-        frames_in = data_class_frames_in.normalize(frames_in)
 
     # --- Output
     check = np.unique(frames_cl, return_counts=True)
