@@ -1,10 +1,16 @@
 from dataclasses import dataclass
-from typing import Any, SupportsInt
+from typing import Any
 from os import getcwd, makedirs
 from os.path import join, abspath, exists
 from torch import optim, nn
 import numpy as np
-import owncloud
+
+from package.data_call.owncloud_handler import ScieboDownloadHandler
+from package.data_process.frame_preprocessing import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
+from package.data_process.frame_preprocessing import reconfigure_cluster_with_cell_lib, generate_zero_frames
+from package.data_process.frame_normalization import DataNormalization
+from package.data_process.frame_augmentation import augmentation_change_position, augmentation_reducing_samples
+
 
 
 @dataclass
@@ -145,7 +151,8 @@ class Config_Dataset:
     def load_dataset(self) -> dict:
         """Loading the dataset from defined data file"""
         self.__download_if_missing()
-        return np.load(self.get_path2data, allow_pickle=True).flatten()[0]
+        dataset = np.load(self.get_path2data, allow_pickle=True).flatten()[0]
+        return self.__process_spike_dataset(dataset)
 
     def __download_if_missing(self) -> None:
         """"""
@@ -167,64 +174,129 @@ class Config_Dataset:
             oc_handler.download_file(self.data_file_name, self.get_path2data)
             oc_handler.close()
 
-
-class ScieboDownloadHandler:
-    __oc_handler: owncloud.Client
-
-    def __init__(self, link: str = 'https://uni-duisburg-essen.sciebo.de/s/JegLJuj1SADBSp0',
-                 path2folder_remote: str = '/00_Merged/') -> None:
-        """Class for handling sciebo repository for getting datasets remotely
-        Args:
-            link:                   String with link to used owncloud repository
-            path2folder_remote:     Used folder on remote source
-        Return:
-            None
+    def __process_spike_dataset(self, rawdata: dict, use_median_for_mean: bool = True, print_state: bool = True,
+                                add_noise_cluster: bool = False) -> dict:
         """
-        self.__public_sciebo_link = link
-        self.__path2folder_remote = path2folder_remote
-
-    def get_overview_data(self, formats: list = ('.npy', '.mat')) -> list:
-        """Getting an overview of available files for downloading"""
-        self.__oc_handler = owncloud.Client.from_public_link(self.__public_sciebo_link)
-        dict_list = self.__oc_handler.list(self.__path2folder_remote, 1)
-        self.__oc_handler.logout()
-
-        files_available = list()
-        for file in dict_list:
-            for format in formats:
-                if format in file.name:
-                    files_available.append(file.name)
-        return files_available
-
-    def download_file(self, file_name: str, destination_download: str) -> None:
-        """Downloading a file from remote server
         Args:
-            file_name:  File name (for downloading remote file)
-            destination_download:   Folder name to save the data locally
+            data:
+            use_median_for_mean:    Using median for calculating mean waveform (Boolean)
+            print_state:            Printing the state and results into Terminal
+            add_noise_cluster:      Adding the noise cluster to dataset
         Return:
-            None
+            Dict
         """
-        self.__oc_handler = owncloud.Client.from_public_link(self.__public_sciebo_link)
-        print("... downloading file from sciebo")
-        self.__oc_handler.get_file(join(self.__path2folder_remote, file_name), destination_download)
-        print("... download done")
+        if print_state:
+            print("... loading and processing the dataset")
 
-    def close(self) -> None:
-        self.__oc_handler.logout()
+        if 'peak' in rawdata.keys():
+            ignore_samples = list()
+            ignore_samples.append(np.argwhere(rawdata['peak'] >= 200.0).flatten())
+            ignore_samples.append(np.argwhere(rawdata['peak'] <= 60.0).flatten())
 
+            for del_samples in ignore_samples:
+                frames_in0 = np.delete(rawdata['data'][:, 16:80], del_samples, 0)
+                frames_cl = np.delete(rawdata['label'], del_samples, 0)
+                frames_pk = np.delete(rawdata['peak'], del_samples, 0)
+
+            product = np.repeat(np.expand_dims(frames_pk, axis=-1), frames_in0.shape[-1], axis=-1)
+            frames_in = frames_in0 * product
+        else:
+            frames_in = rawdata['data']
+            frames_cl = rawdata['label']
+
+        frames_dict = rawdata['dict']
+
+        # --- Using cell_bib for clustering
+        if self.use_cell_library:
+            frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(
+                self.get_path2data,
+                self.use_cell_library,
+                frames_in,
+                frames_cl
+            )
+
+        # --- PART: Reducing samples per cluster (if too large)
+        if self.reduce_samples_per_cluster_do:
+            if print_state:
+                print("... do data augmentation with reducing the samples per cluster")
+            frames_in, frames_cl = augmentation_reducing_samples(
+                frames_in, frames_cl,
+                self.reduce_samples_per_cluster_num,
+                do_shuffle=False
+            )
+
+        # --- PART: Exclusion of selected clusters
+        if len(self.exclude_cluster) == 0:
+            frames_in = frames_in
+            frames_cl = frames_cl
+        else:
+            for i, id in enumerate(self.exclude_cluster):
+                selX = np.where(frames_cl != id)
+                frames_in = frames_in[selX[0], :]
+                frames_cl = frames_cl[selX]
+
+        # --- Generate dict with labeled names
+        if isinstance(frames_dict, dict):
+            frames_dict = list()
+            for id in np.unique(frames_cl):
+                frames_dict.append(f"Neuron #{id}")
+
+        # --- PART: Data Normalization
+        if self.normalization_do:
+            if print_state:
+                print(f"... do data normalization")
+            data_class_frames_in = DataNormalization(self.normalization_method)
+            frames_in = data_class_frames_in.normalize(frames_in)
+
+        # --- PART: Mean waveform calculation and data augmentation
+        if use_median_for_mean:
+            frames_me = calculate_frame_median(frames_in, frames_cl)
+        else:
+            frames_me = calculate_frame_mean(frames_in, frames_cl)
+
+        # --- PART: Calculate SNR if desired
+        if self.augmentation_do or add_noise_cluster:
+            snr_mean = calculate_frame_snr(frames_in, frames_cl, frames_me)
+        else:
+            snr_mean = np.zeros(0, dtype=float)
+
+        # --- PART: Data Augmentation
+        if self.augmentation_do and not self.reduce_samples_per_cluster_do:
+            if print_state:
+                print("... do data augmentation")
+            new_frames, new_clusters = augmentation_change_position(
+                frames_in, frames_cl, snr_mean, self.augmentation_num)
+            frames_in = np.append(frames_in, new_frames, axis=0)
+            frames_cl = np.append(frames_cl, new_clusters, axis=0)
+
+        # --- PART: Generate and add noise cluster
+        if add_noise_cluster:
+            snr_range_zero = [np.median(snr_mean[:, 0]), np.median(snr_mean[:, 2])]
+            info = np.unique(frames_cl, return_counts=True)
+            num_cluster = np.max(info[0]) + 1
+            num_frames = np.max(info[1])
+            if print_state:
+                print(f"... adding a zero-noise cluster: cluster = {num_cluster} - number of frames = {num_frames}")
+
+            new_mean, new_clusters, new_frames = generate_zero_frames(frames_in.shape[1], num_frames, snr_range_zero)
+            frames_in = np.append(frames_in, new_frames, axis=0)
+            frames_cl = np.append(frames_cl, num_cluster + new_clusters, axis=0)
+            frames_me = np.vstack([frames_me, new_mean])
+
+        return {'data': frames_in, 'label': frames_cl, 'dict': frames_dict, 'mean': frames_me}
 
 
 DefaultSettingsDataset = Config_Dataset(
     data_path='data',
-    data_file_name='quiroga',
+    data_file_name='rgc_mcs',
     use_cell_library=0,
     augmentation_do=False,
     augmentation_num=0,
     normalization_do=False,
-    normalization_method='bipolar',
+    normalization_method='minmax',
     reduce_samples_per_cluster_do=False,
     reduce_samples_per_cluster_num=0,
-    exclude_cluster=[]
+    exclude_cluster=[5]
 )
 
 
@@ -234,4 +306,7 @@ if __name__ == "__main__":
 
     print(DefaultSettingsDataset.get_path2data)
     data = DefaultSettingsDataset.load_dataset()
+
+    from package.data_merge.merge_dataset_rgc_onoff_fzj import plot_frames_rgc_onoff_60mea
+    plot_frames_rgc_onoff_60mea(data)
     print(".done")
