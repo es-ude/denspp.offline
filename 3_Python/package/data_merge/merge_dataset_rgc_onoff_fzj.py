@@ -35,7 +35,7 @@ def load_fzj_onoff_waveforms(path2folder: str, path2data: str='', quantize_bitwi
         del data0
 
         # --- Processing for DataSize reduction
-        norm_hndl = DataNormalization("minmax", "bipolar")
+        norm_hndl = DataNormalization("minmax")
         pre_scaler = 2 ** (quantize_bitwidth-1) - 1
         data_dig = np.array(pre_scaler * norm_hndl.normalize(data1), dtype=np.int16)
         amp_array = norm_hndl.get_peak_amplitude_values()
@@ -79,41 +79,49 @@ def get_data_and_label_from_rawdata(data_raw: dict) -> dict:
     return dict_dataset
 
 
-def plot_results(data: dict, take_samples=50) -> None:
+def plot_frames_rgc_onoff_60mea(data: dict, take_samples=2000, plot_norm: bool=False) -> None:
     """Plotting the results
     Args:
         data:           Dictionary with spike frames, peak amplitudes and labels
         take_samples:   Only take random N samples from each class
     """
-    scale_yval = 32767
     xmid_pos = int(len(data['dict']) / 2)
-    xstart = 16
-    xstop = 80
+    frame_raw = data['data']
+    frame_true = data['label']
+    frame_peak = data['peak']
 
     # --- Figure #1: Spike Frames
     axs = plt.subplots(1, len(data['dict']), sharex=True)[1]
     for id, key in enumerate(data['dict']):
-        pos_id = np.argwhere(data['label'] == id).flatten()
+        pos_id = np.argwhere(frame_true == id).flatten()
         pos_random = pos_id[np.random.randint(0, pos_id.size, take_samples)]
+        frame_raw0 = frame_raw[pos_random, :] / np.abs(frame_raw.min())
 
-        frame_raw = data['data'][pos_random, xstart:xstop+1]
-        frame_mean = np.mean(data['data'][pos_id, xstart:xstop+1], axis=0)
-
-        axs[id].plot(np.transpose(frame_raw / scale_yval))
-        axs[id].plot(frame_mean / scale_yval, 'r')
+        axs[id].plot(np.transpose(frame_raw0))
+        axs[id].plot(np.mean(frame_raw0, axis=0), 'k', linewidth=2.0)
         axs[id].grid()
-        axs[id].set_title(key)
+        axs[id].set_title(key, fontsize=12)
 
-    axs[0].set_ylabel("Spike Norm. Value")
-    axs[xmid_pos].set_xlabel("Spike Frame Position")
-    plt.subplots_adjust(hspace=0.05, wspace=0.1)
+    axs[0].set_xlim([0, frame_raw.shape[-1]])
+    if plot_norm:
+        axs[0].set_ylabel("Spike Norm. Value", fontsize=12)
+    else:
+        axs[0].set_ylabel("Spike Voltage [µV]", fontsize=12)
+    axs[xmid_pos].set_xlabel("Spike Frame Position", fontsize=12)
+    plt.subplots_adjust(hspace=0.05, wspace=0.15)
 
     # --- Figure #2: Histogram - Spike Frame Peak Amplitude
-    plt.figure()
-    plt.hist(data['peak'], bins=101)
-    plt.xlabel('Spike Peak Amplitude [µV]')
-    plt.ylabel('Bins')
-    plt.grid()
+    _, axs = plt.subplots(1, 2, sharex=True)
+    axs[0].hist(frame_peak, bins=101)
+    axs[1].hist(frame_peak, bins=101, density=True, cumulative=True)
+
+    axs[0].set_xlim([0, frame_peak.max()])
+    axs[0].set_xlabel('Spike Peak Amplitude [µV]', fontsize=12)
+    axs[1].set_xlabel('Spike Peak Amplitude [µV]', fontsize=12)
+    axs[0].set_ylabel('Bins', fontsize=14)
+
+    for ax in axs:
+        ax.grid()
     plt.tight_layout()
     plt.show(block=True)
 
@@ -123,5 +131,5 @@ if __name__ == "__main__":
     # load_fzj_onoff_waveforms("C:\\HomeOffice\\Data_Neurosignal\\0A_RGC_FZJ_ONOFF", path2save)
 
     data = np.load(os.path.join(path2save, "2024-11-25_Dataset-FZJ-MCS-RGC-ONOFF.npy"), allow_pickle=True).flatten()[0]
-    plot_results(data)
+    plot_frames_rgc_onoff_60mea(data)
     print(".done")
