@@ -1,23 +1,36 @@
 from os.path import join
+from dataclasses import dataclass
 import owncloud
+from copy import deepcopy
+from package.yaml_handler import yaml_config_handler
 
 
-class ScieboDownloadHandler:
+@dataclass
+class Config_Cloud:
+    remote_link: str
+    remote_transient: str
+    remote_dataset: str
+
+
+DefaultConfigCloud = Config_Cloud(
+    remote_link='https://owncloud.com',
+    remote_transient='/',
+    remote_dataset='/'
+)
+
+
+class owncloudDownloader:
     __oc_handler: owncloud.Client
 
-    def __init__(self, link: str = 'https://uni-duisburg-essen.sciebo.de/s/JegLJuj1SADBSp0',
-                 path2folder_remote: str = '/00_Merged/') -> None:
-        """Class for handling sciebo repository for getting datasets remotely
-        Args:
-            link:                   String with link to used owncloud repository
-            path2folder_remote:     Used folder on remote source
-        Return:
-            None
-        """
-        self.__public_sciebo_link = link
-        self.__path2folder_remote = path2folder_remote
+    def __init__(self, path2config: str = '', use_dataset=False) -> None:
+        """Class for handling sciebo repository for getting datasets remotely"""
+        yaml_hndl = yaml_config_handler(deepcopy(DefaultConfigCloud), path2config, 'access_cloud')
+        config = yaml_hndl.get_class(Config_Cloud)
 
-    def get_overview_data(self, formats: list = ('.npy', '.mat')) -> list:
+        self.__public_sciebo_link = config.remote_link
+        self.__path2folder_remote = config.remote_transient if not use_dataset else config.remote_dataset
+
+    def get_overview_data(self, formats: list = ('.npy', '.mat', '.csv')) -> list:
         """Getting an overview of available files for downloading"""
         self.__oc_handler = owncloud.Client.from_public_link(self.__public_sciebo_link)
         dict_list = self.__oc_handler.list(self.__path2folder_remote, 1)

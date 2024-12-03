@@ -79,36 +79,47 @@ def get_data_and_label_from_rawdata(data_raw: dict) -> dict:
     return dict_dataset
 
 
-def plot_frames_rgc_onoff_60mea(data: dict, take_samples=2000, plot_norm: bool=False) -> None:
+def plot_frames_rgc_onoff_60mea(data: dict, take_samples=500, plot_norm: bool=False, plot_show: bool=False) -> None:
     """Plotting the results
     Args:
         data:           Dictionary with spike frames, peak amplitudes and labels
         take_samples:   Only take random N samples from each class
+        plot_norm:      Plot option for do normalization on input data
+        plot_show:      Plot option for blocking and showing the plots
+    Return:
+        None
     """
-    xmid_pos = int(len(data['dict']) / 2)
     frame_raw = data['data']
     frame_true = data['label']
-    frame_peak = data['peak']
+    frame_dict = data['dict']
+    frame_peak = data['peak'] / np.abs(frame_raw.min()) if 'peak' in data.keys() else np.max(np.abs(data['data']), 1)
 
     # --- Figure #1: Spike Frames
-    axs = plt.subplots(1, len(data['dict']), sharex=True)[1]
-    for id, key in enumerate(data['dict']):
+    num_cols = int(np.ceil(len(frame_dict)/2))
+    _, axs = plt.subplots(2, num_cols, sharex=True)
+    for id, key in enumerate(frame_dict):
         pos_id = np.argwhere(frame_true == id).flatten()
         pos_random = pos_id[np.random.randint(0, pos_id.size, take_samples)]
-        frame_raw0 = frame_raw[pos_random, :] / np.abs(frame_raw.min())
+        scale = 1 if not plot_norm else np.repeat(np.expand_dims(frame_peak[pos_random], -1), frame_raw.shape[-1], -1)
+        frame_raw0 = frame_raw[pos_random, :] / scale
 
-        axs[id].plot(np.transpose(frame_raw0))
-        axs[id].plot(np.mean(frame_raw0, axis=0), 'k', linewidth=2.0)
-        axs[id].grid()
-        axs[id].set_title(key, fontsize=12)
+        axs[int(id/num_cols), id % num_cols].plot(np.transpose(frame_raw0))
+        axs[int(id/num_cols), id % num_cols].plot(np.mean(frame_raw0, axis=0), 'k', linewidth=2.0)
+        axs[int(id/num_cols), id % num_cols].grid()
+        axs[int(id/num_cols), id % num_cols].set_title(key, fontsize=12)
 
-    axs[0].set_xlim([0, frame_raw.shape[-1]])
+    axs[0, 0].set_xlim([0, frame_raw.shape[-1]-1])
+    axs[0, 0].set_xticks(np.linspace(0, frame_raw.shape[-1]-1, 7, endpoint=True, dtype=np.uint16))
     if plot_norm:
-        axs[0].set_ylabel("Spike Norm. Value", fontsize=12)
+        axs[0, 0].set_ylabel("Spike Norm. Value", fontsize=12)
+        axs[1, 0].set_ylabel("Spike Norm. Value", fontsize=12)
     else:
-        axs[0].set_ylabel("Spike Voltage [µV]", fontsize=12)
-    axs[xmid_pos].set_xlabel("Spike Frame Position", fontsize=12)
-    plt.subplots_adjust(hspace=0.05, wspace=0.15)
+        axs[0, 0].set_ylabel("Spike Voltage [µV]", fontsize=12)
+        axs[1, 0].set_ylabel("Spike Voltage [µV]", fontsize=12)
+
+    axs[1, 0].set_xlabel("Spike Frame Position", fontsize=12)
+    axs[1, 1].set_xlabel("Spike Frame Position", fontsize=12)
+    plt.tight_layout()
 
     # --- Figure #2: Histogram - Spike Frame Peak Amplitude
     _, axs = plt.subplots(1, 2, sharex=True)
@@ -123,13 +134,15 @@ def plot_frames_rgc_onoff_60mea(data: dict, take_samples=2000, plot_norm: bool=F
     for ax in axs:
         ax.grid()
     plt.tight_layout()
-    plt.show(block=True)
+
+    if plot_show:
+        plt.show(block=True)
 
 
 if __name__ == "__main__":
-    path2save = "C:\\HomeOffice\\Data_Neurosignal\\00_Merged"
+    path2save = './../../data'
     # load_fzj_onoff_waveforms("C:\\HomeOffice\\Data_Neurosignal\\0A_RGC_FZJ_ONOFF", path2save)
 
-    data = np.load(os.path.join(path2save, "2024-11-25_Dataset-FZJ-MCS-RGC-ONOFF.npy"), allow_pickle=True).flatten()[0]
+    data = np.load(os.path.join(path2save, "2024-11-25_Dataset_RGC_MCS_ONOFF_FZJ.npy"), allow_pickle=True).flatten()[0]
     plot_frames_rgc_onoff_60mea(data)
     print(".done")

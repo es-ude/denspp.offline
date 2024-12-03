@@ -30,8 +30,9 @@ class SettingsDATA:
 
 
 RecommendedSettingsDATA = SettingsDATA(
-    path="../2_Data",
-    data_set=1, data_case=0, data_point=0,
+    path='',
+    data_set='',
+    data_case=0, data_point=0,
     t_range=[0], ch_sel=[],
     fs_resample=100e3
 )
@@ -194,7 +195,6 @@ class _DataController:
                     du = u_chck
                 else:
                     du = 0
-
                 data_out.append(du + resample_poly(data_in - du, p, q))
 
                 # --- Resampling the labeled information
@@ -479,13 +479,25 @@ class _DataController:
         # --- Searching the load function for dataset translation
         methods_list_all = [method for method in self._methods_available]
         search_param = '_DataLoader'
-        methods_load_data = [method for method in methods_list_all if method[0:len(search_param)] == search_param]
+        methods_load_data = [method for method in methods_list_all if search_param in method]
 
-        # --- Calling the function
-        if self.settings.data_set == 0:
-            raise ValueError("\nPlease select new input for data_type!")
+        # --- Getting the function to call
+        used_data_source_idx = -1
+        warning_text = "\nPlease select key words in variable 'data_set' for calling methods to read transient data"
+        warning_text += "\n=========================================================================================="
+        for method in methods_load_data:
+            warning_text += f"\n\t{method}"
+
+        for idx, method in enumerate(methods_load_data):
+            if self.settings.data_set in method:
+                used_data_source_idx = idx
+                break
+
+        # --- Call the function
+        if not self.settings.data_set or used_data_source_idx == -1:
+            raise ValueError(warning_text)
         else:
-            getattr(self, methods_load_data[self.settings.data_set - 1])()
+            getattr(self, methods_load_data[idx])()
 
 
 ###########################################################################
@@ -495,7 +507,7 @@ if __name__ == "__main__":
 
     settings = SettingsDATA(
         path="C:\HomeOffice\Data_Neurosignal",
-        data_set=6, data_case=1, data_point=0,
+        data_set='mcs_fzj', data_case=1, data_point=0,
         t_range=[0, 0.5], ch_sel=[], fs_resample=20e3
     )
     data_loader = DataLoader(settings)

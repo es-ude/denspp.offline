@@ -17,7 +17,7 @@ class DataLoader(_DataController):
         self.path2file = str()
         self._methods_available = dir(DataLoader)
 
-    def __load_method_martinez2009(self) -> None:
+    def __load_martinez_simulation(self) -> None:
         """Loading synthethic files from Quiroga simulation (2009)"""
         folder_name = "_SimDaten_Martinez2009"
         data_type = 'simulation_*.mat'
@@ -47,7 +47,7 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_method_pedreira2012(self) -> None:
+    def __load_pedreira_simulation(self) -> None:
         """Loading synthethic files from Quiroga simulator (2012)"""
         folder_name = "_SimDaten_Pedreira2012"
         data_type = 'simulation_*.mat'
@@ -83,7 +83,7 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_method_quiroga2020(self) -> None:
+    def __load_quiroga_simulation(self) -> None:
         """Loading synthetic recordings from Quiroga simulator (Common benchmark)"""
         folder_name = "_SimDaten_Quiroga2020"
         data_type = 'C_*.mat'

@@ -29,7 +29,10 @@ def do_train_rgc_class(settings: Config_ML_Pipeline, yaml_name_index='Config_RGC
 
     # ---Loading Data, Build Model and Do Training
     used_dataset = prepare_training(config_data)
-    used_model = models.models_available.build_model(config_train.model_name)
+    used_model = models.models_available.build_model(config_train.model_name,
+                                                     input_size=used_dataset[0]['in'].size,
+                                                     output_size=len(used_dataset.get_dictionary)
+                                                     )
     _, _, path2folder = do_train_classifier(
         config_ml=settings, config_data=config_data, config_train=config_train,
         used_dataset=used_dataset, used_model=used_model, path2save=''

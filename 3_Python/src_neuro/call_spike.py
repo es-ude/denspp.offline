@@ -19,7 +19,7 @@ class DataLoader(_DataController):
         self.path2file = str()
         self._methods_available = dir(DataLoader)
 
-    def __load_method00_martinez2009(self) -> None:
+    def __load_martinez_simulation(self) -> None:
         """Loading synthethic files from Quiroga simulation (2009)"""
         folder_name = "_SimDaten_Martinez2009"
         data_type = 'simulation_*.mat'
@@ -49,7 +49,7 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_method01_pedreira2012(self) -> None:
+    def __load_pedreira_simulation(self) -> None:
         """Loading synthethic files from Quiroga simulator (2012)"""
         folder_name = "_SimDaten_Pedreira2012"
         data_type = 'simulation_*.mat'
@@ -85,7 +85,7 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_method02_quiroga2020(self) -> None:
+    def __load_quiroga_simulation(self) -> None:
         """Loading synthetic recordings from Quiroga simulator (Common benchmark)"""
         folder_name = "_SimDaten_Quiroga2020"
         data_type = 'C_*.mat'
@@ -115,7 +115,7 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_method03_seidl2012(self) -> None:
+    def __load_seidl_freiburg(self) -> None:
         """Loading the recording files from the Freiburg probes from Karsten Seidl from this PhD"""
         folder_name = "_Freiburg_Seidl2014"
         data_type = '*.mat'
@@ -147,7 +147,7 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_method04_marre2018(self) -> None:
+    def __load_marre_intracellular(self) -> None:
         # Link to data: https://zenodo.org/record/1205233#.YrBYrOzP1PZ
         folder_name = "_Zenodo_Marre2018"
         data_type = '*.mat'
@@ -178,7 +178,7 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_method05_klaes_utah_array(self) -> None:
+    def __load_klaes_utah(self) -> None:
         """Loading the merged data file (from *.ns6 and *.nev files) from recordings with Utah electrode array
         from Blackrock Neurotechnology"""
         folder_name = "_Klaes_Caltech"
@@ -220,7 +220,7 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = loaded_data['behaviour']
         del loaded_data
 
-    def __load_method06_rgc_tdb(self) -> None:
+    def __load_schwartz_rgc_tdb(self) -> None:
         """Loading the transient files from the Retinal Ganglion Cell Transient Database (RGC TDB)"""
         folder_name = "_RGC_TDB"
         data_type = '*.mat'
@@ -284,8 +284,8 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_method07_fzj_mcs(self) -> None:
-        """Loading the recording files from MCS setup in FZ Juelich (case = experiment, point = file)"""
+    def __load_mueller_mcs_fzj(self) -> None:
+        """Loading the recording files from MCS setup used in Frank Mueller Group (Forschungszentrum Juelich)"""
         folder_name = "_RGC_FZJuelich"
         data_type = '*.mat'
         self._prepare_access_file(folder_name, data_type)

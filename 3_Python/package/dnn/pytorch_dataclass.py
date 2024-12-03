@@ -5,7 +5,7 @@ from os.path import join, abspath, exists
 from torch import optim, nn
 import numpy as np
 
-from package.data_call.owncloud_handler import ScieboDownloadHandler
+from package.data_call.owncloud_handler import owncloudDownloader
 from package.data_process.frame_preprocessing import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
 from package.data_process.frame_preprocessing import reconfigure_cluster_with_cell_lib, generate_zero_frames
 from package.data_process.frame_normalization import DataNormalization
@@ -130,14 +130,9 @@ class Config_Dataset:
         """Getting the default path of the Python Project"""
         return abspath(join(getcwd().split(start_folder)[0], start_folder))
 
-    @property
-    def get_path2folder_examples(self, start_folder='3_Python') -> str:
-        """Getting the default path to data from repository"""
-        return abspath(join(getcwd().split(start_folder)[0], '2_Data', '00_Merged_Datasets'))
-
     def print_overview_datasets(self, do_print=True) -> list:
         """"""
-        oc_handler = ScieboDownloadHandler()
+        oc_handler = owncloudDownloader(self.get_path2folder_project, use_dataset=True)
         list_datasets = oc_handler.get_overview_data()
         if do_print:
             print("\nNo local dataset is available. Enter the number of available datasets from remote:"
@@ -170,7 +165,7 @@ class Config_Dataset:
         if not exists(self.get_path2data):
             makedirs(self.get_path2folder, exist_ok=True)
 
-            oc_handler = ScieboDownloadHandler()
+            oc_handler = owncloudDownloader(self.get_path2folder_project, use_dataset=True)
             oc_handler.download_file(self.data_file_name, self.get_path2data)
             oc_handler.close()
 
@@ -188,23 +183,20 @@ class Config_Dataset:
         if print_state:
             print("... loading and processing the dataset")
 
+        frames_dict = rawdata['dict']
         if 'peak' in rawdata.keys():
-            ignore_samples = list()
-            ignore_samples.append(np.argwhere(rawdata['peak'] >= 200.0).flatten())
-            ignore_samples.append(np.argwhere(rawdata['peak'] <= 60.0).flatten())
+            ignore_samples = np.argwhere(rawdata['peak'] >= 200.0).flatten()
+            ignore_samples = np.concatenate((ignore_samples, np.argwhere(rawdata['peak'] <= 40.0).flatten()), axis=0)
 
-            for del_samples in ignore_samples:
-                frames_in0 = np.delete(rawdata['data'][:, 16:80], del_samples, 0)
-                frames_cl = np.delete(rawdata['label'], del_samples, 0)
-                frames_pk = np.delete(rawdata['peak'], del_samples, 0)
+            frames_in0 = np.delete(rawdata['data'][:, 24:64], ignore_samples, 0)
+            frames_cl = np.delete(rawdata['label'], ignore_samples, 0)
+            frames_pk = np.delete(rawdata['peak'], ignore_samples, 0)
 
-            product = np.repeat(np.expand_dims(frames_pk, axis=-1), frames_in0.shape[-1], axis=-1)
-            frames_in = frames_in0 * product
+            scale = np.repeat(np.expand_dims(frames_pk, axis=-1), frames_in0.shape[-1], axis=-1) / np.abs(frames_in0.min())
+            frames_in = frames_in0 * scale
         else:
             frames_in = rawdata['data']
             frames_cl = rawdata['label']
-
-        frames_dict = rawdata['dict']
 
         # --- Using cell_bib for clustering
         if self.use_cell_library:
@@ -226,14 +218,13 @@ class Config_Dataset:
             )
 
         # --- PART: Exclusion of selected clusters
-        if len(self.exclude_cluster) == 0:
-            frames_in = frames_in
-            frames_cl = frames_cl
-        else:
-            for i, id in enumerate(self.exclude_cluster):
-                selX = np.where(frames_cl != id)
-                frames_in = frames_in[selX[0], :]
-                frames_cl = frames_cl[selX]
+        if not len(self.exclude_cluster) == 0:
+            for id in self.exclude_cluster:
+                selX = np.argwhere(frames_cl == id).flatten()
+                frames_in = np.delete(frames_in, selX, 0)
+                frames_cl = np.delete(frames_cl, selX, 0)
+                if isinstance(frames_dict, list):
+                    frames_dict.pop(id)
 
         # --- Generate dict with labeled names
         if isinstance(frames_dict, dict):
@@ -296,17 +287,17 @@ DefaultSettingsDataset = Config_Dataset(
     normalization_method='minmax',
     reduce_samples_per_cluster_do=False,
     reduce_samples_per_cluster_num=0,
-    exclude_cluster=[5]
+    exclude_cluster=[4]
 )
 
 
 if __name__ == "__main__":
-    och = ScieboDownloadHandler()
+    och = owncloudDownloader()
     overview = och.get_overview_data()
 
     print(DefaultSettingsDataset.get_path2data)
     data = DefaultSettingsDataset.load_dataset()
 
     from package.data_merge.merge_dataset_rgc_onoff_fzj import plot_frames_rgc_onoff_60mea
-    plot_frames_rgc_onoff_60mea(data)
+    plot_frames_rgc_onoff_60mea(data, plot_show=True)
     print(".done")
