@@ -4,6 +4,27 @@ from mpl_toolkits.mplot3d import Axes3D
 from package.plot.plot_common import cm_to_inch, save_figure, get_plot_color
 
 
+def translate_feats_into_list(feats: np.ndarray, label: np.ndarray, num_samples: int=-1) -> list:
+    """Preprocessing the features in order to get a list with all class separated features
+    Args:
+        feats:          Numpy array with features from previous feature extraction method
+        label:          Numpy array with corresponding labels to extracted features
+        num_samples:    Integer values for taking N samples only from feature set
+    Return:
+        List with separated features
+    """
+    num_cluster = np.unique(label)
+    mark_feat = [[] for idx in range(feats.shape[-1])]
+
+    for id in num_cluster:
+        xpos_orig = np.argwhere(label == id).flatten()
+        np.random.shuffle(xpos_orig)
+        xpos_norm = xpos_orig[:num_samples]
+        for idx in range(feats.shape[-1]):
+            mark_feat[idx].append(feats[xpos_norm, idx])
+    return mark_feat
+
+
 def results_training(path: str,
                      yin: np.ndarray, ypred: np.ndarray, ymean: np.ndarray,
                      feat: np.ndarray, yclus: np.ndarray, snr: list,
@@ -56,8 +77,8 @@ def results_training(path: str,
 
     # --- Plotting: Feature Space and Metrics
     plot_autoencoder_snr(snr, path)
-    plot_autoencoder_features(cluster_no, mark_feat, [0, 1, 2], data_classname=cl_dict, path2save=path,
-                              show_plot=show_plot)
+    plot_3d_featspace(yclus0, mark_feat, [0, 1, 2], data_classname=cl_dict, path2save=path,
+                      show_plot=show_plot)
 
 
 def plot_autoencoder_snr(snr: list, path2save='', do_boxplot=False, show_plot=False) -> None:
@@ -101,20 +122,20 @@ def plot_autoencoder_snr(snr: list, path2save='', do_boxplot=False, show_plot=Fa
             plt.show(block=True)
 
 
-def plot_autoencoder_features(cluster_no: np.ndarray, mark_feat: list, idx: [0, 1, 2], data_classname=None,
-                              path2save='', show_plot=False) -> None:
+def plot_3d_featspace(labels: np.ndarray, mark_feat: list, idx: [0, 1, 2], data_classname=None,
+                      path2save='', show_plot=False) -> None:
     """Plotting the feature space of the autoencoder"""
     fig = plt.figure(figsize=(cm_to_inch(12), cm_to_inch(9)))
-    plt.rcParams.update({'font.size': 6})
     Axes3D(fig)
     ax = plt.axes(projection='3d')
 
+    cluster_no = np.unique(labels)
     for i, id in enumerate(cluster_no):
         ax.scatter3D(mark_feat[idx[0]][i], mark_feat[idx[1]][i], mark_feat[idx[2]][i],
                      color=get_plot_color(i), marker='.')
-    ax.set_xlabel('Feat[0]')
-    ax.set_ylabel('Feat[1]')
-    ax.set_zlabel('Feat[2]')
+    ax.set_xlabel('Feat[0]', fontsize=6)
+    ax.set_ylabel('Feat[1]', fontsize=6)
+    ax.set_zlabel('Feat[2]', fontsize=6)
     if isinstance(data_classname, list):
         if not len(data_classname) == 0:
             ax.legend(data_classname)

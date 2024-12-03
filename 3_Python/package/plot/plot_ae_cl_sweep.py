@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from glob import glob
 from os.path import join, split
-from torch import load
+from torch import load, rand
 from package.plot.plot_common import save_figure, get_plot_color
 
 
@@ -21,9 +21,17 @@ def extract_best_model_epoch_number(path2search: str, file_index: str = '*.pth')
 def extract_model_params(path2search: str, file_index: str = '*.pth') -> int:
     """"""
     model_path = glob(join(path2search, file_index))[0]
-    model_used = load(model_path)
+    model_used = load(model_path, weights_only=False)
     num_params = int(sum(p.numel() for p in model_used.parameters()))
     return num_params
+
+def extract_model_output_size(path2search: str, file_index: str = '*.pth') -> int:
+    """"""
+    model_path = glob(join(path2search, file_index))[0]
+    model_used = load(model_path, weights_only=False)
+    data_in = rand(model_used.model_shape)
+    data_out = model_used(data_in)
+    return data_out[1].shape[-1] if '_ae' in file_index else data_out[0].shape[-1]
 
 def extract_feature_size(metric: dict) -> list:
     """"""
@@ -50,16 +58,9 @@ def extract_features_from_metric(metric: dict, index_model: str) -> dict:
     for key in key_metrics:
         metric_out.update({key: list()})
 
-    num_clusters = 0
     for key0 in key_feat:
         for key1 in key_metrics:
-            if key1 == 'num_clusters' and num_clusters == 0:
-                num_clusters = metric[key0][key1]
-                metric_out[key1].append(num_clusters)
-            elif key1 == 'num_clusters' and num_clusters > 0:
-                metric_out[key1].append(num_clusters)
-            else:
-                metric_out[key1].append(metric[key0][key1])
+            metric_out[key1].append(metric[key0][key1])
 
     return metric_out
 
@@ -71,9 +72,11 @@ def extract_data_from_files(path2folder: str, folder_split_symbol='\\') -> dict:
     Return:
         Dictionary with metrics
     """
-    data_metrics = dict()
-
     list_folder_runs = glob(f"{path2folder}/*")
+    if len(list_folder_runs) == 0:
+        raise NotADirectoryError("Data not available - Please check the path!")
+
+    data_metrics = dict()
     for folder in list_folder_runs:
         list_data_numpy = glob(f"{folder}/metric_*.npy")
 
@@ -82,15 +85,14 @@ def extract_data_from_files(path2folder: str, folder_split_symbol='\\') -> dict:
             feat_size = file.split(folder_split_symbol)[-2].split('_size')[-1]
             get_best_epoch = extract_best_model_epoch_number(folder, f'model_{type_data}*.pth')
             get_model_params = extract_model_params(folder, f'model_{type_data}*.pth')
+            get_model_output = extract_model_output_size(folder, f'model_{type_data}*.pth')
 
             data_loaded = np.load(file, allow_pickle=True).flatten()[0]['fold_000']
             cont_data = dict()
             for key, data in data_loaded.items():
-                if key == 'num_clusters':
-                    cont_data.update({key: data})
-                else:
+                if not key == 'num_clusters':
                     cont_data.update({key: data[get_best_epoch]})
-            cont_data.update({"feat_size": int(feat_size), 'model_params': get_model_params})
+            cont_data.update({"feat_size": int(feat_size), 'model_params': get_model_params, 'output_size': get_model_output})
             data_metrics.update({f"feat{int(feat_size):03d}_{type_data}": cont_data})
 
     return processing_metric_data(data_metrics)
@@ -105,6 +107,8 @@ def processing_metric_data(metric: dict) -> dict:
 def plot_common_loss(metric: dict, path2save: str='', show_plots: bool=False) -> None:
     """"""
     feat_size = metric['feat']
+    feat_size_ticks = feat_size if len(feat_size) < 6 else np.linspace(feat_size[0], feat_size[-1], 11,
+                                                                       endpoint=True, dtype=np.uint16)
     keys_ae = ['loss_train', 'loss_valid']
     keys_cl = ['train_acc', 'valid_acc']
 
@@ -128,7 +132,7 @@ def plot_common_loss(metric: dict, path2save: str='', show_plots: bool=False) ->
     ## --- End processing
     ax1.grid()
     ax1.set_xlabel('Feature Size', fontsize=14)
-    ax1.set_xticks(feat_size)
+    ax1.set_xticks(feat_size_ticks)
     ax1.set_xlim([feat_size[0], feat_size[-1]])
     plt.tight_layout()
     if path2save:
@@ -140,6 +144,8 @@ def plot_common_loss(metric: dict, path2save: str='', show_plots: bool=False) ->
 def plot_common_params(metric: dict, path2save: str= '', show_plots: bool=False) -> None:
     """"""
     feat_size = metric['feat']
+    feat_size_ticks = feat_size if len(feat_size) < 6 else np.linspace(feat_size[0], feat_size[-1], 11,
+                                                                       endpoint=True, dtype=np.uint16)
     keys_ae = ['model_params']
     keys_cl = ['model_params']
 
@@ -158,7 +164,7 @@ def plot_common_params(metric: dict, path2save: str= '', show_plots: bool=False)
     ## --- End processing
     ax1.grid()
     ax1.set_xlabel('Feature Size', fontsize=14)
-    ax1.set_xticks(feat_size)
+    ax1.set_xticks(feat_size_ticks)
     ax1.set_xlim([feat_size[0], feat_size[-1]])
     plt.tight_layout()
 
@@ -170,10 +176,12 @@ def plot_common_params(metric: dict, path2save: str= '', show_plots: bool=False)
 def plot_architecture_violin(metric: dict, path2save: str = '', show_plots: bool=False, label_dict=None) -> None:
     """"""
     feat_size = metric['feat']
+    feat_size_ticks = feat_size if len(feat_size) < 6 else np.linspace(feat_size[0], feat_size[-1], 11,
+                                                                       endpoint=True, dtype=np.uint16)
     keys_ae = ['dsnr_cl']
     keys_cl = ['precision']
 
-    num_cluster = metric['ae']['num_clusters'][-1]
+    num_cluster = metric['cl']['output_size'][-1]
     if label_dict is None:
         label_dict = [f'Neuron #{idx}' for idx in range(num_cluster)]
 
@@ -206,7 +214,7 @@ def plot_architecture_violin(metric: dict, path2save: str = '', show_plots: bool
         for ax in axs:
             ax.grid()
             ax.set_xlabel('Feature Size', fontsize=14)
-        axs[0].set_xticks(feat_size)
+        axs[0].set_xticks(feat_size_ticks)
         axs[0].set_xlim([feat_size[0]-1, feat_size[-1]+1])
         plt.tight_layout()
 
@@ -219,10 +227,13 @@ def plot_architecture_violin(metric: dict, path2save: str = '', show_plots: bool
 def plot_architecture_metrics_isolated(metric: dict, path2save: str = '', show_plots: bool=False, label_dict=None) -> None:
     """"""
     feat_size = metric['feat']
+    feat_size_ticks = feat_size if len(feat_size) < 6 else np.linspace(feat_size[0], feat_size[-1], 11,
+                                                                       endpoint=True, dtype=np.uint16)
+
     keys_ae = ['dsnr_cl']
     keys_cl = ['precision']
 
-    num_cluster = metric['ae']['num_clusters'][-1]
+    num_cluster = metric['cl']['output_size'][-1]
     if label_dict is None:
         label_dict = [f'Neuron #{idx}' for idx in range(num_cluster)]
 
@@ -249,7 +260,7 @@ def plot_architecture_metrics_isolated(metric: dict, path2save: str = '', show_p
 
         ## --- End processing
         axs[1, 1].set_xlabel('Feature Size', fontsize=14)
-        axs[0, 0].set_xticks(feat_size)
+        axs[0, 0].set_xticks(feat_size_ticks)
         axs[0, 0].set_xlim([feat_size[0] - 0.25, feat_size[-1] + 0.25])
 
     plt.subplots_adjust(wspace=0.3, hspace=0.05)
@@ -272,7 +283,7 @@ def plot_architecture_metrics_isolated(metric: dict, path2save: str = '', show_p
 
         ## --- End processing
         axs.set_xlabel('Feature Size', fontsize=14)
-        axs.set_xticks(feat_size)
+        axs.set_xticks(feat_size_ticks)
         axs.set_xlim([feat_size[0]-0.25, feat_size[-1]+0.25])
 
     plt.subplots_adjust(wspace=0.3, hspace=0.05)
@@ -283,9 +294,10 @@ def plot_architecture_metrics_isolated(metric: dict, path2save: str = '', show_p
 
 
 if __name__ == "__main__":
-    path2run = "./../runs/20241201_230123_cnn_ae_v4_sweep"
-    data = extract_data_from_files(path2run)
+    avai_exp_runs = ['20241202_155954_dnn_ae_v2_sweep', '20241201_230123_cnn_ae_v4_sweep']
+    path2run = f'./../../runs/{avai_exp_runs[1]}'
 
+    data = extract_data_from_files(path2run)
     plot_common_loss(data, path2save=path2run)
     plot_common_params(data, path2save=path2run)
     plot_architecture_metrics_isolated(data, show_plots=True, path2save=path2run)
