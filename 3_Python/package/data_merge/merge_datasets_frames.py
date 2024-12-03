@@ -6,7 +6,7 @@ import numpy as np
 from datetime import datetime
 from tqdm import tqdm
 import platform
-from package.data_call.call_spike_files import DataLoader, SettingsDATA
+from src_neuro.call_spike import DataLoader, SettingsDATA
 
 
 class MergeDatasets:

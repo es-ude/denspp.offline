@@ -1,4 +1,4 @@
-from package.data_call.call_spike_files import DataLoader
+from src_neuro.call_spike import DataLoader
 from package.data_call.call_handler import SettingsDATA, RecommendedSettingsDATA
 from package.pipeline_cmds import ProcessingData, ThreadSettings, RecommendedThreadSetting
 from package.yaml_handler import yaml_config_handler
@@ -18,7 +18,7 @@ if __name__ == "__main__":
           "\n=================================================")
     datahand = DataLoader(settings_data)
     datahand.do_call()
-    # datahand.do_cut()
+    datahand.do_cut()
     datahand.do_resample()
     datahand.output_meta()
     dataIn = datahand.get_data()

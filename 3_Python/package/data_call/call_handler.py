@@ -1,4 +1,4 @@
-from os.path import join, exists, split
+from os.path import join, exists
 from os import walk
 from glob import glob
 import dataclasses
@@ -14,14 +14,14 @@ class SettingsDATA:
     """Class for configuring the dataloader
     input:
     path        - Path to data storage
-    data_set    - Type of dataset
+    data_set    - String with key for used data set
     data_point  - Number within the dataset
     t_range     - List of the given time range for cutting the data [x, y]
     ch_sel      - List of electrodes to use [empty=all]
     fs_resample - Resampling frequency of the datapoint
     """
     path: str
-    data_set: int
+    data_set: str
     data_case: int
     data_point: int
     t_range: list
@@ -126,6 +126,7 @@ class _DataController:
         self._no_files = 0
         self.__fill_factor = 1
         self.__scaling = 1
+        self._methods_available = dir(_DataController)
 
     def do_cut(self) -> None:
         """Cutting all transient electrode signals in the given range"""
@@ -275,12 +276,6 @@ class _DataController:
         for ch_used, trgg_used in enumerate(self.raw_data.evnt_xpos):
             trgg_out.append(self.generate_label_stream_channel(ch_used, window_time))
         return trgg_out
-
-    def _prepare_call(self) -> None:
-        """Loading the dataset"""
-        # --- Checking if path is available
-        if not exists(self.settings.path):
-            raise FileNotFoundError(f"... data path of dataset not found! Please check")
 
     def _prepare_access_file(self, folder_name: str, data_type: str) -> None:
         """Getting the file of the corresponding trial"""
@@ -477,13 +472,25 @@ class _DataController:
                                 break
                             column += 1
             print("... transforming raw data array from 1D to 2D")
-
         self.raw_data.data_raw = data_out
+
+    def do_call(self):
+        """Loading the dataset"""
+        # --- Searching the load function for dataset translation
+        methods_list_all = [method for method in self._methods_available]
+        search_param = '_DataLoader'
+        methods_load_data = [method for method in methods_list_all if method[0:len(search_param)] == search_param]
+
+        # --- Calling the function
+        if self.settings.data_set == 0:
+            raise ValueError("\nPlease select new input for data_type!")
+        else:
+            getattr(self, methods_load_data[self.settings.data_set - 1])()
 
 
 ###########################################################################
 if __name__ == "__main__":
-    from package.data_call.call_spike_files import DataLoader, SettingsDATA
+    from src_neuro.call_spike import DataLoader, SettingsDATA
     from package.plot.plot_mea import results_mea_transient_total
 
     settings = SettingsDATA(

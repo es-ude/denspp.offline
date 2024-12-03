@@ -17,20 +17,7 @@ class DataLoader(_DataController):
         self.settings = setting
         self.select_electrodes = list()
         self.path2file = str()
-
-    def do_call(self):
-        """Loading the dataset"""
-        self._prepare_call()
-        # --- Searching the load function for dataset translation
-        methods_list_all = [method for method in dir(DataLoader)]
-        search_param = '_DataLoader'
-        methods_load_data = [method for method in methods_list_all if method[0:len(search_param)] == search_param]
-
-        # --- Calling the function
-        if self.settings.data_set == 0:
-            raise ValueError("\nPlease select new input for data_type!")
-        else:
-            getattr(self, methods_load_data[self.settings.data_set - 1])()
+        self._methods_available = dir(DataLoader)
 
     def __load_method00_martinez2009(self) -> None:
         """Loading synthethic files from Quiroga simulation (2009)"""
@@ -300,7 +287,7 @@ class DataLoader(_DataController):
     def __load_method07_fzj_mcs(self) -> None:
         """Loading the recording files from MCS setup in FZ Juelich (case = experiment, point = file)"""
         folder_name = "_RGC_FZJuelich"
-        data_type = '*_merged.mat'
+        data_type = '*.mat'
         self._prepare_access_file(folder_name, data_type)
         loaded_data = loadmat_mat73(self.path2file)
 
@@ -326,19 +313,3 @@ class DataLoader(_DataController):
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None
         del loaded_data
-
-    def __load_method08_musall_neuropixel(self) -> None:
-        """Loading the files from recordings with NeuroPixel probes"""
-        folder_name = "_RGC_TDB"
-        data_type = '*.mat'
-        self._prepare_access_file(folder_name, data_type)
-        loaded_data = loadmat(self.path2file)
-
-        self.raw_data = DataHandler()
-        self.raw_data.data_name = folder_name
-        self.raw_data.data_type = "NeuroPixel 1.0"
-
-        self.raw_data.mapping_dimension = [2, 480]
-        del loaded_data
-
-        raise NotImplementedError

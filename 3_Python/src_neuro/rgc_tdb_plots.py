@@ -5,7 +5,7 @@ from matplotlib.ticker import AutoMinorLocator
 from scipy.signal import find_peaks
 
 from package.plot.plot_common import save_figure, cm_to_inch, scale_auto_value
-from package.data_call.call_spike_files import DataLoader, SettingsDATA
+from src_neuro.call_spike import DataLoader, SettingsDATA
 from package.data_call.call_cellbib import CellSelector
 from src_neuro.pipeline_data import Pipeline
 
