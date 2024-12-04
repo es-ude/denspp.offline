@@ -1,5 +1,5 @@
 from os import remove, getcwd, makedirs
-from os.path import join
+from os.path import join, exists
 import platform
 from copy import deepcopy
 import cpuinfo
@@ -12,6 +12,11 @@ from datetime import datetime
 
 from torch import (Tensor, is_tensor, zeros, unique, argwhere, device, cuda, backends, float32,
                    nn, randn, cat, Generator, manual_seed, use_deterministic_algorithms)
+
+from elasticai.creator.file_generation.on_disk_path import OnDiskPath
+from elasticai.creator.vhdl.system_integrations.skeleton.skeleton import Skeleton
+from torch import device, cuda, backends, nn, randn, cat
+from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
 from sklearn.model_selection import KFold
@@ -172,7 +177,6 @@ class training_pytorch:
 
     def _init_train(self, path2save='', addon='') -> None:
         """Do init of class for training"""
-        # --- Generate links
         if not path2save:
             folder_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{self._index_folder}_{self._model_name}'
             self._path2save = join(self._path2run, folder_name)
@@ -502,3 +506,14 @@ class training_pytorch:
     def get_number_parameters_from_model(self) -> int:
         """Getting the number of used parameters of used DNN model"""
         return int(sum(p.numel() for p in self.model.parameters()))
+
+    def save_model_to_vhdl(self, path4vhdl: str):
+        print("================================================================"
+              "\n Saving Hardware Design")
+
+        # Save the VHDL code of the trained model
+        destination_encoder = OnDiskPath(f"{path4vhdl}/encoder")
+        destination_decoder = OnDiskPath(f"{path4vhdl}/decoder")
+        encoder, decoder = self.model.create_design("ae_v1_vhdl")
+        encoder.save_to(destination_encoder)
+        decoder.save_to(destination_decoder)
