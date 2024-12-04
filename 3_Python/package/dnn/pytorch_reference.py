@@ -30,7 +30,7 @@ def generate_reference_cluster(config_feat: SettingsFeature, config_clus: Settin
 if __name__ == "__main__":
     # --- Settings
     sets_feature = SettingsFeature(
-        no_features=3
+        no_features=5
     )
     sets_cluster = SettingsCluster(
         type='kMeans',

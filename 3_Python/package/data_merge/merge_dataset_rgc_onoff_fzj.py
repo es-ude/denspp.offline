@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 from datetime import datetime
 from tqdm import tqdm
 from package.data_process.frame_normalization import DataNormalization
+from package.plot.plot_common import cm_to_inch
 
 
 def load_fzj_onoff_waveforms(path2folder: str, path2data: str='', quantize_bitwidth: int=16) -> None:
@@ -96,29 +97,29 @@ def plot_frames_rgc_onoff_60mea(data: dict, take_samples=500, plot_norm: bool=Fa
 
     # --- Figure #1: Spike Frames
     num_cols = int(np.ceil(len(frame_dict)/2))
-    _, axs = plt.subplots(2, num_cols, sharex=True)
+    _, axs = plt.subplots(2, num_cols, sharex=True, figsize=(cm_to_inch(14), cm_to_inch(16)))
     for id, key in enumerate(frame_dict):
         pos_id = np.argwhere(frame_true == id).flatten()
         pos_random = pos_id[np.random.randint(0, pos_id.size, take_samples)]
         scale = 1 if not plot_norm else np.repeat(np.expand_dims(frame_peak[pos_random], -1), frame_raw.shape[-1], -1)
         frame_raw0 = frame_raw[pos_random, :] / scale
 
-        axs[int(id/num_cols), id % num_cols].plot(np.transpose(frame_raw0))
+        axs[int(id/num_cols), id % num_cols].plot(np.transpose(frame_raw0), linewidth=0.5)
         axs[int(id/num_cols), id % num_cols].plot(np.mean(frame_raw0, axis=0), 'k', linewidth=2.0)
         axs[int(id/num_cols), id % num_cols].grid()
-        axs[int(id/num_cols), id % num_cols].set_title(key, fontsize=12)
+        axs[int(id/num_cols), id % num_cols].set_title(key, fontsize=13)
 
     axs[0, 0].set_xlim([0, frame_raw.shape[-1]-1])
     axs[0, 0].set_xticks(np.linspace(0, frame_raw.shape[-1]-1, 7, endpoint=True, dtype=np.uint16))
     if plot_norm:
-        axs[0, 0].set_ylabel("Spike Norm. Value", fontsize=12)
-        axs[1, 0].set_ylabel("Spike Norm. Value", fontsize=12)
+        axs[0, 0].set_ylabel("Spike Norm. Value", fontsize=13)
+        axs[1, 0].set_ylabel("Spike Norm. Value", fontsize=13)
     else:
-        axs[0, 0].set_ylabel("Spike Voltage [µV]", fontsize=12)
-        axs[1, 0].set_ylabel("Spike Voltage [µV]", fontsize=12)
+        axs[0, 0].set_ylabel("Spike Voltage [µV]", fontsize=13)
+        axs[1, 0].set_ylabel("Spike Voltage [µV]", fontsize=13)
 
-    axs[1, 0].set_xlabel("Spike Frame Position", fontsize=12)
-    axs[1, 1].set_xlabel("Spike Frame Position", fontsize=12)
+    axs[1, 0].set_xlabel("Spike Frame Position", fontsize=13)
+    axs[1, 1].set_xlabel("Spike Frame Position", fontsize=13)
     plt.tight_layout()
 
     # --- Figure #2: Histogram - Spike Frame Peak Amplitude
@@ -127,9 +128,11 @@ def plot_frames_rgc_onoff_60mea(data: dict, take_samples=500, plot_norm: bool=Fa
     axs[1].hist(frame_peak, bins=101, density=True, cumulative=True)
 
     axs[0].set_xlim([0, frame_peak.max()])
-    axs[0].set_xlabel('Spike Peak Amplitude [µV]', fontsize=12)
-    axs[1].set_xlabel('Spike Peak Amplitude [µV]', fontsize=12)
-    axs[0].set_ylabel('Bins', fontsize=14)
+    axs[0].set_ylabel('Bins', fontsize=13)
+    axs[0].set_xlabel('Spike Peak Amplitude [µV]', fontsize=13)
+    axs[1].set_ylabel('Density', fontsize=13)
+    axs[1].set_xlabel('Spike Peak Amplitude [µV]', fontsize=13)
+
 
     for ax in axs:
         ax.grid()

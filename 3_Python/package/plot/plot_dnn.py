@@ -128,14 +128,15 @@ def plot_3d_featspace(labels: np.ndarray, mark_feat: list, idx: [0, 1, 2], data_
     fig = plt.figure(figsize=(cm_to_inch(12), cm_to_inch(9)))
     Axes3D(fig)
     ax = plt.axes(projection='3d')
+    fontsize_label = 12
 
     cluster_no = np.unique(labels)
     for i, id in enumerate(cluster_no):
         ax.scatter3D(mark_feat[idx[0]][i], mark_feat[idx[1]][i], mark_feat[idx[2]][i],
                      color=get_plot_color(i), marker='.')
-    ax.set_xlabel('Feat[0]', fontsize=6)
-    ax.set_ylabel('Feat[1]', fontsize=6)
-    ax.set_zlabel('Feat[2]', fontsize=6)
+    ax.set_xlabel('Feat[0]', fontsize=fontsize_label)
+    ax.set_ylabel('Feat[1]', fontsize=fontsize_label)
+    ax.set_zlabel('Feat[2]', fontsize=fontsize_label)
     if isinstance(data_classname, list):
         if not len(data_classname) == 0:
             ax.legend(data_classname)

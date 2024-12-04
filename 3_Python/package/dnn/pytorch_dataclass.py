@@ -183,14 +183,22 @@ class Config_Dataset:
         if print_state:
             print("... loading and processing the dataset")
 
+        # --- Loading data
         frames_dict = rawdata['dict']
         if 'peak' in rawdata.keys():
-            ignore_samples = np.argwhere(rawdata['peak'] >= 200.0).flatten()
-            ignore_samples = np.concatenate((ignore_samples, np.argwhere(rawdata['peak'] <= 40.0).flatten()), axis=0)
+            # TODO: Generate extra function for it and include in dataset settings
+            if 'rgc_mcs' in self.data_file_name.lower():
+                ignore_samples = np.argwhere(rawdata['peak'] >= 200.0).flatten()
+                ignore_samples = np.concatenate((ignore_samples, np.argwhere(rawdata['peak'] <= 40.0).flatten()), axis=0)
+                ignore_samples = np.concatenate((ignore_samples, np.argwhere(np.argmin(rawdata['data'], 1) != 40).flatten()), axis=0)
 
-            frames_in0 = np.delete(rawdata['data'][:, 24:64], ignore_samples, 0)
-            frames_cl = np.delete(rawdata['label'], ignore_samples, 0)
-            frames_pk = np.delete(rawdata['peak'], ignore_samples, 0)
+                frames_in0 = np.delete(rawdata['data'][:, 24:64], ignore_samples, 0)
+                frames_cl = np.delete(rawdata['label'], ignore_samples, 0)
+                frames_pk = np.delete(rawdata['peak'], ignore_samples, 0)
+            else:
+                frames_in0 = rawdata['data']
+                frames_cl = rawdata['label']
+                frames_pk = rawdata['peak']
 
             scale = np.repeat(np.expand_dims(frames_pk, axis=-1), frames_in0.shape[-1], axis=-1) / np.abs(frames_in0.min())
             frames_in = frames_in0 * scale
@@ -283,7 +291,7 @@ DefaultSettingsDataset = Config_Dataset(
     use_cell_library=0,
     augmentation_do=False,
     augmentation_num=0,
-    normalization_do=False,
+    normalization_do=True,
     normalization_method='minmax',
     reduce_samples_per_cluster_do=False,
     reduce_samples_per_cluster_num=0,
