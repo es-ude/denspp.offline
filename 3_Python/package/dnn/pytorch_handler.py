@@ -1,5 +1,5 @@
 from os import remove, getcwd, makedirs
-from os.path import join
+from os.path import join, exists
 import platform
 from copy import deepcopy
 import cpuinfo
@@ -177,9 +177,6 @@ class training_pytorch:
 
     def _init_train(self, path2save='', addon='') -> None:
         """Do init of class for training"""
-        if not exists(self._path2run):
-            mkdir(self._path2run)
-
         if not path2save:
             folder_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{self._index_folder}_{self._model_name}'
             self._path2save = join(self._path2run, folder_name)
