@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from distutils.command.config import config
 from typing import Any
 from os import getcwd, makedirs
 from os.path import join, abspath, exists
@@ -305,17 +306,18 @@ if __name__ == "__main__":
 
     config_test = Config_Dataset(
         data_path='data',
-        data_file_name='rgc_mcs',
+        data_file_name='quiroga',
         use_cell_library=0,
         augmentation_do=False,
         augmentation_num=0,
-        normalization_do=True,
+        normalization_do=False,
         normalization_method='minmax',
         reduce_samples_per_cluster_do=False,
         reduce_samples_per_cluster_num=0,
-        exclude_cluster=[4]
+        exclude_cluster=[]
     )
     data = config_test.load_dataset()
-    from package.data_merge.merge_dataset_rgc_onoff_fzj import plot_frames_rgc_onoff_60mea
-    plot_frames_rgc_onoff_60mea(data, plot_show=True)
+
+    from package.plot.plot_dataset import plot_frames_dataset
+    plot_frames_dataset(data, plot_norm=config_test.normalization_do, plot_show=True, add_subtitle=True)
     print(".done")
