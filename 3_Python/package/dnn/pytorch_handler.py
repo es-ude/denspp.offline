@@ -7,6 +7,9 @@ import numpy as np
 from shutil import rmtree
 from glob import glob
 from datetime import datetime
+
+from elasticai.creator.file_generation.on_disk_path import OnDiskPath
+from elasticai.creator.vhdl.system_integrations.skeleton.skeleton import Skeleton
 from torch import device, cuda, backends, nn, randn, cat
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader, SubsetRandomSampler
@@ -140,7 +143,7 @@ class training_pytorch:
         self.used_hw_cpu = (f"{cpuinfo.get_cpu_info()['brand_raw']} "
                             f"(@ {1e-9 * cpuinfo.get_cpu_info()['hz_actual'][0]:.3f} GHz)")
         # Using GPU
-        if cuda.is_available():
+        if False: #cuda.is_available():
             self.used_hw_gpu = cuda.get_device_name()
             self.used_hw_dev = device("cuda")
             self.used_hw_num = cuda.device_count()
@@ -382,3 +385,14 @@ class training_pytorch:
         print(f"... saving results: {data2save}")
         np.save(data2save, output)
         return output
+
+    def save_model_to_vhdl(self, path4vhdl: str):
+        print("================================================================"
+              "\n Saving Hardware Design")
+
+        # Save the VHDL code of the trained model
+        destination_encoder = OnDiskPath(f"{path4vhdl}/encoder")
+        destination_decoder = OnDiskPath(f"{path4vhdl}/decoder")
+        encoder, decoder = self.model.create_design("ae_v1_vhdl")
+        encoder.save_to(destination_encoder)
+        decoder.save_to(destination_decoder)
