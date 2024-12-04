@@ -66,8 +66,15 @@ def plot_loss(loss_train: list, loss_valid: list, type: str, path2save='', epoch
     plt.figure(figsize=(cm_to_inch(10), cm_to_inch(8)))
     axs = list()
     axs.append(plt.subplot(1, 1, 1))
-    axs[0].plot(plot_metrics[:, 0], color='k', marker='.', label='Train.')
-    axs[0].plot(plot_metrics[:, 1], color='r', marker='.', label='Valid.')
+
+    epochs_ite = np.array([idx + 1 for idx in range(plot_metrics[:, 0].size)])
+    axs[0].plot(epochs_ite, plot_metrics[:, 0], color='k', marker='.', label='Train.')
+    axs[0].plot(epochs_ite, plot_metrics[:, 1], color='r', marker='.', label='Valid.')
+
+    pos = np.linspace(epochs_ite[0], epochs_ite[-1], num=11, endpoint=True, dtype=int)
+    plt.xticks(pos)
+    plt.xlim([pos[0], pos[-1]])
+
     plt.grid()
     plt.legend()
     plt.title(f"{type} = {plot_metrics.max() if 'Acc' in type else plot_metrics.min():.3f}")
@@ -84,8 +91,8 @@ def plot_loss(loss_train: list, loss_valid: list, type: str, path2save='', epoch
 
         axins0 = axs[0].inset_axes([0.45, 0.02, 0.5, 0.43], xticklabels=[],
                                    xlim=(x0-0.5, x1+0.5), ylim=(0.99 * min_value, 1.01 * max_value))
-        axins0.plot(plot_metrics[:, 0], color='k', marker='.', label='Train.')
-        axins0.plot(plot_metrics[:, 1], color='r', marker='.', label='Valid.')
+        axins0.plot(epochs_ite, plot_metrics[:, 0], color='k', marker='.', label='Train.')
+        axins0.plot(epochs_ite, plot_metrics[:, 1], color='r', marker='.', label='Valid.')
         axins0.grid()
         axs[0].tick_params(direction='in')
         axs[0].indicate_inset_zoom(axins0, edgecolor="black")
@@ -153,7 +160,7 @@ def plot_confusion(true_labels: list | np.ndarray,
         plt.imshow(timestamps_result, cmap=plt.cm.Blues, interpolation='nearest')
         for i in range(timestamps_result.shape[0]):
             for j in range(timestamps_result.shape[1]):
-                plt.text(j, i, f'{timestamps_result[i,j]:.2f}', ha='center', va='center', color='white')
+                plt.text(j, i, f'{timestamps_result[i, j]:.2f}', ha='center', va='center', color='white')
         xtick_labels = ['true', 'false']
         plt.xticks(np.arange(2), xtick_labels)
         ytick_labels = ['positive', 'negative']
@@ -180,15 +187,14 @@ def plot_confusion(true_labels: list | np.ndarray,
     else:
         do_xticks_vertical = False
         cmp = ConfusionMatrixDisplay.from_predictions(
-            y_true=true_labels, y_pred=pred_labels, normalize='pred'
+            y_true=true_labels, y_pred=pred_labels, normalize='pred',
         )
 
     # --- Plotting the results of the class confusion matrix
     ax = plt.subplots(figsize=(cm_to_inch(12), cm_to_inch(12.5)))[1]
     cmp.plot(ax=ax, colorbar=False, values_format='.3f',
              text_kw={'fontsize': 8}, cmap=plt.cm.Blues,
-             xticks_rotation=('vertical' if do_xticks_vertical else 'horizontal')
-             )
+             xticks_rotation=('vertical' if do_xticks_vertical else 'horizontal'))
     cmp.ax_.set_title(f'Precision = {100*precision:.2f}%, Recall = {100*recall:.2f}%')
     plt.tight_layout()
     # --- saving

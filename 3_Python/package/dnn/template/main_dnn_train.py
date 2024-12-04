@@ -1,5 +1,6 @@
 from package.dnn.dnn_handler import Config_ML_Pipeline, DefaultSettings_MLPipe
 from package.yaml_handler import yaml_config_handler
+from package.structure_builder import create_folder_general_firstrun
 
 
 if __name__ == "__main__":
@@ -7,6 +8,7 @@ if __name__ == "__main__":
           "\n===========================================================================================")
 
     # --- Loading YAML-Settings file
+    create_folder_general_firstrun()
     yaml_handler = yaml_config_handler(DefaultSettings_MLPipe, 'config', 'Config_DNN')
     dnn_handler = yaml_handler.get_class(Config_ML_Pipeline)
 
@@ -30,7 +32,7 @@ if __name__ == "__main__":
             do_train_neural_spike_classification(dnn_handler)
         case 4:
             # --- Autoencoder + Classifier
-            from package.dnn.handler.train_aecl import do_train_ae_classifier
+            from package.dnn.handler.train_ae_cl import do_train_ae_classifier
             do_train_ae_classifier(dnn_handler)
         case _:
             raise NotImplementedError("Wrong model! Please select right model!")

@@ -119,24 +119,30 @@ class Clustering:
         )
         return StandardScaler().fit_transform(X), labels_true
 
-    def sort_pred2label_data(self, pred_label: np.ndarray, true_label: np.ndarray, features: np.ndarray) -> np.ndarray:
+    def sort_pred2label_data(self, pred_label: np.ndarray, true_label: np.ndarray, features: np.ndarray,
+                             take_num_samples=-1) -> np.ndarray:
         """Sorting predicted labels with true labels for getting the right-/similiar ID representation
         Args:
-            pred_label:     Array with predicted labels
-            true_label:     Array with true labels
-            features:       Array with features
+            pred_label:         Array with predicted labels
+            true_label:         Array with true labels
+            features:           Array with features
+            take_num_samples:   Integer value of taking samples for each class [-1 --> all]
         Returns:
             Numpy array with sorted output
         """
+        num_repeat_process = 2
         label_out = np.zeros(pred_label.shape, dtype=int) - 1
 
         true_order = np.unique(true_label)
         new_order = np.zeros((self._settings.no_cluster, ), dtype=int) - 1
         for idx, true_id in enumerate(true_order):
             true_pos_id = np.argwhere(true_label == true_id).flatten()
+            if not take_num_samples == -1:
+                np.random.shuffle(true_pos_id)
+                true_pos_id = true_pos_id[:take_num_samples]
 
             pred_class = list()
-            for i0 in range(10):
+            for i0 in range(num_repeat_process):
                 for i1 in true_pos_id:
                     pred_class.append(self._cluster.predict(features[i1, :].reshape((1, -1)))[0])
             pred_class = np.array(pred_class, dtype=int)

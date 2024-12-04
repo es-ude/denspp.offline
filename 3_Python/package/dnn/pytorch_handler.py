@@ -1,12 +1,17 @@
-from os import mkdir, remove, getcwd
-from os.path import exists, join
+from os import remove, getcwd, makedirs
+from os.path import join
 import platform
+from copy import deepcopy
 import cpuinfo
 import numpy as np
+from random import seed
 
 from shutil import rmtree
 from glob import glob
 from datetime import datetime
+
+from torch import (Tensor, is_tensor, zeros, unique, argwhere, device, cuda, backends, float32,
+                   nn, randn, cat, Generator, manual_seed, use_deterministic_algorithms)
 
 from elasticai.creator.file_generation.on_disk_path import OnDiskPath
 from elasticai.creator.vhdl.system_integrations.skeleton.skeleton import Skeleton
@@ -85,6 +90,7 @@ class __model_settings_common(nn.Module):
 
 
 class training_pytorch:
+    deterministic_generator: Generator
     used_hw_dev: device
     used_hw_cpu: str
     used_hw_gpu: str
@@ -93,13 +99,16 @@ class training_pytorch:
     valid_loader: list
     selected_samples: dict
     cell_classes: list
+    _metric_methods: dict
 
-    def __init__(self, config_train: Config_PyTorch, config_dataset: Config_Dataset, do_train=True) -> None:
+    def __init__(self, config_train: Config_PyTorch, config_dataset: Config_Dataset,
+                 do_train=True, do_print=True) -> None:
         """Class for Handling Training of Deep Neural Networks in PyTorch
         Args:
             config_train:   Configuration settings for the PyTorch Training
             config_dataset: Configuration settings for dataset handling
             do_train:       Mention if training should be used (default = True)
+            do_print:       Printing the state and results into Terminal
         Returns:
             None
         """
@@ -107,19 +116,19 @@ class training_pytorch:
         create_folder_dnn_firstrun()
         # --- Preparing Neural Network
         self.os_type = platform.system()
-        self._writer = None
         self.model = None
         self.loss_fn = None
         self.optimizer = None
         # --- Preparing options
         self.config_available = False
-        self._do_kfold = False
-        self._do_shuffle = config_train.data_do_shuffle
-        self._run_kfold = 0
+        self._kfold_do = False
+        self._shuffle_do = config_train.data_do_shuffle
+        self._kfold_run = 0
         # --- Saving options
         self.settings_train = config_train
         self.settings_data = config_dataset
         self._index_folder = 'train' if do_train else 'inference'
+        self._do_print_state = do_print
         self._aitype = str()
         self._model_name = str()
         self._model_addon = str()
@@ -135,34 +144,36 @@ class training_pytorch:
         path2start = join(getcwd().split(start_folder)[0], start_folder)
         path2dst = join(path2start, new_folder)
         self._path2run = path2dst
-        if not exists(path2dst):
-            mkdir(path2dst)
+        makedirs(path2dst, exist_ok=True)
+
 
     def __setup_device(self) -> None:
         """Setup PyTorch for Training"""
         self.used_hw_cpu = (f"{cpuinfo.get_cpu_info()['brand_raw']} "
                             f"(@ {1e-9 * cpuinfo.get_cpu_info()['hz_actual'][0]:.3f} GHz)")
-        # Using GPU
-        if False: #cuda.is_available():
+
+        if cuda.is_available():
+            # Using GPU
             self.used_hw_gpu = cuda.get_device_name()
             self.used_hw_dev = device("cuda")
             self.used_hw_num = cuda.device_count()
             device0 = self.used_hw_gpu
             cuda.empty_cache()
-        # Using Apple M1 Chip
         elif backends.mps.is_available() and backends.mps.is_built() and self.os_type == "Darwin":
+            # Using Apple M1 Chip
             self.used_hw_gpu = 'None'
             self.used_hw_num = cuda.device_count()
             self.used_hw_dev = device("mps")
-            self.used_hw_num = 1
             device0 = self.used_hw_cpu
-        # Using normal CPU
         else:
+            # Using normal CPU
             self.used_hw_gpu = 'None'
             self.used_hw_dev = device("cpu")
-            self.used_hw_num = cpuinfo.get_cpu_info()['count']
+            self.used_hw_num = 1 # cpuinfo.get_cpu_info()['count']
             device0 = self.used_hw_cpu
-        print(f"\nUsing PyTorch with {device0} on {self.os_type}")
+
+        if self._do_print_state:
+            print(f"\nUsing PyTorch with {device0} on {self.os_type}")
 
     def _init_train(self, path2save='', addon='') -> None:
         """Do init of class for training"""
@@ -174,55 +185,99 @@ class training_pytorch:
             self._path2save = join(self._path2run, folder_name)
         else:
             self._path2save = path2save
-
-        if not exists(self._path2save):
-            mkdir(self._path2save)
-
         self._path2temp = join(self._path2save, f'temp')
-        mkdir(self._path2temp)
+
+        # --- Generate folders
+        makedirs(self._path2run, exist_ok=True)
+        makedirs(self._path2save, exist_ok=True)
+        makedirs(self._path2temp, exist_ok=True)
+
+        # --- Transfer model to hardware
         self.model.to(device=self.used_hw_dev)
 
         # --- Copy settings to YAML file
         write_dict_to_yaml(translate_dataclass_to_dict(self.settings_data),
-                           filename='Config_Dataset',
-                           path2save=self._path2save)
+                           filename='Config_Dataset', path2save=self._path2save)
         write_dict_to_yaml(translate_dataclass_to_dict(self.settings_train),
-                           filename=f'Config_Training{addon}',
-                           path2save=self._path2save)
+                           filename=f'Config_Training{addon}', path2save=self._path2save)
 
-    def _init_writer(self) -> None:
-        """Do init of writer"""
-        self._path2log = join(self._path2save, f'logs')
-        self._writer = SummaryWriter(self._path2log, comment=f"event_log_kfold{self._run_kfold:03d}")
+    def __deterministic_training_preparation(self) -> None:
+        """Preparing the CUDA hardware for deterministic training"""
+        if self.settings_train.deterministic_do:
+            np.random.seed(self.settings_train.deterministic_seed)
+            manual_seed(self.settings_train.deterministic_seed)
+            if cuda.is_available():
+                cuda.manual_seed_all(self.settings_train.deterministic_seed)
+            seed(self.settings_train.deterministic_seed)
+            backends.cudnn.deterministic = True
+
+            use_deterministic_algorithms(True)
+            if self._do_print_state:
+                print(f"\n\t\t=== DL Training with Deterministic @seed: {self.settings_train.deterministic_seed} ===")
+        else:
+            use_deterministic_algorithms(False)
+            if self._do_print_state:
+                print(f"\n\t\t=== Normal DL Training ===")
+
+    def __deterministic_get_dataloader_params(self) -> dict:
+        """Getting the parameters for preparing the Training and Validation DataLoader for Deterministic Training"""
+        if self.settings_train.deterministic_do:
+            self.deterministic_generator = Generator()
+            self.deterministic_generator.manual_seed(self.settings_train.deterministic_seed)
+            worker_init_fn = lambda worker_id: np.random.seed(self.settings_train.deterministic_seed)
+            return {'worker_init_fn': worker_init_fn, 'generator': self.deterministic_generator}
+        else:
+            return {}
 
     def load_data(self, data_set, num_workers=0) -> None:
-        """Loading data for training and validation in DataLoader format into class"""
+        """Loading data for training and validation in DataLoader format into class
+        Args:
+            data_set:       DataLoader of used dataset
+            num_workers:    Number of workers for calculation [Default: 0 --> single core]
+        Return:
+            None
+        """
         self.__setup_device()
-        self._do_kfold = True if self.settings_train.num_kfold > 1 else False
+        self._kfold_do = True if self.settings_train.num_kfold > 1 else False
         self._model_addon = data_set.get_topology_type
         self.cell_classes = data_set.get_dictionary
+        params_deterministic = self.__deterministic_get_dataloader_params()
 
         # --- Preparing datasets
         out_train = list()
         out_valid = list()
-        if self._do_kfold:
-            kfold = KFold(n_splits=self.settings_train.num_kfold, shuffle=self._do_shuffle)
+        # ToDo: SubsetRandomSampler works valid with deterministic training? - Please check!
+        if self._kfold_do:
+            kfold = KFold(n_splits=self.settings_train.num_kfold,
+                          shuffle=self._shuffle_do and not self.settings_train.deterministic_do)
             for idx_train, idx_valid in kfold.split(np.arange(len(data_set))):
                 subsamps_train = SubsetRandomSampler(idx_train)
                 subsamps_valid = SubsetRandomSampler(idx_valid)
-                out_train.append(DataLoader(data_set, batch_size=self.settings_train.batch_size, sampler=subsamps_train))
-                out_valid.append(DataLoader(data_set, batch_size=self.settings_train.batch_size, sampler=subsamps_valid))
+                out_train.append(DataLoader(data_set,
+                                            batch_size=self.settings_train.batch_size,
+                                            sampler=subsamps_train,
+                                            **params_deterministic))
+                out_valid.append(DataLoader(data_set,
+                                            batch_size=self.settings_train.batch_size,
+                                            sampler=subsamps_valid,
+                                            **params_deterministic))
         else:
             idx = np.arange(len(data_set))
-            if self._do_shuffle:
+            if self._shuffle_do and not self.settings_train.deterministic_do:
                 np.random.shuffle(idx)
             split_pos = int(len(data_set) * (1 - self.settings_train.data_split_ratio))
             idx_train = idx[0:split_pos]
             idx_valid = idx[split_pos:]
             subsamps_train = SubsetRandomSampler(idx_train)
             subsamps_valid = SubsetRandomSampler(idx_valid)
-            out_train.append(DataLoader(data_set, batch_size=self.settings_train.batch_size, sampler=subsamps_train))
-            out_valid.append(DataLoader(data_set, batch_size=self.settings_train.batch_size, sampler=subsamps_valid))
+            out_train.append(DataLoader(data_set,
+                                        batch_size=self.settings_train.batch_size,
+                                        sampler=subsamps_train,
+                                        **params_deterministic))
+            out_valid.append(DataLoader(data_set,
+                                        batch_size=self.settings_train.batch_size,
+                                        sampler=subsamps_valid,
+                                        **params_deterministic))
 
         # --- CUDA support for dataset
         if cuda.is_available():
@@ -251,9 +306,14 @@ class training_pytorch:
         self.model = model
         self._aitype = model.out_modeltyp
         self._model_name = model.out_modelname
-
         self.optimizer = self.settings_train.load_optimizer(model, learn_rate=learn_rate)
         self.loss_fn = self.settings_train.get_loss_func()
+
+        # --- Init. hardware for deterministic training
+        if self.settings_train.deterministic_do:
+            self.__deterministic_training_preparation()
+
+        # --- Print model
         if print_model:
             print("\nPrint summary of model")
             summary(self.model, input_size=self.model.model_shape)
@@ -280,19 +340,21 @@ class training_pytorch:
             txt_handler.write(f'Num. of epochs: {self.settings_train.num_epochs}\n')
             txt_handler.write(f'Splitting ratio (Training/Validation): '
                               f'{1-self.settings_train.data_split_ratio}/{self.settings_train.data_split_ratio}\n')
-            txt_handler.write(f'Do KFold cross validation?: {self._do_kfold},\n'
+            txt_handler.write(f'Do KFold cross validation?: {self._kfold_do},\n'
                               f'Number of KFold steps: {self.settings_train.num_kfold}\n')
             txt_handler.write(f'Do shuffle?: {self.settings_train.data_do_shuffle}\n')
             txt_handler.write(f'Do data augmentation?: {self.settings_data.augmentation_do}\n')
             txt_handler.write(f'Do input normalization?: {self.settings_data.normalization_do}\n')
             txt_handler.write(f'Exclude cluster: {self.settings_data.exclude_cluster}\n')
+            txt_handler.write(f'Do deterministic training: {self.settings_train.deterministic_do}\n')
+            txt_handler.write(f'Deterministic Training, Seed: {self.settings_train.deterministic_seed}\n')
 
     def _save_train_results(self, last_metric_train: float | np.ndarray,
                             last_metric_valid: float | np.ndarray, loss_type='Loss') -> None:
         """Writing some training metrics into txt-file"""
         if self.config_available:
             with open(self._path2config, 'a') as txt_handler:
-                txt_handler.write(f'\n--- Metrics of last epoch in fold #{self._run_kfold} ---')
+                txt_handler.write(f'\n--- Metrics of last epoch in fold #{self._kfold_run} ---')
                 txt_handler.write(f'\nTraining {loss_type} = {last_metric_train}')
                 txt_handler.write(f'\nValidation {loss_type} = {last_metric_valid}\n')
 
@@ -311,8 +373,9 @@ class training_pytorch:
         diff_time = timestamp_end - timestamp_start
         diff_string = diff_time
 
-        print(f'\nTraining ends on: {timestamp_string}')
-        print(f'Training runs: {diff_string}')
+        if self._do_print_state:
+            print(f'\nTraining ends on: {timestamp_string}')
+            print(f'Training runs: {diff_string}')
 
         # Delete init model
         init_model = glob(join(self._path2save, '*_reset.pth'))
@@ -324,10 +387,6 @@ class training_pytorch:
             folder_logs = glob(join(self._path2save, 'temp*'))
             for folder in folder_logs:
                 rmtree(folder, ignore_errors=True)
-
-        # Give the option to open TensorBoard
-        print("\nLook data on TensorBoard -> open Terminal")
-        print("Type in: tensorboard serve --logdir ./runs")
 
     def __get_data_points(self, only_getting_labels=False, use_train_dataloader=False) -> dict:
         """Getting data from DataLoader for Plotting Results
@@ -370,21 +429,86 @@ class training_pytorch:
         """Getting the raw data for plotting results"""
         # --- Producing and Saving the output
         if results is None:
-            results = {}
+            results = dict()
 
-        print(f"... preparing results for plot generation")
+        if self._do_print_state:
+            print(f"... preparing results for plot generation")
         data_train = self.__get_data_points(only_getting_labels=True, use_train_dataloader=True)
 
         output = dict()
         output.update({'settings': self.settings_train, 'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')})
-        output.update({'train_clus': data_train['out'], 'cl_dict': self.cell_classes})
+        output.update({'train_clus': data_train['class'] if addon == 'ae' else data_train['out'], 'cl_dict': self.cell_classes})
         output.update({'input': valid_input, 'valid_clus': valid_label})
         output.update(results)
 
         data2save = join(self.get_saving_path(), f'results_{addon}.npy')
-        print(f"... saving results: {data2save}")
+        if self._do_print_state:
+            print(f"... saving results: {data2save}")
         np.save(data2save, output)
         return output
+
+    def _determine_epoch_metrics(self, do_metrics: str):
+        """Determination of additional metrics during training
+        Args:
+            do_metrics:     String with index for calculating epoch metric
+        Return:
+            Function for metric calculation
+        """
+        func = Tensor
+        for metric_avai, func in self._metric_methods.items():
+            if metric_avai == do_metrics:
+                break
+        return func
+
+    def _separate_classes_from_label(self, pred: Tensor, true: Tensor, label: str, *args) -> [Tensor, Tensor]:
+        """Separating the classes for further metric processing
+        Args:
+            pred:           Torch Tensor from prediction
+            true:           Torch Tensor from labeled dataset (ground-truth)
+            key:            String with processing metric
+            func:           Function for metric calculation
+        Return:
+            Calculated metric results in Tensor array and total samples of each class
+        """
+        if args or not "cl" in label:
+            metric_out = zeros((len(self.cell_classes),), dtype=float32)
+        else:
+            metric_out = [zeros((1,)) for _ in self.cell_classes]
+
+        length_out = zeros((len(self.cell_classes),), dtype=float32)
+        for idx, id in enumerate(unique(true)):
+            xpos = argwhere(true == id).flatten()
+            length_out[idx] = len(xpos)
+            if args:
+                metric_out[idx] += args[0](pred[xpos], true[xpos])
+            else:
+                metric_out[idx] = pred[xpos]
+        return metric_out, length_out
+
+    def _converting_tensor_to_numpy(self, metric_used: dict) -> dict:
+        """Converting tensor array to numpy for later processing"""
+        # --- Metric out for saving (converting from tensor to numpy)
+        metric_save = deepcopy(metric_used)
+        for key0, data0 in metric_used.items():
+            for key1, data1 in data0.items():
+                for idx2, data2 in enumerate(data1):
+                    if isinstance(data2, list):
+                        for idx3, data3 in enumerate(data2):
+                            if is_tensor(data3):
+                                metric_save[key0][key1][idx2][idx3] = data3.cpu().detach().numpy()
+                    else:
+                        if is_tensor(data2):
+                            metric_save[key0][key1][idx2] = data2.cpu().detach().numpy()
+        return metric_save
+
+    def get_metric_methods(self) -> None:
+        """Function for calling the functions to calculate metrics during training phase"""
+        print(self._metric_methods.keys())
+
+    @property
+    def get_number_parameters_from_model(self) -> int:
+        """Getting the number of used parameters of used DNN model"""
+        return int(sum(p.numel() for p in self.model.parameters()))
 
     def save_model_to_vhdl(self, path4vhdl: str):
         print("================================================================"

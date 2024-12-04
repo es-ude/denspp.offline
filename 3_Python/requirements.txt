@@ -1,17 +1,17 @@
-numpy
+numpy==1.26.4
 matplotlib
-scipy == 1.11.4
+scipy == 1.14.1
 tqdm == 4.66.5
 fxpmath == 0.4.9
 tqdm == 4.66.5
 mat73 == 0.61
-PyYAML == 6.0.2
-mplcursors == 0.5.3
+PyYAML == 6.0.1
+pyocclient == 0.6
 
 # Libs for electric circuit simulation
 PySpice == 1.5
 # Lib for impedance fitting from electrical stimulation signals
-impedancefitter == 2.0.8
+impedancefitter == 2.0.11
 # Libs for reading electrophysiology datasets
 neo == 0.13.0
 # Libs for using DNN (PyTorch)
@@ -20,7 +20,4 @@ py-cpuinfo == 9.0.0
 pynvml == 11.5.3
 torchinfo == 1.8.0
 torch == 2.3.0
-torchvision == 0.18.0
-torchaudio == 2.3.0
-tensorboard == 2.16.0
 # elasticai-creator == 0.59.2

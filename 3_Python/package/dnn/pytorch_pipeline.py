@@ -12,25 +12,28 @@ from package.dnn.pytorch.autoencoder import train_nn as train_nn_ae
 
 def do_train_classifier(config_ml: Config_ML_Pipeline, config_data: Config_Dataset,
                         config_train: Config_PyTorch, used_dataset, used_model,
-                        path2save='') -> [dict, dict, str]:
+                        path2save='', calc_custom_metrics=(), print_results=True) -> [dict, dict, str]:
     """Template for training DL classifiers using PyTorch (incl. plotting)
     Args:
-        config_ml:      Settings for handling the ML Pipeline
-        config_data:    Settings for handling and loading the dataset (just for saving)
-        config_train:   Settings for handling the PyTorch Trainings Routine
-        used_dataset:   Used custom-made DataLoader with data set
-        used_model:     Used custom-made PyTorch DL model
-        path2save:      Path for saving the results [Default: '' --> generate new subfolder in runs]
+        config_ml:          Settings for handling the ML Pipeline
+        config_data:        Settings for handling and loading the dataset (just for saving)
+        config_train:       Settings for handling the PyTorch Trainings Routine
+        used_dataset:       Used custom-made DataLoader with data set
+        used_model:         Used custom-made PyTorch DL model
+        path2save:          Path for saving the results [Default: '' --> generate new subfolder in runs]
+        calc_custom_metrics:List with metric names (custom-made) to determine during trainings process
+        print_results:      Printing the results into Terminal
     Returns:
         Dictionaries with results from training [metrics, validation data] + String to path for saving plots
     """
     # ---Processing Step #1: Preparing Trainings Handler, Build Model
     train_handler = train_nn_cl(config_train=config_train, config_data=config_data, do_train=True)
-    train_handler.load_model(model=used_model)
+    train_handler.load_model(model=used_model, print_model=print_results)
     train_handler.load_data(data_set=used_dataset)
+    train_handler.get_metric_methods()
 
     # --- Processing Step #2: Do Training and Validation
-    metrics = train_handler.do_training(path2save=path2save)
+    metrics = train_handler.do_training(path2save=path2save, metrics=calc_custom_metrics)
     path2folder = train_handler.get_saving_path()
     data_result = train_handler.do_validation_after_training()
 
@@ -54,7 +57,7 @@ def do_train_classifier(config_ml: Config_ML_Pipeline, config_data: Config_Datas
 
 def do_train_autoencoder(config_ml: Config_ML_Pipeline, config_data: Config_Dataset,
                          config_train: Config_PyTorch, used_dataset, used_model,
-                         path2save='', calc_custom_metrics=(), save_vhdl=False, path4vhdl='', print_model=False) -> [dict, dict, str]:
+                         path2save='', calc_custom_metrics=(), save_vhdl=False, path4vhdl='', print_model=False, print_results=True) -> [dict, dict, str]:
     """Template for training DL classifiers using PyTorch (incl. plotting)
     Args:
         config_ml:              Settings for handling the ML Pipeline
@@ -64,15 +67,17 @@ def do_train_autoencoder(config_ml: Config_ML_Pipeline, config_data: Config_Data
         used_model:             Used custom-made PyTorch DL model
         path2save:              Path for saving the results [Default: '' --> generate new subfolder in runs]
         calc_custom_metrics:    List with metric names (custom-made) to determine during trainings process
+        print_results:  Printing the results into Terminal
     Returns:
         Dictionaries with results from training [metrics, validation data] + String to path for saving plots
     """
     # ---Processing Step #1: Preparing Trainings Handler, Build Model
     train_handler = train_nn_ae(config_train=config_train, config_data=config_data, do_train=True)
-    train_handler.load_model(model=used_model, print_model=print_model)
+    train_handler.load_model(model=used_model, print_model=print_results)
     train_handler.load_data(data_set=used_dataset)
 
     # --- Processing Step #2: Do Training and Validation
+    train_handler.get_metric_methods()
     metrics = train_handler.do_training(path2save=path2save, metrics=calc_custom_metrics)
     path2folder = train_handler.get_saving_path()
     data_result = train_handler.do_validation_after_training()
@@ -89,7 +94,7 @@ def do_train_autoencoder(config_ml: Config_ML_Pipeline, config_data: Config_Data
         plot_loss(loss_train=metrics[used_first_fold]['loss_train'],
                   loss_valid=metrics[used_first_fold]['loss_valid'],
                   type=config_train.loss, path2save=path2folder)
-        plot_statistic_data(train_cl=data_result['valid_clus'], valid_cl=data_result['valid_clus'],
+        plot_statistic_data(train_cl=data_result['train_clus'], valid_cl=data_result['valid_clus'],
                             path2save=path2folder, cl_dict=used_dataset.get_dictionary)
     # --- Output
     return metrics, data_result, path2folder

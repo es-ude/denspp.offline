@@ -14,7 +14,6 @@ def characterize_sda_output(spk_pos_can: np.ndarray, spk_pos_true: np.ndarray,
     cnt_true_wrong = 0
     dt_range = int(1e-3 * fs)
 
-    # TODO: Fenstermethode anpassen, um richtige Bestimmung zu machen
     # --- Determine metrics (version 1)
     old_pos = 0
     for idx0, spk_pos in enumerate(spk_pos_can):

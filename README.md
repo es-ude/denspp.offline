@@ -56,6 +56,18 @@ order to find all references in your script. For running code, you find several 
 - `main_emg.py`: For processing EMG signals
 - `main_fpga.py`: For processing data using in Xilinx simulation environment and transfer the weights of a trained model
   in memory file
+  
+### Installation of virtual environment
+
+It is recommended that all python packages should be installed using a virtual environment (venv). For this you type-in the following commands into the terminal.
+````
+cd 3_Python
+python -m venv .venv
+.venv\Scripts\activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+
+````
 
 ## Advanced installation guide for PySPICE
 
