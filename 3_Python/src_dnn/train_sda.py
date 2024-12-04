@@ -2,7 +2,7 @@ from copy import deepcopy
 from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import Config_ML_Pipeline
 from package.dnn.pytorch_dataclass import Config_Dataset, DefaultSettingsDataset, Config_PyTorch, DefaultSettingsTrainCE
-from package.dnn.pytorch_pipeline import do_train_classifier
+from package.dnn.pytorch_pipeline import do_train_classifier, get_model_attributes
 
 from package.dnn.template.dataset.spike_detection import prepare_training
 import package.dnn.template.models.spike_detection as models
@@ -22,7 +22,7 @@ def dnn_train_sda(settings: Config_ML_Pipeline, sda_threshold=4) -> None:
 
     # --- Loading the YAML file: Model training
     default_train = deepcopy(DefaultSettingsTrainCE)
-    default_train.model_name = models.dnn_sda_v1.__name__
+    default_train.model_name = get_model_attributes(models, '_v')
     yaml_train = yaml_config_handler(default_train, 'config', 'Config_SDA_Train')
     config_train = yaml_train.get_class(Config_PyTorch)
 

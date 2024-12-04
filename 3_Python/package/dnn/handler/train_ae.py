@@ -3,7 +3,7 @@ from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import Config_ML_Pipeline
 from package.dnn.pytorch_dataclass import (Config_PyTorch, DefaultSettingsTrainMSE,
                                            Config_Dataset, DefaultSettingsDataset)
-from package.dnn.pytorch_pipeline import do_train_autoencoder
+from package.dnn.pytorch_pipeline import do_train_autoencoder, get_model_attributes
 
 from package.plot.plot_dnn import results_training
 from package.dnn.template.dataset.autoencoder import prepare_training
@@ -26,7 +26,7 @@ def do_train_neural_autoencoder(settings: Config_ML_Pipeline, yaml_name_index='C
 
     # --- Loading the YAML file: Model training
     default_train = deepcopy(DefaultSettingsTrainMSE)
-    default_train.model_name = models.dnn_ae_v1.__name__
+    default_train.model_name = get_model_attributes(models, '_v')
     yaml_nn = yaml_config_handler(default_train, settings.get_path2config, f'{yaml_name_index}_Training')
     config_train = yaml_nn.get_class(Config_PyTorch)
     del default_train, yaml_nn

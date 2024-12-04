@@ -20,4 +20,4 @@ py-cpuinfo == 9.0.0
 pynvml == 11.5.3
 torchinfo == 1.8.0
 torch == 2.3.0
-# elasticai-creator == 0.59.2
+elasticai-creator == 0.59.2

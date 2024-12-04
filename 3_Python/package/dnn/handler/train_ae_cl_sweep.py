@@ -7,7 +7,7 @@ from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import Config_ML_Pipeline, DefaultSettings_MLPipe
 from package.dnn.pytorch_dataclass import (Config_Dataset, DefaultSettingsDataset,
                                            Config_PyTorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE)
-from package.dnn.pytorch_pipeline import do_train_autoencoder, do_train_classifier
+from package.dnn.pytorch_pipeline import do_train_autoencoder, do_train_classifier, get_model_attributes
 
 from package.dnn.template.dataset.autoencoder import prepare_training as get_dataset_ae
 from package.dnn.template.dataset.autoencoder_class import prepare_training as get_dataset_cl
@@ -39,7 +39,7 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
 
     # --- Loading the YAML file: Autoencoder Model Load and building
     default_ae = deepcopy(DefaultSettingsTrainMSE)
-    default_ae.model_name = 'dnn_ae_v2'
+    default_ae.model_name = get_model_attributes(models_ae, '_v')
     default_ae.num_epochs = num_epochs_trial
     yaml_train = yaml_config_handler(default_ae, settings.get_path2config, f'{yaml_name_index}_TrainAE')
     config_train_ae = yaml_train.get_class(Config_PyTorch)
@@ -47,7 +47,7 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
 
     # --- Loading the YAML file: Classifier Model Load and building
     default_cl = deepcopy(DefaultSettingsTrainCE)
-    default_cl.model_name = 'classifier_ae_v1'
+    default_cl.model_name = get_model_attributes(models_cl, '_v')
     default_cl.num_epochs = num_epochs_trial
     yaml_train = yaml_config_handler(default_cl, settings.get_path2config, f'{yaml_name_index}_TrainCL')
     config_train_cl = yaml_train.get_class(Config_PyTorch)

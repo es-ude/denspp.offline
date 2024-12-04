@@ -4,7 +4,7 @@ from package.plot.plot_dnn import results_training
 from package.dnn.dnn_handler import Config_ML_Pipeline
 from package.dnn.pytorch_dataclass import (Config_Dataset, DefaultSettingsDataset,
                                            Config_PyTorch, DefaultSettingsTrainCE, DefaultSettingsTrainMSE)
-from package.dnn.pytorch_pipeline import do_train_autoencoder, do_train_classifier
+from package.dnn.pytorch_pipeline import do_train_autoencoder, do_train_classifier, get_model_attributes
 from package.data_process.rgc_combination import rgc_logic_combination
 
 from package.dnn.template.dataset.autoencoder import prepare_training as get_dataset_ae
@@ -30,13 +30,13 @@ def do_train_rgc_ae_cl(settings: Config_ML_Pipeline, yaml_name_index='Config_RGC
 
     # --- Loading the YAML file: Autoencoder Training
     default_ae = deepcopy(DefaultSettingsTrainMSE)
-    default_ae.model_name = models.cnn_rgc_ae_v1.__name__
+    default_ae.model_name = get_model_attributes(models, '_ae_v')
     yaml_train_ae = yaml_config_handler(default_ae, settings.get_path2config, f'{yaml_name_index}_TrainAE')
     config_train_ae = yaml_train_ae.get_class(Config_PyTorch)
 
     # --- Loading the YAML file: Classifier Training
     default_cl = deepcopy(DefaultSettingsTrainCE)
-    default_cl.model_name = models.rgc_ae_cl_v1.__name__
+    default_cl.model_name = get_model_attributes(models, '_cl_v')
     yaml_train_cl = yaml_config_handler(default_cl, settings.get_path2config, f'{yaml_name_index}_TrainCL')
     config_train_cl = yaml_train_cl.get_class(Config_PyTorch)
 

@@ -3,7 +3,7 @@ from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import Config_ML_Pipeline
 from package.dnn.pytorch_dataclass import (Config_PyTorch, DefaultSettingsTrainCE, DefaultSettingsTrainMSE,
                                            Config_Dataset, DefaultSettingsDataset)
-from package.dnn.pytorch_pipeline import do_train_classifier, do_train_autoencoder
+from package.dnn.pytorch_pipeline import do_train_classifier, do_train_autoencoder, get_model_attributes
 
 from package.dnn.template.dataset.mnist import prepare_training
 import package.dnn.template.models.mnist as models
@@ -29,7 +29,7 @@ def do_train_cl(settings: Config_ML_Pipeline, yaml_name_index='Config_MNIST', cu
 
     # --- Loading the YAML file: Model training
     default_train = deepcopy(DefaultSettingsTrainCE)
-    default_train.model_name = models.mnist_mlp_cl_v1.__name__
+    default_train.model_name = get_model_attributes(models, '_cl_v')
     yaml_train = yaml_config_handler(default_train,
                                      path2yaml=settings.get_path2config, yaml_name=f'{yaml_name_index}_TrainCL')
     config_train = yaml_train.get_class(Config_PyTorch)
@@ -59,7 +59,7 @@ def do_train_ae(settings: Config_ML_Pipeline, yaml_name_index='Config_MNIST') ->
 
     # --- Loading the YAML file: Model training
     default_train = DefaultSettingsTrainMSE
-    default_train.model_name = models.mnist_mlp_ae_v1.__name__
+    default_train.model_name = get_model_attributes(models, '_ae_v')
     yaml_train = yaml_config_handler(default_train, settings.get_path2config, f'{yaml_name_index}_TrainAE')
     config_train = yaml_train.get_class(Config_PyTorch)
 

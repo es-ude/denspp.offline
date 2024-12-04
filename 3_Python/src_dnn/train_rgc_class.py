@@ -2,7 +2,7 @@ from copy import deepcopy
 from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import Config_ML_Pipeline
 from package.dnn.pytorch_dataclass import Config_Dataset, DefaultSettingsDataset, Config_PyTorch, DefaultSettingsTrainCE
-from package.dnn.pytorch_pipeline import do_train_classifier
+from package.dnn.pytorch_pipeline import do_train_classifier, get_model_attributes
 from package.data_process.rgc_combination import rgc_logic_combination
 
 from package.dnn.template.dataset.classifier import prepare_training
@@ -23,7 +23,7 @@ def do_train_rgc_class(settings: Config_ML_Pipeline, yaml_name_index='Config_RGC
 
     # --- Loading the YAML file: Model training
     default_train = deepcopy(DefaultSettingsTrainCE)
-    default_train.model_name = models.dnn_rgc_v1.__name__
+    default_train.model_name = get_model_attributes(models, '_v')
     yaml_train = yaml_config_handler(default_train, settings.get_path2config, f'{yaml_name_index}_TrainCL')
     config_train = yaml_train.get_class(Config_PyTorch)
 
