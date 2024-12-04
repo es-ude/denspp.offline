@@ -1,5 +1,5 @@
 from os import remove, getcwd, makedirs
-from os.path import join
+from os.path import join, exists
 import platform
 from copy import deepcopy
 import cpuinfo
@@ -12,6 +12,10 @@ from datetime import datetime
 
 from torch import (Tensor, is_tensor, zeros, unique, argwhere, device, cuda, backends, float32,
                    nn, randn, cat, Generator, manual_seed, use_deterministic_algorithms)
+
+from elasticai.creator.file_generation.on_disk_path import OnDiskPath
+from elasticai.creator.vhdl.system_integrations.skeleton.skeleton import Skeleton
+from torch import device, cuda, backends, nn, randn, cat
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
@@ -112,7 +116,6 @@ class training_pytorch:
         create_folder_dnn_firstrun()
         # --- Preparing Neural Network
         self.os_type = platform.system()
-        self._writer = None
         self.model = None
         self.loss_fn = None
         self.optimizer = None
@@ -174,7 +177,6 @@ class training_pytorch:
 
     def _init_train(self, path2save='', addon='') -> None:
         """Do init of class for training"""
-        # --- Generate links
         if not path2save:
             folder_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{self._index_folder}_{self._model_name}'
             self._path2save = join(self._path2run, folder_name)
@@ -195,11 +197,6 @@ class training_pytorch:
                            filename='Config_Dataset', path2save=self._path2save)
         write_dict_to_yaml(translate_dataclass_to_dict(self.settings_train),
                            filename=f'Config_Training{addon}', path2save=self._path2save)
-
-    def _init_writer(self) -> None:
-        """Do init of writer"""
-        self._path2log = join(self._path2save, f'logs')
-        self._writer = SummaryWriter(self._path2log, comment=f"event_log_kfold{self._kfold_run:03d}")
 
     def __deterministic_training_preparation(self) -> None:
         """Preparing the CUDA hardware for deterministic training"""
@@ -388,11 +385,6 @@ class training_pytorch:
             for folder in folder_logs:
                 rmtree(folder, ignore_errors=True)
 
-        # Give the option to open TensorBoard
-        if self._do_print_state:
-            print("\nLook data on TensorBoard -> open Terminal")
-            print("Type in: tensorboard serve --logdir ./runs")
-
     def __get_data_points(self, only_getting_labels=False, use_train_dataloader=False) -> dict:
         """Getting data from DataLoader for Plotting Results
         Args:
@@ -434,7 +426,7 @@ class training_pytorch:
         """Getting the raw data for plotting results"""
         # --- Producing and Saving the output
         if results is None:
-            results = {}
+            results = dict()
 
         if self._do_print_state:
             print(f"... preparing results for plot generation")
@@ -442,7 +434,7 @@ class training_pytorch:
 
         output = dict()
         output.update({'settings': self.settings_train, 'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')})
-        output.update({'train_clus': data_train['out'], 'cl_dict': self.cell_classes})
+        output.update({'train_clus': data_train['class'] if addon == 'ae' else data_train['out'], 'cl_dict': self.cell_classes})
         output.update({'input': valid_input, 'valid_clus': valid_label})
         output.update(results)
 
@@ -509,3 +501,19 @@ class training_pytorch:
     def get_metric_methods(self) -> None:
         """Function for calling the functions to calculate metrics during training phase"""
         print(self._metric_methods.keys())
+
+    @property
+    def get_number_parameters_from_model(self) -> int:
+        """Getting the number of used parameters of used DNN model"""
+        return int(sum(p.numel() for p in self.model.parameters()))
+
+    def save_model_to_vhdl(self, path4vhdl: str):
+        print("================================================================"
+              "\n Saving Hardware Design")
+
+        # Save the VHDL code of the trained model
+        destination_encoder = OnDiskPath(f"{path4vhdl}/encoder")
+        destination_decoder = OnDiskPath(f"{path4vhdl}/decoder")
+        encoder, decoder = self.model.create_design("ae_v1_vhdl")
+        encoder.save_to(destination_encoder)
+        decoder.save_to(destination_decoder)

@@ -6,12 +6,10 @@ models_available = ModelRegistry()
 
 
 @models_available.register
-class cnn_rgc_ae_v1(nn.Module):
+class cnn_rgc_ae_v1(__model_settings_common):
     """Class of a convolutional autoencoder for feature extraction"""
     def __init__(self, input_size=32, output_size=8):
-        super().__init__()
-        self.out_modelname = 'cnn_ae_v4'
-        self.out_modeltyp = 'Autoencoder'
+        super().__init__('Autoencoder')
         self.model_embedded = False
         self.model_shape = (1, input_size)
         do_bias_train = True
@@ -67,12 +65,10 @@ class cnn_rgc_ae_v1(nn.Module):
 
 
 @models_available.register
-class rgc_ae_cl_v2(nn.Module):
+class rgc_ae_cl_v2(__model_settings_common):
     """Classification model"""
     def __init__(self, input_size=6, output_size=4):
-        super().__init__()
-        self.out_modelname = 'rgc_class_v2'
-        self.out_modeltyp = 'Classification'
+        super().__init__('Classifier')
         self.model_shape = (1, input_size)
         self.model_embedded = False
         lin_size = [input_size, 64, 72, 58, 36, 24, output_size]
@@ -111,12 +107,10 @@ class rgc_ae_cl_v2(nn.Module):
 
 
 @models_available.register
-class rgc_ae_cl_v1(nn.Module):
+class rgc_ae_cl_v1(__model_settings_common):
     """Classification model of autoencoder output"""
     def __init__(self, input_size=6, output_size=5):
-        super().__init__()
-        self.out_modelname = 'ae_class_v1'
-        self.out_modeltyp = 'Classification'
+        super().__init__('Classifier')
         self.model_shape = (1, input_size)
         self.model_embedded = False
         lin_size = [input_size, 16, 12, output_size]
@@ -135,7 +129,7 @@ class rgc_ae_cl_v1(nn.Module):
             nn.Dropout(lin_drop[1]),
             nn.Linear(lin_size[2], lin_size[3]),
             nn.BatchNorm1d(lin_size[3], affine=do_train_bias),
-            nn.Softmax(dim=1)
+            # nn.Softmax(dim=1)
         )
 
     def forward(self, x: Tensor) -> [Tensor, Tensor]:

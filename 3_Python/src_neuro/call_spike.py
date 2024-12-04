@@ -17,22 +17,9 @@ class DataLoader(_DataController):
         self.settings = setting
         self.select_electrodes = list()
         self.path2file = str()
+        self._methods_available = dir(DataLoader)
 
-    def do_call(self):
-        """Loading the dataset"""
-        self._prepare_call()
-        # --- Searching the load function for dataset translation
-        methods_list_all = [method for method in dir(DataLoader)]
-        search_param = '_DataLoader'
-        methods_load_data = [method for method in methods_list_all if method[0:len(search_param)] == search_param]
-
-        # --- Calling the function
-        if self.settings.data_set == 0:
-            raise ValueError("\nPlease select new input for data_type!")
-        else:
-            getattr(self, methods_load_data[self.settings.data_set - 1])()
-
-    def __load_method00_martinez2009(self) -> None:
+    def __load_martinez_simulation(self) -> None:
         """Loading synthethic files from Quiroga simulation (2009)"""
         folder_name = "_SimDaten_Martinez2009"
         data_type = 'simulation_*.mat'
@@ -62,7 +49,7 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_method01_pedreira2012(self) -> None:
+    def __load_pedreira_simulation(self) -> None:
         """Loading synthethic files from Quiroga simulator (2012)"""
         folder_name = "_SimDaten_Pedreira2012"
         data_type = 'simulation_*.mat'
@@ -98,7 +85,7 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_method02_quiroga2020(self) -> None:
+    def __load_quiroga_simulation(self) -> None:
         """Loading synthetic recordings from Quiroga simulator (Common benchmark)"""
         folder_name = "_SimDaten_Quiroga2020"
         data_type = 'C_*.mat'
@@ -128,7 +115,7 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_method03_seidl2012(self) -> None:
+    def __load_seidl_freiburg(self) -> None:
         """Loading the recording files from the Freiburg probes from Karsten Seidl from this PhD"""
         folder_name = "_Freiburg_Seidl2014"
         data_type = '*.mat'
@@ -160,7 +147,7 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_method04_marre2018(self) -> None:
+    def __load_marre_intracellular(self) -> None:
         # Link to data: https://zenodo.org/record/1205233#.YrBYrOzP1PZ
         folder_name = "_Zenodo_Marre2018"
         data_type = '*.mat'
@@ -191,7 +178,7 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_method05_klaes_utah_array(self) -> None:
+    def __load_klaes_utah(self) -> None:
         """Loading the merged data file (from *.ns6 and *.nev files) from recordings with Utah electrode array
         from Blackrock Neurotechnology"""
         folder_name = "_Klaes_Caltech"
@@ -233,7 +220,7 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = loaded_data['behaviour']
         del loaded_data
 
-    def __load_method06_rgc_tdb(self) -> None:
+    def __load_schwartz_rgc_tdb(self) -> None:
         """Loading the transient files from the Retinal Ganglion Cell Transient Database (RGC TDB)"""
         folder_name = "_RGC_TDB"
         data_type = '*.mat'
@@ -281,7 +268,7 @@ class DataLoader(_DataController):
         self.raw_data.data_time = self.raw_data.data_raw[0].shape[0] / self.raw_data.data_fs_orig
         # Groundtruth
         spike_xoffset = int(-0.5e-6 * self.raw_data.data_fs_orig)
-        rgc_translator = CellSelector(1)
+        rgc_translator = CellSelector(1, 0)
         self.raw_data.label_exist = True
         for idx, pos_ch in enumerate(elec_process):
             self.raw_data.evnt_xpos.append(spike_xpos[idx] - spike_xoffset)
@@ -297,12 +284,11 @@ class DataLoader(_DataController):
         self.raw_data.behaviour = None
         del loaded_data
 
-    def __load_method07_fzj_mcs(self) -> None:
-        """Loading the recording files from MCS setup in FZ Juelich (case = experiment, point = file)"""
+    def __load_mueller_mcs_fzj(self) -> None:
+        """Loading the recording files from MCS setup used in Frank Mueller Group (Forschungszentrum Juelich)"""
         folder_name = "_RGC_FZJuelich"
-        data_type = '*_merged.mat'
+        data_type = '*.mat'
         self._prepare_access_file(folder_name, data_type)
-        # loaded_data = loadmat(self.path2file)
         loaded_data = loadmat_mat73(self.path2file)
 
         self.raw_data = DataHandler()
@@ -327,19 +313,3 @@ class DataLoader(_DataController):
         self.raw_data.behaviour_exist = False
         self.raw_data.behaviour = None
         del loaded_data
-
-    def __load_method08_musall_neuropixel(self) -> None:
-        """Loading the files from recordings with NeuroPixel probes"""
-        folder_name = "_RGC_TDB"
-        data_type = '*.mat'
-        self._prepare_access_file(folder_name, data_type)
-        loaded_data = loadmat_mat73(self.path2file)
-
-        self.raw_data = DataHandler()
-        self.raw_data.data_name = folder_name
-        self.raw_data.data_type = "NeuroPixel 1.0"
-
-        self.raw_data.mapping_dimension = [2, 480]
-        del loaded_data
-
-        raise NotImplementedError

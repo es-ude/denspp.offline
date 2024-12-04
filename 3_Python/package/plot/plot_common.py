@@ -3,13 +3,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-sel_color = ['k', 'r', 'b', 'g', 'y', 'c', 'm', 'gray']
-sel_marker = '.+x_'
-
-
 def get_plot_color(idx: int) -> str:
     """Getting the color string"""
+    sel_color = ['k', 'r', 'b', 'g', 'y', 'c', 'm', 'gray']
     return sel_color[idx % len(sel_color)]
+
+
+def get_marker(idx: int) -> str:
+    """Getting the marker for plotting"""
+    sel_marker = '.+x_'
+    return sel_marker[idx % len(sel_marker)]
 
 
 def cm_to_inch(value: float) -> float:

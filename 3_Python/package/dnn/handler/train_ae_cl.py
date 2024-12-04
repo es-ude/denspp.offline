@@ -12,12 +12,11 @@ import package.dnn.template.models.autoencoder_cnn as models_ae
 import package.dnn.template.models.autoencoder_class as models_cl
 
 
-def do_train_ae_classifier(settings: Config_ML_Pipeline, yaml_name_index='Config_ACL', add_noise_cluster=False) -> dict:
+def do_train_ae_classifier(settings: Config_ML_Pipeline, yaml_name_index='Config_ACL') -> dict:
     """Training routine for Autoencoders and Classifier with Encoder after Autoencoder-Training
     Args:
         settings:           Handler for configuring the routine selection for train deep neural networks
         yaml_name_index:    Index of yaml file name
-        add_noise_cluster:  Adding noise cluster to dataset [Default: False]
     Returns:
         Dictionary with metric results from Autoencoder and Classifier Training
     """
@@ -43,8 +42,7 @@ def do_train_ae_classifier(settings: Config_ML_Pipeline, yaml_name_index='Config
     # --- Processing Step #1.1: Loading dataset and Build Model
     dataset = get_dataset_ae(settings=config_data, do_classification=False,
                              mode_train_ae=settings.autoencoder_mode,
-                             noise_std=settings.autoencoder_noise_std,
-                             add_noise_cluster=add_noise_cluster)
+                             noise_std=settings.autoencoder_noise_std)
     if settings.autoencoder_feat_size:
         used_model_ae = models_ae.models_available.build_model(config_train_ae.model_name,
                                                                output_size=settings.autoencoder_feat_size)
@@ -68,7 +66,7 @@ def do_train_ae_classifier(settings: Config_ML_Pipeline, yaml_name_index='Config
 
     print("\n# ----------- Step #2: TRAINING CLASSIFIER")
     # --- Processing Step #2.1: Loading dataset and Build Model
-    dataset = get_dataset_cl(settings=config_data, path2model=path2folder, add_noise_cluster=add_noise_cluster)
+    dataset = get_dataset_cl(settings=config_data, path2model=path2folder)
     num_feat = dataset[0]['in'].shape[0] if not settings.autoencoder_feat_size else settings.autoencoder_feat_size
     used_model_cl = models_cl.models_available.build_model(config_train_cl.model_name, input_size=num_feat)
 

@@ -264,9 +264,8 @@ class train_nn(training_pytorch):
             epoch_train_loss = list()
             epoch_valid_loss = list()
 
-            self.model.load_state_dict(load(path2model_init))
+            self.model.load_state_dict(load(path2model_init, weights_only=False))
             self._run_kfold = fold
-            self._init_writer()
 
             if self._kfold_do and self._do_print_state:
                 print(f'\nStarting with Fold #{fold}')
@@ -281,13 +280,6 @@ class train_nn(training_pytorch):
                       f'[{(epoch + 1) / self.settings_train.num_epochs * 100:.2f} %]: '
                       f'train_loss = {train_loss:.5f}, delta_loss = {train_loss-valid_loss:.5f}, '
                       f'train_acc = {100* train_acc:.4f} %, delta_acc = {100 * (train_acc-valid_acc):.4f} %')
-
-                # Log the running loss averaged per batch for both training and validation
-                self._writer.add_scalar('Loss_train (CL)', train_loss, epoch+1)
-                self._writer.add_scalar('Loss_valid (CL)', valid_loss, epoch+1)
-                self._writer.add_scalar('Acc_train (CL)', train_acc, epoch+1)
-                self._writer.add_scalar('Acc_valid (CL)', valid_acc, epoch+1)
-                self._writer.flush()
 
                 # Saving metrics after each epoch
                 epoch_train_acc.append(train_acc)
@@ -334,7 +326,7 @@ class train_nn(training_pytorch):
 
         # --- Do the Inference with Best Model
         path2model = self.get_best_model('class')[0]
-        model_test = load(path2model)
+        model_test = load(path2model, weights_only=False)
         print("\n================================================================="
               f"\nDo Validation with best model: {path2model}")
 

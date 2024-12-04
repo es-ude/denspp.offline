@@ -4,8 +4,8 @@ from package.dnn.dnn_handler import Config_ML_Pipeline
 from package.dnn.pytorch_dataclass import Config_Dataset, DefaultSettingsDataset, Config_PyTorch, DefaultSettingsTrainCE
 from package.dnn.pytorch_pipeline import do_train_classifier
 
-from src_dnn.dataset.spike_detection import prepare_training
-import src_dnn.models.spike_detection as models
+from package.dnn.template.dataset.spike_detection import prepare_training
+import package.dnn.template.models.spike_detection as models
 
 
 def dnn_train_sda(settings: Config_ML_Pipeline, sda_threshold=4) -> None:

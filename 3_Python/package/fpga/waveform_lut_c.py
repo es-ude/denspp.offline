@@ -10,7 +10,7 @@ from package.fpga.helper.translater import get_embedded_datatype, replace_variab
 
 def generate_lut_files(bitsize_lut: int, f_sys: float, f_rpt: float, f_sine: float,
                        out_signed=False, do_optimized=False, device_id='',
-                       file_name='waveform_lut', path2save='') -> None:
+                       file_name='waveform_lut', path2save='', define_path='src') -> None:
     """Generating C file with SINE_LUT for sinusoidal waveform generation
     Args:
         bitsize_lut:    Used quantization level for generating sinusoidal waveform LUT
@@ -22,6 +22,7 @@ def generate_lut_files(bitsize_lut: int, f_sys: float, f_rpt: float, f_sine: flo
         device_id:      Device ID
         file_name:      File name of generated output
         path2save:      Path for saving the verilog output files
+        define_path:    Path for loading the header file in IDE [Default: 'src']
     Return:
         None
     """
@@ -36,7 +37,7 @@ def generate_lut_files(bitsize_lut: int, f_sys: float, f_rpt: float, f_sine: flo
     # --- Step #2: Generating the values for parameter dict
     params = {
         'datetime_created': datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
-        'path2include':     'lib',
+        'path2include':     define_path,
         'template_name':    'waveform_lut_template.h',
         'device_id':        module_id_used.upper(),
         'datatype_cnt':     get_embedded_datatype(np.log2(lut_data.size), out_signed=False),
@@ -106,5 +107,7 @@ def __generate_waveform_lut_template(do_full_opt: bool) -> dict:
 
 if __name__ == '__main__':
     path2save = '../../runs'
-    generate_lut_files(14, 32e6, 250e3, 10e3, device_id=0, do_optimized=False, out_signed=True, path2save=path2save)
-    generate_lut_files(14, 32e6, 250e3, 10e3, device_id=1, do_optimized=True, out_signed=True, path2save=path2save)
+    generate_lut_files(14, 32e6, 250e3, 10e3, device_id="0",
+                       do_optimized=False, out_signed=True, path2save=path2save)
+    generate_lut_files(16, 125e6, 250e3, 1e3, device_id="1",
+                       do_optimized=True, out_signed=True, path2save=path2save)

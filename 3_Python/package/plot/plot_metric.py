@@ -66,8 +66,15 @@ def plot_loss(loss_train: list, loss_valid: list, type: str, path2save='', epoch
     plt.figure(figsize=(cm_to_inch(10), cm_to_inch(8)))
     axs = list()
     axs.append(plt.subplot(1, 1, 1))
-    axs[0].plot(plot_metrics[:, 0], color='k', marker='.', label='Train.')
-    axs[0].plot(plot_metrics[:, 1], color='r', marker='.', label='Valid.')
+
+    epochs_ite = np.array([idx + 1 for idx in range(plot_metrics[:, 0].size)])
+    axs[0].plot(epochs_ite, plot_metrics[:, 0], color='k', marker='.', label='Train.')
+    axs[0].plot(epochs_ite, plot_metrics[:, 1], color='r', marker='.', label='Valid.')
+
+    pos = np.linspace(epochs_ite[0], epochs_ite[-1], num=11, endpoint=True, dtype=int)
+    plt.xticks(pos)
+    plt.xlim([pos[0], pos[-1]])
+
     plt.grid()
     plt.legend()
     plt.title(f"{type} = {plot_metrics.max() if 'Acc' in type else plot_metrics.min():.3f}")
@@ -84,8 +91,8 @@ def plot_loss(loss_train: list, loss_valid: list, type: str, path2save='', epoch
 
         axins0 = axs[0].inset_axes([0.45, 0.02, 0.5, 0.43], xticklabels=[],
                                    xlim=(x0-0.5, x1+0.5), ylim=(0.99 * min_value, 1.01 * max_value))
-        axins0.plot(plot_metrics[:, 0], color='k', marker='.', label='Train.')
-        axins0.plot(plot_metrics[:, 1], color='r', marker='.', label='Valid.')
+        axins0.plot(epochs_ite, plot_metrics[:, 0], color='k', marker='.', label='Train.')
+        axins0.plot(epochs_ite, plot_metrics[:, 1], color='r', marker='.', label='Valid.')
         axins0.grid()
         axs[0].tick_params(direction='in')
         axs[0].indicate_inset_zoom(axins0, edgecolor="black")

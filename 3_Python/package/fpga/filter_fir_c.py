@@ -11,7 +11,8 @@ from package.fpga.helper.translater import (get_embedded_datatype, replace_varia
 def generate_fir_filter_files(data_bitsize: int, data_signed: bool,
                               filter_order: int, sampling_rate: float, filter_corner: list,
                               filter_btype='low', filter_ftype='butter',
-                              do_optimized=False, filter_id='', file_name='filter_fir', path2save='') -> None:
+                              do_optimized=False, filter_id='', file_name='filter_fir',
+                              path2save='', define_path='src') -> None:
     """Generating C files for IIR filtering on microcontroller
     Args:
         data_bitsize:   Used quantization level for data stream
@@ -25,6 +26,7 @@ def generate_fir_filter_files(data_bitsize: int, data_signed: bool,
         do_optimized:   Decision if LUT resources should be minimized [only quarter and mirroring]
         file_name:      Name of the generated files
         path2save:      Path for saving the verilog output files
+        define_path:    Path for loading the header file in IDE [Default: 'src']
     Return:
         None
     """
@@ -42,7 +44,7 @@ def generate_fir_filter_files(data_bitsize: int, data_signed: bool,
 
     params = {
         'datetime_created':     datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
-        'path2include':         'lib',
+        'path2include':         define_path,
         'template_name':        'filter_fir_template.h',
         'device_id':            module_id_used.upper(),
         'data_type':            data_type_filter,

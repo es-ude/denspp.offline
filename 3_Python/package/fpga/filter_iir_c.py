@@ -11,7 +11,7 @@ from package.fpga.helper.translater import (get_embedded_datatype, replace_varia
 def generate_iir_filter_files(data_bitsize: int, data_signed: bool,
                               filter_order: int, sampling_rate: float, filter_corner: list,
                               filter_btype='low', filter_ftype='butter', filter_id='',
-                              file_name='filter_iir', path2save='') -> None:
+                              file_name='filter_iir', path2save='', define_path='src') -> None:
     """Generating C files for IIR filtering on microcontroller
     Args:
         data_bitsize:   Used quantization level for data stream
@@ -24,6 +24,7 @@ def generate_iir_filter_files(data_bitsize: int, data_signed: bool,
         filter_ftype:   Used filter design ['butter', 'cheby1', 'cheby2', 'ellip', 'bessel']
         file_name:      Name of the generated files
         path2save:      Path for saving the verilog output files
+        define_path:    Path for loading the header file in IDE [Default: 'src']
     Return:
         None
     """
@@ -35,19 +36,18 @@ def generate_iir_filter_files(data_bitsize: int, data_signed: bool,
 
     data_type_filter = get_embedded_datatype(data_bitsize, data_signed)
     template_c = __generate_filter_iir_template()
-
     params = {
         'datetime_created':     datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
-        'path2include':         'lib',
+        'path2include':         define_path,
         'template_name':        'filter_iir_template.h',
         'device_id':            module_id_used.upper(),
         'data_type':            data_type_filter,
         'fs':                   f'{sampling_rate}',
-        'filter_type':          f'{filter_btype}, butter',
+        'filter_type':          f'{filter_btype}, {filter_ftype}',
         'filter_corner':        ', '.join(map(str, filter_corner)),
         'filter_order':         str(filter_order),
-        'coeff_order':          str(filter_order+1),
-        'tap_order':            str(filter_order),
+        'coeff_order':          str(filter_coeff['coeffa'].size),
+        'tap_order':            str(filter_coeff['coeffa'].size-1),
         'coeffs_string':        filter_coeff_used
 
     }
@@ -108,5 +108,15 @@ if __name__ == '__main__':
     path2save_out = '../../runs'
 
     # generate_iir_filter_files(16, True, 0, 2, 1e3, [100], path2save=path2save_out)
-    generate_iir_filter_files(16, True, 2, 1e3, [100, 200],
-                              filter_btype='all', path2save=path2save_out)
+    generate_iir_filter_files(16, True, 2, 1e3, [100],
+                              filter_btype='low', path2save=path2save_out, filter_id='0')
+    generate_iir_filter_files(16, True, 2, 1e3, [100],
+                              filter_btype='high', path2save=path2save_out, filter_id='1')
+    generate_iir_filter_files(16, True, 1, 1e3, [100],
+                              filter_btype='all', path2save=path2save_out, filter_id='2')
+    generate_iir_filter_files(16, True, 1, 1e3, [10, 100],
+                              filter_btype='bandpass', path2save=path2save_out, filter_id='3')
+    generate_iir_filter_files(16, True, 2, 1e3, [10, 100],
+                              filter_btype='bandpass', path2save=path2save_out, filter_id='4')
+    generate_iir_filter_files(16, True, 2, 1e3, [10, 100],
+                              filter_btype='bandstop', path2save=path2save_out, filter_id='5')

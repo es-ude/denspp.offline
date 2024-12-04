@@ -8,10 +8,10 @@ from package.dnn.pytorch_pipeline import do_train_autoencoder
 from package.plot.plot_dnn import results_training
 from package.dnn.template.dataset.autoencoder import prepare_training
 import package.dnn.template.models.autoencoder_dnn as models
+from datetime import date
 
 
-def do_train_neural_autoencoder(settings: Config_ML_Pipeline, add_noise_cluster=False,
-                                yaml_name_index='Config_AE') -> [dict, dict]:
+def do_train_neural_autoencoder(settings: Config_ML_Pipeline, yaml_name_index='Config_AE') -> [dict, dict]:
     """Training routine for Autoencoders in Neural Applications (Spike Frames)
     Args:
         settings:           Handler for configuring the routine selection for train deep neural networks
@@ -33,17 +33,17 @@ def do_train_neural_autoencoder(settings: Config_ML_Pipeline, add_noise_cluster=
 
     # --- Loading Data, Build Model and Do Training
     dataset = prepare_training(settings=config_data, do_classification=False,
-                               mode_train_ae=settings.autoencoder_mode, noise_std=settings.autoencoder_noise_std,
-                               add_noise_cluster=add_noise_cluster,
-                               use_median_for_mean=True)
+                               mode_train_ae=settings.autoencoder_mode, noise_std=settings.autoencoder_noise_std)
     if settings.autoencoder_feat_size:
         used_model = models.models_available.build_model(config_train.model_name, output_size=settings.autoencoder_feat_size)
     else:
         used_model = models.models_available.build_model(config_train.model_name)
 
+    path4vhdl = f'vhdl/run_{date.today()}'
+
     metrics, data_result, path2folder = do_train_autoencoder(
         config_ml=settings, config_data=config_data, config_train=config_train,
-        used_dataset=dataset, used_model=used_model, calc_custom_metrics=['dsnr_all']
+        used_dataset=dataset, used_model=used_model, calc_custom_metrics=['dsnr_all'], save_vhdl=True, path4vhdl=path4vhdl
     )
 
     if settings.do_plot:

@@ -5,7 +5,7 @@ from package.dnn.pytorch_dataclass import Config_Dataset, DefaultSettingsDataset
 from package.dnn.pytorch_pipeline import do_train_classifier
 from package.data_process.rgc_combination import rgc_logic_combination
 
-from src_dnn.dataset.rgc_classification import prepare_training
+from package.dnn.template.dataset.classifier import prepare_training
 import src_dnn.models.rgc_onoff_class as models
 
 
@@ -17,8 +17,7 @@ def do_train_rgc_class(settings: Config_ML_Pipeline, yaml_name_index='Config_RGC
     """
     # --- Loading the YAML file: Dataset
     default_data = deepcopy(DefaultSettingsDataset)
-    default_data.data_path = 'data'
-    default_data.data_file_name = '2023-11-24_Dataset-07_RGC_TDB_Merged.mat'
+    default_data.data_file_name = 'rgc_tdb'
     yaml_data = yaml_config_handler(default_data, settings.get_path2config, f'{yaml_name_index}_Dataset')
     config_data = yaml_data.get_class(Config_Dataset)
 
@@ -30,7 +29,10 @@ def do_train_rgc_class(settings: Config_ML_Pipeline, yaml_name_index='Config_RGC
 
     # ---Loading Data, Build Model and Do Training
     used_dataset = prepare_training(config_data)
-    used_model = models.models_available.build_model(config_train.model_name)
+    used_model = models.models_available.build_model(config_train.model_name,
+                                                     input_size=used_dataset[0]['in'].size,
+                                                     output_size=len(used_dataset.get_dictionary)
+                                                     )
     _, _, path2folder = do_train_classifier(
         config_ml=settings, config_data=config_data, config_train=config_train,
         used_dataset=used_dataset, used_model=used_model, path2save=''

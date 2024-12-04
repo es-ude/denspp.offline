@@ -57,7 +57,7 @@ def do_train_classifier(config_ml: Config_ML_Pipeline, config_data: Config_Datas
 
 def do_train_autoencoder(config_ml: Config_ML_Pipeline, config_data: Config_Dataset,
                          config_train: Config_PyTorch, used_dataset, used_model,
-                         path2save='', calc_custom_metrics=(), print_results=True) -> [dict, dict, str]:
+                         path2save='', calc_custom_metrics=(), save_vhdl=False, path4vhdl='', print_model=False, print_results=True) -> [dict, dict, str]:
     """Template for training DL classifiers using PyTorch (incl. plotting)
     Args:
         config_ml:              Settings for handling the ML Pipeline
@@ -82,6 +82,10 @@ def do_train_autoencoder(config_ml: Config_ML_Pipeline, config_data: Config_Data
     path2folder = train_handler.get_saving_path()
     data_result = train_handler.do_validation_after_training()
 
+    # --- Save VHDL Code
+    if save_vhdl:
+        train_handler.save_model_to_vhdl(path4vhdl=path4vhdl)
+
     # --- Processing Step #3: Plotting
     if config_ml.do_plot:
         plt.close('all')
@@ -90,7 +94,7 @@ def do_train_autoencoder(config_ml: Config_ML_Pipeline, config_data: Config_Data
         plot_loss(loss_train=metrics[used_first_fold]['loss_train'],
                   loss_valid=metrics[used_first_fold]['loss_valid'],
                   type=config_train.loss, path2save=path2folder)
-        plot_statistic_data(train_cl=data_result['valid_clus'], valid_cl=data_result['valid_clus'],
+        plot_statistic_data(train_cl=data_result['train_clus'], valid_cl=data_result['valid_clus'],
                             path2save=path2folder, cl_dict=used_dataset.get_dictionary)
     # --- Output
     return metrics, data_result, path2folder
