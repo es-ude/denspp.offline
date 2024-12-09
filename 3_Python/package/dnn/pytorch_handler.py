@@ -46,7 +46,6 @@ class ModelRegistry:
             idx = 0
             for key, func in self.data.items():
                 print(f"\t#{idx:02d}: {key}")
-                # print(func.__annotations__)
                 idx += 1
 
         return [key for key in self.data.keys()]

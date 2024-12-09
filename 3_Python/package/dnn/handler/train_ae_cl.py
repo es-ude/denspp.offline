@@ -6,10 +6,10 @@ from package.dnn.pytorch_dataclass import (Config_PyTorch, DefaultSettingsTrainM
 from package.dnn.pytorch_pipeline import do_train_autoencoder, do_train_classifier, get_model_attributes
 from package.plot.plot_dnn import results_training
 
-from package.dnn.template.dataset.autoencoder import prepare_training as get_dataset_ae
-from package.dnn.template.dataset.autoencoder_class import prepare_training as get_dataset_cl
-import package.dnn.template.models.autoencoder_dnn as models_ae
-import package.dnn.template.models.autoencoder_class as models_cl
+from package.dnn.dataset.autoencoder import prepare_training as get_dataset_ae
+from package.dnn.dataset.autoencoder_class import prepare_training as get_dataset_cl
+import package.dnn.models.autoencoder_dnn as models_ae
+import package.dnn.models.autoencoder_class as models_cl
 
 
 def do_train_ae_classifier(settings: Config_ML_Pipeline, yaml_name_index='Config_ACL') -> dict:

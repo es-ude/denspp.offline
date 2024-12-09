@@ -5,8 +5,8 @@ from package.dnn.pytorch_dataclass import (Config_PyTorch, DefaultSettingsTrainC
                                            Config_Dataset, DefaultSettingsDataset)
 from package.dnn.pytorch_pipeline import do_train_classifier, do_train_autoencoder, get_model_attributes
 
-from package.dnn.template.dataset.mnist import prepare_training
-import package.dnn.template.models.mnist as models
+from package.dnn.dataset.mnist import prepare_training
+import package.dnn.models.mnist as models
 from package.plot.plot_dnn import plot_mnist_graphs
 
 

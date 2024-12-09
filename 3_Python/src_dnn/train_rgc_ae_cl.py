@@ -7,8 +7,8 @@ from package.dnn.pytorch_dataclass import (Config_Dataset, DefaultSettingsDatase
 from package.dnn.pytorch_pipeline import do_train_autoencoder, do_train_classifier, get_model_attributes
 from package.data_process.rgc_combination import rgc_logic_combination
 
-from package.dnn.template.dataset.autoencoder import prepare_training as get_dataset_ae
-from package.dnn.template.dataset.autoencoder_class import prepare_training as get_dataset_cl
+from package.dnn.dataset.autoencoder import prepare_training as get_dataset_ae
+from package.dnn.dataset.autoencoder_class import prepare_training as get_dataset_cl
 import src_dnn.models.rgc_ae_cl as models
 
 

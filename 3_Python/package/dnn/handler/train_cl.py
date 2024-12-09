@@ -5,8 +5,8 @@ from package.dnn.pytorch_dataclass import (Config_PyTorch, DefaultSettingsDatase
                                            Config_Dataset, DefaultSettingsTrainCE)
 from package.dnn.pytorch_pipeline import do_train_classifier, get_model_attributes
 
-from package.dnn.template.dataset.autoencoder import prepare_training
-import package.dnn.template.models.spike_classifier as models
+from package.dnn.dataset.autoencoder import prepare_training
+import package.dnn.models.spike_classifier as models
 
 
 def do_train_neural_spike_classification(settings: Config_ML_Pipeline, yaml_name_index='Config_Neural') -> None:

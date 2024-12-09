@@ -6,8 +6,8 @@ from package.dnn.pytorch_dataclass import (Config_PyTorch, DefaultSettingsTrainM
 from package.dnn.pytorch_pipeline import do_train_autoencoder, get_model_attributes
 
 from package.plot.plot_dnn import results_training
-from package.dnn.template.dataset.autoencoder import prepare_training
-import package.dnn.template.models.autoencoder_dnn as models
+from package.dnn.dataset.autoencoder import prepare_training
+import package.dnn.models.autoencoder_dnn as models
 from datetime import date
 
 
