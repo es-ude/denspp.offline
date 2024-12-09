@@ -39,6 +39,7 @@ def generate_iir_filter_files(data_bitsize: int, data_signed: bool,
     used_bitsize_weights = data_bitsize if weights_bitsize == 0 else weights_bitsize
     if filter_order > 2:
         raise NotImplementedError("Please reduce filter_order to 1 or 2!")
+    filter_order_effective = filter_order if filter_btype == 'low' or filter_btype == 'high' else 1
 
     # --- Getting the design template
     used_template_name = 'filter_iir_onecyc_template' if use_fast_iir else 'filter_iir_fivecyc_template'
@@ -46,7 +47,7 @@ def generate_iir_filter_files(data_bitsize: int, data_signed: bool,
     template_file = read_template_design_file(path2template)
 
     # --- Reading the filter coefficients
-    filter_emulator = filter_stage(filter_order, sampling_rate, filter_corner, True,
+    filter_emulator = filter_stage(filter_order_effective, sampling_rate, filter_corner, True,
                                    ftype=filter_ftype, btype=filter_btype)
     filter_coeff = filter_emulator.get_coeff_full()
     coeff_string = ''

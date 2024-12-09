@@ -16,11 +16,8 @@ def normalize(arr, t_min, t_max):
 
 
 class DataCompressor:
-
-    def __init__(self):
-
-            self.filepath = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), "data",
-                                         "2024-02-05_Dataset-KlaesNeuralDecoding.mat")
+    def __init__(self, path2folder: str, file_name: str):
+            self.filepath = os.path.join(path2folder, file_name)
             self.num_experiments = 21
             self.num_trials = 50
 
@@ -143,8 +140,9 @@ class DataCompressor:
         #self.print_bad_waveforms()
 
 
-trialONE = DataCompressor()
-trialONE.format_data()
-data = np.load(trialONE.get_Path("waveforms"))
-t = np.load(trialONE.get_Path("timestamps"))
-pos = np.load(trialONE.get_Path("positions"))
+if __name__ == "__main__":
+    trialONE = DataCompressor("data", "2024-02-05_Dataset-KlaesNeuralDecoding.npy")
+    trialONE.format_data()
+    data = np.load(trialONE.get_Path("waveforms"))
+    t = np.load(trialONE.get_Path("timestamps"))
+    pos = np.load(trialONE.get_Path("positions"))

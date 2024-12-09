@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 from package.pipeline_cmds import PipelineSignal
 from package.nsp.spike_analyse import calc_amplitude, calc_autocorrelogram, calc_firing_rate
-from package.plot.plot_common import cm_to_inch, save_figure, get_plot_color, scale_auto_value, sel_color
+from package.plot.plot_common import cm_to_inch, save_figure, get_plot_color, scale_auto_value
 
 color_none = ['#929591']
 text_size = 14
@@ -471,7 +471,7 @@ def plot_signals_neural_cluster(dataset, path2save='', show_plot=False) -> None:
     plt.figure()
     axs = [plt.subplot(2, int(np.ceil(num_cl/2)), 1+idx) for idx in range(num_cl)]
     for idx, frame in enumerate(dataset.__frames_me):
-        axs[idx].plot(frame, color=sel_color[idx % 7])
+        axs[idx].plot(frame, color=get_plot_color(idx))
         axs[idx].grid()
         axs[idx].set_title(dataset.__labeled_dictionary[idx])
         axs[idx].set_xlim(0, num_frame_size)

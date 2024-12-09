@@ -30,10 +30,6 @@ class StimModulator(ProcessNoise):
         """"""
         return amplitude * signal
 
-    def do_charge_stimulation(self, amplitude: float, signal: np.ndarray) -> np.ndarray:
-        """"""
-        return amplitude * signal
-
 
 RecommendedSettingsStim = SettingsSTIM(
     update_rate=20e3,

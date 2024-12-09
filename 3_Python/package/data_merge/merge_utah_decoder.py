@@ -21,7 +21,6 @@ class DatasetDecoder:
 
     def generateDataset(self, path2folder: str) -> None:
         """Function for Generating Training from Human Brain Recordings (by using Utah array)
-
         Args:
             path2folder: Specific place in which the data is stored
         """

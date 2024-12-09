@@ -4,7 +4,6 @@ from os.path import join
 from package.data_call.call_handler import _DataController, SettingsDATA, DataHandler, transform_label_from_csv_to_numpy
 
 
-# ----- Read Settings -----
 class DataLoader(_DataController):
     """Class for loading and manipulating the used dataset"""
     raw_data: DataHandler
@@ -16,20 +15,7 @@ class DataLoader(_DataController):
         self.settings = setting
         self.select_electrodes = list()
         self.path2file = str()
-
-    def do_call(self):
-        """Loading the dataset"""
-        self._prepare_call()
-        # --- Searching the load function for dataset translation
-        methods_list_all = [method for method in dir(DataLoader)]
-        search_param = '_DataLoader'
-        methods_load_data = [method for method in methods_list_all if method[0:len(search_param)] == search_param]
-
-        # --- Calling the function
-        if self.settings.data_set == 0:
-            raise ValueError("\nPlease select new input for data_type!")
-        else:
-            getattr(self, methods_load_data[self.settings.data_set - 1])()
+        self._methods_available = dir(DataLoader)
 
     def __load_method00_kirchner2023(self) -> None:
         """Loading EMG recording files from E. Kirchner (2023) working with an orthese"""

@@ -300,8 +300,6 @@ class train_nn(training_pytorch):
 
             self.model.load_state_dict(load(path2model_init))
             self._run_kfold = fold
-            self._init_writer()
-
             if self._kfold_do and self._do_print_state:
                 print(f'\nStarting with Fold #{fold}')
 
@@ -321,11 +319,6 @@ class train_nn(training_pytorch):
                           f'train_loss = {loss_train:.5f},'
                           f'\tvalid_loss = {loss_valid:.5f},'
                           f'\tdelta_loss = {loss_train - loss_valid:.6f}')
-
-                # Log the running loss averaged per batch for both training and validation
-                self._writer.add_scalar('Loss_train (AE)', loss_train, epoch + 1)
-                self._writer.add_scalar('Loss_valid (AE)', loss_valid, epoch + 1)
-                self._writer.flush()
 
                 # Tracking the best performance and saving the model
                 if loss_valid < best_loss[1]:
@@ -366,7 +359,7 @@ class train_nn(training_pytorch):
         if self._do_print_state:
             print("\n================================================================="
                   f"\nDo Validation with best model: {path2model}")
-        model_test = load(path2model)
+        model_test = load(path2model, weights_only=False)
 
         pred_model = randn(32, 1)
         feat_model = randn(32, 1)

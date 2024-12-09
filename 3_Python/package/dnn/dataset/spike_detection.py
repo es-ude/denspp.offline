@@ -1,10 +1,7 @@
 import numpy as np
-from scipy.io import loadmat
 from torch import is_tensor
 from torch.utils.data import Dataset, DataLoader
 from package.dnn.pytorch_handler import Config_Dataset
-from package.data_process.frame_augmentation import augmentation_reducing_samples
-from package.data_process.frame_normalization import DataNormalization
 
 
 class DatasetSDA(Dataset):
@@ -57,35 +54,9 @@ def prepare_training(settings: Config_Dataset, threshold: int) -> DatasetSDA:
     print("... loading the datasets")
 
     # --- MATLAB reading file
-    npzfile = loadmat(settings.get_path2data)
-    frames_in = npzfile["sda_in"]
-    frames_cl = npzfile["sda_pred"]
-
-    # --- PART: Exclusion of selected clusters
-    if len(settings.exclude_cluster):
-        for i, id in enumerate(settings.exclude_cluster):
-            selX = np.where(frames_cl != id)
-            frames_in = frames_in[selX[0], :]
-            frames_cl = frames_cl[selX]
-
-    # --- PART: Reducing samples per cluster (if too large)
-    if settings.reduce_samples_per_cluster_do:
-        print("... do data augmentation with reducing the samples per cluster")
-        frames_in, frames_cl = augmentation_reducing_samples(frames_in, frames_cl,
-                                                             settings.reduce_samples_per_cluster_num)
-
-    # --- PART: Data Normalization
-    if settings.normalization_do:
-        data_class_frames_in = DataNormalization(mode="CPU", method="minmax", do_global=False)
-        frames_in = data_class_frames_in.normalize(frames_in)
-
-    # --- Using cell library
-    if settings.use_cell_library:
-        raise NotImplementedError("No cell library for this case is available - Please disable flag!")
-
-    # --- Data Augmentation
-    if settings.augmentation_do:
-        raise NotImplementedError("No augmentation method is implemented - Please disable flag!")
+    data = settings.load_dataset()
+    frames_in = data["data"]
+    frames_cl = data["label"]
 
     # --- Output
     check = np.unique(frames_cl, return_counts=True)

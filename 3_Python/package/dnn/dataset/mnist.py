@@ -3,7 +3,6 @@ import numpy as np
 from torchvision import datasets, transforms
 from torch import is_tensor, concat
 from torch.utils.data import Dataset
-
 from package.dnn.pytorch_dataclass import Config_Dataset
 
 

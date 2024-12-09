@@ -50,7 +50,7 @@ def calculate_reference_car_2d(mea_signal: np.ndarray, mapp_used: np.ndarray, ke
 
 ###########################################################################
 if __name__ == "__main__":
-    from package.data_call.call_spike_files import DataLoader, SettingsDATA
+    from src_neuro.call_spike import DataLoader, SettingsDATA
 
     settings = SettingsDATA(
         path="C:\HomeOffice\Data_Neurosignal",

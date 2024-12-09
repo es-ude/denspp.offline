@@ -2,7 +2,6 @@ from os.path import join
 import numpy as np
 from time import time_ns
 from datetime import datetime
-from scipy.io import savemat
 from tqdm import tqdm
 
 from package.data_call.call_handler import _DataController
@@ -23,7 +22,7 @@ def prepare_sda_dataset(path2save: str, slice_size=12, process_points=[]) -> Non
     print("\nStart merging datasets for generating a dataset for train spike detection algorithms (SDA)")
     print(f"... loading the datasets")
     datahandler = _DataController(afe_set.SettingsDATA)
-    datahandler.do_call()
+    datahandler
     datahandler.do_resample()
     data = datahandler.get_data()
     del datahandler
@@ -61,11 +60,12 @@ def prepare_sda_dataset(path2save: str, slice_size=12, process_points=[]) -> Non
     # --- Saving results
     create_time = datetime.now().strftime("%Y-%m-%d")
     mdict = {'fs_adc': fs_adc,
-             'sda_in': sda_input[0],
-             'sda_pred': sda_pred[0],
-             'sda_xpos': xpos}
-    newfile_name = join(path2save, create_time + '_SDA_Dataset' + '.mat')
-    savemat(newfile_name, mdict)
+             'data': sda_input[0],
+             'label': sda_pred[0],
+             'xpos': xpos,
+             'create_on': create_time}
+    newfile_name = join(path2save, create_time + '_SDA_Dataset.npy')
+    np.save(newfile_name, mdict, allow_pickle=True)
     print('... saving results in: ' + newfile_name)
 
     delta_time = 1e-9 * (time_ns() - timepoint_start)
