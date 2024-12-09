@@ -34,9 +34,7 @@ class ModelRegistry:
 
     def build_model(self, name: str, *args, **kwargs):
         """Build the model"""
-        model = self.data[name](*args, **kwargs)
-        print(model.__annotations__)
-        return model
+        return self.data[name](*args, **kwargs)
 
     def get_model_overview(self, do_print=True) -> list:
         """Getting an overview of existing models in library"""

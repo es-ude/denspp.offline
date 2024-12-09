@@ -26,7 +26,7 @@ def do_train_neural_autoencoder(settings: Config_ML_Pipeline, yaml_name_index='C
 
     # --- Loading the YAML file: Model training
     default_train = deepcopy(DefaultSettingsTrainMSE)
-    default_train.model_name = get_model_attributes(models, '_v')
+    default_train.model_name = get_model_attributes(models, '_ae_v')
     yaml_nn = yaml_config_handler(default_train, settings.get_path2config, f'{yaml_name_index}_Training')
     config_train = yaml_nn.get_class(Config_PyTorch)
     del default_train, yaml_nn
