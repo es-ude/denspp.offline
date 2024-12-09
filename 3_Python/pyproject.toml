@@ -21,9 +21,74 @@ dependencies = [
     "torchinfo>=1.8.0",
     "torchvision>=0.20.1",
     "tqdm>=4.67.1",
+    "logging>=0.4.9.6",
+    "logdecorator==2.*"
 ]
 
 [dependency-groups]
 dev = [
     "pytest>=8.3.3",
 ]
+lint = [
+    "rope>=1.13.0",
+    "mypy>=1.13.0",
+    "ruff>=0.8.2",
+    "python-lsp-server>=1.12.0",
+    "pylsp-mypy>=0.6.9",
+    "python-lsp-ruff>=2.2.2",
+]
+
+[tool.ruff]
+exclude = [
+    ".ipynp",
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+]
+line-length = 88
+indent-width = 4
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "F",   # pyflakes
+    "B",   # flake8-bugbear
+    "E",   # pycodestyle
+    "D",   # pydocstyle
+    "I",   # isort
+    "ANN", # flake8 type annotations
+    "RUF", # ruff-specific rules
+]
+unfixable = ["B"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+docstring-code-format = false
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
