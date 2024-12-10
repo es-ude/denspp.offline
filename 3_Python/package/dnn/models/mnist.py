@@ -1,17 +1,16 @@
 from torch import nn, Tensor, argmax, flatten, reshape
-from package.dnn.pytorch_handler import __model_settings_common, ModelRegistry
+from package.dnn.model_library import ModelRegistry
 
 
-models_available = ModelRegistry()
+models_bib = ModelRegistry()
 
 
-@models_available.register
-class mnist_mlp_cl_v1(__model_settings_common):
+@models_bib.register
+class mnist_mlp_cl_v1(nn.Module):
     """Class of a classifier with Dense-Layer for feature extraction"""
     def __init__(self):
-        super().__init__('Classifier')
+        super().__init__()
         self.model_shape = (1, 28, 28)
-        self.model_embedded = False
         # --- Settings of model
         do_train_bias = True
         do_train_batch = True
@@ -34,13 +33,12 @@ class mnist_mlp_cl_v1(__model_settings_common):
         return prob, argmax(prob, 1)
 
 
-@models_available.register
-class mnist_mlp_ae_v1(__model_settings_common):
+@models_bib.register
+class mnist_mlp_ae_v1(nn.Module):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
     def __init__(self):
-        super().__init__('Autoencoder')
+        super().__init__()
         self.model_shape = (1, 28, 28)
-        self.model_embedded = False
         # --- Settings of model
         do_train_bias = True
         do_train_batch = True

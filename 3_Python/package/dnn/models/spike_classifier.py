@@ -1,17 +1,16 @@
 from torch import nn, Tensor, argmax, flatten
-from package.dnn.pytorch_handler import __model_settings_common, ModelRegistry
+from package.dnn.model_library import ModelRegistry
 
 
-models_available = ModelRegistry()
+models_bib = ModelRegistry()
 
 
-@models_available.register
-class spike_cl_v1(__model_settings_common):
+@models_bib.register
+class synthetic__cl_v1(nn.Module):
     def __init__(self, input_size=32, output_size=5):
         """DL model for classifying neural spike activity (MLP)"""
-        super().__init__('Classifier')
+        super().__init__()
         self.model_shape = (1, input_size)
-        self.model_embedded = False
         # --- Settings of model
         do_train_bias = True
         do_train_batch = True

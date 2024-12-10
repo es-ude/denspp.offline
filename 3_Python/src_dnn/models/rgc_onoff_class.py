@@ -1,17 +1,16 @@
 from torch import nn, Tensor, argmax, unsqueeze
-from package.dnn.pytorch_handler import __model_settings_common, ModelRegistry
+from package.dnn.model_library import ModelRegistry
 
 
-models_available = ModelRegistry()
+models_bib = ModelRegistry()
 
 
-@models_available.register
-class dnn_rgc_v1(__model_settings_common):
+@models_bib.register
+class rgc_onoff_tdb_dnn_cl_v1(nn.Module):
     """Classification model"""
     def __init__(self, input_size=32, output_size=4):
-        super().__init__('Classifier')
+        super().__init__()
         self.model_shape = (1, input_size)
-        self.model_embedded = False
         lin_size = [input_size, 45, 32, 28, 16, output_size]
         lin_drop = [0.1, 0.1, 0.15, 0.05]
         do_train_bias = True
@@ -43,13 +42,12 @@ class dnn_rgc_v1(__model_settings_common):
         return val, argmax(val, dim=1)
 
 
-@models_available.register
-class dnn_rgc_v2(__model_settings_common):
+@models_bib.register
+class rgc_onoff_tdb_dnn_cl_v2(nn.Module):
     """Classification model"""
     def __init__(self, input_size=32, output_size=4):
-        super().__init__('Classifier')
+        super().__init__()
         self.model_shape = (1, input_size)
-        self.model_embedded = False
         lin_size = [input_size, 64, 72, 58, 36, 24, output_size]
         lin_drop = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         do_train_bias = True
@@ -86,12 +84,11 @@ class dnn_rgc_v2(__model_settings_common):
         return val, argmax(val, dim=1)
 
 
-@models_available.register
-class cnn_rgc_onoff_v1(__model_settings_common):
+@models_bib.register
+class rgc_onoff_tdb_cnn_cl_v1(nn.Module):
     """Classification model"""
     def __init__(self, input_size=32, output_size=4):
-        super().__init__('Classifier')
-        self.model_embedded = False
+        super().__init__()
         self.model_shape = (1, input_size)
         kernel_layer = [28, 40, 24, 16, 12]
         kernel_size = [4, 4, 3, 3, 2]
@@ -149,12 +146,11 @@ class cnn_rgc_onoff_v1(__model_settings_common):
         return val, argmax(val, dim=1)
 
 
-@models_available.register
-class cnn_rgc_onoff_v2(__model_settings_common):
+@models_bib.register
+class rgc_onoff_classifier_cnn_cl_v2(nn.Module):
     """Classification model"""
     def __init__(self, input_size=32, output_size=4):
-        super().__init__('Classifier')
-        self.model_embedded = False
+        super().__init__()
         self.model_shape = (1, input_size)
         kernel_layer = [28, 40, 24, 16, 12]
         kernel_size = [4, 4, 3, 3, 2]

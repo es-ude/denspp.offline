@@ -1,14 +1,16 @@
 from torch import nn, Tensor, argmax, flatten, reshape
-from package.dnn.pytorch_handler import __model_settings_common, ModelRegistry
+from package.dnn.model_library import ModelRegistry
 
 
-models_available = ModelRegistry()
+models_bib = ModelRegistry()
 
 
-@models_available.register
-class mnist_gki_v0(__model_settings_common):
+@models_bib.register
+class mnist_test_cl_v0(nn.Module):
     def __init__(self):
-        super().__init__('Classifier')
+        super().__init__()
+        self.model_shape = (1, 28, 28)
+
         self.model = nn.Sequential(
             nn.Linear(784, 10)
         )
@@ -19,10 +21,12 @@ class mnist_gki_v0(__model_settings_common):
         return prob, argmax(prob, 1)
 
 
-@models_available.register
-class mnist_gki_v1(__model_settings_common):
+@models_bib.register
+class mnist_test_cl_v1(nn.Module):
     def __init__(self):
-        super().__init__('Classifier')
+        super().__init__()
+        self.model_shape = (1, 28, 28)
+
         self.model = nn.Sequential(
             nn.Linear(784, 10),
             nn.ReLU()
@@ -34,10 +38,12 @@ class mnist_gki_v1(__model_settings_common):
         return prob, argmax(prob, 1)
 
 
-@models_available.register
-class mnist_gki_v2(__model_settings_common):
+@models_bib.register
+class mnist_test_cl_v2(nn.Module):
     def __init__(self):
-        super().__init__('Classifier')
+        super().__init__()
+        self.model_shape = (1, 28, 28)
+
         self.model = nn.Sequential(
             nn.Linear(784, 10),
             nn.Softmax(dim=1)
@@ -49,10 +55,12 @@ class mnist_gki_v2(__model_settings_common):
         return prob, argmax(prob, 1)
 
 
-@models_available.register
-class mnist_gki_v3(__model_settings_common):
+@models_bib.register
+class mnist_test_cl_v3(nn.Module):
     def __init__(self):
-        super().__init__('Classifier')
+        super().__init__()
+        self.model_shape = (1, 28, 28)
+
         self.model = nn.Sequential(
             nn.Linear(784, 10),
             nn.BatchNorm1d(10),
@@ -65,10 +73,12 @@ class mnist_gki_v3(__model_settings_common):
         return prob, argmax(prob, 1)
 
 
-@models_available.register
-class mnist_gki_v4(__model_settings_common):
+@models_bib.register
+class mnist_test_cl_v4(nn.Module):
     def __init__(self):
-        super().__init__('Classifier')
+        super().__init__()
+        self.model_shape = (1, 28, 28)
+
         self.model = nn.Sequential(
             nn.Linear(784, 10),
             nn.BatchNorm1d(10),
@@ -81,10 +91,12 @@ class mnist_gki_v4(__model_settings_common):
         return prob, argmax(prob, 1)
 
 
-@models_available.register
-class mnist_gki_v5(__model_settings_common):
+@models_bib.register
+class mnist_test_cl_v5(nn.Module):
     def __init__(self):
-        super().__init__('Classifier')
+        super().__init__()
+        self.model_shape = (1, 28, 28)
+
         self.model = nn.Sequential(
             nn.Linear(784, 250),
             nn.BatchNorm1d(250),
@@ -100,10 +112,12 @@ class mnist_gki_v5(__model_settings_common):
         return prob, argmax(prob, 1)
 
 
-@models_available.register
-class mnist_gki_v6(__model_settings_common):
+@models_bib.register
+class mnist_test_cl_v6(nn.Module):
     def __init__(self):
-        super().__init__('Classifier')
+        super().__init__()
+        self.model_shape = (1, 28, 28)
+
         self.model = nn.Sequential(
             nn.Linear(784, 400),
             nn.BatchNorm1d(400),
@@ -125,11 +139,13 @@ class mnist_gki_v6(__model_settings_common):
         return prob, argmax(prob, 1)
 
 
-@models_available.register
-class mnist_gki_v7(__model_settings_common):
+@models_bib.register
+class mnist_test_cl_v7(nn.Module):
     def __init__(self):
-        super().__init__('Classifier')
+        super().__init__()
+        self.model_shape = (1, 28, 28)
         feature_size = [16, 24, 32]
+
         self.model_cnn = nn.Sequential(
             nn.Conv2d(1, feature_size[0], 4, 1, 1),
             nn.BatchNorm2d(num_features=feature_size[0]),
@@ -165,11 +181,12 @@ class mnist_gki_v7(__model_settings_common):
         return prob, argmax(prob, 1)
 
 
-@models_available.register
-class mnist_gki_v8(__model_settings_common):
+@models_bib.register
+class mnist_test_cl_v8(nn.Module):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
     def __init__(self):
-        super().__init__('Autoencoder')
+        super().__init__()
+        self.model_shape = (1, 28, 28)
         # --- Settings of model
         do_train_bias = True
         do_train_batch = True

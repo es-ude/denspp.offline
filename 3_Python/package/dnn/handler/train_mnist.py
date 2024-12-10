@@ -1,13 +1,12 @@
 from copy import deepcopy
 from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import Config_ML_Pipeline
-from package.dnn.pytorch_dataclass import (Config_PyTorch, DefaultSettingsTrainCE, DefaultSettingsTrainMSE,
-                                           Config_Dataset, DefaultSettingsDataset)
-from package.dnn.pytorch_pipeline import do_train_classifier, do_train_autoencoder, get_model_attributes
-
+from package.dnn.pytorch_config_data import Config_Dataset, DefaultSettingsDataset
+from package.dnn.pytorch_config_model import Config_PyTorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE
+from package.dnn.pytorch_pipeline import do_train_classifier, do_train_autoencoder
 from package.dnn.dataset.mnist import prepare_training
-import package.dnn.models.mnist as models
 from package.plot.plot_dnn import plot_mnist_graphs
+import package.dnn.models.mnist as models
 
 
 def do_train_cl(settings: Config_ML_Pipeline, yaml_name_index='Config_MNIST', custom_metrics=()) -> None:
@@ -15,28 +14,26 @@ def do_train_cl(settings: Config_ML_Pipeline, yaml_name_index='Config_MNIST', cu
     Args:
         settings:           Handler for configuring the routine selection for train deep neural networks
         yaml_name_index:    Index of yaml file name for saving and configure configuration
-        custom_metrics:     List with metrics for calculation during validation phase
-                            ['accuracy', 'precision', 'recall', 'fbeta']
+        custom_metrics:     List with metrics for calculation during validation phase ['accuracy', 'precision', 'recall', 'fbeta']
     Returns:
         None
     """
     # --- Loading the YAML files: Dataset
     default_data = deepcopy(DefaultSettingsDataset)
     default_data.data_path = 'data'
-    yaml_data = yaml_config_handler(default_data,
-                                    path2yaml=settings.get_path2config, yaml_name=f'{yaml_name_index}_Dataset')
+    default_data.data_file_name = 'MNIST'
+    yaml_data = yaml_config_handler(default_data, path2yaml=settings.get_path2config, yaml_name=f'{yaml_name_index}_Dataset')
     config_data = yaml_data.get_class(Config_Dataset)
 
     # --- Loading the YAML file: Model training
     default_train = deepcopy(DefaultSettingsTrainCE)
-    default_train.model_name = get_model_attributes(models, '_cl_v')
-    yaml_train = yaml_config_handler(default_train,
-                                     path2yaml=settings.get_path2config, yaml_name=f'{yaml_name_index}_TrainCL')
+    default_train.model_name = ''
+    yaml_train = yaml_config_handler(default_train, path2yaml=settings.get_path2config, yaml_name=f'{yaml_name_index}_TrainCL')
     config_train = yaml_train.get_class(Config_PyTorch)
 
     # --- Loading Data, Build Model and Do Training
     dataset = prepare_training(config_data, True)
-    used_model = models.models_available.build_model(config_train.model_name)
+    used_model = config_train.get_model()
     do_train_classifier(
         config_ml=settings, config_data=config_data, config_train=config_train,
         used_dataset=dataset, used_model=used_model, calc_custom_metrics=custom_metrics
@@ -54,20 +51,19 @@ def do_train_ae(settings: Config_ML_Pipeline, yaml_name_index='Config_MNIST') ->
     # --- Loading the YAML file: Dataset
     default_data = DefaultSettingsDataset
     default_data.data_path = 'data'
+    default_data.data_file_name = 'MNIST'
     yaml_data = yaml_config_handler(default_data, settings.get_path2config, f'{yaml_name_index}_Dataset')
     config_data = yaml_data.get_class(Config_Dataset)
 
     # --- Loading the YAML file: Model training
     default_train = DefaultSettingsTrainMSE
-    default_train.model_name = get_model_attributes(models, '_ae_v')
+    default_train.model_name = ''
     yaml_train = yaml_config_handler(default_train, settings.get_path2config, f'{yaml_name_index}_TrainAE')
     config_train = yaml_train.get_class(Config_PyTorch)
 
     # --- Loading Data, Build Model and Do Training
-    print(config_data.get_path2data)
-
     dataset = prepare_training(config_data, False)
-    used_model = models.models_available.build_model(config_train.model_name)
+    used_model = config_train.get_model()
     metrics, data_result, path2save = do_train_autoencoder(
         config_ml=settings, config_data=config_data, config_train=config_train,
         used_dataset=dataset, used_model=used_model

@@ -1,6 +1,6 @@
 import numpy as np
 
-from package.dnn.pytorch_dataclass import Config_Dataset
+from package.dnn.pytorch_config_data import Config_Dataset
 from package.digital.fex import SettingsFeature, FeatureExtraction
 from package.digital.cluster import SettingsCluster, Clustering
 from package.plot.plot_dnn import plot_3d_featspace, translate_feats_into_list

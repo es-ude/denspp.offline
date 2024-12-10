@@ -32,6 +32,11 @@ class DatasetSDA(Dataset):
         """Getting the information of used Autoencoder topology"""
         return 'Spike Detection Algorithm'
 
+    @property
+    def get_cluster_num(self) -> int:
+        """"""
+        return int(np.unique(self.__sda_class).size)
+
 
 def prepare_plotting(data_in: DataLoader) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Getting data from DataLoader for Plotting Results"""

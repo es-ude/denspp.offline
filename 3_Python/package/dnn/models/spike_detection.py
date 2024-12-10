@@ -1,12 +1,12 @@
 from torch import nn, Tensor, unsqueeze, argmax
-from package.dnn.pytorch_handler import __model_settings_common, ModelRegistry
+from package.dnn.model_library import ModelRegistry
 
 
-models_available = ModelRegistry()
+models_bib = ModelRegistry()
 
 
-@models_available.register
-class dnn_sda_v1(__model_settings_common):
+@models_bib.register
+class sda_dnn_v1(nn.Module):
     """Class of a dense-layer based spike detection classifier"""
     def __init__(self, input_size=9, output_size=2):
         super().__init__('Classifier')
@@ -33,11 +33,11 @@ class dnn_sda_v1(__model_settings_common):
         return xdist, argmax(xdist, dim=1)
 
 
-@models_available.register
-class cnn_sda_v1(__model_settings_common):
+@models_bib.register
+class sda_cnn_v1(nn.Module):
     """Class of a convolutional spike detection classifier"""
     def __init__(self, input_size=9, output_size=2):
-        super().__init__('Classifier')
+        super().__init__()
         self.model_embedded = False
         self.model_shape = (1, input_size)
         kernel_layer = [1, 4, 3]

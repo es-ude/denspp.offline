@@ -35,6 +35,11 @@ class DatasetClassifier(Dataset):
         """Getting the information of used Autoencoder topology"""
         return 'Classification'
 
+    @property
+    def get_cluster_num(self) -> int:
+        """"""
+        return int(np.unique(self.__frame_cellid).size)
+
 
 def prepare_training(settings: Config_Dataset) -> DatasetClassifier:
     """Preparing dataset incl. augmentation for spike-detection-based training

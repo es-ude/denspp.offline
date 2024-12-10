@@ -1,9 +1,7 @@
-import os
 import numpy as np
-from torchvision import datasets, transforms
-from torch import is_tensor, concat
+from torch import is_tensor
 from torch.utils.data import Dataset
-from package.dnn.pytorch_dataclass import Config_Dataset
+from package.dnn.pytorch_config_data import Config_Dataset
 
 
 class DatasetMNIST(Dataset):
@@ -41,34 +39,10 @@ class DatasetMNIST(Dataset):
         """Getting the information of used Autoencoder topology"""
         return "MNIST" + (" (Classification)" if self.__do_classification else " (Autoencoder)")
 
-
-def load_mnist(data_path: str) -> [datasets.MNIST, datasets.MNIST]:
-    """Loading MNIST dataset and preparing for training
-    Args:
-        data_path:  String for finding the MNIST data locally
-    Returns:
-        Two dataset arrays with [training samples, validation samples]
-    """
-    # --- Checking if dataset exists
-    if not os.path.exists(data_path):
-        os.makedirs(data_path)
-        do_download = True
-    else:
-        path2mnist = os.path.join(data_path, 'MNIST')
-        if not os.path.exists(path2mnist):
-            do_download = True
-        else:
-            do_download = False
-
-    # --- Resampling of MNIST dataset
-    transform = transforms.Compose([
-        transforms.Resize((28, 28)),
-        transforms.Grayscale(),
-        transforms.ToTensor()])
-
-    data_train = datasets.MNIST(data_path, train=True, download=do_download, transform=transform)
-    data_valid = datasets.MNIST(data_path, train=False, download=do_download, transform=transform)
-    return data_train, data_valid
+    @property
+    def get_cluster_num(self) -> int:
+        """"""
+        return int(np.unique(self.__cluster_id).size)
 
 
 def prepare_training(settings: Config_Dataset, do_classification=True) -> DatasetMNIST:
@@ -79,12 +53,10 @@ def prepare_training(settings: Config_Dataset, do_classification=True) -> Datase
     Returns:
         Getting the prepared Dataset for MNIST
     """
-    data_train, data_valid = load_mnist(settings.get_path2folder_data)
-
-    # --- Translating data to common
-    data_raw = concat((data_train.data, data_valid.data), 0).numpy()
-    data_label = concat((data_train.targets, data_valid.targets), 0).numpy()
-    data_dict = data_train.classes
+    dataset = settings.load_dataset()
+    data_raw = dataset['data']
+    data_dict = dataset['dict']
+    data_label = dataset['label']
 
     # --- Normalization
     if settings.normalization_do:

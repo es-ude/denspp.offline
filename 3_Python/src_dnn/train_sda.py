@@ -1,11 +1,10 @@
 from copy import deepcopy
 from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import Config_ML_Pipeline
-from package.dnn.pytorch_dataclass import Config_Dataset, DefaultSettingsDataset, Config_PyTorch, DefaultSettingsTrainCE
-from package.dnn.pytorch_pipeline import do_train_classifier, get_model_attributes
-
+from package.dnn.pytorch_config_data import Config_Dataset, DefaultSettingsDataset
+from package.dnn.pytorch_config_model import Config_PyTorch, DefaultSettingsTrainCE
+from package.dnn.pytorch_pipeline import do_train_classifier
 from package.dnn.dataset.spike_detection import prepare_training
-import package.dnn.models.spike_detection as models
 
 
 def dnn_train_sda(settings: Config_ML_Pipeline, sda_threshold=4) -> None:
@@ -17,18 +16,20 @@ def dnn_train_sda(settings: Config_ML_Pipeline, sda_threshold=4) -> None:
         None
     """
     # --- Loading the YAML file: Dataset
+    default_data = deepcopy(DefaultSettingsDataset)
+    default_data.data_file_name = ''
     yaml_data = yaml_config_handler(DefaultSettingsDataset, yaml_name='Config_SDA_Dataset')
     config_data = yaml_data.get_class(Config_Dataset)
 
     # --- Loading the YAML file: Model training
     default_train = deepcopy(DefaultSettingsTrainCE)
-    default_train.model_name = get_model_attributes(models, '_v')
+    default_train.model_name = ''
     yaml_train = yaml_config_handler(default_train, 'config', 'Config_SDA_Train')
     config_train = yaml_train.get_class(Config_PyTorch)
 
     # --- Loading Data, Build Model and Do Training
     used_dataset = prepare_training(config_data, sda_threshold)
-    used_model = models.models_available.build_model(config_train.model_name)
+    used_model = config_train.get_model()
     do_train_classifier(
         config_ml=settings, config_data=config_data, config_train=config_train,
         used_dataset=used_dataset, used_model=used_model

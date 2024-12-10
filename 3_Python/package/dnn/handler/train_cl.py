@@ -1,12 +1,10 @@
 from copy import deepcopy
 from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import Config_ML_Pipeline
-from package.dnn.pytorch_dataclass import (Config_PyTorch, DefaultSettingsDataset,
-                                           Config_Dataset, DefaultSettingsTrainCE)
-from package.dnn.pytorch_pipeline import do_train_classifier, get_model_attributes
-
-from package.dnn.dataset.autoencoder import prepare_training
-import package.dnn.models.spike_classifier as models
+from package.dnn.pytorch_config_data import Config_Dataset, DefaultSettingsDataset
+from package.dnn.pytorch_config_model import Config_PyTorch, DefaultSettingsTrainCE
+from package.dnn.pytorch_pipeline import do_train_classifier
+from package.dnn.dataset.classifier import prepare_training
 
 
 def do_train_neural_spike_classification(settings: Config_ML_Pipeline, yaml_name_index='Config_Neural') -> None:
@@ -23,13 +21,13 @@ def do_train_neural_spike_classification(settings: Config_ML_Pipeline, yaml_name
 
     # --- Loading the YAML file: Model training
     default_train = deepcopy(DefaultSettingsTrainCE)
-    default_train.model_name = get_model_attributes(models, '_v')
+    default_train.model_name = ''
     yaml_train = yaml_config_handler(default_train, settings.get_path2config, f'{yaml_name_index}_TrainCL')
     config_train = yaml_train.get_class(Config_PyTorch)
 
     # --- Loading Data, Build Model and Do Inference
-    dataset = prepare_training(config_data, do_classification=True)
-    used_model = models.models_available.build_model(config_train.model_name)
+    dataset = prepare_training(config_data)
+    used_model = config_train.get_model()
     do_train_classifier(
         config_ml=settings, config_data=config_data, config_train=config_train,
         used_dataset=dataset, used_model=used_model

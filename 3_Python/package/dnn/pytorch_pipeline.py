@@ -2,20 +2,11 @@ import matplotlib.pyplot as plt
 from package.plot.plot_dnn import plot_statistic_data
 from package.plot.plot_metric import plot_confusion, plot_loss
 from package.dnn.dnn_handler import Config_ML_Pipeline
-from package.dnn.pytorch_dataclass import Config_Dataset, Config_PyTorch
+from package.dnn.pytorch_config_data import Config_Dataset
+from package.dnn.pytorch_config_model import Config_PyTorch
 from package.dnn.pytorch.classifier import train_nn as train_nn_cl
 from package.dnn.pytorch.autoencoder import train_nn as train_nn_ae
 
-
-def get_model_attributes(func, attribute: str) -> str:
-    """"""
-    methods_available = dir(func)
-
-    methods_choose = list()
-    for key in methods_available:
-        if attribute in key:
-            methods_choose.append(key)
-    return methods_choose[-1]
 
 def do_train_classifier(config_ml: Config_ML_Pipeline, config_data: Config_Dataset,
                         config_train: Config_PyTorch, used_dataset, used_model,

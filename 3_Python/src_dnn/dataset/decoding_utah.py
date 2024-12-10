@@ -354,7 +354,7 @@ def __counting_dataset(dataset_decision, label_dict):
 
 
 if __name__ == "__main__":
-    from package.dnn.pytorch_dataclass import DefaultSettingsDataset
+    from package.dnn.pytorch_config_data import DefaultSettingsDataset
 
     default_settings = DefaultSettingsDataset
     default_settings.data_path = 'data'

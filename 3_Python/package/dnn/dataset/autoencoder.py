@@ -1,7 +1,7 @@
 import numpy as np
 from torch import is_tensor
 from torch.utils.data import Dataset
-from package.dnn.pytorch_dataclass import Config_Dataset
+from package.dnn.pytorch_config_data import Config_Dataset
 
 
 class DatasetAE(Dataset):

@@ -3,7 +3,7 @@ from os.path import join
 from glob import glob
 from torch import is_tensor, load, from_numpy
 from torch.utils.data import Dataset
-from package.dnn.pytorch_dataclass import Config_Dataset
+from package.dnn.pytorch_config_data import Config_Dataset
 
 
 class DatasetAE_Class(Dataset):

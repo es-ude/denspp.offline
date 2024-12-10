@@ -1,17 +1,16 @@
 from torch import nn, Tensor, argmax
-from package.dnn.pytorch_handler import __model_settings_common, ModelRegistry
+from package.dnn.model_library import ModelRegistry
 
 
-models_available = ModelRegistry()
+models_bib = ModelRegistry()
 
 
-@models_available.register
-class classifier_ae_v1(__model_settings_common):
+@models_bib.register
+class synthetic_ae_cl_v1(nn.Module):
     """Classification model of autoencoder output"""
     def __init__(self, input_size=6, output_size=5):
-        super().__init__('Classifier')
+        super().__init__()
         self.model_shape = (1, input_size)
-        self.model_embedded = False
         lin_size = [input_size, 16, 12, output_size]
         lin_drop = [0.0, 0.0]
         do_train_bias = True
@@ -34,3 +33,8 @@ class classifier_ae_v1(__model_settings_common):
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
         val = self.classifier(x)
         return val, argmax(val, dim=1)
+
+
+if __name__ == "__main__":
+    models_bib.get_model_library_overview()
+    print(".done")

@@ -1,17 +1,16 @@
 from torch import nn, Tensor, unsqueeze, argmax
-from package.dnn.pytorch_handler import __model_settings_common, ModelRegistry
+from package.dnn.model_library import ModelRegistry
 
 
-models_available = ModelRegistry()
+models_bib = ModelRegistry()
 
 
-@models_available.register
-class cnn_ae_v1(__model_settings_common):
+@models_bib.register
+class synthetic_cnn_ae_v1(nn.Module):
     def __init__(self, input_size=32, output_size=5):
         """Class of a convolutional autoencoder for feature extraction"""
-        super().__init__('Autoencoder')
+        super().__init__()
         self.model_shape = (1, 32)
-        self.model_embedded = False
         do_bias_train = True
         kernel_layer = [1, 16, 6, 1]
         kernel_size = [4, 3, 2]
@@ -55,12 +54,11 @@ class cnn_ae_v1(__model_settings_common):
         return self.flatten(encoded), self.flatten(decoded)
 
 
-@models_available.register
-class cnn_ae_v2(__model_settings_common):
+@models_bib.register
+class synthetic_cnn_ae_v2(nn.Module):
     def __init__(self, input_size=32, output_size=5):
         """Class of a convolutional autoencoder for feature extraction"""
-        super().__init__('Autoencoder')
-        self.model_embedded = False
+        super().__init__()
         self.model_shape = (1, 32)
         do_bias_train = True
         kernel_layer = [1, 22, 8, 3]
@@ -115,12 +113,11 @@ class cnn_ae_v2(__model_settings_common):
         return self.flatten(encoded), self.flatten(decoded)
 
 
-@models_available.register
-class cnn_ae_v3(__model_settings_common):
+@models_bib.register
+class synthetic_cnn_ae_v3(nn.Module):
     def __init__(self, input_size=32, output_size=6):
         """Class of a convolutional autoencoder for feature extraction"""
-        super().__init__('Autoencoder')
-        self.model_embedded = False
+        super().__init__()
         self.model_shape = (1, 32)
         do_bias_train = True
         kernel_layer = [1, 40, 22, 8]
@@ -192,12 +189,11 @@ class cnn_ae_v3(__model_settings_common):
         return encoded, self.flatten(decoded)
 
 
-@models_available.register
-class cnn_ae_v4(__model_settings_common):
+@models_bib.register
+class synthetic_cnn_ae_v4(nn.Module):
     def __init__(self, input_size=32, output_size=8):
         """Class of a convolutional autoencoder for feature extraction"""
-        super().__init__('Autoencoder')
-        self.model_embedded = False
+        super().__init__()
         self.model_shape = (1, 32)
         do_bias_train = True
         kernel_layer = [1, 42, 22, output_size]
