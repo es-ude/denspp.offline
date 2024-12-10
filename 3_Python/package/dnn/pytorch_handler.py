@@ -1,85 +1,23 @@
 from os import remove, getcwd, makedirs
-from os.path import join, exists
+from os.path import join
 import platform
 from copy import deepcopy
 import cpuinfo
 import numpy as np
 from random import seed
-
 from shutil import rmtree
 from glob import glob
 from datetime import datetime
-
-from torch import (Tensor, is_tensor, zeros, unique, argwhere, float32, Generator, manual_seed, use_deterministic_algorithms)
-
-from torch import device, cuda, backends, nn, randn, cat
+from torch import (device, cuda, backends, nn, randn, cat, Tensor, is_tensor, zeros, unique, argwhere, float32,
+                   Generator, manual_seed, use_deterministic_algorithms)
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
 from sklearn.model_selection import KFold
 
-from package.dnn.pytorch_dataclass import Config_Dataset, Config_PyTorch
+from package.dnn.pytorch_config_data import Config_Dataset
+from package.dnn.pytorch_config_model import Config_PyTorch
 from package.structure_builder import create_folder_general_firstrun, create_folder_dnn_firstrun
 from package.yaml_handler import translate_dataclass_to_dict, write_dict_to_yaml
-
-
-class ModelRegistry:
-    def __init__(self):
-        """Class for building the overview of neural networks"""
-        self.data = {}
-
-    def register(self, fn):
-        """Adding a class with neural network topology to system"""
-        self.data[fn.__name__] = fn
-        return fn
-
-    def build_model(self, name: str, *args, **kwargs):
-        """Build the model"""
-        return self.data[name](*args, **kwargs)
-
-    def get_model_overview(self, do_print=True) -> list:
-        """Getting an overview of existing models in library"""
-        if do_print:
-            print("\nOverview of available neural network models"
-                  "\n====================================================")
-            idx = 0
-            for key, func in self.data.items():
-                print(f"\t#{idx:02d}: {key}")
-                idx += 1
-
-        return [key for key in self.data.keys()]
-
-
-class __model_settings_common(nn.Module):
-    model: nn.Sequential
-
-    def __init__(self, type_model: str):
-        """"""
-        super().__init__()
-        self.model_shape = (1, 28, 28)
-        self.model_embedded = False
-        self.out_modeltyp = type_model
-        self.out_modelname = self.get_modelname
-
-    @property
-    def get_modelname(self) -> str:
-        """Getting the name of the model"""
-        return self.__class__.__name__ + self.__get_addon
-
-    @property
-    def __get_addon(self) -> str:
-        """Getting the prefix / addon of used network topology"""
-        search_space = {'Classifier': '_cl', 'Autoencoder': '_ae', 'CNN+LSTM': '_2d'}
-
-        addon = '_unknown'
-        for key, addon in search_space.items():
-            if self.out_modeltyp in key:
-                break
-        return addon
-
-    @property
-    def get_topology(self) -> str:
-        """Getting the model name defined in models"""
-        return self.out_modeltyp
 
 
 class training_pytorch:
@@ -122,8 +60,6 @@ class training_pytorch:
         self.settings_data = config_dataset
         self._index_folder = 'train' if do_train else 'inference'
         self._do_print_state = do_print
-        self._aitype = str()
-        self._model_name = str()
         self._model_addon = str()
         # --- Logging paths for saving
         self.__check_start_folder()
@@ -171,7 +107,7 @@ class training_pytorch:
     def _init_train(self, path2save='', addon='') -> None:
         """Do init of class for training"""
         if not path2save:
-            folder_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{self._index_folder}_{self._model_name}'
+            folder_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{self._index_folder}_{self.model.__class__.__name__}'
             self._path2save = join(self._path2run, folder_name)
         else:
             self._path2save = path2save
@@ -186,10 +122,8 @@ class training_pytorch:
         self.model.to(device=self.used_hw_dev)
 
         # --- Copy settings to YAML file
-        write_dict_to_yaml(translate_dataclass_to_dict(self.settings_data),
-                           filename='Config_Dataset', path2save=self._path2save)
-        write_dict_to_yaml(translate_dataclass_to_dict(self.settings_train),
-                           filename=f'Config_Training{addon}', path2save=self._path2save)
+        write_dict_to_yaml(translate_dataclass_to_dict(self.settings_data), filename='Config_Dataset', path2save=self._path2save)
+        write_dict_to_yaml(translate_dataclass_to_dict(self.settings_train), filename=f'Config_Training{addon}', path2save=self._path2save)
 
     def __deterministic_training_preparation(self) -> None:
         """Preparing the CUDA hardware for deterministic training"""
@@ -294,8 +228,6 @@ class training_pytorch:
             None
         """
         self.model = model
-        self._aitype = model.out_modeltyp
-        self._model_name = model.out_modelname
         self.optimizer = self.settings_train.load_optimizer(model, learn_rate=learn_rate)
         self.loss_fn = self.settings_train.get_loss_func()
 
@@ -320,9 +252,7 @@ class training_pytorch:
             txt_handler.write(f'Used CPU: {self.used_hw_cpu}\n')
             txt_handler.write(f'Used GPU: {self.used_hw_gpu}\n')
             txt_handler.write(f'Used dataset: {self.settings_data.get_path2data}\n')
-            txt_handler.write(f'AI Topology: {self.model.get_topology}\n')
             txt_handler.write(f'Used Dataset: {self._model_addon}\n')
-            txt_handler.write(f'Embedded?: {self.model.model_embedded}\n')
             txt_handler.write('\n')
             txt_handler.write(f'Used Optimizer: {self.settings_train.optimizer}\n')
             txt_handler.write(f'Used Loss Function: {self.settings_train.loss}\n')

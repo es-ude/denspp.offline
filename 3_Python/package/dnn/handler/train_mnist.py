@@ -1,4 +1,6 @@
 from copy import deepcopy
+from distutils.command.config import config
+
 from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import Config_ML_Pipeline
 from package.dnn.pytorch_config_data import Config_Dataset, DefaultSettingsDataset
@@ -6,7 +8,6 @@ from package.dnn.pytorch_config_model import Config_PyTorch, DefaultSettingsTrai
 from package.dnn.pytorch_pipeline import do_train_classifier, do_train_autoencoder
 from package.dnn.dataset.mnist import prepare_training
 from package.plot.plot_dnn import plot_mnist_graphs
-import package.dnn.models.mnist as models
 
 
 def do_train_cl(settings: Config_ML_Pipeline, yaml_name_index='Config_MNIST', custom_metrics=()) -> None:
@@ -27,7 +28,7 @@ def do_train_cl(settings: Config_ML_Pipeline, yaml_name_index='Config_MNIST', cu
 
     # --- Loading the YAML file: Model training
     default_train = deepcopy(DefaultSettingsTrainCE)
-    default_train.model_name = ''
+    default_train.model_name = 'mnist_mlp_cl_v1'
     yaml_train = yaml_config_handler(default_train, path2yaml=settings.get_path2config, yaml_name=f'{yaml_name_index}_TrainCL')
     config_train = yaml_train.get_class(Config_PyTorch)
 
@@ -57,7 +58,7 @@ def do_train_ae(settings: Config_ML_Pipeline, yaml_name_index='Config_MNIST') ->
 
     # --- Loading the YAML file: Model training
     default_train = DefaultSettingsTrainMSE
-    default_train.model_name = ''
+    default_train.model_name = 'mnist_mlp_ae_v1'
     yaml_train = yaml_config_handler(default_train, settings.get_path2config, f'{yaml_name_index}_TrainAE')
     config_train = yaml_train.get_class(Config_PyTorch)
 

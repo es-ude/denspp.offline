@@ -1,91 +1,15 @@
 from dataclasses import dataclass
-from distutils.command.config import config
-from typing import Any
 from os import getcwd, makedirs
 from os.path import join, abspath, exists
-from torch import optim, nn
 import numpy as np
+from torch import concat
+from torchvision import datasets, transforms
 
 from package.data_call.owncloud_handler import owncloudDownloader
 from package.data_process.frame_preprocessing import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
 from package.data_process.frame_preprocessing import reconfigure_cluster_with_cell_lib, generate_zero_frames
 from package.data_process.frame_normalization import DataNormalization
 from package.data_process.frame_augmentation import augmentation_change_position, augmentation_reducing_samples
-
-
-
-@dataclass
-class Config_PyTorch:
-    """Class for handling the PyTorch training/inference pipeline"""
-    model_name: str
-    patience: int
-    optimizer: str
-    loss: str
-    deterministic_do: bool
-    deterministic_seed: int
-    num_kfold: int
-    num_epochs: int
-    batch_size: int
-    data_split_ratio: float
-    data_do_shuffle: bool
-
-    def get_loss_func(self) -> Any:
-        """Getting the loss function"""
-        match self.loss:
-            case 'MSE':
-                loss_func = nn.MSELoss()
-            case 'Cross Entropy':
-                loss_func = nn.CrossEntropyLoss()
-            case _:
-                raise NotImplementedError("Loss function unknown! - Please implement or check!")
-        return loss_func
-
-    def load_optimizer(self, model, learn_rate=0.1) -> Any:
-        """Loading the optimizer function"""
-        match self.optimizer:
-            case 'Adam':
-                optim_func = self.__set_optimizer_adam(model)
-            case 'SGD':
-                optim_func = self.__set_optimizer_sgd(model, learn_rate=learn_rate)
-            case _:
-                raise NotImplementedError("Optimizer function unknown! - Please implement or check!")
-        return optim_func
-
-    def __set_optimizer_adam(self, model):
-        """Using the Adam Optimizer"""
-        return optim.Adam(model.parameters())
-
-    def __set_optimizer_sgd(self, model, learn_rate=0.1):
-        """Using the SGD as Optimizer"""
-        return optim.SGD(model.parameters(), lr=learn_rate)
-
-
-DefaultSettingsTrainMSE = Config_PyTorch(
-    model_name='dnn_ae_v1',
-    patience=20,
-    optimizer='Adam',
-    loss='MSE',
-    deterministic_do=False,
-    deterministic_seed=42,
-    num_kfold=1,
-    num_epochs=10,
-    batch_size=256,
-    data_do_shuffle=True,
-    data_split_ratio=0.2
-)
-DefaultSettingsTrainCE = Config_PyTorch(
-    model_name='dnn_cl_v1',
-    patience=20,
-    optimizer='Adam',
-    loss='Cross Entropy',
-    num_kfold=1,
-    num_epochs=10,
-    batch_size=256,
-    data_do_shuffle=True,
-    data_split_ratio=0.2,
-    deterministic_do=False,
-    deterministic_seed=42
-)
 
 
 @dataclass
@@ -147,44 +71,72 @@ class Config_Dataset:
     def load_dataset(self) -> dict:
         """Loading the dataset from defined data file"""
         self.__download_if_missing()
-        dataset = np.load(self.get_path2data, allow_pickle=True).flatten()[0]
-        return self.__process_spike_dataset(dataset)
+        return self.__process_spike_dataset() if not self.data_file_name.lower() == 'mnist' else self.__process_mnist_dataset()
 
     def __download_if_missing(self) -> None:
-        """"""
-        if self.data_file_name == '':
+        """Function for calling a dataset from remote"""
+        makedirs(self.get_path2folder, exist_ok=True)
+
+        if self.data_file_name.lower() == 'mnist':
+            self.__download_mnist()
+        elif self.data_file_name == '':
             list_datasets = self.print_overview_datasets(True)
             sel_data = input()
             self.data_file_name = list_datasets[int(sel_data)]
+            self.__download_spike()
         else:
             list_datasets = self.print_overview_datasets(False)
             for file in list_datasets:
                 if self.data_file_name.lower() in file.lower():
                     self.data_file_name = file
                     break
+            self.__download_spike()
 
+    def __download_spike(self) -> None:
         if not exists(self.get_path2data):
-            makedirs(self.get_path2folder, exist_ok=True)
-
             oc_handler = owncloudDownloader(self.get_path2folder_project, use_dataset=True)
             oc_handler.download_file(self.data_file_name, self.get_path2data)
             oc_handler.close()
 
-    def __process_spike_dataset(self, rawdata: dict, use_median_for_mean: bool = True, print_state: bool = True,
+    def __download_mnist(self) -> None:
+        do_download = not exists(self.get_path2data)
+        datasets.MNIST(self.data_path, train=True, download=do_download)
+        datasets.MNIST(self.data_path, train=False, download=do_download)
+
+    def __process_mnist_dataset(self) -> dict:
+        """"""
+        # --- Resampling of MNIST dataset
+        transform = transforms.Compose([
+            transforms.Resize((28, 28)),
+            transforms.Grayscale(),
+            transforms.ToTensor()
+        ])
+        data_train = datasets.MNIST(self.data_path, train=True, download=False, transform=transform)
+        data_valid = datasets.MNIST(self.data_path, train=False, download=False, transform=transform)
+
+        data_raw = concat((data_train.data, data_valid.data), 0).numpy()
+        data_label = concat((data_train.targets, data_valid.targets), 0).numpy()
+        data_dict = data_train.classes
+        return {'data': data_raw, 'label': data_label, 'dict': data_dict}
+
+
+    def __process_spike_dataset(self, use_median_for_mean: bool = True, print_state: bool = True,
                                 add_noise_cluster: bool = False) -> dict:
-        """
+        """Function for processing neural spike frame events from dataset
         Args:
-            data:
+
             use_median_for_mean:    Using median for calculating mean waveform (Boolean)
             print_state:            Printing the state and results into Terminal
             add_noise_cluster:      Adding the noise cluster to dataset
         Return:
-            Dict
+            Dict with {'data': frames_in, 'label': frames_cl, 'dict': frames_dict, 'mean': frames_me}
         """
         if print_state:
             print("... loading and processing the dataset")
 
-        # --- Loading data
+        # --- Loading rawdata ['data'=frames, 'label'= label id, 'peak'=amplitude values, 'dict'=label names]
+        rawdata = np.load(self.get_path2data, allow_pickle=True).flatten()[0]
+
         frames_dict = rawdata['dict']
         if 'peak' in rawdata.keys():
             # TODO: Generate extra function for it and include in dataset settings
@@ -288,7 +240,7 @@ class Config_Dataset:
 
 DefaultSettingsDataset = Config_Dataset(
     data_path='data',
-    data_file_name='quiroga',
+    data_file_name='',
     use_cell_library=0,
     augmentation_do=False,
     augmentation_num=0,
@@ -306,7 +258,7 @@ if __name__ == "__main__":
 
     config_test = Config_Dataset(
         data_path='data',
-        data_file_name='quiroga',
+        data_file_name='',
         use_cell_library=0,
         augmentation_do=False,
         augmentation_num=0,
