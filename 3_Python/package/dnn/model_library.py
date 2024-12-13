@@ -1,5 +1,3 @@
-import sys
-import importlib.util
 from inspect import getfile
 from os import listdir, getcwd
 from os.path import isfile, join
@@ -58,50 +56,16 @@ class ModelRegistry:
 
 
 class ModelLibrary:
-    __file2models: list = list()
-    __used_key: str = ''
-
-    def __init__(self, key: str = 'models_bib') -> None:
-        """Class for searching for used ModelRegistry in package for getting an overview of all models
-        Args:
-            key:    String with searching module in the python model files
-        Return:
-            None
-        """
-        self.__extract_files_search()
-        self.__used_key = key
-
-    def __extract_files_search(self, split_path: str = '3_Python') -> None:
-        actual_path = getcwd().split(split_path)[0] + '**/models/*.py'
-        self.__file2models = [file for file in iglob(actual_path, recursive=True) if isfile(file)]
-
-    def add_external_path_to_models(self, path2folder_models: str) -> None:
-        """Function for adding python folder with files of PyTorch models to internal list
-        Args:
-            path2folder_models:    String to python folder with different models
-        Return:
-            None
-        """
-        files_overview = list()
-        for file in listdir(path2folder_models):
-            files_overview.append(join(path2folder_models, file))
-        self.__file2models.extend([file for file in files_overview if isfile(file)])
-
-    def get_registry(self) -> ModelRegistry:
-        module = None
-        for file in self.__file2models:
-            spec = importlib.util.spec_from_file_location('models_bib', file)
-            module = importlib.util.module_from_spec(spec)
-            sys.modules['models_bib'] = module
-            spec.loader.exec_module(module)
-
-        module.models_bib.get_model_library_overview()
-        a = module.models_bib.get_model_library_overview()
-        b = __import__()
-        return module.models_bib
+    """Class for searching for used ModelRegistry in package for getting an overview of all models"""
+    def get_registry(self, packages: tuple[str, ...] = ("package.dnn.models", "src_dnn.models")) -> ModelRegistry:
+        m = ModelRegistry()
+        m.register_packages(packages)
+        return m
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
     model_test = ModelLibrary()
-    a = model_test.get_registry()
+    model_test.get_registry().get_model_library_overview()
+
     print(".done")

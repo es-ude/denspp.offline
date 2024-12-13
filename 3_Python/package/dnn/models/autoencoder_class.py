@@ -1,11 +1,6 @@
 from torch import nn, Tensor, argmax
-from package.dnn.model_library import ModelRegistry
 
 
-models_bib = ModelRegistry()
-
-
-@models_bib.register
 class synthetic_ae_cl_v1(nn.Module):
     """Classification model of autoencoder output"""
     def __init__(self, input_size=6, output_size=5):
@@ -33,8 +28,3 @@ class synthetic_ae_cl_v1(nn.Module):
     def forward(self, x: Tensor) -> [Tensor, Tensor]:
         val = self.classifier(x)
         return val, argmax(val, dim=1)
-
-
-if __name__ == "__main__":
-    models_bib.get_model_library_overview()
-    print(".done")

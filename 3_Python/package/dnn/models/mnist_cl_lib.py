@@ -1,11 +1,6 @@
 from torch import nn, Tensor, argmax, flatten, reshape
-from package.dnn.model_library import ModelRegistry
 
 
-models_bib = ModelRegistry()
-
-
-@models_bib.register
 class mnist_test_cl_v0(nn.Module):
     def __init__(self):
         super().__init__()
@@ -21,7 +16,6 @@ class mnist_test_cl_v0(nn.Module):
         return prob, argmax(prob, 1)
 
 
-@models_bib.register
 class mnist_test_cl_v1(nn.Module):
     def __init__(self):
         super().__init__()
@@ -38,7 +32,6 @@ class mnist_test_cl_v1(nn.Module):
         return prob, argmax(prob, 1)
 
 
-@models_bib.register
 class mnist_test_cl_v2(nn.Module):
     def __init__(self):
         super().__init__()
@@ -55,7 +48,6 @@ class mnist_test_cl_v2(nn.Module):
         return prob, argmax(prob, 1)
 
 
-@models_bib.register
 class mnist_test_cl_v3(nn.Module):
     def __init__(self):
         super().__init__()
@@ -73,7 +65,6 @@ class mnist_test_cl_v3(nn.Module):
         return prob, argmax(prob, 1)
 
 
-@models_bib.register
 class mnist_test_cl_v4(nn.Module):
     def __init__(self):
         super().__init__()
@@ -91,7 +82,6 @@ class mnist_test_cl_v4(nn.Module):
         return prob, argmax(prob, 1)
 
 
-@models_bib.register
 class mnist_test_cl_v5(nn.Module):
     def __init__(self):
         super().__init__()
@@ -112,7 +102,6 @@ class mnist_test_cl_v5(nn.Module):
         return prob, argmax(prob, 1)
 
 
-@models_bib.register
 class mnist_test_cl_v6(nn.Module):
     def __init__(self):
         super().__init__()
@@ -139,7 +128,6 @@ class mnist_test_cl_v6(nn.Module):
         return prob, argmax(prob, 1)
 
 
-@models_bib.register
 class mnist_test_cl_v7(nn.Module):
     def __init__(self):
         super().__init__()
@@ -181,7 +169,6 @@ class mnist_test_cl_v7(nn.Module):
         return prob, argmax(prob, 1)
 
 
-@models_bib.register
 class mnist_test_cl_v8(nn.Module):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
     def __init__(self):

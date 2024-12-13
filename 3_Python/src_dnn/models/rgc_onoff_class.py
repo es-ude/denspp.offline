@@ -1,11 +1,6 @@
 from torch import nn, Tensor, argmax, unsqueeze
-from package.dnn.model_library import ModelRegistry
 
 
-models_bib = ModelRegistry()
-
-
-@models_bib.register
 class rgc_onoff_tdb_dnn_cl_v1(nn.Module):
     """Classification model"""
     def __init__(self, input_size=32, output_size=4):
@@ -42,7 +37,6 @@ class rgc_onoff_tdb_dnn_cl_v1(nn.Module):
         return val, argmax(val, dim=1)
 
 
-@models_bib.register
 class rgc_onoff_tdb_dnn_cl_v2(nn.Module):
     """Classification model"""
     def __init__(self, input_size=32, output_size=4):
@@ -84,7 +78,6 @@ class rgc_onoff_tdb_dnn_cl_v2(nn.Module):
         return val, argmax(val, dim=1)
 
 
-@models_bib.register
 class rgc_onoff_tdb_cnn_cl_v1(nn.Module):
     """Classification model"""
     def __init__(self, input_size=32, output_size=4):
@@ -146,7 +139,6 @@ class rgc_onoff_tdb_cnn_cl_v1(nn.Module):
         return val, argmax(val, dim=1)
 
 
-@models_bib.register
 class rgc_onoff_classifier_cnn_cl_v2(nn.Module):
     """Classification model"""
     def __init__(self, input_size=32, output_size=4):

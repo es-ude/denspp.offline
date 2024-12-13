@@ -2,13 +2,8 @@ from elasticai.creator.file_generation.on_disk_path import OnDiskPath
 from torch import nn, Tensor
 from elasticai.creator.nn import Sequential
 from elasticai.creator.nn.fixed_point import Linear, Tanh, BatchNormedLinear
-from package.dnn.model_library import ModelRegistry
 
 
-models_bib = ModelRegistry()
-
-
-@models_bib.register
 class synthetic_dnn_ae_v1(nn.Module):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
     def __init__(self, input_size=32, output_size=3):
@@ -49,7 +44,6 @@ class synthetic_dnn_ae_v1(nn.Module):
         return self.encoder.create_design(name)
 
 
-@models_bib.register
 class synthetic_dnn_ae_v2(nn.Module):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
     def __init__(self, input_size=32, output_size=3):
@@ -81,7 +75,6 @@ class synthetic_dnn_ae_v2(nn.Module):
         return encoded, self.decoder(encoded)
 
 
-@models_bib.register
 class synthetic_dnn_ae_v1_quantized(nn.Module):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
     def __init__(self, input_size=32, output_size=3):
@@ -125,7 +118,6 @@ class synthetic_dnn_ae_v1_quantized(nn.Module):
         return self.encoder.create_design(name)
 
 
-@models_bib.register
 class synthethic_dnn_ae_v2(nn.Module):
     def __init__(self, input_size=32, output_size=3):
         super().__init__()

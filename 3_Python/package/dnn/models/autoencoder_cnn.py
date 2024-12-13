@@ -1,11 +1,6 @@
 from torch import nn, Tensor, unsqueeze, argmax
-from package.dnn.model_library import ModelRegistry
 
 
-models_bib = ModelRegistry()
-
-
-@models_bib.register
 class synthetic_cnn_ae_v1(nn.Module):
     def __init__(self, input_size=32, output_size=5):
         """Class of a convolutional autoencoder for feature extraction"""
@@ -54,7 +49,6 @@ class synthetic_cnn_ae_v1(nn.Module):
         return self.flatten(encoded), self.flatten(decoded)
 
 
-@models_bib.register
 class synthetic_cnn_ae_v2(nn.Module):
     def __init__(self, input_size=32, output_size=5):
         """Class of a convolutional autoencoder for feature extraction"""
@@ -113,7 +107,6 @@ class synthetic_cnn_ae_v2(nn.Module):
         return self.flatten(encoded), self.flatten(decoded)
 
 
-@models_bib.register
 class synthetic_cnn_ae_v3(nn.Module):
     def __init__(self, input_size=32, output_size=6):
         """Class of a convolutional autoencoder for feature extraction"""
@@ -189,7 +182,6 @@ class synthetic_cnn_ae_v3(nn.Module):
         return encoded, self.flatten(decoded)
 
 
-@models_bib.register
 class synthetic_cnn_ae_v4(nn.Module):
     def __init__(self, input_size=32, output_size=8):
         """Class of a convolutional autoencoder for feature extraction"""

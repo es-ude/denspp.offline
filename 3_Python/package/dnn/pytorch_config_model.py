@@ -4,16 +4,6 @@ from torch import optim, nn
 from package.dnn.model_library import ModelLibrary
 from copy import deepcopy
 
-from package.dnn.models.autoencoder_class import models_bib
-from package.dnn.models.autoencoder_dnn import models_bib
-from package.dnn.models.autoencoder_cnn import models_bib
-from package.dnn.models.mnist import models_bib
-from package.dnn.models.mnist_cl_lib import models_bib
-from package.dnn.models.spike_classifier import models_bib
-from package.dnn.models.spike_detection import models_bib
-from src_dnn.models.rgc_onoff_class import models_bib
-from src_dnn.models.rgc_onoff_ae_cl import models_bib
-
 
 @dataclass
 class Config_PyTorch:
@@ -58,12 +48,12 @@ class Config_PyTorch:
 
     def get_model_overview(self, index='') -> None:
         """"""
-        # models_bib = ModelLibrary().get_registry()
-        models_bib.get_model_library_overview(index, do_print=True)
+        models_bib = ModelLibrary().get_registry()
+        # models_bib.get_model_library_overview(index, do_print=True)
 
     def get_model(self, *args, **kwargs):
         """"""
-        # models_bib = ModelLibrary().get_registry()
+        models_bib = ModelLibrary().get_registry()
         if not self.model_name:
             models_bib.get_model_library_overview(True)
             raise NotImplementedError("Please select one model above and type-in the name into yaml file")

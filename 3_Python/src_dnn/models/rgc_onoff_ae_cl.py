@@ -1,11 +1,6 @@
 from torch import nn, Tensor, unsqueeze, argmax
-from package.dnn.model_library import ModelRegistry
 
 
-models_bib = ModelRegistry()
-
-
-@models_bib.register
 class rgc_onoff_cnn_ae_v1(nn.Module):
     """Class of a convolutional autoencoder for feature extraction"""
     def __init__(self, input_size=32, output_size=8):
@@ -63,7 +58,6 @@ class rgc_onoff_cnn_ae_v1(nn.Module):
         return encoded, decoded
 
 
-@models_bib.register
 class rgc_onoff_dnn_cl_v2(nn.Module):
     """Classification model"""
     def __init__(self, input_size=6, output_size=4):
@@ -104,7 +98,6 @@ class rgc_onoff_dnn_cl_v2(nn.Module):
         return val, argmax(val, dim=1)
 
 
-@models_bib.register
 class rgc_onoff_dnn_ae_cl_v1(nn.Module):
     """Classification model of autoencoder output"""
     def __init__(self, input_size=6, output_size=5):

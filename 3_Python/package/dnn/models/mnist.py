@@ -1,11 +1,6 @@
 from torch import nn, Tensor, argmax, flatten, reshape
-from package.dnn.model_library import ModelRegistry
 
 
-models_bib = ModelRegistry()
-
-
-@models_bib.register
 class mnist_mlp_cl_v1(nn.Module):
     """Class of a classifier with Dense-Layer for feature extraction"""
     def __init__(self):
@@ -33,7 +28,6 @@ class mnist_mlp_cl_v1(nn.Module):
         return prob, argmax(prob, 1)
 
 
-@models_bib.register
 class mnist_mlp_ae_v1(nn.Module):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
     def __init__(self):

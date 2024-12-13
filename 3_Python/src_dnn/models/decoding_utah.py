@@ -1,11 +1,6 @@
 from torch import nn, Tensor, argmax, cat
-from package.dnn.model_library import ModelRegistry
 
 
-models_bib = ModelRegistry()
-
-
-@models_bib.register
 class klaes_cnn_lstm_dec_v3(nn.Module):
     """Class of a convolutional Decoding for feature extraction"""
     def __init__(self, num_clusters, input_samples, output_samples=3):
@@ -76,7 +71,6 @@ class klaes_cnn_lstm_dec_v3(nn.Module):
         return pred_con, argmax(pred_con, 1)
 
 
-@models_bib.register
 class klaes_cnn_lstm_dec_v2(nn.Module):
     """Class of a convolutional Decoding for feature extraction"""
 
@@ -148,7 +142,6 @@ class klaes_cnn_lstm_dec_v2(nn.Module):
         return pred_con, argmax(pred_con, 1)
 
 
-@models_bib.register
 class klaes_cnn_lstm_dec_v1(nn.Module):
     """Class of a convolutional Decoding for feature extraction"""
     def __init__(self, num_clusters=1, input_samples=12, output_samples=3):

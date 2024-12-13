@@ -1,11 +1,6 @@
 from torch import nn, Tensor, argmax, flatten
-from package.dnn.model_library import ModelRegistry
 
 
-models_bib = ModelRegistry()
-
-
-@models_bib.register
 class synthetic__cl_v1(nn.Module):
     def __init__(self, input_size=32, output_size=5):
         """DL model for classifying neural spike activity (MLP)"""

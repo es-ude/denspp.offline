@@ -1,11 +1,6 @@
 from torch import nn, Tensor, unsqueeze, argmax
-from package.dnn.model_library import ModelRegistry
 
 
-models_bib = ModelRegistry()
-
-
-@models_bib.register
 class sda_dnn_v1(nn.Module):
     """Class of a dense-layer based spike detection classifier"""
     def __init__(self, input_size=9, output_size=2):
@@ -33,7 +28,6 @@ class sda_dnn_v1(nn.Module):
         return xdist, argmax(xdist, dim=1)
 
 
-@models_bib.register
 class sda_cnn_v1(nn.Module):
     """Class of a convolutional spike detection classifier"""
     def __init__(self, input_size=9, output_size=2):
