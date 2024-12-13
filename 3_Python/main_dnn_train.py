@@ -41,16 +41,16 @@ if __name__ == "__main__":
             plot_architecture_metrics_isolated(data, show_plots=True, path2save=path2data)
         case 5:
             # --- Spike Detection
-            from src_dnn.train_sda import dnn_train_sda
-            dnn_train_sda(dnn_handler)
+            from package.dnn.handler.train_cl import do_train_spike_class
+            do_train_spike_class(dnn_handler, 'Config_SDA', '', 'sda_dnn_v1')
         case 6:
             # --- RGC ON/OFF Classifier
-            from src_dnn.train_rgc_class import do_train_rgc_class
+            from src_dnn.train_rgc import do_train_rgc_class
             do_train_rgc_class(dnn_handler)
         case 7:
             # --- RGC ON/OFF Autoencoder + Classifier
-            from src_dnn.train_rgc_ae_cl import do_train_rgc_ae_cl
-            do_train_rgc_ae_cl(dnn_handler)
+            from src_dnn.train_rgc import do_train_rgc_aecl
+            do_train_rgc_aecl(dnn_handler)
         case 8:
             # --- Neural Decoder (Utah Array)
             from src_dnn.train_decoder_utah import do_train_decoder_utah

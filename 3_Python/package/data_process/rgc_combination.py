@@ -1,5 +1,5 @@
-from os import mkdir
-from os.path import join, exists
+from os import makedirs
+from os.path import join
 from numpy import load
 
 from package.data_call.call_cellbib import logic_combination
@@ -17,8 +17,7 @@ def rgc_logic_combination(path2valid_data: str, valid_file_name='results_cl.npy'
     """
     data_result = load(join(path2valid_data, valid_file_name), allow_pickle=True).item()
     path2save = join(path2valid_data, 'logic_comb')
-    if not exists(path2save):
-        mkdir(path2save)
+    makedirs(path2save, exist_ok=True)
 
     cell_dict_orig = data_result['cl_dict']
     true_labels_orig = data_result['valid_clus']

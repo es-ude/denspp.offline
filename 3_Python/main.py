@@ -19,8 +19,8 @@ if __name__ == "__main__":
     datahand = DataLoader(settings_data)
     datahand.do_call()
     datahand.do_cut()
-    datahand.do_mapping()
     datahand.do_resample()
+    datahand.do_mapping()
     datahand.output_meta()
     dataIn = datahand.get_data()
     del datahand

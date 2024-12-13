@@ -9,8 +9,9 @@ from package.dnn.dataset.autoencoder import prepare_training as get_dataset_ae
 from package.dnn.dataset.autoencoder_class import prepare_training as get_dataset_cl
 
 
-def do_train_ae_classifier(settings: Config_ML_Pipeline, yaml_name_index='Config_ACL',
-                           model_ae_default_name='', model_cl_default_name='', used_dataset_name='quiroga') -> dict:
+def do_train_ae_classifier(settings: Config_ML_Pipeline, yaml_name_index: str='Config_ACL',
+                           model_ae_default_name: str='', model_cl_default_name: str='', used_dataset_name:str='quiroga',
+                           add_noise_cluster: bool=False) -> dict:
     """Training routine for Autoencoders and Classifier with Encoder after Autoencoder-Training
     Args:
         settings:           Handler for configuring the routine selection for train deep neural networks
@@ -18,9 +19,11 @@ def do_train_ae_classifier(settings: Config_ML_Pipeline, yaml_name_index='Config
         model_ae_default_name:  Default name of the autoencoder model
         model_cl_default_name:  Default name of the classifier model
         used_dataset_name:  Default name of the dataset for training [default: quiroga]
+        add_noise_cluster:  Adding noise cluster to dataset [Default: False]
     Returns:
         Dictionary with metric results from Autoencoder and Classifier Training
     """
+    # --- Processing Step #0: Loading YAML files
     # --- Loading the YAML file: Dataset
     default_data = deepcopy(DefaultSettingsDataset)
     default_data.data_file_name = used_dataset_name
@@ -68,7 +71,7 @@ def do_train_ae_classifier(settings: Config_ML_Pipeline, yaml_name_index='Config
 
     print("\n# ----------- Step #2: TRAINING CLASSIFIER")
     # --- Processing Step #2.1: Loading dataset and Build Model
-    dataset = get_dataset_cl(settings=config_data, path2model=path2folder)
+    dataset = get_dataset_cl(settings=config_data, path2model=path2folder, add_noise_cluster=add_noise_cluster)
     num_feat = dataset[0]['in'].shape[0] if not settings.autoencoder_feat_size else settings.autoencoder_feat_size
     used_model_cl = config_train_cl.get_model(input_size=num_feat, output_size=dataset.get_cluster_num)
 

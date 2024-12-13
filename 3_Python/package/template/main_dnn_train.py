@@ -28,12 +28,28 @@ if __name__ == "__main__":
             do_train_neural_autoencoder(dnn_handler)
         case 3:
             # --- Classifier
-            from package.dnn.handler.train_cl import do_train_neural_spike_classification
-            do_train_neural_spike_classification(dnn_handler)
+            from package.dnn.handler.train_cl import do_train_spike_class
+            do_train_spike_class(dnn_handler)
         case 4:
             # --- Autoencoder + Classifier
             from package.dnn.handler.train_ae_cl import do_train_ae_classifier
             do_train_ae_classifier(dnn_handler)
+        case 5:
+            # --- Autoencoder + Classifier (Sweep Run of Hidden Layer Size)
+            from package.dnn.handler.train_ae_cl_sweep import do_train_ae_cl_sweep
+            from package.plot.plot_ae_cl_sweep import extract_data_from_files, plot_common_loss, plot_common_params, \
+                plot_architecture_metrics_isolated
+
+            path2data = do_train_ae_cl_sweep(dnn_handler, 1, 1, 32)
+            data = extract_data_from_files(path2data)
+            plot_common_loss(data, path2save=path2data)
+            plot_common_params(data, path2save=path2data)
+            plot_architecture_metrics_isolated(data, show_plots=True, path2save=path2data)
+        case 6:
+            # --- Spike Detection
+            from package.dnn.handler.train_cl import do_train_spike_class
+
+            do_train_spike_class(dnn_handler, 'Config_SDA', '', 'sda_dnn_v1')
         case _:
             raise NotImplementedError("Wrong model! Please select right model!")
 

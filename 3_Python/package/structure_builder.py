@@ -17,7 +17,7 @@ def create_folder_dnn_firstrun(project_start_folder='3_Python', dnn_folder='src_
     path2start = join(getcwd().split(project_start_folder)[0], project_start_folder)
     path2dst = join(path2start, dnn_folder)
 
-    folder_structure = ['models', 'dataset', 'config']
+    folder_structure = ['models', 'dataset']
     for folder_name in folder_structure:
         makedirs(join(path2dst, folder_name), exist_ok=True)
 
