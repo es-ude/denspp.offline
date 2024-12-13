@@ -1,14 +1,15 @@
 from inspect import getfile
-from os import listdir, getcwd
-from os.path import isfile, join
-from glob import iglob
-
+from importlib import import_module
+from importlib import resources as res
+import logging
+import re
 
 class ModelRegistry:
     __models_avai: dict = dict()
 
     def __init__(self):
         """Class for building the overview of neural networks"""
+        self._logger = logging.getLogger(__name__)
         pass
 
     def register(self, fn):
@@ -53,6 +54,23 @@ class ModelRegistry:
             else:
                 print("Model is not available")
         return model_chck
+
+    def register_package(self, package: str ) -> None:
+        for resource in res.files(package).iterdir():
+            if not resource.name.endswith("__"):
+                module_name = f"{package}.{resource.name[:-3]}"
+                m = import_module(module_name)
+                self._logger.debug(f"importing models from {module_name}")
+                for name in m.__dict__:
+                    if re.match(r".*_v\d+", name):
+                        self._logger.debug(f"registering model {name}")
+                        item = getattr(m, name)
+                        self.register(item)
+
+    def register_packages(self, packages: tuple[str, ...]) -> None:
+        for p in packages:
+            self.register_package(p)
+
 
 
 class ModelLibrary:
