@@ -354,10 +354,10 @@ def __counting_dataset(dataset_decision, label_dict):
 
 
 if __name__ == "__main__":
-    from package.dnn.pytorch_dataclass import DefaultSettingsDataset
+    from package.dnn.pytorch_config_data import DefaultSettingsDataset
 
     default_settings = DefaultSettingsDataset
     default_settings.data_path = 'data'
     default_settings.data_file_name = '2024-02-05_Dataset-KlaesNeuralDecoding.npy'
 
-    generate_electrode_mapping_from_data(default_settings, default_settings.get_path2folder_data)
+    generate_electrode_mapping_from_data(default_settings, default_settings.get_path2data)

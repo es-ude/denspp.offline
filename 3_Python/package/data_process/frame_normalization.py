@@ -90,20 +90,20 @@ class DataNormalization:
     def _normalize_zeroone(self, dataset: np.ndarray | torch.Tensor) -> np.ndarray | torch.Tensor:
         self._get_scaling_value_minmax(dataset)
         if isinstance(dataset, np.ndarray):
-            scale_norm = self._generate_numpy_full(self.__params['scale_used'], dataset.shape[-1])
+            scale_norm = self._generate_numpy_full(2* self.__params['scale_used'], dataset.shape[-1])
             dataset_norm = 0.5 + dataset / scale_norm
         else:
-            scale_norm = self._generate_tensor_full(self.__params['scale_used'], dataset.shape[-1])
+            scale_norm = self._generate_tensor_full(2* self.__params['scale_used'], dataset.shape[-1])
             dataset_norm = torch.divide(torch.add(0.5, dataset), scale_norm)
         return dataset_norm
 
     def _normalize_minmax(self, dataset: np.ndarray | torch.Tensor) -> np.ndarray | torch.Tensor:
         self._get_scaling_value_minmax(dataset)
         if isinstance(dataset, np.ndarray):
-            scale_norm = self._generate_numpy_full(2 * self.__params['scale_used'], dataset.shape[-1])
+            scale_norm = self._generate_numpy_full(self.__params['scale_used'], dataset.shape[-1])
             dataset_norm = dataset / scale_norm
         else:
-            scale_norm = self._generate_tensor_full(2 * self.__params['scale_used'], dataset.shape[-1])
+            scale_norm = self._generate_tensor_full(self.__params['scale_used'], dataset.shape[-1])
             dataset_norm = torch.divide(dataset, scale_norm)
         return dataset_norm
 

@@ -1,4 +1,5 @@
 import yaml
+from typing import Any
 from os import getcwd
 from os.path import join, exists
 
@@ -63,7 +64,7 @@ class yaml_config_handler:
         """Getting the path to the desired YAML file"""
         return join(self.__path2yaml, f"{self.__yaml_name}.yaml")
 
-    def __init__(self, yaml_template: type | dict, path2yaml='config', yaml_name='Config_Train', start_folder='3_Python'):
+    def __init__(self, yaml_template: Any | dict, path2yaml='config', yaml_name='Config_Train', start_folder='3_Python'):
         """Creating a class for handling YAML files
         Args:
             yaml_template:      Dummy dataclass with entries or dictionary (is only generated if YAML not exist)

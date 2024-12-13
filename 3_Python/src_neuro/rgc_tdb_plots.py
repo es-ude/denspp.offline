@@ -111,26 +111,28 @@ if __name__ == "__main__":
         datahandler = DataLoader(data_set)
         datahandler.do_call()
         datahandler.do_resample()
+        data_used = datahandler.get_data()
+        del datahandler
 
         # --- Processing the analogue input (channel specific)
         afe = Pipeline(data_set.fs_resample)
-        # spike_xpos = np.floor(datahandler.raw_data.evnt_xpos[ch] * afe.fs_adc / afe.fs_ana).astype("int")
-        spike_xpos = find_peaks(np.abs(datahandler.raw_data.data_raw[ch]), distance=int(2e-3 * afe.fs_ana),
-                                height=0.5* datahandler.raw_data.data_raw[ch].max())[0]
+        # spike_xpos = np.floor(data_used.raw_data.evnt_xpos[ch] * afe.fs_adc / afe.fs_ana).astype("int")
+        spike_xpos = find_peaks(np.abs(data_used.data_raw[ch]), distance=int(2e-3 * afe.fs_ana),
+                                height=0.5* data_used.data_raw[ch].max())[0]
         spike_xpos = np.floor(spike_xpos * afe.fs_adc / afe.fs_ana)
 
-        afe.run_input(datahandler.raw_data.data_raw[ch], spike_xpos)
+        afe.run_input(data_used.data_raw[ch], spike_xpos)
         adc_fs = afe.fs_adc
 
         # --- Getting the results
         rawdata0.append(afe.lsb * afe.signals.x_adc)
         frames0.append(afe.lsb * afe.signals.frames_align)
         spike_xpos0.append(afe.signals.x_pos)
-        for id in np.unique(datahandler.raw_data.evnt_id[ch]):
+        for id in np.unique(data_used.evnt_id[ch]):
             cell_name0.append(cell_bib.get_celltype_name_from_id(int(id)))
 
     # Delete after runs
-    del spike_xpos, datahandler, idx, ch, file, afe
+    del spike_xpos, idx, ch, file, afe
 
     print('... plot the results!')
     # Plot transient signals

@@ -123,9 +123,9 @@ def plot_autoencoder_snr(snr: list, path2save='', do_boxplot=False, show_plot=Fa
 
 
 def plot_3d_featspace(labels: np.ndarray, mark_feat: list, idx: [0, 1, 2], data_classname=None,
-                      path2save='', show_plot=False) -> None:
+                      path2save='', show_plot=False, show_ticks=False) -> None:
     """Plotting the feature space of the autoencoder"""
-    fig = plt.figure(figsize=(cm_to_inch(12), cm_to_inch(9)))
+    fig = plt.figure(figsize=(cm_to_inch(14), cm_to_inch(10)))
     Axes3D(fig)
     ax = plt.axes(projection='3d')
     fontsize_label = 12
@@ -137,6 +137,11 @@ def plot_3d_featspace(labels: np.ndarray, mark_feat: list, idx: [0, 1, 2], data_
     ax.set_xlabel('Feat[0]', fontsize=fontsize_label)
     ax.set_ylabel('Feat[1]', fontsize=fontsize_label)
     ax.set_zlabel('Feat[2]', fontsize=fontsize_label)
+    if not show_ticks:
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        ax.set_zticklabels([])
+
     if isinstance(data_classname, list):
         if not len(data_classname) == 0:
             ax.legend(data_classname)

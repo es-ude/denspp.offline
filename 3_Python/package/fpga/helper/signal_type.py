@@ -201,13 +201,25 @@ def plot_waveform_results(signal: dict, lut_waveform: np.ndarray, tran_ref: np.n
         plt.show(block=True)
 
 
+def plot_metric_result(result: dict, metric: str, dependent_variable: list, name_dependent_var: str) -> None:
+    metric_list = []
+    for i in result:
+        metric_list.append(result[i][metric])
+    plt.plot(dependent_variable, metric_list)
+    plt.ylabel(metric)
+    plt.xlabel(name_dependent_var)
+    plt.show()
+
+
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
+    import numpy as np
 
     # --- Settings
-    bitwidth = [6, 8, 10, 12, 16]
+    bitwidth = [16]
     fs = 2e6
     Ntmp = [9, 11, 13, 15, 17, 21, 23, 25, 27, 31]
+    Ntmp = np.arange(5, 90)
     fsine = 1e3
     t_end = 0.5
     lut_optimized = False
@@ -243,3 +255,5 @@ if __name__ == "__main__":
             mape = metrics['MAPE']
             print(f"LUT_SIZE = {Nsine} @ {bitwidth_used} bit: MAE = {mae:.4f}, MAPE = {mape:.4f}, "
                   f"Similarity = {100 * sim:.4f} % and THD = {thd:.2f} dB")
+
+    plot_metric_result(results, "THD", Ntmp, "Number of steps in LUT")

@@ -5,14 +5,11 @@ from copy import deepcopy
 from datetime import datetime
 from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import Config_ML_Pipeline, DefaultSettings_MLPipe
-from package.dnn.pytorch_dataclass import (Config_Dataset, DefaultSettingsDataset,
-                                           Config_PyTorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE)
+from package.dnn.pytorch_config_data import Config_Dataset, DefaultSettingsDataset
+from package.dnn.pytorch_config_model import Config_PyTorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE
 from package.dnn.pytorch_pipeline import do_train_autoencoder, do_train_classifier
-
-from package.dnn.template.dataset.autoencoder import prepare_training as get_dataset_ae
-from package.dnn.template.dataset.autoencoder_class import prepare_training as get_dataset_cl
-import package.dnn.template.models.autoencoder_dnn as models_ae
-import package.dnn.template.models.autoencoder_class as models_cl
+from package.dnn.dataset.autoencoder import prepare_training as get_dataset_ae
+from package.dnn.dataset.autoencoder_class import prepare_training as get_dataset_cl
 
 
 def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
@@ -39,7 +36,7 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
 
     # --- Loading the YAML file: Autoencoder Model Load and building
     default_ae = deepcopy(DefaultSettingsTrainMSE)
-    default_ae.model_name = 'dnn_ae_v2'
+    default_ae.model_name = ''
     default_ae.num_epochs = num_epochs_trial
     yaml_train = yaml_config_handler(default_ae, settings.get_path2config, f'{yaml_name_index}_TrainAE')
     config_train_ae = yaml_train.get_class(Config_PyTorch)
@@ -47,7 +44,7 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
 
     # --- Loading the YAML file: Classifier Model Load and building
     default_cl = deepcopy(DefaultSettingsTrainCE)
-    default_cl.model_name = 'classifier_ae_v1'
+    default_cl.model_name = ''
     default_cl.num_epochs = num_epochs_trial
     yaml_train = yaml_config_handler(default_cl, settings.get_path2config, f'{yaml_name_index}_TrainCL')
     config_train_cl = yaml_train.get_class(Config_PyTorch)
@@ -72,7 +69,7 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
             noise_std=settings.autoencoder_noise_std,
             do_classification=False
         )
-        used_model_ae = models_ae.models_available.build_model(config_train_ae.model_name, output_size=feat_size)
+        used_model_ae = config_train_ae.get_model(output_size=feat_size)
         metrics_ae, valid_data_ae, path2folder = do_train_autoencoder(
             config_ml=settings,
             config_train=config_train_ae,
@@ -89,9 +86,7 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
             settings=config_data,
             path2model=path2folder
         )
-        used_model_cl = models_cl.models_available.build_model(config_train_cl.model_name,
-                                                               input_size=feat_size,
-                                                               output_size=used_dataset_cl.get_cluster_num)
+        used_model_cl = config_train_cl.get_model(input_size=feat_size, output_size=used_dataset_cl.get_cluster_num)
         metrics_cl = do_train_classifier(
             config_ml=settings,
             config_train=config_train_cl,

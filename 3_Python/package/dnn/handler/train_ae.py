@@ -1,32 +1,33 @@
 from copy import deepcopy
+from datetime import date
 from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import Config_ML_Pipeline
-from package.dnn.pytorch_dataclass import (Config_PyTorch, DefaultSettingsTrainMSE,
-                                           Config_Dataset, DefaultSettingsDataset)
+from package.dnn.pytorch_config_data import Config_Dataset, DefaultSettingsDataset
+from package.dnn.pytorch_config_model import Config_PyTorch, DefaultSettingsTrainMSE
 from package.dnn.pytorch_pipeline import do_train_autoencoder
-
 from package.plot.plot_dnn import results_training
-from package.dnn.template.dataset.autoencoder import prepare_training
-import package.dnn.template.models.autoencoder_dnn as models
-from datetime import date
+from package.dnn.dataset.autoencoder import prepare_training
 
 
-def do_train_neural_autoencoder(settings: Config_ML_Pipeline, yaml_name_index='Config_AE') -> [dict, dict]:
+def do_train_neural_autoencoder(settings: Config_ML_Pipeline, yaml_name_index='Config_AE',
+                                model_default_name='', used_dataset_name='quiroga') -> [dict, dict]:
     """Training routine for Autoencoders in Neural Applications (Spike Frames)
     Args:
         settings:           Handler for configuring the routine selection for train deep neural networks
-        add_noise_cluster:  Decision for adding noise cluster activity
         yaml_name_index:    Index of yaml file name
+        used_dataset_name:  Default name of the dataset for training [default: quiroga]
     Returns:
         Dictionaries with results from training [metrics, validation data]
     """
     # --- Loading the YAML file: Dataset
-    yaml_data = yaml_config_handler(DefaultSettingsDataset, settings.get_path2config, f'{yaml_name_index}_Dataset')
+    default_data = deepcopy(DefaultSettingsDataset)
+    default_data.data_file_name = used_dataset_name
+    yaml_data = yaml_config_handler(default_data, settings.get_path2config, f'{yaml_name_index}_Dataset')
     config_data = yaml_data.get_class(Config_Dataset)
 
     # --- Loading the YAML file: Model training
     default_train = deepcopy(DefaultSettingsTrainMSE)
-    default_train.model_name = models.dnn_ae_v1.__name__
+    default_train.model_name = model_default_name
     yaml_nn = yaml_config_handler(default_train, settings.get_path2config, f'{yaml_name_index}_Training')
     config_train = yaml_nn.get_class(Config_PyTorch)
     del default_train, yaml_nn
@@ -35,9 +36,9 @@ def do_train_neural_autoencoder(settings: Config_ML_Pipeline, yaml_name_index='C
     dataset = prepare_training(settings=config_data, do_classification=False,
                                mode_train_ae=settings.autoencoder_mode, noise_std=settings.autoencoder_noise_std)
     if settings.autoencoder_feat_size:
-        used_model = models.models_available.build_model(config_train.model_name, output_size=settings.autoencoder_feat_size)
+        used_model = config_train.get_model(output_size=settings.autoencoder_feat_size)
     else:
-        used_model = models.models_available.build_model(config_train.model_name)
+        used_model = config_train.get_model()
 
     path4vhdl = f'vhdl/run_{date.today()}'
 
