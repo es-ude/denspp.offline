@@ -1,5 +1,6 @@
 from os.path import join
 from dataclasses import dataclass
+import fnmatch
 import owncloud
 from package.yaml_handler import yaml_config_handler
 
@@ -29,18 +30,24 @@ class owncloudDownloader:
         self.__public_sciebo_link = config.remote_link
         self.__path2folder_remote = config.remote_transient if not use_dataset else config.remote_dataset
 
-    def get_overview_data(self, formats: list = ('.npy', '.mat', '.csv')) -> list:
-        """Getting an overview of available files for downloading"""
+    def __get_remote_content(self, search_folder: str = '', depth: int=1) -> list:
         self.__oc_handler = owncloud.Client.from_public_link(self.__public_sciebo_link)
-        dict_list = self.__oc_handler.list(self.__path2folder_remote, 1)
+        path_selected = join(self.__path2folder_remote, search_folder) if search_folder else self.__path2folder_remote
+        dict_list = self.__oc_handler.list(path_selected, depth)
         self.__oc_handler.logout()
+        return dict_list
 
-        files_available = list()
-        for file in dict_list:
-            for format in formats:
-                if format in file.name:
-                    files_available.append(file.name)
-        return files_available
+    def get_overview_folder(self, search_folder: str = '') -> list:
+        """Getting an overview of available folders in selected folder"""
+        remote_content = self.__get_remote_content(search_folder)
+        folder_available = [file.path for file in remote_content if file.file_type == 'dir']
+        return folder_available
+
+    def get_overview_data(self, search_folder: str = '',  format: str = '*.*') -> list:
+        """Getting an overview of available files to download"""
+        remote_content = self.__get_remote_content(search_folder)
+        files_available = [file.path for file in remote_content if file.file_type == 'file']
+        return fnmatch.filter(files_available, '*/'+format)
 
     def download_file(self, file_name: str, destination_download: str) -> None:
         """Downloading a file from remote server

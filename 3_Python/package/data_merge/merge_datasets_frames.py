@@ -1,5 +1,5 @@
 from glob import glob
-from os import mkdir
+from os import makedirs
 from os.path import join, exists
 from shutil import rmtree
 import numpy as np
@@ -28,14 +28,10 @@ class MergeDatasets:
         self.path2folder = join(self.__path2save, addon)
 
         if not self.__saving_data_list:
-            # --- Generate path2save folder (e.g. "save")
-            if not exists(self.__path2save):
-                mkdir(self.__path2save)
-
-            # --- Generate subfolder in which data is stored
+            makedirs(self.__path2save, exist_ok=True)
             if exists(self.path2folder):
                 rmtree(self.path2folder)
-            mkdir(self.path2folder)
+            makedirs(self.path2folder, exist_ok=True)
         else:
             if exists(self.path2folder):
                 rmtree(self.path2folder)
@@ -112,21 +108,21 @@ class MergeDatasets:
             time_start = datetime.now()
 
             # --- Getting data
-            self.__settings.data_point = runPoint
+            self.__settings = runPoint
             datahandler = DataLoader(self.__settings)
             datahandler.do_call()
             datahandler.do_resample()
 
             # --- Processing data (Iterating the channels)
             print(f"\nProcessing data sample {runPoint}:\n========================================================")
-            for ch in tqdm(datahandler.raw_data.electrode_id, ncols=100, desc="Progress: "):
-                spike_xpos = np.floor(datahandler.raw_data.evnt_xpos[ch] * fs_adc / fs_ana).astype("int")
+            for ch in tqdm(datahandler._raw_data.electrode_id, ncols=100, desc="Progress: "):
+                spike_xpos = np.floor(datahandler._raw_data.evnt_xpos[ch] * fs_adc / fs_ana).astype("int")
                 # --- Processing the analogue input
-                self.__pipeline.run_input(datahandler.raw_data.data_raw[ch], spike_xpos)
+                self.__pipeline.run_input(datahandler._raw_data.data_raw[ch], spike_xpos)
                 length_data_in = self.__pipeline.signals.x_adc.size
 
                 frame_new = self.__pipeline.signals.frames_align
-                frame_cl = datahandler.raw_data.evnt_id[ch]
+                frame_cl = datahandler._raw_data.evnt_id[ch]
 
                 # --- Post-Processing: Checking if same length
                 if frame_new.shape[0] != frame_cl.size:
@@ -179,7 +175,7 @@ class MergeDatasets:
 
             # --- Bringing data into format
             create_time = datetime.now().strftime("%Y-%m-%d")
-            file_name = join(self.path2folder, f"{create_time}_Dataset-{datahandler.raw_data.data_name}_step{runPoint+1:03d}")
+            file_name = join(self.path2folder, f"{create_time}_Dataset-{datahandler._raw_data.data_name}_step{runPoint + 1:03d}")
             self.__data_single.update({"frames_in": frames_in, "frames_cl": frames_cl, "ite_recovered": ite_recoverd})
             self.__data_single.update({"settings": settings, "num_clusters": np.unique(frames_cl).size})
             self.__data_single.update({"file_name": file_name})

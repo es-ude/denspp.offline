@@ -37,18 +37,11 @@ class Config_Dataset:
     @property
     def get_path2folder(self) -> str:
         """Getting the path name to the file"""
-        if self.data_path == 'data':
-            path = join(self.get_path2folder_data)
-        elif not self.data_path == '':
+        if not self.data_path == '':
             path = join(self.get_path2folder_project, self.data_path)
         else:
             path = join(self.data_path)
         return abspath(path)
-
-    @property
-    def get_path2folder_data(self) -> str:
-        """Getting the default path of the data inside the Python Project"""
-        return abspath(join(self.get_path2folder_project, 'data'))
 
     @property
     def get_path2folder_project(self, start_folder='3_Python') -> str:
@@ -239,12 +232,12 @@ class Config_Dataset:
 
 
 DefaultSettingsDataset = Config_Dataset(
-    data_path='data',
+    data_path='data/datasets',
     data_file_name='',
     use_cell_library=0,
     augmentation_do=False,
     augmentation_num=0,
-    normalization_do=True,
+    normalization_do=False,
     normalization_method='minmax',
     reduce_samples_per_cluster_do=False,
     reduce_samples_per_cluster_num=0,
@@ -253,22 +246,14 @@ DefaultSettingsDataset = Config_Dataset(
 
 
 if __name__ == "__main__":
-    och = owncloudDownloader()
+    from copy import deepcopy
+    och = owncloudDownloader(use_dataset=True)
     overview = och.get_overview_data()
 
-    config_test = Config_Dataset(
-        data_path='data',
-        data_file_name='',
-        use_cell_library=0,
-        augmentation_do=False,
-        augmentation_num=0,
-        normalization_do=False,
-        normalization_method='minmax',
-        reduce_samples_per_cluster_do=False,
-        reduce_samples_per_cluster_num=0,
-        exclude_cluster=[]
-    )
+    config_test = deepcopy(DefaultSettingsDataset)
+    config_test.normalization_do = True
     data = config_test.load_dataset()
+    config_test.data_file_name = 'quiroga'
 
     from package.plot.plot_dataset import plot_frames_dataset
     plot_frames_dataset(data, plot_norm=config_test.normalization_do, plot_show=True, add_subtitle=True)
