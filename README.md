@@ -26,16 +26,12 @@ python3 -m pip install -r requirements.txt
 
 ## File structure
 
-This Git project contains the three folders:
-
-- `1_Docu`: Documentation
-- `2_Data`: Containing neural datasets. In this repo, only the synthetic dataset of Martinez2009 is available.
-- `3_Python`: Containing the functions in order to setup a NSP pipeline incl. plotting examples
+This Git project contains the main folder `3_Python` which includes the functions to setup a NSP pipeline incl. plotting examples and training Deep Neural Networks (DNN).
 
 The Python folder contains the following folder structure:
 
+- `config`: Includes yaml files for configuring the pipelines (only local)
 - `data`: Merged datasets from your dataset library in order to train deep learning networks (only local)
-- `experiments`: Custom-made functions for characterizing pipeline segments (e.g. spike detection)
 - `package`: All functions in order to setup the pipeline with (i) analogue, (ii) digital, (iii) neural signal
   processing and (iv) handler for train Deep Neural Networks (like Autoencoders, Recurrent Neural Networks and
   Classifiers)
@@ -49,13 +45,10 @@ The Python folder contains the following folder structure:
 
 For starting the Python framework, we recommend to configure the main folder `3_Python` as starting point in PyCharm in
 order to find all references in your script. For running code, you find several Python scripts for different examples.
-
 - `main.py`: For normal pipeline processing
 - `main_data_merge.py`: For merging of given datasets
 - `main_dnn_train.py`: For training ML models, like Autoencoder and Classifier
-- `main_emg.py`: For processing EMG signals
-- `main_fpga.py`: For processing data using in Xilinx simulation environment and transfer the weights of a trained model
-  in memory file
+
   
 ### Installation of virtual environment
 
@@ -116,3 +109,5 @@ Most package managers only provide the latest version of ngspice which is far gr
 - `PySpice` [Official Documentation](https://pyspice.fabrice-salvaire.fr/releases/v1.5/)
 - `impedancefitter` [Official Documentation](https://impedancefitter.readthedocs.io/en/latest/index.html)
 
+## Citation / Documentation
+If you want to understand what is the idea behind DeNSPP, please have a look on the corresponding [paper](https://doi.org/10.1515/cdbme-2023-1118).
