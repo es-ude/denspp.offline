@@ -23,6 +23,7 @@ dependencies = [
     "tqdm>=4.67.1",
     "logging>=0.4.9.6",
     "logdecorator==2.*",
+    "pyxdf>=1.16.8",
 ]
 
 [dependency-groups]

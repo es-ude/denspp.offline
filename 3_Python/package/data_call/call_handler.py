@@ -229,7 +229,7 @@ class _DataController:
             fs_addon = ""
         print(f"... original sampling rate of {int(1e-3 * self._raw_data.data_fs_orig)} kHz{fs_addon}"
               f"\n... using {self.__fill_factor * 100:.2f}% of the data "
-              f"(time length of {self._raw_data.data_time / self.__fill_factor:.2f} s)")
+              f"(time length of {self._raw_data.data_time[-1] / self.__fill_factor:.2f} s)")
 
         if self._raw_data.label_exist:
             cluster_array = None
@@ -418,13 +418,15 @@ class _DataController:
             if len(self.path2mapping_local) == 0 and len(self.path2mapping_remote):
                 self.path2mapping = join(self._path2folder, basename(self.path2mapping_remote[0]))
                 self.__download_handler.download_file(self.path2mapping_remote[0], self.path2mapping)
+            elif len(self.path2mapping_local) == 0 and len(self.path2mapping_remote) == 0:
+                self.path2mapping = ''
             else:
                 self.path2mapping = self.path2mapping_local[0]
         else:
             self.path2mapping = path2csv
 
         # --- Generating mapping information
-        if self._settings.do_mapping and exists(self.path2mapping):
+        if self._settings.do_mapping and exists(self.path2mapping) and self.path2mapping:
             self._generate_electrode_mapping_from_csv()
             self._generate_electrode_activation_mapping()
             self._transform_rawdata_mapping()
