@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from os import getcwd, makedirs
-from os.path import join, abspath, exists
+from os.path import join, abspath, exists, basename
 import numpy as np
 from torch import concat
 from torchvision import datasets, transforms
@@ -32,7 +32,8 @@ class Config_Dataset:
     @property
     def get_path2data(self) -> str:
         """Getting the path name to the file"""
-        return abspath(join(self.get_path2folder, self.data_file_name))
+        a = join(self.get_path2folder, self.data_file_name)
+        return a
 
     @property
     def get_path2folder(self) -> str:
@@ -81,7 +82,7 @@ class Config_Dataset:
             list_datasets = self.print_overview_datasets(False)
             for file in list_datasets:
                 if self.data_file_name.lower() in file.lower():
-                    self.data_file_name = file
+                    self.data_file_name = basename(file)
                     break
             self.__download_spike()
 
