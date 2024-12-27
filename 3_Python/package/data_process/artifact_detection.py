@@ -9,11 +9,11 @@ def load_data(path, filename):
     full_path = os.path.join(path, filename)
     return loadmat(full_path)
 
-def extract_arrays(data, key, num_arrays=3):
+def extract_arrays(data, key, num_arrays=10):
     """Extracts a specified number of arrays from the loaded .mat data."""
     return [np.array([arr[i] for arr in data[key]]) for i in range(num_arrays)]
 
-def detect_artifacts(array, threshold_factor=3):
+def detect_artifacts(array, threshold_factor=10):
     """Detects artifacts in an array based on standard deviation."""
     mean = np.mean(array)
     std_dev = np.std(array)
@@ -53,8 +53,8 @@ def plot_signals(signals, titles, std_devs, means, artifact_ranges, indices_rang
             plt.plot(signal[start:end], label=title)
         else:
             plt.plot(signal, label=title)
-        plt.axhline(mean + 3 * std_dev, color='r', linestyle=':', label='Mean + 3*StdDev')
-        plt.axhline(mean - 3 * std_dev, color='r', linestyle=':', label='Mean - 3*StdDev')
+        plt.axhline(mean + 10 * std_dev, color='r', linestyle=':', label='Mean + 10*StdDev')
+        plt.axhline(mean - 10 * std_dev, color='r', linestyle=':', label='Mean - 10*StdDev')
         plt.title(title)
         plt.xlabel("Index")
         plt.ylabel("Amplitude")
@@ -64,10 +64,19 @@ def plot_signals(signals, titles, std_devs, means, artifact_ranges, indices_rang
 
 # Main script
 if __name__ == "__main__":
-    np.set_printoptions(threshold=np.inf)
-    settings = RecommendedSettingsDSP
+    #np.set_printoptions(threshold=np.inf)
+    settings =  SettingsDSP(
+        gain=1,
+        fs=25e3,
+        n_order=2,
+        f_filt=[1000,10000],
+        type='iir',
+        f_type='butter',
+        b_type='bandpass',
+        t_dly=0
+    )
     dsp_instance = DSP(settings)
-    fs = settings.fs
+    dsp_instance.use_filtfilt = True
     path = r"C:\\Users\\jo-di\\Documents\\Masterarbeit\\Rohdaten"
     filename = "A1R1a_elec_stim_50biphasic_400us0001"
     key = "A1R1a_elec_stim_50biphasic_400us0001"
@@ -84,22 +93,25 @@ if __name__ == "__main__":
     cleaned_original_signal = replace_artifacts(original_signal, original_artifacts)
     cleaned_filtered_signal = replace_artifacts(filtered_signal, filtered_artifacts)
 
-    signals = [filtered_signal, cleaned_filtered_signal, original_signal, cleaned_original_signal]
+    signals = [original_signal, filtered_signal, cleaned_original_signal, cleaned_filtered_signal]
     titles = [
-        "Filtered Signal",
-        "Filtered Signal with Artifacts Replaced",
         "Original Signal",
-        "Original Signal with Artifacts Replaced"
+        "Filtered Signal",
+        "Original Signal with Artifacts Replaced",
+        "Filtered Signal with Artifacts Replaced"
     ]
-    std_devs = [filtered_std_dev, filtered_std_dev, original_std_dev, original_std_dev]
-    means = [filtered_mean, filtered_mean, original_mean, original_mean]
-
-    indices_range = (333218-10, 333340)
-    plot_signals(signals, titles, std_devs, means, [filtered_artifacts, original_artifacts], indices_range)
-
-    print("Filtered Artifacts Indices:", filtered_artifacts)
+    std_devs = [original_std_dev, filtered_std_dev, original_std_dev, filtered_std_dev]
+    means = [original_mean, filtered_mean, original_mean, filtered_mean]
+    for ranges in find_connected_ranges(original_artifacts):
+        x = ranges[0]
+        y = ranges[1]
+        indices_range = (x-10,y+10)
+        plot_signals(signals, titles, std_devs, means, [original_artifacts], indices_range)
+    indices_range = (None, None)
+    plot_signals(signals, titles, std_devs, means, [original_artifacts], indices_range)
+    print("Filtered Artifacts Indices:", original_artifacts)
     #print("Cleaned Filtered Signal Segment:", cleaned_filtered_signal)
 
-    connected_ranges = find_connected_ranges(filtered_artifacts)
+    connected_ranges = find_connected_ranges(original_artifacts)
 
     print("Connected Ranges:", connected_ranges)
