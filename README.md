@@ -16,12 +16,16 @@ in ASICs. For using this framework, the following software tools are necessary /
 
 It is recommended that each working group will create a new branch for editing their input. At the end of each project,
 their input will be merged with the main branch. Further informations about this software framework are described in the
-PPTX/PDF-Documentation. To get the first start of this Framework, we recommend to create a virtual virtual environment (
-venv) with installing all packages from the requirement file. This can be done using the following command line in the
-terminal (Command Prompt) with activing the venv.
+paper at the end of the readme file.
 
+## Installation
+
+We recommended to install all python packages for using this API with a virtual environment (venv). Therefore, we also recommend to `uv` ([Link](https://docs.astral.sh/uv/)) package manager. For this you type-in the following commands into the terminal (Powershell) on Windows.
 ````
-python3 -m pip install -r requirements.txt
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+uv venv
+.\.venv\Scripts\activate  
+uv sync
 ````
 
 ## File structure
@@ -48,19 +52,6 @@ order to find all references in your script. For running code, you find several 
 - `main.py`: For normal pipeline processing
 - `main_data_merge.py`: For merging of given datasets
 - `main_dnn_train.py`: For training ML models, like Autoencoder and Classifier
-
-  
-### Installation of virtual environment
-
-It is recommended that all python packages should be installed using a virtual environment (venv). For this you type-in the following commands into the terminal.
-````
-cd 3_Python
-python -m venv .venv
-.venv\Scripts\activate
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-
-````
 
 ## Advanced installation guide for PySPICE
 
