@@ -1,10 +1,11 @@
 from os.path import abspath
 import numpy as np
 
-from package.pipeline_cmds import PipelineCMD, PipelineSignal
-from package.analog.pre_amp import PreAmp, SettingsAMP
-from package.analog.adc_basic import SettingsADC
-from package.analog.adc_sar import ADC_SAR as ADC0
+from package.pipeline_cmds import PipelineCMD
+from package.pipeline_signal import PipelineSignal
+from package.analog.amplifier.pre_amp import PreAmp, SettingsAMP
+from package.analog.adc import SettingsADC
+from package.analog.adc.adc_sar import SARADC as ADC0
 from package.digital.sda import SpikeDetection, SettingsSDA
 
 

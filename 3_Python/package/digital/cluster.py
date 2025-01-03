@@ -1,8 +1,7 @@
-import dataclasses
-import os
-
 import numpy as np
 import joblib
+from dataclasses import dataclass
+from os import remove
 from os.path import join
 from sklearn.metrics import accuracy_score
 from sklearn.cluster import KMeans, DBSCAN
@@ -10,13 +9,13 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.mixture import GaussianMixture
 
 
-@dataclasses.dataclass
+@dataclass
 class SettingsCluster:
     """"Individual data class to configure clustering"""
     type: str
     no_cluster: int
-    max_iter = 1000
-    tolerance = 1e-9
+    max_iter: int = 1000
+    tolerance: float = 1e-9
     random_state = None # np.random.RandomState(seed=1234)
 
 
@@ -281,7 +280,7 @@ if __name__ == "__main__":
     cluster_pred = Clustering(settings)
     cluster_pred.load_model_from_file(file_name)
     labels_pred = cluster_pred.predict(data)
-    os.remove(f'{file_name}.joblib')
+    remove(f'{file_name}.joblib')
 
     # --- Printing metrics
     print("\nPrinting results\n=======================================================")

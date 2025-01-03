@@ -4,7 +4,7 @@ from os import getcwd
 
 
 @dataclass
-class Config_ML_Pipeline:
+class ConfigMLPipeline:
     """Handling for training depp neural networks"""
     # --- Selection of DL Pipeline
     mode_train_dnn: int
@@ -28,7 +28,7 @@ class Config_ML_Pipeline:
             return path2start
 
 
-DefaultSettings_MLPipe = Config_ML_Pipeline(
+DefaultSettings_MLPipe = ConfigMLPipeline(
     mode_train_dnn=0,
     path2yaml='config',
     do_plot=True,

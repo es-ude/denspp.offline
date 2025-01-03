@@ -7,7 +7,7 @@ from glob import glob
 from fractions import Fraction
 from scipy.signal import resample_poly
 from package.structure_builder import create_folder_general_firstrun
-from package.data_call.owncloud_handler import owncloudDownloader
+from package.data_call.owncloud_handler import OwncloudDownloader
 
 
 @dataclasses.dataclass(frozen=True)
@@ -116,9 +116,9 @@ def transform_label_from_csv_to_numpy(marker_loaded: list, label_text: list, sta
     return loaded_type, loaded_marker
 
 
-class _DataController:
+class DataController:
     """Class for loading and manipulating the used dataset"""
-    __download_handler = owncloudDownloader(use_dataset=False)
+    __download_handler = OwncloudDownloader(use_dataset=False)
     _raw_data: DataHandler
     _settings: SettingsDATA
     _path2file: str = ''
@@ -131,7 +131,7 @@ class _DataController:
         create_folder_general_firstrun()
         self.__fill_factor = 1
         self.__scaling = 1
-        self._methods_available = dir(_DataController)
+        self._methods_available = dir(DataController)
         self.__default_data_path = join(self.get_path2repo(), '2_Data')
         self.__config_data_selection = [self.__default_data_path, 0, 0]
 

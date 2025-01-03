@@ -2,17 +2,17 @@ import numpy as np
 from os.path import join
 from scipy.io import loadmat
 from pyxdf import load_xdf
-from package.data_call.call_handler import _DataController, SettingsDATA, DataHandler
+from package.data_call.call_handler import DataController, SettingsDATA, DataHandler
 
 
-class DataLoader(_DataController):
+class DataLoader(DataController):
     """Class for loading and manipulating the used dataset"""
     _raw_data: DataHandler
     _settings: SettingsDATA
     _path2file: str
 
     def __init__(self, setting: SettingsDATA) -> None:
-        _DataController.__init__(self)
+        DataController.__init__(self)
         self._settings = setting
         self.select_electrodes = list()
         self._path2file = str()

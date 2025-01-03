@@ -1,16 +1,11 @@
 from src_neuro.call_spike import DataLoader
-from package.data_call.call_handler import SettingsDATA, RecommendedSettingsDATA
-from package.pipeline_cmds import ProcessingData, ThreadSettings, RecommendedThreadSetting
-from package.yaml_handler import yaml_config_handler
+from package.pipeline_cmds import ProcessingData, read_yaml_pipeline_config
 from src_neuro.pipeline_v1 import Pipeline
 
 
 if __name__ == "__main__":
     # --- Calling YAML config handler
-    yaml_data = yaml_config_handler(RecommendedSettingsDATA, yaml_name='Config_PipelineData')
-    settings_data = yaml_data.get_class(SettingsDATA)
-    yaml_threads = yaml_config_handler(RecommendedThreadSetting, yaml_name='Config_Pipeline')
-    settings_thr = yaml_threads.get_class(ThreadSettings)
+    settings_data, settings_thr = read_yaml_pipeline_config()
 
     # ----- Preparation: Module calling -----
     print("\nRunning framework for end-to-end neural signal processing (DeNSPP)"

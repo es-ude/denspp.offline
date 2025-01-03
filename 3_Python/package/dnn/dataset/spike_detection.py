@@ -1,7 +1,7 @@
 import numpy as np
 from torch import is_tensor
 from torch.utils.data import Dataset, DataLoader
-from package.dnn.pytorch_handler import Config_Dataset
+from package.dnn.pytorch_handler import ConfigDataset
 
 
 class DatasetSDA(Dataset):
@@ -54,7 +54,7 @@ def prepare_plotting(data_in: DataLoader) -> tuple[np.ndarray, np.ndarray, np.nd
     return din, dsda, dout
 
 
-def prepare_training(settings: Config_Dataset, threshold: int) -> DatasetSDA:
+def prepare_training(settings: ConfigDataset, threshold: int) -> DatasetSDA:
     """Preparing datasets incl. augmentation for spike-detection-based training (without pre-processing)"""
     print("... loading the datasets")
 

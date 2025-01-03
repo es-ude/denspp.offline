@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from os import mkdir
 from os.path import exists
 
-from package.plot.plot_common import save_figure, scale_auto_value
+from package.plot.helper import save_figure, scale_auto_value
 from package.data_call.call_handler import DataHandler
 
 

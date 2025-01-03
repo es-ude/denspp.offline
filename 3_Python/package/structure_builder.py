@@ -4,18 +4,25 @@ from glob import glob
 from shutil import copy
 
 
-def create_folder_general_firstrun(start_folder='3_Python') -> None:
-    """Generating folder structure in first run"""
-    path2start = join(getcwd().split(start_folder)[0], start_folder)
+def create_folder_general_firstrun(start_folder='3_Python', new_folder='') -> None:
+    """Generating folder structure in first run
+    :param start_folder:    Name of the start folder to find in get absolute path
+    :param new_folder:      Name of the new folder to create (test case)
+    """
+    path2start = join(getcwd().split(start_folder)[0], start_folder, new_folder)
     folder_structure = ['data', 'runs', 'test', 'config']
     for folder_name in folder_structure:
         makedirs(join(path2start, folder_name), exist_ok=True)
 
 
-def create_folder_dnn_firstrun(project_start_folder='3_Python', dnn_folder='src_dnn') -> None:
-    """Generating a handler dummy for training neural networks"""
-    path2start = join(getcwd().split(project_start_folder)[0], project_start_folder)
-    path2dst = join(path2start, dnn_folder)
+def create_folder_dnn_firstrun(start_folder='3_Python', new_folder='', dnn_folder='src_dnn') -> None:
+    """Generating a handler dummy for training neural networks
+    :param start_folder:    Name of the start folder to find in get absolute path
+    :param new_folder:      Name of the new folder to create (test case)
+    :param dnn_folder:      Name of the DNN folder to create
+    """
+    path2start = join(getcwd().split(start_folder)[0], start_folder)
+    path2dst = join(path2start, new_folder, dnn_folder)
 
     folder_structure = ['models', 'dataset']
     for folder_name in folder_structure:

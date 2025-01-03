@@ -1,38 +1,39 @@
 import unittest
 from os import getcwd
 from os.path import exists, join
+from shutil import rmtree
 from package.structure_builder import create_folder_general_firstrun, create_folder_dnn_firstrun
 
 
-folder_general = ['data', 'runs', 'test', 'config']
-folder_dnn = ['models', 'dataset', 'config']
-
-
 class TestSum(unittest.TestCase):
-    def test_sum(self):
-        self.assertEqual(sum([1, 2, 3]), 6, "Should be 6")
+    folder_general = ['data', 'runs', 'test', 'config']
+    folder_dnn = ['models', 'dataset']
+    folder2search = '3_Python'
+    folder_name_test = 'temp_tests'
 
     def test_check_folder_general(self):
-        create_folder_general_firstrun()
-        folder2search = '3_Python'
-        path2start = join(getcwd().split(folder2search)[0], folder2search)
+        create_folder_general_firstrun(self.folder2search, self.folder_name_test)
+        path2start = join(getcwd().split(self.folder2search)[0], self.folder2search, self.folder_name_test)
 
         num_pass = 0
-        for folder in folder_general:
+        for folder in self.folder_general:
             path2test = join(path2start, folder)
             num_pass += 1 if exists(path2test) else 0
-        self.assertEqual(num_pass == len(folder_general), True, "Folders not there")
+
+        rmtree(path2start)
+        self.assertEqual(num_pass, len(self.folder_general), "Folders not there")
 
     def test_check_folder_dnn(self):
-        create_folder_dnn_firstrun()
-        folder2search = '3_Python'
-        path2start = join(getcwd().split(folder2search)[0], folder2search)
+        create_folder_dnn_firstrun(self.folder2search, self.folder_name_test)
+        path2start = join(getcwd().split(self.folder2search)[0], self.folder2search, self.folder_name_test, 'src_dnn')
 
         num_pass = 0
-        for folder in folder_dnn:
+        for folder in self.folder_dnn:
             path2test = join(path2start, folder)
             num_pass += 1 if exists(path2test) else 0
-        self.assertEqual(num_pass == len(folder_dnn), True, "Folders not there")
+
+        rmtree(path2start)
+        self.assertEqual(num_pass == len(self.folder_dnn), True, "Folders not there")
 
 
 if __name__ == '__main__':

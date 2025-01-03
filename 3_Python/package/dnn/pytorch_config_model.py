@@ -6,7 +6,7 @@ from copy import deepcopy
 
 
 @dataclass
-class Config_PyTorch:
+class ConfigPytorch:
     """Class for handling the PyTorch training/inference pipeline"""
     model_name: str
     patience: int
@@ -46,13 +46,13 @@ class Config_PyTorch:
                 raise NotImplementedError("Optimizer function unknown! - Please implement or check!")
         return optim_func
 
-    def get_model_overview(self, index='') -> None:
-        """"""
+    def get_model_overview(self, print_overview=False, index='') -> None:
+        """Function for getting an overview of existing models inside library"""
         models_bib = ModelLibrary().get_registry()
-        # models_bib.get_model_library_overview(index, do_print=True)
+        models_bib.get_model_library_overview(index, do_print=print_overview)
 
     def get_model(self, *args, **kwargs):
-        """"""
+        """Function for loading the model to train"""
         models_bib = ModelLibrary().get_registry()
         if not self.model_name:
             models_bib.get_model_library_overview(True)
@@ -66,7 +66,7 @@ class Config_PyTorch:
                                           f"\n{models_bib.get_model_library_overview_string()}")
 
 
-DefaultSettingsTrainMSE = Config_PyTorch(
+DefaultSettingsTrainMSE = ConfigPytorch(
     model_name='',
     patience=20,
     optimizer='Adam',
@@ -79,7 +79,7 @@ DefaultSettingsTrainMSE = Config_PyTorch(
     data_do_shuffle=True,
     data_split_ratio=0.2
 )
-DefaultSettingsTrainCE = Config_PyTorch(
+DefaultSettingsTrainCE = ConfigPytorch(
     model_name='',
     patience=20,
     optimizer='Adam',
@@ -92,11 +92,3 @@ DefaultSettingsTrainCE = Config_PyTorch(
     deterministic_do=False,
     deterministic_seed=42
 )
-
-
-if __name__ == "__main__":
-    models_bib.get_model_library_overview()
-
-    model_test = ModelLibrary()
-    a = model_test.get_registry()
-    print(".done")

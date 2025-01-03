@@ -6,7 +6,7 @@ from torch import is_tensor
 from torch.utils.data import Dataset
 from pathlib import Path
 
-from package.dnn.pytorch_handler import Config_Dataset
+from package.dnn.pytorch_handler import ConfigDataset
 
 
 class DecoderDataset(Dataset):
@@ -53,7 +53,7 @@ class DecoderDataset(Dataset):
         return "Neural Decoder (Utah)"
 
 
-def prepare_training(settings: Config_Dataset, length_time_window_ms=500, use_cluster=True) -> DecoderDataset:
+def prepare_training(settings: ConfigDataset, length_time_window_ms=500, use_cluster=True) -> DecoderDataset:
     """Preparing dataset incl. add time-window feature and counting dataset
     Args:
         settings:               Configuration/Settings for handling data
@@ -107,7 +107,7 @@ def prepare_training(settings: Config_Dataset, length_time_window_ms=500, use_cl
                           label_dict=label_dict, use_patient_dec=True)
 
 
-def generate_electrode_mapping_from_data(settings: Config_Dataset, path2save_csv='') -> np.ndarray:
+def generate_electrode_mapping_from_data(settings: ConfigDataset, path2save_csv='') -> np.ndarray:
     """Preparing dataset incl. add time-window feature and counting dataset
     Args:
         settings:               Configuration/Settings for handling data
@@ -137,7 +137,7 @@ def generate_electrode_mapping_from_data(settings: Config_Dataset, path2save_csv
     return elec_id_map
 
 
-def __load_dataset(settings: Config_Dataset) -> np.ndarray:
+def __load_dataset(settings: ConfigDataset) -> np.ndarray:
     """Loading the raw data from Utah recording"""
     base_path = Path(__file__).parents[2]
     func_name = __load_dataset.__name__

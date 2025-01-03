@@ -5,7 +5,7 @@ from datetime import datetime
 from sklearn.metrics import precision_recall_fscore_support
 
 from torch import Tensor, zeros, load, save, concatenate, inference_mode, sum, cuda, cat, randn, eq, add, div
-from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
+from package.dnn.pytorch_handler import ConfigPytorch, ConfigDataset, PyTorchHandler
 
 
 def _calculate_number_true_predictions(pred: Tensor, true: Tensor) -> Tensor:
@@ -53,8 +53,8 @@ def _calculate_fbeta(pred: Tensor, true: Tensor, beta=1.0) -> Tensor:
     return precision_recall_fscore_support(true, pred, beta=beta, average="micro", warn_for=tuple())[2]
 
 
-class train_nn(training_pytorch):
-    def __init__(self, config_train: Config_PyTorch, config_data: Config_Dataset,
+class train_nn(PyTorchHandler):
+    def __init__(self, config_train: ConfigPytorch, config_data: ConfigDataset,
                  do_train=True, do_print=True) -> None:
         """Class for Handling Training of Classifiers
         Args:
@@ -65,7 +65,7 @@ class train_nn(training_pytorch):
         Return:
             None
         """
-        training_pytorch.__init__(self, config_train, config_data, do_train, do_print)
+        PyTorchHandler.__init__(self, config_train, config_data, do_train, do_print)
         # --- Structure for calculating custom metrics during training
         self.__metric_buffer = dict()
         self.__metric_result = dict()

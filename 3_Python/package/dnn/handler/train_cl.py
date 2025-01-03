@@ -1,13 +1,13 @@
 from copy import deepcopy
 from package.yaml_handler import yaml_config_handler
-from package.dnn.dnn_handler import Config_ML_Pipeline
-from package.dnn.pytorch_config_data import Config_Dataset, DefaultSettingsDataset
-from package.dnn.pytorch_config_model import Config_PyTorch, DefaultSettingsTrainCE
+from package.dnn.dnn_handler import ConfigMLPipeline
+from package.dnn.pytorch_config_data import ConfigDataset, DefaultSettingsDataset
+from package.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainCE
 from package.dnn.pytorch_pipeline import do_train_classifier
 from package.dnn.dataset.classifier import prepare_training
 
 
-def do_train_spike_class(settings: Config_ML_Pipeline, yaml_name_index='Config_Neural',
+def do_train_spike_class(settings: ConfigMLPipeline, yaml_name_index='Config_Neural',
                          used_dataset_name='', used_model_name='') -> str:
     """Training routine for Classification DL models
     Args:
@@ -22,13 +22,13 @@ def do_train_spike_class(settings: Config_ML_Pipeline, yaml_name_index='Config_N
     default_data = deepcopy(DefaultSettingsDataset)
     default_data.data_file_name = used_dataset_name
     yaml_data = yaml_config_handler(default_data, settings.get_path2config, f'{yaml_name_index}_Dataset')
-    config_data = yaml_data.get_class(Config_Dataset)
+    config_data = yaml_data.get_class(ConfigDataset)
 
     # --- Loading the YAML file: Model training
     default_train = deepcopy(DefaultSettingsTrainCE)
     default_train.model_name = used_model_name
     yaml_train = yaml_config_handler(default_train, settings.get_path2config, f'{yaml_name_index}_TrainCL')
-    config_train = yaml_train.get_class(Config_PyTorch)
+    config_train = yaml_train.get_class(ConfigPytorch)
 
     # --- Loading Data, Build Model and Do Inference
     dataset = prepare_training(config_data)

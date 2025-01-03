@@ -1,4 +1,4 @@
-from package.dnn.dnn_handler import Config_ML_Pipeline, DefaultSettings_MLPipe
+from package.dnn.dnn_handler import ConfigMLPipeline, DefaultSettings_MLPipe
 from package.yaml_handler import yaml_config_handler
 from package.structure_builder import create_folder_general_firstrun
 
@@ -10,18 +10,18 @@ if __name__ == "__main__":
     create_folder_general_firstrun()
     # --- Loading YAML-Settings file
     yaml_handler = yaml_config_handler(DefaultSettings_MLPipe, 'config', 'Config_DNN')
-    dnn_handler = yaml_handler.get_class(Config_ML_Pipeline)
+    dnn_handler = yaml_handler.get_class(ConfigMLPipeline)
 
     # --- Processing
     match dnn_handler.mode_train_dnn:
         case 0:
             # --- MNIST (Classifier)
-            from package.dnn.handler.train_mnist import do_train_cl
-            do_train_cl(dnn_handler)
+            from package.dnn.handler.train_mnist import do_train_mnist_cl
+            do_train_mnist_cl(dnn_handler)
         case 1:
             # --- MNIST (Autoencoder)
-            from package.dnn.handler.train_mnist import do_train_ae
-            do_train_ae(dnn_handler)
+            from package.dnn.handler.train_mnist import do_train_mnist_ae
+            do_train_mnist_ae(dnn_handler)
         case 2:
             # --- Neural Classifier (Normal)
             from package.dnn.handler.train_cl import do_train_spike_class

@@ -4,17 +4,17 @@ from scipy.io import loadmat
 from mat73 import loadmat as loadmat_mat73
 from pyxdf import load_xdf
 from package.data_call.call_cellbib import CellSelector
-from package.data_call.call_handler import _DataController, DataHandler, SettingsDATA, translate_unit_to_scale_value
+from package.data_call.call_handler import DataController, DataHandler, SettingsDATA, translate_unit_to_scale_value
 
 
-class DataLoader(_DataController):
+class DataLoader(DataController):
     """Class for loading and manipulating the used dataset"""
     _raw_data: DataHandler
     _settings: SettingsDATA
     _path2file: str = ""
 
     def __init__(self, setting: SettingsDATA) -> None:
-        _DataController.__init__(self)
+        DataController.__init__(self)
         self._settings = setting
         self.select_electrodes = list()
         self._methods_available = dir(DataLoader)

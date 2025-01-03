@@ -1,13 +1,13 @@
 from copy import deepcopy
 from package.yaml_handler import yaml_config_handler
-from package.dnn.dnn_handler import Config_ML_Pipeline
-from package.dnn.pytorch_config_data import Config_Dataset, DefaultSettingsDataset
-from package.dnn.pytorch_config_model import Config_PyTorch, DefaultSettingsTrainCE
+from package.dnn.dnn_handler import ConfigMLPipeline
+from package.dnn.pytorch_config_data import ConfigDataset, DefaultSettingsDataset
+from package.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainCE
 from package.dnn.pytorch_pipeline import do_train_classifier
 from src_dnn.dataset.decoding_utah import prepare_training
 
 
-def do_train_decoder_utah(config_ml: Config_ML_Pipeline, length_window_ms=500,
+def do_train_decoder_utah(config_ml: ConfigMLPipeline, length_window_ms=500,
                           yaml_name_index='Config_Utah') -> None:
     """Training routine for Neural Decoding of recordings from Utah array (KlaesLab)
     Args:
@@ -21,14 +21,14 @@ def do_train_decoder_utah(config_ml: Config_ML_Pipeline, length_window_ms=500,
     default_data = deepcopy(DefaultSettingsDataset)
     default_data.data_file_name = ''
     yaml_data = yaml_config_handler(DefaultSettingsDataset, path2yaml='config', yaml_name=f'{yaml_name_index}_Dataset')
-    config_data = yaml_data.get_class(Config_Dataset)
+    config_data = yaml_data.get_class(ConfigDataset)
     del yaml_data
 
     # --- Loading the YAML file: Model training
     default_train = deepcopy(DefaultSettingsTrainCE)
     default_train.model_name = ''
     yaml_train = yaml_config_handler(default_train, path2yaml='config', yaml_name=f'{yaml_name_index}_Train')
-    config_train = yaml_train.get_class(Config_PyTorch)
+    config_train = yaml_train.get_class(ConfigPytorch)
     del default_train, yaml_train
 
     # --- Loading Data, Build Model and Do Training

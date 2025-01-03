@@ -3,7 +3,7 @@ import numpy as np
 from glob import glob
 from os.path import join, split
 from torch import load, rand
-from package.plot.plot_common import save_figure, get_plot_color
+from package.plot.helper import save_figure, get_plot_color
 
 
 def extract_best_model_epoch_number(path2search: str, file_index: str = '*.pth') -> int:

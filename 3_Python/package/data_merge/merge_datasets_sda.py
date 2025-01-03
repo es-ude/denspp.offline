@@ -4,7 +4,8 @@ from time import time_ns
 from datetime import datetime
 from tqdm import tqdm
 
-from package.data_call.call_handler import _DataController
+import package.analog.adc.adc_settings
+from package.data_call.call_handler import DataController
 from src_neuro.pipeline_data import Settings, Pipeline
 
 
@@ -14,14 +15,14 @@ def prepare_sda_dataset(path2save: str, slice_size=12, process_points=[]) -> Non
         only_pos: Taking the datapoints of the choicen dataset [Start, End]"""
     # --- Loading the src_neuro
     afe_set = Settings()
-    fs_ana = afe_set.SettingsADC.fs_ana
-    fs_adc = afe_set.SettingsADC.fs_adc
+    fs_ana = package.analog.adc.adc_settings.SettingsADC.fs_ana
+    fs_adc = package.analog.adc.adc_settings.SettingsADC.fs_adc
 
     # ------ Loading Data: Preparing Data
     timepoint_start = time_ns()
     print("\nStart merging datasets for generating a dataset for train spike detection algorithms (SDA)")
     print(f"... loading the datasets")
-    datahandler = _DataController(afe_set.SettingsDATA)
+    datahandler = DataController(afe_set.SettingsDATA)
     datahandler
     datahandler.do_resample()
     data = datahandler.get_data()

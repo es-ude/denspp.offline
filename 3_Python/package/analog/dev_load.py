@@ -1,7 +1,6 @@
 import numpy as np
-
 from package.structure_builder import create_folder_general_firstrun
-from package.analog.dev_handler import ElectricalLoad_Handler, SettingsDEV, _generate_signal, _plot_test_results
+from package.analog.dev_handler import ElectricalLoadHandler, SettingsDEV, _generate_signal, _plot_test_results
 from package.analog.dev_noise import ProcessNoise, SettingsNoise
 
 
@@ -23,7 +22,7 @@ RecommendedSettingsNoise = SettingsNoise(
 )
 
 
-class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
+class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
     _settings: SettingsDEV
     _poly_fit: np.ndarray
     _fit_options: list

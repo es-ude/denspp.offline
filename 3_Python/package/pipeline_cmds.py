@@ -7,7 +7,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from threading import Thread, active_count
 from tqdm import tqdm
-import dataclasses
+from dataclasses import dataclass
+from package.data_call.call_handler import SettingsDATA, RecommendedSettingsDATA
+from package.yaml_handler import yaml_config_handler
 
 
 class PipelineCMD:
@@ -62,35 +64,6 @@ class PipelineCMD:
         print(f"... data saved in: {path2data}")
 
 
-class PipelineSignal:
-    def __init__(self) -> None:
-        """Pipeline signals for saving 1d signal processing"""
-        self.u_in = None  # Input voltage
-        self.u_pre = None  # Output of pre-amp
-        self.u_spk = None  # Output of analogue filtering - spike acitivity
-        self.u_lfp = None  # Output of analogue filtering - lfp
-        self.x_adc = None  # ADC output
-        self.fs_ana = 0.0  # "Sampling rate"
-
-        self.x_adc = None  # ADC output
-        self.x_spk = None  # Output of digital filtering - spike
-        self.x_lfp = None  # Output of digital filtering - lfp
-        self.x_sda = None  # Output of Spike Detection Algorithm (SDA)
-        self.x_thr = None  # Threshold value for SDA
-        self.x_pos = None  # Position for generating frames
-        self.frames_orig = None  # Original frames after event-detection (larger)
-        self.frames_align = None  # Aligned frames to specific method
-        self.features = None  # Calculated features of frames
-        self.cluster_id = None  # Clustered events
-        self.spike_ticks = None  # Spike Ticks
-        self.nsp_post = dict()  # Adding some parameters after calculating some neural signal processing methods
-        self.fs_adc = 0.0  # Sampling rate of the ADC incl. oversampling
-        self.fs_dig = 0.0  # Processing rate of the digital part
-
-        self.spike_ticks = None  # Spike Ticks
-        self.nsp_post = dict()  # Adding some parameters after calculating some neural signal processing methods
-
-
 class ThreadProcessor(Thread):
     def __init__(self, rawdata: np.ndarray, fs_ana: float, pipeline) -> None:
         """Class for handling a thread of the signal processor
@@ -114,8 +87,8 @@ class ThreadProcessor(Thread):
         self.output_save = self.pipeline.prepare_saving()
 
 
-@dataclasses.dataclass(frozen=True)
-class ThreadSettings:
+@dataclass(frozen=True)
+class SettingsThread:
     """Class for handling the processor"""
     use_multithreading: bool
     num_max_workers: int
@@ -123,7 +96,7 @@ class ThreadSettings:
     fs_ana: float
 
 
-RecommendedThreadSetting = ThreadSettings(
+RecommendedSettingsThread = SettingsThread(
     use_multithreading=False,
     num_max_workers=1,
     block_plots=True,
@@ -132,7 +105,7 @@ RecommendedThreadSetting = ThreadSettings(
 
 
 class ProcessingData:
-    def __init__(self, pipeline, settings: ThreadSettings, data_in: np.ndarray, channel_id: np.ndarray) -> None:
+    def __init__(self, pipeline, settings: SettingsThread, data_in: np.ndarray, channel_id: np.ndarray) -> None:
         """Thread processor for analyzing data
         Args:
             pipeline:       Used pipeline for signal processing
@@ -210,3 +183,20 @@ class ProcessingData:
             self.__perform_multi_threads()
         else:
             self.__perform_single_threads()
+
+
+def read_yaml_pipeline_config(
+        yaml_data_index: str = 'Config_PipelineData',
+        yaml_pipe_index: str = 'Config_Pipeline',
+    ) -> [SettingsDATA, SettingsThread]:
+    """
+    Function for reading/generating the yaml configuration files for getting the transient data and pipeline processing
+    :param yaml_data_index: Index with name for reading the yaml configuration file for data loading
+    :param yaml_pipe_index: Index with name for reading the yaml configuration file for pipeline processing
+    :return:                Classes for handling the data (SettingsDATA) and pipeline processor (SettingsThread)
+    """
+    yaml_data = yaml_config_handler(RecommendedSettingsDATA, yaml_name=yaml_data_index)
+    settings_data = yaml_data.get_class(SettingsDATA)
+    yaml_threads = yaml_config_handler(RecommendedSettingsThread, yaml_name=yaml_pipe_index)
+    settings_thr = yaml_threads.get_class(SettingsThread)
+    return settings_data, settings_thr

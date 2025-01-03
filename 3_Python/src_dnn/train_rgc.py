@@ -1,10 +1,10 @@
-from package.dnn.dnn_handler import Config_ML_Pipeline
+from package.dnn.dnn_handler import ConfigMLPipeline
 from package.dnn.handler.train_cl import do_train_spike_class
 from package.dnn.handler.train_ae_cl import do_train_ae_classifier
 from package.data_process.rgc_combination import rgc_logic_combination
 
 
-def do_train_rgc_class(settings: Config_ML_Pipeline) -> None:
+def do_train_rgc_class(settings: ConfigMLPipeline) -> None:
     """Training routine for classifying RGC ON/OFF and Transient/Sustained Types (Classification)
     Args:
         settings:           Handler for configuring the routine selection to train deep neural networks
@@ -21,7 +21,7 @@ def do_train_rgc_class(settings: Config_ML_Pipeline) -> None:
         rgc_logic_combination(path2folder, show_plot=settings.do_block)
 
 
-def do_train_rgc_aecl(settings: Config_ML_Pipeline, add_noise_cluster: bool=False) -> None:
+def do_train_rgc_aecl(settings: ConfigMLPipeline, add_noise_cluster: bool=False) -> None:
     """Training routine for Autoencoders and Classification after Encoder for Retinal Ganglion Celltype Classification
     Args:
         settings:           Handler for configuring the routine selection for train deep neural networks

@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from package.pipeline_cmds import PipelineSignal
+from package.pipeline_signal import PipelineSignal
 from package.nsp.spike_analyse import calc_amplitude, calc_autocorrelogram, calc_firing_rate
-from package.plot.plot_common import cm_to_inch, save_figure, get_plot_color, scale_auto_value
+from package.plot.helper import cm_to_inch, save_figure, get_plot_color, scale_auto_value
 
 color_none = ['#929591']
 text_size = 14

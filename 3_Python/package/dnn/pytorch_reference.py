@@ -1,13 +1,12 @@
 import numpy as np
-
-from package.dnn.pytorch_config_data import Config_Dataset
+from package.dnn.pytorch_config_data import ConfigDataset
 from package.digital.fex import SettingsFeature, FeatureExtraction
 from package.digital.cluster import SettingsCluster, Clustering
 from package.plot.plot_dnn import plot_3d_featspace, translate_feats_into_list
 from package.plot.plot_metric import plot_confusion
 
 
-def generate_reference_cluster(config_feat: SettingsFeature, config_clus: SettingsCluster, config_data: Config_Dataset,
+def generate_reference_cluster(config_feat: SettingsFeature, config_clus: SettingsCluster, config_data: ConfigDataset,
                                take_num_samples: int = -1, do_reordering=False, path2save: str = '') -> None:
     """"""
     data_used = config_data.load_dataset()
@@ -32,7 +31,7 @@ def generate_reference_cluster(config_feat: SettingsFeature, config_clus: Settin
                    cl_dict=data_dict, path2save=path2save, show_plots=True)
 
 
-def make_reordered_confusion_matrix(config_data: Config_Dataset, num_pred_ids: list, path2save: str = '') -> None:
+def make_reordered_confusion_matrix(config_data: ConfigDataset, num_pred_ids: list, path2save: str = '') -> None:
     """"""
     data_used = config_data.load_dataset()
     data_dict = data_used['dict']
@@ -62,7 +61,7 @@ if __name__ == "__main__":
         type='kMeans',
         no_cluster=6
     )
-    sets_data = Config_Dataset(
+    sets_data = ConfigDataset(
         data_path='data',
         data_file_name='quiroga',
         use_cell_library=0,

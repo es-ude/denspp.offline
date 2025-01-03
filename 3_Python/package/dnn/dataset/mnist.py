@@ -1,7 +1,7 @@
 import numpy as np
 from torch import is_tensor
 from torch.utils.data import Dataset
-from package.dnn.pytorch_config_data import Config_Dataset
+from package.dnn.pytorch_config_data import ConfigDataset
 
 
 class DatasetMNIST(Dataset):
@@ -45,7 +45,7 @@ class DatasetMNIST(Dataset):
         return int(np.unique(self.__cluster_id).size)
 
 
-def prepare_training(settings: Config_Dataset, do_classification=True) -> DatasetMNIST:
+def prepare_training(settings: ConfigDataset, do_classification=True) -> DatasetMNIST:
     """Loading and preparing the MNIST dataset for Deep Learning
     Args:
         settings:           Class for loading and pre-processing the data for DataLoader

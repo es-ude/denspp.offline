@@ -27,7 +27,7 @@ class DatasetWFG(Dataset):
 def generate_dataset(selected_wfg: list, num_wfg_class: int, freq_wfg: float, sampling_rate: float, scale_amp=1.0,
                      adding_noise=False, pwr_noise_db=-30.0, get_info_classes=False,
                      do_normalize_rms=False) -> DatasetWFG:
-    """Generating dataset
+    """Generating dataset with waveforms
     Args:
         selected_wfg:       Selected types of waveforms
         num_wfg_class:      Number of samples for each waveform class

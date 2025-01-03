@@ -1,15 +1,15 @@
 import matplotlib.pyplot as plt
 from package.plot.plot_dnn import plot_statistic_data
 from package.plot.plot_metric import plot_confusion, plot_loss
-from package.dnn.dnn_handler import Config_ML_Pipeline
-from package.dnn.pytorch_config_data import Config_Dataset
-from package.dnn.pytorch_config_model import Config_PyTorch
+from package.dnn.dnn_handler import ConfigMLPipeline
+from package.dnn.pytorch_config_data import ConfigDataset
+from package.dnn.pytorch_config_model import ConfigPytorch
 from package.dnn.pytorch.classifier import train_nn as train_nn_cl
 from package.dnn.pytorch.autoencoder import train_nn as train_nn_ae
 
 
-def do_train_classifier(config_ml: Config_ML_Pipeline, config_data: Config_Dataset,
-                        config_train: Config_PyTorch, used_dataset, used_model,
+def do_train_classifier(config_ml: ConfigMLPipeline, config_data: ConfigDataset,
+                        config_train: ConfigPytorch, used_dataset, used_model,
                         path2save='', calc_custom_metrics=(), print_results=True) -> [dict, dict, str]:
     """Template for training DL classifiers using PyTorch (incl. plotting)
     Args:
@@ -53,8 +53,8 @@ def do_train_classifier(config_ml: Config_ML_Pipeline, config_data: Config_Datas
     return metrics, data_result, path2folder
 
 
-def do_train_autoencoder(config_ml: Config_ML_Pipeline, config_data: Config_Dataset,
-                         config_train: Config_PyTorch, used_dataset, used_model,
+def do_train_autoencoder(config_ml: ConfigMLPipeline, config_data: ConfigDataset,
+                         config_train: ConfigPytorch, used_dataset, used_model,
                          path2save='', calc_custom_metrics=(), save_vhdl=False, path4vhdl='', print_results=True) -> [dict, dict, str]:
     """Template for training DL classifiers using PyTorch (incl. plotting)
     Args:

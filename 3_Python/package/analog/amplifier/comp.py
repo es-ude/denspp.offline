@@ -6,7 +6,7 @@ import numpy as np
 class SettingsCMP:
     """"Individual data class to configure an analogue comparator
 
-    Args:
+    Params:
         vdd:        Positive supply voltage [V]
         vss:        Negative supply voltage [V]
         offset:     Offset voltage of the amplifier [V]
@@ -25,7 +25,7 @@ class SettingsCMP:
         return np.array(self.vdd + self.vss) / 2
 
 
-RecommendedSettingsAMP = SettingsCMP(
+RecommendedSettingsCMP = SettingsCMP(
     vdd=0.6, vss=-0.6,
     out_analog=False,
     gain=100,
@@ -66,7 +66,7 @@ class Comp:
 
     def __dig_output(self, du: np.ndarray) -> np.ndarray:
         """Translating the analogue signal into digital trigger"""
-        return np.sign(du) == 1
+        return np.array(np.sign(du) == True)
 
     def __cmp_hystere(self, du: np.ndarray, thr: list) -> np.ndarray:
         """Processing differential input for generating hysterese"""
@@ -186,10 +186,11 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     print("TEST")
 
-    cmp = Comp(RecommendedSettingsAMP)
+    cmp = Comp(RecommendedSettingsCMP)
     # --- Defining the input
     n_samples = 10000
-    inp0 = np.concatenate((np.linspace(-0.6, 0.6, n_samples), np.linspace(0.6, -0.6, n_samples)))
+    halfspace = np.linspace(-0.6, 0.6, n_samples)
+    inp0 = np.concatenate((halfspace, -halfspace), 0)
     inp1 = np.zeros((n_samples, ))
 
     # --- Defining the output

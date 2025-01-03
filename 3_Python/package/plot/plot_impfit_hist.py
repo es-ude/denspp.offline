@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from package.plot.plot_common import save_figure, scale_auto_value, _get_median
+from package.plot.helper import save_figure, scale_auto_value, _get_median
 
 
 def plot_hist_impedance(r_tis: np.ndarray, z_war: np.ndarray, c_dl: np.ndarray, r_ct: np.ndarray,

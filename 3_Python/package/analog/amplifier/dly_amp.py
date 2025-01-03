@@ -7,7 +7,8 @@ from package.analog.dev_noise import ProcessNoise, SettingsNoise
 @dataclasses.dataclass
 class SettingsDLY:
     """Individual data class to configure the delay amplifier
-    Args:
+
+    Params:
         vdd:        Positive supply voltage [V]
         vss:        Negative supply voltage [V]
         fs_ana:     Sampling frequency of input [Hz]

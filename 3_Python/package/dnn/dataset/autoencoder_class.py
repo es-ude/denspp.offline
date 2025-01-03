@@ -3,7 +3,7 @@ from os.path import join
 from glob import glob
 from torch import is_tensor, load, from_numpy
 from torch.utils.data import Dataset
-from package.dnn.pytorch_config_data import Config_Dataset
+from package.dnn.pytorch_config_data import ConfigDataset
 
 
 class DatasetAE_Class(Dataset):
@@ -51,7 +51,7 @@ class DatasetAE_Class(Dataset):
         return "Autoencoder-based Classification"
 
 
-def prepare_training(settings: Config_Dataset, path2model: str,
+def prepare_training(settings: ConfigDataset, path2model: str,
                      add_noise_cluster=False, use_median_for_mean=True,
                      print_state=True) -> DatasetAE_Class:
     """Preparing dataset incl. augmentation for spike-frame based training

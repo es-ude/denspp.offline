@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.integrate as it
-from package.plot.plot_common import save_figure, scale_auto_value, get_plot_color
+from package.plot.helper import save_figure, scale_auto_value, get_plot_color
 from package.metric import calculate_error_mse, calculate_error_rrmse
 
 

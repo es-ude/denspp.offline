@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from package.plot.plot_common import cm_to_inch, save_figure, get_plot_color
+from package.plot.helper import cm_to_inch, save_figure, get_plot_color
 
 
 def translate_feats_into_list(feats: np.ndarray, label: np.ndarray, num_samples: int=-1) -> list:

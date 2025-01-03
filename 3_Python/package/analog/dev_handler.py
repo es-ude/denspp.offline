@@ -6,7 +6,7 @@ from scipy.constants import Boltzmann, elementary_charge
 from scipy.optimize import least_squares, curve_fit
 
 from package.structure_builder import create_folder_general_firstrun
-from package.plot.plot_common import scale_auto_value, save_figure
+from package.plot.helper import scale_auto_value, save_figure
 from package.metric import calculate_error_rae, calculate_error_mse
 
 
@@ -35,17 +35,17 @@ def _calc_error(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float
 
 def _raise_voltage_violation(du: np.ndarray | float, range_volt: list) -> None:
     """Checking differential voltage input for violation of voltage range for given branch"""
-    violation_dwn = np.count_nonzero(du < range_volt[0], axis=0)
-    violation_up = np.count_nonzero(du > range_volt[1], axis=0)
+    violation_dwn = np.count_nonzero(du < range_volt[slice(0)], axis=0)
+    violation_up = np.count_nonzero(du > range_volt[slice(1)], axis=0)
 
     if violation_up or violation_dwn:
         val = du.min if violation_dwn else du.max
-        limit = range_volt[0] if violation_dwn else range_volt[1]
+        limit = range_volt[slice(0)] if violation_dwn else range_volt[slice(1)]
         addon = f'(Upper limit)' if not violation_dwn else '(Downer limit)'
         warn(f"--- Warning: Voltage Range Violation {addon}! With {val} of {limit} ---")
 
 
-class ElectricalLoad_Handler:
+class ElectricalLoadHandler:
     """Class for emulating an electrical device"""
     _settings: SettingsDEV
     _poly_fit: np.ndarray

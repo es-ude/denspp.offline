@@ -14,13 +14,13 @@ from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
 from sklearn.model_selection import KFold
 
-from package.dnn.pytorch_config_data import Config_Dataset
-from package.dnn.pytorch_config_model import Config_PyTorch
+from package.dnn.pytorch_config_data import ConfigDataset
+from package.dnn.pytorch_config_model import ConfigPytorch
 from package.structure_builder import create_folder_general_firstrun, create_folder_dnn_firstrun
 from package.yaml_handler import translate_dataclass_to_dict, write_dict_to_yaml
 
 
-class training_pytorch:
+class PyTorchHandler:
     deterministic_generator: Generator
     used_hw_dev: device
     used_hw_cpu: str
@@ -32,7 +32,7 @@ class training_pytorch:
     cell_classes: list
     _metric_methods: dict
 
-    def __init__(self, config_train: Config_PyTorch, config_dataset: Config_Dataset,
+    def __init__(self, config_train: ConfigPytorch, config_dataset: ConfigDataset,
                  do_train=True, do_print=True) -> None:
         """Class for Handling Training of Deep Neural Networks in PyTorch
         Args:

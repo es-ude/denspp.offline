@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 from enum import Enum
 
-from package.analog.comp import *
+from package.analog.amplifier.comp import *
 
 class CBEval(Enum):
     WINDOW = 1

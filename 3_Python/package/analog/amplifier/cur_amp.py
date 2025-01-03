@@ -7,7 +7,7 @@ from package.analog.dev_noise import ProcessNoise, SettingsNoise
 class SettingsCUR:
     """Individual data class to configure the current amplifier
 
-    Args:
+    Params:
         vdd:            Positive supply voltage [V]
         vss:            Negative supply voltage [V]
         fs_ana:         Sampling frequency of input [Hz]

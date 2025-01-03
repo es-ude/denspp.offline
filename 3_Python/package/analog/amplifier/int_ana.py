@@ -6,6 +6,7 @@ from package.analog.dev_noise import ProcessNoise, SettingsNoise
 @dataclasses.dataclass
 class SettingsINT:
     """Individual data class to configure an analog voltage integrator
+
     Params:
         vdd:        Positive supply voltage [V]
         vss:        Negative supply voltage [V]

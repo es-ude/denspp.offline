@@ -4,15 +4,15 @@ from shutil import rmtree
 from copy import deepcopy
 from datetime import datetime
 from package.yaml_handler import yaml_config_handler
-from package.dnn.dnn_handler import Config_ML_Pipeline, DefaultSettings_MLPipe
-from package.dnn.pytorch_config_data import Config_Dataset, DefaultSettingsDataset
-from package.dnn.pytorch_config_model import Config_PyTorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE
+from package.dnn.dnn_handler import ConfigMLPipeline, DefaultSettings_MLPipe
+from package.dnn.pytorch_config_data import ConfigDataset, DefaultSettingsDataset
+from package.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE
 from package.dnn.pytorch_pipeline import do_train_autoencoder, do_train_classifier
 from package.dnn.dataset.autoencoder import prepare_training as get_dataset_ae
 from package.dnn.dataset.autoencoder_class import prepare_training as get_dataset_cl
 
 
-def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
+def do_train_ae_cl_sweep(settings: ConfigMLPipeline,
                          feat_layer_start: int, feat_layer_inc: int, feat_layer_stop: int,
                          num_epochs_trial=50,
                          yaml_name_index='Config_AECL_Sweep') -> str:
@@ -32,14 +32,14 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
     # --- Loading the YAML file: Dataset
     default_data = deepcopy(DefaultSettingsDataset)
     yaml_data = yaml_config_handler(default_data, settings.get_path2config, f'{yaml_name_index}_Dataset')
-    config_data = yaml_data.get_class(Config_Dataset)
+    config_data = yaml_data.get_class(ConfigDataset)
 
     # --- Loading the YAML file: Autoencoder Model Load and building
     default_ae = deepcopy(DefaultSettingsTrainMSE)
     default_ae.model_name = ''
     default_ae.num_epochs = num_epochs_trial
     yaml_train = yaml_config_handler(default_ae, settings.get_path2config, f'{yaml_name_index}_TrainAE')
-    config_train_ae = yaml_train.get_class(Config_PyTorch)
+    config_train_ae = yaml_train.get_class(ConfigPytorch)
     del yaml_train, default_ae
 
     # --- Loading the YAML file: Classifier Model Load and building
@@ -47,7 +47,7 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
     default_cl.model_name = ''
     default_cl.num_epochs = num_epochs_trial
     yaml_train = yaml_config_handler(default_cl, settings.get_path2config, f'{yaml_name_index}_TrainCL')
-    config_train_cl = yaml_train.get_class(Config_PyTorch)
+    config_train_cl = yaml_train.get_class(ConfigPytorch)
     del yaml_train, default_cl
 
     time_now = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -109,11 +109,11 @@ def do_train_ae_cl_sweep(settings: Config_ML_Pipeline,
 
 
 if __name__ == "__main__":
-    from package.dnn.dnn_handler import Config_ML_Pipeline
+    from package.dnn.dnn_handler import ConfigMLPipeline
     from package.plot.plot_ae_cl_sweep import extract_data_from_files, plot_common_loss, plot_common_params, plot_architecture_metrics_isolated
 
     yaml_handler = yaml_config_handler(DefaultSettings_MLPipe, 'config', 'Config_DNN')
-    dnn_handler = yaml_handler.get_class(Config_ML_Pipeline)
+    dnn_handler = yaml_handler.get_class(ConfigMLPipeline)
     dnn_handler.do_plot = True
     dnn_handler.do_block = False
 
