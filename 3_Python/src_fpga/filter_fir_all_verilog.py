@@ -1,7 +1,7 @@
 from os import mkdir, getcwd
 from os.path import join, isdir
 from datetime import datetime
-from package.fpga.helper.translater import replace_variables_with_parameters, read_template_design_file
+from fpga.helper.translater import replace_variables_with_parameters, read_template_design_file
 
 
 def generate_fir_allpass_files(data_bitsize: int, t_dly: float, sampling_rate: float,

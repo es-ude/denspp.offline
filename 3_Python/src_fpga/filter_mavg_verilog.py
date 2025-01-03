@@ -4,7 +4,7 @@ from datetime import datetime
 from fxpmath import Fxp
 from shutil import copyfile
 
-from package.fpga.helper.translater import replace_variables_with_parameters, read_template_design_file
+from fpga.helper.translater import replace_variables_with_parameters, read_template_design_file
 
 
 def generate_moving_avg_files(data_bitsize: int, data_signed: bool,

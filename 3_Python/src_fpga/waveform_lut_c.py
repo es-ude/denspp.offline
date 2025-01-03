@@ -4,8 +4,8 @@ import numpy as np
 from datetime import datetime
 from shutil import copyfile
 
-from package.fpga.helper.signal_type import generation_sinusoidal_waveform
-from package.fpga.helper.translater import get_embedded_datatype, replace_variables_with_parameters
+from fpga.helper.signal_type import generation_sinusoidal_waveform
+from fpga.helper.translater import get_embedded_datatype, replace_variables_with_parameters
 
 
 def generate_lut_files(bitsize_lut: int, f_sys: float, f_rpt: float, f_sine: float,

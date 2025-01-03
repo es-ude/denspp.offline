@@ -2,8 +2,8 @@ from os import mkdir, getcwd
 from os.path import join, isdir
 from datetime import datetime
 import numpy as np
-from package.fpga.helper.signal_type import generation_sinusoidal_waveform
-from package.fpga.helper.translater import replace_variables_with_parameters, read_template_design_file
+from fpga.helper.signal_type import generation_sinusoidal_waveform
+from fpga.helper.translater import replace_variables_with_parameters, read_template_design_file
 
 
 def generate_waveform_lut(lut_bitsize: int, lut_signed: bool,
