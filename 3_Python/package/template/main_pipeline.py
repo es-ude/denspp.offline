@@ -1,6 +1,6 @@
 from package.pipeline.pipeline_cmds import ProcessingData, read_yaml_pipeline_config
 from package.template.call_template import DataLoader
-from package.pipeline.pipeline_setup import Pipeline
+from package.template.pipeline_v0 import Pipeline
 
 
 if __name__ == "__main__":

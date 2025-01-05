@@ -12,7 +12,7 @@ class TestSum(unittest.TestCase):
     folder_name_test = 'temp_tests'
 
     def test_check_folder_general(self):
-        init_project_folder(self.folder2search, self.folder_name_test)
+        init_project_folder(self.folder_name_test)
         path2start = join(getcwd().split(self.folder2search)[0], self.folder2search, self.folder_name_test)
 
         num_pass = 0
@@ -24,7 +24,7 @@ class TestSum(unittest.TestCase):
         self.assertEqual(num_pass, len(self.folder_general), "Folders not there")
 
     def test_check_folder_dnn(self):
-        init_dnn_folder(self.folder2search, self.folder_name_test)
+        init_dnn_folder(self.folder_name_test)
         path2start = join(getcwd().split(self.folder2search)[0], self.folder2search, self.folder_name_test, 'src_dnn')
 
         num_pass = 0
