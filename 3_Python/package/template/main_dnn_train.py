@@ -1,5 +1,5 @@
 from package.dnn.dnn_handler import ConfigMLPipeline, DefaultSettings_MLPipe
-from package.yaml_handler import yaml_config_handler
+from package.yaml_handler import YamlConfigHandler
 from package.structure_builder import create_folder_general_firstrun
 
 
@@ -9,7 +9,7 @@ if __name__ == "__main__":
 
     # --- Loading YAML-Settings file
     create_folder_general_firstrun()
-    yaml_handler = yaml_config_handler(DefaultSettings_MLPipe, 'config', 'Config_DNN')
+    yaml_handler = YamlConfigHandler(DefaultSettings_MLPipe, 'config', 'Config_DNN')
     dnn_handler = yaml_handler.get_class(ConfigMLPipeline)
 
     # --- Selecting model for train

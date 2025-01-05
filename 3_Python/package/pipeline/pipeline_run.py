@@ -1,6 +1,6 @@
-from package.pipeline_cmds import ProcessingData, read_yaml_pipeline_config
+from package.pipeline.pipeline_cmds import ProcessingData, read_yaml_pipeline_config
 from package.template.call_template import DataLoader
-from package.template.pipeline_setup import Pipeline
+from package.pipeline.pipeline_setup import Pipeline
 
 
 if __name__ == "__main__":
@@ -30,5 +30,4 @@ if __name__ == "__main__":
     print("\nStep #3: Saving results and plotting"
           "\n=================================================")
     thr_station.do_save_results()
-    thr_station.do_save_results(True)
     thr_station.do_plot_results()

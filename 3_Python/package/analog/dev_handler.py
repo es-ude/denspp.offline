@@ -7,7 +7,7 @@ from scipy.optimize import least_squares, curve_fit
 
 from package.structure_builder import create_folder_general_firstrun
 from package.plot.helper import scale_auto_value, save_figure
-from package.metric import calculate_error_rae, calculate_error_mse
+from package.metric.data import calculate_error_rae, calculate_error_mse
 
 
 @dataclasses.dataclass

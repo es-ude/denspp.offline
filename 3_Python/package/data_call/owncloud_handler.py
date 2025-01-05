@@ -2,7 +2,7 @@ from os.path import join
 from dataclasses import dataclass
 import fnmatch
 import owncloud
-from package.yaml_handler import yaml_config_handler
+from package.yaml_handler import YamlConfigHandler
 
 
 @dataclass
@@ -24,7 +24,7 @@ class OwncloudDownloader:
 
     def __init__(self, path2config: str = '', use_dataset=False) -> None:
         """Class for handling sciebo repository for getting datasets remotely"""
-        yaml_hndl = yaml_config_handler(DefaultConfigCloud, path2config, 'access_cloud')
+        yaml_hndl = YamlConfigHandler(DefaultConfigCloud, path2config, 'access_cloud')
         config = yaml_hndl.get_class(ConfigCloud)
 
         self.__public_sciebo_link = config.remote_link

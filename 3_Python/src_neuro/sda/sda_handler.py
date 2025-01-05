@@ -1,8 +1,8 @@
 import os
 import numpy as np
 from scipy.io import savemat
-from package.metric import calculate_snr
-from src_neuro.sda.sda_plotting import plot_results_single, plot_results_sweep, plot_histogramm
+from package.metric.data import calculate_snr
+from src_neuro.sda.sda_plotting import plot_results_single, plot_results_sweep
 
 
 def characterize_sda_output(spk_pos_can: np.ndarray, spk_pos_true: np.ndarray,

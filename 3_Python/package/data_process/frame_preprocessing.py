@@ -1,6 +1,6 @@
 import numpy as np
 from package.analog.dev_noise import noise_awgn
-from package.metric import calculate_snr
+from package.metric.data import calculate_snr
 from package.data_call.call_cellbib import CellSelector
 
 

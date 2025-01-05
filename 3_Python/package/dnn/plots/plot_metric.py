@@ -1,11 +1,9 @@
 import numpy as np
-from os import mkdir
-from os.path import exists
 from matplotlib import pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay, precision_recall_fscore_support
 
 from package.plot.helper import save_figure, cm_to_inch
-from package.metric import compare_timestamps
+from package.metric.data import compare_timestamps
 
 
 def _get_median(parameter: list) -> float:

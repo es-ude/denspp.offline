@@ -6,7 +6,7 @@ from scipy.io import loadmat
 
 from package.stim.imp_fitting.impfitter_handler import (ImpFit_Handler, Settings_ImpFit, RecommendedSettingsImpFit,
                                                         splitting_stimulation_waveforms_into_single_trials)
-from package.yaml_handler import yaml_config_handler
+from package.yaml_handler import YamlConfigHandler
 
 
 def _read_osci_transient_from_mat(path2file: str, i_gain=1e4) -> dict:
@@ -121,7 +121,7 @@ def run_over_dataset(model2fit: str, default_params: dict,
 
 if __name__ == "__main__":
     # --- Settings
-    yaml_config = yaml_config_handler(RecommendedSettingsImpFit, yaml_name="Config_ImpFit_Normal")
+    yaml_config = YamlConfigHandler(RecommendedSettingsImpFit, yaml_name="Config_ImpFit_Normal")
     settings_impfit = yaml_config.get_class(Settings_ImpFit)
 
     # --- Make all files

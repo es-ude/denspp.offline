@@ -1,5 +1,5 @@
 from src_neuro.call_spike import DataLoader
-from package.pipeline_cmds import ProcessingData, read_yaml_pipeline_config
+from package.pipeline.pipeline_cmds import ProcessingData, read_yaml_pipeline_config
 from src_neuro.pipeline_v1 import Pipeline
 
 

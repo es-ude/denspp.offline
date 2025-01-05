@@ -7,7 +7,7 @@ import numpy.lib.scimath as sm
 from datetime import datetime
 
 from package.structure_builder import create_folder_general_firstrun
-from package.metric import calculate_error_mse
+from package.metric.data import calculate_error_mse
 
 
 def crossval(wave1, wave2):

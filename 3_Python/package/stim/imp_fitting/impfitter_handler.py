@@ -9,7 +9,7 @@ from datetime import datetime
 from fractions import Fraction
 from platform import system
 
-from package.yaml_handler import yaml_config_handler
+from package.yaml_handler import YamlConfigHandler
 from package.structure_builder import create_folder_general_firstrun
 from package.data_process.transformation import do_fft_withimag
 from package.stim.imp_fitting.plot_impfit import (plot_transient, plot_transient_fft, plot_impedance)
@@ -504,7 +504,7 @@ class ImpFit_Handler:
 
 if __name__ == "__main__":
     # --- Settings
-    yaml_config = yaml_config_handler(RecommendedSettingsImpFit, yaml_name="Config_ImpFit_Test")
+    yaml_config = YamlConfigHandler(RecommendedSettingsImpFit, yaml_name="Config_ImpFit_Test")
     settings_impfit = yaml_config.get_class(Settings_ImpFit)
 
     path2imp = '../../../../2_Data/00_ImpedanceFitter'

@@ -54,7 +54,7 @@ def translate_dataclass_to_dict(class_content: type) -> dict:
             if not key.startswith('__') and not callable(key)}
 
 
-class yaml_config_handler:
+class YamlConfigHandler:
     __path2yaml: str
     __yaml_name: str
     _data: dict

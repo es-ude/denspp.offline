@@ -1,8 +1,8 @@
 from os.path import abspath
 import numpy as np
 
-from package.pipeline_cmds import PipelineCMD
-from package.pipeline_signal import PipelineSignal
+from package.pipeline.pipeline_cmds import PipelineCMD
+from package.pipeline.pipeline_signal import PipelineSignal
 from package.nsp.spike_analyse import calc_spiketicks
 from package.analog.amplifier.pre_amp import PreAmp, SettingsAMP
 from package.analog.adc import SettingsADC
@@ -109,10 +109,10 @@ class Pipeline(PipelineCMD):
 
     def do_plotting(self, data: PipelineSignal, channel: int) -> None:
         """Function to plot results"""
-        import package.plot.plot_pipeline as plt_neuro
+        import package.pipeline.plot_pipeline as plt_neuro
 
-        plt_neuro.results_fec(data, channel, path=self.path2save)
-        plt_neuro.results_paper(data, channel, path=self.path2save)
+        plt_neuro.plot_pipeline_frame_sorted(data, channel, path=self.path2save)
+        plt_neuro.plot_pipeline_results(data, channel, path=self.path2save)
 
     def run(self, uinp: np.ndarray) -> None:
         self.signals.u_in = uinp

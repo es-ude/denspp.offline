@@ -8,8 +8,9 @@ import matplotlib.pyplot as plt
 from threading import Thread, active_count
 from tqdm import tqdm
 from dataclasses import dataclass
+
 from package.data_call.call_handler import SettingsDATA, RecommendedSettingsDATA
-from package.yaml_handler import yaml_config_handler
+from package.yaml_handler import YamlConfigHandler
 
 
 class PipelineCMD:
@@ -195,8 +196,8 @@ def read_yaml_pipeline_config(
     :param yaml_pipe_index: Index with name for reading the yaml configuration file for pipeline processing
     :return:                Classes for handling the data (SettingsDATA) and pipeline processor (SettingsThread)
     """
-    yaml_data = yaml_config_handler(RecommendedSettingsDATA, yaml_name=yaml_data_index)
+    yaml_data = YamlConfigHandler(RecommendedSettingsDATA, yaml_name=yaml_data_index)
     settings_data = yaml_data.get_class(SettingsDATA)
-    yaml_threads = yaml_config_handler(RecommendedSettingsThread, yaml_name=yaml_pipe_index)
+    yaml_threads = YamlConfigHandler(RecommendedSettingsThread, yaml_name=yaml_pipe_index)
     settings_thr = yaml_threads.get_class(SettingsThread)
     return settings_data, settings_thr

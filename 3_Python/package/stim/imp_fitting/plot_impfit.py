@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.integrate as it
 from package.plot.helper import save_figure, scale_auto_value, get_plot_color
-from package.metric import calculate_error_mse, calculate_error_rrmse
+from package.metric.data import calculate_error_mse, calculate_error_rrmse
 
 
 def calculate_charge_injected(i_in: np.ndarray, fs: float) -> np.ndarray:

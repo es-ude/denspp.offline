@@ -1,8 +1,9 @@
 import numpy as np
 from scipy.signal import sawtooth
 from package.data_process.transformation import do_fft
-from package.metric import (calculate_error_mape, calculate_error_mae, calculate_error_mbe,
-                            calculate_total_harmonics_distortion, calculate_cosine_similarity)
+from package.metric.data import (calculate_error_mape, calculate_error_mae, calculate_error_mbe)
+from package.metric.electrical import calculate_total_harmonics_distortion
+from package import calculate_cosine_similarity
 
 
 def checking_binary_limits_violation(data: np.ndarray, bitwidth: int, do_signed: bool) -> np.ndarray:

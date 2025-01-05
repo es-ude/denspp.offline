@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from package.plot.helper import cm_to_inch
-from package.metric import calculate_snr
+from package.metric.data import calculate_snr
 
 
 def plot_frames_dataset(data: dict, take_samples=500, do_norm: bool=False,

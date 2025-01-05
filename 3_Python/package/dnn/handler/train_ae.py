@@ -1,6 +1,6 @@
 from copy import deepcopy
 from datetime import date
-from package.yaml_handler import yaml_config_handler
+from package.yaml_handler import YamlConfigHandler
 from package.dnn.dnn_handler import ConfigMLPipeline
 from package.dnn.pytorch_config_data import ConfigDataset, DefaultSettingsDataset
 from package.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainMSE
@@ -22,13 +22,13 @@ def do_train_neural_autoencoder(settings: ConfigMLPipeline, yaml_name_index='Con
     # --- Loading the YAML file: Dataset
     default_data = deepcopy(DefaultSettingsDataset)
     default_data.data_file_name = used_dataset_name
-    yaml_data = yaml_config_handler(default_data, settings.get_path2config, f'{yaml_name_index}_Dataset')
+    yaml_data = YamlConfigHandler(default_data, settings.get_path2config, f'{yaml_name_index}_Dataset')
     config_data = yaml_data.get_class(ConfigDataset)
 
     # --- Loading the YAML file: Model training
     default_train = deepcopy(DefaultSettingsTrainMSE)
     default_train.model_name = model_default_name
-    yaml_nn = yaml_config_handler(default_train, settings.get_path2config, f'{yaml_name_index}_Training')
+    yaml_nn = YamlConfigHandler(default_train, settings.get_path2config, f'{yaml_name_index}_Training')
     config_train = yaml_nn.get_class(ConfigPytorch)
     del default_train, yaml_nn
 

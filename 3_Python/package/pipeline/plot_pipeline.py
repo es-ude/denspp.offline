@@ -1,13 +1,20 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from package.pipeline_signal import PipelineSignal
+from package.pipeline.pipeline_signal import PipelineSignal
 from package.plot.helper import cm_to_inch, save_figure, get_plot_color, get_textsize_paper, get_plot_color_inactive
 
 
-def results_afe1(signals: PipelineSignal, no_electrode: int, path="", time_cut=(),
-                 show_plot=False) -> None:
-    """Plotting the results in type of ... """
+def plot_pipeline_afe(signals: PipelineSignal, no_electrode: int, path="", time_cut=(),
+                      show_plot=False) -> None:
+    """Plotting the pipeline results of the front-end device
+    :param signals:         the pipeline signals (class PipelineSignal)
+    :param no_electrode:    the number of electrodes to plot
+    :param path:            the path of the output file
+    :param time_cut:        the time cutoff to plot
+    :param show_plot:       If true, show the plot
+    :return:                None
+    """
     fs_ana = signals.fs_ana
     fs_dig = signals.fs_dig
 
@@ -70,9 +77,16 @@ def results_afe1(signals: PipelineSignal, no_electrode: int, path="", time_cut=(
         plt.show(block=True)
 
 
-def results_afe_sorted(signals: PipelineSignal, no_electrode: int, path="", time_cut=(),
-                       show_noise=False, show_plot=False) -> None:
-    """Plotting ADC output with sorted results"""
+def plot_transient_highlight_spikes(signals: PipelineSignal, no_electrode: int, path="", time_cut=(),
+                                    show_noise=False, show_plot=False) -> None:
+    """Plotting the detected spike activity from transient data (highlighted, noise in gray)
+    :param signals:         class containing the rawdata and processed data from class PipelineSignal
+    :param no_electrode:    number of electrodes
+    :param path:            Path to save the figures
+    :param show_plot:       If true, show plot
+    :param show_noise:      If true, show noise (otherwise flat line)
+    :return:                None
+    """
     fs_dig = signals.fs_dig
     xadc = signals.x_adc
     time = np.arange(0, xadc.size, 1) / fs_dig
@@ -143,9 +157,15 @@ def results_afe_sorted(signals: PipelineSignal, no_electrode: int, path="", time
         plt.show(block=True)
 
 
-def results_fec(signals: PipelineSignal, no_electrode: int,
-                path="", show_plot=False) -> None:
-    """Plotting results """
+def plot_pipeline_frame_sorted(signals: PipelineSignal, no_electrode: int,
+                               path="", show_plot=False) -> None:
+    """Plotting the detected spike frame activity of used transient dataset
+    :param signals:         class containing the rawdata and processed data from class PipelineSignal
+    :param no_electrode:    number of electrodes
+    :param path:            Path to save the figures
+    :param show_plot:       If true, show plot
+    :return:                None
+    """
     frames_in = signals.frames_orig[0]
     frames_out = signals.frames_align[0]
     feat = signals.features
@@ -187,8 +207,15 @@ def results_fec(signals: PipelineSignal, no_electrode: int,
         plt.show(block=True)
 
 
-def results_paper(signals: PipelineSignal, no_electrode: int, path="", time_cut=(), show_plot=False) -> None:
-    """Plotting results of end-to-end spike sorting for paper"""
+def plot_pipeline_results(signals: PipelineSignal, no_electrode: int, path="", time_cut=(), show_plot=False) -> None:
+    """Plotting results of end-to-end spike sorting for paper
+    :param signals:         class containing the rawdata and processed data from class PipelineSignal
+    :param no_electrode:    number of electrodes
+    :param path:            Path to save the figures
+    :param time_cut:        Time cut
+    :param show_plot:       If true, show plot
+    :return:                None
+    """
     # --- Selection of Transient signals
     fs_adc = signals.fs_dig
     xadc = signals.x_adc
@@ -212,9 +239,8 @@ def results_paper(signals: PipelineSignal, no_electrode: int, path="", time_cut=
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(12)))
     plt.rcParams.update({'font.size': get_textsize_paper()})
     plt.subplots_adjust(hspace=0)
-    ax1 = plt.subplot(311)
-    ax2 = plt.subplot(312, sharex=ax1)
-    ax3 = plt.subplot(313, sharex=ax1)
+    ax1 = plt.subplot(211)
+    ax2 = plt.subplot(212, sharex=ax1)
 
     ax1.plot(tD, xadc, color='k', drawstyle='steps-post')
     ax1.set_ylabel("ADC output")
@@ -223,24 +249,19 @@ def results_paper(signals: PipelineSignal, no_electrode: int, path="", time_cut=
         ax1.set_xlim(time_cut)
     else:
         ax1.set_xlim([tD[0], tD[-1]])
-
-    # Spike detection and thresholding
-    ax2.plot(tD, xsda, color='k', drawstyle='steps-post')
-    ax2.plot(tD, xthr, color='r', drawstyle='steps-post')
-    ax2.xaxis.set_visible(False)
-    ax2.set_ylabel("SDA output")
+    ax1.set_xlabel("Time t (s)")
 
     # Spike ticks
     for id in cluster:
         sel_x = np.where(ticks_id == id)[0]
         sel_ticks = ticks[sel_x]
-        ax3.eventplot(positions=tD[sel_ticks], orientation="horizontal",
+        ax2.eventplot(positions=tD[sel_ticks], orientation="horizontal",
                       lineoffsets=0.45+id, linelengths=0.9,
                       color=get_plot_color(id))
 
-    ax3.set_ylim([cluster[0], 1+cluster[-1]])
-    ax3.set_ylabel("Spike Train")
-    ax3.set_xlabel("Time t (s)")
+    ax2.set_ylim([cluster[0], 1+cluster[-1]])
+    ax2.set_ylabel("Spike Train")
+    ax2.set_xlabel("Time t (s)")
 
     plt.tight_layout()
     # --- saving plots
@@ -280,7 +301,12 @@ def results_paper(signals: PipelineSignal, no_electrode: int, path="", time_cut=
 
 
 def plot_signals_neural_cluster(dataset, path2save='', show_plot=False) -> None:
-    """Plotting the mean waveforms of each cluster"""
+    """Plotting the mean waveforms of each cluster directly from dataset
+    :param dataset:     Training Dataset containing rawdata (spike activity)
+    :param path2save:   path to save the figure
+    :param show_plot:   show plot
+    :return:            None
+    """
     num_cl = dataset.__frames_me.shape[0]
     num_frame_size = dataset.__frames_me.shape[1] - 1
 
@@ -295,6 +321,6 @@ def plot_signals_neural_cluster(dataset, path2save='', show_plot=False) -> None:
 
     plt.tight_layout(pad=0.5)
     if path2save:
-        save_figure(plt, path2save, f"neural_cluster_waveforms")
+        save_figure(plt, path2save, f"pipeline_neural_cluster")
     if show_plot:
         plt.show(block=True)

@@ -3,7 +3,7 @@ import numpy as np
 from shutil import rmtree
 from copy import deepcopy
 from datetime import datetime
-from package.yaml_handler import yaml_config_handler
+from package.yaml_handler import YamlConfigHandler
 from package.dnn.dnn_handler import ConfigMLPipeline, DefaultSettings_MLPipe
 from package.dnn.pytorch_config_data import ConfigDataset, DefaultSettingsDataset
 from package.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE
@@ -31,14 +31,14 @@ def do_train_ae_cl_sweep(settings: ConfigMLPipeline,
     # ------------ STEP #0: Loading YAML files
     # --- Loading the YAML file: Dataset
     default_data = deepcopy(DefaultSettingsDataset)
-    yaml_data = yaml_config_handler(default_data, settings.get_path2config, f'{yaml_name_index}_Dataset')
+    yaml_data = YamlConfigHandler(default_data, settings.get_path2config, f'{yaml_name_index}_Dataset')
     config_data = yaml_data.get_class(ConfigDataset)
 
     # --- Loading the YAML file: Autoencoder Model Load and building
     default_ae = deepcopy(DefaultSettingsTrainMSE)
     default_ae.model_name = ''
     default_ae.num_epochs = num_epochs_trial
-    yaml_train = yaml_config_handler(default_ae, settings.get_path2config, f'{yaml_name_index}_TrainAE')
+    yaml_train = YamlConfigHandler(default_ae, settings.get_path2config, f'{yaml_name_index}_TrainAE')
     config_train_ae = yaml_train.get_class(ConfigPytorch)
     del yaml_train, default_ae
 
@@ -46,7 +46,7 @@ def do_train_ae_cl_sweep(settings: ConfigMLPipeline,
     default_cl = deepcopy(DefaultSettingsTrainCE)
     default_cl.model_name = ''
     default_cl.num_epochs = num_epochs_trial
-    yaml_train = yaml_config_handler(default_cl, settings.get_path2config, f'{yaml_name_index}_TrainCL')
+    yaml_train = YamlConfigHandler(default_cl, settings.get_path2config, f'{yaml_name_index}_TrainCL')
     config_train_cl = yaml_train.get_class(ConfigPytorch)
     del yaml_train, default_cl
 
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     from package.dnn.dnn_handler import ConfigMLPipeline
     from package.dnn.plots.plot_ae_cl_sweep import extract_data_from_files, plot_common_loss, plot_common_params, plot_architecture_metrics_isolated
 
-    yaml_handler = yaml_config_handler(DefaultSettings_MLPipe, 'config', 'Config_DNN')
+    yaml_handler = YamlConfigHandler(DefaultSettings_MLPipe, 'config', 'Config_DNN')
     dnn_handler = yaml_handler.get_class(ConfigMLPipeline)
     dnn_handler.do_plot = True
     dnn_handler.do_block = False

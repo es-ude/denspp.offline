@@ -1,5 +1,5 @@
 import numpy as np
-from package.metric import calculate_snr
+from package.metric.data import calculate_snr
 from package.analog.dev_noise import noise_awgn
 
 

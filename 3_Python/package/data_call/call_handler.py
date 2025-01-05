@@ -523,7 +523,7 @@ class DataController:
 ###########################################################################
 if __name__ == "__main__":
     from src_neuro.call_spike import DataLoader, SettingsDATA
-    from package.plot.plot_mea import plot_mea_transient_total
+    from package.pipeline.plot_mea import plot_mea_transient_total
 
     settings = SettingsDATA(
         path="C:\HomeOffice\Data_Neurosignal",
