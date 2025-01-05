@@ -4,8 +4,8 @@ from package.plot.plot_metric import plot_confusion, plot_loss
 from package.dnn.dnn_handler import ConfigMLPipeline
 from package.dnn.pytorch_config_data import ConfigDataset
 from package.dnn.pytorch_config_model import ConfigPytorch
-from package.dnn.pytorch.classifier import train_nn as train_nn_cl
-from package.dnn.pytorch.autoencoder import train_nn as train_nn_ae
+from package.dnn.pytorch.classifier import TrainClassifier
+from package.dnn.pytorch.autoencoder import TrainAutoencoder
 
 
 def do_train_classifier(config_ml: ConfigMLPipeline, config_data: ConfigDataset,
@@ -25,7 +25,7 @@ def do_train_classifier(config_ml: ConfigMLPipeline, config_data: ConfigDataset,
         Dictionaries with results from training [metrics, validation data] + String to path for saving plots
     """
     # ---Processing Step #1: Preparing Trainings Handler, Build Model
-    train_handler = train_nn_cl(config_train=config_train, config_data=config_data, do_train=True)
+    train_handler = TrainClassifier(config_train=config_train, config_data=config_data, do_train=True)
     train_handler.load_model(model=used_model, print_model=print_results)
     train_handler.load_data(data_set=used_dataset)
     train_handler.get_metric_methods()
@@ -70,7 +70,7 @@ def do_train_autoencoder(config_ml: ConfigMLPipeline, config_data: ConfigDataset
         Dictionaries with results from training [metrics, validation data] + String to path for saving plots
     """
     # ---Processing Step #1: Preparing Trainings Handler, Build Model
-    train_handler = train_nn_ae(config_train=config_train, config_data=config_data, do_train=True)
+    train_handler = TrainAutoencoder(config_train=config_train, config_data=config_data, do_train=True)
     train_handler.load_model(model=used_model, print_model=print_results)
     train_handler.load_data(data_set=used_dataset)
 

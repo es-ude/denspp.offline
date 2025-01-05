@@ -3,12 +3,12 @@ from shutil import copyfile
 from os.path import join, isdir
 from datetime import datetime
 
-from fpga.helper.translater import (get_embedded_datatype, replace_variables_with_parameters,
+from src_fpga.helper.translater import (get_embedded_datatype, replace_variables_with_parameters,
                                     generate_params_list)
 
 
-def generate_fir_allpass_files(data_bitsize: int, data_signed: bool, sampling_rate: float, t_dly: float,
-                               filter_id='', file_name='filter_fir_all', path2save='', define_path='src') -> None:
+def generate_fir_allpass_c(data_bitsize: int, data_signed: bool, sampling_rate: float, t_dly: float,
+                           filter_id='', file_name='filter_fir_all', path2save='', define_path='src') -> None:
     """Generating C files for IIR filtering on microcontroller
     Args:
         data_bitsize:   Used quantization level for data stream
@@ -91,4 +91,4 @@ def __generate_filter_fir_allpass_template() -> dict:
 if __name__ == '__main__':
     path2save = '../../runs'
 
-    generate_fir_allpass_files(16, True, 1e3, 10e-3, path2save=path2save)
+    generate_fir_allpass_c(16, True, 1e3, 10e-3, path2save=path2save)

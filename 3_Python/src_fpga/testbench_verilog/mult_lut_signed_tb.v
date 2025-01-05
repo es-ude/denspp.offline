@@ -47,16 +47,20 @@ module TB_MULT_LUT();
         DATA_B <= 0;
         flag_start <= 1'd0;
         #5;
-                
-        //for (i0 = 0; i0 < 10; i0=i0+1) begin
-        #500; flag_start <= 1'd1;   #10; flag_start <= 1'd0;
-        for (i0 = 0; i0 <= STOP; i0=i0+'d1) begin
-            DATA_A <= DATA_A + 1;
-            if(DATA_A == ('d1<<MUT_WIDTH)-'d1) begin
-                DATA_B <= DATA_B +1;
-                DATA_A <= 'd0;
+
+        repeat(1) begin
+            #500; flag_start <= 1'd1;   #10; flag_start <= 1'd0;
+            for (i0 = 0; i0 <= STOP; i0=i0+'d1) begin
+                DATA_A <= DATA_A + 1;
+                if(DATA_A == ('d1<<MUT_WIDTH)-'d1) begin
+                    DATA_B <= DATA_B +1;
+                    DATA_A <= 'd0;
+                end
+                #500;
             end
-            #500;
         end
+
+        // Step #4: Stop Simulation
+        #(100); $stop;
     end    
 endmodule

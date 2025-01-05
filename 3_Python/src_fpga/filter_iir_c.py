@@ -3,15 +3,15 @@ from shutil import copyfile
 from os.path import join, isdir
 from datetime import datetime
 
-from fpga.helper.emulator_filter import filter_stage
-from fpga.helper.translater import (get_embedded_datatype, replace_variables_with_parameters,
+from src_fpga.helper.emulator_filter import filter_stage
+from src_fpga.helper.translater import (get_embedded_datatype, replace_variables_with_parameters,
                                     generate_params_list)
 
 
-def generate_iir_filter_files(data_bitsize: int, data_signed: bool,
-                              filter_order: int, sampling_rate: float, filter_corner: list,
-                              filter_btype='low', filter_ftype='butter', filter_id='',
-                              file_name='filter_iir', path2save='', define_path='src') -> None:
+def generate_iir_filter_c(data_bitsize: int, data_signed: bool,
+                          filter_order: int, sampling_rate: float, filter_corner: list,
+                          filter_btype='low', filter_ftype='butter', filter_id='',
+                          file_name='filter_iir', path2save='', define_path='src') -> None:
     """Generating C files for IIR filtering on microcontroller
     Args:
         data_bitsize:   Used quantization level for data stream
@@ -107,16 +107,9 @@ def __generate_filter_iir_template() -> dict:
 if __name__ == '__main__':
     path2save_out = '../../runs'
 
-    # generate_iir_filter_files(16, True, 0, 2, 1e3, [100], path2save=path2save_out)
-    generate_iir_filter_files(16, True, 2, 1e3, [100],
-                              filter_btype='low', path2save=path2save_out, filter_id='0')
-    generate_iir_filter_files(16, True, 2, 1e3, [100],
-                              filter_btype='high', path2save=path2save_out, filter_id='1')
-    generate_iir_filter_files(16, True, 1, 1e3, [100],
-                              filter_btype='all', path2save=path2save_out, filter_id='2')
-    generate_iir_filter_files(16, True, 1, 1e3, [10, 100],
-                              filter_btype='bandpass', path2save=path2save_out, filter_id='3')
-    generate_iir_filter_files(16, True, 2, 1e3, [10, 100],
-                              filter_btype='bandpass', path2save=path2save_out, filter_id='4')
-    generate_iir_filter_files(16, True, 2, 1e3, [10, 100],
-                              filter_btype='bandstop', path2save=path2save_out, filter_id='5')
+    generate_iir_filter_c(16, True, 2, 1e3, [100], filter_btype='low', path2save=path2save_out, filter_id='0')
+    generate_iir_filter_c(16, True, 2, 1e3, [100], filter_btype='high', path2save=path2save_out, filter_id='1')
+    generate_iir_filter_c(16, True, 1, 1e3, [100], filter_btype='all', path2save=path2save_out, filter_id='2')
+    generate_iir_filter_c(16, True, 1, 1e3, [10, 100], filter_btype='bandpass', path2save=path2save_out, filter_id='3')
+    generate_iir_filter_c(16, True, 2, 1e3, [10, 100], filter_btype='bandpass', path2save=path2save_out, filter_id='4')
+    generate_iir_filter_c(16, True, 2, 1e3, [10, 100], filter_btype='bandstop', path2save=path2save_out, filter_id='5')

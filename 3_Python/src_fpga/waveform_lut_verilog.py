@@ -2,14 +2,14 @@ from os import mkdir, getcwd
 from os.path import join, isdir
 from datetime import datetime
 import numpy as np
-from fpga.helper.signal_type import generation_sinusoidal_waveform
-from fpga.helper.translater import replace_variables_with_parameters, read_template_design_file
+from src_fpga.helper.signal_type import generation_sinusoidal_waveform
+from src_fpga.helper.translater import replace_variables_with_parameters, read_template_design_file
 
 
-def generate_waveform_lut(lut_bitsize: int, lut_signed: bool,
-                          f_sys: float, f_rpt: float, f_wvf: float,
-                          module_id='', copy_testbench=False, do_optimized=False,
-                          file_name='waveform_lut', path2save='') -> None:
+def generate_waveform_lut_verilog(lut_bitsize: int, lut_signed: bool,
+                                  f_sys: float, f_rpt: float, f_wvf: float,
+                                  module_id='', copy_testbench=False, do_optimized=False,
+                                  file_name='waveform_lut', path2save='') -> None:
     """Generating Verilog file for generating waveform using LUTs
     Args:
         lut_bitsize:    Used quantization level for generating sinusoidal waveform LUT
@@ -96,7 +96,7 @@ if __name__ == '__main__':
     f_rpt = 200e3
     f_sine = 10e3
 
-    generate_waveform_lut(n_bit, False, f_sys, f_rpt, f_sine, module_id='0',
-                          do_optimized=False, copy_testbench=True, path2save=path2save)
-    generate_waveform_lut(n_bit, True, f_sys, f_rpt, f_sine, module_id='1',
-                          do_optimized=True, copy_testbench=False, path2save=path2save)
+    generate_waveform_lut_verilog(n_bit, False, f_sys, f_rpt, f_sine, module_id='0',
+                                  do_optimized=False, copy_testbench=True, path2save=path2save)
+    generate_waveform_lut_verilog(n_bit, True, f_sys, f_rpt, f_sine, module_id='1',
+                                  do_optimized=True, copy_testbench=False, path2save=path2save)

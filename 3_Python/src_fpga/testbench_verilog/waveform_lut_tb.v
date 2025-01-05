@@ -40,7 +40,6 @@ module TB_LUT_WVF();
 		#(CLK_CYC_NS) CLK_SYS = ~CLK_SYS;
 	end
 
-	integer i0;
 	initial begin
 		CLK_SYS = 1'd0;
 		nRST = 1'd1;
@@ -58,11 +57,13 @@ module TB_LUT_WVF();
 		#(10* CLK_CYC_NS);   EN_LUT = 1'b1;
 
 		//Step #3: End simulation
-		for(i0='d0; i0 < 100; i0 = i0 + 'd1) begin
+		repeat(100) begin
             #(2* CNT_VAL_WAIT* CLK_CYC_NS - 2*CLK_CYC_NS);    TRGG_LUT = 1'd1;
             #(2* CLK_CYC_NS);                                 TRGG_LUT = 1'd0;
         end
         #(48* CLK_CYC_NS);
+
+        // Step #4: Stop Simulation
 		$stop;
 	end
 

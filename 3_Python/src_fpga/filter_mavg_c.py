@@ -3,14 +3,14 @@ from shutil import copyfile
 from os.path import join, isdir
 from datetime import datetime
 
-from fpga.helper.translater import (get_embedded_datatype, replace_variables_with_parameters,
-                                    generate_params_list)
+from src_fpga.helper.translater import (get_embedded_datatype, replace_variables_with_parameters,
+                                        generate_params_list)
 
 
-def generate_moving_avg_files(data_bitsize: int, data_signed: bool,
-                              filter_order: int, sampling_rate: float,
-                              module_id='', file_name='filter_mavg',
-                              path2save='', define_path='src') -> None:
+def generate_moving_avg_c(data_bitsize: int, data_signed: bool,
+                          filter_order: int, sampling_rate: float,
+                          module_id='', file_name='filter_mavg',
+                          path2save='', define_path='src') -> None:
     """Generating C files for moving average on microcontroller
     Args:
         data_bitsize:   Used quantization level for data stream
@@ -94,4 +94,4 @@ def __generate_filter_mavg_template() -> dict:
 if __name__ == '__main__':
     path2save = '../../runs'
 
-    generate_moving_avg_files(14, True, 21, 1e3,  path2save=path2save)
+    generate_moving_avg_c(14, True, 21, 1e3, path2save=path2save)

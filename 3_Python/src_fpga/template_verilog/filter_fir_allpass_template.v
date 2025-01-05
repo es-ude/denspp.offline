@@ -43,7 +43,7 @@ module FIR_DELAY_{$device_id}#(
         
     //Performing FIR allpass filtering or delay line
     integer i0;
-    always@(posedge CLK) begin
+    always@(posedge CLK or negedge nRST) begin
         if(~(nRST && EN)) begin
             state <= STATE_IDLE;
             cnt_adr_data <= 'd0;

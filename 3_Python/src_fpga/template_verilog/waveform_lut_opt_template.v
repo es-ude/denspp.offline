@@ -4,7 +4,7 @@
 //
 // Create Date: 	21.10.2024 12:38:44
 // Copied on: 	    {$date_copy_created}
-// Module Name:     LUT Generator (optimized with mirror techniques)
+// Module Name:     LUT Generator for Storing/Calling Optimized (Quarter) Waveforms
 // Target Devices:  ASIC, FPGA
 // Tool Versions:   1v1
 // Description:     Digital Direct Syntheziser with Analog Signal Waveforms ({$num_sinelut} x {$bitsize_lut} bit)
@@ -79,15 +79,15 @@ module LUT_WVF_GEN{$device_id}#(
 
     // --- Processing LUT data
     assign LUT_END = (cnt_sine == (LUT_WIDTH-'d1)) && (cnt_phase == 2'd3);
-    wire {$signed_type} [BIT_WIDTH-'d2:0] lut_ram [LUT_WIDTH-'d1:0];
+    wire {$signed_type} [BIT_WIDTH-'d2:0] lut_rom_int [LUT_WIDTH-'d1:0];
     //Unsigned Processing
-    {$do_unsigned_call}assign LUT_VALUE = (cnt_phase == 2'd0) ? {1'd1, lut_ram[cnt_sine]} : ((cnt_phase == 2'd1) ? {1'd1, lut_ram[LUT_WIDTH-cnt_sine-'d1]} : ((cnt_phase == 2'd2) ? {1'd0, {(BIT_WIDTH-'d2){1'd1}}} - lut_ram[cnt_sine] : ({1'd0, {(BIT_WIDTH-'d2){1'd1}}} - lut_ram[LUT_WIDTH-cnt_sine-'d1])));
+    {$do_unsigned_call}assign LUT_VALUE = (cnt_phase == 2'd0) ? {1'd1, lut_rom_int[cnt_sine]} : ((cnt_phase == 2'd1) ? {1'd1, lut_rom_int[LUT_WIDTH-cnt_sine-'d1]} : ((cnt_phase == 2'd2) ? {1'd0, {(BIT_WIDTH-'d2){1'd1}}} - lut_rom_int[cnt_sine] : ({1'd0, {(BIT_WIDTH-'d2){1'd1}}} - lut_rom_int[LUT_WIDTH-cnt_sine-'d1])));
     //Signed Processing
-    {$do_signed_call}assign LUT_VALUE = (cnt_phase == 2'd0) ? {1'd0, lut_ram[cnt_sine]} : ((cnt_phase == 2'd1) ? {1'd0, lut_ram[LUT_WIDTH-cnt_sine-'d1]} : ((cnt_phase == 2'd2) ? {1'd1, -lut_ram[cnt_sine]-'d1} : ({1'd1, -lut_ram[LUT_WIDTH-cnt_sine-'d1]-'d1})));
+    {$do_signed_call}assign LUT_VALUE = (cnt_phase == 2'd0) ? {1'd0, lut_rom_int[cnt_sine]} : ((cnt_phase == 2'd1) ? {1'd0, lut_rom_int[LUT_WIDTH-cnt_sine-'d1]} : ((cnt_phase == 2'd2) ? {1'd1, -lut_rom_int[cnt_sine]-'d1} : ({1'd1, -lut_rom_int[LUT_WIDTH-cnt_sine-'d1]-'d1})));
     `ifdef LUT{$device_id}_ACCESS_EXTERNAL
         genvar i0;
         for(i0 = 'd0; i0 < LUT_WIDTH; i0 = i0 + 'd1) begin
-            assign lut_ram[i0] = LUT_ROM[i0*(BIT_WIDTH-'d1)+:BIT_WIDTH-'d1];
+            assign lut_rom_int[i0] = LUT_ROM[i0*(BIT_WIDTH-'d1)+:BIT_WIDTH-'d1];
         end
     `else
         // --- Data save in BRAM
@@ -95,7 +95,7 @@ module LUT_WVF_GEN{$device_id}#(
     `endif
 
     //--- Counter for Quarter Wave Reading (Symmetric)
-    always@(posedge CLK_SYS) begin
+    always@(posedge CLK_SYS or negedge nRST) begin
         if(~(nRST && EN)) begin
             cnt_phase <= 2'd0;
             cnt_sine <= 'd0;

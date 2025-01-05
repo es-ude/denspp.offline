@@ -83,7 +83,7 @@ module IIR_ONE_MULT_{$device_id}#(
 
     integer i0;
     //Control-Structure
-    always@(posedge CLK) begin
+    always@(posedge CLK or negedge nRST) begin
         if(~(nRST && EN)) begin
             state <= STATE_IDLE;
             for(i0 = 'd0; i0 < 2; i0 = i0 + 'd1) begin
@@ -120,7 +120,7 @@ module IIR_ONE_MULT_{$device_id}#(
             endcase
         end
     end
-    always@(negedge CLK) begin
+    always@(negedge CLK or negedge nRST) begin
         if(~nRST || (state == STATE_IDLE)) begin
             pre_out <= 'd0;
         end else begin

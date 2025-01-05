@@ -4,16 +4,16 @@ from datetime import datetime
 from fxpmath import Fxp
 from shutil import copyfile
 
-from fpga.helper.emulator_filter import filter_stage
-from fpga.helper.translater import replace_variables_with_parameters, read_template_design_file
+from src_fpga.helper.emulator_filter import filter_stage
+from src_fpga.helper.translater import replace_variables_with_parameters, read_template_design_file
 
 
-def generate_iir_filter_files(data_bitsize: int, data_signed: bool,
-                              filter_order: int, sampling_rate: float, filter_corner: list,
-                              filter_btype='low', filter_ftype='butter',
-                              mode_multiplier=0, use_fast_iir=False, use_ram_coeff=False, weights_bitsize=0,
-                              copy_testbench=False,
-                              module_id='', file_name='filter_iir', path2save='') -> None:
+def generate_iir_filter_verilog(data_bitsize: int, data_signed: bool,
+                                filter_order: int, sampling_rate: float, filter_corner: list,
+                                filter_btype='low', filter_ftype='butter',
+                                mode_multiplier=0, use_fast_iir=False, use_ram_coeff=False, weights_bitsize=0,
+                                copy_testbench=False,
+                                module_id='', file_name='filter_iir', path2save='') -> None:
     """Generating Verilog files for IIR filtering (SOS structure / 2nd filter order) on FPGAs/ASICs
     (Fraction of all weights have data_bitsize-2)
     Args:
@@ -108,7 +108,5 @@ def generate_iir_filter_files(data_bitsize: int, data_signed: bool,
 if __name__ == '__main__':
     path2save = '../../runs'
 
-    generate_iir_filter_files(16, True, 2, 1e3, [100],
-                              use_fast_iir=True, module_id='0', path2save=path2save)
-    generate_iir_filter_files(16, True, 2, 1e3, [100],
-                              use_fast_iir=False, module_id='1', path2save=path2save)
+    generate_iir_filter_verilog(16, True, 2, 1e3, [100], use_fast_iir=True, module_id='0', path2save=path2save)
+    generate_iir_filter_verilog(16, True, 2, 1e3, [100], use_fast_iir=False, module_id='1', path2save=path2save)

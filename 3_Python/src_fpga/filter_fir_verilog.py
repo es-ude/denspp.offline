@@ -3,15 +3,15 @@ from os.path import join, isdir
 from datetime import datetime
 from shutil import copyfile
 
-from fpga.helper.emulator_filter import filter_stage
-from fpga.helper.translater import replace_variables_with_parameters, read_template_design_file
+from src_fpga.helper.emulator_filter import filter_stage
+from src_fpga.helper.translater import replace_variables_with_parameters, read_template_design_file
 
 
-def generate_fir_filter_files(data_bitsize: int, data_signed: bool,
-                              filter_order: int, sampling_rate: float, filter_corner: list,
-                              filter_btype='low', filter_ftype='butter',
-                              use_ext_coeff=False, mode_multiplier=0, do_optimized=False, weights_bitsize=0,
-                              copy_testbench=False, module_id='', file_name='filter_fir', path2save='') -> None:
+def generate_fir_filter_verilog(data_bitsize: int, data_signed: bool,
+                                filter_order: int, sampling_rate: float, filter_corner: list,
+                                filter_btype='low', filter_ftype='butter',
+                                use_ext_coeff=False, mode_multiplier=0, do_optimized=False, weights_bitsize=0,
+                                copy_testbench=False, module_id='', file_name='filter_fir', path2save='') -> None:
     """Generating Verilog files for FIR filtering on FPGAs/ASICs
     (Fraction of all weights have data_bitsize)
     Args:
@@ -103,9 +103,9 @@ def generate_fir_filter_files(data_bitsize: int, data_signed: bool,
 if __name__ == '__main__':
     path2save = '../../runs'
 
-    generate_fir_filter_files(16, False, 21, 1e3, [100],
-                              module_id='FULL', do_optimized=False, path2save=path2save)
-    generate_fir_filter_files(16, False, 21, 1e3, [100],
-                              module_id='HALF0', do_optimized=True, path2save=path2save)
-    generate_fir_filter_files(16, False, 21, 1e3, [100],
-                              module_id='HALF1', do_optimized=True, path2save=path2save, mode_multiplier=2)
+    generate_fir_filter_verilog(16, False, 21, 1e3, [100],
+                                module_id='FULL', do_optimized=False, path2save=path2save)
+    generate_fir_filter_verilog(16, False, 21, 1e3, [100],
+                                module_id='HALF0', do_optimized=True, path2save=path2save)
+    generate_fir_filter_verilog(16, False, 21, 1e3, [100],
+                                module_id='HALF1', do_optimized=True, path2save=path2save, mode_multiplier=2)

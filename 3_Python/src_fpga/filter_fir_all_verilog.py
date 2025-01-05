@@ -1,11 +1,11 @@
 from os import mkdir, getcwd
 from os.path import join, isdir
 from datetime import datetime
-from fpga.helper.translater import replace_variables_with_parameters, read_template_design_file
+from src_fpga.helper.translater import replace_variables_with_parameters, read_template_design_file
 
 
-def generate_fir_allpass_files(data_bitsize: int, t_dly: float, sampling_rate: float,
-                               module_id='', copy_testbench=False, file_name='filter_fir_all', path2save='') -> None:
+def generate_fir_allpass_verilog(data_bitsize: int, t_dly: float, sampling_rate: float,
+                                 module_id='', copy_testbench=False, file_name='filter_fir_all', path2save='') -> None:
     """Generating Verilog files for FIR all-pass filtering (ideal) on FPGAs/ASICs
     Args:
         data_bitsize:       Used quantization level for data stream
@@ -59,4 +59,4 @@ def generate_fir_allpass_files(data_bitsize: int, t_dly: float, sampling_rate: f
 
 if __name__ == '__main__':
     path2save = '../../runs'
-    generate_fir_allpass_files(16, 10e-3, 1e3, path2save=path2save)
+    generate_fir_allpass_verilog(16, 10e-3, 1e3, path2save=path2save)

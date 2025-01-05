@@ -90,7 +90,7 @@ module FIR_FULL_{$device_id}#(
         
      //Performing FIR
     integer i0;
-    always@(posedge CLK) begin
+    always@(posedge CLK or negedge nRST) begin
         if(~(nRST && EN)) begin
             state <= STATE_IDLE;
             cnt_adr_data <= 'd0;
@@ -127,7 +127,7 @@ module FIR_FULL_{$device_id}#(
             endcase
         end
     end      
-    always@(negedge CLK) begin
+    always@(negedge CLK or negedge nRST) begin
         if(~nRST || (state == STATE_PREP)) begin
             mac_out <= 'd0;
         end else begin

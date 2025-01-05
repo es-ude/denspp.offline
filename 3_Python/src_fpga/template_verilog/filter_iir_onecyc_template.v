@@ -68,7 +68,7 @@ module IIR_FIVE_MULT_{$device_id}#(
     assign DATA_OUT = {uint_io ^ tap_output[0][BITWIDTH_DATA-'d1], tap_output[0][BITWIDTH_DATA-'d2:0]};
     
     //Control-Structure
-    always@(posedge CLK) begin
+    always@(posedge CLK or negedge nRST) begin
         if(~(nRST && EN)) begin
             tap_input[0] <= 'd0;
             tap_input[1] <= 'd0;

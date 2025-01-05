@@ -47,7 +47,7 @@ def _calculate_dsnr_waveform(input_waveform: Tensor, pred_waveform: Tensor, mean
     return sub(snr_out, snr_in)
 
 
-class train_nn(PyTorchHandler):
+class TrainAutoencoder(PyTorchHandler):
     def __init__(self, config_train: ConfigPytorch, config_data: ConfigDataset, do_train=True, do_print=True) -> None:
         """Class for Handling Training of Autoencoders
         Args:

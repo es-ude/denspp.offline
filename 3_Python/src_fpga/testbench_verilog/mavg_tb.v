@@ -54,9 +54,10 @@ module TB_MAVG();
         
         // Step #1: Reset
         #(3* CLK_SYS);  nrst <= 1'd0;
-		#(6* CLK_SYS);  nrst <= 1'b1;
-		#(6* CLK_SYS);  nrst <= 1'b0;
-		#(6* CLK_SYS);  nrst <= 1'b1;
+        repeat(2) begin
+		    #(6* CLK_SYS);  nrst <= 1'b0;
+		    #(6* CLK_SYS);  nrst <= 1'b1;
+        end
 		
 		// Step #2: Activate DUT
 		#(4* CLK_SYS);  en_dut <= 1'd1;
@@ -70,6 +71,8 @@ module TB_MAVG();
             #(2* CLK_SYS);                  clk_adc = 1'd0;
 		end
 		#(2* CLK_CYC);
+
+		// Step #4: Stop Simulation
 		$stop;
 	end
 endmodule

@@ -43,9 +43,8 @@ module TB_FIR();
 	);
 
     integer i0;
-    integer ite;
     initial begin
-        i0 = 'd0;
+
 		nrst = 1'd1;
 		clk_sys = 1'd0;
 		clk_adc = 1'd0;
@@ -57,16 +56,18 @@ module TB_FIR();
         
         // Step #1: Reset
         #(3* CLK_SYS);  nrst <= 1'd0;
-		#(6* CLK_SYS);  nrst <= 1'b1;
-		#(6* CLK_SYS);  nrst <= 1'b0;
-		#(6* CLK_SYS);  nrst <= 1'b1;
+        repeat(2) begin
+		    #(6* CLK_SYS);  nrst <= 1'b0;
+		    #(6* CLK_SYS);  nrst <= 1'b1;
+        end
 		
 		// Step #2: Activate DUT
 		#(4* CLK_SYS); en_dut <= 1'd1;
 		#(8* CLK_SYS);
 		
 		// Step #3: Run filter (for N periods)
-		for(ite='d0; ite < NUM_PERIODS * F_SINE; ite=ite+'d1) begin		    
+		i0 = 'd0;
+		repeat(NUM_PERIODS * F_SINE) begin
 		    // Apply data and run filter
             #(2* CLK_CYC - 2 * CLK_SYS)     clk_adc = 1'd1;
                                             filter_in = ('d1 << BITSIZE -'d1) +  (('d1 << BITSIZE -'d1) - 'd10) * $sin(6.28319 * i0/F_SINE);  
@@ -74,6 +75,8 @@ module TB_FIR();
             #(2* CLK_SYS);                  clk_adc = 1'd0;
 		end
 		#(2* CLK_CYC);
+
+		// Step #4: Stop Simulation
 		$stop;
 	end
 endmodule

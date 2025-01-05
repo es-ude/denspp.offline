@@ -53,7 +53,7 @@ def _calculate_fbeta(pred: Tensor, true: Tensor, beta=1.0) -> Tensor:
     return precision_recall_fscore_support(true, pred, beta=beta, average="micro", warn_for=tuple())[2]
 
 
-class train_nn(PyTorchHandler):
+class TrainClassifier(PyTorchHandler):
     def __init__(self, config_train: ConfigPytorch, config_data: ConfigDataset,
                  do_train=True, do_print=True) -> None:
         """Class for Handling Training of Classifiers

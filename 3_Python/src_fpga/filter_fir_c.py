@@ -3,16 +3,16 @@ from shutil import copyfile
 from os.path import join, isdir
 from datetime import datetime
 
-from fpga.helper.emulator_filter import filter_stage
-from fpga.helper.translater import (get_embedded_datatype, replace_variables_with_parameters,
-                                    generate_params_list)
+from src_fpga.helper.emulator_filter import filter_stage
+from src_fpga.helper.translater import (get_embedded_datatype, replace_variables_with_parameters,
+                                        generate_params_list)
 
 
-def generate_fir_filter_files(data_bitsize: int, data_signed: bool,
-                              filter_order: int, sampling_rate: float, filter_corner: list,
-                              filter_btype='low', filter_ftype='butter',
-                              do_optimized=False, filter_id='', file_name='filter_fir',
-                              path2save='', define_path='src') -> None:
+def generate_fir_filter_c(data_bitsize: int, data_signed: bool,
+                          filter_order: int, sampling_rate: float, filter_corner: list,
+                          filter_btype='low', filter_ftype='butter',
+                          do_optimized=False, filter_id='', file_name='filter_fir',
+                          path2save='', define_path='src') -> None:
     """Generating C files for IIR filtering on microcontroller
     Args:
         data_bitsize:   Used quantization level for data stream
@@ -113,5 +113,4 @@ def __generate_filter_fir_template(do_opt: bool) -> dict:
 if __name__ == '__main__':
     path2save = '../../runs'
 
-    generate_fir_filter_files(14, True, 21, 1e3, [100],
-                              do_optimized=True, path2save=path2save)
+    generate_fir_filter_c(14, True, 21, 1e3, [100], do_optimized=True, path2save=path2save)

@@ -4,13 +4,13 @@ import numpy as np
 from datetime import datetime
 from shutil import copyfile
 
-from fpga.helper.signal_type import generation_sinusoidal_waveform
-from fpga.helper.translater import get_embedded_datatype, replace_variables_with_parameters
+from src_fpga.helper.signal_type import generation_sinusoidal_waveform
+from src_fpga.helper.translater import get_embedded_datatype, replace_variables_with_parameters
 
 
-def generate_lut_files(bitsize_lut: int, f_sys: float, f_rpt: float, f_sine: float,
-                       out_signed=False, do_optimized=False, device_id='',
-                       file_name='waveform_lut', path2save='', define_path='src') -> None:
+def generate_waveform_lut_c(bitsize_lut: int, f_sys: float, f_rpt: float, f_sine: float,
+                            out_signed=False, do_optimized=False, device_id='',
+                            file_name='waveform_lut', path2save='', define_path='src') -> None:
     """Generating C file with SINE_LUT for sinusoidal waveform generation
     Args:
         bitsize_lut:    Used quantization level for generating sinusoidal waveform LUT
@@ -107,7 +107,5 @@ def __generate_waveform_lut_template(do_full_opt: bool) -> dict:
 
 if __name__ == '__main__':
     path2save = '../../runs'
-    generate_lut_files(14, 32e6, 250e3, 10e3, device_id="0",
-                       do_optimized=False, out_signed=True, path2save=path2save)
-    generate_lut_files(16, 125e6, 250e3, 1e3, device_id="1",
-                       do_optimized=True, out_signed=True, path2save=path2save)
+    generate_waveform_lut_c(14, 32e6, 250e3, 10e3, device_id="0", do_optimized=False, out_signed=True, path2save=path2save)
+    generate_waveform_lut_c(16, 125e6, 250e3, 1e3, device_id="1", do_optimized=True, out_signed=True, path2save=path2save)

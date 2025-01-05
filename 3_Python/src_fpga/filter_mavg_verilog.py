@@ -4,12 +4,12 @@ from datetime import datetime
 from fxpmath import Fxp
 from shutil import copyfile
 
-from fpga.helper.translater import replace_variables_with_parameters, read_template_design_file
+from src_fpga.helper.translater import replace_variables_with_parameters, read_template_design_file
 
 
-def generate_moving_avg_files(data_bitsize: int, data_signed: bool,
-                              filter_order: int, sampling_rate: float, module_id='',
-                              mode_multiplier=0, copy_testbench=False, file_name='filter_mavg', path2save='') -> None:
+def generate_moving_avg_verilog(data_bitsize: int, data_signed: bool,
+                                filter_order: int, sampling_rate: float, module_id='',
+                                mode_multiplier=0, copy_testbench=False, file_name='filter_mavg', path2save='') -> None:
     """Generating Verilog files for moving average on FPGAs/ASICs
     Args:
         data_bitsize:       Used quantization level for data stream
@@ -74,4 +74,4 @@ def generate_moving_avg_files(data_bitsize: int, data_signed: bool,
 if __name__ == '__main__':
     path2save = '../../runs'
 
-    generate_moving_avg_files(16, True, 1, 10, '0',  path2save=path2save)
+    generate_moving_avg_verilog(16, True, 1, 10, '0', path2save=path2save)
