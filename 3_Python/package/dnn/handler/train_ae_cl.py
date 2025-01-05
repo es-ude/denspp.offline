@@ -4,7 +4,7 @@ from package.dnn.dnn_handler import ConfigMLPipeline
 from package.dnn.pytorch_config_data import ConfigDataset, DefaultSettingsDataset
 from package.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE
 from package.dnn.pytorch_pipeline import do_train_autoencoder, do_train_classifier
-from package.plot.plot_dnn import results_training
+from package.dnn.plots.plot_dnn import results_training
 from package.dnn.dataset.autoencoder import prepare_training as get_dataset_ae
 from package.dnn.dataset.autoencoder_class import prepare_training as get_dataset_cl
 

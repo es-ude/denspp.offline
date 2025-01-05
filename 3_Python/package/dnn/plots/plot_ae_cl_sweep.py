@@ -18,23 +18,37 @@ def extract_best_model_epoch_number(path2search: str, file_index: str = '*.pth')
     epoch_num = split(model_path)[-1].split(".pth")[0].split("_epoch")[-1]
     return int(epoch_num)
 
+
 def extract_model_params(path2search: str, file_index: str = '*.pth') -> int:
-    """"""
+    """Extracting the model parameters from a pre-trained model file
+    :param path2search:    Path for look into and find file
+    :param file_index:     Filename index for looking on
+    :return: Integer with model parameters
+    """
     model_path = glob(join(path2search, file_index))[0]
     model_used = load(model_path, weights_only=False)
     num_params = int(sum(p.numel() for p in model_used.parameters()))
     return num_params
 
+
 def extract_model_output_size(path2search: str, file_index: str = '*.pth') -> int:
-    """"""
+    """Extracting the model output size from a pre-trained model file
+    :param path2search:    Path for look into and find file
+    :param file_index:     Filename index for looking on
+    :return: Integer with model output size
+    """
     model_path = glob(join(path2search, file_index))[0]
     model_used = load(model_path, weights_only=False)
     data_in = rand(model_used.model_shape)
     data_out = model_used(data_in)
     return data_out[1].shape[-1] if '_ae' in file_index else data_out[0].shape[-1]
 
+
 def extract_feature_size(metric: dict) -> list:
-    """"""
+    """Extracting the feature size from a pre-trained model file
+    :param metric:  Dictionary with Metrics to extract feature size from
+    :return:        Integer with feature size
+    """
     feat_size = list()
     for key in metric.keys():
         feat0 = int(key.split('_')[0][-3:])
@@ -42,8 +56,13 @@ def extract_feature_size(metric: dict) -> list:
             feat_size.append(feat0)
     return feat_size
 
+
 def extract_features_from_metric(metric: dict, index_model: str) -> dict:
-    """"""
+    """Extracting the feature size from a pre-trained model file
+    :param metric:      Dictionary with Metrics to extract feature size from
+    :param index_model: Index model to extract feature size from
+    :return:            Integer with feature size
+    """
     key_feat = list()
     for key in metric.keys():
         if index_model in key:
@@ -63,6 +82,7 @@ def extract_features_from_metric(metric: dict, index_model: str) -> dict:
             metric_out[key1].append(metric[key0][key1])
 
     return metric_out
+
 
 def extract_data_from_files(path2folder: str, folder_split_symbol='\\') -> dict:
     """Loading the metric data from Autoencoder-Classifier Sweep
@@ -99,13 +119,22 @@ def extract_data_from_files(path2folder: str, folder_split_symbol='\\') -> dict:
 
 
 def processing_metric_data(metric: dict) -> dict:
-    """"""
+    """Function for extracting the metrics for the autoencoder and classifier model
+    :param metric:  Dictionary with Metrics to extract feature size from
+    :return:        Dictionary with params of each model
+    """
     feat_ae = extract_features_from_metric(metric, 'ae')
     feat_cl = extract_features_from_metric(metric, 'cl')
     return {'ae': feat_ae, 'cl': feat_cl, 'feat': feat_ae['feat_size']}
 
+
 def plot_common_loss(metric: dict, path2save: str='', show_plots: bool=False) -> None:
-    """"""
+    """Function for plotting the loss function of both models with sweeping the feature space size
+    :param metric:      Dictionary with Metrics to extract feature size from
+    :param path2save:   Path for saving the figure
+    :param show_plots:  If True, show the plot
+    :return:            None
+    """
     feat_size = metric['feat']
     feat_size_ticks = feat_size if len(feat_size) < 6 else np.linspace(feat_size[0], feat_size[-1], 11,
                                                                        endpoint=True, dtype=np.uint16)
@@ -142,7 +171,12 @@ def plot_common_loss(metric: dict, path2save: str='', show_plots: bool=False) ->
 
 
 def plot_common_params(metric: dict, path2save: str= '', show_plots: bool=False) -> None:
-    """"""
+    """Function for plotting the parameter numbers of both models with sweeping the feature space size
+    :param metric:      Dictionary with Metrics to extract feature size from
+    :param path2save:   Path for saving the figure
+    :param show_plots:  If True, show the plot
+    :return:            None
+    """
     feat_size = metric['feat']
     feat_size_ticks = feat_size if len(feat_size) < 6 else np.linspace(feat_size[0], feat_size[-1], 11,
                                                                        endpoint=True, dtype=np.uint16)
@@ -173,8 +207,15 @@ def plot_common_params(metric: dict, path2save: str= '', show_plots: bool=False)
     if show_plots:
         plt.show(block=True)
 
+
 def plot_architecture_violin(metric: dict, path2save: str = '', show_plots: bool=False, label_dict=None) -> None:
-    """"""
+    """Function for plotting the architecture violin plot
+    :param metric:      Dictionary with Metrics to extract feature size from
+    :param path2save:   Path for saving the figure
+    :param show_plots:  If True, show the plot
+    :param label_dict:  Dictionary with Labels to extract feature size from
+    :return:            None
+    """
     feat_size = metric['feat']
     feat_size_ticks = feat_size if len(feat_size) < 6 else np.linspace(feat_size[0], feat_size[-1], 11,
                                                                        endpoint=True, dtype=np.uint16)
@@ -225,7 +266,13 @@ def plot_architecture_violin(metric: dict, path2save: str = '', show_plots: bool
 
 
 def plot_architecture_metrics_isolated(metric: dict, path2save: str = '', show_plots: bool=False, label_dict=None) -> None:
-    """"""
+    """Function for plotting the metrics in isolated plots for the autoencoder and classifier model
+    :param metric:      Dictionary with Metrics to extract feature size from
+    :param path2save:   Path for saving the figure
+    :param show_plots:  If True, show the plot
+    :param label_dict:  Dictionary with Labels to extract feature size from
+    :return:            None
+    """
     feat_size = metric['feat']
     feat_size_ticks = feat_size if len(feat_size) < 6 else np.linspace(feat_size[0], feat_size[-1], 11,
                                                                        endpoint=True, dtype=np.uint16)

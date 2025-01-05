@@ -1,8 +1,9 @@
 import numpy as np
 from os import mkdir
-from os.path import exists, join
-import matplotlib.pyplot as plt
+from os.path import exists
+from matplotlib import pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay, precision_recall_fscore_support
+
 from package.plot.helper import save_figure, cm_to_inch
 from package.metric import compare_timestamps
 
@@ -14,35 +15,6 @@ def _get_median(parameter: list) -> float:
         param[idx] = np.median(val)
 
     return float(np.median(param))
-
-
-def plot_boxplot_metric(freq: np.ndarray, metric: list, type_name: str, name: str,
-                        path2save='', saving_formats=('pdf')) -> None:
-    """Plotting one metric of the sweep run"""
-    if not exists(path2save):
-        mkdir(path2save)
-
-    # --- Pre-Processing
-    w = 0.1
-    width = lambda p, w: 10 ** (np.log10(p) + w / 2.) - 10 ** (np.log10(p) - w / 2.)
-    mean_metric = _get_median(metric)
-
-    plt.clf()
-    plt.figure()
-    plt.rcParams.clear()
-    plt.rcParams.update({'font.size': 13, 'font.serif': 'Times New Roman',
-                         "lines.linewidth": 1, 'lines.marker': '.', 'lines.markersize': 12})
-
-    plt.title(f"{type_name} = {mean_metric:.4f}")
-    plt.boxplot(metric, positions=freq, widths=width(freq, w), patch_artist=True, showfliers=False)
-    plt.xscale('log')
-    plt.xlabel(r'Sampling Frequency f [Hz]')
-    plt.ylabel(f"{type_name}")
-    plt.grid()
-
-    plt.tight_layout(pad=0.2)
-    if path2save:
-        save_figure(plt, path2save, f"{name}_metric-box_{type_name}", saving_formats)
 
 
 def plot_loss(loss_train: list, loss_valid: list, type: str, path2save='', epoch_zoom=None, show_plot=False) -> None:
@@ -231,3 +203,78 @@ def prep_confusion(true_labels: list, pred_labels: list, mode="training", plots=
         plot_confusion(true_labels, pred_labels, result, f1_score, accuracy, plots, show_accuracy, cl_dict, path2save)
     else:
         plot_confusion(true_labels, pred_labels, None, None, None, "class", False, cl_dict, path2save)
+
+
+def plot_statistic_data(train_cl: np.ndarray | list, valid_cl=None, path2save='',
+                        cl_dict=None, show_plot=False) -> None:
+    """Plotting the statistics of used dataset during training
+    :param train_cl:    Numpy array of all classification labels from training dataset
+    :param valid_cl:    Numpy array of all classification labels from validation dataset (optional)
+    :param path2save:   Path to save the figure
+    :param cl_dict:     Dictionary with keys for each label (otherwise number are used)
+    :param show_plot:   If true, show plot
+    :return:            None
+    """
+    do_plots_avai = isinstance(valid_cl, np.ndarray | list)
+    dict_available = isinstance(cl_dict, np.ndarray | list | dict)
+    use_cl_dict = list()
+    if dict_available:
+        if isinstance(cl_dict, np.ndarray):
+            cl_dict0 = cl_dict.tolist()
+        else:
+            cl_dict0 = cl_dict
+        xtick_text = 'vertical' if len(cl_dict0) > 3 else 'horizontal'
+    else:
+        xtick_text = 'horizontal'
+
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
+    plt.rcParams.update({'font.size': 12})
+    plt.subplots_adjust(hspace=0, wspace=0.5)
+    axs = list()
+    for idx in range(0, 1+do_plots_avai):
+        axs.append(plt.subplot(1, 1 + do_plots_avai, 1+idx))
+
+    # Histogram of Training data
+    check = np.unique(train_cl, return_counts=True)
+    axs[0].bar(check[0], check[1], color='k', width=0.8)
+    if dict_available:
+        if not len(cl_dict) == 0:
+            if isinstance(cl_dict, dict):
+                for key in cl_dict.keys():
+                    use_cl_dict.append(key)
+            else:
+                for idx in np.unique(train_cl):
+                    use_cl_dict.append(cl_dict[int(idx)])
+            axs[0].set_xticks(check[0], (use_cl_dict if check[0].size != 1 else [use_cl_dict[0]]),
+                              rotation=xtick_text)
+    else:
+        axs[0].set_xticks(check[0])
+
+    axs[0].set_ylabel("Bins")
+    axs[0].set_ylim([int(0.99*check[1].min()), int(1.01*check[1].max())])
+    axs[0].set_title('Training')
+
+    # Histogram of Validation data
+    if do_plots_avai:
+        check = np.unique(valid_cl, return_counts=True)
+        axs[1].bar(check[0], check[1], color='k', width=0.8)
+        if dict_available:
+            if not len(cl_dict) == 0:
+                axs[1].set_xticks(check[0], (use_cl_dict if check[0].size != 1 else [use_cl_dict[0]]),
+                                  rotation=xtick_text)
+        else:
+            axs[0].set_xticks(check[0])
+
+        axs[1].set_ylim([int(0.99 * check[1].min()), int(1.01 * check[1].max())])
+        axs[1].set_title('Validation')
+
+    for ax in axs:
+        ax.grid()
+        ax.set_xlabel("Cluster")
+
+    plt.tight_layout(pad=0.5)
+    # --- saving plots
+    if path2save:
+        save_figure(plt, path2save, "ai_training_histdata")
+    if show_plot:
+        plt.show(block=True)

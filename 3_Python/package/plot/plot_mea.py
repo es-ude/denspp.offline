@@ -7,8 +7,8 @@ from package.plot.helper import save_figure, scale_auto_value
 from package.data_call.call_handler import DataHandler
 
 
-def results_mea_transient_total(mea_data: np.ndarray | list, config: DataHandler, path2save="",
-                                yscale=1e6, do_global_limit=False, do_show=False) -> None:
+def plot_mea_transient_total(mea_data: np.ndarray | list, config: DataHandler, path2save="",
+                             yscale=1e6, do_global_limit=False, do_show=False) -> None:
     """Plotting the transient signals of the transient numpy signal with electrode information
     Args:
         mea_data:           Transient numpy array with neural signal [row, colomn, transient]
@@ -97,8 +97,8 @@ def results_mea_transient_total(mea_data: np.ndarray | list, config: DataHandler
         plt.close()
 
 
-def results_mea_transient_single(mea_data: np.ndarray | list, config: DataHandler,
-                                 path2save="") -> None:
+def plot_mea_transient_single(mea_data: np.ndarray | list, config: DataHandler,
+                              path2save="") -> None:
     """Plotting the transient signals of the transient numpy signal with electrode information in single matter
     Args:
         mea_data:           Transient numpy array with neural signal [row, colomn, transient]

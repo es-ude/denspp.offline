@@ -523,7 +523,7 @@ class DataController:
 ###########################################################################
 if __name__ == "__main__":
     from src_neuro.call_spike import DataLoader, SettingsDATA
-    from package.plot.plot_mea import results_mea_transient_total
+    from package.plot.plot_mea import plot_mea_transient_total
 
     settings = SettingsDATA(
         path="C:\HomeOffice\Data_Neurosignal",
@@ -537,7 +537,7 @@ if __name__ == "__main__":
     data_loader.do_mapping()
     data = data_loader.get_data()
 
-    results_mea_transient_total(data.data_raw, data, '../../runs/test', do_global_limit=True)
-    results_mea_transient_total(data.data_raw, data, '../../runs/test', do_global_limit=False)
+    plot_mea_transient_total(data.data_raw, data, '../../runs/test', do_global_limit=True)
+    plot_mea_transient_total(data.data_raw, data, '../../runs/test', do_global_limit=False)
     del data_loader
     print(data)

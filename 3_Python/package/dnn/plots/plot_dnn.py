@@ -124,7 +124,16 @@ def plot_autoencoder_snr(snr: list, path2save='', do_boxplot=False, show_plot=Fa
 
 def plot_3d_featspace(labels: np.ndarray, mark_feat: list, idx: [0, 1, 2], data_classname=None,
                       path2save='', show_plot=False, show_ticks=False) -> None:
-    """Plotting the feature space of the autoencoder"""
+    """Plotting the feature space of the autoencoder
+    :param labels:          Numpy array with labels of the dataset
+    :param mark_feat:       Numpy array with extracted mark features of the dataset
+    :param idx:             Numpy array with used indices of the feature space (mark_feat)
+    :param data_classname:  Numpy array with used label names
+    :param path2save:       Path to save the figure
+    :param show_plot:       If true, show plot
+    :param show_ticks:      If true, show ticks
+    :return:                None
+    """
     fig = plt.figure(figsize=(cm_to_inch(14), cm_to_inch(10)))
     Axes3D(fig)
     ax = plt.axes(projection='3d')
@@ -205,74 +214,6 @@ def plot_autoencoder_run(mark_feat: list, mark_idx: list,
     # --- Saving plots
     if path2save:
         save_figure(plt, path2save, f"ai_training_out{mark_idx[0]}-{mark_idx[1]}")
-    if show_plot:
-        plt.show(block=True)
-
-
-def plot_statistic_data(train_cl: np.ndarray | list, valid_cl=None, path2save='',
-                        cl_dict=None, show_plot=False) -> None:
-    """Plotting the statistics of the data"""
-    do_plots_avai = isinstance(valid_cl, np.ndarray | list)
-    dict_available = isinstance(cl_dict, np.ndarray | list | dict)
-    use_cl_dict = list()
-    if dict_available:
-        if isinstance(cl_dict, np.ndarray):
-            cl_dict0 = cl_dict.tolist()
-        else:
-            cl_dict0 = cl_dict
-        xtick_text = 'vertical' if len(cl_dict0) > 3 else 'horizontal'
-    else:
-        xtick_text = 'horizontal'
-
-    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
-    plt.rcParams.update({'font.size': 12})
-    plt.subplots_adjust(hspace=0, wspace=0.5)
-    axs = list()
-    for idx in range(0, 1+do_plots_avai):
-        axs.append(plt.subplot(1, 1 + do_plots_avai, 1+idx))
-
-    # Histogram of Training data
-    check = np.unique(train_cl, return_counts=True)
-    axs[0].bar(check[0], check[1], color='k', width=0.8)
-    if dict_available:
-        if not len(cl_dict) == 0:
-            if isinstance(cl_dict, dict):
-                for key in cl_dict.keys():
-                    use_cl_dict.append(key)
-            else:
-                for idx in np.unique(train_cl):
-                    use_cl_dict.append(cl_dict[int(idx)])
-            axs[0].set_xticks(check[0], (use_cl_dict if check[0].size != 1 else [use_cl_dict[0]]),
-                              rotation=xtick_text)
-    else:
-        axs[0].set_xticks(check[0])
-
-    axs[0].set_ylabel("Bins")
-    axs[0].set_ylim([int(0.99*check[1].min()), int(1.01*check[1].max())])
-    axs[0].set_title('Training')
-
-    # Histogram of Validation data
-    if do_plots_avai:
-        check = np.unique(valid_cl, return_counts=True)
-        axs[1].bar(check[0], check[1], color='k', width=0.8)
-        if dict_available:
-            if not len(cl_dict) == 0:
-                axs[1].set_xticks(check[0], (use_cl_dict if check[0].size != 1 else [use_cl_dict[0]]),
-                                  rotation=xtick_text)
-        else:
-            axs[0].set_xticks(check[0])
-
-        axs[1].set_ylim([int(0.99 * check[1].min()), int(1.01 * check[1].max())])
-        axs[1].set_title('Validation')
-
-    for ax in axs:
-        ax.grid()
-        ax.set_xlabel("Cluster")
-
-    plt.tight_layout(pad=0.5)
-    # --- saving plots
-    if path2save:
-        save_figure(plt, path2save, "ai_training_histdata")
     if show_plot:
         plt.show(block=True)
 

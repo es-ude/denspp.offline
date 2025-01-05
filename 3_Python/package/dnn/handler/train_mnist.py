@@ -1,5 +1,4 @@
 from copy import deepcopy
-from distutils.command.config import config
 
 from package.yaml_handler import yaml_config_handler
 from package.dnn.dnn_handler import ConfigMLPipeline
@@ -7,7 +6,7 @@ from package.dnn.pytorch_config_data import ConfigDataset, DefaultSettingsDatase
 from package.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE
 from package.dnn.pytorch_pipeline import do_train_classifier, do_train_autoencoder
 from package.dnn.dataset.mnist import prepare_training
-from package.plot.plot_dnn import plot_mnist_graphs
+from package.dnn.plots.plot_dnn import plot_mnist_graphs
 
 
 def do_train_mnist_cl(settings: ConfigMLPipeline, yaml_name_index='Config_MNIST', custom_metrics=()) -> None:

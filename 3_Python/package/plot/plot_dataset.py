@@ -6,7 +6,7 @@ from package.metric import calculate_snr
 
 def plot_frames_dataset(data: dict, take_samples=500, do_norm: bool=False,
                         plot_norm: bool=False, plot_show: bool=False, add_subtitle: bool=False) -> None:
-    """Plotting the results
+    """Plotting the frames for different classes into one figure
     Args:
         data:           Dictionary with spike frames, peak amplitudes and labels
         take_samples:   Only take random N samples from each class

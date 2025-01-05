@@ -6,7 +6,7 @@ from src_impfit.run_mode_normal import run_over_dataset, read_impedance_from_eis
 from package.metric import (calculate_error_mae, calculate_error_mse, calculate_error_rmse, calculate_error_rrmse,
                             calculate_error_mape, calculate_error_mpe, calculate_error_rmsre)
 from package.stim.imp_fitting.impfitter_handler import ImpFit_Handler, load_params_from_csv
-from package.plot.plot_impfit_hist import plot_hist_impedance
+from package.stim.imp_fitting.plot_impfit_hist import plot_hist_impedance
 
 
 def do_single_run(fit_model: str, params_default: dict,

@@ -3,7 +3,7 @@ from os.path import join
 from numpy import load
 
 from package.data_call.call_cellbib import logic_combination
-from package.plot.plot_metric import plot_confusion
+from package.dnn.plots.plot_metric import plot_confusion
 
 
 def rgc_logic_combination(path2valid_data: str, valid_file_name='results_cl.npy', show_plot=False) -> None:

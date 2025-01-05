@@ -2,8 +2,8 @@ import numpy as np
 from package.dnn.pytorch_config_data import ConfigDataset
 from package.digital.fex import SettingsFeature, FeatureExtraction
 from package.digital.cluster import SettingsCluster, Clustering
-from package.plot.plot_dnn import plot_3d_featspace, translate_feats_into_list
-from package.plot.plot_metric import plot_confusion
+from package.dnn.plots.plot_dnn import plot_3d_featspace, translate_feats_into_list
+from package.dnn.plots.plot_metric import plot_confusion
 
 
 def generate_reference_cluster(config_feat: SettingsFeature, config_clus: SettingsCluster, config_data: ConfigDataset,

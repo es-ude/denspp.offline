@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
-from package.plot.plot_dnn import plot_statistic_data
-from package.plot.plot_metric import plot_confusion, plot_loss
+from package.plot import plot_statistic_data
+from package.dnn.plots.plot_metric import plot_confusion, plot_loss
 from package.dnn.dnn_handler import ConfigMLPipeline
 from package.dnn.pytorch_config_data import ConfigDataset
 from package.dnn.pytorch_config_model import ConfigPytorch

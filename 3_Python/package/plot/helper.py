@@ -3,6 +3,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+def get_textsize_paper() -> int:
+    """Getting the fontsize (best practice) for publishing in papers"""
+    return 14
+
+
+def get_plot_color_inactive() -> str:
+    """Getting the color for plotting non-spike activity in transient plots"""
+    return '#929591'
+
+
 def get_plot_color(idx: int) -> str:
     """Getting the color string"""
     sel_color = ['k', 'r', 'b', 'g', 'y', 'c', 'm', 'gray']

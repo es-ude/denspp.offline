@@ -1,6 +1,7 @@
 from os.path import abspath
 import numpy as np
 
+import package.nsp.plot_nsp
 from package.pipeline_cmds import PipelineCMD
 from package.pipeline_signal import PipelineSignal
 from package.analog.amplifier.pre_amp import PreAmp, SettingsAMP
@@ -121,8 +122,8 @@ class Pipeline(PipelineCMD):
         plt_neuro.results_paper(data, channel, path=path2save)
 
         # --- NSP block
-        plt_neuro.results_ivt(data, channel, path=path2save)
-        plt_neuro.results_firing_rate(data, channel, path=path2save)
+        package.nsp.plot_nsp.plot_nsp_ivt(data, channel, path=path2save)
+        package.nsp.plot_nsp.plot_firing_rate(data, channel, path=path2save)
         # plt_neuro.results_correlogram(data, channel, path=path2save)
         # plt_neuro.results_cluster_amplitude(data, channel, path=path2save)
 
