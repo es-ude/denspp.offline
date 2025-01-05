@@ -2,7 +2,7 @@ import unittest
 from os import getcwd
 from os.path import exists, join
 from shutil import rmtree
-from package.structure_builder import create_folder_general_firstrun, create_folder_dnn_firstrun
+from package.structure_builder import init_project_folder, init_dnn_folder
 
 
 class TestSum(unittest.TestCase):
@@ -12,7 +12,7 @@ class TestSum(unittest.TestCase):
     folder_name_test = 'temp_tests'
 
     def test_check_folder_general(self):
-        create_folder_general_firstrun(self.folder2search, self.folder_name_test)
+        init_project_folder(self.folder2search, self.folder_name_test)
         path2start = join(getcwd().split(self.folder2search)[0], self.folder2search, self.folder_name_test)
 
         num_pass = 0
@@ -24,7 +24,7 @@ class TestSum(unittest.TestCase):
         self.assertEqual(num_pass, len(self.folder_general), "Folders not there")
 
     def test_check_folder_dnn(self):
-        create_folder_dnn_firstrun(self.folder2search, self.folder_name_test)
+        init_dnn_folder(self.folder2search, self.folder_name_test)
         path2start = join(getcwd().split(self.folder2search)[0], self.folder2search, self.folder_name_test, 'src_dnn')
 
         num_pass = 0

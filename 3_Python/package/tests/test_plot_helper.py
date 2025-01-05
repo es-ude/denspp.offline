@@ -1,7 +1,6 @@
 from unittest import TestCase, main
 import numpy as np
-from package.tests.test_helper import generate_reference_array
-from package.plot.helper import scale_auto_value
+from package.plot_helper import scale_auto_value
 
 
 class TestPlots(TestCase):

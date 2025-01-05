@@ -3,7 +3,7 @@ import numpy as np
 from PySpice.Spice.Netlist import Circuit
 from package.analog.pyspice_handler import PySpiceHandler
 from package.analog.dev_handler import _generate_signal, _plot_test_results
-from package.structure_builder import create_folder_general_firstrun
+from package.structure_builder import init_project_folder
 
 
 @dataclasses.dataclass
@@ -44,7 +44,7 @@ class PySpiceLoad(PySpiceHandler):
     def __init__(self, settings_pyspice: SettingsPySpice) -> None:
         super().__init__(settings_pyspice.temp, True)
 
-        create_folder_general_firstrun()
+        init_project_folder()
         self._settings = settings_pyspice
 
         self._circuit = Circuit("Test")

@@ -256,6 +256,6 @@ if __name__ == "__main__":
     data = config_test.load_dataset()
     config_test.data_file_name = 'quiroga'
 
-    from package.plot.plot_dataset import plot_frames_dataset
+    from package.dnn.plots.plot_dataset import plot_frames_dataset
     plot_frames_dataset(data, plot_norm=config_test.normalization_do, plot_show=True, add_subtitle=True)
     print(".done")

@@ -5,7 +5,7 @@ from glob import glob
 from datetime import datetime
 from tqdm import tqdm
 from package.data_process.frame_normalization import DataNormalization
-from package.plot.plot_dataset import plot_frames_dataset
+from package.dnn.plots.plot_dataset import plot_frames_dataset
 
 
 def load_fzj_onoff_waveforms(path2folder: str, path2data: str='', quantize_bitwidth: int=16) -> None:

@@ -19,7 +19,7 @@ def get_plot_color(idx: int) -> str:
     return sel_color[idx % len(sel_color)]
 
 
-def get_marker(idx: int) -> str:
+def get_plot_marker(idx: int) -> str:
     """Getting the marker for plotting"""
     sel_marker = '.+x_'
     return sel_marker[idx % len(sel_marker)]

@@ -16,7 +16,7 @@ from sklearn.model_selection import KFold
 
 from package.dnn.pytorch_config_data import ConfigDataset
 from package.dnn.pytorch_config_model import ConfigPytorch
-from package.structure_builder import create_folder_general_firstrun, create_folder_dnn_firstrun
+from package.structure_builder import init_project_folder, init_dnn_folder
 from package.yaml_handler import translate_dataclass_to_dict, write_dict_to_yaml
 
 
@@ -43,8 +43,8 @@ class PyTorchHandler:
         Returns:
             None
         """
-        create_folder_general_firstrun()
-        create_folder_dnn_firstrun()
+        init_project_folder()
+        init_dnn_folder()
         # --- Preparing Neural Network
         self.os_type = platform.system()
         self.model = None

@@ -1,6 +1,6 @@
 from package.dnn.dnn_handler import ConfigMLPipeline, DefaultSettings_MLPipe
 from package.yaml_handler import YamlConfigHandler
-from package.structure_builder import create_folder_general_firstrun
+from package.structure_builder import init_project_folder
 
 
 if __name__ == "__main__":
@@ -8,7 +8,7 @@ if __name__ == "__main__":
           "\n===========================================================================================")
 
     # --- Loading YAML-Settings file
-    create_folder_general_firstrun()
+    init_project_folder()
     yaml_handler = YamlConfigHandler(DefaultSettings_MLPipe, 'config', 'Config_DNN')
     dnn_handler = yaml_handler.get_class(ConfigMLPipeline)
 

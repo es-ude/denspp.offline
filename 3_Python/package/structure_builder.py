@@ -4,7 +4,7 @@ from glob import glob
 from shutil import copy
 
 
-def create_folder_general_firstrun(start_folder='3_Python', new_folder='') -> None:
+def init_project_folder(start_folder='3_Python', new_folder='') -> None:
     """Generating folder structure in first run
     :param start_folder:    Name of the start folder to find in get absolute path
     :param new_folder:      Name of the new folder to create (test case)
@@ -15,7 +15,7 @@ def create_folder_general_firstrun(start_folder='3_Python', new_folder='') -> No
         makedirs(join(path2start, folder_name), exist_ok=True)
 
 
-def create_folder_dnn_firstrun(start_folder='3_Python', new_folder='', dnn_folder='src_dnn') -> None:
+def init_dnn_folder(start_folder='3_Python', new_folder='', dnn_folder='src_dnn') -> None:
     """Generating a handler dummy for training neural networks
     :param start_folder:    Name of the start folder to find in get absolute path
     :param new_folder:      Name of the new folder to create (test case)

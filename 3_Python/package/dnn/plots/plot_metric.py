@@ -2,7 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay, precision_recall_fscore_support
 
-from package.plot.helper import save_figure, cm_to_inch
+from package.plot_helper import save_figure, cm_to_inch
 from package.metric.data import compare_timestamps
 
 

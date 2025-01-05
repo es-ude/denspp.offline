@@ -6,7 +6,7 @@ from os import getcwd, makedirs
 from glob import glob
 from fractions import Fraction
 from scipy.signal import resample_poly
-from package.structure_builder import create_folder_general_firstrun
+from package.structure_builder import init_project_folder
 from package.data_call.owncloud_handler import OwncloudDownloader
 
 
@@ -128,7 +128,7 @@ class DataController:
     path2mapping: str = ''
 
     def __init__(self) -> None:
-        create_folder_general_firstrun()
+        init_project_folder()
         self.__fill_factor = 1
         self.__scaling = 1
         self._methods_available = dir(DataController)

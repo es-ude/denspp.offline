@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 from matplotlib.cm import ScalarMappable
-from package.plot.helper import save_figure, scale_auto_value
+from package.plot_helper import save_figure, scale_auto_value
 
 
 def plot_histogramm(in0: np.ndarray, in1: np.ndarray, in2: np.ndarray, path2save='', show_plot=False) -> None:

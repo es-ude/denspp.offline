@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from package.pipeline.pipeline_signal import PipelineSignal
-from package.plot.helper import cm_to_inch, save_figure, get_plot_color, get_textsize_paper, get_plot_color_inactive
+from package.plot_helper import cm_to_inch, save_figure, get_plot_color, get_textsize_paper, get_plot_color_inactive
 
 
 def plot_pipeline_afe(signals: PipelineSignal, no_electrode: int, path="", time_cut=(),

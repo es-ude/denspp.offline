@@ -1,6 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from package.plot.helper import cm_to_inch
+from package.plot_helper import cm_to_inch
 from package.metric.data import calculate_snr
 
 

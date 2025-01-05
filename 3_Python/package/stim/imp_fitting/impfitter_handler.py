@@ -10,7 +10,7 @@ from fractions import Fraction
 from platform import system
 
 from package.yaml_handler import YamlConfigHandler
-from package.structure_builder import create_folder_general_firstrun
+from package.structure_builder import init_project_folder
 from package.data_process.transformation import do_fft_withimag
 from package.stim.imp_fitting.plot_impfit import (plot_transient, plot_transient_fft, plot_impedance)
 
@@ -230,7 +230,7 @@ class ImpFit_Handler:
             path2start: Definition of path who the processing results will be stored [if not '' given folder is used]
             generate_folders: Generation of dummy folder structure
         """
-        create_folder_general_firstrun()
+        init_project_folder()
         self.__create_folders_impedance(path2start, generate_folders)
 
         self.__trennzeichen = '\\' if system() == 'Windows' else '/'

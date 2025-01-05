@@ -3,8 +3,8 @@ from package.data_generator.waveform_generator import WaveformGenerator
 import matplotlib.pyplot as plt
 
 from enum import Enum
-
 from package.analog.amplifier.comp import *
+
 
 class CBEval(Enum):
     WINDOW = 1
@@ -80,7 +80,7 @@ class ChargeBalancer:
         self.waveform = self.__update_waveform()
 
         if self.cbeval == CBEval.REAL_WINDOW:
-            self.comp = Comp(RecommendedSettingsAMP)
+            self.comp = Comp(RecommendedSettingsCMP)
 
     def get_t_rep(self):
         return self.t_start + self.n_waves * self._get_t_wave() + self.t_end
@@ -368,5 +368,3 @@ if __name__ == "__main__":
     ax.grid()
     plt.tight_layout()
     plt.show()
-
-

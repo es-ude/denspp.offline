@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import PySpice.Logging.Logging as Logging
 from PySpice.Spice.Netlist import Circuit, Netlist
 from PySpice.Spice.NgSpice.Shared import NgSpiceShared
-from package.plot.helper import scale_auto_value, save_figure
+from package.plot_helper import scale_auto_value, save_figure
 
 
 class PySpiceModels:
