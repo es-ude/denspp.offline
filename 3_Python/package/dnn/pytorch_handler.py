@@ -283,7 +283,7 @@ class PyTorchHandler:
 
     def get_best_model(self, type_model: str) -> list:
         """Getting the path to the best trained model"""
-        return glob(join(self._path2save, f"*{type_model}*.pth"))
+        return glob(join(self._path2save, f'*{type_model}*.pt'))
 
     def _end_training_routine(self, timestamp_start: datetime, do_delete_temps=True) -> None:
         """Doing the last step of training routine"""
@@ -297,7 +297,7 @@ class PyTorchHandler:
             print(f'Training runs: {diff_string}')
 
         # Delete init model
-        init_model = glob(join(self._path2save, '*_reset.pth'))
+        init_model = glob(join(self._path2save, '*_reset.pt'))
         for file in init_model:
             remove(file)
 

@@ -280,7 +280,7 @@ class TrainAutoencoder(PyTorchHandler):
 
         metric_out = dict()
         path2model = str()
-        path2model_init = join(self._path2save, f'model_ae_reset.pth')
+        path2model_init = join(self._path2save, f'model_ae_reset.pt')
         save(self.model.state_dict(), path2model_init)
         timestamp_start = datetime.now()
         timestamp_string = timestamp_start.strftime('%H:%M:%S')
@@ -323,7 +323,7 @@ class TrainAutoencoder(PyTorchHandler):
                 # Tracking the best performance and saving the model
                 if loss_valid < best_loss[1]:
                     best_loss = [loss_train, loss_valid]
-                    path2model = join(self._path2temp, f'model_ae_fold{fold:03d}_epoch{epoch:04d}.pth')
+                    path2model = join(self._path2temp, f'model_ae_fold{fold:03d}_epoch{epoch:04d}.pt')
                     save(self.model, path2model)
                     patience_counter = self.settings_train.patience
                 else:

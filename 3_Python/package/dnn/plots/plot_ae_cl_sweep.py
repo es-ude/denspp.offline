@@ -6,7 +6,7 @@ from torch import load, rand
 from package.plot_helper import save_figure, get_plot_color
 
 
-def extract_best_model_epoch_number(path2search: str, file_index: str = '*.pth') -> int:
+def extract_best_model_epoch_number(path2search: str, file_index: str = '*.pt') -> int:
     """Extracting the epoch number of best model available
     Args:
         path2search:    Path for look into and find file
@@ -15,11 +15,11 @@ def extract_best_model_epoch_number(path2search: str, file_index: str = '*.pth')
         Integer with epoch number
     """
     model_path = glob(join(path2search, file_index))[0]
-    epoch_num = split(model_path)[-1].split(".pth")[0].split("_epoch")[-1]
+    epoch_num = split(model_path)[-1].split(".pt")[0].split("_epoch")[-1]
     return int(epoch_num)
 
 
-def extract_model_params(path2search: str, file_index: str = '*.pth') -> int:
+def extract_model_params(path2search: str, file_index: str = '*.pt') -> int:
     """Extracting the model parameters from a pre-trained model file
     :param path2search:    Path for look into and find file
     :param file_index:     Filename index for looking on
@@ -31,7 +31,7 @@ def extract_model_params(path2search: str, file_index: str = '*.pth') -> int:
     return num_params
 
 
-def extract_model_output_size(path2search: str, file_index: str = '*.pth') -> int:
+def extract_model_output_size(path2search: str, file_index: str = '*.pt') -> int:
     """Extracting the model output size from a pre-trained model file
     :param path2search:    Path for look into and find file
     :param file_index:     Filename index for looking on
@@ -103,9 +103,9 @@ def extract_data_from_files(path2folder: str, folder_split_symbol='\\') -> dict:
         for file in list_data_numpy:
             type_data = file.split("_")[-1].split('.')[0]
             feat_size = file.split(folder_split_symbol)[-2].split('_size')[-1]
-            get_best_epoch = extract_best_model_epoch_number(folder, f'model_{type_data}*.pth')
-            get_model_params = extract_model_params(folder, f'model_{type_data}*.pth')
-            get_model_output = extract_model_output_size(folder, f'model_{type_data}*.pth')
+            get_best_epoch = extract_best_model_epoch_number(folder, f'model_{type_data}*.pt')
+            get_model_params = extract_model_params(folder, f'model_{type_data}*.pt')
+            get_model_output = extract_model_output_size(folder, f'model_{type_data}*.pt')
 
             data_loaded = np.load(file, allow_pickle=True).flatten()[0]['fold_000']
             cont_data = dict()

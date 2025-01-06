@@ -242,7 +242,7 @@ class TrainClassifier(PyTorchHandler):
             print(f"Starting Kfold cross validation training in {self.settings_train.num_kfold} steps")
 
         path2model = str()
-        path2model_init = join(self._path2save, f'model_class_reset.pth')
+        path2model_init = join(self._path2save, f'model_class_reset.pt')
         save(self.model.state_dict(), path2model_init)
         timestamp_start = datetime.now()
         timestamp_string = timestamp_start.strftime('%H:%M:%S')
@@ -292,7 +292,7 @@ class TrainClassifier(PyTorchHandler):
                 if valid_loss < best_loss[1]:
                     best_loss = [train_loss, valid_loss]
                     best_acc = [train_acc, valid_acc]
-                    path2model = join(self._path2temp, f'model_class_fold{fold:03d}_epoch{epoch:04d}.pth')
+                    path2model = join(self._path2temp, f'model_class_fold{fold:03d}_epoch{epoch:04d}.pt')
                     save(self.model, path2model)
                     patience_counter = self.settings_train.patience
                 else:

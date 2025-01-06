@@ -71,7 +71,7 @@ def prepare_training(settings: ConfigDataset, path2model: str,
     frames_me = data['mean']
 
     # --- PART: Calculating the features with given Autoencoder model
-    overview_model = glob(join(path2model, '*.pth'))
+    overview_model = glob(join(path2model, '*.pt'))
     model_ae = load(overview_model[0], weights_only=False)
     model_ae = model_ae.to("cpu")
     feat = model_ae(from_numpy(np.array(frames_in, dtype=np.float32)))[0]
