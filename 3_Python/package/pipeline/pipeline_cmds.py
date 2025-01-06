@@ -9,6 +9,7 @@ from threading import Thread, active_count
 from tqdm import tqdm
 from dataclasses import dataclass
 
+from package.structure_builder import get_path_project_start
 from package.data_call.call_handler import SettingsDATA, RecommendedSettingsDATA
 from package.yaml_handler import YamlConfigHandler
 
@@ -17,14 +18,9 @@ class PipelineCMD:
     path2save: str
     _path2pipe: str
 
-    def __init__(self, path2start='3_Python') -> None:
-        """Class for handling the pipeline processing
-        Args:
-            path2start:     Start folder to generate new run folder for saving results
-        Returns:
-            None
-        """
-        self._path2start = join(getcwd().split(path2start)[0], path2start)
+    def __init__(self) -> None:
+        """Class for handling the pipeline processing"""
+        self._path2start = get_path_project_start()
 
     def get_pipeline_name(self) -> str:
         """Getting the name of the pipeline"""

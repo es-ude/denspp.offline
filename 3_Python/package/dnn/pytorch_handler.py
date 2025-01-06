@@ -1,4 +1,4 @@
-from os import remove, getcwd, makedirs
+from os import remove, makedirs
 from os.path import join
 import platform
 from copy import deepcopy
@@ -14,6 +14,7 @@ from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
 from sklearn.model_selection import KFold
 
+from package.structure_builder import get_path_project_start
 from package.dnn.pytorch_config_data import ConfigDataset
 from package.dnn.pytorch_config_model import ConfigPytorch
 from package.structure_builder import init_project_folder, init_dnn_folder
@@ -68,12 +69,10 @@ class PyTorchHandler:
         self._path2temp = str()
         self._path2config = str()
 
-    def __check_start_folder(self, start_folder='3_Python', new_folder='runs'):
+    def __check_start_folder(self, new_folder='runs'):
         """Checking for starting folder to generate"""
-        path2start = join(getcwd().split(start_folder)[0], start_folder)
-        path2dst = join(path2start, new_folder)
-        self._path2run = path2dst
-        makedirs(path2dst, exist_ok=True)
+        self._path2run = get_path_project_start(new_folder)
+        makedirs(self._path2run, exist_ok=True)
 
 
     def __setup_device(self) -> None:

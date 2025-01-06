@@ -3,14 +3,14 @@ import numpy as np
 import pandas as pd
 import impedancefitter as ifit
 from copy import deepcopy
-from os import mkdir, getcwd
+from os import mkdir
 from os.path import join, exists
 from datetime import datetime
 from fractions import Fraction
 from platform import system
 
 from package.yaml_handler import YamlConfigHandler
-from package.structure_builder import init_project_folder
+from package.structure_builder import init_project_folder, get_path_project_start
 from package.data_process.transformation import do_fft_withimag
 from package.stim.imp_fitting.plot_impfit import (plot_transient, plot_transient_fft, plot_impedance)
 
@@ -97,7 +97,7 @@ def _transfer_params_to_detail(params: dict) -> dict:
     return params2dict
 
 
-def find_stimlation_waveform_position(signals: dict, split_on_voltage=False) -> dict:
+def find_stimulation_waveform_position(signals: dict, split_on_voltage=False) -> dict:
     """Find the positions in which a transient stimulation waveform is available
     Args:
         signals:            Dictionary with stimulation signals ['V': voltage, 'I': current]
@@ -161,7 +161,7 @@ def splitting_stimulation_waveforms_into_single_trials(signals_input: dict,
         Dictionary with position of stimulation phases from input transient stimulation waveform
     """
     # --- Getting positions of stimulation phase
-    phase_positions = find_stimlation_waveform_position(signals_input, split_on_voltage)
+    phase_positions = find_stimulation_waveform_position(signals_input, split_on_voltage)
 
     # --- Preparing signals
     input_signal_nml = signals_input['V'] if split_on_voltage else signals_input['I']
@@ -240,11 +240,10 @@ class ImpFit_Handler:
     def __create_folders_impedance(self, folder_start='', generate_folder=True) -> None:
         """Creating empty folder structure if impedance fitting is done from transient signal"""
         # --- Finding the start folder
-        folder2search = '3_Python'
         folder_run_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_imp_fit' if not folder_start else folder_start
 
         # --- Definition of folder structure
-        self._path2save = join(getcwd().split(folder2search)[0], folder2search, 'runs', folder_run_name)
+        self._path2save = join(get_path_project_start(), 'runs', folder_run_name)
         self._path2figure = join(self._path2save, 'figure')
         self._path2impfit = join(self._path2save, 'impedance')
         self._path2params = join(self._path2save, 'model_param')

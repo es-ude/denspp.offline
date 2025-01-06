@@ -1,12 +1,12 @@
 import csv
 import numpy as np
 import dataclasses
-from os.path import join, exists, abspath, dirname, basename
-from os import getcwd, makedirs
+from os.path import join, exists, dirname, basename
+from os import makedirs
 from glob import glob
 from fractions import Fraction
 from scipy.signal import resample_poly
-from package.structure_builder import init_project_folder
+from package.structure_builder import init_project_folder, get_path_project_start
 from package.data_call.owncloud_handler import OwncloudDownloader
 
 
@@ -132,13 +132,8 @@ class DataController:
         self.__fill_factor = 1
         self.__scaling = 1
         self._methods_available = dir(DataController)
-        self.__default_data_path = join(self.get_path2repo(), '2_Data')
+        self.__default_data_path = join(get_path_project_start(), 'data')
         self.__config_data_selection = [self.__default_data_path, 0, 0]
-
-    def get_path2repo(self, start_folder='3_Python', include_start_folder=False) -> str:
-        """Getting the default path of the Python Project"""
-        start_absfolder = abspath(getcwd().split(start_folder)[0])
-        return join(start_absfolder, start_folder) if include_start_folder else start_absfolder
 
     def do_cut(self) -> None:
         """Cutting all transient electrode signals in the given range"""
@@ -154,7 +149,7 @@ class DataController:
         if self._raw_data.data_fs_used == 0:
             self._raw_data.data_fs_used = self._raw_data.data_fs_orig
 
-        # --- Positionen ermitteln
+        # --- Getting the positition of used time range
         if t_range.size == 2:
             idx0 = int(t_range[0] * self._raw_data.data_fs_used)
             idx1 = int(t_range[1] * self._raw_data.data_fs_used)
@@ -528,8 +523,10 @@ if __name__ == "__main__":
     settings = SettingsDATA(
         path="C:\HomeOffice\Data_Neurosignal",
         data_set='mcs_fzj', data_case=1, data_point=0,
-        t_range=[0, 0.5], ch_sel=[], fs_resample=20e3
+        t_range=[0, 0.5], ch_sel=[], fs_resample=20e3,
+        do_mapping=False
     )
+
     data_loader = DataLoader(settings)
     data_loader.do_call()
     data_loader.do_cut()

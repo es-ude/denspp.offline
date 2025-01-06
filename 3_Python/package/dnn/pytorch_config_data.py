@@ -1,10 +1,11 @@
 from dataclasses import dataclass
-from os import getcwd, makedirs
+from os import makedirs
 from os.path import join, abspath, exists, basename
 import numpy as np
 from torch import concat
 from torchvision import datasets, transforms
 
+from package.structure_builder import get_path_project_start
 from package.data_call.owncloud_handler import OwncloudDownloader
 from package.data_process.frame_preprocessing import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
 from package.data_process.frame_preprocessing import reconfigure_cluster_with_cell_lib, generate_zero_frames
@@ -45,9 +46,9 @@ class ConfigDataset:
         return abspath(path)
 
     @property
-    def get_path2folder_project(self, start_folder='3_Python') -> str:
+    def get_path2folder_project(self) -> str:
         """Getting the default path of the Python Project"""
-        return abspath(join(getcwd().split(start_folder)[0], start_folder))
+        return get_path_project_start()
 
     def print_overview_datasets(self, do_print=True) -> list:
         """"""
