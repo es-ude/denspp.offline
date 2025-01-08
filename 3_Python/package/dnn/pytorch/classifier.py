@@ -2,55 +2,10 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from sklearn.metrics import precision_recall_fscore_support
 
-from torch import Tensor, zeros, load, save, concatenate, inference_mode, sum, cuda, cat, randn, eq, add, div
+from torch import Tensor, zeros, load, save, concatenate, inference_mode, cuda, cat, randn, add, div
 from package.dnn.pytorch_handler import ConfigPytorch, ConfigDataset, PyTorchHandler
-
-
-def _calculate_number_true_predictions(pred: Tensor, true: Tensor) -> Tensor:
-    """Function for determining the true predicted values
-    Args:
-        pred:   Tensor with predicted values from model
-        true:   Tensor with true labels from dataset
-    Return
-        Tensor with metric
-    """
-    return sum(eq(pred, true))
-
-
-def _calculate_precision(pred: Tensor, true: Tensor) -> Tensor:
-    """Function for determining the precision metric
-    Args:
-        pred:   Tensor with predicted values from model
-        true:   Tensor with true labels from dataset
-    Return
-        Tensor with metrics [precision]
-    """
-    return precision_recall_fscore_support(true, pred, average="micro", warn_for=tuple())[0]
-
-
-def _calculate_recall(pred: Tensor, true: Tensor) -> Tensor:
-    """Function for determining the precision metric
-    Args:
-        pred:   Tensor with predicted values from model
-        true:   Tensor with true labels from dataset
-    Return
-        Tensor with metrics [precision]
-    """
-    return precision_recall_fscore_support(true, pred, average="micro", warn_for=tuple())[1]
-
-
-def _calculate_fbeta(pred: Tensor, true: Tensor, beta=1.0) -> Tensor:
-    """Function for determining the precision metric
-    Args:
-        pred:   Tensor with predicted values from model
-        true:   Tensor with true labels from dataset
-        beta:   Beta value for getting Fbeta metric
-    Return
-        Tensor with metrics [precision]
-    """
-    return precision_recall_fscore_support(true, pred, beta=beta, average="micro", warn_for=tuple())[2]
+from package.metric.data import calculate_number_true_predictions, calculate_precision, calculate_recall, calculate_fbeta
 
 
 class TrainClassifier(PyTorchHandler):
@@ -96,7 +51,7 @@ class TrainClassifier(PyTorchHandler):
 
             train_loss += loss.item()
             total_batches += 1
-            total_correct += _calculate_number_true_predictions(dec_cl, tdata_out)
+            total_correct += calculate_number_true_predictions(dec_cl, tdata_out)
             total_samples += len(tdata['in'])
 
         train_acc = float(int(total_correct) / total_samples)
@@ -124,7 +79,7 @@ class TrainClassifier(PyTorchHandler):
 
                 valid_loss += self.loss_fn(pred_cl, true_cl).item()
                 total_batches += 1
-                total_correct += _calculate_number_true_predictions(dec_cl, true_cl)
+                total_correct += calculate_number_true_predictions(dec_cl, true_cl)
                 total_samples += len(vdata['in'])
 
                 # --- Calculating custom made metrics
@@ -179,21 +134,21 @@ class TrainClassifier(PyTorchHandler):
                     case 'precision':
                         out = self._separate_classes_from_label(
                             self.__metric_buffer[key0][0], self.__metric_buffer[key0][1], key0,
-                            _calculate_precision
+                            calculate_precision
                         )
                         self.__metric_result[key0].append(out[0])
                         self.__metric_buffer.update({key0: [[], []]})
                     case 'recall':
                         out = self._separate_classes_from_label(
                             self.__metric_buffer[key0][0], self.__metric_buffer[key0][1], key0,
-                            _calculate_recall
+                            calculate_recall
                         )
                         self.__metric_result[key0].append(out[0])
                         self.__metric_buffer.update({key0: [[], []]})
                     case 'fbeta':
                         out = self._separate_classes_from_label(
                             self.__metric_buffer[key0][0], self.__metric_buffer[key0][1], key0,
-                            _calculate_fbeta
+                            calculate_fbeta
                         )
                         self.__metric_result[key0].append(out[0])
                         self.__metric_buffer.update({key0: [[], []]})
@@ -206,7 +161,7 @@ class TrainClassifier(PyTorchHandler):
         Return:
             None
         """
-        out = self._separate_classes_from_label(pred, true, args[0], _calculate_number_true_predictions)
+        out = self._separate_classes_from_label(pred, true, args[0], calculate_number_true_predictions)
         self.__metric_buffer[args[0]][0] = add(self.__metric_buffer[args[0]][0], out[0])
         self.__metric_buffer[args[0]][1] = add(self.__metric_buffer[args[0]][1], out[1])
 

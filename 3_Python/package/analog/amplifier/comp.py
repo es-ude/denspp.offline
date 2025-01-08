@@ -64,12 +64,13 @@ class Comp:
         du = uinp - uinn
         return self.settings.vcm + self.settings.gain * du
 
-    def __dig_output(self, du: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def __dig_output(du: np.ndarray) -> np.ndarray:
         """Translating the analogue signal into digital trigger"""
         return np.array(np.sign(du) == True)
 
-    def __cmp_hystere(self, du: np.ndarray, thr: list) -> np.ndarray:
-        """Processing differential input for generating hysterese"""
+    def __cmp_hysteresis(self, du: np.ndarray, thr: list) -> np.ndarray:
+        """Processing differential input for generating hysteresis"""
         u_out = np.zeros(du.shape)
         self._int_state = np.zeros(du.shape, dtype=np.bool_)
         # state == 0 --> not active, state == 1 --> active
@@ -82,7 +83,7 @@ class Comp:
 
         return u_out
 
-    def __type_hystere(self, mode: int, scale_thr: float) -> list:
+    def __type_hysteresis(self, mode: int, scale_thr: float) -> list:
         """Definition of type"""
         list_out = [0.0, 0.0]
         match mode:
@@ -130,8 +131,8 @@ class Comp:
             u_out = self.__dig_output(u_out)
         return u_out
 
-    def cmp_single_pos_hystere(self, uinp: np.ndarray, uinn: np.ndarray, scale_thr=0.25) -> np.ndarray:
-        """Performs a single-side hystere comparator with input signal
+    def cmp_single_pos_hysteresis(self, uinp: np.ndarray, uinn: np.ndarray, scale_thr=0.25) -> np.ndarray:
+        """Performs a single-side hysteresis comparator with input signal
         Args:
             uinp: Positive input voltage [V]
             uinn: Negative input voltage [V]
@@ -141,14 +142,14 @@ class Comp:
         """
         du = uinp - uinn
         self._unoise = self.__gen_noise(du.size, self.__noise_dis)
-        thr0 = self.__type_hystere(2, scale_thr)
-        u_out = self.__voltage_clipping(self.__cmp_hystere(du, thr0))
+        thr0 = self.__type_hysteresis(2, scale_thr)
+        u_out = self.__voltage_clipping(self.__cmp_hysteresis(du, thr0))
         if not self.settings.out_analog:
             u_out = self.__dig_output(u_out)
         return u_out
 
-    def cmp_single_neg_hystere(self, uinp: np.ndarray, uinn: np.ndarray, scale_thr=0.25) -> np.ndarray:
-        """Performs a single-side hystere comparator with input signal
+    def cmp_single_neg_hysteresis(self, uinp: np.ndarray, uinn: np.ndarray, scale_thr=0.25) -> np.ndarray:
+        """Performs a single-side hysteresis comparator with input signal
         Args:
             uinp: Positive input voltage [V]
             uinn: Negative input voltage [V]
@@ -158,14 +159,14 @@ class Comp:
         """
         du = uinp - uinn
         self._unoise = self.__gen_noise(du.size, self.__noise_dis)
-        thr0 = self.__type_hystere(1, scale_thr)
-        u_out = self.__voltage_clipping(self.__cmp_hystere(du, thr0))
+        thr0 = self.__type_hysteresis(1, scale_thr)
+        u_out = self.__voltage_clipping(self.__cmp_hysteresis(du, thr0))
         if not self.settings.out_analog:
             u_out = self.__dig_output(u_out)
         return u_out
 
-    def cmp_double_hystere(self, uinp: np.ndarray, uinn: np.ndarray, scale_thr=0.25) -> np.ndarray:
-        """Performs a double-side hystere comparator with input signal
+    def cmp_double_hysteresis(self, uinp: np.ndarray, uinn: np.ndarray, scale_thr=0.25) -> np.ndarray:
+        """Performs a double-side hysteresis comparator with input signal
         Args:
             uinp: Positive input voltage [V]
             uinn: Negative input voltage [V]
@@ -175,8 +176,8 @@ class Comp:
         """
         du = uinp - uinn
         self._unoise = self.__gen_noise(du.size, self.__noise_dis)
-        thr0 = self.__type_hystere(3, scale_thr)
-        u_out = self.__voltage_clipping(self.__cmp_hystere(du, thr0))
+        thr0 = self.__type_hysteresis(3, scale_thr)
+        u_out = self.__voltage_clipping(self.__cmp_hysteresis(du, thr0))
         if not self.settings.out_analog:
             u_out = self.__dig_output(u_out)
         return u_out
@@ -196,9 +197,9 @@ if __name__ == "__main__":
     # --- Defining the output
     vcm = cmp.settings.vcm
     out0 = cmp.cmp_normal(inp0, vcm)
-    out1 = cmp.cmp_single_pos_hystere(inp0, vcm)
-    out2 = cmp.cmp_single_neg_hystere(inp0, vcm)
-    out3 = cmp.cmp_double_hystere(inp0, vcm, 0.4)
+    out1 = cmp.cmp_single_pos_hysteresis(inp0, vcm)
+    out2 = cmp.cmp_single_neg_hysteresis(inp0, vcm)
+    out3 = cmp.cmp_double_hysteresis(inp0, vcm, 0.4)
     cmp.cmp_normal(inp1, vcm)
 
     # --- Plots

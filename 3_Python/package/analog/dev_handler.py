@@ -178,7 +178,6 @@ class ElectricalLoadHandler:
             params_dev=params_dev,
             bounds_voltage=self._bounds_volt,
             bounds_current=self._bounds_curr,
-            num_points_regression=self._fit_options[1],
             mode_fit=mode_fit
         )
         self._curve_fit = curve_fit(f=self._type_func2cur[self._settings.type], xdata=u_path, ydata=i_path)[0]
@@ -302,8 +301,6 @@ class ElectricalLoadHandler:
             self.change_options_fit(order, self._fit_options[1])
             error = self._get_params_polyfit(
                 params_dev=params_dev,
-                bounds_voltage=bounds_voltage,
-                bounds_current=self._bounds_curr,
                 do_test=True, do_plot=show_plots,
                 mode_fit=mode_fit
             )
@@ -340,7 +337,7 @@ class ElectricalLoadHandler:
             self._find_best_poly_order(
                 order_start=order_start, order_stop=order_stop,
                 params_dev=self._params_used,
-                show_plots=show_plots, mode_fitting=mode_fit
+                show_plots=show_plots, mode_fit=mode_fit
             )
 
     def change_boundary_current(self, downer_limit: float, upper_limit: float) -> None:

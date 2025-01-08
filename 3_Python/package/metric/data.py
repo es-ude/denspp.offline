@@ -1,15 +1,6 @@
 import numpy as np
-
-
-def calculate_snr(yin: np.ndarray, ymean: np.ndarray) -> np.ndarray:
-    """Calculating the signal-to-noise ratio [dB] of the input signal compared to mean waveform
-    :param yin:     Numpy array with all spike waveforms (raw data)
-    :param ymean:   Numpy array with mean waveform of corresponding spike frame cluster
-    :return:        Numpy array with SNR of all spike waveforms
-    """
-    a0 = (np.max(ymean) - np.min(ymean)) ** 2
-    b0 = np.sum((yin - ymean) ** 2)
-    return 10 * np.log10(a0 / b0)
+from sklearn.metrics import precision_recall_fscore_support
+from torch import Tensor, sum, eq
 
 
 def calculate_error_mbe(y_pred: np.ndarray | float, y_true: np.ndarray | float, do_print=False) -> float:
@@ -188,41 +179,46 @@ def calculate_error_rmsre(y_pred: np.ndarray, y_true: np.ndarray, do_print=False
     return error
 
 
-def compare_timestamps(true_labels: list, pred_labels: list, window=2) -> [float, float, list, list]:
-    """ This function compares the timestamps of the predicted classes and the true classes and returns TP, FP, FN and
-    new arrays which only contain the classes that have matched timestamps in both arrays. The function should be used
-    before plotting a confusion matrix of the classes when working with actual data from the pipeline.
+def calculate_number_true_predictions(pred: Tensor, true: Tensor) -> Tensor:
+    """Function for determining the true predicted values
     Args:
-        true_labels:    List with true labels
-        pred_labels:    List with predicted labels
-        window:         Window size for acceptance rate
-    Returns:
-        Metrics (F1 score, accuracy), new list
+        pred:   Tensor with predicted values from model
+        true:   Tensor with true labels from dataset
+    Return
+        Tensor with metric
     """
-    new_true = []
-    new_pred = []
-    FN = 0
-    TP_same = 0
-    TP_different = 0
-    max_value = max(true_labels[0][-1], pred_labels[0][-1])
-    for i in range(0, max_value):
-        if i in true_labels[0]:
-            found = False
-            for j in range(i-int(window), i+int(window)+1):
-                if j in pred_labels[0]:
-                    pos_true = true_labels[0].index(i)
-                    pos_pred = pred_labels[0].index(j)
-                    new_true.append(true_labels[1][pos_true])
-                    new_pred.append(pred_labels[1][pos_pred])
-                    if true_labels[1][pos_true] == pred_labels[1][pos_pred]:
-                        TP_same += 1
-                    else:
-                        TP_different += 1
-                    found = True
-            if not found:
-                FN += 1
-    FP = len(pred_labels[1])-len(new_pred)
-    TP = TP_same+TP_different
-    f1_score = 2 * TP / (2*TP+FP+FN)
-    accuracy = TP / (TP+FP+FN)
-    return f1_score, accuracy, new_true, new_pred
+    return sum(eq(pred, true))
+
+
+def calculate_precision(pred: Tensor, true: Tensor) -> Tensor:
+    """Function for determining the precision metric
+    Args:
+        pred:   Tensor with predicted values from model
+        true:   Tensor with true labels from dataset
+    Return
+        Tensor with metrics [precision]
+    """
+    return precision_recall_fscore_support(true, pred, average="micro", warn_for=tuple())[0]
+
+
+def calculate_recall(pred: Tensor, true: Tensor) -> Tensor:
+    """Function for determining the precision metric
+    Args:
+        pred:   Tensor with predicted values from model
+        true:   Tensor with true labels from dataset
+    Return
+        Tensor with metrics [precision]
+    """
+    return precision_recall_fscore_support(true, pred, average="micro", warn_for=tuple())[1]
+
+
+def calculate_fbeta(pred: Tensor, true: Tensor, beta=1.0) -> Tensor:
+    """Function for determining the precision metric
+    Args:
+        pred:   Tensor with predicted values from model
+        true:   Tensor with true labels from dataset
+        beta:   Beta value for getting Fbeta metric
+    Return
+        Tensor with metrics [precision]
+    """
+    return precision_recall_fscore_support(true, pred, beta=beta, average="micro", warn_for=tuple())[2]

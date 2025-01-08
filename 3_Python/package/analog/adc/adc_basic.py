@@ -156,7 +156,8 @@ class BasicADC:
                 output_transient.append(j / gain)  # normalise the gain
         return np.array(output_transient)
 
-    def do_decimation_polyphase_order_one(self, uin: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def do_decimation_polyphase_order_one(uin: np.ndarray) -> np.ndarray:
         """Performing first order Non-Recursive Polyphase Decimation on input"""
         last_sample_hs = 0
         uout = []
@@ -168,7 +169,8 @@ class BasicADC:
         uout = np.array(uout)
         return uout
 
-    def do_decimation_polyphase_order_two(self, uin: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def do_decimation_polyphase_order_two(uin: np.ndarray) -> np.ndarray:
         """Performing second order Non-Recursive Polyphase Decimation on input"""
         last_sample_hs = 0
         last_sample_ls = 0

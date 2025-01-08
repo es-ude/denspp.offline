@@ -34,7 +34,8 @@ class DeltaSigmaADC(BasicADC):
         # Output
         return du
 
-    def __stream_converter(self, xin: int) -> np.ndarray:
+    @staticmethod
+    def __stream_converter(xin: int) -> np.ndarray:
         """Performing the stream conversion"""
         xout = (1 + np.sum((-1) ** (1 - xin))) / 2
         return xout

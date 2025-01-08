@@ -33,7 +33,7 @@ class PySpiceModels:
         circuit0.V('cm', 'output', circuit0.gnd, self.vcm)
         return circuit0
 
-    def resistive_diode(self, r0=1e3, Uth=0.7, IS0=4e-12, N=2) -> Circuit:
+    def resistive_diode(self, r0: float=1e3, Uth: float=0.7, IS0: float=4e-12, N: float=2.0) -> Circuit:
         """PySpice model for handling a custom-made diode (series) in simulation
         :param r0:     The resistance of the diode.
         :param Uth:    Threshold voltage of the diode.
@@ -48,7 +48,7 @@ class PySpiceModels:
         circuit0.V('cm', 'output', circuit0.gnd, self.vcm)
         return circuit0
 
-    def resistive_diode_antiparallel(self, r0=1e3, Uth=0.7, IS0=4e-12, N=2) -> Circuit:
+    def resistive_diode_antiparallel(self, r0: float=1e3, Uth: float=0.7, IS0: float=4e-12, N: float=2.0) -> Circuit:
         """PySpice model for handling a custom-made diode (antiparallel) in simulation
         :param r0:     The resistance of the diode.
         :param Uth:    Threshold voltage of the diode.
@@ -64,7 +64,7 @@ class PySpiceModels:
         circuit0.V('cm', 'output', circuit0.gnd, self.vcm)
         return circuit
 
-    def simple_randles_model(self, r_tis=10e3, r_far=100e6, c_dl=10e-9) -> Circuit:
+    def simple_randles_model(self, r_tis: float=10e3, r_far: float=100e6, c_dl: float=10e-9) -> Circuit:
         """PySpice model for handling a Randles model in simulation
         :param r_tis:   Tissue resistance.
         :param r_far:   Faraday resistance.
@@ -78,7 +78,7 @@ class PySpiceModels:
         circuit0.V('cm', 'output', circuit0.gnd, self.vcm)
         return circuit0
 
-    def voltage_divider(self, r_0=10e3, r_1=10e3, r_load=10e12, c_load=0.0) -> Circuit:
+    def voltage_divider(self, r_0: float=10e3, r_1: float=10e3, r_load: float=10e12, c_load: float=0.0) -> Circuit:
         """PySpice model for handling a custom-made diode (series) in simulation
         :param r0:  The resistance of the diode.
         :param Uth: Threshold voltage of the diode.

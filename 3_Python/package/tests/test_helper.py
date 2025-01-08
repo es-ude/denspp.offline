@@ -3,7 +3,11 @@ from unittest import TestCase, main
 
 
 def generate_reference_array(data_array: np.ndarray | list, index_array = 'check') -> str:
-    """"""
+    """Function for generating a reference array to load into the testbench
+    :param data_array:  numpy array or list with data
+    :param index_array: index name of data array for testing
+    :return:            string with index name and list array with data
+    """
     if type(data_array) == np.ndarray:
         list_to_transfer = data_array.tolist()
     else:

@@ -20,6 +20,12 @@ class ConfigPytorch:
     data_split_ratio: float
     data_do_shuffle: bool
 
+    @staticmethod
+    def get_model_overview(print_overview=False, index='') -> None:
+        """Function for getting an overview of existing models inside library"""
+        models_bib = ModelLibrary().get_registry()
+        models_bib.get_model_library_overview(index, do_print=print_overview)
+
     def get_loss_func(self) -> Any:
         """Getting the loss function"""
         match self.loss:
@@ -45,11 +51,6 @@ class ConfigPytorch:
             case _:
                 raise NotImplementedError("Optimizer function unknown! - Please implement or check!")
         return optim_func
-
-    def get_model_overview(self, print_overview=False, index='') -> None:
-        """Function for getting an overview of existing models inside library"""
-        models_bib = ModelLibrary().get_registry()
-        models_bib.get_model_library_overview(index, do_print=print_overview)
 
     def get_model(self, *args, **kwargs):
         """Function for loading the model to train"""

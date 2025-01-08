@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay, precision_recall_fscore_support
 
 from package.plot_helper import save_figure, cm_to_inch
-from package.metric.data import compare_timestamps
+from package.metric.timestamps import compare_timestamps
 
 
 def _get_median(parameter: list) -> float:

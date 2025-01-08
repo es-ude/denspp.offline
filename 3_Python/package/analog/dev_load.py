@@ -62,7 +62,8 @@ class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
         dev_type.update({'RDs': self._resistive_schottky_single, 'RDd': self._resistive_schottky_antiparallel})
         return dev_type
 
-    def __init_dev_string(self) -> dict:
+    @staticmethod
+    def __init_dev_string() -> dict:
         """Initialization of functions to get devices"""
         dev_type = {'R': 'Resistor', 'C': 'Capacitor', 'L': 'Inductor'}
         dev_type.update({'Ds': 'pn-Diode (single)', 'Dd': 'pn-Diode (anti-parallel)'})
@@ -189,7 +190,8 @@ class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
         v3 = params[3] * i_path
         return xd - v1 - v3
 
-    def _func2curve_resistive_diode(self, i_path: np.ndarray, a, b, c, d) -> np.ndarray:
+    @staticmethod
+    def _func2curve_resistive_diode(i_path: np.ndarray, a, b, c, d) -> np.ndarray:
         """Function for performing curve fitting for resistive diode behaviour"""
         return a + b * i_path + c * np.log(d * i_path + 1)
 

@@ -2,49 +2,10 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import Tensor, load, save, inference_mode, flatten, cuda, cat, sub, concatenate
-from torch import max, min, log10, sum, randn
+from torch import Tensor, load, save, inference_mode, flatten, cuda, cat, concatenate
+from torch import randn
 from package.dnn.pytorch_handler import ConfigPytorch, ConfigDataset, PyTorchHandler
-
-
-def _calculate_snr(data: Tensor, mean: Tensor) -> Tensor:
-    """Calculating the Signal-to-Noise (SNR) ratio of the input data
-    Args:
-        data:   Tensor with raw data / frame
-        mean:   Tensor with class-specific mean data / frame
-    Return:
-        Tensor with SNR value
-    """
-    max_values, _ = max(mean, dim=1)
-    min_values, _ = min(mean, dim=1)
-    a0 = (max_values - min_values) ** 2
-    b0 = sum((data - mean) ** 2, dim=1)
-    return 10 * log10(a0 / b0)
-
-
-def _calculate_snr_waveform(input_waveform: Tensor, mean_waveform: Tensor) -> Tensor:
-    """Calculation of metric Signal-to-Noise ratio (SNR) of defined input and reference waveform
-    Args:
-        input_waveform:     Tensor array with input waveform
-        mean_waveform:      Tensor array with real mean waveform from dataset
-    Return:
-        Tensor with differential Signal-to-Noise ratio (SNR) of applied waveforms
-    """
-    return _calculate_snr(input_waveform, mean_waveform)
-
-
-def _calculate_dsnr_waveform(input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor) -> Tensor:
-    """Calculation of metric different Signal-to-Noise ratio (SNR) between defined input and predicted to reference waveform
-    Args:
-        input_waveform:     Tensor array with input waveform
-        pred_waveform:      Tensor array with predicted waveform from model
-        mean_waveform:      Tensor array with real mean waveform from dataset
-    Return:
-        Tensor with differential Signal-to-Noise ratio (SNR) of applied waveforms
-    """
-    snr_in = _calculate_snr(input_waveform, mean_waveform)
-    snr_out = _calculate_snr(pred_waveform, mean_waveform)
-    return sub(snr_out, snr_in)
+from package.metric.snr import calculate_snr_tensor_waveform, calculate_dsnr_tensor_waveform
 
 
 class TrainAutoencoder(PyTorchHandler):
@@ -162,7 +123,7 @@ class TrainAutoencoder(PyTorchHandler):
         Return:
             None
         """
-        out = _calculate_snr_waveform(input_waveform, mean_waveform)
+        out = calculate_snr_tensor_waveform(input_waveform, mean_waveform)
         if isinstance(self.__metric_buffer[args[0]], list):
             self.__metric_buffer[args[0]] = out
         else:
@@ -179,7 +140,7 @@ class TrainAutoencoder(PyTorchHandler):
             None
         """
         out = self._separate_classes_from_label(
-            pred=_calculate_snr_waveform(input_waveform, mean_waveform),
+            pred=calculate_snr_tensor_waveform(input_waveform, mean_waveform),
             true=args[1], label=args[0]
         )
         if len(self.__metric_buffer[args[0]]) == 0:
@@ -199,7 +160,7 @@ class TrainAutoencoder(PyTorchHandler):
         Return:
             None
         """
-        out = _calculate_snr_waveform(pred_waveform, mean_waveform)
+        out = calculate_snr_tensor_waveform(pred_waveform, mean_waveform)
         if isinstance(self.__metric_buffer[args[0]], list):
             self.__metric_buffer[args[0]] = out
         else:
@@ -216,7 +177,7 @@ class TrainAutoencoder(PyTorchHandler):
             None
         """
         out = self._separate_classes_from_label(
-            pred=_calculate_snr_waveform(pred_waveform, mean_waveform),
+            pred=calculate_snr_tensor_waveform(pred_waveform, mean_waveform),
             true=args[1], label=args[0]
         )
         if len(self.__metric_buffer[args[0]]) == 0:
@@ -236,7 +197,7 @@ class TrainAutoencoder(PyTorchHandler):
         Return:
             None
         """
-        out = _calculate_dsnr_waveform(input_waveform, pred_waveform, mean_waveform)
+        out = calculate_dsnr_tensor_waveform(input_waveform, pred_waveform, mean_waveform)
         if isinstance(self.__metric_buffer[args[0]], list):
             self.__metric_buffer[args[0]] = out
         else:
@@ -253,7 +214,7 @@ class TrainAutoencoder(PyTorchHandler):
             None
         """
         out = self._separate_classes_from_label(
-            pred=_calculate_dsnr_waveform(input_waveform, pred_waveform, mean_waveform),
+            pred=calculate_dsnr_tensor_waveform(input_waveform, pred_waveform, mean_waveform),
             true=args[1], label=args[0]
         )
         if len(self.__metric_buffer[args[0]]) == 0:

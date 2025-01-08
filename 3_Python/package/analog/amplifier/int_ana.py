@@ -119,7 +119,8 @@ class IntegratorStage(ProcessNoise):
         u_out = u_int if not self._settings.do_invert else -u_int
         return u_out
 
-    def __do_accumulation_sample(self, x_inp: np.ndarray, x_inn: np.ndarray, scale=1.0) -> np.ndarray:
+    @staticmethod
+    def __do_accumulation_sample(x_inp: np.ndarray, x_inn: np.ndarray, scale=1.0) -> np.ndarray:
         """Performs an accumulation of input signals
         Args:
             x_inp:      Positive input signal

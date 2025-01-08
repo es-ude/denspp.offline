@@ -338,7 +338,8 @@ class DataController:
         else:
             raise FileNotFoundError("--- File is not available. Please check! ---")
 
-    def _read_csv_file(self, path2csv: str, num_channels: int, split_option: str, start_pos_csvfile=0) -> list:
+    @staticmethod
+    def _read_csv_file(path2csv: str, num_channels: int, split_option: str, start_pos_csvfile=0) -> list:
         """Reading the csv file
         Args:
             path2csv:           Path to csv file for reading content
@@ -367,7 +368,8 @@ class DataController:
                         sel_list += 1
             return loaded_data
 
-    def _transform_rawdata_from_csv_to_numpy(self, data: list) -> np.ndarray:
+    @staticmethod
+    def _transform_rawdata_from_csv_to_numpy(data: list) -> np.ndarray:
         """Tranforming the csv data to numpy array"""
         # --- Getting meta information
         num_samples = list()
