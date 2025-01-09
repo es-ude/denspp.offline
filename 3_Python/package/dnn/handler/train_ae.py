@@ -13,9 +13,10 @@ def do_train_neural_autoencoder(settings: ConfigMLPipeline, yaml_name_index='Con
                                 model_default_name='', used_dataset_name='quiroga') -> [dict, dict]:
     """Training routine for Autoencoders in Neural Applications (Spike Frames)
     Args:
-        settings:           Handler for configuring the routine selection for train deep neural networks
-        yaml_name_index:    Index of yaml file name
-        used_dataset_name:  Default name of the dataset for training [default: quiroga]
+        settings:               Handler for configuring the routine selection for train deep neural networks
+        yaml_name_index:        Index of yaml file name
+        model_default_name:     Optional name for the model to load
+        used_dataset_name:      Default name of the dataset for training [default: quiroga]
     Returns:
         Dictionaries with results from training [metrics, validation data]
     """
@@ -40,13 +41,13 @@ def do_train_neural_autoencoder(settings: ConfigMLPipeline, yaml_name_index='Con
     else:
         used_model = config_train.get_model()
 
-    path4vhdl = f'vhdl/run_{date.today()}'
-
     metrics, data_result, path2folder = do_train_autoencoder(
         config_ml=settings, config_data=config_data, config_train=config_train,
-        used_dataset=dataset, used_model=used_model, calc_custom_metrics=['dsnr_all'], save_vhdl=True, path4vhdl=path4vhdl
+        used_dataset=dataset, used_model=used_model, calc_custom_metrics=['dsnr_all', 'ptq_loss'],
+        save_vhdl=True, path4vhdl=f'vhdl/run_{date.today()}'
     )
 
+    # --- Plotting
     if settings.do_plot:
         used_first_fold = [key for key in metrics.keys()][0]
         results_training(

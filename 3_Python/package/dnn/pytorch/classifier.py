@@ -154,26 +154,11 @@ class TrainClassifier(PyTorchHandler):
                         self.__metric_buffer.update({key0: [[], []]})
 
     def __determine_accuracy_per_class(self, pred: Tensor, true: Tensor, *args) -> None:
-        """Calculation of class-specific calculating metrics in each epoch using validation dataset
-        Args:
-            pred:   Tensor with predicted values from model
-            true:   Tensor with true labels from dataset
-        Return:
-            None
-        """
         out = self._separate_classes_from_label(pred, true, args[0], calculate_number_true_predictions)
         self.__metric_buffer[args[0]][0] = add(self.__metric_buffer[args[0]][0], out[0])
         self.__metric_buffer[args[0]][1] = add(self.__metric_buffer[args[0]][1], out[1])
 
     def __determine_buffering_metric_calculation(self, pred: Tensor, true: Tensor, *args) -> None:
-        """Buffering all predicted and labeled data for later metric calculation
-        Args:
-            pred:   Tensor with predicted values from model
-            true:   Tensor with true labels from dataset
-            metric: Short name of used metric as args[0]
-        Return:
-            None
-        """
         if len(self.__metric_buffer[args[0]][0]) == 0:
             self.__metric_buffer[args[0]][0] = true
             self.__metric_buffer[args[0]][1] = pred
@@ -290,6 +275,7 @@ class TrainClassifier(PyTorchHandler):
         data_orig_list = randn(32, 1)
 
         first_cycle = True
+        model_test.eval()
         for vdata in self.valid_loader[-1]:
             clus_pred = model_test(vdata['in'].to(self.used_hw_dev))[1]
             if first_cycle:

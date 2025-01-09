@@ -56,7 +56,7 @@ class ConfigPytorch:
         """Function for loading the model to train"""
         models_bib = ModelLibrary().get_registry()
         if not self.model_name:
-            models_bib.get_model_library_overview(True)
+            models_bib.get_model_library_overview(do_print=True)
             raise NotImplementedError("Please select one model above and type-in the name into yaml file")
         else:
             if models_bib.check_model_available(self.model_name):

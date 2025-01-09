@@ -54,7 +54,8 @@ def do_train_classifier(config_ml: ConfigMLPipeline, config_data: ConfigDataset,
 
 def do_train_autoencoder(config_ml: ConfigMLPipeline, config_data: ConfigDataset,
                          config_train: ConfigPytorch, used_dataset, used_model,
-                         path2save='', calc_custom_metrics=(), save_vhdl=False, path4vhdl='', print_results=True) -> [dict, dict, str]:
+                         path2save='', calc_custom_metrics=(), save_vhdl=False, path4vhdl='', print_results=True,
+                         ptq_validation_do: bool=False, ptq_quant_lvl: list = [12, 8]) -> [dict, dict, str]:
     """Template for training DL classifiers using PyTorch (incl. plotting)
     Args:
         config_ml:              Settings for handling the ML Pipeline
@@ -64,7 +65,9 @@ def do_train_autoencoder(config_ml: ConfigMLPipeline, config_data: ConfigDataset
         used_model:             Used custom-made PyTorch DL model
         path2save:              Path for saving the results [Default: '' --> generate new subfolder in runs]
         calc_custom_metrics:    List with metric names (custom-made) to determine during trainings process
-        print_results:  Printing the results into Terminal
+        print_results:          Printing the results into Terminal
+        ptq_validation_do:      Bool for doing the PTQ validation (instead of normal)
+        ptq_quant_lvl:          Quantization level for PTQ [total bitwidth, frac bitwidth]
     Returns:
         Dictionaries with results from training [metrics, validation data] + String to path for saving plots
     """
@@ -77,7 +80,11 @@ def do_train_autoencoder(config_ml: ConfigMLPipeline, config_data: ConfigDataset
     train_handler.get_metric_methods()
     metrics = train_handler.do_training(path2save=path2save, metrics=calc_custom_metrics)
     path2folder = train_handler.get_saving_path()
-    data_result = train_handler.do_validation_after_training()
+    if ptq_validation_do:
+        train_handler.define_ptq_level(ptq_quant_lvl[0], ptq_quant_lvl[1])
+        data_result = train_handler.do_validation_after_training_ptq()
+    else:
+        data_result = train_handler.do_validation_after_training()
 
     # --- Save VHDL Code
     if save_vhdl:

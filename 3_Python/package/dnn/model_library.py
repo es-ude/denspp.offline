@@ -21,7 +21,7 @@ class ModelRegistry:
         """Build the model"""
         return self.__models_avai[name](*args, **kwargs)
 
-    def get_model_library_overview(self, index='', do_print=True) -> list:
+    def get_model_library_overview(self, index: str='', do_print: bool=True) -> list:
         """Getting an overview of existing models in library
         Args:
             index:      Index search for specific model names

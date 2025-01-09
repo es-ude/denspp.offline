@@ -155,7 +155,7 @@ def plot_3d_featspace(labels: np.ndarray, mark_feat: list, idx: [0, 1, 2], data_
         if not len(data_classname) == 0:
             ax.legend(data_classname)
 
-    plt.tight_layout(pad=0.5)
+    plt.tight_layout()
     # --- saving plots
     if path2save:
         save_figure(plt, path2save, "ai_training_feat")
