@@ -6,63 +6,13 @@ from copy import deepcopy
 from os import mkdir
 from os.path import join, exists
 from datetime import datetime
-from fractions import Fraction
 from platform import system
 
-from package.yaml_handler import YamlConfigHandler
+from package.data_process.transient_resampling import quantize_transient_signal
+from package.example.impfit_single_trial import settings_impfit, path2ngsolve, imp_handler, z_prd, z_fit0
 from package.structure_builder import init_project_folder, get_path_project_start
 from package.data_process.transformation import do_fft_withimag
-from package.stim.imp_fitting.plot_impfit import (plot_transient, plot_transient_fft, plot_impedance)
-
-
-def _quantize_transient_signal(transient_orig: dict, fs_new: float, u_lsb: float, i_gain=2e3) -> dict:
-    """Performing a re-quantization of the transient input signal (amplitude and time)
-    Args:
-        transient_orig:     Input dictionary with transient signal ['V': voltage, 'I': current, 'fs': sampling rate]
-        fs_new:             New sampling rate
-        u_lsb:              New smallest voltage resolution (least significant bit, LSB)
-    Returns:
-        Dictionary with new transient output ['V': voltage, 'I': current, 'fs': sampling rate]
-    """
-    current0 = __do_resample_time(transient_orig['I'], transient_orig['fs'], fs_new, do_offset_comp=True)
-    voltage0 = __do_resample_time(transient_orig['V'], transient_orig['fs'], fs_new)
-
-    current_tran = __do_resample_amplitude(i_gain * current0, u_lsb) / i_gain
-    voltage_tran = __do_resample_amplitude(voltage0, u_lsb)
-    return {'I': current_tran, 'V': voltage_tran, 'fs': fs_new}
-
-
-def __do_resample_time(signal_in: np.ndarray, fs_orig: float, fs_new: float,
-                       do_offset_comp=False) -> np.ndarray:
-    """Do resampling of time value from transient signals
-    Args:
-        signal_in:      Numpy array of transient input signal
-        fs_orig:        Original sampling rate value
-        fs_new:         New sampling rate value
-        do_offset_comp: Do offset compensation on output
-    Returns:
-        Numpy array of resampled into
-    """
-    from scipy.signal import resample_poly
-
-    u_chck = np.mean(signal_in)
-    u_off = u_chck if not do_offset_comp else 0
-    if not fs_orig == fs_new:
-        p, q = Fraction(fs_new / fs_orig).limit_denominator(10000).as_integer_ratio()
-        return u_off + resample_poly(signal_in - u_chck, p, q)
-    else:
-        return signal_in - u_off
-
-
-def __do_resample_amplitude(signal_in: np.ndarray, u_lsb: float) -> np.ndarray:
-    """Do resampling of amplitude from transient signal
-    Args:
-        signal_in:  Numpy array with transient signal
-        u_lsb:      New smallest voltage resolution (least significant bit, LSB)
-    Returns:
-        Numpy array with re-sampled input (amplitude)
-    """
-    return u_lsb * np.round(signal_in / u_lsb, 0) if not u_lsb == 0.0 else signal_in
+from package.stim.imp_fitting.plot_impfit import (plot_transient_stimulation, plot_transient_fft, plot_impedance)
 
 
 def load_params_from_csv(path2model: str) -> dict:
@@ -97,7 +47,7 @@ def _transfer_params_to_detail(params: dict) -> dict:
     return params2dict
 
 
-def find_stimulation_waveform_position(signals: dict, split_on_voltage=False) -> dict:
+def find_stimulation_waveform_position(signals: dict, split_on_voltage: bool=False) -> dict:
     """Find the positions in which a transient stimulation waveform is available
     Args:
         signals:            Dictionary with stimulation signals ['V': voltage, 'I': current]
@@ -150,7 +100,7 @@ def find_stimulation_waveform_position(signals: dict, split_on_voltage=False) ->
 
 
 def splitting_stimulation_waveforms_into_single_trials(signals_input: dict,
-                                                       split_on_voltage=False, do_offset_comp=False) -> dict:
+                                                       split_on_voltage: bool=False, do_offset_comp: bool=False) -> dict:
     """
     Args:
         signals_input:      Dictionary with stimulation signals ['V': voltage, 'I': current]
@@ -199,21 +149,21 @@ def splitting_stimulation_waveforms_into_single_trials(signals_input: dict,
 
 
 @dataclass(frozen=True)
-class Settings_ImpFit:
+class SettingsImpFit:
     """Configuration class for handling the impedance fitting processing pipeline"""
     model:      str
     path2fits:  str
     path2tran:  str
 
 
-RecommendedSettingsImpFit = Settings_ImpFit(
+RecommendedSettingsImpFit = SettingsImpFit(
     model="R_tis + W_war + parallel(R_ct, C_dl)",
     path2fits='../../2_Data/00_ImpedanceFitter',
     path2tran='C:/HomeOffice/Austausch_Rostock/TransienteMessungen/180522_Messung/1_Messdaten'
 )
 
 
-class ImpFit_Handler:
+class ImpFitHandler:
     fit_model = 'R_tis'
     _path2save: str
     _path2figure: str
@@ -237,7 +187,7 @@ class ImpFit_Handler:
         self.take_freq_range = [1e2, 1e5]
         self.__results = dict()
 
-    def __create_folders_impedance(self, folder_start='', generate_folder=True) -> None:
+    def __create_folders_impedance(self, folder_start: str='', generate_folder: bool=True) -> None:
         """Creating empty folder structure if impedance fitting is done from transient signal"""
         # --- Finding the start folder
         folder_run_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_imp_fit' if not folder_start else folder_start
@@ -291,7 +241,7 @@ class ImpFit_Handler:
         df = pd.DataFrame(data)
         df.to_csv(path2file, index=False)
 
-    def fit_impedance_to_model(self, file_name: str, do_print_report=False, save_results=True) -> dict:
+    def fit_impedance_to_model(self, file_name: str, do_print_report: bool=False, save_results: bool=True) -> dict:
         """Fitting extracted impedance fit values to model for getting model parameter
         Args:
             file_name:          File name of the impedance file
@@ -324,7 +274,7 @@ class ImpFit_Handler:
             df.to_csv(path2file, index=False)
         return model_params
 
-    def __transform_transient_signal(self, transient_used: dict, ratio_amp=10.0) -> [dict, dict]:
+    def __transform_transient_signal(self, transient_used: dict, ratio_amp: float=10.0) -> [dict, dict]:
         """Transforming the transient input signal
         Args:
             transient_used: Dictionary with transient signal ['V': voltage, 'I': current, 'fs': sampling rate]
@@ -360,8 +310,8 @@ class ImpFit_Handler:
 
     def calculate_impedance_from_transient_dict(
             self, transient_signal: dict, file_name: str,
-            ratio_amp=10.0, fs_new=0.0, u_lsb=0.0,
-            create_plot=False, show_plot=False) -> bool:
+            ratio_amp: float=10.0, fs_new: float=0.0, u_lsb: float=0.0,
+            create_plot: bool=False, show_plot: bool=False) -> bool:
         """Calculating the impedance values from transient input (using dict format)
         Args:
             transient_signal:   Dictionary with transient input ['fs': sampling rate, 'V': voltage, 'I': current]
@@ -375,7 +325,7 @@ class ImpFit_Handler:
             Boolean value for breaking an external loop (data can be called with get_results())
         """
         fs_used = fs_new if not fs_new == 0.0 else transient_signal['fs']
-        transient_quant = _quantize_transient_signal(transient_signal, fs_used, u_lsb)
+        transient_quant = quantize_transient_signal(transient_signal, fs_used, u_lsb)
         spectrum_signal, data_fit = self.__transform_transient_signal(
             transient_quant, ratio_amp=ratio_amp
         )
@@ -397,8 +347,8 @@ class ImpFit_Handler:
 
     def calculate_impedance_from_transient_numpy(
         self, voltage_signal: np.ndarray, current_signal: np.ndarray, fs_data: float, file_name: str,
-        ratio_amp=10.0, fs_new=0.0, u_lsb=0.0,
-        create_plot=False, show_plot=False
+        ratio_amp: float=10.0, fs_new: float=0.0, u_lsb: float=0.0,
+        create_plot: bool=False, show_plot: bool=False
     ) -> bool:
         """Calculating the impedance values from transient input (using numpy format)
         Args:
@@ -422,7 +372,7 @@ class ImpFit_Handler:
         )
 
     def plot_transient_results(self, file_name: str, transient_signal: dict, spectrum_signal: dict,
-                               show_plot=False) -> None:
+                               show_plot: bool=False) -> None:
         """Plotting the results of the transient input
         Args:
             file_name:          Used file name from which the transient data is extracted
@@ -433,8 +383,8 @@ class ImpFit_Handler:
               None
         """
         file0 = file_name.split(self.__trennzeichen)[-1].split('.')[0]
-        plot_transient(transient_signal['fs'], transient_signal['V'], transient_signal['I'],
-                       file_name=file0, path2save=self._path2figure, plot_charge=True)
+        plot_transient_stimulation(transient_signal['fs'], transient_signal['V'], transient_signal['I'],
+                                   file_name=file0, path2save=self._path2figure, plot_charge=True)
         plot_transient_fft(spectrum_signal['freq'], spectrum_signal['V'], spectrum_signal['I'],
                            file_name=file0, path2save=self._path2figure)
         plot_impedance(spectrum_signal['freq'], imp_fit=spectrum_signal['Z'],
@@ -484,7 +434,7 @@ class ImpFit_Handler:
         return self.__do_impedance_fitting(params, freq)
 
     def plot_impedance_results(self, imp_stim=None, imp_fit=None, imp_eis=None, imp_mod=None,
-                               plot_name='', save_plot=False, show_plot=False) -> None:
+                               plot_name: str='', save_plot: bool=False, show_plot: bool=False) -> None:
         """Plotting the impedance results for different input modes
         Args:
             imp_stim:   Dictionary with impedance and frequency values from transient stimulation signal fitting
@@ -499,26 +449,3 @@ class ImpFit_Handler:
         """
         plot_impedance(imp_fit=imp_fit, imp_eis=imp_eis, imp_mod=imp_mod, imp_stim=imp_stim,
                        name=plot_name, path2save=self._path2figure if save_plot else '', show_plot=show_plot)
-
-
-if __name__ == "__main__":
-    # --- Settings
-    yaml_config = YamlConfigHandler(RecommendedSettingsImpFit, yaml_name="Config_ImpFit_Test")
-    settings_impfit = yaml_config.get_class(Settings_ImpFit)
-
-    path2imp = '../../../../2_Data/00_ImpedanceFitter'
-    path2ngsolve = f'{path2imp}/impedance_expected_ngsolve.csv'
-    path2test0 = f'{path2imp}/tek0000ALL_MATLAB_new_fit.csv'
-    path2test1 = f'{path2imp}/tek0000ALL_MATLAB_impedance.csv'
-
-    imp_handler = ImpFit_Handler()
-    imp_handler.load_fitmodel(settings_impfit.model)
-    imp_handler.load_params_default(path2ngsolve, {'ct_R': 8.33e6})
-
-    # --- Step #1: Plotting impedance
-    fit2freq = np.logspace(0, 6, 61, endpoint=True)
-    z_prd = imp_handler.do_impedance_fit_from_params(imp_handler.get_params_default(), fit2freq)
-    z_fit0 = imp_handler.do_impedance_fit_from_params_csv(path2test0, fit2freq)
-    z_fit1 = imp_handler.do_impedance_fit_from_predicted_csv(path2test1, fit2freq)
-
-    imp_handler.plot_impedance_results(imp_stim=z_fit0, imp_mod=z_prd, plot_name='comparison', show_plot=True)

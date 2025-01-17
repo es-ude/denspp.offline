@@ -1,21 +1,24 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import scipy.integrate as it
 from package.plot_helper import save_figure, scale_auto_value, get_plot_color
 from package.metric.data import calculate_error_mse, calculate_error_rrmse
+from package.data_process.transient_resampling import calculate_charge_injected
 
 
-def calculate_charge_injected(i_in: np.ndarray, fs: float) -> np.ndarray:
-    """Calculating the injected charge amount of one stimulation pattern"""
-    time = np.linspace(0, i_in.size, num=i_in.size) / fs
-    return it.cumtrapz(i_in, time, dx=1/fs, initial=0)
-
-
-def plot_transient(fs: float, voltage: np.ndarray, current: np.ndarray,
-                   plot_charge=False, take_range=(), zoom=(),
-                   file_name='', path2save='', show_plot=False) -> None:
-    """Plotting the transient signal before FFT and impedance fitting
+def plot_transient_stimulation(fs: float, voltage: np.ndarray, current: np.ndarray,
+                               plot_charge: bool=False, take_range=(), zoom=(),
+                               file_name: str='', path2save: str='', show_plot: bool=False) -> None:
+    """Plotting the transient signal of stimulation trial
     Args:
+        fs (float): Sampling rate of the transient signals
+        voltage (np.ndarray): Transient voltage signal
+        current (np.ndarray): Transient current signal
+        plot_charge (bool, optional): Plot charge injected or not
+        take_range (tuple, optional): Take range for plotting
+        zoom (tuple, optional): Zoom range for plotting
+        file_name (str, optional): File name to save figure
+        path2save (str, optional): Path to save figure
+        show_plot (bool, optional): Show plot
     Returns:
         None
     """
@@ -27,12 +30,10 @@ def plot_transient(fs: float, voltage: np.ndarray, current: np.ndarray,
         time0 = time[x00:x01] - time[x00]
         voltage0 = voltage[x00:x01] - voltage[x00]
         current0 = current[x00:x01] - current[x00] + 102.5e-9
-        charge0 = calculate_charge_injected(current0, fs) if plot_charge else 0
     else:
         time0 = time
         voltage0 = voltage
         current0 = current
-        charge0 = calculate_charge_injected(current0, fs)
 
     # --- Generating the plots
     fig, axs = plt.subplots(3 if plot_charge else 2, 1, sharex=True)
@@ -43,6 +44,7 @@ def plot_transient(fs: float, voltage: np.ndarray, current: np.ndarray,
     data_to_plot = [voltage0, current0]
     label_to_plot = [r"$\Delta U_{elec}$ [V]", r"$I_{elec}$ [A]"]
     if plot_charge:
+        charge0 = calculate_charge_injected(current0, fs)
         data_to_plot.append(charge0)
         label_to_plot.append(r"$Q_{inj}$ [C]")
 
@@ -85,8 +87,16 @@ def plot_transient(fs: float, voltage: np.ndarray, current: np.ndarray,
 
 
 def plot_transient_fft(freq: np.ndarray, voltage: np.ndarray, current: np.ndarray,
-                       file_name='', path2save='', show_plot=False) -> None:
-    """Plotting the FFT output of the transient signal"""
+                       file_name: str='', path2save: str='', show_plot: bool=False) -> None:
+    """Plotting the FFT output of the transient signal
+    :param freq:        Frequency array of spectral analysis
+    :param voltage:     Numpy array with transient voltage signal
+    :param current:     Numpy array with transient current signal
+    :param file_name:   File name to save figure
+    :param path2save:   Path to save figure
+    :param show_plot:   Show plot
+    :return:            None
+    """
     plt.tick_params(direction='in')
     fig, axs = plt.subplots(2, 1, sharex=True)
     plt.rcParams.clear()
@@ -115,7 +125,7 @@ def plot_transient_fft(freq: np.ndarray, voltage: np.ndarray, current: np.ndarra
 
 
 def plot_impedance(imp_stim=None, imp_eis=None, imp_fit=None, imp_mod=None,
-                   name='', path2save='', show_plot=False) -> None:
+                   name: str='', path2save: str='', show_plot: bool=False) -> None:
     """Plotting the impedance for different input modes (EIS, fitted and/or predicted)
     Args:
         imp_stim:   Dictionary with impedance and frequency values from transient stimulation signal fitting
@@ -199,8 +209,16 @@ def plot_impedance(imp_stim=None, imp_eis=None, imp_fit=None, imp_mod=None,
 
 
 def plot_impedance_error(freq: np.ndarray, imp_eis: np.ndarray, imp_fit: np.ndarray,
-                         name="", path2save="", show_plot=False) -> None:
-    """Plotting the impedance error (fitted and measured)"""
+                         name: str="", path2save: str="", show_plot: bool=False) -> None:
+    """Plotting the impedance error (fitted and measured)
+    :param freq:        Frequency values of spectrum input
+    :param imp_eis:     Impedance values from electrical impedance spectroscopy
+    :param imp_fit:     Impedance values from ImpedanceFitting
+    :param name:        File name of figure
+    :param path2save:   Path for saving the data
+    :param show_plot:   Showing and blocking plot
+    :return:            None
+    """
     imp_diff = np.abs(imp_eis - imp_fit) / np.abs(imp_eis)
     mse = calculate_error_mse(imp_eis, imp_fit)
     rrmse = calculate_error_rrmse(imp_eis, imp_fit)

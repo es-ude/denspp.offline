@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 
 from package.nsp import calc_firing_rate, calc_autocorrelogram, calc_amplitude
 from package.pipeline.pipeline_signal import PipelineSignal
-from package.plot import cm_to_inch, get_plot_color, save_figure
+from package.plot_helper import cm_to_inch, get_plot_color, save_figure
 
 
 def plot_nsp_ivt(signals: PipelineSignal, no_electrode: int, path="", show_plot=False) -> None:

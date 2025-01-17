@@ -4,8 +4,17 @@ from package.plot_helper import save_figure, _get_median
 
 
 def plot_hist_impedance(r_tis: np.ndarray, z_war: np.ndarray, c_dl: np.ndarray, r_ct: np.ndarray,
-                        name='', path2save='', show_plot=False) -> None:
-    """Plotting the Histogram of the Parameters of Impedance Model"""
+                        name: str='', path2save: str='', show_plot: bool=False) -> None:
+    """Plotting the Histogram of the Parameters of Impedance Model
+    :param r_tis:   Numpy array with Tissue Resistance from Sweep Analysis
+    :param z_war:   Numpy array with Warburg Impedance from Sweep Analysis
+    :param c_dl:    Numpy array with Double Layer Capacity from Sweep Analysis
+    :param r_ct:    Numpy array with Faraday Resistance from Sweep Analysis
+    :param name:    Name of figure
+    :param path2save:   Path to save figure
+    :param show_plot:  Show plot
+    :return:        None
+    """
     plt.clf()
     plt.figure()
     plt.rcParams.clear()
@@ -39,7 +48,7 @@ def plot_hist_impedance(r_tis: np.ndarray, z_war: np.ndarray, c_dl: np.ndarray, 
 
 def plot_sweep_params(x0: np.ndarray, type_in: str, r_tis: np.ndarray, z_war: np.ndarray,
                       c_dl: np.ndarray, r_ct: np.ndarray, zoom=(),
-                      name='', path2save='', show_plot=False) -> None:
+                      name: str='', path2save: str='', show_plot: bool=False) -> None:
     """Plotting the sweeping results with the electrical target parameter
     Args:
         x0:         Input of the parameter sweep
@@ -142,13 +151,17 @@ def plot_sweep_params(x0: np.ndarray, type_in: str, r_tis: np.ndarray, z_war: np
 
 
 def plot_sweep_metric(x0: np.ndarray, type_in: str, metric: np.ndarray, type_name: str,
-                      name='', path2save='', show_plot=False) -> None:
+                      name: str='', path2save: str='', show_plot: bool=False) -> None:
     """Plotting one metric of the sweep run
-
     Args:
-        x0: Input of the parameter sweep
-        type_in: Type of the parameter sweep ['LSB', 'fs']
-        metric: Metric results
+        x0:         Input of the parameter sweep
+        type_in:    Type of the parameter sweep ['LSB', 'fs']
+        metric:     Metric results
+        name:       Name of the figure
+        path2save:  Path to save figure
+        show_plot:  Show plot
+    Return:
+        None
     """
     # Type definition
     if type_in == 'LSB':
@@ -187,10 +200,9 @@ def plot_sweep_metric(x0: np.ndarray, type_in: str, metric: np.ndarray, type_nam
 
 
 def plot_boxplot_params(x0: np.ndarray, type_in: str, r_tis: list, z_war: list, c_dl: list, r_ct: list,
-                        given_ticks=True, plot_cdl=True, plot_rtis=True, plot_rct=False, plot_zwar=True,
-                        name='', path2save='', show_plot=False) -> None:
+                        given_ticks: bool=True, plot_cdl: bool=True, plot_rtis: bool=True, plot_rct: bool=False,
+                        plot_zwar: bool=True, name: str='', path2save: str='', show_plot: bool=False) -> None:
     """Plotting the results with boxplot
-
     Args:
         x0:         Input of the parameter sweep
         type_in:    Type of the parameter sweep ['LSB', 'fs']
@@ -205,6 +217,7 @@ def plot_boxplot_params(x0: np.ndarray, type_in: str, r_tis: list, z_war: list, 
         plot_zwar:  Do plotting the
         name:       Name for saving the plots
         path2save:  Path for saving the plots
+        show_plot:  Showing and blocking plots
     """
     # Type definition
     if type_in == 'LSB':
@@ -294,13 +307,18 @@ def plot_boxplot_params(x0: np.ndarray, type_in: str, r_tis: list, z_war: list, 
 
 
 def plot_boxplot_metric(x0: np.ndarray, type_in: str, metric: list, type_name: str,
-                        name='', path2save='', show_plot=False) -> None:
+                        name: str='', path2save: str='', show_plot: bool=False) -> None:
     """Plotting one metric of the sweep run
-
     Args:
-        x0: Input of the parameter sweep
-        type_in: Type of the parameter sweep ['LSB', 'fs']
-        metric: Metric results
+        x0:         Input of the parameter sweep
+        type_in:    Type of the parameter sweep ['LSB', 'fs']
+        metric:     Metric results
+        type_name:  Name of the used metric
+        name:        Name of the plot
+        path2save:   Path to save the figure
+        show_plot:  Show plot
+    Return:
+        None
     """
     # Type definition
     if type_in == 'LSB':
@@ -344,8 +362,18 @@ def plot_boxplot_metric(x0: np.ndarray, type_in: str, metric: list, type_name: s
 
 def plot_heatmap_2d_metric(freq: np.ndarray, lsb: np.ndarray, metric: list,
                            type_metric: str, mdict_eis=(),
-                           name='', path2save='', show_plot=False) -> None:
-    """Plotting the heatmap with the median metric from the 2D-Parameter Sweep"""
+                           name: str='', path2save: str='', show_plot: bool=False) -> None:
+    """Plotting the heatmap with the median metric from the 2D-Parameter Sweep
+    :param freq:        Numpy array with sampling rate values used in sweep
+    :param lsb:         Numpy array with LSB voltage value used in sweep
+    :param metric:      List with extracted metric values of the sweep
+    :param type_metric: Name of the used metric
+    :param mdict_eis:   Dictionary with results from Electrical Impedance Spectroscopy
+    :param name:        Name of the plot
+    :param path2save:   Path to save the figure
+    :param show_plot:   Show plot
+    :return:            None
+    """
     # --- Pre-Processing
     num_fs = np.unique(freq).size
     num_lsb = np.unique(lsb).size

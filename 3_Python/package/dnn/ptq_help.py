@@ -8,6 +8,12 @@ from package.dnn.pytorch_config_data import DefaultSettingsDataset
 
 
 def quantize_model_fxp(model: nn.Sequential, total_bits: int, frac_bits: int) -> nn.Module:
+    """Function for quantizing the model parameters
+    :param model:       Torch model / Sequential to be quantized
+    :param total_bits:  Total number of bits
+    :param frac_bits:   Fraction of bits to quantize
+    :return:            Quantized model
+    """
     model_quant = deepcopy(model)
     for name, sequential in model_quant.named_children():
         seq_quant = nn.Sequential()
@@ -22,6 +28,12 @@ def quantize_model_fxp(model: nn.Sequential, total_bits: int, frac_bits: int) ->
 
 
 def quantize_data_fxp(data: Tensor | np.ndarray, total_bits: int, frac_bits: int) -> Tensor:
+    """Function for quantizing the data
+    :param data:        Tensor data to be quantized
+    :param total_bits:  Total number of bits
+    :param frac_bits:   Fraction of bits to quantize
+    :return:            Quantized Tensor data
+    """
     data_used = data if isinstance(data, Tensor) else Tensor(data)
     return quantize(data_used, total_bits=total_bits, frac_bits=frac_bits)
 
