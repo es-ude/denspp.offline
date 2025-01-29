@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import PySpice.Logging.Logging as Logging
 from PySpice.Spice.Netlist import Circuit, Netlist
 from PySpice.Spice.NgSpice.Shared import NgSpiceShared
-from package.plot.plot_common import scale_auto_value, save_figure, sel_color
+from package.plot_helper import scale_auto_value, save_figure
 
 
 class PySpiceModels:
@@ -11,14 +11,20 @@ class PySpiceModels:
         self.vcm = 0.0
 
     def resistor(self, value: float) -> Circuit:
-        """"""
+        """PySpice model for handling a resistor in simulation
+        :param value: The resistance of the circuit.
+        :return:
+            The circuit model including voltage sources (input, common mode)
+        """
         circuit0 = Circuit("Resistive Load")
         circuit0.R(1, 'input', 'output', value)
         circuit0.V('cm', 'output', circuit0.gnd, self.vcm)
         return circuit0
 
     def diode_1n4148(self) -> Circuit:
-        """"""
+        """PySpice model for using a 1N4148 diode in simulation
+        :return:    The circuit model including voltage sources (input, common mode)
+        """
         circuit0 = Circuit("Diode_1N4148")
         circuit0.model('1N4148', 'D', IS=4.352e-9, N=1.906, BV=110, IBV=1e-5, RS=0.6458,
                        CJO=7.048e-13, V=0.869, M=0.03, FC=0.5, TT=3.48E-9)
@@ -27,8 +33,14 @@ class PySpiceModels:
         circuit0.V('cm', 'output', circuit0.gnd, self.vcm)
         return circuit0
 
-    def resistive_diode(self, r0=1e3, Uth=0.7, IS0=4e-12, N=2) -> Circuit:
-        """"""
+    def resistive_diode(self, r0: float=1e3, Uth: float=0.7, IS0: float=4e-12, N: float=2.0) -> Circuit:
+        """PySpice model for handling a custom-made diode (series) in simulation
+        :param r0:     The resistance of the diode.
+        :param Uth:    Threshold voltage of the diode.
+        :param IS0:    Saturation current of the diode.
+        :param N:      Nonlinear factor of the diode.
+        :return:       The circuit model including voltage sources (input, common mode)
+        """
         circuit0 = Circuit("Resistive Diode")
         circuit0.model('myDiode', 'D', IS=IS0, RS=0, N=N, VJ=Uth, BV=10, IBV=1e-12, )
         circuit0.R(1, 'input', 'middle', r0)
@@ -36,8 +48,14 @@ class PySpiceModels:
         circuit0.V('cm', 'output', circuit0.gnd, self.vcm)
         return circuit0
 
-    def resistive_diode_antiparallel(self, r0=1e3, Uth=0.7, IS0=4e-12, N=2) -> Circuit:
-        """"""
+    def resistive_diode_antiparallel(self, r0: float=1e3, Uth: float=0.7, IS0: float=4e-12, N: float=2.0) -> Circuit:
+        """PySpice model for handling a custom-made diode (antiparallel) in simulation
+        :param r0:     The resistance of the diode.
+        :param Uth:    Threshold voltage of the diode.
+        :param IS0:    Saturation current of the diode.
+        :param N:      Nonlinear factor of the diode.
+        :return:       The circuit model including voltage sources (input, common mode)
+        """
         circuit0 = Circuit("Resistive Diode (Antiparallel)")
         circuit0.model('myDiode', 'D', IS=IS0, RS=0, N=N, VJ=Uth, BV=10, IBV=1e-12)
         circuit0.R(1, 'input', 'middle', r0)
@@ -46,17 +64,28 @@ class PySpiceModels:
         circuit0.V('cm', 'output', circuit0.gnd, self.vcm)
         return circuit
 
-    def simple_randles_model(self, R_tis=10e3, R_far=100e6, C_dl=10e-9) -> Circuit:
-        """"""
+    def simple_randles_model(self, r_tis: float=10e3, r_far: float=100e6, c_dl: float=10e-9) -> Circuit:
+        """PySpice model for handling a Randles model in simulation
+        :param r_tis:   Tissue resistance.
+        :param r_far:   Faraday resistance.
+        :param c_dl:    Double layer capacity.
+        :return:        The circuit model including voltage sources (input, common mode)
+        """
         circuit0 = Circuit("Simple Randles Model")
-        circuit0.R(1, 'input', 'middle', R_tis)
-        circuit0.R(2, 'middle', 'output', R_far)
-        circuit0.C(1, 'middle', 'output', C_dl)
+        circuit0.R(1, 'input', 'middle', r_tis)
+        circuit0.R(2, 'middle', 'output', r_far)
+        circuit0.C(1, 'middle', 'output', c_dl)
         circuit0.V('cm', 'output', circuit0.gnd, self.vcm)
         return circuit0
 
-    def voltage_divider(self, r_0=10e3, r_1=10e3, r_load=10e12, c_load=0.0) -> Circuit:
-        """"""
+    def voltage_divider(self, r_0: float=10e3, r_1: float=10e3, r_load: float=10e12, c_load: float=0.0) -> Circuit:
+        """PySpice model for handling a custom-made diode (series) in simulation
+        :param r0:  The resistance of the diode.
+        :param Uth: Threshold voltage of the diode.
+        :param IS0: Saturation current of the diode.
+        :param N:   Nonlinear factor of the diode.
+        :return:    The circuit model including voltage sources (input, common mode)
+        """
         circuit0 = Circuit("Voltage Divider with Load")
         circuit0.R(1, 'input', 'output', r_0)
         circuit0.R(2, 'output', 'ref', r_1)
@@ -87,7 +116,7 @@ def _create_arbfwg(spice_instance: NgSpiceShared, waveform: np.ndarray, f_samp: 
 
 
 def _clear_arbfwg(spice_instance: NgSpiceShared) -> None:
-    """"""
+    """Function for getting the voltage source value for making transient analysis"""
     def get_vsrc_data(self, voltage, time, node, ngspice_id) -> int:
         """Internal NgSpice function for simulation"""
         self._logger.debug('ngspice_id-{} get_vsrc_data @{} node {}'.format(ngspice_id, time, node))
@@ -97,7 +126,7 @@ def _clear_arbfwg(spice_instance: NgSpiceShared) -> None:
 
 
 def do_bugfix_clone_circuit(circuits_netlist: Netlist) -> None:
-    """"""
+    """Bugfix function for cloning circuits successful"""
     def copy_to(self, netlist: Netlist) -> Netlist:
         for subcircuit in self.subcircuits:
             netlist.subcircuit(subcircuit)
@@ -115,9 +144,7 @@ def do_bugfix_clone_circuit(circuits_netlist: Netlist) -> None:
 
 
 ############################################################################
-
-
-class PySpice_Handler:
+class PySpiceHandler:
     _circuit: Circuit
     _is_input_voltage: bool
     __results: dict
@@ -138,7 +165,6 @@ class PySpice_Handler:
         self.__results = dict()
         self._is_input_voltage = input_voltage
         self._used_temp = temperature
-        self.__plot_color = sel_color
         self._circuit = Circuit("Test")
         self._run_ite = 0
         self._arbitrary_signal_ng_spice_instance = NgSpiceShared.new_instance()
@@ -592,7 +618,7 @@ if __name__ == "__main__":
     # circuit = models.diode_1n4148()
 
     # --- Definition of Sim mode
-    pyspice = PySpice_Handler(input_voltage=do_voltage)
+    pyspice = PySpiceHandler(input_voltage=do_voltage)
     pyspice.get_ngspice_version()
     for mode in run_mode:
         pyspice.load_circuit_model(circuit)

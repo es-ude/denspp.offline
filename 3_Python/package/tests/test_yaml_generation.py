@@ -1,12 +1,29 @@
+from dataclasses import dataclass
 import unittest
-from os import remove
 from os.path import join, exists
+from shutil import rmtree
+from package.yaml_handler import YamlConfigHandler
 
-from package.yaml_handler import write_dict_to_yaml, read_yaml_to_dict
+
+@dataclass
+class SettingsTest:
+    path: str
+    val: int
+    freq: float
+    data: list
+    meta: dict
+
+DefaultSettingsTest = SettingsTest(
+    path='test',
+    val=1,
+    freq=10.0,
+    data=[0, 1, 2],
+    meta={1: 'company', 2: 'street', 3: 'city'}
+)
 
 # --- DATA FOR TESTING
-path2yaml = ''
-filename = 'test_output'
+path2yaml = 'config'
+filename = 'Config_Test'
 data_wr = {
     'Name': 'John Doe',
     'Position': 'DevOps Engineer',
@@ -15,22 +32,39 @@ data_wr = {
     'Experience': {'GitHub': 'Software Engineer', 'Google': 'Technical Engineer', 'Linkedin': 'Data Analyst'},
     'Languages': {'Markup': ['HTML'], 'Programming': ['Python', 'JavaScript', 'Golang']}
 }
-path2chck = join(path2yaml, f"{filename}.yaml")
 
 
 class TestSum(unittest.TestCase):
-    def test_sum(self):
-        self.assertEqual(sum([1, 2, 3]), 6, "Should be 6")
+    dummy0 = YamlConfigHandler(
+        yaml_template=data_wr,
+        path2yaml=path2yaml,
+        yaml_name=filename + '0'
+    )
+    dummy1 = YamlConfigHandler(
+        yaml_template=DefaultSettingsTest,
+        path2yaml=path2yaml,
+        yaml_name=filename + '1'
+    )
+
+    def test_folder_generation(self):
+        self.assertEqual(exists(path2yaml), True)
 
     def test_yaml_create(self):
-        write_dict_to_yaml(data_wr, filename, path2yaml)
-        self.assertEqual(exists(path2chck), True, "YAML file should be there")
+        self.dummy0.write_dict_to_yaml(data_wr)
+        path2chck = join(path2yaml, f"{filename}0.yaml")
+        self.assertEqual(exists(path2chck), True)
+
+    def test_yaml_class(self):
+        class_out = self.dummy1.get_class(SettingsTest)
+        self.assertEqual(DefaultSettingsTest == class_out, True)
 
     def test_yaml_read(self):
-        data_rd = read_yaml_to_dict(filename, path2yaml)
-        self.assertEqual(data_wr == data_rd, True, "Should be equal")
-        if data_wr == data_rd:
-            remove(path2chck)
+        data_rd = self.dummy0.read_yaml_to_dict()
+        self.assertEqual(data_wr == data_rd, True)
+
+    def test_yaml_stop_test(self):
+        rmtree(path2yaml)
+        self.assertEqual(exists(path2yaml), False)
 
 
 if __name__ == '__main__':

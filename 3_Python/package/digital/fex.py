@@ -1,12 +1,12 @@
-import dataclasses
+from dataclasses import dataclass
 import numpy as np
 from sklearn.decomposition import PCA
 from torch import load, from_numpy
 
 
-@dataclasses.dataclass
+@dataclass
 class SettingsFeature:
-    """"Individuall data class to configure feature extractor and cluster"""
+    """"Individual data class to configure feature extractor and cluster"""
     no_features: int
 
 

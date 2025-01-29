@@ -1,10 +1,12 @@
 from os.path import abspath
 import numpy as np
 
-from package.pipeline_cmds import PipelineCMD, PipelineSignal
-from package.analog.pre_amp import PreAmp, SettingsAMP
-from package.analog.adc_basic import SettingsADC
-from package.analog.adc_sar import ADC_SAR as ADC0
+import package.nsp.plot_nsp
+from package.pipeline.pipeline_cmds import PipelineCMD
+from package.pipeline.pipeline_signal import PipelineSignal
+from package.analog.amplifier.pre_amp import PreAmp, SettingsAMP
+from package.analog.adc import SettingsADC
+from package.analog.adc.adc_sar import SARADC as ADC0
 from package.digital.dsp import DSP, SettingsDSP
 from package.digital.sda import SpikeDetection, SettingsSDA
 from package.digital.fex import FeatureExtraction, SettingsFeature
@@ -109,19 +111,19 @@ class Pipeline(PipelineCMD):
 
     def do_plotting(self, data: PipelineSignal, channel: int) -> None:
         """Function to plot results"""
-        import package.plot.plot_pipeline as plt_neuro
+        import package.pipeline.plot_pipeline as plt_neuro
 
         path2save = self.path2save
         # --- Spike Sorting output
-        plt_neuro.results_afe1(data, channel, path=path2save)
-        plt_neuro.results_afe_sorted(data, channel, path=path2save)
-        plt_neuro.results_afe_sorted(data, channel, path=path2save, time_cut=[10, 12])
-        plt_neuro.results_fec(data, channel, path=path2save)
-        plt_neuro.results_paper(data, channel, path=path2save)
+        plt_neuro.plot_pipeline_afe(data, channel, path=path2save)
+        plt_neuro.plot_transient_highlight_spikes(data, channel, path=path2save)
+        plt_neuro.plot_transient_highlight_spikes(data, channel, path=path2save, time_cut=[10, 12])
+        plt_neuro.plot_pipeline_frame_sorted(data, channel, path=path2save)
+        plt_neuro.plot_pipeline_results(data, channel, path=path2save)
 
         # --- NSP block
-        plt_neuro.results_ivt(data, channel, path=path2save)
-        plt_neuro.results_firing_rate(data, channel, path=path2save)
+        package.nsp.plot_nsp.plot_nsp_ivt(data, channel, path=path2save)
+        package.nsp.plot_nsp.plot_firing_rate(data, channel, path=path2save)
         # plt_neuro.results_correlogram(data, channel, path=path2save)
         # plt_neuro.results_cluster_amplitude(data, channel, path=path2save)
 

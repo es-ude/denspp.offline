@@ -1,10 +1,10 @@
-import dataclasses
+from dataclasses import dataclass
 import numpy as np
 import scipy.signal as scft
 from fxpmath import Fxp
 
 
-@dataclasses.dataclass
+@dataclass
 class SettingsDSP:
     gain: int
     fs: float

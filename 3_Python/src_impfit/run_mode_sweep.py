@@ -3,10 +3,10 @@ from glob import glob
 from os.path import join
 
 from src_impfit.run_mode_normal import run_over_dataset, read_impedance_from_eis, do_eis_calibration
-from package.metric import (calculate_error_mae, calculate_error_mse, calculate_error_rmse, calculate_error_rrmse,
-                            calculate_error_mape, calculate_error_mpe, calculate_error_rmsre)
-from package.stim.imp_fitting.impfitter_handler import ImpFit_Handler, load_params_from_csv
-from package.plot.plot_impfit_hist import plot_hist_impedance
+from package.metric.data import (calculate_error_mae, calculate_error_mse, calculate_error_rmse, calculate_error_rrmse,
+                                 calculate_error_mape, calculate_error_mpe, calculate_error_rmsre)
+from package.stim.imp_fitting.impfitter_handler import ImpFitHandler, load_params_from_csv
+from package.stim.imp_fitting.plot_impfit_hist import plot_hist_impedance
 
 
 def do_single_run(fit_model: str, params_default: dict,
@@ -149,7 +149,7 @@ if __name__ == '__main__':
     eis_params = load_params_from_csv(path2eis_params)
 
     # --- Step #1: Extraction Impedance from real measurement
-    imp_hndl = ImpFit_Handler()
+    imp_hndl = ImpFitHandler()
     imp_hndl.load_fitmodel(set_ifitter)
     imp_hndl.load_params_default(path2ngsolve, {'ct_R': 8.33e6})
 

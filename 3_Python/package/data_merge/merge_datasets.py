@@ -6,8 +6,8 @@ from tqdm import tqdm
 import numpy.lib.scimath as sm
 from datetime import datetime
 
-from package.structure_builder import create_folder_general_firstrun
-from package.metric import calculate_error_mse
+from package.structure_builder import init_project_folder
+from package.metric.data import calculate_error_mse
 
 
 def crossval(wave1, wave2):
@@ -106,7 +106,7 @@ def plot_results(data_packet_X, data_packet_Y, data_packet_mean, path2fig, name)
 
 class SortDataset:
     def __init__(self, path_2_file: str):
-        create_folder_general_firstrun()
+        init_project_folder()
         """Tool for loading and processing dataset to generate a sorted dataset"""
         self.setOptions = dict()
         self.setOptions['do_2nd_run'] = False

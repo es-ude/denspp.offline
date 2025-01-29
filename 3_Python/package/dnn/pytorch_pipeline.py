@@ -1,15 +1,14 @@
 import matplotlib.pyplot as plt
-from package.plot.plot_dnn import plot_statistic_data
-from package.plot.plot_metric import plot_confusion, plot_loss
-from package.dnn.dnn_handler import Config_ML_Pipeline
-from package.dnn.pytorch_config_data import Config_Dataset
-from package.dnn.pytorch_config_model import Config_PyTorch
-from package.dnn.pytorch.classifier import train_nn as train_nn_cl
-from package.dnn.pytorch.autoencoder import train_nn as train_nn_ae
+from package.dnn.plots.plot_metric import plot_confusion, plot_loss, plot_statistic_data
+from package.dnn.dnn_handler import ConfigMLPipeline
+from package.dnn.pytorch_config_data import ConfigDataset
+from package.dnn.pytorch_config_model import ConfigPytorch
+from package.dnn.pytorch.classifier import TrainClassifier
+from package.dnn.pytorch.autoencoder import TrainAutoencoder
 
 
-def do_train_classifier(config_ml: Config_ML_Pipeline, config_data: Config_Dataset,
-                        config_train: Config_PyTorch, used_dataset, used_model,
+def do_train_classifier(config_ml: ConfigMLPipeline, config_data: ConfigDataset,
+                        config_train: ConfigPytorch, used_dataset, used_model,
                         path2save='', calc_custom_metrics=(), print_results=True) -> [dict, dict, str]:
     """Template for training DL classifiers using PyTorch (incl. plotting)
     Args:
@@ -25,7 +24,7 @@ def do_train_classifier(config_ml: Config_ML_Pipeline, config_data: Config_Datas
         Dictionaries with results from training [metrics, validation data] + String to path for saving plots
     """
     # ---Processing Step #1: Preparing Trainings Handler, Build Model
-    train_handler = train_nn_cl(config_train=config_train, config_data=config_data, do_train=True)
+    train_handler = TrainClassifier(config_train=config_train, config_data=config_data, do_train=True)
     train_handler.load_model(model=used_model, print_model=print_results)
     train_handler.load_data(data_set=used_dataset)
     train_handler.get_metric_methods()
@@ -53,9 +52,10 @@ def do_train_classifier(config_ml: Config_ML_Pipeline, config_data: Config_Datas
     return metrics, data_result, path2folder
 
 
-def do_train_autoencoder(config_ml: Config_ML_Pipeline, config_data: Config_Dataset,
-                         config_train: Config_PyTorch, used_dataset, used_model,
-                         path2save='', calc_custom_metrics=(), save_vhdl=False, path4vhdl='', print_results=True) -> [dict, dict, str]:
+def do_train_autoencoder(config_ml: ConfigMLPipeline, config_data: ConfigDataset,
+                         config_train: ConfigPytorch, used_dataset, used_model,
+                         path2save='', calc_custom_metrics=(), save_vhdl=False, path4vhdl='', print_results=True,
+                         ptq_validation_do: bool=False, ptq_quant_lvl: list = [12, 8]) -> [dict, dict, str]:
     """Template for training DL classifiers using PyTorch (incl. plotting)
     Args:
         config_ml:              Settings for handling the ML Pipeline
@@ -65,12 +65,14 @@ def do_train_autoencoder(config_ml: Config_ML_Pipeline, config_data: Config_Data
         used_model:             Used custom-made PyTorch DL model
         path2save:              Path for saving the results [Default: '' --> generate new subfolder in runs]
         calc_custom_metrics:    List with metric names (custom-made) to determine during trainings process
-        print_results:  Printing the results into Terminal
+        print_results:          Printing the results into Terminal
+        ptq_validation_do:      Bool for doing the PTQ validation (instead of normal)
+        ptq_quant_lvl:          Quantization level for PTQ [total bitwidth, frac bitwidth]
     Returns:
         Dictionaries with results from training [metrics, validation data] + String to path for saving plots
     """
     # ---Processing Step #1: Preparing Trainings Handler, Build Model
-    train_handler = train_nn_ae(config_train=config_train, config_data=config_data, do_train=True)
+    train_handler = TrainAutoencoder(config_train=config_train, config_data=config_data, do_train=True)
     train_handler.load_model(model=used_model, print_model=print_results)
     train_handler.load_data(data_set=used_dataset)
 
@@ -78,7 +80,11 @@ def do_train_autoencoder(config_ml: Config_ML_Pipeline, config_data: Config_Data
     train_handler.get_metric_methods()
     metrics = train_handler.do_training(path2save=path2save, metrics=calc_custom_metrics)
     path2folder = train_handler.get_saving_path()
-    data_result = train_handler.do_validation_after_training()
+    if ptq_validation_do:
+        train_handler.define_ptq_level(ptq_quant_lvl[0], ptq_quant_lvl[1])
+        data_result = train_handler.do_validation_after_training_ptq()
+    else:
+        data_result = train_handler.do_validation_after_training()
 
     # --- Save VHDL Code
     if save_vhdl:

@@ -2,53 +2,15 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import Tensor, load, save, inference_mode, flatten, cuda, cat, sub, concatenate
-from torch import max, min, log10, sum, randn
-from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
+from torch import Tensor, load, save, inference_mode, flatten, cuda, cat, concatenate, randn, sum, abs
+
+from package.dnn.ptq_help import quantize_model_fxp
+from package.dnn.pytorch_handler import ConfigPytorch, ConfigDataset, PyTorchHandler
+from package.metric.snr import calculate_snr_tensor_waveform, calculate_dsnr_tensor_waveform
 
 
-def _calculate_snr(data: Tensor, mean: Tensor) -> Tensor:
-    """Calculating the Signal-to-Noise (SNR) ratio of the input data
-    Args:
-        data:   Tensor with raw data / frame
-        mean:   Tensor with class-specific mean data / frame
-    Return:
-        Tensor with SNR value
-    """
-    max_values, _ = max(mean, dim=1)
-    min_values, _ = min(mean, dim=1)
-    a0 = (max_values - min_values) ** 2
-    b0 = sum((data - mean) ** 2, dim=1)
-    return 10 * log10(a0 / b0)
-
-
-def _calculate_snr_waveform(input_waveform: Tensor, mean_waveform: Tensor) -> Tensor:
-    """Calculation of metric Signal-to-Noise ratio (SNR) of defined input and reference waveform
-    Args:
-        input_waveform:     Tensor array with input waveform
-        mean_waveform:      Tensor array with real mean waveform from dataset
-    Return:
-        Tensor with differential Signal-to-Noise ratio (SNR) of applied waveforms
-    """
-    return _calculate_snr(input_waveform, mean_waveform)
-
-
-def _calculate_dsnr_waveform(input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor) -> Tensor:
-    """Calculation of metric different Signal-to-Noise ratio (SNR) between defined input and predicted to reference waveform
-    Args:
-        input_waveform:     Tensor array with input waveform
-        pred_waveform:      Tensor array with predicted waveform from model
-        mean_waveform:      Tensor array with real mean waveform from dataset
-    Return:
-        Tensor with differential Signal-to-Noise ratio (SNR) of applied waveforms
-    """
-    snr_in = _calculate_snr(input_waveform, mean_waveform)
-    snr_out = _calculate_snr(pred_waveform, mean_waveform)
-    return sub(snr_out, snr_in)
-
-
-class train_nn(training_pytorch):
-    def __init__(self, config_train: Config_PyTorch, config_data: Config_Dataset, do_train=True, do_print=True) -> None:
+class TrainAutoencoder(PyTorchHandler):
+    def __init__(self, config_train: ConfigPytorch, config_data: ConfigDataset, do_train=True, do_print=True) -> None:
         """Class for Handling Training of Autoencoders
         Args:
             config_data:            Settings for handling and loading the dataset (just for saving)
@@ -58,13 +20,23 @@ class train_nn(training_pytorch):
         Return:
             None
         """
-        training_pytorch.__init__(self, config_train, config_data, do_train, do_print)
+        PyTorchHandler.__init__(self, config_train, config_data, do_train, do_print)
         # --- Structure for calculating custom metrics during training
+        self._ptq_level = [12, 8]
         self.__metric_buffer = dict()
         self.__metric_result = dict()
         self._metric_methods = {'snr_in': self.__determine_snr_input, 'snr_in_cl': self.__determine_snr_input_class,
                                 'snr_out': self.__determine_snr_output, 'snr_out_cl': self.__determine_snr_output_class,
-                                'dsnr_all': self.__determine_dsnr_all, 'dsnr_cl': self.__determine_dsnr_class}
+                                'dsnr_all': self.__determine_dsnr_all, 'dsnr_cl': self.__determine_dsnr_class,
+                                'ptq_loss': self.__determine_ptq_loss}
+
+    def define_ptq_level(self, total_bitwidth: int, frac_bitwidth: int) -> None:
+        """Function for defining the post-training quantization level of the model
+        :param total_bitwidth: Total bitwidth of the model
+        :param frac_bitwidth: Fraction of bitwidth used for quantization
+        :return: None
+        """
+        self._ptq_level = [total_bitwidth, frac_bitwidth]
 
     def __do_training_epoch(self) -> float:
         """Do training during epoch of training
@@ -99,7 +71,7 @@ class train_nn(training_pytorch):
         Return:
             Floating value with validation loss value
         """
-        total_batches = 0
+        self.total_batches_valid = 0
         valid_loss = 0.0
 
         self.model.eval()
@@ -111,7 +83,7 @@ class train_nn(training_pytorch):
                 data_id = vdata['class'].to(self.used_hw_dev)
                 data_p = self.model(data_x)[1]
 
-                total_batches += 1
+                self.total_batches_valid += 1
                 if len(data_y) > 2:
                     valid_loss += self.loss_fn(flatten(data_p, 1), flatten(data_y, 1)).item()
                 else:
@@ -121,12 +93,12 @@ class train_nn(training_pytorch):
                 for metric_used in epoch_custom_metrics:
                     self._determine_epoch_metrics(metric_used)(data_x, data_p, data_m, metric_used, data_id)
 
-        return float(valid_loss / total_batches)
+        return float(valid_loss / self.total_batches_valid)
 
     def __process_epoch_metrics_calculation(self, init_phase: bool, custom_made_metrics: list) -> None:
         """Function for preparing the custom-made metric calculation
         Args:
-            init_phase:         Boolean decision if processing part is in init (True) or in post-training phase (False)
+            init_phase:         Boolean decision if processing part is in init (True) or in training phase (False)
             custom_made_metrics:List with custom metrics for calculation during validation phase
         Return:
             None
@@ -152,34 +124,16 @@ class train_nn(training_pytorch):
                 self.__metric_result[key0].append(self.__metric_buffer[key0])
                 self.__metric_buffer.update({key0: list()})
 
-    def __determine_snr_input(self, input_waveform: Tensor, pred_waveform: Tensor,
-                              mean_waveform: Tensor, *args) -> None:
-        """Calculation of SNR in each epoch using validation dataset
-        Args:
-            input_waveform:     Tensor array with input waveform
-            pred_waveform:      Tensor array with predicted waveform from model
-            mean_waveform:      Tensor array with real mean waveform from dataset
-        Return:
-            None
-        """
-        out = _calculate_snr_waveform(input_waveform, mean_waveform)
+    def __determine_snr_input(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, *args) -> None:
+        out = calculate_snr_tensor_waveform(input_waveform, mean_waveform)
         if isinstance(self.__metric_buffer[args[0]], list):
             self.__metric_buffer[args[0]] = out
         else:
             self.__metric_buffer[args[0]] = concatenate((self.__metric_buffer[args[0]], out), dim=0)
 
-    def __determine_snr_input_class(self, input_waveform: Tensor, pred_waveform: Tensor,
-                              mean_waveform: Tensor, *args) -> None:
-        """Calculation of SNR in each epoch using validation dataset
-        Args:
-            input_waveform:     Tensor array with input waveform
-            pred_waveform:      Tensor array with predicted waveform from model
-            mean_waveform:      Tensor array with real mean waveform from dataset
-        Return:
-            None
-        """
+    def __determine_snr_input_class(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, *args) -> None:
         out = self._separate_classes_from_label(
-            pred=_calculate_snr_waveform(input_waveform, mean_waveform),
+            pred=calculate_snr_tensor_waveform(input_waveform, mean_waveform),
             true=args[1], label=args[0]
         )
         if len(self.__metric_buffer[args[0]]) == 0:
@@ -189,34 +143,16 @@ class train_nn(training_pytorch):
                 old = self.__metric_buffer[args[0]][idx]
                 self.__metric_buffer[args[0]][idx] = concatenate((old, snr_class), dim=0)
 
-    def __determine_snr_output(self, input_waveform: Tensor, pred_waveform: Tensor,
-                              mean_waveform: Tensor, *args) -> None:
-        """Calculation of SNR in each epoch using validation dataset
-        Args:
-            input_waveform:     Tensor array with input waveform
-            pred_waveform:      Tensor array with predicted waveform from model
-            mean_waveform:      Tensor array with real mean waveform from dataset
-        Return:
-            None
-        """
-        out = _calculate_snr_waveform(pred_waveform, mean_waveform)
+    def __determine_snr_output(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, *args) -> None:
+        out = calculate_snr_tensor_waveform(pred_waveform, mean_waveform)
         if isinstance(self.__metric_buffer[args[0]], list):
             self.__metric_buffer[args[0]] = out
         else:
             self.__metric_buffer[args[0]] = concatenate((self.__metric_buffer[args[0]], out), dim=0)
 
-    def __determine_snr_output_class(self, input_waveform: Tensor, pred_waveform: Tensor,
-                              mean_waveform: Tensor, *args) -> None:
-        """Calculation of SNR in each epoch using validation dataset
-        Args:
-            input_waveform:     Tensor array with input waveform
-            pred_waveform:      Tensor array with predicted waveform from model
-            mean_waveform:      Tensor array with real mean waveform from dataset
-        Return:
-            None
-        """
+    def __determine_snr_output_class(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, *args) -> None:
         out = self._separate_classes_from_label(
-            pred=_calculate_snr_waveform(pred_waveform, mean_waveform),
+            pred=calculate_snr_tensor_waveform(pred_waveform, mean_waveform),
             true=args[1], label=args[0]
         )
         if len(self.__metric_buffer[args[0]]) == 0:
@@ -226,42 +162,42 @@ class train_nn(training_pytorch):
                 old = self.__metric_buffer[args[0]][idx][0]
                 self.__metric_buffer[args[0]][idx] = concatenate((old, snr_class), dim=0)
 
-    def __determine_dsnr_all(self, input_waveform: Tensor, pred_waveform: Tensor,
-                             mean_waveform: Tensor, *args) -> None:
-        """Calculation of dSNR in each epoch using validation dataset
-        Args:
-            input_waveform:     Tensor array with input waveform
-            pred_waveform:      Tensor array with predicted waveform from model
-            mean_waveform:      Tensor array with real mean waveform from dataset
-        Return:
-            None
-        """
-        out = _calculate_dsnr_waveform(input_waveform, pred_waveform, mean_waveform)
+    def __determine_dsnr_all(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, *args) -> None:
+        out = calculate_dsnr_tensor_waveform(input_waveform, pred_waveform, mean_waveform)
         if isinstance(self.__metric_buffer[args[0]], list):
             self.__metric_buffer[args[0]] = out
         else:
             self.__metric_buffer[args[0]] = concatenate((self.__metric_buffer[args[0]], out), dim=0)
 
-    def __determine_dsnr_class(self, input_waveform: Tensor, pred_waveform: Tensor,
-                               mean_waveform: Tensor, *args) -> None:
-        """Calculation of class-specific dSNR in each epoch using validation dataset
-        Args:
-            input_waveform:     Tensor array with input waveform
-            pred_waveform:      Tensor array with predicted waveform from model
-            mean_waveform:      Tensor array with real mean waveform from dataset
-        Return:
-            None
-        """
-        out = self._separate_classes_from_label(
-            pred=_calculate_dsnr_waveform(input_waveform, pred_waveform, mean_waveform),
-            true=args[1], label=args[0]
-        )
-        if len(self.__metric_buffer[args[0]]) == 0:
-            self.__metric_buffer[args[0]] = out[0]
+    def __determine_dsnr_class(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, *args) -> None:
+        out = calculate_dsnr_tensor_waveform(input_waveform, pred_waveform, mean_waveform)
+        if isinstance(self.__metric_buffer[args[0]], list):
+            self.__metric_buffer[args[0]] = out
         else:
-            for idx, snr_class in enumerate(out[0]):
-                old = self.__metric_buffer[args[0]][idx]
-                self.__metric_buffer[args[0]][idx] = concatenate((old, snr_class), dim=0)
+            self.__metric_buffer[args[0]] = concatenate((self.__metric_buffer[args[0]], out), dim=0)
+
+    def __determine_ptq_loss(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, *args) -> None:
+        """if not hasattr(self.model, 'bit_config'):
+            raise NotImplementedError('PTQ Test is only available with elasticAI.creator Models or '
+                                      'model includes variable \"bit_config\" = [total_bitwidth, frac_bitwidth]')
+        else:"""
+        # --- Load model and make inference
+        model_ptq = quantize_model_fxp(self.model, self._ptq_level[0], self._ptq_level[1])
+        pred_waveform_ptq = model_ptq(input_waveform)[1]
+        model_ptq.eval()
+
+        # --- Calculate loss
+        if len(input_waveform) > 2:
+            loss = self.loss_fn(flatten(pred_waveform_ptq, 1), flatten(input_waveform, 1)).item() / self.total_batches_valid
+        else:
+            loss = self.loss_fn(pred_waveform_ptq, input_waveform).item() / self.total_batches_valid
+
+        # --- Saving results
+        if len(self.__metric_buffer[args[0]]):
+            self.__metric_buffer[args[0]][0] = self.__metric_buffer[args[0]][0] + loss
+        else:
+            self.__metric_buffer[args[0]].append(loss)
+
 
     def do_training(self, path2save='', metrics=()) -> dict:
         """Start model training incl. validation and custom-own metric calculation
@@ -280,7 +216,7 @@ class train_nn(training_pytorch):
 
         metric_out = dict()
         path2model = str()
-        path2model_init = join(self._path2save, f'model_ae_reset.pth')
+        path2model_init = join(self._path2save, f'model_ae_reset.pt')
         save(self.model.state_dict(), path2model_init)
         timestamp_start = datetime.now()
         timestamp_string = timestamp_start.strftime('%H:%M:%S')
@@ -296,9 +232,8 @@ class train_nn(training_pytorch):
             metric_fold = dict()
             epoch_loss_train = list()
             epoch_loss_valid = list()
-            epoch_metric = [[] for _ in metrics]
 
-            self.model.load_state_dict(load(path2model_init))
+            self.model.load_state_dict(load(path2model_init, weights_only=False))
             self._run_kfold = fold
             if self._kfold_do and self._do_print_state:
                 print(f'\nStarting with Fold #{fold}')
@@ -323,7 +258,7 @@ class train_nn(training_pytorch):
                 # Tracking the best performance and saving the model
                 if loss_valid < best_loss[1]:
                     best_loss = [loss_train, loss_valid]
-                    path2model = join(self._path2temp, f'model_ae_fold{fold:03d}_epoch{epoch:04d}.pth')
+                    path2model = join(self._path2temp, f'model_ae_fold{fold:03d}_epoch{epoch:04d}.pt')
                     save(self.model, path2model)
                     patience_counter = self.settings_train.patience
                 else:
@@ -367,6 +302,7 @@ class train_nn(training_pytorch):
         data_orig_list = randn(32, 1)
 
         first_cycle = True
+        model_test.eval()
         for ite_cycle, vdata in enumerate(self.valid_loader[-1]):
             feat, pred = model_test(vdata['in'].to(self.used_hw_dev))
             if first_cycle:
@@ -386,3 +322,43 @@ class train_nn(training_pytorch):
         result_pred = pred_model.numpy()
         return self._getting_data_for_plotting(data_orig_list.numpy(), clus_orig_list.numpy(),
                                                {'feat': result_feat, 'pred': result_pred}, addon='ae')
+
+    def do_validation_after_training_ptq(self) -> dict:
+        """Performing the validation with the best model after training for plotting and saving results"""
+        if cuda.is_available():
+            cuda.empty_cache()
+
+        # --- Do the Inference with Best Model
+        path2model = self.get_best_model('ae')[0]
+        if self._do_print_state:
+            print("\n================================================================="
+                  f"\nDo Validation with best model: {path2model}")
+        model_test = load(path2model, weights_only=False)
+        model_quant = quantize_model_fxp(model_test, self._ptq_level[0], self._ptq_level[1])
+
+        pred_model = randn(32, 1)
+        feat_model = randn(32, 1)
+        clus_orig_list = randn(32, 1)
+        data_orig_list = randn(32, 1)
+
+        first_cycle = True
+        model_quant.eval()
+        for ite_cycle, vdata in enumerate(self.valid_loader[-1]):
+            feat, pred = model_quant(vdata['in'].to(self.used_hw_dev))
+            if first_cycle:
+                feat_model = feat.detach().cpu()
+                pred_model = pred.detach().cpu()
+                clus_orig_list = vdata['class']
+                data_orig_list = vdata['in']
+            else:
+                feat_model = cat((feat_model, feat.detach().cpu()), dim=0)
+                pred_model = cat((pred_model, pred.detach().cpu()), dim=0)
+                clus_orig_list = cat((clus_orig_list, vdata['class']), dim=0)
+                data_orig_list = cat((data_orig_list, vdata['in']), dim=0)
+            first_cycle = False
+
+        # --- Preparing output
+        result_feat = feat_model.numpy()
+        result_pred = pred_model.numpy()
+        return self._getting_data_for_plotting(data_orig_list.numpy(), clus_orig_list.numpy(),
+                                               {'feat': result_feat, 'pred': result_pred}, addon='ae_quant')

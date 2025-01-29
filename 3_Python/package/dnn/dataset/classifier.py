@@ -1,7 +1,7 @@
 import numpy as np
 from torch import is_tensor
 from torch.utils.data import Dataset
-from package.dnn.pytorch_handler import Config_Dataset
+from package.dnn.pytorch_handler import ConfigDataset
 
 
 class DatasetClassifier(Dataset):
@@ -41,7 +41,7 @@ class DatasetClassifier(Dataset):
         return int(np.unique(self.__frame_cellid).size)
 
 
-def prepare_training(settings: Config_Dataset) -> DatasetClassifier:
+def prepare_training(settings: ConfigDataset) -> DatasetClassifier:
     """Preparing dataset incl. augmentation for spike-detection-based training
     Args:
         settings:       Settings for loading data

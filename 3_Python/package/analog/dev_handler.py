@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 from scipy.constants import Boltzmann, elementary_charge
 from scipy.optimize import least_squares, curve_fit
 
-from package.structure_builder import create_folder_general_firstrun
-from package.plot.plot_common import scale_auto_value, save_figure
-from package.metric import calculate_error_rae, calculate_error_mse
+from package.structure_builder import init_project_folder
+from package.plot_helper import scale_auto_value, save_figure
+from package.metric.data import calculate_error_rae, calculate_error_mse
 
 
 @dataclasses.dataclass
@@ -35,17 +35,17 @@ def _calc_error(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float
 
 def _raise_voltage_violation(du: np.ndarray | float, range_volt: list) -> None:
     """Checking differential voltage input for violation of voltage range for given branch"""
-    violation_dwn = np.count_nonzero(du < range_volt[0], axis=0)
-    violation_up = np.count_nonzero(du > range_volt[1], axis=0)
+    violation_dwn = np.count_nonzero(du < range_volt[slice(0)], axis=0)
+    violation_up = np.count_nonzero(du > range_volt[slice(1)], axis=0)
 
     if violation_up or violation_dwn:
         val = du.min if violation_dwn else du.max
-        limit = range_volt[0] if violation_dwn else range_volt[1]
+        limit = range_volt[slice(0)] if violation_dwn else range_volt[slice(1)]
         addon = f'(Upper limit)' if not violation_dwn else '(Downer limit)'
         warn(f"--- Warning: Voltage Range Violation {addon}! With {val} of {limit} ---")
 
 
-class ElectricalLoad_Handler:
+class ElectricalLoadHandler:
     """Class for emulating an electrical device"""
     _settings: SettingsDEV
     _poly_fit: np.ndarray
@@ -66,7 +66,7 @@ class ElectricalLoad_Handler:
         return Boltzmann * self._settings.temp / elementary_charge
 
     def __init__(self) -> None:
-        create_folder_general_firstrun()
+        init_project_folder()
         self._init_class()
 
     def _init_class(self) -> None:
@@ -178,7 +178,6 @@ class ElectricalLoad_Handler:
             params_dev=params_dev,
             bounds_voltage=self._bounds_volt,
             bounds_current=self._bounds_curr,
-            num_points_regression=self._fit_options[1],
             mode_fit=mode_fit
         )
         self._curve_fit = curve_fit(f=self._type_func2cur[self._settings.type], xdata=u_path, ydata=i_path)[0]
@@ -302,8 +301,6 @@ class ElectricalLoad_Handler:
             self.change_options_fit(order, self._fit_options[1])
             error = self._get_params_polyfit(
                 params_dev=params_dev,
-                bounds_voltage=bounds_voltage,
-                bounds_current=self._bounds_curr,
                 do_test=True, do_plot=show_plots,
                 mode_fit=mode_fit
             )
@@ -340,7 +337,7 @@ class ElectricalLoad_Handler:
             self._find_best_poly_order(
                 order_start=order_start, order_stop=order_stop,
                 params_dev=self._params_used,
-                show_plots=show_plots, mode_fitting=mode_fit
+                show_plots=show_plots, mode_fit=mode_fit
             )
 
     def change_boundary_current(self, downer_limit: float, upper_limit: float) -> None:

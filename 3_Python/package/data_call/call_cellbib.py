@@ -97,9 +97,13 @@ class _RGC_ONOFF_FZJ:
         }
 
 
-def logic_combination(true_labels: np.ndarray, pred_labels: np.ndarray, translate_dict: list) -> [np.ndarray,
-                                                                                                  np.ndarray]:
-    """Combination of logic for Reducing Label Classes"""
+def logic_combination(true_labels: np.ndarray, pred_labels: np.ndarray, translate_dict: list) -> [np.ndarray, np.ndarray]:
+    """Combination of logic for Reducing Label Classes
+    :param true_labels:     Numpy array with true labels
+    :param pred_labels:     Numpy array with predicted labels
+    :param translate_dict:  Dictionary with label ids to combine
+    :returns:               Two numpy arrays with true_labels_new and pred_labels_new
+    """
     true_labels_new = np.zeros(shape=true_labels.shape, dtype=np.uint8)
     pred_labels_new = np.zeros(shape=pred_labels.shape, dtype=np.uint8)
 

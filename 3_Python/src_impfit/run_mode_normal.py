@@ -4,13 +4,17 @@ from tqdm import tqdm
 from glob import glob
 from scipy.io import loadmat
 
-from package.stim.imp_fitting.impfitter_handler import (ImpFit_Handler, Settings_ImpFit, RecommendedSettingsImpFit,
+from package.stim.imp_fitting.impfitter_handler import (ImpFitHandler, SettingsImpFit, RecommendedSettingsImpFit,
                                                         splitting_stimulation_waveforms_into_single_trials)
-from package.yaml_handler import yaml_config_handler
+from package.yaml_handler import YamlConfigHandler
 
 
-def _read_osci_transient_from_mat(path2file: str, i_gain=1e4) -> dict:
-    """Loading the MATLAB files from already converted Tektronix MXO recording"""
+def read_osci_transient_from_mat(path2file: str, i_gain:float=1e4) -> dict:
+    """Loading the MATLAB files from already converted Tektronix MXO recording
+    :param path2file:   String with path to file
+    :param i_gain:      Floating value with transimpedance gain
+    :return:            Dictionary with data of voltage 'V', current 'I', sampling_rate 'fs'
+    """
     data = loadmat(path2file)
     fs_orig = 1 / np.mean(np.diff(data["DataNum"][:, 0]))
     current = data["DataNum"][:, 1] / i_gain
@@ -72,9 +76,9 @@ def do_eis_calibration(imp_eis: dict, bode_cal: dict) -> dict:
 
 def run_over_dataset(model2fit: str, default_params: dict,
                      path2data: str, search_index: str,
-                     start_sample=0, stop_sample=-1, exclude_sample=(),
-                     start_folder='', generate_folders=False,
-                     ulsb_new=0.0, fs_new=0.0) -> None:
+                     start_sample: int=0, stop_sample: int=-1, exclude_sample=(),
+                     start_folder: str='', generate_folders: bool=False,
+                     ulsb_new: float=0.0, fs_new: float=0.0) -> None:
     """Run the impedancefitter for extraction of impedance data and model parameter from transient stimulation signal
     Args:
         model2fit:          Definition of the electrical model for fitting
@@ -101,14 +105,14 @@ def run_over_dataset(model2fit: str, default_params: dict,
         files = transient_files[start_sample:stop_sample + 1]
 
     # --- Init the handler
-    imp_fitter = ImpFit_Handler(start_folder, generate_folders)
+    imp_fitter = ImpFitHandler(start_folder, generate_folders)
     imp_fitter.load_fitmodel(model2fit)
     imp_fitter.define_params_default(default_params)
 
     # --- Processing
     ite = 0
     for file in tqdm(files):
-        transient_orig = _read_osci_transient_from_mat(file)
+        transient_orig = read_osci_transient_from_mat(file)
         transient_split = splitting_stimulation_waveforms_into_single_trials(transient_orig)
 
         imp_fitter.calculate_impedance_from_transient_dict(
@@ -121,8 +125,8 @@ def run_over_dataset(model2fit: str, default_params: dict,
 
 if __name__ == "__main__":
     # --- Settings
-    yaml_config = yaml_config_handler(RecommendedSettingsImpFit, yaml_name="Config_ImpFit_Normal")
-    settings_impfit = yaml_config.get_class(Settings_ImpFit)
+    yaml_config = YamlConfigHandler(RecommendedSettingsImpFit, yaml_name="Config_ImpFit_Normal")
+    settings_impfit = yaml_config.get_class(SettingsImpFit)
 
     # --- Make all files
     path2data = settings_impfit.path2fits
@@ -131,7 +135,7 @@ if __name__ == "__main__":
     path2test1 = f'{path2data}/tek0000ALL_MATLAB_impedance.csv'
 
     # --- Step #0: Loading handler for Impedance Extraction
-    imp_hndl = ImpFit_Handler()
+    imp_hndl = ImpFitHandler()
     imp_hndl.load_fitmodel(settings_impfit.model)
     imp_hndl.load_params_default(path2ngsolve, {'ct_R': 8.33e6})
 

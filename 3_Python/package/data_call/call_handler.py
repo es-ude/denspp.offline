@@ -1,13 +1,13 @@
 import csv
 import numpy as np
 import dataclasses
-from os.path import join, exists, abspath, dirname, basename
-from os import getcwd, makedirs
+from os.path import join, exists, dirname, basename
+from os import makedirs
 from glob import glob
 from fractions import Fraction
 from scipy.signal import resample_poly
-from package.structure_builder import create_folder_general_firstrun
-from package.data_call.owncloud_handler import owncloudDownloader
+from package.structure_builder import init_project_folder, get_path_project_start
+from package.data_call.owncloud_handler import OwncloudDownloader
 
 
 @dataclasses.dataclass(frozen=True)
@@ -116,9 +116,9 @@ def transform_label_from_csv_to_numpy(marker_loaded: list, label_text: list, sta
     return loaded_type, loaded_marker
 
 
-class _DataController:
+class DataController:
     """Class for loading and manipulating the used dataset"""
-    __download_handler = owncloudDownloader(use_dataset=False)
+    __download_handler = OwncloudDownloader(use_dataset=False)
     _raw_data: DataHandler
     _settings: SettingsDATA
     _path2file: str = ''
@@ -128,17 +128,12 @@ class _DataController:
     path2mapping: str = ''
 
     def __init__(self) -> None:
-        create_folder_general_firstrun()
+        init_project_folder()
         self.__fill_factor = 1
         self.__scaling = 1
-        self._methods_available = dir(_DataController)
-        self.__default_data_path = join(self.get_path2repo(), '2_Data')
+        self._methods_available = dir(DataController)
+        self.__default_data_path = join(get_path_project_start(), 'data')
         self.__config_data_selection = [self.__default_data_path, 0, 0]
-
-    def get_path2repo(self, start_folder='3_Python', include_start_folder=False) -> str:
-        """Getting the default path of the Python Project"""
-        start_absfolder = abspath(getcwd().split(start_folder)[0])
-        return join(start_absfolder, start_folder) if include_start_folder else start_absfolder
 
     def do_cut(self) -> None:
         """Cutting all transient electrode signals in the given range"""
@@ -154,7 +149,7 @@ class _DataController:
         if self._raw_data.data_fs_used == 0:
             self._raw_data.data_fs_used = self._raw_data.data_fs_orig
 
-        # --- Positionen ermitteln
+        # --- Getting the positition of used time range
         if t_range.size == 2:
             idx0 = int(t_range[0] * self._raw_data.data_fs_used)
             idx1 = int(t_range[1] * self._raw_data.data_fs_used)
@@ -229,7 +224,7 @@ class _DataController:
             fs_addon = ""
         print(f"... original sampling rate of {int(1e-3 * self._raw_data.data_fs_orig)} kHz{fs_addon}"
               f"\n... using {self.__fill_factor * 100:.2f}% of the data "
-              f"(time length of {self._raw_data.data_time / self.__fill_factor:.2f} s)")
+              f"(time length of {self._raw_data.data_time[-1] / self.__fill_factor:.2f} s)")
 
         if self._raw_data.label_exist:
             cluster_array = None
@@ -343,7 +338,8 @@ class _DataController:
         else:
             raise FileNotFoundError("--- File is not available. Please check! ---")
 
-    def _read_csv_file(self, path2csv: str, num_channels: int, split_option: str, start_pos_csvfile=0) -> list:
+    @staticmethod
+    def _read_csv_file(path2csv: str, num_channels: int, split_option: str, start_pos_csvfile=0) -> list:
         """Reading the csv file
         Args:
             path2csv:           Path to csv file for reading content
@@ -372,7 +368,8 @@ class _DataController:
                         sel_list += 1
             return loaded_data
 
-    def _transform_rawdata_from_csv_to_numpy(self, data: list) -> np.ndarray:
+    @staticmethod
+    def _transform_rawdata_from_csv_to_numpy(data: list) -> np.ndarray:
         """Tranforming the csv data to numpy array"""
         # --- Getting meta information
         num_samples = list()
@@ -418,13 +415,15 @@ class _DataController:
             if len(self.path2mapping_local) == 0 and len(self.path2mapping_remote):
                 self.path2mapping = join(self._path2folder, basename(self.path2mapping_remote[0]))
                 self.__download_handler.download_file(self.path2mapping_remote[0], self.path2mapping)
+            elif len(self.path2mapping_local) == 0 and len(self.path2mapping_remote) == 0:
+                self.path2mapping = ''
             else:
                 self.path2mapping = self.path2mapping_local[0]
         else:
             self.path2mapping = path2csv
 
         # --- Generating mapping information
-        if self._settings.do_mapping and exists(self.path2mapping):
+        if self._settings.do_mapping and exists(self.path2mapping) and self.path2mapping:
             self._generate_electrode_mapping_from_csv()
             self._generate_electrode_activation_mapping()
             self._transform_rawdata_mapping()
@@ -521,13 +520,15 @@ class _DataController:
 ###########################################################################
 if __name__ == "__main__":
     from src_neuro.call_spike import DataLoader, SettingsDATA
-    from package.plot.plot_mea import results_mea_transient_total
+    from package.pipeline.plot_mea import plot_mea_transient_total
 
     settings = SettingsDATA(
         path="C:\HomeOffice\Data_Neurosignal",
         data_set='mcs_fzj', data_case=1, data_point=0,
-        t_range=[0, 0.5], ch_sel=[], fs_resample=20e3
+        t_range=[0, 0.5], ch_sel=[], fs_resample=20e3,
+        do_mapping=False
     )
+
     data_loader = DataLoader(settings)
     data_loader.do_call()
     data_loader.do_cut()
@@ -535,7 +536,7 @@ if __name__ == "__main__":
     data_loader.do_mapping()
     data = data_loader.get_data()
 
-    results_mea_transient_total(data.data_raw, data, '../../runs/test', do_global_limit=True)
-    results_mea_transient_total(data.data_raw, data, '../../runs/test', do_global_limit=False)
+    plot_mea_transient_total(data.data_raw, data, '../../runs/test', do_global_limit=True)
+    plot_mea_transient_total(data.data_raw, data, '../../runs/test', do_global_limit=False)
     del data_loader
     print(data)

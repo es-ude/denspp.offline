@@ -57,7 +57,8 @@ class ProcessNoise:
         self.__settings_noise = settings
         self.__noise_sampling_rate = fs_ana
 
-    def __calc_spectral_noise_device(self, dev_val: float) -> float:
+    @staticmethod
+    def __calc_spectral_noise_device(dev_val: float) -> float:
         """Calculating the noise spectral density value"""
         return 10 * np.log10(dev_val)
 

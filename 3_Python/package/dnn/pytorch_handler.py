@@ -1,4 +1,4 @@
-from os import remove, getcwd, makedirs
+from os import remove, makedirs
 from os.path import join
 import platform
 from copy import deepcopy
@@ -14,13 +14,14 @@ from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
 from sklearn.model_selection import KFold
 
-from package.dnn.pytorch_config_data import Config_Dataset
-from package.dnn.pytorch_config_model import Config_PyTorch
-from package.structure_builder import create_folder_general_firstrun, create_folder_dnn_firstrun
+from package.structure_builder import get_path_project_start
+from package.dnn.pytorch_config_data import ConfigDataset
+from package.dnn.pytorch_config_model import ConfigPytorch
+from package.structure_builder import init_project_folder, init_dnn_folder
 from package.yaml_handler import translate_dataclass_to_dict, write_dict_to_yaml
 
 
-class training_pytorch:
+class PyTorchHandler:
     deterministic_generator: Generator
     used_hw_dev: device
     used_hw_cpu: str
@@ -32,7 +33,7 @@ class training_pytorch:
     cell_classes: list
     _metric_methods: dict
 
-    def __init__(self, config_train: Config_PyTorch, config_dataset: Config_Dataset,
+    def __init__(self, config_train: ConfigPytorch, config_dataset: ConfigDataset,
                  do_train=True, do_print=True) -> None:
         """Class for Handling Training of Deep Neural Networks in PyTorch
         Args:
@@ -43,8 +44,8 @@ class training_pytorch:
         Returns:
             None
         """
-        create_folder_general_firstrun()
-        create_folder_dnn_firstrun()
+        init_project_folder()
+        init_dnn_folder()
         # --- Preparing Neural Network
         self.os_type = platform.system()
         self.model = None
@@ -68,12 +69,10 @@ class training_pytorch:
         self._path2temp = str()
         self._path2config = str()
 
-    def __check_start_folder(self, start_folder='3_Python', new_folder='runs'):
+    def __check_start_folder(self, new_folder='runs'):
         """Checking for starting folder to generate"""
-        path2start = join(getcwd().split(start_folder)[0], start_folder)
-        path2dst = join(path2start, new_folder)
-        self._path2run = path2dst
-        makedirs(path2dst, exist_ok=True)
+        self._path2run = get_path_project_start(new_folder)
+        makedirs(self._path2run, exist_ok=True)
 
 
     def __setup_device(self) -> None:
@@ -284,7 +283,7 @@ class training_pytorch:
 
     def get_best_model(self, type_model: str) -> list:
         """Getting the path to the best trained model"""
-        return glob(join(self._path2save, f"*{type_model}*.pth"))
+        return glob(join(self._path2save, f'*{type_model}*.pt'))
 
     def _end_training_routine(self, timestamp_start: datetime, do_delete_temps=True) -> None:
         """Doing the last step of training routine"""
@@ -298,7 +297,7 @@ class training_pytorch:
             print(f'Training runs: {diff_string}')
 
         # Delete init model
-        init_model = glob(join(self._path2save, '*_reset.pth'))
+        init_model = glob(join(self._path2save, '*_reset.pt'))
         for file in init_model:
             remove(file)
 

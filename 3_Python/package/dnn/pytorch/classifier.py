@@ -2,59 +2,14 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from sklearn.metrics import precision_recall_fscore_support
 
-from torch import Tensor, zeros, load, save, concatenate, inference_mode, sum, cuda, cat, randn, eq, add, div
-from package.dnn.pytorch_handler import Config_PyTorch, Config_Dataset, training_pytorch
-
-
-def _calculate_number_true_predictions(pred: Tensor, true: Tensor) -> Tensor:
-    """Function for determining the true predicted values
-    Args:
-        pred:   Tensor with predicted values from model
-        true:   Tensor with true labels from dataset
-    Return
-        Tensor with metric
-    """
-    return sum(eq(pred, true))
+from torch import Tensor, zeros, load, save, concatenate, inference_mode, cuda, cat, randn, add, div
+from package.dnn.pytorch_handler import ConfigPytorch, ConfigDataset, PyTorchHandler
+from package.metric.data import calculate_number_true_predictions, calculate_precision, calculate_recall, calculate_fbeta
 
 
-def _calculate_precision(pred: Tensor, true: Tensor) -> Tensor:
-    """Function for determining the precision metric
-    Args:
-        pred:   Tensor with predicted values from model
-        true:   Tensor with true labels from dataset
-    Return
-        Tensor with metrics [precision]
-    """
-    return precision_recall_fscore_support(true, pred, average="micro", warn_for=tuple())[0]
-
-
-def _calculate_recall(pred: Tensor, true: Tensor) -> Tensor:
-    """Function for determining the precision metric
-    Args:
-        pred:   Tensor with predicted values from model
-        true:   Tensor with true labels from dataset
-    Return
-        Tensor with metrics [precision]
-    """
-    return precision_recall_fscore_support(true, pred, average="micro", warn_for=tuple())[1]
-
-
-def _calculate_fbeta(pred: Tensor, true: Tensor, beta=1.0) -> Tensor:
-    """Function for determining the precision metric
-    Args:
-        pred:   Tensor with predicted values from model
-        true:   Tensor with true labels from dataset
-        beta:   Beta value for getting Fbeta metric
-    Return
-        Tensor with metrics [precision]
-    """
-    return precision_recall_fscore_support(true, pred, beta=beta, average="micro", warn_for=tuple())[2]
-
-
-class train_nn(training_pytorch):
-    def __init__(self, config_train: Config_PyTorch, config_data: Config_Dataset,
+class TrainClassifier(PyTorchHandler):
+    def __init__(self, config_train: ConfigPytorch, config_data: ConfigDataset,
                  do_train=True, do_print=True) -> None:
         """Class for Handling Training of Classifiers
         Args:
@@ -65,7 +20,7 @@ class train_nn(training_pytorch):
         Return:
             None
         """
-        training_pytorch.__init__(self, config_train, config_data, do_train, do_print)
+        PyTorchHandler.__init__(self, config_train, config_data, do_train, do_print)
         # --- Structure for calculating custom metrics during training
         self.__metric_buffer = dict()
         self.__metric_result = dict()
@@ -96,7 +51,7 @@ class train_nn(training_pytorch):
 
             train_loss += loss.item()
             total_batches += 1
-            total_correct += _calculate_number_true_predictions(dec_cl, tdata_out)
+            total_correct += calculate_number_true_predictions(dec_cl, tdata_out)
             total_samples += len(tdata['in'])
 
         train_acc = float(int(total_correct) / total_samples)
@@ -124,7 +79,7 @@ class train_nn(training_pytorch):
 
                 valid_loss += self.loss_fn(pred_cl, true_cl).item()
                 total_batches += 1
-                total_correct += _calculate_number_true_predictions(dec_cl, true_cl)
+                total_correct += calculate_number_true_predictions(dec_cl, true_cl)
                 total_samples += len(vdata['in'])
 
                 # --- Calculating custom made metrics
@@ -179,46 +134,31 @@ class train_nn(training_pytorch):
                     case 'precision':
                         out = self._separate_classes_from_label(
                             self.__metric_buffer[key0][0], self.__metric_buffer[key0][1], key0,
-                            _calculate_precision
+                            calculate_precision
                         )
                         self.__metric_result[key0].append(out[0])
                         self.__metric_buffer.update({key0: [[], []]})
                     case 'recall':
                         out = self._separate_classes_from_label(
                             self.__metric_buffer[key0][0], self.__metric_buffer[key0][1], key0,
-                            _calculate_recall
+                            calculate_recall
                         )
                         self.__metric_result[key0].append(out[0])
                         self.__metric_buffer.update({key0: [[], []]})
                     case 'fbeta':
                         out = self._separate_classes_from_label(
                             self.__metric_buffer[key0][0], self.__metric_buffer[key0][1], key0,
-                            _calculate_fbeta
+                            calculate_fbeta
                         )
                         self.__metric_result[key0].append(out[0])
                         self.__metric_buffer.update({key0: [[], []]})
 
     def __determine_accuracy_per_class(self, pred: Tensor, true: Tensor, *args) -> None:
-        """Calculation of class-specific calculating metrics in each epoch using validation dataset
-        Args:
-            pred:   Tensor with predicted values from model
-            true:   Tensor with true labels from dataset
-        Return:
-            None
-        """
-        out = self._separate_classes_from_label(pred, true, args[0], _calculate_number_true_predictions)
+        out = self._separate_classes_from_label(pred, true, args[0], calculate_number_true_predictions)
         self.__metric_buffer[args[0]][0] = add(self.__metric_buffer[args[0]][0], out[0])
         self.__metric_buffer[args[0]][1] = add(self.__metric_buffer[args[0]][1], out[1])
 
     def __determine_buffering_metric_calculation(self, pred: Tensor, true: Tensor, *args) -> None:
-        """Buffering all predicted and labeled data for later metric calculation
-        Args:
-            pred:   Tensor with predicted values from model
-            true:   Tensor with true labels from dataset
-            metric: Short name of used metric as args[0]
-        Return:
-            None
-        """
         if len(self.__metric_buffer[args[0]][0]) == 0:
             self.__metric_buffer[args[0]][0] = true
             self.__metric_buffer[args[0]][1] = pred
@@ -242,7 +182,7 @@ class train_nn(training_pytorch):
             print(f"Starting Kfold cross validation training in {self.settings_train.num_kfold} steps")
 
         path2model = str()
-        path2model_init = join(self._path2save, f'model_class_reset.pth')
+        path2model_init = join(self._path2save, f'model_class_reset.pt')
         save(self.model.state_dict(), path2model_init)
         timestamp_start = datetime.now()
         timestamp_string = timestamp_start.strftime('%H:%M:%S')
@@ -292,7 +232,7 @@ class train_nn(training_pytorch):
                 if valid_loss < best_loss[1]:
                     best_loss = [train_loss, valid_loss]
                     best_acc = [train_acc, valid_acc]
-                    path2model = join(self._path2temp, f'model_class_fold{fold:03d}_epoch{epoch:04d}.pth')
+                    path2model = join(self._path2temp, f'model_class_fold{fold:03d}_epoch{epoch:04d}.pt')
                     save(self.model, path2model)
                     patience_counter = self.settings_train.patience
                 else:
@@ -335,6 +275,7 @@ class train_nn(training_pytorch):
         data_orig_list = randn(32, 1)
 
         first_cycle = True
+        model_test.eval()
         for vdata in self.valid_loader[-1]:
             clus_pred = model_test(vdata['in'].to(self.used_hw_dev))[1]
             if first_cycle:

@@ -10,7 +10,7 @@ dependencies = [
     "mat73>=0.65",
     "matplotlib>=3.9.2",
     "neo>=0.13.2",
-    "numpy>=2.1.3",
+    "numpy>=1.26.4",
     "py-cpuinfo>=9.0.0",
     "pyocclient>=0.6",
     "pyspice>=1.5",
@@ -23,6 +23,8 @@ dependencies = [
     "tqdm>=4.67.1",
     "logging>=0.4.9.6",
     "logdecorator==2.*",
+    "pyxdf>=1.16.8",
+    "elasticai-creator",
 ]
 
 [dependency-groups]
@@ -89,6 +91,9 @@ quote-style = "double"
 indent-style = "space"
 line-ending = "auto"
 docstring-code-format = false
+
+[tool.uv.sources]
+elasticai-creator = { git = "https://github.com/es-ude/elastic-ai.creator.git", rev = "develop" }
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

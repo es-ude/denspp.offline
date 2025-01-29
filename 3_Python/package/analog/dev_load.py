@@ -1,7 +1,6 @@
 import numpy as np
-
-from package.structure_builder import create_folder_general_firstrun
-from package.analog.dev_handler import ElectricalLoad_Handler, SettingsDEV, _generate_signal, _plot_test_results
+from package.structure_builder import init_project_folder
+from package.analog.dev_handler import ElectricalLoadHandler, SettingsDEV, _generate_signal, _plot_test_results
 from package.analog.dev_noise import ProcessNoise, SettingsNoise
 
 
@@ -23,7 +22,7 @@ RecommendedSettingsNoise = SettingsNoise(
 )
 
 
-class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
+class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
     _settings: SettingsDEV
     _poly_fit: np.ndarray
     _fit_options: list
@@ -44,7 +43,7 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
     def __init__(self, settings_dev: SettingsDEV, settings_noise=RecommendedSettingsNoise):
         super().__init__(settings_noise, settings_dev.fs_ana)
 
-        create_folder_general_firstrun()
+        init_project_folder()
         self._init_class()
 
         self._settings = settings_dev
@@ -63,7 +62,8 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
         dev_type.update({'RDs': self._resistive_schottky_single, 'RDd': self._resistive_schottky_antiparallel})
         return dev_type
 
-    def __init_dev_string(self) -> dict:
+    @staticmethod
+    def __init_dev_string() -> dict:
         """Initialization of functions to get devices"""
         dev_type = {'R': 'Resistor', 'C': 'Capacitor', 'L': 'Inductor'}
         dev_type.update({'Ds': 'pn-Diode (single)', 'Dd': 'pn-Diode (anti-parallel)'})
@@ -190,7 +190,8 @@ class ElectricalLoad(ProcessNoise, ElectricalLoad_Handler):
         v3 = params[3] * i_path
         return xd - v1 - v3
 
-    def _func2curve_resistive_diode(self, i_path: np.ndarray, a, b, c, d) -> np.ndarray:
+    @staticmethod
+    def _func2curve_resistive_diode(i_path: np.ndarray, a, b, c, d) -> np.ndarray:
         """Function for performing curve fitting for resistive diode behaviour"""
         return a + b * i_path + c * np.log(d * i_path + 1)
 

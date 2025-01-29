@@ -1,11 +1,11 @@
-import dataclasses
+from dataclasses import dataclass
 import numpy as np
 from scipy.signal import savgol_filter, find_peaks, iirfilter, lfilter
 from numpy import hamming, bartlett, blackman
 from scipy.signal.windows import gaussian
 import matplotlib.pyplot as plt
 
-@dataclasses.dataclass
+@dataclass
 class SettingsSDA:
     fs: float
     dx_sda: list

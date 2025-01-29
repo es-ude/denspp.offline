@@ -1,7 +1,7 @@
 from torch import nn, Tensor, argmax, flatten
 
 
-class synthetic__cl_v1(nn.Module):
+class synthetic_cl_v1(nn.Module):
     def __init__(self, input_size=32, output_size=5):
         """DL model for classifying neural spike activity (MLP)"""
         super().__init__()

@@ -2,18 +2,19 @@ from os.path import join
 import numpy as np
 from scipy.io import loadmat
 from mat73 import loadmat as loadmat_mat73
+from pyxdf import load_xdf
 from package.data_call.call_cellbib import CellSelector
-from package.data_call.call_handler import _DataController, DataHandler, SettingsDATA, translate_unit_to_scale_value
+from package.data_call.call_handler import DataController, DataHandler, SettingsDATA, translate_unit_to_scale_value
 
 
-class DataLoader(_DataController):
+class DataLoader(DataController):
     """Class for loading and manipulating the used dataset"""
     _raw_data: DataHandler
     _settings: SettingsDATA
     _path2file: str = ""
 
     def __init__(self, setting: SettingsDATA) -> None:
-        _DataController.__init__(self)
+        DataController.__init__(self)
         self._settings = setting
         self.select_electrodes = list()
         self._methods_available = dir(DataLoader)
@@ -104,11 +105,42 @@ class DataLoader(_DataController):
         self._raw_data.electrode_id = [int(loaded_data["chan"][0][0]) - 1]
         self._raw_data.data_raw = [100e-6 * np.float32(loaded_data["data"][0])]
         self._raw_data.data_time = loaded_data["data"].shape[1] / self._raw_data.data_fs_orig
-        # --- Groundtruth
+        # Groundtruth
         self._raw_data.label_exist = True
         spike_xoffset = int(-0.5e-6 * self._raw_data.data_fs_orig)
         self._raw_data.evnt_xpos = [(loaded_data["spike_times"][0][0][0] - spike_xoffset)]
         self._raw_data.evnt_id = [(loaded_data["spike_class"][0][0][0] - 1)]
+        # Behaviour
+        self._raw_data.behaviour_exist = False
+        self._raw_data.behaviour = None
+        del loaded_data
+
+    def __load_denspp_online(self) -> None:
+        """Function for loading the *.xdf files from custom hardware readout with DeNSPP.online framework"""
+        folder_name = "_Custom_Hardware"
+        data_type = '*.xdf'
+        self._prepare_access_file(folder_name, data_type)
+        loaded_data = load_xdf(self._path2file)[0][0]
+
+        self._raw_data = DataHandler()
+        # Meta information
+        self._raw_data.data_name = folder_name
+        self._raw_data.data_type = loaded_data['info']['name']
+        self._raw_data.data_lsb = 1
+        self._raw_data.data_fs_orig = float(loaded_data['info']['nominal_srate'][0])
+        self._raw_data.device_id = [0]
+        # Electrode mapping information
+        self._raw_data.mapping_exist = False
+        self._raw_data.mapping_dimension = [1, loaded_data['time_series'].shape[1]]
+        # Raw data
+        elec_orig = np.arange(0, loaded_data['time_series'].shape[1]).tolist()
+        elec_process = self.select_electrodes if not len(self.select_electrodes) == 0 else elec_orig
+        for elec in elec_process:
+            self._raw_data.data_raw.append(self._raw_data.data_lsb * np.float32(loaded_data['time_series'][:, elec]))
+        self._raw_data.electrode_id = elec_process
+        self._raw_data.data_time = loaded_data['time_stamps']
+        # Groundtruth
+        self._raw_data.label_exist = False
         # Behaviour
         self._raw_data.behaviour_exist = False
         self._raw_data.behaviour = None
@@ -138,7 +170,7 @@ class DataLoader(_DataController):
             self._raw_data.data_raw.append(self._raw_data.data_lsb * np.float32(loaded_data['raw_data'][elec]))
         self._raw_data.electrode_id = elec_process
         self._raw_data.data_time = loaded_data['raw_data'].shape[1] / self._raw_data.data_fs_orig
-        # --- Groundtruth
+        # Groundtruth
         self._raw_data.label_exist = False
         # Behaviour
         self._raw_data.behaviour_exist = False
@@ -169,7 +201,7 @@ class DataLoader(_DataController):
             self._raw_data.data_raw.append(float(loaded_data['Gain'][0]) * (np.float32(loaded_data['data'][:, elec]) - 32767))
         self._raw_data.electrode_id = elec_process
         self._raw_data.data_time = loaded_data['data'].shape[0] / self._raw_data.data_fs_orig
-        # --- Groundtruth
+        # Groundtruth
         self._raw_data.label_exist = False
         # Behaviour
         self._raw_data.behaviour_exist = False
@@ -213,7 +245,7 @@ class DataLoader(_DataController):
             self._raw_data.evnt_xpos.append(data['timestamps'][0, 0][0, :] - spike_xoffset)
             self._raw_data.evnt_id.append(data['cluster'][0, 0][0, :])
 
-        # --- Behaviour
+        # Behaviour
         self._raw_data.behaviour_exist = True
         self._raw_data.behaviour = loaded_data['behaviour']
         del loaded_data
@@ -276,7 +308,6 @@ class DataLoader(_DataController):
             if id == -1:
                 print(f"Missing type: {type}")
             self._raw_data.evnt_id.append(np.zeros(shape=(num_spikes,), dtype=int) + id)
-
         # Behaviour
         self._raw_data.behaviour_exist = False
         self._raw_data.behaviour = None

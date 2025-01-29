@@ -2,30 +2,30 @@ from os.path import join
 from dataclasses import dataclass
 import fnmatch
 import owncloud
-from package.yaml_handler import yaml_config_handler
+from package.yaml_handler import YamlConfigHandler
 
 
 @dataclass
-class Config_Cloud:
+class ConfigCloud:
     remote_link: str
     remote_transient: str
     remote_dataset: str
 
 
-DefaultConfigCloud = Config_Cloud(
+DefaultConfigCloud = ConfigCloud(
     remote_link='https://owncloud.com',
     remote_transient='/',
     remote_dataset='/'
 )
 
 
-class owncloudDownloader:
+class OwncloudDownloader:
     __oc_handler: owncloud.Client
 
     def __init__(self, path2config: str = '', use_dataset=False) -> None:
         """Class for handling sciebo repository for getting datasets remotely"""
-        yaml_hndl = yaml_config_handler(DefaultConfigCloud, path2config, 'access_cloud')
-        config = yaml_hndl.get_class(Config_Cloud)
+        yaml_hndl = YamlConfigHandler(DefaultConfigCloud, path2config, 'access_cloud')
+        config = yaml_hndl.get_class(ConfigCloud)
 
         self.__public_sciebo_link = config.remote_link
         self.__path2folder_remote = config.remote_transient if not use_dataset else config.remote_dataset

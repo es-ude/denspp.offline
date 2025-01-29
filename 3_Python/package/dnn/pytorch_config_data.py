@@ -1,11 +1,12 @@
 from dataclasses import dataclass
-from os import getcwd, makedirs
-from os.path import join, abspath, exists
+from os import makedirs
+from os.path import join, abspath, exists, basename
 import numpy as np
 from torch import concat
 from torchvision import datasets, transforms
 
-from package.data_call.owncloud_handler import owncloudDownloader
+from package.structure_builder import get_path_project_start
+from package.data_call.owncloud_handler import OwncloudDownloader
 from package.data_process.frame_preprocessing import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
 from package.data_process.frame_preprocessing import reconfigure_cluster_with_cell_lib, generate_zero_frames
 from package.data_process.frame_normalization import DataNormalization
@@ -13,7 +14,7 @@ from package.data_process.frame_augmentation import augmentation_change_position
 
 
 @dataclass
-class Config_Dataset:
+class ConfigDataset:
     """Class for handling preparation of dataset"""
     # --- Settings of Datasets
     data_path: str
@@ -32,7 +33,8 @@ class Config_Dataset:
     @property
     def get_path2data(self) -> str:
         """Getting the path name to the file"""
-        return abspath(join(self.get_path2folder, self.data_file_name))
+        a = join(self.get_path2folder, self.data_file_name)
+        return a
 
     @property
     def get_path2folder(self) -> str:
@@ -44,13 +46,13 @@ class Config_Dataset:
         return abspath(path)
 
     @property
-    def get_path2folder_project(self, start_folder='3_Python') -> str:
+    def get_path2folder_project(self) -> str:
         """Getting the default path of the Python Project"""
-        return abspath(join(getcwd().split(start_folder)[0], start_folder))
+        return get_path_project_start()
 
     def print_overview_datasets(self, do_print=True) -> list:
         """"""
-        oc_handler = owncloudDownloader(self.get_path2folder_project, use_dataset=True)
+        oc_handler = OwncloudDownloader(self.get_path2folder_project, use_dataset=True)
         list_datasets = oc_handler.get_overview_data()
         if do_print:
             print("\nNo local dataset is available. Enter the number of available datasets from remote:"
@@ -81,13 +83,13 @@ class Config_Dataset:
             list_datasets = self.print_overview_datasets(False)
             for file in list_datasets:
                 if self.data_file_name.lower() in file.lower():
-                    self.data_file_name = file
+                    self.data_file_name = basename(file)
                     break
             self.__download_spike()
 
     def __download_spike(self) -> None:
         if not exists(self.get_path2data):
-            oc_handler = owncloudDownloader(self.get_path2folder_project, use_dataset=True)
+            oc_handler = OwncloudDownloader(self.get_path2folder_project, use_dataset=True)
             oc_handler.download_file(self.data_file_name, self.get_path2data)
             oc_handler.close()
 
@@ -231,7 +233,7 @@ class Config_Dataset:
         return {'data': frames_in, 'label': frames_cl, 'dict': frames_dict, 'mean': frames_me}
 
 
-DefaultSettingsDataset = Config_Dataset(
+DefaultSettingsDataset = ConfigDataset(
     data_path='data/datasets',
     data_file_name='',
     use_cell_library=0,
@@ -247,7 +249,7 @@ DefaultSettingsDataset = Config_Dataset(
 
 if __name__ == "__main__":
     from copy import deepcopy
-    och = owncloudDownloader(use_dataset=True)
+    och = OwncloudDownloader(use_dataset=True)
     overview = och.get_overview_data()
 
     config_test = deepcopy(DefaultSettingsDataset)
@@ -255,6 +257,6 @@ if __name__ == "__main__":
     data = config_test.load_dataset()
     config_test.data_file_name = 'quiroga'
 
-    from package.plot.plot_dataset import plot_frames_dataset
+    from package.dnn.plots.plot_dataset import plot_frames_dataset
     plot_frames_dataset(data, plot_norm=config_test.normalization_do, plot_show=True, add_subtitle=True)
     print(".done")
