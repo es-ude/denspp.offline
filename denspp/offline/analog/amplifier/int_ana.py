@@ -122,7 +122,7 @@ class IntegratorStage(CommonAnalogFunctions):
         """
         u_out = np.zeros(x_inp.shape) + (self._settings.vss if not do_push else self._settings.vdd)
         for idx, u_top in enumerate(x_inp[1:], start=1):
-            u_bot = x_inn[idx] if x_inn.size > 1 else x_inn
+            u_bot = (x_inn[idx] if x_inn.size > 1 else x_inn) if isinstance(x_inn, np.ndarray) else x_inn
             du = scale * self.__do_inversion(u_top - u_bot)
             u_out[idx] = self.voltage_clipping(u_out[idx-1] + du)
         return u_out
@@ -138,7 +138,7 @@ class IntegratorStage(CommonAnalogFunctions):
         """
         u_out = np.zeros(x_inp.shape) + self._settings.vcm
         for idx, u_top in enumerate(x_inp[1:], start=1):
-            u_bot = x_inn[idx] if isinstance(x_inn, np.ndarray) else x_inn
+            u_bot = (x_inn[idx] if x_inn.size > 1 else x_inn) if isinstance(x_inn, np.ndarray) else x_inn
             u_int = u_out[idx-1] + scale * self.__do_inversion(u_top - u_bot)
             u_out[idx] = self.voltage_clipping(u_int)
         return u_out
@@ -200,7 +200,7 @@ class IntegratorStage(CommonAnalogFunctions):
         Returns:
             Numpy array with voltage signal
         """
-        u_out = self.__do_accumulation_active(iin, np.array(0)) + uref
+        u_out = self.__do_accumulation_active(iin, 0.0) + uref
         u_out += self.__noise_generation_circuit(u_out.size)
         return self.voltage_clipping(u_out)
 
@@ -211,5 +211,5 @@ class IntegratorStage(CommonAnalogFunctions):
         Returns:
             Numpy array with voltage signal
         """
-        u_out = self.__do_accumulation_passive(iin, np.array(0))
+        u_out = self.__do_accumulation_passive(iin, 0.0)
         return self.voltage_clipping(u_out)

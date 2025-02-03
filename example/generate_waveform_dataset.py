@@ -4,7 +4,6 @@ from denspp.offline.data_generator.waveform_dataset import generate_dataset
 
 
 if __name__ == "__main__":
-
     num_wfg_class = 1
     sel_wfg_class = [0, 5, 7, 8]
 
@@ -24,4 +23,4 @@ if __name__ == "__main__":
         axs[idx].grid()
 
     plt.tight_layout()
-    plt.show()
+    plt.show(block=True)

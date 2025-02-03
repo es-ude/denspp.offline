@@ -4,9 +4,9 @@ from src_neuro.call_spike import DataLoader
 
 
 if __name__ == "__main__":
-    settings = RecommendedSettingsDATA()
+    settings = RecommendedSettingsDATA
     settings.data_set = 'mcs_fzj'
-    settings.data_case = 1
+    settings.data_case = 0
     settings.fs_resample = 20e3
 
     # --- Pipeline

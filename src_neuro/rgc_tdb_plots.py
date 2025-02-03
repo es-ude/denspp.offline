@@ -9,7 +9,7 @@ from denspp.offline.plot_helper import save_figure, cm_to_inch, scale_auto_value
 from denspp.offline.data_call.call_cellbib import CellSelector
 
 from src_neuro.call_spike import DataLoader, SettingsDATA
-from src_neuro.pipeline_data import Pipeline
+from denspp.offline.data_merge.pipeline_data import Pipeline
 
 
 def plot_rgc_transient_signals(rawdata: list, frames: list, spike_xpos: list, cell_name: list,

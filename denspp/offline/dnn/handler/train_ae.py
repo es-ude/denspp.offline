@@ -9,8 +9,8 @@ from denspp.offline.dnn.plots.plot_dnn import results_training
 from denspp.offline.dnn.dataset.autoencoder import prepare_training
 
 
-def do_train_neural_autoencoder(settings: ConfigMLPipeline, yaml_name_index='Config_AE',
-                                model_default_name='', used_dataset_name='quiroga') -> [dict, dict]:
+def do_train_neural_autoencoder(settings: ConfigMLPipeline, yaml_name_index: str='Config_AE',
+                                model_default_name: str='', used_dataset_name: str='quiroga') -> [dict, dict]:
     """Training routine for Autoencoders in Neural Applications (Spike Frames)
     Args:
         settings:               Handler for configuring the routine selection for train deep neural networks
@@ -57,8 +57,3 @@ def do_train_neural_autoencoder(settings: ConfigMLPipeline, yaml_name_index='Con
             show_plot=settings.do_block
         )
     return metrics, data_result
-
-
-if __name__ == "__main__":
-    from offline.dnn.dnn_handler import DefaultSettings_MLPipe
-    do_train_neural_autoencoder(DefaultSettings_MLPipe)

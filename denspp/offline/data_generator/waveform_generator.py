@@ -164,8 +164,7 @@ class WaveformGenerator:
             List with three numpy arrays (time, output_signal, true rms value)
         """
         if not len(time_points) == len(waveform_select) == len(time_duration):
-            print("Please check input! --> Length is not equal")
-            return dict()
+            raise RuntimeError("Please check input! --> Length is not equal")
         else:
             # Generate dummy
             out = self.__generate_zero(2 * time_points[-1] + time_duration[-1])
@@ -185,7 +184,7 @@ class WaveformGenerator:
     def generate_biphasic_waveform(self, anodic_mode: int, anodic_duration: float,
                                    cathodic_mode: int, cathodic_duration: float,
                                    intermediate_duration: float=0.0, do_cathodic_first: bool=False,
-                                   do_charge_balancing: bool=False) -> list:
+                                   do_charge_balancing: bool=False) -> dict:
         """Generating the waveform for stimulation
         Args:
             anodic_mode:            Mode of the anodic phase
@@ -218,4 +217,4 @@ class WaveformGenerator:
         # --- Creating the output signal
         out = np.concatenate([waveform for waveform in waveforms], axis=0)
         time = np.linspace(0, out.size, out.size) / self._sampling_rate
-        return [time, out]
+        return {'t': time, 'y': out}

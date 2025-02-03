@@ -14,8 +14,8 @@ from denspp.offline.dnn.dataset.autoencoder_class import prepare_training as get
 
 def do_train_ae_cl_sweep(settings: ConfigMLPipeline,
                          feat_layer_start: int, feat_layer_inc: int, feat_layer_stop: int,
-                         num_epochs_trial=50,
-                         yaml_name_index='Config_AECL_Sweep') -> str:
+                         num_epochs_trial: int=50,
+                         yaml_name_index: str='Config_AECL_Sweep') -> str:
     """Training routine for Autoencoders and Classification after Encoder (Sweep)
     Args:
         settings:           Handler for configuring the routine selection for train deep neural networks
@@ -109,8 +109,8 @@ def do_train_ae_cl_sweep(settings: ConfigMLPipeline,
 
 
 if __name__ == "__main__":
-    from offline.dnn.dnn_handler import ConfigMLPipeline
-    from offline.dnn.plots.plot_ae_cl_sweep import extract_data_from_files, plot_common_loss, plot_common_params, plot_architecture_metrics_isolated
+    from denspp.offline.dnn.dnn_handler import ConfigMLPipeline
+    from denspp.offline.dnn.plots.plot_ae_cl_sweep import extract_data_from_files, plot_common_loss, plot_common_params, plot_architecture_metrics_isolated
 
     yaml_handler = YamlConfigHandler(DefaultSettings_MLPipe, 'config', 'Config_DNN')
     dnn_handler = yaml_handler.get_class(ConfigMLPipeline)

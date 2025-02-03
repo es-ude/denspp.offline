@@ -10,7 +10,7 @@ from denspp.offline.structure_builder import init_project_folder, get_path_proje
 from denspp.offline.data_call.owncloud_handler import OwncloudDownloader
 
 
-@dataclass(frozen=True)
+@dataclass
 class SettingsDATA:
     """Class for configuring the dataloader
     input:

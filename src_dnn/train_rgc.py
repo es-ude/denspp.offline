@@ -1,7 +1,7 @@
 from denspp.offline.dnn.dnn_handler import ConfigMLPipeline
 from denspp.offline.dnn.handler.train_cl import do_train_spike_class
 from denspp.offline.dnn.handler.train_ae_cl import do_train_ae_classifier
-from src_neuro.rgc_combination import rgc_logic_combination
+from src_dnn.rgc_combination import rgc_logic_combination
 
 
 def do_train_rgc_class(settings: ConfigMLPipeline) -> None:

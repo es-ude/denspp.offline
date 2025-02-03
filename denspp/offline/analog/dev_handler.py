@@ -6,7 +6,7 @@ from scipy.constants import Boltzmann, elementary_charge
 from scipy.optimize import least_squares, curve_fit
 
 from denspp.offline.structure_builder import init_project_folder
-from denspp.offline.plot_helper import scale_auto_value, save_figure
+from denspp.offline.plot_helper import save_figure
 from denspp.offline.metric.data import calculate_error_rae, calculate_error_mse
 
 
@@ -327,6 +327,7 @@ class ElectricalLoadHandler:
         if len(self._params_used) == 1 and self._params_used[0] == 1.0:
             self.get_current(0.0, 0.0)
 
+        # TODO: Separation between R and Diode staff necessary
         if not find_best_order:
             self._get_params_polyfit(
                 params_dev=self._params_used,
@@ -337,6 +338,7 @@ class ElectricalLoadHandler:
             self._find_best_poly_order(
                 order_start=order_start, order_stop=order_stop,
                 params_dev=self._params_used,
+                bounds_voltage=self._bounds_volt,
                 show_plots=show_plots, mode_fit=mode_fit
             )
 

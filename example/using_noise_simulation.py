@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
 from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise
 from denspp.offline.data_process.transformation import do_fft
 
@@ -9,7 +9,7 @@ if __name__ == "__main__":
     settings_noise = SettingsNoise(
         temp=300,
         wgn_dB=-70,
-        Fc=100,
+        Fc=10,
         slope=0.6,
         do_print=False
     )

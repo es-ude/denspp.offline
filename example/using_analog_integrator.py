@@ -4,7 +4,6 @@ from denspp.offline.analog.amplifier.int_ana import IntegratorStage, SettingsINT
 
 
 if __name__ == "__main__":
-
     # --- Definition of Inputs
     settings = RecommendedSettingsINT
     f_smp = 10e3
@@ -18,7 +17,7 @@ if __name__ == "__main__":
     u_inp0 = np.zeros(time.shape) + u_off + settings.vcm
     for idx, peak_value in enumerate(upp):
         u_inp0 += peak_value * np.sin(2 * np.pi * time * f0[idx])
-    u_inn0 = np.array(settings.vcm)
+    u_inn0 = settings.vcm
     i_in0 = u_inp0 - settings.vcm
 
     # --- DUT (Test condition)

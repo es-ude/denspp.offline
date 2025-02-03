@@ -2,12 +2,11 @@ from os import makedirs
 from os.path import join
 from numpy import load
 
-from denspp.offline.data_call.call_cellbib import logic_combination
+from denspp.offline.data_call.call_cellbib import CellMergeClass, logic_combination
 from denspp.offline.dnn.plots.plot_metric import plot_confusion
 
 
-class RetinalGanglionCellTDB:
-    """Retinal Ganglion Cell Selection from Schwartz Lab"""
+RetinalGanglionCellTDB = CellMergeClass(
     cell_type_to_id = {
         "ON-OFF DS - dorsal": 0,
         "ON-OFF DS - temporal": 1,
@@ -62,47 +61,47 @@ class RetinalGanglionCellTDB:
         "Motion sensor": 49,
         "ON DS transient": 50,
         "unknown": 51,
-    }
-
+    },
     # Abgeglichen mit Functional classes of rgctypes.org
     cell_class_to_id = {
         "OFF sustained": [10, 11, 12, 13, 14, 15],
         "OFF transient": [17, 18, 19, 20],
         "ON sustained": [27, 28, 29, 30, 48],
         "ON transient": [38, 39, 40]
-    }
+    },
     cell_class_to_type = {
         "Transient": [17, 18, 19, 20, 38, 39, 40],
         "Sustained": [10, 11, 12, 13, 14, 15, 27, 28, 29, 30, 48]
-    }
+    },
     cell_class_to_group = {
         "ON": [27, 28, 29, 30, 48, 38, 39, 40],
         "OFF": [10, 11, 12, 13, 14, 15, 17, 18, 19, 20]
     }
+)
 
 
-class RetinalGanglionCellResearchCenterJuelich:
-    """Retinal Ganglion Cell Selection from Recordings from Research Center Juelich"""
+RetinalGanglionCellResearchCenterJuelich = CellMergeClass(
     cell_type_to_id = {
         "OFF Sustained": 0,
         "OFF Transient": 1,
         "ON-OFF": 2,
         "ON Sustained": 3,
         "ON Transient": 4
-    }
-    cell_class_to_id = {}
+    },
+    cell_class_to_id = {},
     cell_class_to_type = {
         "Transient": [1, 4],
         "Sustained": [0, 3]
-    }
+    },
     cell_class_to_group = {
         "OFF": [0, 1],
         "ON": [3, 4]
     }
+)
 
 
-def rgc_logic_combination(path2valid_data: str, valid_file_name='results_cl.npy', show_plot=False) -> None:
-    """Post-Classification of Retinal Ganglion Celltype Classifier (RGC) after NN training
+def rgc_logic_combination(path2valid_data: str, valid_file_name: str='results_cl.npy', show_plot: bool=False) -> None:
+    """Post-Classification of Retinal Ganglion Cell-Type Classifier (RGC) after NN training
     Args:
         path2valid_data:    Path to validation data (generated after training)
         valid_file_name:    Filename of validation data [Default: 'results_cl.npy']

@@ -1,4 +1,5 @@
 import numpy as np
+from dataclasses import dataclass
 
 
 def logic_combination(true_labels: np.ndarray, pred_labels: np.ndarray, translate_dict: list) -> [np.ndarray, np.ndarray]:
@@ -19,43 +20,40 @@ def logic_combination(true_labels: np.ndarray, pred_labels: np.ndarray, translat
             pred_labels_new[pos] = idx
     return true_labels_new, pred_labels_new
 
-
-class SelectorDummy:
-    cell_type_to_id: dict = {}
-    cell_class_to_id: dict = {}
-    cell_class_to_group: dict = {}
-    cell_class_to_type: dict = {}
+@dataclass
+class CellMergeClass:
+    cell_type_to_id: dict
+    cell_class_to_id: dict
+    cell_class_to_group: dict
+    cell_class_to_type: dict
 
 
 class CellSelector:
     """Cell Selection Functions"""
-    handler: SelectorDummy
+    handler: CellMergeClass
     cell_type_to_id: dict
     cell_class_to_id: dict
     cell_class_to_group: dict
     cell_class_to_type: dict
     cell_class_used: dict
 
-    def __init__(self, func: SelectorDummy, mode: int) -> None:
+    def __init__(self, cell_merge: CellMergeClass, mode: int) -> None:
         """Class for separating the classes into new subset
         Args:
-            func:           Class with handling process
-            mode:           0=original, 1=Reduced specific, 2= ON/OFF, 3= Sustained/Transient
+            cell_merge: Class with handling process
+            mode:       0=original, 1=Reduced specific, 2= ON/OFF, 3= Sustained/Transient
         Returns:
             None
         """
-        # Data selection
-        self.handler = func
-
         # Mode selection
         if mode == 0:
-            self.cell_class_used = self.handler.cell_type_to_id
+            self.cell_class_used = cell_merge.cell_type_to_id
         elif mode == 1:
-            self.cell_class_used = self.handler.cell_class_to_id
+            self.cell_class_used = cell_merge.cell_class_to_id
         elif mode == 2:
-            self.cell_class_used = self.handler.cell_class_to_group
+            self.cell_class_used = cell_merge.cell_class_to_group
         elif mode == 3:
-            self.cell_class_used = self.handler.cell_class_to_type
+            self.cell_class_used = cell_merge.cell_class_to_type
 
     def get_id_from_celltype(self, name: str) -> int:
         """Getting the ID from a cell type"""

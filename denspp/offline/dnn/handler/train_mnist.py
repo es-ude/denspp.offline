@@ -9,7 +9,7 @@ from denspp.offline.dnn.dataset.mnist import prepare_training
 from denspp.offline.dnn.plots.plot_dnn import plot_mnist_graphs
 
 
-def do_train_mnist_cl(settings: ConfigMLPipeline, yaml_name_index='Config_MNIST', custom_metrics=()) -> None:
+def do_train_mnist_cl(settings: ConfigMLPipeline, yaml_name_index: str='Config_MNIST', custom_metrics: list=()) -> None:
     """Training routine for classifying neural activations
     Args:
         settings:           Handler for configuring the routine selection for train deep neural networks
@@ -40,7 +40,7 @@ def do_train_mnist_cl(settings: ConfigMLPipeline, yaml_name_index='Config_MNIST'
     )
 
 
-def do_train_mnist_ae(settings: ConfigMLPipeline, yaml_name_index='Config_MNIST') -> None:
+def do_train_mnist_ae(settings: ConfigMLPipeline, yaml_name_index: str='Config_MNIST') -> None:
     """Training routine for training an autoencoder
     Args:
         settings:           Handler for configuring the routine selection for train deep neural networks
@@ -74,14 +74,3 @@ def do_train_mnist_ae(settings: ConfigMLPipeline, yaml_name_index='Config_MNIST'
         plot_mnist_graphs(data_result['input'], data_result['valid_clus'], "_input", path2save=path2save)
         plot_mnist_graphs(data_result['pred'], data_result['valid_clus'], "_predicted", path2save=path2save,
                           show_plot=settings.do_block)
-
-
-if __name__ == "__main__":
-    from offline.dnn.dnn_handler import DefaultSettings_MLPipe
-
-    set0 = DefaultSettings_MLPipe
-    set0.do_plot = False
-    do_train_mnist_cl(set0)
-
-    set0.do_plot = True
-    do_train_mnist_ae(set0)

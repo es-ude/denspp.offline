@@ -4,11 +4,10 @@ from src_impfit.imp_fitting.impfitter_handler import RecommendedSettingsImpFit, 
 
 
 if __name__ == "__main__":
-    # --- Settings
     yaml_config = YamlConfigHandler(RecommendedSettingsImpFit, yaml_name="Config_ImpFit_Test")
     settings_impfit = yaml_config.get_class(SettingsImpFit)
 
-    path2imp = '../../../../2_Data/00_ImpedanceFitter'
+    path2imp = settings_impfit.path2fits
     path2ngsolve = f'{path2imp}/impedance_expected_ngsolve.csv'
     path2test0 = f'{path2imp}/tek0000ALL_MATLAB_new_fit.csv'
     path2test1 = f'{path2imp}/tek0000ALL_MATLAB_impedance.csv'

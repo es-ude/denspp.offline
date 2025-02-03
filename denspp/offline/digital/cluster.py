@@ -23,7 +23,7 @@ RecommendedSettingsCluster = SettingsCluster(
     no_cluster=3
 )
 
-
+# TODO: Warning with kmeans and local core number estimation (warning)
 class Clustering:
     def __init__(self, settings: SettingsCluster) -> None:
         """Initialization of module for clustering

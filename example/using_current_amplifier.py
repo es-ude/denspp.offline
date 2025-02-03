@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
     u_out = list()
     u_out.append(i_in)
-    u_out.append(dev_cur.transimpedance_amplifier(i_in))
+    u_out.append(dev_cur.transimpedance_amplifier(i_in, 0.0))
     u_out.append(dev_cur.push_amplifier(i_in))
     u_out.append(dev_cur.pull_amplifier(i_in))
     u_out.append(dev_cur.push_pull_amplifier(i_in)[0])

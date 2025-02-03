@@ -7,8 +7,8 @@ from denspp.offline.dnn.pytorch_pipeline import do_train_classifier
 from denspp.offline.dnn.dataset.classifier import prepare_training
 
 
-def do_train_spike_class(settings: ConfigMLPipeline, yaml_name_index='Config_Neural',
-                         used_dataset_name='', used_model_name='') -> str:
+def do_train_spike_class(settings: ConfigMLPipeline, yaml_name_index: str='Config_Neural',
+                         used_dataset_name: str='', used_model_name: str='') -> str:
     """Training routine for Classification DL models
     Args:
         settings:               Handler for configuring the routine selection for train deep neural networks
@@ -38,8 +38,3 @@ def do_train_spike_class(settings: ConfigMLPipeline, yaml_name_index='Config_Neu
         used_dataset=dataset, used_model=used_model
     )
     return path2folder
-
-
-if __name__ == "__main__":
-    from offline.dnn.dnn_handler import DefaultSettings_MLPipe
-    do_train_spike_class(DefaultSettings_MLPipe)

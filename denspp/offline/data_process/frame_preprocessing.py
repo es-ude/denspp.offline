@@ -118,7 +118,7 @@ def frame_noise(no_frames: int, frame_in: np.ndarray, noise_pwr: list, fs: float
         frames_noise[idx, :] = np.round(noise)
     return frames_noise, frames_out
 
-
+#TODO: Include CellFormat
 def reconfigure_cluster_with_cell_lib(path: str, sel_mode_classes: int,
                                       frames_in: np.ndarray, frames_cl: np.ndarray) -> [np.ndarray, np.ndarray, dict]:
     """Function for reducing the samples for a given cell bib"""

@@ -132,14 +132,14 @@ class ProcessNoise:
         e_pink = self.__noise_flicker(tsize, alpha)
 
         # --- Adapting the amplitude
-        freq0, y_white = self.__do_fft(e_white)
-        _, y_pink = self.__do_fft(e_pink)
+        fft_white = self.__do_fft(e_white)
+        fft_pink = self.__do_fft(e_pink)
 
         # --- Find corner frequency
-        x_corner = np.argwhere(freq0 >= fc)[0]
+        x_corner = np.argwhere(fft_white['freq'] >= fc)[0]
         n_mean = 100
-        y_wgm = np.convolve(y_white, np.ones(n_mean) / n_mean, mode='same')
-        y_pnk = np.convolve(y_pink, np.ones(n_mean) / n_mean, mode='same')
+        y_wgm = np.convolve(fft_white['Y'], np.ones(n_mean) / n_mean, mode='same')
+        y_pnk = np.convolve(fft_pink['Y'], np.ones(n_mean) / n_mean, mode='same')
         scalef = y_wgm[x_corner] / y_pnk[x_corner]
 
         # --- Generate output noise

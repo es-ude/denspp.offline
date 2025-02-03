@@ -5,6 +5,7 @@ from denspp.offline.plot_helper import scale_auto_value, save_figure
 from denspp.offline.analog.dev_load import ElectricalLoad, SettingsDEV
 from denspp.offline.analog.pyspice_load import PySpiceLoad, SettingsPySpice
 
+
 # ================================ FUNCTIONS FOR TESTING ===================================
 def generate_signal(t_end: float, fs: float, upp: list, fsig: list, uoff: float=0.0) -> [np.ndarray, np.ndarray]:
     """Generating a signal for testing

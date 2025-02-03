@@ -9,12 +9,17 @@ from denspp.offline.analog.adc.adc_sar import SuccessiveApproximation as ADC0
 from denspp.offline.digital.sda import SpikeDetection, SettingsSDA
 
 
-# --- Configuring the Pipeline for generating datasets
-class _SettingsPipe:
-    """Settings class for setting-up the pipeline"""
-    def __init__(self, fs_ana: float):
+class SettingsPipe:
+    def __init__(self, bit_adc: int=12, adc_dvref: float=0.1, fs_ana: float=20e3):
+        """Settings class for setting-up the pipeline
+            :param bit_adc:     Bit-resolution of used ADC
+            :param adc_dvref:   Diff. voltage of ADC reference voltage [V]
+            :param fs_ana:      Sampling frequency of ADC reference voltage [Hz]
+        """
         self.SettingsAMP.fs_ana = fs_ana
         self.SettingsADC.fs_ana = fs_ana
+        self.SettingsADC.dvref = adc_dvref
+        self.SettingsADC.Nadc = bit_adc
 
     SettingsAMP = SettingsAMP(
         vss=-0.6, vdd=0.6,
@@ -50,7 +55,7 @@ class Pipeline(PipelineCMD):
         self._path2pipe = abspath(__file__)
         # self.generate_folder('runs', '_data')
 
-        settings = _SettingsPipe(fs_ana)
+        settings = SettingsPipe(fs_ana)
         self.fs_ana = fs_ana
         self.fs_dig = settings.SettingsADC.fs_dig
         self.fs_adc = settings.SettingsADC.fs_dig

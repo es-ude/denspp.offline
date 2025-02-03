@@ -84,9 +84,3 @@ def do_train_ae_classifier(settings: ConfigMLPipeline, yaml_name_index: str= 'Co
 
     # --- Generate output dictionary with results
     return {"path2model_ae": path2folder, 'metric_ae': metrics_ae, 'metrics_cl': metrics_cl}
-
-
-if __name__ == "__main__":
-    from offline.dnn.dnn_handler import DefaultSettings_MLPipe
-    result = do_train_ae_classifier(DefaultSettings_MLPipe)
-    print(result)

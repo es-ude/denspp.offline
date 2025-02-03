@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import fnmatch
 import owncloud
 from denspp.offline.yaml_handler import YamlConfigHandler
+from denspp.offline.structure_builder import get_path_project_start
 
 
 @dataclass
@@ -22,7 +23,7 @@ DefaultConfigCloud = ConfigCloud(
 class OwncloudDownloader:
     __oc_handler: owncloud.Client
 
-    def __init__(self, path2config: str = '', use_dataset=False) -> None:
+    def __init__(self, path2config: str = get_path_project_start(), use_dataset=False) -> None:
         """Class for handling sciebo repository for getting datasets remotely"""
         yaml_hndl = YamlConfigHandler(DefaultConfigCloud, path2config, 'access_cloud')
         config = yaml_hndl.get_class(ConfigCloud)
