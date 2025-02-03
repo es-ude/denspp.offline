@@ -2,7 +2,6 @@ from os import mkdir
 from os.path import exists, join
 from shutil import copy
 from datetime import datetime
-from scipy.io import savemat
 import numpy as np
 import matplotlib.pyplot as plt
 from threading import Thread, active_count
@@ -156,19 +155,16 @@ class ProcessingData:
                 self.results_full.update({f'Elec_{elec:03d}': self.__threads_worker[idx].output_full})
                 self.results_save.update({f'Elec_{elec:03d}': self.__threads_worker[idx].output_save})
 
-    def do_save_results(self, do_matfile=False) -> None:
-        """Saving results in desired format [True = *.mat, False = *.npy]"""
+    def do_save_results(self) -> None:
+        """Saving results in desired numpy format"""
         path2save = self.__threads_worker[-1].pipeline.path2save
-        if not do_matfile:
-            np.save(f'{path2save}/results_half.npy', self.results_save)
-        else:
-            savemat(f'{path2save}/results_half.mat', self.results_save, do_compression=True)
+        np.save(f'{path2save}/results_half.npy', self.results_save)
 
     def do_plot_results(self) -> None:
         """Plotting the results of all signal processors"""
         plt.close('all')
-        for idx, elec_num in enumerate(self._channel_id):
-            self.__threads_worker[-1].pipeline.do_plotting(self.results_full[f'Elec_{elec_num:03d}'], elec_num)
+        for key in self.results_full.keys():
+            self.__threads_worker[-1].pipeline.do_plotting(self.results_full[key], int(key[-3:]))
 
         plt.show(block=self._settings.block_plots)
 

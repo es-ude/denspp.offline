@@ -92,7 +92,7 @@ line-ending = "auto"
 docstring-code-format = false
 
 [tool.uv.sources]
-elasticai-creator = { git = "https://github.com/es-ude/elastic-ai.creator.git", rev = "develop" }
+elasticai-creator = { git = "https://github.com/es-ude/elastic-ai.creator.git"}
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

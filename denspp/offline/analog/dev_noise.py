@@ -1,7 +1,6 @@
 import numpy as np
 from dataclasses import dataclass
 from scipy.constants import Boltzmann, elementary_charge
-from denspp.offline.data_process.transformation import do_fft
 
 
 @dataclass
@@ -61,6 +60,20 @@ class ProcessNoise:
         self.__noise_sampling_rate = fs_ana
 
     ######################## FUNCTIONS FOR GENERATE NOISE ########################
+    def __do_fft(self, y: np.ndarray) -> dict:
+        window = np.hanning(y.size)
+        fft_in = window * y
+        N = y.size // 2
+        fft_out = 2 / N * np.abs(np.fft.fft(fft_in))
+        fft_out[0] = fft_out[0] / 2
+        freq = self.__noise_sampling_rate * np.fft.fftfreq(fft_out.size)
+
+        # Taking positive range
+        xsel = np.where(freq >= 0)
+        fft_out = fft_out[xsel]
+        freq = freq[xsel]
+        return {'freq': freq, 'Y': fft_out}
+
     @staticmethod
     def __noise_awgn(size: int, fs: float, e_n: float) -> np.ndarray:
         """Generation of transient noise signal with spectral noise power [dBW/sqrt(Hz)]
@@ -119,8 +132,8 @@ class ProcessNoise:
         e_pink = self.__noise_flicker(tsize, alpha)
 
         # --- Adapting the amplitude
-        freq0, y_white = do_fft(e_white, fs)
-        _, y_pink = do_fft(e_pink, fs)
+        freq0, y_white = self.__do_fft(e_white)
+        _, y_pink = self.__do_fft(e_pink)
 
         # --- Find corner frequency
         x_corner = np.argwhere(freq0 >= fc)[0]
@@ -153,7 +166,7 @@ class ProcessNoise:
         val = np.sqrt(2 * self.__settings_noise.noise_pwr / fs / resistance)
         return 3.01 + 10 * np.log10(val)
 
-    def _do_print(self, noise_in: np.ndarray, mode_output=0) -> None:
+    def _do_print(self, noise_in: np.ndarray, mode_output: int=0) -> None:
         """Printing output from noise analysis"""
         if self.__settings_noise.do_print:
             match mode_output:

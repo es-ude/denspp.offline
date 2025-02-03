@@ -5,8 +5,8 @@ from denspp.offline.pipeline.pipeline_signal import PipelineSignal
 from denspp.offline.plot_helper import cm_to_inch, save_figure, get_plot_color, get_textsize_paper, get_plot_color_inactive
 
 
-def plot_pipeline_afe(signals: PipelineSignal, no_electrode: int, path="", time_cut=(),
-                      show_plot=False) -> None:
+def plot_pipeline_afe(signals: PipelineSignal, no_electrode: int, path:str='',
+                      time_cut: list=(), show_plot=False) -> None:
     """Plotting the pipeline results of the front-end device
     :param signals:         the pipeline signals (class PipelineSignal)
     :param no_electrode:    the number of electrodes to plot

@@ -36,7 +36,6 @@ def start_pipeline_processing(object_dataloader, object_pipeline) -> None:
     print("\nStep #3: Saving results and plotting"
           "\n=================================================")
     thr_station.do_save_results()
-    thr_station.do_save_results(True)
     thr_station.do_plot_results()
 
 

@@ -20,15 +20,14 @@ class CommonAnalogFunctions:
 
 
 class CommonDigitalFunctions:
-    __digital_border: np.ndarray
+    _digital_border: np.ndarray
 
-    def __init__(self, settings, digital_boarder: np.ndarray) -> None:
+    def __init__(self, settings) -> None:
         self._settings = settings
-
 
     def digital_clipping(self, xin: np.ndarray) -> np.ndarray:
         """Do digital clipping of quantizied values"""
         xout = xin.astype('int16') if self._settings.type_out == "signed" else xin.astype('uint16')
-        xout[xin > self.__digital_border[1]] = self.__digital_border[1]
-        xout[xin <= self.__digital_border[0]] = self.__digital_border[0]
+        xout[xin > self._digital_border[1]] = self._digital_border[1]
+        xout[xin <= self._digital_border[0]] = self._digital_border[0]
         return xout

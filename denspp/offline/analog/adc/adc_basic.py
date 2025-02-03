@@ -10,11 +10,14 @@ from denspp.offline.analog.dev_noise import SettingsNoise, RecommendedSettingsNo
 class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
     handler_noise: ProcessNoise
 
-    def __init__(self, settings_adc: SettingsADC, settings_noise: SettingsNoise=RecommendedSettingsNoise):
+    def __init__(self, settings_adc: SettingsADC, settings_noise: SettingsNoise = RecommendedSettingsNoise):
         """Basic class for applying an Analogue-Digital-Converter (ADC) on the raw data
         :param settings_adc: SettingsADC
         :param settings_noise: SettingsNoise
         """
+        CommonAnalogFunctions(settings_adc)
+        CommonDigitalFunctions(settings_adc)
+
         self.handler_noise = ProcessNoise(settings_noise, settings_adc.fs_ana)
         self._settings = settings_adc
 
@@ -24,8 +27,8 @@ class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
         self.__lsb = self._settings.lsb
         self.__oversampling_ratio = self._settings.osr
         self.__snr_ideal = 10 * np.log10(4) * self._settings.Nadc + 10 * np.log10(3 / 2)
-        self.__digital_border = np.array([0, 2 ** self._settings.Nadc - 1])
-        self.__digital_border -= 2 ** (self._settings.Nadc - 1) if self._settings.type_out == "signed" else 0
+        self._digital_border = np.array([0, 2 ** self._settings.Nadc - 1])
+        self._digital_border -= 2 ** (self._settings.Nadc - 1) if self._settings.type_out == "signed" else 0
         # --- Resampling stuff
         (self.__p_ratio, self.__q_ratio) = (
             Fraction(self._settings.fs_adc / self._settings.fs_ana)
@@ -35,8 +38,6 @@ class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
         # --- Internal voltage values
         self.__input_snh = 0.0
 
-        # --- Init super classes
-        super().__init__(settings_adc, self.__digital_border)
 
     def __do_snh_sample(self, uin: np.ndarray, do: bool | np.ndarray) -> np.ndarray:
         """Performing sample-and-hold (S&H) stage for buffering input value"""

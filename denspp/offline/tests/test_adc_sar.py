@@ -1,6 +1,6 @@
 from unittest import TestCase, main
 import numpy as np
-from denspp.offline.analog.adc.adc_sar import SARADC
+from denspp.offline.analog.adc.adc_sar import SuccessiveApproximation
 from denspp.offline.analog.adc.adc_settings import SettingsADC, SettingsNon
 
 settings_adc = SettingsADC(
@@ -22,7 +22,7 @@ RecommendedSettingsNon = SettingsNon(
 
 
 class TestSAR0(TestCase):
-    method = SARADC(settings_adc)
+    method = SuccessiveApproximation(settings_adc)
     time = np.linspace(0, 1, int(settings_adc.fs_ana), endpoint=True, dtype=float)
     input = settings_adc.vcm + 0.2 * np.sin(2* np.pi* time* 100)
     result = method.adc_sar(input)

@@ -28,7 +28,7 @@ RecommendedSettingsSDA = SettingsSDA(
     t_dly=0.3e-3,
     window_size=7,
     thr_gain=1.0,
-    thr_value=100.0
+    thr_min_value=100.0
 )
 
 

@@ -6,7 +6,7 @@ from denspp.offline.pipeline.pipeline_signal import PipelineSignal
 from denspp.offline.nsp.spike_analyse import calc_spiketicks
 from denspp.offline.analog.amplifier.pre_amp import PreAmp, SettingsAMP
 from denspp.offline.analog.adc import SettingsADC
-from denspp.offline.analog.adc.adc_sar import SARADC as ADC0
+from denspp.offline.analog.adc.adc_sar import SuccessiveApproximation
 from denspp.offline.digital.dsp import DSP, SettingsDSP
 from denspp.offline.digital.sda import SpikeDetection, SettingsSDA
 from denspp.offline.digital.fex import FeatureExtraction, SettingsFeature
@@ -91,7 +91,7 @@ class Pipeline(PipelineCMD):
         self.signals.fs_dig = settings.SettingsADC.fs_dig
 
         self.__preamp0 = PreAmp(settings.SettingsAMP)
-        self.__adc = ADC0(settings.SettingsADC)
+        self.__adc = SuccessiveApproximation(settings.SettingsADC)
         self.__dsp0 = DSP(settings.SettingsDSP_LFP)
         self.__dsp1 = DSP(settings.SettingsDSP_SPK)
         self.__sda = SpikeDetection(settings.SettingsSDA)

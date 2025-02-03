@@ -3,11 +3,12 @@ from .adc_basic import BasicADC
 from denspp.offline.analog.adc import SettingsADC, RecommendedSettingsNon
 
 
-class SARADC(BasicADC):
+class SuccessiveApproximation(BasicADC):
     """"Class for applying a Successive Approximation (SAR) Analogue-Digital-Converter (ADC) on the raw data"""
-    def __init__(self, settings_adc: SettingsADC, settings_non=RecommendedSettingsNon):
+    def __init__(self, settings_adc: SettingsADC, use_noise: bool = False):
         super().__init__(settings_adc)
-        self.__use_noise = settings_non.use_noise
+        self._settings = settings_adc
+        self.__use_noise = use_noise
         # --- Transfer function
         self.__dv = self._settings.vref[0] - self._settings.vref[1]
         self.__partition_digital = 2 ** np.arange(0, self._settings.Nadc)
