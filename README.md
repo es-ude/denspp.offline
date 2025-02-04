@@ -26,9 +26,15 @@ It is recommended that each working group will create a new branch for editing t
 their input will be merged with the main branch. Further informations about this software framework are described in the
 paper at the end of the readme file.
 
+If you have downloaded the repo and no *.py files or no folder are available, then run the following code to initialize the project.
+```
+python ./denspp/offline/init_project.py 
+```
+Important! Please start from your repo folder!
+
 ## Project File structure
 
-This Git project contains the main folder `3_Python` which includes the functions to setup a NSP pipeline incl. plotting examples and training Deep Neural Networks (DNN).
+This Git project contains the main folder `denspp` which includes the functions to setup a NSP pipeline incl. plotting examples and training Deep Neural Networks (DNN).
 
 The Python folder contains the following folder structure:
 ```bash
