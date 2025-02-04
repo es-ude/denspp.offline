@@ -46,10 +46,9 @@ class SuccessiveApproximation(BasicADC):
         uin_adc = self.voltage_clipping(uin)
         uin0 = self._do_resample(uin_adc)
         unoise = self._gen_noise(uin0.size) if self.__use_noise else np.zeros(shape=uin0.shape)
+
         # Running SAR code
-        uout = np.zeros(shape=uin0.shape)
-        xout = np.zeros(shape=uin0.shape)
-        uerr = np.zeros(shape=uin0.shape)
+        xout, uout, uerr = self._generate_sar_empty_data(uin0.shape)
         for idx, umod in enumerate(uin0):
             calc_out = self.__adc_sar_sample(umod)
             uout[idx] = calc_out[0] + unoise[idx]
@@ -69,9 +68,7 @@ class SuccessiveApproximation(BasicADC):
         uin0 = self._do_resample(uin_adc)
         unoise = self._gen_noise(uin0.size) if self.__use_noise else np.zeros(shape=uin0.shape)
         # Running SAR code
-        uout = np.zeros(shape=uin0.shape)
-        xout = np.zeros(shape=uin0.shape)
-        uerr = np.zeros(shape=uin0.shape)
+        xout, uout, uerr = self._generate_sar_empty_data(uin0.shape)
         for idx, din in enumerate(uin0):
             umod = din + self.__stage_one_dly
             calc_out = self.__adc_sar_sample(umod)
@@ -94,9 +91,7 @@ class SuccessiveApproximation(BasicADC):
         uin0 = self._do_resample(uin_adc)
         unoise = self._gen_noise(uin0.size) if self.__use_noise else np.zeros(shape=uin0.shape)
         # Running SAR code
-        uout = np.zeros(shape=uin0.shape)
-        xout = np.zeros(shape=uin0.shape)
-        uerr = np.zeros(shape=uin0.shape)
+        xout, uout, uerr = self._generate_sar_empty_data(uin0.shape)
         for idx, din in enumerate(uin0):
             # --- SAR processing
             umod = din + self.__stage_one_dly
@@ -121,9 +116,7 @@ class SuccessiveApproximation(BasicADC):
         unoise = self._gen_noise(uin0.size) if self.__use_noise else np.zeros(
             shape=uin0.shape)
         # Running SAR code
-        uout = np.zeros(shape=uin0.shape)
-        xout = np.zeros(shape=uin0.shape)
-        uerr = np.zeros(shape=uin0.shape)
+        xout, uout, uerr = self._generate_sar_empty_data(uin0.shape)
         for idx, din in enumerate(uin0):
             umod = din + self.__stage_two_dly
             calc_out = self.__adc_sar_sample(umod)

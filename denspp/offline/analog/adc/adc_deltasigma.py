@@ -66,10 +66,10 @@ class DeltaSigmaADC(BasicADC):
         # Resampling the input to sampling frequency of ADC with oversampling
         uin_adc = self.voltage_clipping(uin)
         uin0 = self._do_resample(uin_adc)
-        unoise = self._gen_noise(uin0.size) if self.use_noise == True else np.zeros(shape=uin0.shape)
+        uin0 += self._gen_noise(uin0.size) if self.use_noise == True else np.zeros(shape=uin0.shape)
+
         # Running the delta sigma modulator
-        xout_hs = np.zeros(shape=uin0.shape)
-        xbit = np.zeros(shape=uin0.shape)
+        xout_hs, xbit = self._generate_dsigma_empty_data(uin0.shape)
         umod_one = self._settings.vcm
         ufb0 = self._settings.vref[1]
         # --- DS Modulator (at high frequency)
@@ -77,12 +77,14 @@ class DeltaSigmaADC(BasicADC):
             umod_one += self.__ds_modulator(umod, ufb0)
             xbit[idx], ufb0 = self.__comp_1bit(umod_one)
             xout_hs[idx] = self.__stream_converter(xbit[idx])
+
         # --- Downsampling
         xout0 = self.do_decimation_polyphase_order_two(xout_hs)
         xout1 = self.do_decimation_polyphase_order_two(xout0)
         xout2 = self.do_decimation_polyphase_order_two(xout1)
         xout3 = self.do_decimation_polyphase_order_two(xout2)
         xout4 = self.do_decimation_polyphase_order_two(xout3)
+
         # --- Correction and output
         xout = xout4
         xout -= 2 ** (self._settings.Nadc - 1) if self._settings.type_out == "signed" else 0
@@ -99,11 +101,10 @@ class DeltaSigmaADC(BasicADC):
         # Resampling the input to sampling frequency of ADC with oversampling
         uin_adc = self.voltage_clipping(uin)
         uin0 = self._do_resample(uin_adc)
-        unoise = self._gen_noise(uin0.size) if self.use_noise else np.zeros(shape=uin0.shape)
+        uin0 += self._gen_noise(uin0.size) if self.use_noise else np.zeros(shape=uin0.shape)
 
         # Running the delta sigma modulator
-        xout_hs = np.zeros(shape=uin0.shape)
-        xbit = np.zeros(shape=uin0.shape)
+        xout_hs, xbit = self._generate_dsigma_empty_data(uin0.shape)
         umod_one = self._settings.vcm
         umod_two = self._settings.vcm
         ufb0 = self._settings.vref[1]

@@ -14,7 +14,7 @@ def get_path_project_start(new_folder: str = '') -> str:
 
 
 def get_path_to_templates() -> str:
-    return join(get_path_project_start(), 'offline/template')
+    return join(get_path_project_start(), 'denspp/offline/template')
 
 
 def init_project_folder(new_folder: str = '') -> None:
@@ -22,10 +22,12 @@ def init_project_folder(new_folder: str = '') -> None:
     :param new_folder:      Name of the new folder to create (test case)
     :return:                None
     """
-    folder_structure = ['data', 'runs', 'test', 'config', 'src_neuro']
-    copy_files = {'main_pipeline.py': '', 'call_template.py': 'src_neuro', 'pipeline_v0.py': 'src_neuro'}
+    folder_structure = ['data', 'runs', 'temp', 'config', 'src_neuro']
+    copy_files = {'main_pipeline.py': '', 'main_data_merge.py': '', 'main_dnn_train.py': '',
+                  'call_template.py': 'src_neuro', 'pipeline_v0.py': 'src_neuro'}
 
     path2start = get_path_project_start(new_folder)
+    makedirs(path2start, exist_ok=True)
     if not exists(join(path2start, folder_structure[0])):
         for folder_name in folder_structure:
             makedirs(join(path2start, folder_name), exist_ok=True)
@@ -34,7 +36,7 @@ def init_project_folder(new_folder: str = '') -> None:
     first_element = list(copy_files.items())[0]
     path2test = join(path2start, first_element[1], first_element[0])
     if not exists(path2test):
-        path2temp = join(path2start, 'offline/template')
+        path2temp = get_path_to_templates()
         for key, value in copy_files.items():
             copy(join(path2temp, key), join(path2start, value) + '/')
 
@@ -58,11 +60,9 @@ def init_dnn_folder(new_folder: str = '') -> None:
     first_element = list(copy_files.items())[0]
     path2test = join(path2proj, first_element[1], first_element[0])
     if not exists(path2test):
-        path2temp = join(path2proj, 'offline/template')
+        path2temp = get_path_to_templates()
         for key, value in copy_files.items():
             copy(join(path2temp, key), join(path2proj, value) + '/')
-
-        raise TypeError("Folders are generated - Please restart the training routine!")
 
 
 if __name__ == '__main__':

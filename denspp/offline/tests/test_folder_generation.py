@@ -6,7 +6,7 @@ from denspp.offline.structure_builder import init_project_folder, init_dnn_folde
 
 
 class TestSum(unittest.TestCase):
-    folder_general = ['data', 'runs', 'test', 'config']
+    folder_general = ['config', 'data', 'runs', 'src_neuro', 'temp']
     folder_dnn = ['models', 'dataset']
     folder2search = 'denspp.offline'
     folder_name_test = 'temp_tests'
@@ -21,7 +21,7 @@ class TestSum(unittest.TestCase):
             num_pass += 1 if exists(path2test) else 0
 
         rmtree(path2start)
-        self.assertEqual(num_pass, len(self.folder_general), "Folders not there")
+        self.assertEqual(num_pass, len(self.folder_general))
 
     def test_check_folder_dnn(self):
         init_dnn_folder(self.folder_name_test)

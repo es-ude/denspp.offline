@@ -19,6 +19,7 @@ class _SettingsPipe:
         self.SettingsAMP.fs_ana = fs
         self.SettingsADC.fs_ana = fs
 
+    # TODO: Supply voltage anpassen mit externem überschreiben
     SettingsAMP = SettingsAMP(
         vss=-0.6, vdd=0.6,
         fs_ana=0.0,

@@ -5,6 +5,7 @@ Config_*.yaml
 **/runs
 **/src_mem
 **/test
+**/temp*
 uv.lock
 
 ### venv template

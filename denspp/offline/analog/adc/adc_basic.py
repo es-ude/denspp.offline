@@ -147,6 +147,19 @@ class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
         return np.array(output_transient)
 
     @staticmethod
+    def _generate_sar_empty_data(shape) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        uout = np.zeros(shape=shape, dtype=np.float32)
+        xout = np.zeros(shape=shape, dtype=np.int16)
+        uerr = np.zeros(shape=shape, dtype=np.float32)
+        return xout, uout, uerr
+
+    @staticmethod
+    def _generate_dsigma_empty_data(shape) -> tuple[np.ndarray, np.ndarray]:
+        xout_hs = np.zeros(shape=shape, dtype=np.int32)
+        xbit = np.zeros(shape=shape, dtype=np.int32)
+        return xout_hs, xbit
+
+    @staticmethod
     def do_decimation_polyphase_order_one(uin: np.ndarray) -> np.ndarray:
         """Performing first order Non-Recursive Polyphase Decimation on input"""
         last_sample_hs = 0
