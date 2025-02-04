@@ -35,13 +35,15 @@ The Python folder contains the following folder structure:
   <path_to_project>
     ├── config              # Includes yaml files for configuring the pipelines (only local)
     ├── data                # Merged datasets from your dataset or transient data (only local)
-    ├── package             # All functionalities for data analysis (will be removed in next releases)
+    ├── denspp              # All functionalities for data analysis (will be removed in next releases)
+    ├── example             # Example for using API (will be removed in next releases)
     ├── runs                # Saving all results from analysis (only local)
-    ├── src_dnn             # Contains functions for training deep neural networks which are not in package
-    ├── src_<xyz>           # Contains functions for data analysis which are not in package  
-    ├── main_pipeline.py    # For normal pipeline processing
+    ├── src_dnn             # Contains functions for training deep neural networks which are not in package 
+    ├── src_<xyz>           # Contains functions for data analysis which are not in package (only local)
+    ├── access_cloud.yaml   # Yaml file with information for cloud access 
+    ├── main_pipeline.py    # For normal pipeline processing 
     ├── main_data_merge.py  # For merging of given datasets
-    ├── main_dnn_train.py`  # For training ML models, like Autoencoder and Classifier
+    ├── main_dnn_train.py   # For training ML models, like Autoencoder and Classifier
     └── ...
 ```
 The marked folders with "only local" will only be saved on your computer. It not be sync with git.
