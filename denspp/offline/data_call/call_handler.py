@@ -254,7 +254,7 @@ class DataController:
         xpos_in = self._raw_data.evnt_xpos[used_channel]
         return xpos_in / fs_orig * fs_used
         
-    def generate_label_stream_channel(self, used_channel: int, window_time=1.6e-3) -> np.ndarray:
+    def generate_label_stream_channel(self, used_channel: int, window_time: float=1.6e-3) -> np.ndarray:
         """Generating a transient array with labeling event detection
         Args:
             used_channel:   Number of used channel for labeling event detection
@@ -268,7 +268,7 @@ class DataController:
             trgg0[int(val):int(val) + window_size] = 1
         return trgg0
 
-    def generate_label_stream_all(self, window_time=1.6e-3) -> list:
+    def generate_label_stream_all(self, window_time: float=1.6e-3) -> list:
         """Generating a list with transient arrays to label event detection of all used channels
         Args:
             window_time:    Time window of the trigger signal for generating the transient trigger array
@@ -336,7 +336,7 @@ class DataController:
             raise FileNotFoundError("--- File is not available. Please check! ---")
 
     @staticmethod
-    def _read_csv_file(path2csv: str, num_channels: int, split_option: str, start_pos_csvfile=0) -> list:
+    def _read_csv_file(path2csv: str, num_channels: int, split_option: str, start_pos_csvfile: int=0) -> list:
         """Reading the csv file
         Args:
             path2csv:           Path to csv file for reading content
@@ -399,7 +399,7 @@ class DataController:
 
             self._raw_data.data_raw = data_out
 
-    def do_mapping(self, path2csv="") -> None:
+    def do_mapping(self, path2csv: str='') -> None:
         """Transforming the input data to electrode array specific design
         (considering electrode format and coordination)
         Args:

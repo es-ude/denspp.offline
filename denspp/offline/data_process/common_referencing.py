@@ -46,25 +46,3 @@ def calculate_reference_car_2d(mea_signal: np.ndarray, mapp_used: np.ndarray, ke
                     data_out[row, col, :] = np.zeros((mea_signal.shape[-1], ), dtype=float)
 
         return data_out
-
-
-###########################################################################
-if __name__ == "__main__":
-    from src_neuro.call_spike import DataLoader, SettingsDATA
-
-    settings = SettingsDATA(
-        path="C:\HomeOffice\Data_Neurosignal",
-        data_set=8, data_case=1, data_point=1,
-        t_range=[0, 0.5], ch_sel=[], fs_resample=20e3
-    )
-    data_loader = DataLoader(settings)
-    data_loader.do_call()
-    data_loader.do_cut()
-    data_1d = data_loader.get_data()
-    car_1d = calculate_reference_car_1d(data_1d.data_raw)
-
-    data_loader.do_mapping()
-    data_2d = data_loader.get_data()
-    car_2d = calculate_reference_car_2d(data_2d.data_raw, data_2d.mapping_active, 3)
-
-    del data_loader

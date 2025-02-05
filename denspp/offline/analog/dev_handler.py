@@ -1,4 +1,4 @@
-import dataclasses
+from dataclasses import dataclass
 from warnings import warn
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,7 +10,7 @@ from denspp.offline.plot_helper import save_figure
 from denspp.offline.metric.data import calculate_error_rae, calculate_error_mse
 
 
-@dataclasses.dataclass
+@dataclass
 class SettingsDEV:
     """Individual data class to configure the electrical device
     Inputs:
@@ -81,7 +81,7 @@ class ElectricalLoadHandler:
 
     def _extract_iv_curve_from_regression(self, params_dev: list,
                                           bounds_voltage: list, bounds_current: list,
-                                          mode_fit=0) -> [np.ndarray, np.ndarray]:
+                                          mode_fit: int=0) -> [np.ndarray, np.ndarray]:
         """Function for getting the I-V curve from regression
         Args:
             params_dev:             List with parameters from device
@@ -162,7 +162,8 @@ class ElectricalLoadHandler:
         return np.array(iout, dtype=float)
 
     def _get_params_curve_fit(self, params_dev: list, mode_fit: int,
-                              do_test=False, do_plot=True, plot_title_prefix='', path2save='') -> float:
+                              do_test: bool=False, do_plot: bool=True,
+                              plot_title_prefix: str='', path2save: str='') -> float:
         """Function to extract the params of electrical device behaviour with curve fitting
         Args:
             params_dev:             List with parameters from device
@@ -197,9 +198,9 @@ class ElectricalLoadHandler:
             error = -1.0
         return error
 
-    def _get_params_polyfit(self, params_dev: list, mode_fit=0,
-                            do_test=False, do_plot=False,
-                            plot_title_prefix='', path2save='') -> float:
+    def _get_params_polyfit(self, params_dev: list, mode_fit: int=0,
+                            do_test: bool=False, do_plot: bool=False,
+                            plot_title_prefix: str='', path2save: str='') -> float:
         """Function to extract the params of electrical device behaviour with polyfit function
         Args:
             params_dev:             List with parameters from device
@@ -239,7 +240,7 @@ class ElectricalLoadHandler:
         return error
 
     def _plot_fit_curve(self, u_poly: np.ndarray, i_poly: np.ndarray, i_reg: np.ndarray,
-                        metric=(), title_prefix='', path2save='', show_plot=False) -> None:
+                        metric: list=(), title_prefix: str='', path2save: str='', show_plot: bool=False) -> None:
         """Plotting the output of the polynomial fit function
         Args:
             u_poly:         Numpy array with voltage from polynom fit (input)
@@ -280,7 +281,7 @@ class ElectricalLoadHandler:
 
     def _find_best_poly_order(self, order_start: int, order_stop: int,
                               bounds_voltage: list, params_dev: list,
-                              show_plots=False, mode_fit=0) -> None:
+                              show_plots: bool=False, mode_fit: int=0) -> None:
         """Finding the best polynomial order for fitting
         Args:
             order_start:    Integer value with starting order number
@@ -313,7 +314,8 @@ class ElectricalLoadHandler:
         print(f"\nBest solution: Order = {np.array(order_search)[xmin]} with an error of {error_search[xmin]}!")
         print("TEST")
 
-    def plot_fit_curve(self, find_best_order=False, show_plots=True, order_start=2, order_stop=18, mode_fit=0) -> None:
+    def plot_fit_curve(self, find_best_order: bool=False, show_plots: bool=True,
+                       order_start: int=2, order_stop: int=18, mode_fit: int=0) -> None:
         """Plotting the output of the polynom fit function
         Args:
             find_best_order:    Find the best poly.-fit order
@@ -404,7 +406,7 @@ class ElectricalLoadHandler:
         return self.get_current(u_top, u_bot) / area
 
     def get_voltage(self, i_in: np.ndarray, u_inn: np.ndarray | float,
-                    start_value=0.0, start_step=1e-3, take_last_value=True) -> np.ndarray:
+                    start_value: float=0.0, start_step: float=1e-3, take_last_value: bool=True) -> np.ndarray:
         """Getting the voltage response from electrical device
         Args:
             i_in:               Applied current input [A]

@@ -82,8 +82,8 @@ class DatasetAE(Dataset):
         return out
 
 
-def prepare_training(settings: ConfigDataset, do_classification=False,
-                     mode_train_ae=0, noise_std=0.1, print_state=True) -> DatasetAE:
+def prepare_training(settings: ConfigDataset, do_classification: bool=False,
+                     mode_train_ae: int=0, noise_std: float=0.1, print_state: bool=True) -> DatasetAE:
     """Preparing dataset incl. augmentation for spike-frame based training
     Args:
         settings:               Class for loading the data and do pre-processing

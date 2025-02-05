@@ -50,7 +50,7 @@ class ConfigDataset:
         """Getting the default path of the Python Project"""
         return get_path_project_start()
 
-    def print_overview_datasets(self, do_print=True) -> list:
+    def print_overview_datasets(self, do_print: bool=True) -> list:
         """"""
         oc_handler = OwncloudDownloader(self.get_path2folder_project, use_dataset=True)
         list_datasets = oc_handler.get_overview_data()

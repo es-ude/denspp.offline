@@ -6,7 +6,7 @@ from denspp.offline.pipeline.pipeline_signal import PipelineSignal
 from denspp.offline.plot_helper import cm_to_inch, get_plot_color, save_figure
 
 
-def plot_nsp_ivt(signals: PipelineSignal, no_electrode: int, path="", show_plot=False) -> None:
+def plot_nsp_ivt(signals: PipelineSignal, no_electrode: int, path: str="", show_plot: bool=False) -> None:
     """Plotting the results of interval timing spikes of each cluster
     :param signals:         Pipeline signal object (class PipelineSignal)
     :param no_electrode:    Number of electrodes to plot
@@ -61,7 +61,7 @@ def plot_nsp_ivt(signals: PipelineSignal, no_electrode: int, path="", show_plot=
         plt.show(block=True)
 
 
-def plot_nsp_correlogram(signals: PipelineSignal, no_electrode: int, path="", show_plot=False) -> None:
+def plot_nsp_correlogram(signals: PipelineSignal, no_electrode: int, path: str="", show_plot: bool=False) -> None:
     """Plotting the results of interval timing spikes of each cluster
     :param signals:         Pipeline signal object (class PipelineSignal)
     :param no_electrode:    Number of electrodes to plot
@@ -95,7 +95,7 @@ def plot_nsp_correlogram(signals: PipelineSignal, no_electrode: int, path="", sh
         plt.show(block=True)
 
 
-def plot_firing_rate(signals: PipelineSignal, no_electrode: int, path="", show_plot=False) -> None:
+def plot_firing_rate(signals: PipelineSignal, no_electrode: int, path: str="", show_plot: bool=False) -> None:
     """Function for plotting the firing rate of choicen electrode
     :param signals:         Pipeline signal object (class PipelineSignal)
     :param no_electrode:    Number of electrodes to plot
@@ -125,7 +125,7 @@ def plot_firing_rate(signals: PipelineSignal, no_electrode: int, path="", show_p
         plt.show(block=True)
 
 
-def plot_nsp_cluster_amplitude(signals: PipelineSignal, no_electrode: int, path="", show_plot=False) -> None:
+def plot_nsp_cluster_amplitude(signals: PipelineSignal, no_electrode: int, path: str="", show_plot: bool=False) -> None:
     """Function for plotting the spike frame amplitude values of each amplitude during time
     :param signals:         Pipeline signal object (class PipelineSignal)
     :param no_electrode:    Number of electrodes to plot

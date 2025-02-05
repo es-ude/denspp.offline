@@ -1,10 +1,10 @@
-import dataclasses
+from dataclasses import dataclass
 import numpy as np
 from denspp.offline.analog.common_func import CommonAnalogFunctions
 from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, RecommendedSettingsNoise
 
 
-@dataclasses.dataclass
+@dataclass
 class SettingsCUR:
     """Individual data class to configure the current amplifier
 
@@ -58,7 +58,7 @@ class CurrentAmplifier(CommonAnalogFunctions):
     def vcm(self) -> float:
         return (self._settings.vdd + self._settings.vss) / 2
 
-    def __add_parasitic(self, size: int, resistance=1.0) -> np.ndarray:
+    def __add_parasitic(self, size: int, resistance: float=1.0) -> np.ndarray:
         """"""
         u_para = np.zeros((size, ))
         u_para += self._settings.transimpedance * self._settings.offset_i
@@ -82,7 +82,7 @@ class CurrentAmplifier(CommonAnalogFunctions):
         u_out += self.__add_parasitic(u_out.size)
         return self.voltage_clipping(u_out)
 
-    def instrumentation_amplifier(self, iin: np.ndarray, uoff: np.ndarray | float, v_gain=1.0) -> np.ndarray:
+    def instrumentation_amplifier(self, iin: np.ndarray, uoff: np.ndarray | float, v_gain: float=1.0) -> np.ndarray:
         """Using an instrumentation amplifier for current sensing
         Args:
             iin:    Input current [A]

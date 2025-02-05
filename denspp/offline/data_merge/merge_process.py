@@ -25,7 +25,7 @@ def start_merge_process(data_loader, pipeline) -> None:
     merge_handler.get_frames_from_dataset(
         data_loader=data_loader,
         cluster_class_avai=False,
-        process_points=[]
+        process_points=list()
     )
     merge_handler.merge_data_from_diff_files()
     merge_handler.save_merged_data_in_npyfile()

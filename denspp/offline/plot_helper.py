@@ -30,7 +30,7 @@ def cm_to_inch(value: float) -> float:
     return value / 2.54
 
 
-def save_figure(fig, path: str, name: str, formats=('pdf', 'svg')) -> None:
+def save_figure(fig, path: str, name: str, formats: list=('pdf', 'svg')) -> None:
     """Saving figure in given format
     Args:
         fig:        Matplot which will be saved
@@ -121,7 +121,7 @@ def _get_mean(parameter: list) -> float:
     return float(np.mean(param))
 
 
-def _autoscale(ax=None, axis='y', margin=0.1):
+def _autoscale(ax=None, axis: str='y', margin: float=0.1):
     """Autoscales the x or y axis of a given matplotlib ax object
     to fit the margins set by manually limits of the other axis,
     with margins in fraction of the width of the plot

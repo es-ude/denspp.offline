@@ -1,5 +1,5 @@
 import numpy as np
-#from .frame_preprocessing import generate_frames
+from .frame_preprocessing import generate_frames
 
 
 def augmentation_mean_waveform(
@@ -74,7 +74,7 @@ def augmentation_reducing_samples(
         frames_in: np.ndarray,
         frames_cl: np.ndarray,
         num_frames: int,
-        do_shuffle=True) -> dict:
+        do_shuffle: bool=True) -> dict:
     """Tool for data augmentation of input spike frames (change position)
     :param frames_in:           Numpy array with mean waveform
     :param frames_cl:           Numpy array with corresponding cluster id to each waveform

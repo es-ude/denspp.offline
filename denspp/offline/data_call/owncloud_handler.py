@@ -23,8 +23,11 @@ DefaultConfigCloud = ConfigCloud(
 class OwncloudDownloader:
     __oc_handler: owncloud.Client
 
-    def __init__(self, path2config: str = get_path_project_start(), use_dataset=False) -> None:
-        """Class for handling sciebo repository for getting datasets remotely"""
+    def __init__(self, path2config: str = get_path_project_start(), use_dataset: bool=False) -> None:
+        """Class for handling sciebo repository for getting datasets remotely
+        :param path2config: path to config file
+        :param use_dataset: whether to download datasets (true) or transient signals (false) remotely
+        """
         yaml_hndl = YamlConfigHandler(DefaultConfigCloud, path2config, 'access_cloud')
         config = yaml_hndl.get_class(ConfigCloud)
 
@@ -39,13 +42,20 @@ class OwncloudDownloader:
         return dict_list
 
     def get_overview_folder(self, search_folder: str = '') -> list:
-        """Getting an overview of available folders in selected folder"""
+        """Getting an overview of available folders in selected folder
+        :param search_folder:   Search folder path
+        :return:                List of folder paths
+        """
         remote_content = self.__get_remote_content(search_folder)
         folder_available = [file.path for file in remote_content if file.file_type == 'dir']
         return folder_available
 
     def get_overview_data(self, search_folder: str = '',  format: str = '*.*') -> list:
-        """Getting an overview of available files to download"""
+        """Getting an overview of available files to download
+        :param search_folder:   Search folder path
+        :param format:          File format
+        :return:                List with available folders/files from remote
+        """
         remote_content = self.__get_remote_content(search_folder)
         files_available = [file.path for file in remote_content if file.file_type == 'file']
         return fnmatch.filter(files_available, '*/'+format)

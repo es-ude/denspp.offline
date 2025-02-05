@@ -191,11 +191,11 @@ class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
         return xd - v1 - v3
 
     @staticmethod
-    def _func2curve_resistive_diode(i_path: np.ndarray, a, b, c, d) -> np.ndarray:
+    def _func2curve_resistive_diode(i_path: np.ndarray, a: float, b: float, c: float, d: float) -> np.ndarray:
         """Function for performing curve fitting for resistive diode behaviour"""
         return a + b * i_path + c * np.log(d * i_path + 1)
 
-    def _resistive_schottky_single(self, u_inp: np.ndarray, u_inn: np.ndarray | float, mode_fitting=1) -> np.ndarray:
+    def _resistive_schottky_single(self, u_inp: np.ndarray, u_inn: np.ndarray | float, mode_fitting: int=1) -> np.ndarray:
         """Performing the behaviour of a series connection of resistor and single-side schottky diode
         Args:
             u_inp:          Positive input voltage [V]

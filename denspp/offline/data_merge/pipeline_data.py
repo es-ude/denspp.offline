@@ -85,7 +85,7 @@ class Pipeline(PipelineCMD):
         """Function to plot results"""
         pass
 
-    def run_input(self, uin: np.ndarray, spike_xpos: np.ndarray, spike_xoffset=0) -> None:
+    def run_input(self, uin: np.ndarray, spike_xpos: np.ndarray, spike_xoffset: int=0) -> None:
         """Processing the raw data for frame generation
         Args:
             uin: Array of the 1D-transient signal

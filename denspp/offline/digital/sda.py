@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 import numpy as np
 from scipy.signal import savgol_filter, find_peaks, iirfilter, lfilter
-from numpy import hamming, bartlett, blackman
-from scipy.signal.windows import gaussian
+from denspp.offline.data_process.transformation import window_method
 
 
 @dataclass
@@ -161,7 +160,7 @@ class SpikeDetection:
         eed = np.array(lfilter(filter[0], filter[1], xin))
         return np.square(eed)
 
-    def sda_spb(self, xin: np.ndarray, f_bp=(100.0, 1000.0)) -> [np.ndarray, np.ndarray]:
+    def sda_spb(self, xin: np.ndarray, f_bp: list=(100.0, 1000.0)) -> [np.ndarray, np.ndarray]:
         """Performing the spike detection with spike band-power estimation [Nason et al., 2020]"""
         fs = self.settings.fs
         filter = iirfilter(N=2, Wn=2 * np.array(f_bp) / fs, ftype="butter", btype="bandpass", analog=False, output='ba')
@@ -208,7 +207,7 @@ class SpikeDetection:
 
         return xpos_out
 
-    def __frame_extraction(self, xraw: np.ndarray, xpos: np.ndarray, xoffset=0) -> [list, list, list, list]:
+    def __frame_extraction(self, xraw: np.ndarray, xpos: np.ndarray, xoffset: int=0) -> [list, list, list, list]:
         """Extraction of the frames"""
         f0 = self.__offset_frame_neg
         f1 = f0 + int(self.frame_length_total / 2)
@@ -358,17 +357,7 @@ class SpikeDetection:
         return frame_out
 
     @staticmethod
-    def smoothing_1d(xin: np.ndarray, window_size: int, window_method='Hamming') -> np.ndarray:
+    def smoothing_1d(xin: np.ndarray, window_size: int, method: str= 'Hamming') -> np.ndarray:
         """Smoothing the input"""
-        if window_method == 'Hamming':
-            window = hamming(window_size)
-        elif window_method == 'Gaussian':
-            window = gaussian(window_size, int(0.16 * window_size), sym=True)
-        elif window_method == 'Bartlett':
-            window = bartlett(window_size)
-        elif window_method == 'Blackman':
-            window = blackman(window_size)
-        else:
-            window = np.ones(window_size)
-
+        window = window_method(window_size, method)
         return np.convolve(xin, window, mode='same') # / np.sum(window), mode='same')

@@ -10,7 +10,7 @@ from denspp.offline.metric.data import calculate_number_true_predictions, calcul
 
 class TrainClassifier(PyTorchHandler):
     def __init__(self, config_train: ConfigPytorch, config_data: ConfigDataset,
-                 do_train=True, do_print=True) -> None:
+                 do_train: bool=True, do_print: bool=True) -> None:
         """Class for Handling Training of Classifiers
         Args:
             config_data:            Settings for handling and loading the dataset (just for saving)
@@ -166,7 +166,7 @@ class TrainClassifier(PyTorchHandler):
             self.__metric_buffer[args[0]][0] = concatenate((self.__metric_buffer[args[0]][0], true), dim=0)
             self.__metric_buffer[args[0]][1] = concatenate((self.__metric_buffer[args[0]][1], pred), dim=0)
 
-    def do_training(self, path2save='', metrics=()) -> dict:
+    def do_training(self, path2save: str='', metrics: list=()) -> dict:
         """Start model training incl. validation and custom-own metric calculation
         Args:
             path2save:      Path for saving the results [Default: '' --> generate new folder]

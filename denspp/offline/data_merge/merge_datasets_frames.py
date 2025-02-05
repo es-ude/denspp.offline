@@ -10,7 +10,7 @@ from denspp.offline.data_call.call_handler import SettingsDATA
 
 
 class MergeDatasets:
-    def __init__(self, pipeline, settings_data: SettingsDATA, do_list=False) -> None:
+    def __init__(self, pipeline, settings_data: SettingsDATA, do_list: bool=False) -> None:
         """Class for handling the merging process for generating datasets from transient input signals
         :param pipeline:        Selected pipeline for processing data
         :param settings_data:   Dataclass for handling the transient data
@@ -26,7 +26,7 @@ class MergeDatasets:
         self.__data_merged = dict()
         self.__cluster_available = False
 
-    def __generate_folder(self, addon='Merging') -> None:
+    def __generate_folder(self, addon: str='Merging') -> None:
         """Generating the folder temporary saving"""
         self.__name_temp_folder = addon
         self.path2folder = join(self.__path2save, addon)
@@ -40,7 +40,7 @@ class MergeDatasets:
             if exists(self.path2folder):
                 rmtree(self.path2folder)
 
-    def __erase_folder(self, do_erase=True) -> None:
+    def __erase_folder(self, do_erase: bool=True) -> None:
         """Erasing the folder temporary saving"""
         if do_erase:
             rmtree(self.path2folder)
@@ -62,7 +62,7 @@ class MergeDatasets:
             np.save(file_name, self.__data_single)
             print(f'Saving file in: {file_name}')
 
-    def __output_meta(self, take_merged=True) -> None:
+    def __output_meta(self, take_merged: bool=True) -> None:
         """Generating print output with meta information"""
         data0 = self.__data_single if not take_merged else self.__data_merged
 
@@ -75,7 +75,7 @@ class MergeDatasets:
         print(f"... available frames: {meta_infos_frames[0]} samples with each size of {meta_infos_frames[1]}"
               f'\n... available classes: {meta_infos_id[0]} with {meta_infos_id[1]} samples')
 
-    def get_frames_from_dataset(self, data_loader, cluster_class_avai=False, process_points=None) -> None:
+    def get_frames_from_dataset(self, data_loader, cluster_class_avai: bool=False, process_points: list=()) -> None:
         """Tool for loading datasets in order to generate one new dataset (Step 1)
         Args:
             data_loader:        Function with DataLoader
@@ -88,7 +88,7 @@ class MergeDatasets:
         fs_adc = self.__pipeline.fs_adc
 
         # --- Setting the points
-        do_reduced_sample = isinstance(process_points, list)
+        do_reduced_sample = len(process_points) > 0
         if do_reduced_sample and len(process_points) > 0:
             runPoint = process_points[0]
             if len(process_points) == 2:

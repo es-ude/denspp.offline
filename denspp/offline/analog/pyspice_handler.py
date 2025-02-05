@@ -149,8 +149,10 @@ class PySpiceHandler:
     _is_input_voltage: bool
     __results: dict
 
-    def __init__(self, temperature=300.0, input_voltage=True) -> None:
-        """Rewritten API for using PySPICE in simulation (Git Tutorial: https://github.com/benedictjones/engineeringthings-pyspice, YouTube: https://www.youtube.com/watch?v=62BOYx1UCfs&list=PL97KTNA1aBe1QXCcVIbZZ76B2f0Sx2Snh)
+    def __init__(self, temperature: float=300.0, input_voltage: bool=True) -> None:
+        """Rewritten API for using PySPICE in simulation
+        (Git Tutorial: https://github.com/benedictjones/engineeringthings-pyspice,
+        YouTube: https://www.youtube.com/watch?v=62BOYx1UCfs&list=PL97KTNA1aBe1QXCcVIbZZ76B2f0Sx2Snh)
         Args:
             temperature:    Given temperature for simulation in [K] [Default: 300.0 K]
             input_voltage:  Defining if input is a voltage (True) or current (False)
@@ -198,7 +200,7 @@ class PySpiceHandler:
 
     ############################################################################
 
-    def do_dc_simulation(self, value: float, do_print_results=True, initial_value=0.0) -> dict:
+    def do_dc_simulation(self, value: float, do_print_results: bool=True, initial_value: float=0.0) -> dict:
         """Performing the DC or Operating Point Simulation
         Args:
             value:              Specified value of the input voltage or current source
@@ -239,7 +241,7 @@ class PySpiceHandler:
 
     ############################################################################
 
-    def do_dc_sweep_simulation(self, start_dc: float, stop_dc: float, step_dc: float, initial_value=0.0) -> dict:
+    def do_dc_sweep_simulation(self, start_dc: float, stop_dc: float, step_dc: float, initial_value: float=0.0) -> dict:
         """Performing the DC or Operating Point Simulation
         Args:
             start_dc:   Starting point of DC Sweep
@@ -273,7 +275,7 @@ class PySpiceHandler:
     ############################################################################
 
     def do_ac_simulation(self, start_freq: float, stop_freq: float, num_points: int,
-                         amplitude=1.0, initial_value=0.0) -> dict:
+                         amplitude: float=1.0, initial_value: float=0.0) -> dict:
         """Performing the DC or Operating Point Simulation
         Args:
             start_freq:     Frequency value for starting point
@@ -306,7 +308,7 @@ class PySpiceHandler:
 
     def do_transient_pulse_simulation(self, neg_value: float, pos_value: float,
                                       pulse_width: float, pulse_period: float,
-                                      t_sim: float, f_samp: float, initial_value=0.0) -> dict:
+                                      t_sim: float, f_samp: float, initial_value: float=0.0) -> dict:
         """Performing the Transient Simulation with Pulse Signal
         Args:
             neg_value:      Pos. peak value of the pulse signal [V or A]
@@ -345,7 +347,7 @@ class PySpiceHandler:
     ############################################################################
 
     def do_transient_sinusoidal_simulation(self, amp: float, freq: float, t_sim: float, f_samp: float,
-                                           t_dly=0.0, offset=0.0, initial_value=0.0) -> dict:
+                                           t_dly: float=0.0, offset: float=0.0, initial_value: float=0.0) -> dict:
         """Performing the Transient Simulation with Sinusoidal Signal
         Args:
             amp:            Amplitude of sinusoidal waveform [V or A]
@@ -384,7 +386,7 @@ class PySpiceHandler:
     ############################################################################
 
     def do_transient_arbitrary_simulation(self, signal: np.ndarray, t_end: float, f_samp: float,
-                                          initial_value=0.0, trans_value=1.0) -> dict:
+                                          initial_value: float=0.0, trans_value: float=1.0) -> dict:
         """Performing the Transient Simulation with Arbitrary Signal Waveform
         Args:
             signal:         Numpy array with transient custom-made signal
@@ -426,7 +428,7 @@ class PySpiceHandler:
 
     ############################################################################
 
-    def create_dummy_signal(self, t_sim: float, f_samp: float, offset=0.0) -> [np.ndarray, np.ndarray]:
+    def create_dummy_signal(self, t_sim: float, f_samp: float, offset: float=0.0) -> [np.ndarray, np.ndarray]:
         """Creating a dummy function for transient simulation
         Args:
             t_sim:  Simulation time [s]
@@ -488,7 +490,7 @@ class PySpiceHandler:
 
     ############################################################################
 
-    def plot_iv_curve(self, do_log=False, path2save='', show_plot=False) -> None:
+    def plot_iv_curve(self, do_log: bool=False, path2save: str='', show_plot: bool=False) -> None:
         """Plotting the I-V relationship/curve of investigated circuit (taking v_in and i_in)
         Args:
             do_log:         Do a logarithmic plotting on y-axis
@@ -521,7 +523,7 @@ class PySpiceHandler:
         if show_plot:
             plt.show(block=True)
 
-    def plot_bodeplot(self, mode=0, path2save='', show_plot=False) -> None:
+    def plot_bodeplot(self, mode: int=0, path2save: str='', show_plot: str=False) -> None:
         """Plotting the Bode Diagram (mode == 0) or Impedance Plot (mode == 1) of investigated circuit
         Args:
             mode:           Mode selection (0 = Bode diagram, 1 = Impedance plot)
@@ -557,7 +559,7 @@ class PySpiceHandler:
         if show_plot:
             plt.show(block=True)
 
-    def plot_transient(self, path2save='', show_plot=False) -> None:
+    def plot_transient(self, path2save: str='', show_plot: bool=False) -> None:
         """Plotting the results of Transient Simulation of investigated circuit
         Args:
             path2save:  Optional string for plotting [Default: '' for non-plotting]
@@ -603,42 +605,3 @@ class PySpiceHandler:
             save_figure(plt, path2save, 'pyspice_transient_result', ['svg'])
         if show_plot:
             plt.show(block=True)
-
-
-if __name__ == "__main__":
-    # --- Settings
-    run_mode = [0, 1, 2, 3, 4, 5]
-    do_voltage = True
-    fs = 100e3
-    t_sim = 20e-3
-
-    models = PySpiceModels()
-    circuit = models.voltage_divider(c_load=10e-9)
-    # circuit = models.simple_randles_model()
-    # circuit = models.diode_1n4148()
-
-    # --- Definition of Sim mode
-    pyspice = PySpiceHandler(input_voltage=do_voltage)
-    pyspice.get_ngspice_version()
-    for mode in run_mode:
-        pyspice.load_circuit_model(circuit)
-        if mode == 0:
-            pyspice.do_dc_simulation(1.0)
-        elif mode == 1:
-            pyspice.do_dc_sweep_simulation(-12.0, 4.0, 1e-3)
-            pyspice.plot_iv_curve(do_log=False)
-            pyspice.plot_iv_curve(do_log=True)
-        elif mode == 2:
-            pyspice.do_ac_simulation(1e0, 1e5, 101)
-            pyspice.plot_bodeplot()
-        elif mode == 3:
-            pyspice.do_transient_pulse_simulation(0.0, 1.8, 1e-3, 5e-3, t_sim, fs)
-            pyspice.plot_transient()
-        elif mode == 4:
-            pyspice.do_transient_sinusoidal_simulation(1.0, 0.25e3, t_sim, fs)
-            pyspice.plot_transient()
-        elif mode == 5:
-            signal0 = pyspice.create_dummy_signal(t_sim, fs)[1]
-            pyspice.do_transient_arbitrary_simulation(signal0, t_sim, fs)
-            pyspice.plot_transient(show_plot=True)
-        pyspice.print_spice_circuit()
