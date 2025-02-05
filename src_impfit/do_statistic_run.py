@@ -53,7 +53,7 @@ def _print_results(mdata: dict) -> None:
 
 
 def _plot_results_sweep_1d_fs(mdict: dict, name: str, used_metric: list,
-                              path2save='', show_plot=True) -> None:
+                              path2save: str='', show_plot: bool=True) -> None:
     """Preparing plotting with results from 1D-sweep (only frequency)"""
     fsamp = np.array(mdict['fs'], dtype=float)
     plot_boxplot_params(fsamp, 'fs', mdict['Rtis'], mdict['Zw'], mdict['Cdl'], mdict['Rct'], name,
@@ -64,7 +64,7 @@ def _plot_results_sweep_1d_fs(mdict: dict, name: str, used_metric: list,
 
 
 def _plot_results_sweep_1d_lsb(mdict: dict, name: str, used_metric: list,
-                               path2save='', show_plot=True) -> None:
+                               path2save: str='', show_plot: bool=True) -> None:
     """Preparing plotting with results from 1D-sweep (only voltage of lsb)"""
     lsb = np.array(mdict['lsb'], dtype=float)
     plot_boxplot_params(lsb, 'LSB', mdict['Rtis'], mdict['Zw'], mdict['Cdl'], mdict['Rct'], name,
@@ -75,7 +75,7 @@ def _plot_results_sweep_1d_lsb(mdict: dict, name: str, used_metric: list,
 
 
 def _plot_results_sweep_2d(mdict: dict, name: str, used_metric: list, mdict_eis=(),
-                           path2save='', show_plot=False) -> None:
+                           path2save: str='', show_plot: bool=False) -> None:
     """Preparing plotting with results from 2D-sweep"""
     fsamp = np.array(mdict['fs'], dtype=int)
     lsb = np.array(mdict['lsb'], dtype=float)
@@ -85,9 +85,9 @@ def _plot_results_sweep_2d(mdict: dict, name: str, used_metric: list, mdict_eis=
         plot_heatmap_2d_metric(fsamp, lsb, mdict[key], key, name, path2save, mdict_eis, show_plot=do_plot)
 
 
-def extract_sweep_results(path2file: str, name='results', path2save='',
-                          used_metric=('MAPE', 'Rtis'), eis_params=None,
-                          show_plot=False) -> None:
+def extract_sweep_results(path2file: str, name: str='results', path2save: str='',
+                          used_metric: list=('MAPE', 'Rtis'), eis_params=None,
+                          show_plot: bool=False) -> None:
     """Extracting the results from sweep analysis
     (investigation on hardware resources: sampling rate and smallest voltage resolution)
     Args:

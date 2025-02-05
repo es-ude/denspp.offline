@@ -111,7 +111,8 @@ class Pipeline(PipelineCMD):
 
     def do_plotting(self, data: PipelineSignal, channel: int) -> None:
         """Function to plot results"""
-        import offline.pipeline.plot_pipeline as plt_neuro
+        import denspp.offline.pipeline.plot_pipeline as plt_neuro
+        import denspp.offline.nsp.plot_nsp as plt_nsp
 
         path2save = self.path2save
         # --- Spike Sorting output
@@ -122,10 +123,8 @@ class Pipeline(PipelineCMD):
         plt_neuro.plot_pipeline_results(data, channel, path=path2save)
 
         # --- NSP block
-        offline.nsp.plot_nsp.plot_nsp_ivt(data, channel, path=path2save)
-        offline.nsp.plot_nsp.plot_firing_rate(data, channel, path=path2save)
-        # plt_neuro.results_correlogram(data, channel, path=path2save)
-        # plt_neuro.results_cluster_amplitude(data, channel, path=path2save)
+        plt_nsp.plot_nsp_ivt(data, channel, path=path2save)
+        plt_nsp.plot_firing_rate(data, channel, path=path2save)
 
     def run(self, uinp: np.ndarray) -> None:
         self.signals.u_in = uinp
