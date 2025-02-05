@@ -21,7 +21,7 @@ def do_quantize_transient(transient_orig: dict, fs_new: float, u_lsb: float, i_g
 
 
 def do_resample_time(signal_in: np.ndarray, fs_orig: float, fs_new: float,
-                     do_offset_comp=False) -> np.ndarray:
+                     do_offset_comp: bool=False) -> np.ndarray:
     """Do resampling of time value from transient signals
     Args:
         signal_in:      Numpy array of transient input signal

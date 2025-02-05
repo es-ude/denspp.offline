@@ -34,7 +34,7 @@ class PyTorchHandler:
     _metric_methods: dict
 
     def __init__(self, config_train: ConfigPytorch, config_dataset: ConfigDataset,
-                 do_train=True, do_print=True) -> None:
+                 do_train: bool=True, do_print: bool=True) -> None:
         """Class for Handling Training of Deep Neural Networks in PyTorch
         Args:
             config_train:   Configuration settings for the PyTorch Training
@@ -69,7 +69,7 @@ class PyTorchHandler:
         self._path2temp = str()
         self._path2config = str()
 
-    def __check_start_folder(self, new_folder='runs'):
+    def __check_start_folder(self, new_folder: str='runs'):
         """Checking for starting folder to generate"""
         self._path2run = get_path_project_start(new_folder)
         makedirs(self._path2run, exist_ok=True)
@@ -103,7 +103,7 @@ class PyTorchHandler:
         if self._do_print_state:
             print(f"\nUsing PyTorch with {device0} on {self.os_type}")
 
-    def _init_train(self, path2save='', addon='') -> None:
+    def _init_train(self, path2save: str='', addon: str='') -> None:
         """Do init of class for training"""
         if not path2save:
             folder_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{self._index_folder}_{self.model.__class__.__name__}'
@@ -160,7 +160,7 @@ class PyTorchHandler:
         else:
             return {}
 
-    def load_data(self, data_set, num_workers=0) -> None:
+    def load_data(self, data_set, num_workers: int=0) -> None:
         """Loading data for training and validation in DataLoader format into class
         Args:
             data_set:       DataLoader of used dataset
@@ -225,7 +225,7 @@ class PyTorchHandler:
         self.train_loader = out_train
         self.valid_loader = out_valid
 
-    def load_model(self, model, learn_rate=0.1, print_model=True) -> None:
+    def load_model(self, model, learn_rate: float=0.1, print_model: bool=True) -> None:
         """Loading optimizer, loss_fn into class
         Args:
             model:          PyTorch Neural Network for Training / Inference
@@ -265,7 +265,7 @@ class PyTorchHandler:
         """Getting the path to the best trained model"""
         return glob(join(self._path2save, f'*{type_model}*.pt'))
 
-    def _end_training_routine(self, timestamp_start: datetime, do_delete_temps=True) -> None:
+    def _end_training_routine(self, timestamp_start: datetime, do_delete_temps: bool=True) -> None:
         """Doing the last step of training routine"""
         timestamp_end = datetime.now()
         timestamp_string = timestamp_end.strftime('%H:%M:%S')
@@ -287,7 +287,7 @@ class PyTorchHandler:
             for folder in folder_logs:
                 rmtree(folder, ignore_errors=True)
 
-    def __get_data_points(self, only_getting_labels=False, use_train_dataloader=False) -> dict:
+    def __get_data_points(self, only_getting_labels: bool=False, use_train_dataloader: bool=False) -> dict:
         """Getting data from DataLoader for Plotting Results
         Args:
             only_getting_labels:    Option for taking only labels
@@ -324,7 +324,7 @@ class PyTorchHandler:
         return mdict
 
     def _getting_data_for_plotting(self, valid_input: np.ndarray, valid_label: np.ndarray,
-                                   results=None, addon='cl') -> dict:
+                                   results=None, addon: str='cl') -> dict:
         """Getting the raw data for plotting results"""
         # --- Producing and Saving the output
         if results is None:

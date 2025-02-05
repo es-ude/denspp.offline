@@ -10,7 +10,8 @@ from denspp.offline.metric.snr import calculate_snr_tensor_waveform, calculate_d
 
 
 class TrainAutoencoder(PyTorchHandler):
-    def __init__(self, config_train: ConfigPytorch, config_data: ConfigDataset, do_train=True, do_print=True) -> None:
+    def __init__(self, config_train: ConfigPytorch, config_data: ConfigDataset,
+                 do_train: bool=True, do_print: bool=True) -> None:
         """Class for Handling Training of Autoencoders
         Args:
             config_data:            Settings for handling and loading the dataset (just for saving)

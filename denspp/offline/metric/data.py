@@ -3,7 +3,7 @@ from sklearn.metrics import precision_recall_fscore_support
 from torch import Tensor, sum, eq
 
 
-def calculate_error_mbe(y_pred: np.ndarray | float, y_true: np.ndarray | float, do_print=False) -> float:
+def calculate_error_mbe(y_pred: np.ndarray | float, y_true: np.ndarray | float, do_print: bool=False) -> float:
     """Calculating the distance-based metric with mean bias error
     Args:
         y_pred:     Numpy array or float value from prediction
@@ -21,7 +21,7 @@ def calculate_error_mbe(y_pred: np.ndarray | float, y_true: np.ndarray | float, 
     return error
 
 
-def calculate_error_mae(y_pred: np.ndarray | float, y_true: np.ndarray | float, do_print=False) -> float:
+def calculate_error_mae(y_pred: np.ndarray | float, y_true: np.ndarray | float, do_print: bool=False) -> float:
     """Calculating the distance-based metric with mean absolute error
     Args:
         y_pred:     Numpy array or float value from prediction
@@ -39,7 +39,7 @@ def calculate_error_mae(y_pred: np.ndarray | float, y_true: np.ndarray | float, 
     return error
 
 
-def calculate_error_mse(y_pred: np.ndarray | float, y_true: np.ndarray | float, do_print=False) -> float:
+def calculate_error_mse(y_pred: np.ndarray | float, y_true: np.ndarray | float, do_print: bool=False) -> float:
     """Calculating the distance-based metric with mean squared error
     Args:
         y_pred:     Numpy array or float value from prediction
@@ -57,7 +57,7 @@ def calculate_error_mse(y_pred: np.ndarray | float, y_true: np.ndarray | float, 
     return error
 
 
-def calculate_error_mpe(y_pred: np.ndarray | float, y_true: np.ndarray | float, do_print=False) -> float:
+def calculate_error_mpe(y_pred: np.ndarray | float, y_true: np.ndarray | float, do_print: bool=False) -> float:
     """Calculating the distance-based metric with mean percentage error
     Args:
         y_pred:     Numpy array or float value from prediction
@@ -75,7 +75,7 @@ def calculate_error_mpe(y_pred: np.ndarray | float, y_true: np.ndarray | float, 
     return error
 
 
-def calculate_error_mape(y_pred: np.ndarray | float, y_true: np.ndarray | float, do_print=False) -> float:
+def calculate_error_mape(y_pred: np.ndarray | float, y_true: np.ndarray | float, do_print: bool=False) -> float:
     """Calculating the distance-based metric with mean absolute percentage error
     Args:
         y_pred:     Numpy array or float value from prediction
@@ -93,7 +93,7 @@ def calculate_error_mape(y_pred: np.ndarray | float, y_true: np.ndarray | float,
     return error
 
 
-def calculate_error_rae(y_pred: np.ndarray | float, y_true: np.ndarray | float, do_print=False) -> float:
+def calculate_error_rae(y_pred: np.ndarray | float, y_true: np.ndarray | float, do_print: bool=False) -> float:
     """Calculating the distance-based metric with relative absolute error
     Args:
         y_pred:     Numpy array or float value from prediction
@@ -112,7 +112,7 @@ def calculate_error_rae(y_pred: np.ndarray | float, y_true: np.ndarray | float, 
     return error
 
 
-def calculate_error_rse(y_pred: np.ndarray | float, y_true: np.ndarray | float, do_print=False) -> float:
+def calculate_error_rse(y_pred: np.ndarray | float, y_true: np.ndarray | float, do_print: bool=False) -> float:
     """Calculating the distance-based metric with relative squared error
     Args:
         y_pred:     Numpy array or float value from prediction
@@ -132,7 +132,7 @@ def calculate_error_rse(y_pred: np.ndarray | float, y_true: np.ndarray | float, 
     return error
 
 
-def calculate_error_rmse(y_pred: np.ndarray, y_true: np.ndarray, do_print=False) -> float:
+def calculate_error_rmse(y_pred: np.ndarray, y_true: np.ndarray, do_print: bool=False) -> float:
     """Calculating the Root Mean Squared Error
     Args:
         y_pred:     Numpy array or float value from prediction
@@ -147,7 +147,7 @@ def calculate_error_rmse(y_pred: np.ndarray, y_true: np.ndarray, do_print=False)
     return error
 
 
-def calculate_error_rrmse(y_pred: np.ndarray, y_true: np.ndarray, do_print=False) -> float:
+def calculate_error_rrmse(y_pred: np.ndarray, y_true: np.ndarray, do_print: bool=False) -> float:
     """Calculating the Relative Root Mean Squared Error
     Args:
         y_pred:     Numpy array or float value from prediction
@@ -164,7 +164,7 @@ def calculate_error_rrmse(y_pred: np.ndarray, y_true: np.ndarray, do_print=False
     return error
 
 
-def calculate_error_rmsre(y_pred: np.ndarray, y_true: np.ndarray, do_print=False) -> float:
+def calculate_error_rmsre(y_pred: np.ndarray, y_true: np.ndarray, do_print: bool=False) -> float:
     """Calculating the Root Mean Squared Relative ErrorArgs:
         y_pred:     Numpy array or float value from prediction
         y_true:     Numpy array or float value from true label
@@ -212,7 +212,7 @@ def calculate_recall(pred: Tensor, true: Tensor) -> Tensor:
     return precision_recall_fscore_support(true, pred, average="micro", warn_for=tuple())[1]
 
 
-def calculate_fbeta(pred: Tensor, true: Tensor, beta=1.0) -> Tensor:
+def calculate_fbeta(pred: Tensor, true: Tensor, beta: float=1.0) -> Tensor:
     """Function for determining the precision metric
     Args:
         pred:   Tensor with predicted values from model

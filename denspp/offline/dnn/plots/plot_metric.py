@@ -15,7 +15,8 @@ def _get_median(parameter: list) -> float:
     return float(np.median(param))
 
 
-def plot_loss(loss_train: list, loss_valid: list, type: str, path2save='', epoch_zoom=None, show_plot=False) -> None:
+def plot_loss(loss_train: list, loss_valid: list, type: str, path2save: str='',
+              epoch_zoom=None, show_plot: bool=False) -> None:
     """Plotting the loss of any DNN-based learning method
     Args:
         loss_train:     List with loss values from training
@@ -79,13 +80,13 @@ def plot_loss(loss_train: list, loss_valid: list, type: str, path2save='', epoch
 
 def plot_confusion(true_labels: list | np.ndarray,
                    pred_labels: list | np.ndarray,
-                   plotting="class",
-                   show_accuracy=False,
+                   plotting: str="class",
+                   show_accuracy: bool=False,
                    cl_dict=None,
-                   path2save="", name_addon="",
-                   timestamps_result=(),
-                   timestamps_f1=(), timestamps_accuracy=(),
-                   show_plots=False) -> None:
+                   path2save: str="", name_addon: str="",
+                   timestamps_result: list=(),
+                   timestamps_f1: list=(), timestamps_accuracy: list=(),
+                   show_plots: bool=False) -> None:
     """This function is designed to generate and display confusion matrices for classification results and
     timestamp-based comparisons. The function takes various parameters, including true and predicted labels, as well as additional information such as timestamps and plotting preferences. The confusion matrix for classification is
     displayed using the ConfusionMatrixDisplay class from scikit-learn. It also calculates and prints precision, recall,
@@ -174,8 +175,8 @@ def plot_confusion(true_labels: list | np.ndarray,
         plt.show(block=True)
 
 
-def prep_confusion(true_labels: list, pred_labels: list, mode="training", plots="class", show_accuracy=False,
-                   cl_dict=None, path2save="", window=2) -> None:
+def prep_confusion(true_labels: list, pred_labels: list, mode: str="training", plots: str="class",
+                   show_accuracy: bool=False, cl_dict=None, path2save: str="", window: int=2) -> None:
     """This function serves as a wrapper for the _plot_confusion function, primarily focused on preparing and organizing
      the inputs for the visualization of confusion matrices. It supports two modes: "pipeline" and other modes.
      In "pipeline" mode, it computes true positive (TP), false positive (FP), false negative (FN), F1-score, and
@@ -203,8 +204,8 @@ def prep_confusion(true_labels: list, pred_labels: list, mode="training", plots=
         plot_confusion(true_labels, pred_labels, None, None, None, "class", False, cl_dict, path2save)
 
 
-def plot_statistic_data(train_cl: np.ndarray | list, valid_cl=None, path2save='',
-                        cl_dict=None, show_plot=False) -> None:
+def plot_statistic_data(train_cl: np.ndarray | list, valid_cl=None, path2save: str='',
+                        cl_dict=None, show_plot: bool=False) -> None:
     """Plotting the statistics of used dataset during training
     :param train_cl:    Numpy array of all classification labels from training dataset
     :param valid_cl:    Numpy array of all classification labels from validation dataset (optional)

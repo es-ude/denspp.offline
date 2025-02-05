@@ -53,7 +53,7 @@ class Comp(CommonAnalogFunctions):
     def vcm(self) -> float:
         return (self.settings.vdd + self.settings.vss) / 2
 
-    def __gen_noise(self, input: int, scale=0.1) -> np.ndarray:
+    def __gen_noise(self, input: int, scale: float=0.1) -> np.ndarray:
         """Generate the input noise"""
         return np.random.normal(self.settings.offset, scale, input) if self.settings.noise else self.settings.offset * np.ones(input)
 
@@ -129,7 +129,7 @@ class Comp(CommonAnalogFunctions):
             u_out = self.__dig_output(u_out)
         return u_out
 
-    def cmp_single_pos_hysteresis(self, uinp: np.ndarray, uinn: np.ndarray, scale_thr=0.25) -> np.ndarray:
+    def cmp_single_pos_hysteresis(self, uinp: np.ndarray, uinn: np.ndarray, scale_thr: float=0.25) -> np.ndarray:
         """Performs a single-side hysteresis comparator with input signal
         Args:
             uinp: Positive input voltage [V]
@@ -146,7 +146,7 @@ class Comp(CommonAnalogFunctions):
             u_out = self.__dig_output(u_out)
         return u_out
 
-    def cmp_single_neg_hysteresis(self, uinp: np.ndarray, uinn: np.ndarray, scale_thr=0.25) -> np.ndarray:
+    def cmp_single_neg_hysteresis(self, uinp: np.ndarray, uinn: np.ndarray, scale_thr: float=0.25) -> np.ndarray:
         """Performs a single-side hysteresis comparator with input signal
         Args:
             uinp: Positive input voltage [V]
@@ -163,7 +163,7 @@ class Comp(CommonAnalogFunctions):
             u_out = self.__dig_output(u_out)
         return u_out
 
-    def cmp_double_hysteresis(self, uinp: np.ndarray, uinn: np.ndarray, scale_thr=0.25) -> np.ndarray:
+    def cmp_double_hysteresis(self, uinp: np.ndarray, uinn: np.ndarray, scale_thr: float=0.25) -> np.ndarray:
         """Performs a double-side hysteresis comparator with input signal
         Args:
             uinp: Positive input voltage [V]

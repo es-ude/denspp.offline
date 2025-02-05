@@ -7,7 +7,7 @@ from denspp.offline.analog.dev_noise import SettingsNoise, RecommendedSettingsNo
 
 class DatasetWFG(Dataset):
     def __init__(self, fs: float, waveforms: np.ndarray, classes: np.ndarray,
-                 cl_names: list, do_autoencoder=False) -> None:
+                 cl_names: list, do_autoencoder: bool=False) -> None:
         """Dataset for defining different waveforms for training"""
         self.sampling_rate = fs
         self.__signals = waveforms
@@ -26,7 +26,8 @@ class DatasetWFG(Dataset):
 
 
 def generate_dataset(selected_wfg: list, num_wfg_class: int, freq_wfg: float, sampling_rate: float, scale_amp:float=1.0,
-                     adding_noise: bool=False, pwr_noise_db:float=-30.0, get_info_classes:bool=False, do_normalize_rms:bool=False,
+                     adding_noise: bool=False, pwr_noise_db: float=-30.0,
+                     get_info_classes: bool=False, do_normalize_rms:bool=False,
                      settings_noise: SettingsNoise=RecommendedSettingsNoise) -> DatasetWFG:
     """Generating dataset with waveforms
     Args:

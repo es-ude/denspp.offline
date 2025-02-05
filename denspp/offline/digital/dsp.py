@@ -81,7 +81,7 @@ class DSP:
         uout = np.concatenate((mat, uin[0:uin.size - set_delay]), axis=None)
         return uout
 
-    def time_delay_iir_fir_order(self, uin: np.ndarray, f_b=1.0, do_plot=False) -> np.ndarray:
+    def time_delay_iir_fir_order(self, uin: np.ndarray, f_b: float=1.0, do_plot: bool=False) -> np.ndarray:
         """Performing a 1st order all-pass filter (IIR) for adding time delay"""
         val = np.tan(np.pi * f_b / self.settings.fs)
         iir_c0 = (val - 1) / (val + 1)
@@ -94,7 +94,8 @@ class DSP:
 
         return scft.lfilter(b, a, uin)
 
-    def time_delay_iir_sec_order(self, uin: np.ndarray, f_b=1.0, bandwidth=0.5, do_plot=False) -> np.ndarray:
+    def time_delay_iir_sec_order(self, uin: np.ndarray, f_b: float=1.0, bandwidth: float=0.5,
+                                 do_plot: bool=False) -> np.ndarray:
         """Performing a 2nd order all-pass filter (IIR) for adding time delay"""
         val = np.tan(np.pi * bandwidth / self.settings.fs)
         iir_c0 = (val - 1) / (val + 1)
@@ -108,7 +109,7 @@ class DSP:
 
         return scft.lfilter(b, a, uin)
 
-    def coeff_print(self, bit_size: int, bit_frac: int, signed=True) -> None:
+    def coeff_print(self, bit_size: int, bit_frac: int, signed: bool=True) -> None:
         """Printing the coefficients with given bit fraction for adding into hardware designs"""
         print("\nAusgabe der Filterkoeffizienten:")
         if self.coeff_a:
@@ -123,7 +124,7 @@ class DSP:
                 error = coeff - float(quant)
                 print(f".. Coeff_B{id}: {float(quant):.8f} = {quant.hex()} (Delta = {error:.6f})")
 
-    def coeff_verilog(self, bit_size: int, bit_frac: int, signed=True) -> None:
+    def coeff_verilog(self, bit_size: int, bit_frac: int, signed: bool=True) -> None:
         """Printing the coefficients with given bit fraction for adding into FPGA designs"""
         print(f"\n//--- Used filter coefficients for {self.settings.b_type, self.settings.f_type} with {np.array(self.settings.f_filt) / 1000:.3f} kHz @ {self.settings.fs / 1000:.3f} kHz")
         if not self.type1 == 'fir':
@@ -139,7 +140,7 @@ class DSP:
             quant = Fxp(coeff, signed=signed, n_word=bit_size, n_frac=bit_frac)
             print(f"assign coeff_b[{id}] = {bit_size}'b{quant.bin(False)}; //coeff_b[{id}] = {float(quant):.6f} = {quant.hex()}")
 
-    def plot_freq_response(self, b: list, a: list, num_points=1001) -> None:
+    def plot_freq_response(self, b: list, a: list, num_points: int=1001) -> None:
         ws = 2 * np.pi * self.settings.fs
         if not len(a) == 0:
             w, h = scft.freqz(b, a, worN=num_points, fs=ws, include_nyquist=True)
@@ -163,7 +164,7 @@ class DSP:
         plt.ylabel(r'Phase $\alpha$ (°)', color='g')
         plt.tight_layout()
 
-    def plot_grp_delay(self, b: list, a: list, num_points=1001) -> None:
+    def plot_grp_delay(self, b: list, a: list, num_points: int=1001) -> None:
         """ Plotting the Group Delay of filter """
         ws = 2 * np.pi * self.settings.fs
         if not len(a) == 0:
@@ -182,7 +183,7 @@ class DSP:
         plt.grid()
         plt.tight_layout()
 
-    def do_hw_normalization(self, input: np.ndarray, full_range=False) -> np.ndarray:
+    def do_hw_normalization(self, input: np.ndarray, full_range: bool=False) -> np.ndarray:
         """Normalization of the input to binary shifting, range [+1, -1]"""
         frame_out = np.zeros(shape=input.shape, dtype='float')
         offset = 0.5 if full_range else 0

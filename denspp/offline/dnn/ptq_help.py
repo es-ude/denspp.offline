@@ -38,6 +38,7 @@ def quantize_data_fxp(data: Tensor | np.ndarray, total_bits: int, frac_bits: int
     return quantize(data_used, total_bits=total_bits, frac_bits=frac_bits)
 
 
+# TODO: Do test?
 if __name__ == "__main__":
     settings_test = DefaultSettingsTrainMSE
     settings_test.model_name = 'CompareDNN_Autoencoder_v1_Torch'

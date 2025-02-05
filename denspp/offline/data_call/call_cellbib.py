@@ -20,6 +20,7 @@ def logic_combination(true_labels: np.ndarray, pred_labels: np.ndarray, translat
             pred_labels_new[pos] = idx
     return true_labels_new, pred_labels_new
 
+
 @dataclass
 class CellMergeClass:
     cell_type_to_id: dict

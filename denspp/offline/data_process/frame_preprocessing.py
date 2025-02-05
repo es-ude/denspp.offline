@@ -15,7 +15,7 @@ def change_frame_size(frames_in: np.ndarray, sel_pos: list) -> np.ndarray:
     return frames_in if len(sel_pos) != 2 else frames_in[:, sel_pos[0]:sel_pos[1]]
 
 
-def generate_frames(num: int, frame_in: np.ndarray, cluster_in: int, snr_out: list, fs=20e3) -> [np.ndarray, np.ndarray]:
+def generate_frames(num: int, frame_in: np.ndarray, cluster_in: int, snr_out: list, fs: float=20e3) -> [np.ndarray, np.ndarray]:
     """Generating noisy spike frames"""
     new_cluster = cluster_in * np.ones(shape=(num,), dtype=int)
     _, new_frame = frame_noise(num, frame_in, snr_out, fs)
@@ -31,7 +31,7 @@ def generate_zero_frames(frame_size: int, num_frames: int, noise_range: list) ->
 
 
 def calculate_frame_mean(frames_in: np.ndarray, frames_cl: np.ndarray,
-                         do_integer_output=False) -> np.ndarray:
+                         do_integer_output: bool=False) -> np.ndarray:
     """Calculating mean waveforms of spike waveforms"""
     id_cluster, num_cluster = np.unique(frames_cl, return_counts=True)
     size_cluster = np.size(id_cluster)
@@ -46,7 +46,7 @@ def calculate_frame_mean(frames_in: np.ndarray, frames_cl: np.ndarray,
 
 
 def calculate_frame_median(frames_in: np.ndarray, frames_cl: np.ndarray,
-                           do_integer_output=False) -> np.ndarray:
+                           do_integer_output: bool=False) -> np.ndarray:
     """Calculating mean waveforms of spike waveforms with median()"""
     id_cluster, num_cluster = np.unique(frames_cl, return_counts=True)
     size_cluster = np.size(id_cluster)
@@ -64,7 +64,11 @@ def calculate_frame_snr(
         frames_in: np.ndarray,
         frames_cl: np.ndarray,
         frames_mean: np.ndarray) -> np.ndarray:
-    """Calculating SNR of each cluster"""""
+    """Calculating SNR of each cluster
+    :param frames_in:   Numpy array with spike frames
+    :param frames_cl:   Numpy array with cluster label to each spike frame
+    :param frames_mean: Numpy array with mean waveforms of cluster
+    """
     id_cluster, num_cluster = np.unique(frames_cl, return_counts=True)
 
     cluster_snr = np.zeros(shape=(num_cluster.size, 4), dtype=float)

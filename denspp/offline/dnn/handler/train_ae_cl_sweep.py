@@ -22,7 +22,6 @@ def do_train_ae_cl_sweep(settings: ConfigMLPipeline,
         feat_layer_start:   Increasing value for feature layer
         feat_layer_inc:     Increasing value for feature layer
         feat_layer_stop:    Increasing value for feature layer
-        add_noise_cluster:  Adding noise cluster to dataset [Default: False]
         num_epochs_trial:   Number of epochs of each run
         yaml_name_index:    Index of yaml file name
     Return:

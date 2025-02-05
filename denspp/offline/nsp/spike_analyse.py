@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def calc_spiketicks(frames_in: list, do_short=True, out_transient_size=0) -> np.ndarray:
+def calc_spiketicks(frames_in: list, do_short: bool=True, out_transient_size: int=0) -> np.ndarray:
     """Determining spike ticks with cluster results"""
     frames_pos = frames_in[1]
     cluster_id = frames_in[2]

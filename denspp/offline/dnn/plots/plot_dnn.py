@@ -28,7 +28,7 @@ def translate_feats_into_list(feats: np.ndarray, label: np.ndarray, num_samples:
 def results_training(path: str,
                      yin: np.ndarray, ypred: np.ndarray, ymean: np.ndarray,
                      feat: np.ndarray, yclus: np.ndarray, snr: list,
-                     cl_dict=None, xframes=50, num_feat=3, show_plot=False) -> None:
+                     cl_dict=None, xframes: int=50, num_feat: int=3, show_plot: bool=False) -> None:
     """Plotting results from Autoencoder Training for Neural Spike Sorting
     Args:
         path:       Path for saving the results of plots
@@ -81,7 +81,7 @@ def results_training(path: str,
                       show_plot=show_plot)
 
 
-def plot_autoencoder_snr(snr: list, path2save='', do_boxplot=False, show_plot=False) -> None:
+def plot_autoencoder_snr(snr: list, path2save: str='', do_boxplot: bool=False, show_plot: bool=False) -> None:
     """Plotting the Signal-to-Noise Ratio (SNR) over the epochs"""
     # --- Processing
     snr_processed = list()
@@ -122,8 +122,8 @@ def plot_autoencoder_snr(snr: list, path2save='', do_boxplot=False, show_plot=Fa
             plt.show(block=True)
 
 
-def plot_3d_featspace(labels: np.ndarray, mark_feat: list, idx: [0, 1, 2], data_classname=None,
-                      path2save='', show_plot=False, show_ticks=False) -> None:
+def plot_3d_featspace(labels: np.ndarray, mark_feat: list, idx: list=(0, 1, 2), data_classname=None,
+                      path2save: str='', show_plot: bool=False, show_ticks: bool=False) -> None:
     """Plotting the feature space of the autoencoder
     :param labels:          Numpy array with labels of the dataset
     :param mark_feat:       Numpy array with extracted mark features of the dataset
@@ -166,7 +166,7 @@ def plot_3d_featspace(labels: np.ndarray, mark_feat: list, idx: [0, 1, 2], data_
 def plot_autoencoder_run(mark_feat: list, mark_idx: list,
                          frames_in: np.ndarray, frames_out: np.ndarray, frames_mean: np.ndarray,
                          cluster_no: np.ndarray, take_frames: list,
-                         data_classname=None, data_labeled=False, path2save='', show_plot=False) -> None:
+                         data_classname=None, data_labeled: bool=False, path2save: str='', show_plot: bool=False) -> None:
     """Plotting the autoencoder in-/output for an inference"""
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
     plt.rcParams.update({'font.size': 10})

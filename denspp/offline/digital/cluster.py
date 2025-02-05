@@ -44,7 +44,7 @@ class Clustering:
         self.__method_bib.update({'DBSCAN': [self.__dbscan_init, self.__dbscan_predict]})
         self.__method_bib.update({'kNN': [self.__knn_init, self.__knn_predict]})
 
-    def methods_available(self, do_lower=False) -> list:
+    def methods_available(self, do_lower: bool=False) -> list:
         """Getting the list already methods"""
         dict_keys = self.__method_bib.keys()
         list_keys = [key if not do_lower else key.lower() for key in dict_keys]
@@ -96,7 +96,7 @@ class Clustering:
         else:
             return self._cluster
 
-    def save_model_to_file(self, filename: str, path='') -> None:
+    def save_model_to_file(self, filename: str, path: str='') -> None:
         """Saving model to an external *.joblib file"""
         model2save = self.get_cluster_model()
         path2save = join(path, filename.split('.')[0]) + '.joblib'
@@ -118,7 +118,7 @@ class Clustering:
         return StandardScaler().fit_transform(X), labels_true
 
     def sort_pred2label_data(self, pred_label: np.ndarray, true_label: np.ndarray, features: np.ndarray,
-                             take_num_samples=-1) -> np.ndarray:
+                             take_num_samples: int=-1) -> np.ndarray:
         """Sorting predicted labels with true labels for getting the right-/similiar ID representation
         Args:
             pred_label:         Array with predicted labels

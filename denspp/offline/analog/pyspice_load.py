@@ -143,8 +143,8 @@ class PySpiceLoad(PySpiceHandler):
             print("Error: Model not available - Please check!")
         return vout
 
-    def plot_fit_curve(self, start_value=-5.0, stop_value=+5.0, step_size=0.1, do_logy=False,
-                       path2save='', show_plot=False) -> None:
+    def plot_fit_curve(self, start_value: float=-5.0, stop_value: float=+5.0, step_size: float=0.1,
+                       do_logy: bool=False, path2save: str='', show_plot: bool=False) -> None:
         """Plotting the output of the polynom fit function
         Args:
             start_value:    Starting point of DC Sweep
@@ -235,4 +235,3 @@ class PySpiceLoad(PySpiceHandler):
         circuit0.C('dl', 'middle', 'output', params[2])
         circuit0.V('cm', 'output', circuit0.gnd, 0.0)
         return circuit0
-

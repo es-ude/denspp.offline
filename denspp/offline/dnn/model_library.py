@@ -46,7 +46,7 @@ class ModelRegistry:
             string_out += f"\n\t#{idx:02d}: {key}"
         return string_out
 
-    def check_model_available(self, model_name: str, do_print=False) -> bool:
+    def check_model_available(self, model_name: str, do_print: bool=False) -> bool:
         """Function for checking if model name is in Library available (and print where to find)"""
         model_chck = True if model_name in self.__models_avai.keys() else False
         if do_print:
@@ -77,6 +77,14 @@ class ModelRegistry:
 class ModelLibrary:
     """Class for searching for used ModelRegistry in offline for getting an overview of all models"""
     def get_registry(self, packages: tuple[str, ...] = ("denspp.offline.dnn.models", "src_dnn.models")) -> ModelRegistry:
+        m = ModelRegistry()
+        m.register_packages(packages)
+        return m
+
+
+class CellLibrary:
+    """Class for searching for used ModelRegistry in offline for getting an overview of all models"""
+    def get_registry(self, packages: tuple[str, ...] = ("denspp.offline.dnn.cell_bib", "src_dnn.cell_bib")) -> ModelRegistry:
         m = ModelRegistry()
         m.register_packages(packages)
         return m

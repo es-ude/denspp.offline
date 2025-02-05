@@ -6,7 +6,7 @@ from denspp.offline.plot_helper import cm_to_inch, save_figure, get_plot_color, 
 
 
 def plot_pipeline_afe(signals: PipelineSignal, no_electrode: int, path:str='',
-                      time_cut: list=(), show_plot=False) -> None:
+                      time_cut: list=(), show_plot: bool=False) -> None:
     """Plotting the pipeline results of the front-end device
     :param signals:         the pipeline signals (class PipelineSignal)
     :param no_electrode:    the number of electrodes to plot
@@ -77,8 +77,9 @@ def plot_pipeline_afe(signals: PipelineSignal, no_electrode: int, path:str='',
         plt.show(block=True)
 
 
-def plot_transient_highlight_spikes(signals: PipelineSignal, no_electrode: int, path="", time_cut=(),
-                                    show_noise=False, show_plot=False) -> None:
+def plot_transient_highlight_spikes(signals: PipelineSignal, no_electrode: int,
+                                    path: str="", time_cut: list=(),
+                                    show_noise: bool=False, show_plot: bool=False) -> None:
     """Plotting the detected spike activity from transient data (highlighted, noise in gray)
     :param signals:         class containing the rawdata and processed data from class PipelineSignal
     :param no_electrode:    number of electrodes
@@ -158,7 +159,7 @@ def plot_transient_highlight_spikes(signals: PipelineSignal, no_electrode: int, 
 
 
 def plot_pipeline_frame_sorted(signals: PipelineSignal, no_electrode: int,
-                               path="", show_plot=False) -> None:
+                               path: str="", show_plot: bool=False) -> None:
     """Plotting the detected spike frame activity of used transient dataset
     :param signals:         class containing the rawdata and processed data from class PipelineSignal
     :param no_electrode:    number of electrodes
@@ -207,7 +208,8 @@ def plot_pipeline_frame_sorted(signals: PipelineSignal, no_electrode: int,
         plt.show(block=True)
 
 
-def plot_pipeline_results(signals: PipelineSignal, no_electrode: int, path="", time_cut=(), show_plot=False) -> None:
+def plot_pipeline_results(signals: PipelineSignal, no_electrode: int,
+                          path: str="", time_cut: list=(), show_plot: bool=False) -> None:
     """Plotting results of end-to-end spike sorting for paper
     :param signals:         class containing the rawdata and processed data from class PipelineSignal
     :param no_electrode:    number of electrodes
@@ -300,7 +302,7 @@ def plot_pipeline_results(signals: PipelineSignal, no_electrode: int, path="", t
         plt.show(block=True)
 
 
-def plot_signals_neural_cluster(dataset, path2save='', show_plot=False) -> None:
+def plot_signals_neural_cluster(dataset, path2save: str='', show_plot: bool=False) -> None:
     """Plotting the mean waveforms of each cluster directly from dataset
     :param dataset:     Training Dataset containing rawdata (spike activity)
     :param path2save:   path to save the figure

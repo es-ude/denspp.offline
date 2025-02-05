@@ -317,7 +317,7 @@ class SortDataset:
 
         return data_pos, data_frames, data_means, data_metric, unique_cluster, data_number
 
-    def split_frames(self, idx, data_raw_frames, data_raw_pos):
+    def split_frames(self, idx: int, data_raw_frames, data_raw_pos):
         """Splitting frames into frames to be processed and to be dismissed"""
         do_run = True
         YCheckIn = data_raw_frames[idx]

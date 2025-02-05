@@ -9,7 +9,7 @@ from denspp.offline.dnn.pytorch.autoencoder import TrainAutoencoder
 
 def do_train_classifier(config_ml: ConfigMLPipeline, config_data: ConfigDataset,
                         config_train: ConfigPytorch, used_dataset, used_model,
-                        path2save='', calc_custom_metrics=(), print_results=True) -> [dict, dict, str]:
+                        path2save: str='', calc_custom_metrics: list=(), print_results: bool=True) -> [dict, dict, str]:
     """Template for training DL classifiers using PyTorch (incl. plotting)
     Args:
         config_ml:          Settings for handling the ML Pipeline
@@ -54,8 +54,8 @@ def do_train_classifier(config_ml: ConfigMLPipeline, config_data: ConfigDataset,
 
 def do_train_autoencoder(config_ml: ConfigMLPipeline, config_data: ConfigDataset,
                          config_train: ConfigPytorch, used_dataset, used_model,
-                         path2save='', calc_custom_metrics=(), save_vhdl=False, path4vhdl='', print_results=True,
-                         ptq_validation_do: bool=False, ptq_quant_lvl: list = [12, 8]) -> [dict, dict, str]:
+                         path2save: str='', calc_custom_metrics: list=(), print_results: bool=True,
+                         ptq_validation_do: bool=False, ptq_quant_lvl: list = (12, 8)) -> [dict, dict, str]:
     """Template for training DL classifiers using PyTorch (incl. plotting)
     Args:
         config_ml:              Settings for handling the ML Pipeline

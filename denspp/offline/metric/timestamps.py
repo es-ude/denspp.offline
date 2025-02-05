@@ -1,4 +1,4 @@
-def compare_timestamps(true_labels: list, pred_labels: list, window=2) -> [float, float, list, list]:
+def compare_timestamps(true_labels: list, pred_labels: list, window: int=2) -> [float, float, list, list]:
     """ This function compares the timestamps of the predicted classes and the true classes and returns TP, FP, FN and
     new arrays which only contain the classes that have matched timestamps in both arrays. The function should be used
     before plotting a confusion matrix of the classes when working with actual data from the pipeline.

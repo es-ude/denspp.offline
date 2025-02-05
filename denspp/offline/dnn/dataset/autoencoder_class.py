@@ -52,8 +52,8 @@ class DatasetAE_Class(Dataset):
 
 
 def prepare_training(settings: ConfigDataset, path2model: str,
-                     add_noise_cluster=False, use_median_for_mean=True,
-                     print_state=True) -> DatasetAE_Class:
+                     add_noise_cluster: bool=False, use_median_for_mean: bool=True,
+                     print_state: bool=True) -> DatasetAE_Class:
     """Preparing dataset incl. augmentation for spike-frame based training
     Args:
         settings:               Class for loading the data and do pre-processing

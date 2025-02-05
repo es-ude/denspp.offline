@@ -1,11 +1,11 @@
-import dataclasses
+from dataclasses import dataclass
 import numpy as np
 from scipy.signal import lfilter
 from denspp.offline.analog.common_func import CommonAnalogFunctions
 from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, RecommendedSettingsNoise
 
 
-@dataclasses.dataclass
+@dataclass
 class SettingsDLY:
     """Individual data class to configure the delay amplifier
 

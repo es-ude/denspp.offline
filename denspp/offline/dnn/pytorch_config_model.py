@@ -21,7 +21,7 @@ class ConfigPytorch:
     data_do_shuffle: bool
 
     @staticmethod
-    def get_model_overview(print_overview=False, index='') -> None:
+    def get_model_overview(print_overview: bool=False, index: str='') -> None:
         """Function for getting an overview of existing models inside library"""
         models_bib = ModelLibrary().get_registry()
         models_bib.get_model_library_overview(index, do_print=print_overview)
@@ -41,7 +41,7 @@ class ConfigPytorch:
                 raise NotImplementedError("Loss function unknown! - Please implement or check!")
         return loss_func
 
-    def load_optimizer(self, model, learn_rate=0.1) -> Any:
+    def load_optimizer(self, model, learn_rate: float=0.1) -> Any:
         """Loading the optimizer function"""
         match self.optimizer:
             case 'Adam':

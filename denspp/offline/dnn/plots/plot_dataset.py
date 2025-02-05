@@ -4,7 +4,7 @@ from denspp.offline.plot_helper import cm_to_inch
 from denspp.offline.metric import calculate_snr
 
 
-def plot_frames_dataset(data: dict, take_samples=500, do_norm: bool=False,
+def plot_frames_dataset(data: dict, take_samples: int=500, do_norm: bool=False,
                         plot_norm: bool=False, plot_show: bool=False, add_subtitle: bool=False) -> None:
     """Plotting the frames for different classes into one figure
     Args:

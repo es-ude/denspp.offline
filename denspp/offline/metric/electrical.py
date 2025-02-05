@@ -3,7 +3,7 @@ from scipy.signal import find_peaks, correlate
 
 
 def calculate_total_harmonics_distortion(freq: np.ndarray, spectral: np.ndarray,
-                                         fsine: float, N_harmonics=4) -> [float, np.ndarray]:
+                                         fsine: float, N_harmonics: int=4) -> [float, np.ndarray]:
     """Calculating the Total Harmonics Distortion (THD) of spectral input
     Args:
         freq:           Array with frequency values for spectral analysis
@@ -29,7 +29,7 @@ def calculate_total_harmonics_distortion(freq: np.ndarray, spectral: np.ndarray,
     return total_harmonics, search_x[xpos]
 
 
-def calculate_cosine_similarity(y_pred: np.ndarray, y_true: np.ndarray, do_print=False) -> float:
+def calculate_cosine_similarity(y_pred: np.ndarray, y_true: np.ndarray, do_print: bool=False) -> float:
     """Calculating the Cosine Similarity of two different inputs (same size)
     Args:
         y_pred:     Numpy array or float value from prediction
