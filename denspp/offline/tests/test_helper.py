@@ -3,7 +3,7 @@ import torch
 from unittest import TestCase, main
 
 
-def generate_test_data(num_samples: int=100, num_window_size: int=32, do_tensor=False) -> np.ndarray | torch.Tensor:
+def generate_test_data(num_samples: int=100, num_window_size: int=32, do_tensor: bool=False) -> np.ndarray | torch.Tensor:
     """Test function for generating test data
     :param num_samples:         Number of samples to generate
     :param num_window_size:     Number of window size
