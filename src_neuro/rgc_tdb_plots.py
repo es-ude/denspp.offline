@@ -13,7 +13,7 @@ from denspp.offline.data_merge.pipeline_data import Pipeline
 
 
 def plot_rgc_transient_signals(rawdata: list, frames: list, spike_xpos: list, cell_name: list,
-                               fs: float, path2save='', show_plots=False) -> None:
+                               fs: float, path2save: str='', show_plots: bool=False) -> None:
     """Plotting an example of transient signals and spike frames from the RGC TDB
     Args:
         rawdata:    List with transient rawdata from ADC conversion

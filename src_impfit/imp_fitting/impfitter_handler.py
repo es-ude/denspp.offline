@@ -98,8 +98,9 @@ def find_stimulation_waveform_position(signals: dict, split_on_voltage: bool=Fal
     return run_dict_positions
 
 
-def splitting_stimulation_waveforms_into_single_trials(signals_input: dict, split_on_voltage: bool=False, do_offset_comp: bool=False) -> dict:
-    """
+def splitting_stimulation_waveforms_into_single_trials(signals_input: dict,
+                                                       split_on_voltage: bool=False, do_offset_comp: bool=False) -> dict:
+    """Function for splitting transient signal with several waveforms into single trials
     Args:
         signals_input:      Dictionary with stimulation signals ['V': voltage, 'I': current]
         split_on_voltage:   Boolean for making single stimulation trails on voltage [True] or current [False]
@@ -170,7 +171,7 @@ class ImpFitHandler:
     _index_impedance_result = '_impedance.csv'
     _index_params_result = '_params.csv'
 
-    def __init__(self, path2start='', generate_folders=True):
+    def __init__(self, path2start: str='', generate_folders: bool=True):
         """Class of Impedance Fitter from transient electrical stimulation signals
         More documentation on: https://impedancefitter.readthedocs.io/en/latest/index.html
         Args:

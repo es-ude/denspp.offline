@@ -102,7 +102,7 @@ def extract_csv_metric(files: list, imp_mea: dict) -> dict:
     return metric_dict
 
 
-def extract_csv_param(files_fit: list, path2save='', do_plot=False, do_print=False) -> dict:
+def extract_csv_param(files_fit: list, path2save: str='', do_plot: bool=False, do_print: bool=False) -> dict:
     """Extracting the electrical target values from csv impfitter runs"""
     # --- Reading parameters
     c_dl = np.zeros((len(files_fit),), dtype=float)
