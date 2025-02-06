@@ -221,19 +221,21 @@ class ElectricalLoadHandler:
         if not i_path.size == 1:
             self._poly_fit = np.polyfit(x=u_path, y=i_path, deg=self._fit_options[0])
 
+            u_poly = np.linspace(self._bounds_volt[0], self._bounds_volt[1], self._fit_options[1], endpoint=True)
+            i_poly = self._type_device[self._settings.type](u_poly, 0.0)
+
             # --- Calculating the metric
-            if do_test:
-                u_poly = np.linspace(self._bounds_volt[0], self._bounds_volt[1], self._fit_options[1], endpoint=True)
-                i_poly = self._type_device[self._settings.type](u_poly, 0.0)
+            if do_test and self._settings.type != 'R':
                 i_test = self._do_regression(u_poly, 0.0, params_dev, self._bounds_curr)
                 error = _calc_error(i_poly, i_test)
-                if do_plot:
-                    self._plot_fit_curve(
-                        u_poly, i_poly, i_test, metric=['1e3 * RAE', 1e3 * error],
-                        title_prefix=plot_title_prefix, path2save=path2save
-                    )
             else:
+                i_test = np.zeros_like(u_poly)
                 error = -1.0
+
+            self._plot_fit_curve(
+                u_poly, i_poly, i_test, metric=['1e3 * RAE', 1e3 * error],
+                title_prefix=plot_title_prefix, path2save=path2save, show_plot=do_plot
+            )
         else:
             error = -1.0
 
@@ -258,17 +260,19 @@ class ElectricalLoadHandler:
         axs = list()
         axs.append(plt.subplot(2, 1, 1))
         axs.append(plt.subplot(2, 1, 2, sharex=axs[0]))
-        axs[0].semilogy(u_poly, 1e6 * abs(i_reg), 'k', marker='.', markersize=2, label='Regression')
         axs[0].semilogy(u_poly, 1e6 * abs(i_poly), 'r', marker='.', markersize=2, label='Poly. fit')
         axs[0].grid()
         axs[0].set_ylabel(r'Current $\log_{10}(I_F)$ / µA')
 
-        axs[1].plot(u_poly, 1e6 * i_reg, 'k', marker='.', markersize=2, label='Regression')
         axs[1].plot(u_poly, 1e6 * i_poly, 'r', marker='.', markersize=2, label='Poly. fit')
         axs[1].grid()
         axs[1].set_ylabel(r'Current $I_F$ / µA')
         axs[1].set_xlabel(r'Voltage $\Delta U$ / V')
-        axs[1].legend()
+
+        if not np.array_equal(i_reg, np.zeros_like(i_reg)):
+            axs[0].semilogy(u_poly, 1e6 * abs(i_reg), 'k', marker='.', markersize=2, label='Regression')
+            axs[1].plot(u_poly, 1e6 * i_reg, 'k', marker='.', markersize=2, label='Regression')
+            axs[1].legend()
 
         # --- Add figure title
         if not len(metric) == 0:
@@ -329,7 +333,6 @@ class ElectricalLoadHandler:
         if len(self._params_used) == 1 and self._params_used[0] == 1.0:
             self.get_current(0.0, 0.0)
 
-        # TODO: Separation between R and Diode staff necessary
         if not find_best_order:
             self._get_params_polyfit(
                 params_dev=self._params_used,
@@ -388,7 +391,8 @@ class ElectricalLoadHandler:
         else:
             iout = np.zeros(u_top.shape, dtype=float)
 
-        if self._settings.type in self._type_device.keys():
+        method = [method for method in self._type_device.keys() if method == self._settings.type]
+        if len(method):
             iout = self._type_device[self._settings.type](u_top, u_bot)
         else:
             raise Exception("Error: Model not available - Please check!")
@@ -417,61 +421,64 @@ class ElectricalLoadHandler:
         Returns:
             Corresponding voltage response
         """
-        u_response = np.zeros(i_in.shape) + start_value
-        idx = 0
-        for i0 in i_in:
-            u_bottom = u_inn if isinstance(u_inn, float) else u_inn[idx]
-            derror = []
-            error = []
-            error_sign = []
+        if self._settings.type == 'R':
+            return i_in * self._params_used[0]
+        else:
+            u_response = np.zeros(i_in.shape) + start_value
+            idx = 0
+            for i0 in i_in:
+                u_bottom = u_inn if isinstance(u_inn, float) else u_inn[idx]
+                derror = []
+                error = []
+                error_sign = []
 
-            # First Step Test (Direction)
-            initial_value = start_value if idx == 0 and not take_last_value else u_response[idx-1]
-            test_value = list()
-            test_value.append(initial_value - start_step * (float(np.random.random(1) + 0.5)))
-            test_value.append(initial_value - 0.5 * start_step * (float(np.random.random(1) - 0.5)))
-            test_value.append(initial_value + 0.5 * start_step * (float(np.random.random(1) - 0.5)))
-            test_value.append(initial_value + start_step * (float(np.random.random(1) + 0.5)))
+                # First Step Test (Direction)
+                initial_value = start_value if idx == 0 and not take_last_value else u_response[idx-1]
+                test_value = list()
+                test_value.append(initial_value - start_step * (float(np.random.random(1) + 0.5)))
+                test_value.append(initial_value - 0.5 * start_step * (float(np.random.random(1) - 0.5)))
+                test_value.append(initial_value + 0.5 * start_step * (float(np.random.random(1) - 0.5)))
+                test_value.append(initial_value + start_step * (float(np.random.random(1) + 0.5)))
 
-            error0 = list()
-            for u_top in test_value:
-                i1 = self.get_current(u_top, u_bottom)
-                error0.append(calculate_error_mse(i1, i0))
+                error0 = list()
+                for u_top in test_value:
+                    i1 = self.get_current(u_top, u_bottom)
+                    error0.append(calculate_error_mse(i1, i0))
 
-            error0 = np.array(error0)
-            error0_sign = np.sign(np.diff(error0))
-            direction = np.sign(np.sum(error0_sign))
-            del error0, error0_sign
+                error0 = np.array(error0)
+                error0_sign = np.sign(np.diff(error0))
+                direction = np.sign(np.sum(error0_sign))
+                del error0, error0_sign
 
-            # --- Iteration
-            u_top = start_value if idx == 0 and not take_last_value else u_response[idx-1]
-            step_size = start_step
-            step_ite = 0
-            do_calc = True
-            while do_calc:
-                i1 = self.get_current(u_top, u_bottom)
+                # --- Iteration
+                u_top = start_value if idx == 0 and not take_last_value else u_response[idx-1]
+                step_size = start_step
+                step_ite = 0
+                do_calc = True
+                while do_calc:
+                    i1 = self.get_current(u_top, u_bottom)
 
-                # Error Logging
-                error.append(calculate_error_mse(i1, i0))
-                if len(error) > 1:
-                    derror.append(error[-1] - error[-2])
-                    error_sign.append(np.sign(derror[-1]) == -1.0)
+                    # Error Logging
+                    error.append(calculate_error_mse(i1, i0))
+                    if len(error) > 1:
+                        derror.append(error[-1] - error[-2])
+                        error_sign.append(np.sign(derror[-1]) == -1.0)
 
-                # Final Decision (with hyperparameter)
-                if np.abs(error[-1]) >= 1e-24 and step_ite < 8:
-                    u_top -= direction * step_size
-                    do_calc = True
-                else:
-                    do_calc = False
+                    # Final Decision (with hyperparameter)
+                    if np.abs(error[-1]) >= 1e-24 and step_ite < 8:
+                        u_top -= direction * step_size
+                        do_calc = True
+                    else:
+                        do_calc = False
 
-                # Logarithmic Updating Mechanism
-                if len(error) > 1:
-                    if not error_sign[-1]:
-                        u_top += 3 * direction * step_size
-                        step_size = 0.1 * step_size
-                        step_ite += 1
-                        direction = -direction
-            # --- Update
-            u_response[idx] = u_top
-            idx += 1
-        return u_response
+                    # Logarithmic Updating Mechanism
+                    if len(error) > 1:
+                        if not error_sign[-1]:
+                            u_top += 3 * direction * step_size
+                            step_size = 0.1 * step_size
+                            step_ite += 1
+                            direction = -direction
+                # --- Update
+                u_response[idx] = u_top
+                idx += 1
+            return u_response
