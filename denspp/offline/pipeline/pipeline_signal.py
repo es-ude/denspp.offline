@@ -1,4 +1,3 @@
-# TODO: Reduzieren aufs nötigste
 class PipelineSignal:
     def __init__(self) -> None:
         """Pipeline signals for saving 1d signal processing
