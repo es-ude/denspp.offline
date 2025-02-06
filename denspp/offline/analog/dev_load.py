@@ -56,7 +56,7 @@ class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
 
     def __init_dev(self) -> dict:
         """Initialization of functions to get devices"""
-        dev_type = {'R': self._resistor, 'C': self._capacitor}
+        dev_type = {'R': self._resistor}
         dev_type.update({'Ds': self._diode_single, 'Dd': self._diode_antiparallel})
         dev_type.update({'DSs': self._diode_single, 'DSd': self._diode_antiparallel})
         dev_type.update({'RDs': self._resistive_schottky_single, 'RDd': self._resistive_schottky_antiparallel})
@@ -65,7 +65,7 @@ class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
     @staticmethod
     def __init_dev_string() -> dict:
         """Initialization of functions to get devices"""
-        dev_type = {'R': 'Resistor', 'C': 'Capacitor', 'L': 'Inductor'}
+        dev_type = {'R': 'Resistor'}
         dev_type.update({'Ds': 'pn-Diode (single)', 'Dd': 'pn-Diode (anti-parallel)'})
         dev_type.update({'DSs': 'Schottky diode (single)', 'DSd': 'Schottky diode (anti-parallel)'})
         dev_type.update({'RDs': 'Resistive schottky diode (single)', 'RDd': 'Resistive schottky diode (anti-parallel)'})
@@ -92,7 +92,7 @@ class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
     def __init_params(self) -> dict:
         """Initialization of Device Parameters"""
         params_dict = {}
-        params_dict.update({'R': [self._settings.dev_value], 'C': [self._settings.dev_value], 'L': [self._settings.dev_value]})
+        params_dict.update({'R': [self._settings.dev_value]})
         params_dict.update({'Ds': [1e-12, 1.4, 0.7], 'Dd': [1e-12, 1.4, 0.7]})
         params_dict.update({'DSs': [1e-12, 1.4, 0.2], 'DSd': [1e-12, 1.4, 0.2]})
         params_dict.update({'RDs': [1e-12, 2.8, 0.1, self._settings.dev_value]})
@@ -113,23 +113,6 @@ class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
         i_out = du / self._params_used[0]
         if self._settings.noise_en:
             i_out += self.gen_noise_awgn_curr(du.size, self._params_used[0])
-        return i_out
-
-    def _capacitor(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
-        """Performing the behaviour of an electrical capacitor
-        Args:
-            u_inp:   Positive input voltage [V]
-            u_inn:   Negative input voltage [V]
-        Returns:
-            Corresponding current signal
-        """
-        self._params_used = self._type_params[self._settings.type]
-
-        du = u_inp - u_inn
-        i_out = np.zeros(du.shape)
-        i_out[1:] = self._params_used[0] * np.diff(du) * self._settings.fs_ana
-        if self._settings.noise_en:
-            i_out += self.gen_noise_awgn_pwr(du.size)
         return i_out
 
     def _func2equa_diode(self, params: list, u_inp: np.ndarray, u_inn: np.ndarray) -> np.ndarray:
@@ -191,7 +174,7 @@ class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
         return xd - v1 - v3
 
     @staticmethod
-    def _func2curve_resistive_diode(i_path: np.ndarray, a: float, b: float, c: float, d: float) -> np.ndarray:
+    def _func2curve_resistive_diode(i_path: np.ndarray, a, b, c, d) -> np.ndarray:
         """Function for performing curve fitting for resistive diode behaviour"""
         return a + b * i_path + c * np.log(d * i_path + 1)
 
@@ -222,8 +205,13 @@ class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
             # Curve fitting
             if self._curve_fit.size == 1:
                 self._get_params_curve_fit(self._params_used, mode_fit=0)
-            i_fit = self._func2curve_resistive_diode(du, self._curve_fit[0], self._curve_fit[1],
-                                                     self._curve_fit[2], self._curve_fit[3])
+            i_fit = self._func2curve_resistive_diode(
+                i_path=du,
+                a=self._curve_fit[0],
+                b=self._curve_fit[1],
+                c=self._curve_fit[2],
+                d=self._curve_fit[3]
+            )
         else:
             # Regression
             i_fit = self._do_regression(u_inp, u_inn, self._bounds_volt, self._bounds_curr)
