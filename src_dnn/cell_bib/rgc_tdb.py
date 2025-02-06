@@ -1,7 +1,7 @@
 from denspp.offline.data_call.call_cellbib import CellMergeClass
 
 
-RetinalGanglionCellTDB = CellMergeClass(
+class resort_rgc_tdb(CellMergeClass):
     cell_type_to_id = {
         "ON-OFF DS - dorsal": 0,
         "ON-OFF DS - temporal": 1,
@@ -56,20 +56,22 @@ RetinalGanglionCellTDB = CellMergeClass(
         "Motion sensor": 49,
         "ON DS transient": 50,
         "unknown": 51,
-    },
+    }
     # Abgeglichen mit Functional classes of rgctypes.org
     cell_class_to_id = {
         "OFF sustained": [10, 11, 12, 13, 14, 15],
         "OFF transient": [17, 18, 19, 20],
         "ON sustained": [27, 28, 29, 30, 48],
         "ON transient": [38, 39, 40]
-    },
+    }
     cell_class_to_type = {
         "Transient": [17, 18, 19, 20, 38, 39, 40],
         "Sustained": [10, 11, 12, 13, 14, 15, 27, 28, 29, 30, 48]
-    },
+    }
     cell_class_to_group = {
         "ON": [27, 28, 29, 30, 48, 38, 39, 40],
         "OFF": [10, 11, 12, 13, 14, 15, 17, 18, 19, 20]
     }
-)
+
+    def __init__(self):
+        pass

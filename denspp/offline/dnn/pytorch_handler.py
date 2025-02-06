@@ -249,7 +249,7 @@ class PyTorchHandler:
             print("\n\n")
 
     def _save_train_results(self, last_metric_train: float | np.ndarray,
-                            last_metric_valid: float | np.ndarray, loss_type='Loss') -> None:
+                            last_metric_valid: float | np.ndarray, loss_type: str='Loss') -> None:
         """Writing some training metrics into txt-file"""
         if self.config_available:
             with open(self._path2config, 'a') as txt_handler:

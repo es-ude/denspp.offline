@@ -89,7 +89,7 @@ def prepare_training(settings: ConfigDataset, do_classification: bool=True) -> D
     print(f"... used data points for training: "
           f"in total {check[0].size} classes with {np.sum(check[1])} samples")
     for idx, id in enumerate(check[0]):
-        addon = f'' if not isinstance(data_dict, list) else f' ({data_dict[id]})'
+        addon = f'' if not isinstance(data_dict, list) else f' ({data_dict[idx]})'
         print(f"\tclass {id}{addon} --> {check[1][idx]} samples")
 
     return DatasetMNIST(data_raw, data_label, data_dict, do_classification)
