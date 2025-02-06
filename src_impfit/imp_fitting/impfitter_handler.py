@@ -239,12 +239,14 @@ class ImpFitHandler:
         df = pd.DataFrame(data)
         df.to_csv(path2file, index=False)
 
-    def fit_impedance_to_model(self, file_name: str, do_print_report: bool=False, save_results: bool=True) -> dict:
+    def fit_impedance_to_model(self, file_name: str, do_print_report: bool=False, save_results: bool=True,
+                               parameters_to_fix: list=()) -> dict:
         """Fitting extracted impedance fit values to model for getting model parameter
         Args:
             file_name:          File name of the impedance file
             do_print_report:    Printing the fit results into terminal
             save_results:       Saving the fit results into csv file
+            parameters_to_fix:  Parameters that are kept constant
         Returns:
             Dictionary with fitted parameters to corresponding model
         """
@@ -259,7 +261,67 @@ class ImpFitHandler:
 
         fitter = ifit.Fitter("CSV", fileList=file_list, directory=folder_src, LogLevel='WARNING')
         if not len(self._params_default) == 0:
-            fitter.run(self.fit_model, parameters=self._params_default, weighting="modulus", report=do_print_report)
+            fitter.run(
+                self.fit_model,
+                parameters=self._params_default,
+                weighting="modulus",
+                report=do_print_report,
+            )
+            current_params = deepcopy(self._params_default)
+            fix_ct_R = False
+            fix_dl_cap = False
+            if not hasattr(fitter.fittedValues, "uvars"):
+                if "ct_R" not in parameters_to_fix:
+                    if "ct_R" in current_params:
+                        fix_ct_R = True
+                else:
+                    if "dl_C" not in parameters_to_fix:
+                        if "dl_C" in current_params:
+                            fix_dl_cap = True
+                if fix_ct_R:
+                    current_params["ct_R"]["vary"] = False
+                    print("Fixing charge transfer resistance, trying to fit again")
+                if fix_dl_cap:
+                    current_params["dl_C"]["vary"] = False
+                    print("Fixing double layer capacitance, trying to fit again")
+                fitter.run(
+                    self.fit_model,
+                    parameters=current_params,
+                    weighting="modulus",
+                    report=do_print_report,
+                )
+                if not hasattr(fitter.fittedValues, "uvars") and not fix_dl_cap:
+                    if "dl_C" in current_params:
+                        current_params["dl_C"]["vary"] = False
+                        print("Fixing double layer capacitance, trying to fit again")
+                        fitter.run(
+                            self.fit_model,
+                            parameters=current_params,
+                            weighting="modulus",
+                            report=do_print_report,
+                        )
+            # if fit error is large, fix value
+            large_error = False
+            fixed_params = 0
+            for param in fitter.fittedValues.params:
+                param_vals = fitter.fittedValues.params[param]
+                if param_vals.stderr / param_vals.value > 1e3:
+                    print(
+                        f"Parameter {param} has large fitting error, fixing and refitting"
+                    )
+                    current_params[param]["vary"] = False
+                    large_error = True
+                if "vary" in current_params[param]:
+                    if current_params[param]["vary"] is False:
+                        fixed_params += 1
+            # only run if all parameters are free
+            if large_error and len(current_params) != fixed_params:
+                fitter.run(
+                    self.fit_model,
+                    parameters=current_params,
+                    weighting="modulus",
+                    report=do_print_report,
+                )
         else:
             fitter.run(self.fit_model, weighting="modulus", report=do_print_report)
         model_params = fitter.fit_data[f'{file_list[0]}_0']
