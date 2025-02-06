@@ -13,13 +13,24 @@ from denspp.offline.digital.fex import FeatureExtraction, SettingsFeature
 from denspp.offline.digital.cluster import Clustering, SettingsCluster
 
 
-class _SettingsPipe:
-    """Settings class for setting-up the pipeline"""
-    def __init__(self, fs: float):
+class SettingsPipe:
+    def __init__(self, fs: float, vss: float=-0.6, vdd: float=0.6) -> None:
+        """Settings class for setting-up the pipeline
+        :param fs:      Sampling frequency [Hz]
+        :param vss:     Negative Supply Voltage [V]
+        :param vdd:     Positive Supply Voltage [V]
+        """
         self.SettingsAMP.fs_ana = fs
         self.SettingsADC.fs_ana = fs
+        self.__overwrite_power_supply(vss, vdd)
 
-    # TODO: Supply voltage anpassen mit externem überschreiben
+    def __overwrite_power_supply(self, vss: float, vdd: float) -> None:
+        a = [method for method in dir(self) if 'Settings' in method and '__' not in method]
+        for setting in a:
+            set0 = getattr(self, setting)
+            set0.vss = vss
+            set0.vdd = vdd
+
     SettingsAMP = SettingsAMP(
         vss=-0.6, vdd=0.6,
         fs_ana=0.0,
@@ -83,7 +94,7 @@ class Pipeline(PipelineCMD):
         self._path2pipe = abspath(__file__)
         self.generate_folder('runs', '_neuro')
 
-        settings = _SettingsPipe(fs_ana)
+        settings = SettingsPipe(fs_ana)
         self.signals = PipelineSignal()
         self.signals.fs_ana = settings.SettingsADC.fs_ana
         self.signals.fs_adc = settings.SettingsADC.fs_adc
