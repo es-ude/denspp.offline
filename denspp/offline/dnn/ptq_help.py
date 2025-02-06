@@ -1,10 +1,7 @@
 import numpy as np
-from torch import nn, Tensor, abs, sum
+from torch import nn, Tensor
 from copy import deepcopy
 from elasticai.creator.nn.fixed_point.quantization import quantize
-
-from denspp.offline.dnn.pytorch_config_model import DefaultSettingsTrainMSE
-from denspp.offline.dnn.pytorch_config_data import DefaultSettingsDataset
 
 
 def quantize_model_fxp(model: nn.Sequential, total_bits: int, frac_bits: int) -> nn.Module:
@@ -36,27 +33,3 @@ def quantize_data_fxp(data: Tensor | np.ndarray, total_bits: int, frac_bits: int
     """
     data_used = data if isinstance(data, Tensor) else Tensor(data)
     return quantize(data_used, total_bits=total_bits, frac_bits=frac_bits)
-
-
-# TODO: Do test?
-if __name__ == "__main__":
-    settings_test = DefaultSettingsTrainMSE
-    settings_test.model_name = 'CompareDNN_Autoencoder_v1_Torch'
-    model_test = settings_test.get_model()
-    model_test.eval()
-
-    settings_data = DefaultSettingsDataset
-    settings_data.data_file_name = 'quiroga'
-    settings_data.normalization_do = True
-    dataset = settings_data.load_dataset()
-
-    model_qunt = quantize_model_fxp(model_test,12, 10)
-    model_qunt.eval()
-
-    data_input = Tensor(dataset['data'])
-    dout_test = model_test(data_input)
-    dout_qunt = model_qunt(data_input)
-
-    dmae = sum(abs(dout_test - dout_qunt)).detach().numpy() / len(data_input)
-    mae_loss = sum(abs(data_input - dout_qunt[1])).detach().numpy() / len(data_input)
-    print(mae_loss, dmae)
