@@ -122,34 +122,22 @@ def frame_noise(no_frames: int, frame_in: np.ndarray, noise_pwr: list, fs: float
         frames_noise[idx, :] = np.round(noise)
     return frames_noise, frames_out
 
-#TODO: Include CellFormat
-def reconfigure_cluster_with_cell_lib(path: str, sel_mode_classes: int,
-                                      frames_in: np.ndarray, frames_cl: np.ndarray) -> [np.ndarray, np.ndarray, dict]:
-    """Function for reducing the samples for a given cell bib"""
-    check_class = ['fzj', 'RGC']
-    check_path = path[:-4].split("_")
-    # --- Check if one is available
-    flag = -1
-    for path0 in check_path:
-        for idx, j in enumerate(check_class):
-            if path0 == j:
-                flag = idx
-                break
 
-    if not flag == -1:
-        cl_sampler = CellSelector(flag, sel_mode_classes)
-        cell_dict = cl_sampler.get_celltype_names()
-        print(f"... Cluster types before reconfiguration: {np.unique(frames_cl)}")
-        cluster = cl_sampler.get_class_to_id(frames_cl)
+def reconfigure_cluster_with_cell_lib(fn, sel_mode_classes: int,
+                                      frames_in: np.ndarray, frames_cl: np.ndarray) -> dict:
+    """Function for reducing the samples for a given cell bib
+    :param fn:                  Class with new resorting dictionaries
+    :param sel_mode_classes:    Number of classes to select for each cell bib (0= original, 1= Reduced specific, 2= ON/OFF, 3= Sustained/Transient)
+    :param frames_in:           Numpy array with spike frames
+    :param frames_cl:           Numpy array with cluster label to each spike frame
+    :return:                    Dict with ['frame': spike frames, 'cl': new class id, 'dict': new dictionary with names]
+    """
+    cl_sampler = CellSelector(fn, sel_mode_classes)
+    cell_dict = cl_sampler.get_celltype_names()
+    print(f"... Cluster types before reconfiguration: {np.unique(frames_cl)}")
 
-        # Removing undesired samples
-        pos = np.argwhere(cluster != -1).flatten()
-        print(f"... Cluster types after reconfiguration: {np.unique(cluster)}")
-        cell_frame = frames_in[pos, :]
-        cell_cl = cluster[pos]
-    else:
-        cell_frame = frames_in
-        cell_cl = frames_cl
-        cell_dict = list()
+    cluster = cl_sampler.get_class_to_id(frames_cl)
+    pos = np.argwhere(cluster != -1).flatten()
+    print(f"... Cluster types after reconfiguration: {np.unique(cluster)}")
 
-    return cell_frame, cell_cl, cell_dict
+    return {'frame': frames_in[pos, :], 'cl': cluster[pos], 'dict': cell_dict}

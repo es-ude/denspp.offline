@@ -8,10 +8,10 @@ import re
 class ModelRegistry:
     __models_avai: dict = dict()
 
-    def __init__(self):
+    def __init__(self, regex: str):
         """Class for building the overview of neural networks"""
         self._logger = logging.getLogger(__name__)
-        pass
+        self._regex = regex
 
     def register(self, fn):
         """Adding a class with neural network topology to system"""
@@ -63,7 +63,7 @@ class ModelRegistry:
                 m = import_module(module_name)
                 self._logger.debug(f"importing models from {module_name}")
                 for name in m.__dict__:
-                    if re.match(r".*_v\d+", name):
+                    if re.match(self._regex, name.lower()):
                         self._logger.debug(f"registering model {name}")
                         item = getattr(m, name)
                         self.register(item)
@@ -77,14 +77,14 @@ class ModelRegistry:
 class ModelLibrary:
     """Class for searching for used ModelRegistry in offline for getting an overview of all models"""
     def get_registry(self, packages: tuple[str, ...] = ("denspp.offline.dnn.models", "src_dnn.models")) -> ModelRegistry:
-        m = ModelRegistry()
+        m = ModelRegistry(r".*_v\d+")
         m.register_packages(packages)
         return m
 
 
 class CellLibrary:
-    """Class for searching for used ModelRegistry in offline for getting an overview of all models"""
+    """Class for searching for used ModelRegistry in offline for getting an overview of all cell sorting libraries"""
     def get_registry(self, packages: tuple[str, ...] = ("denspp.offline.dnn.cell_bib", "src_dnn.cell_bib")) -> ModelRegistry:
-        m = ModelRegistry()
+        m = ModelRegistry(r"resort_\W*")
         m.register_packages(packages)
         return m

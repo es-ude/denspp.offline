@@ -5,6 +5,7 @@ import numpy as np
 from torch import concat
 from torchvision import datasets, transforms
 
+from .model_library import CellLibrary
 from denspp.offline.structure_builder import get_path_project_start
 from denspp.offline.data_call.owncloud_handler import OwncloudDownloader
 from denspp.offline.data_process.frame_preprocessing import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
@@ -19,7 +20,7 @@ class ConfigDataset:
     # --- Settings of Datasets
     data_path: str
     data_file_name: str
-    use_cell_library: int
+    use_cell_sort_mode: int
     # --- Data Augmentation
     augmentation_do: bool
     augmentation_num: int
@@ -114,7 +115,6 @@ class ConfigDataset:
         data_dict = data_train.classes
         return {'data': data_raw, 'label': data_label, 'dict': data_dict}
 
-
     def __process_spike_dataset(self, use_median_for_mean: bool = True, print_state: bool = True,
                                 add_noise_cluster: bool = False) -> dict:
         """Function for processing neural spike frame events from dataset
@@ -131,37 +131,24 @@ class ConfigDataset:
 
         # --- Loading rawdata ['data'=frames, 'label'= label id, 'peak'=amplitude values, 'dict'=label names]
         rawdata = np.load(self.get_path2data, allow_pickle=True).flatten()[0]
-
         frames_dict = rawdata['dict']
-        if 'peak' in rawdata.keys():
-            # TODO: Generate extra function for it and include in dataset settings
-            if 'rgc_mcs' in self.data_file_name.lower():
-                ignore_samples = np.argwhere(rawdata['peak'] >= 200.0).flatten()
-                ignore_samples = np.concatenate((ignore_samples, np.argwhere(rawdata['peak'] <= 40.0).flatten()), axis=0)
-                ignore_samples = np.concatenate((ignore_samples, np.argwhere(np.argmin(rawdata['data'], 1) != 40).flatten()), axis=0)
-
-                frames_in0 = np.delete(rawdata['data'][:, 24:64], ignore_samples, 0)
-                frames_cl = np.delete(rawdata['label'], ignore_samples, 0)
-                frames_pk = np.delete(rawdata['peak'], ignore_samples, 0)
-            else:
-                frames_in0 = rawdata['data']
-                frames_cl = rawdata['label']
-                frames_pk = rawdata['peak']
-
-            scale = np.repeat(np.expand_dims(frames_pk, axis=-1), frames_in0.shape[-1], axis=-1) / np.abs(frames_in0.min())
-            frames_in = frames_in0 * scale
-        else:
-            frames_in = rawdata['data']
-            frames_cl = rawdata['label']
+        frames_in = rawdata['data']
+        frames_cl = rawdata['label']
 
         # --- Using cell_bib for clustering
-        if self.use_cell_library:
-            frames_in, frames_cl, frames_dict = reconfigure_cluster_with_cell_lib(
-                self.get_path2data,
-                self.use_cell_library,
-                frames_in,
-                frames_cl
+        cell_libs_handler = CellLibrary().get_registry()
+        libs_class_overview = [lib.split("resort_")[-1] for lib in cell_libs_handler.get_model_library_overview(do_print=False)]
+        libs_use = [f'resort_{lib}' for lib in libs_class_overview if lib in self.get_path2data.lower()]
+        if len(libs_use):
+            new_data = reconfigure_cluster_with_cell_lib(
+                fn=cell_libs_handler.build_model(libs_use[0]),
+                sel_mode_classes=self.use_cell_sort_mode,
+                frames_in=frames_in,
+                frames_cl=frames_cl
             )
+            frames_in = new_data['frame']
+            frames_cl = new_data['cl']
+            frames_dict = new_data['dict']
 
         # --- PART: Reducing samples per cluster (if too large)
         if self.reduce_samples_per_cluster_do:
@@ -212,7 +199,10 @@ class ConfigDataset:
             if print_state:
                 print("... do data augmentation")
             new_frames, new_clusters = augmentation_change_position(
-                frames_in, frames_cl, snr_mean, self.augmentation_num)
+                frames_in=frames_in,
+                frames_cl=frames_cl,
+                num_min_frames=self.augmentation_num
+            )
             frames_in = np.append(frames_in, new_frames, axis=0)
             frames_cl = np.append(frames_cl, new_clusters, axis=0)
 
@@ -236,7 +226,7 @@ class ConfigDataset:
 DefaultSettingsDataset = ConfigDataset(
     data_path='data/datasets',
     data_file_name='',
-    use_cell_library=0,
+    use_cell_sort_mode=0,
     augmentation_do=False,
     augmentation_num=0,
     normalization_do=False,

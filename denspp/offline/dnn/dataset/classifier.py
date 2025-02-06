@@ -58,7 +58,7 @@ def prepare_training(settings: ConfigDataset) -> DatasetClassifier:
     print("... for training are", frames_in.shape[0], "frames with each", frames_in.shape[1], "points available")
     print(f"... used data points for training: in total {check[0].size} classes with {np.sum(check[1])} samples")
     for idx, id in enumerate(check[0]):
-        addon = f'' if len(frames_dict) == 0 else f' ({frames_dict[id]})'
+        addon = f'' if len(frames_dict) == 0 else f' ({frames_dict[idx]})'
         print(f"\tclass {id}{addon} --> {check[1][idx]} samples")
 
     return DatasetClassifier(frames_in, frames_cl, frames_dict)
