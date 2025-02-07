@@ -4,16 +4,8 @@ import matplotlib.pyplot as plt
 from scipy.io import loadmat
 from scipy.interpolate import interp1d, CubicSpline
 from denspp.offline.digital.dsp import DSP, SettingsDSP, RecommendedSettingsDSP
+from src_ma_jo.data_handler import load_data, extract_arrays
 
-
-def load_data(path, filename):
-    """Loads a .mat file and returns its content."""
-    full_path = os.path.join(path, filename)
-    return loadmat(full_path)
-
-def extract_arrays(data, key, num_arrays=61):
-    """Extracts a specified number of arrays from the loaded .mat data."""
-    return [np.array([arr[i] for arr in data[key]]) for i in range(num_arrays)]
 
 def detect_artifacts(array, threshold_factor=10):
     """Detects artifacts in an array based on standard deviation."""
@@ -49,6 +41,106 @@ def prepare_array_for_spline(original_signal):
     return
 
 
+def process_signal(signal, signal_index, dsp_instance, apply_filter, percentage_limit, threshold):
+    cleaned_signal = signal.copy()
+    plot_counter = 0
+    percentage_counter = 0
+    threshold_counter = 0
+    percent_array = []
+    threshold_array = []
+
+    if not filter_signals_by_percentage(signal, threshold, percentage_limit):
+        percentage_counter += 1
+        percent_array.append(signal_index)
+        return {
+            "plot_counter": plot_counter,
+            "percentage_counter": percentage_counter,
+            "threshold_counter": threshold_counter,
+            "percent_array": percent_array,
+            "threshold_array": threshold_array,
+        }
+
+    if not filter_signal_based_on_threshold(signal, threshold):
+        threshold_counter += 1
+        threshold_array.append(signal_index)
+        return {
+            "plot_counter": plot_counter,
+            "percentage_counter": percentage_counter,
+            "threshold_counter": threshold_counter,
+            "percent_array": percent_array,
+            "threshold_array": threshold_array,
+        }
+    else:
+        plot_counter += 1
+
+    if apply_filter:
+        filtered_signal = dsp_instance.filter(signal)
+        filtered_artifacts, filtered_mean, filtered_std_dev = detect_artifacts(filtered_signal)
+        cleaned_filtered_signal = replace_artifacts_with_spline_smooth(
+            filtered_signal, filtered_artifacts
+        )
+    else:
+        filtered_signal = signal
+        cleaned_filtered_signal = signal
+
+    original_artifacts, original_mean, original_std_dev = detect_artifacts(signal)
+
+    titles = [
+        f"Original Signal {signal_index}",
+        "Filtered Signal" if apply_filter else "Original Signal (Filter Skipped)",
+        "Original Signal with Artifacts Replaced",
+        "Filtered Signal with Artifacts Replaced" if apply_filter else "Original Signal with Artifacts Replaced (Filter Skipped)",
+    ]
+    std_devs = [
+        original_std_dev,
+        filtered_std_dev if apply_filter else original_std_dev,
+        original_std_dev,
+        filtered_std_dev if apply_filter else original_std_dev,
+    ]
+    means = [
+        original_mean,
+        filtered_mean if apply_filter else original_mean,
+        original_mean,
+        filtered_mean if apply_filter else original_mean,
+    ]
+
+    cleaned_signal = process_artifact_ranges(
+        signal, filtered_signal, cleaned_signal, cleaned_filtered_signal,
+        original_artifacts, titles, std_devs, means
+    )
+
+    plot_artifact_ranges(
+        signal, filtered_signal, cleaned_signal, cleaned_filtered_signal,
+        titles, std_devs, means, original_artifacts, (None, None)
+    )
+
+    return {
+        "plot_counter": plot_counter,
+        "percentage_counter": percentage_counter,
+        "threshold_counter": threshold_counter,
+        "percent_array": percent_array,
+        "threshold_array": threshold_array,
+    }
+
+
+def process_artifact_ranges(signal, filtered_signal, cleaned_signal, cleaned_filtered_signal, original_artifacts, titles, std_devs, means):
+    cleaned_signal = signal.copy()
+    for ranges in find_connected_ranges(original_artifacts):
+        x = ranges[0]
+        y = ranges[1]
+        indices_range = (max(0, x - 10), min(len(signal) - 1, y + 10))
+        start, end = indices_range
+        range_indices = list(range(start, end))
+        replaced_signal = replace_artifacts_with_spline_smooth(signal, range_indices)
+        cleaned_signal[start:end] = replaced_signal
+
+        plot_artifact_ranges(
+            signal, filtered_signal, cleaned_signal, cleaned_filtered_signal,
+            titles, std_devs, means, original_artifacts, indices_range
+        )
+
+    return cleaned_signal
+
 def find_connected_ranges(data):
     diffs = np.diff(data)
     breaks = np.where(diffs >= 5)[0]
@@ -65,7 +157,8 @@ def find_connected_ranges(data):
 
 
 
-def plot_signals(signals, titles, std_devs, means, artifact_ranges, indices_range, figsize=(12, 8)):
+def plot_artifact_ranges(signal, filtered_signal, cleaned_signal, cleaned_filtered_signal, titles, std_devs, means, artifact_ranges, indices_range, figsize=(12, 8)):
+    signals = [signal, filtered_signal, cleaned_signal, cleaned_filtered_signal]
     plt.figure(figsize=figsize)
     for i, (signal, title, std_dev, mean) in enumerate(zip(signals, titles, std_devs, means), 1):
         plt.subplot(len(signals), 1, i)
@@ -164,72 +257,21 @@ if __name__ == "__main__":
     percentage_limit = 10  # Beispiel-Prozentwert
     percent_array = []
     threshold_array = []
-    #TODO: Funktion mit übergabeparameter Signal X verarbeiten
     #TODO: Flag für Plot (mit verschiedenen Levels ggf)
-    for i in range(2):
-        original_signal = result_arrays[i]
-
-        if not filter_signals_by_percentage(original_signal, threshold, percentage_limit):
-            # Signal ignorieren, wenn Prozentsatz zu hoch ist
-            percentage_counter += 1
-            percent_array.append(i)
-            continue
-
-        if not filter_signal_based_on_threshold(original_signal, threshold):
-            # Signal ignorieren, wenn Threshold überschritten wird
-            threshold_counter += 1
-            threshold_array.append(i)
-            continue
-        else:
-            plot_counter += 1
-
-        if apply_filter:
-            # Filterung anwenden, wenn das Flag aktiviert ist
-            filtered_signal = dsp_instance.filter(original_signal)
-            filtered_artifacts, filtered_mean, filtered_std_dev = detect_artifacts(filtered_signal)
-
-            # Bereinigung des gefilterten Signals
-            cleaned_filtered_signal = replace_artifacts_with_spline(filtered_signal,
-                filtered_artifacts)
-        else:
-            # Filterung überspringen
-            filtered_signal = original_signal
-            cleaned_filtered_signal = original_signal
-
-        # Artefakterkennung und Bereinigung des Originalsignals
-        original_artifacts, original_mean, original_std_dev = detect_artifacts(original_signal)
-
-        # Signale und Metadaten für die Darstellung
-
-        titles = [
-            f"Original Signal {i}",
-            "Filtered Signal" if apply_filter else "Original Signal (Filter Skipped)",
-            "Original Signal with Artifacts Replaced",
-            "Filtered Signal with Artifacts Replaced" if apply_filter else "Original Signal with Artifacts Replaced (Filter Skipped)"
-        ]
-        std_devs = [original_std_dev, filtered_std_dev if apply_filter else original_std_dev, original_std_dev,
-                    filtered_std_dev if apply_filter else original_std_dev]
-        means = [original_mean, filtered_mean if apply_filter else original_mean, original_mean,
-                 filtered_mean if apply_filter else original_mean]
-
-        # Plot für Artefaktbereiche
-        cleaned_signal = original_signal.copy()
-        for ranges in find_connected_ranges(original_artifacts):
-            x = ranges[0]
-            y = ranges[1]
-            indices_range = (max(0, x - 10), min(len(original_signal) - 1, y + 10))  # Grenzen einhalten
-            start, end = indices_range
-            range_indices = list(range(start, end))
-            replaced_signal = replace_artifacts_with_spline_smooth(original_signal, range_indices)
-            cleaned_signal[start:end] = replaced_signal
-
-            signals = [original_signal, filtered_signal, cleaned_signal, cleaned_filtered_signal]
-            plot_signals(signals, titles, std_devs, means, [original_artifacts], indices_range)
-
-        signals = [original_signal, filtered_signal, cleaned_signal, cleaned_filtered_signal]
-        # Optional: Gesamtes Signal anzeigen
-        indices_range = (None, None)
-        plot_signals(signals, titles, std_devs, means, [original_artifacts], indices_range)
-
+    #TODO: plot_artifact_ranges is now used for modular plotting
+    for i in range(10):
+        result = process_signal(
+            signal=result_arrays[i],
+            signal_index=i,
+            dsp_instance=dsp_instance,
+            apply_filter=apply_filter,
+            percentage_limit=percentage_limit,
+            threshold=threshold
+        )
+        plot_counter += result["plot_counter"]
+        percentage_counter += result["percentage_counter"]
+        threshold_counter += result["threshold_counter"]
+        percent_array.extend(result["percent_array"])
+        threshold_array.extend(result["threshold_array"])
     plot_std_boxplot(result_arrays)
     plot_std_histogram(result_arrays)
