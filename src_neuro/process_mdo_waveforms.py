@@ -40,7 +40,7 @@ def calc_charge_balance_metrics(osci_data: dict) -> tuple[float]:
     :return:            Float: percentual phase mismatch, Float Injected charge imbalance in Coulomb
     """
 
-    # TODO: Add extraction of ROI e.g. stimulus window // Removal of Amplifier Offset (determined before stim)
+    # TODO: Add extraction of ROI e.g. stimulus window // Optional! Removal of Amplifier Offset (determined before stim)
     snip_before_stim = osci_data['Current_A'][0:round(len(osci_data['Current_A'])/3)]
     offset = mean(snip_before_stim)
 
