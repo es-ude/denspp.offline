@@ -22,7 +22,7 @@ def exponential_func(x, a, b, c):
 def fit_exponential(data_segment):
     x = np.arange(len(data_segment))
     try:
-        popt, _ = curve_fit(exponential_func, x, data_segment, maxfev=10000)
+        popt, _ = curve_fit(exponential_func, x, data_segment, maxfev=10000, p0=(1, -0.1, 0))
         fitted_curve = exponential_func(x, *popt)
         print(popt)
     except RuntimeError:
@@ -35,11 +35,10 @@ def replace_artifacts_with_spline_smooth(array, artifacts):
     Ersetzt Artefakte mit glatterer Interpolation (CubicSpline) und gibt
     das gesamte glatte Array oder eine geglättete Kurve zurück.
     """
-    # Kopie des Arrays erstellen
     clean_array = array.copy()
 
     for artifact_range in find_connected_ranges(artifacts):
-        start = artifact_range[1]-25
+        start = artifact_range[1]-20
         end = artifact_range[1]
         exp_data_segment = clean_array[start:end]
         _, fitted_curve = fit_exponential(exp_data_segment)
@@ -48,7 +47,6 @@ def replace_artifacts_with_spline_smooth(array, artifacts):
         extrapolated_values = exponential_func(np.arange(len(x_artifact)), *_)
         clean_array[artifact_range[0]:artifact_range[1]] -= extrapolated_values
 
-    # Gültige Indizes bestimmen
     valid_indices = np.setdiff1d(np.arange(len(array)), artifacts)
     if len(valid_indices) < 4:  # Mindestens 4 Punkte für CubicSpline erforderlich
         raise ValueError("Nicht genug gültige Punkte für Interpolation.")
