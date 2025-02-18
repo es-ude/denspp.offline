@@ -1,12 +1,10 @@
-import os
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.io import loadmat
-from scipy.interpolate import interp1d, CubicSpline
+from scipy.interpolate import CubicSpline
 from scipy.optimize import curve_fit
 from denspp.offline.digital.dsp import DSP, SettingsDSP, RecommendedSettingsDSP
-from src_ma_jo.data_handler import load_data, extract_arrays
-
+from src_ma_jo.data_handler_artifacts import load_data, extract_arrays
+from src_ma_jo.show_plots_artifacts import *
 
 def detect_artifacts(array, threshold_factor=10):
     """Detects artifacts in an array based on standard deviation."""
@@ -22,9 +20,10 @@ def exponential_func(x, a, b, c):
 def fit_exponential(data_segment):
     x = np.arange(len(data_segment))
     try:
+        # noinspection PyTupleAssignmentBalance
         popt, _ = curve_fit(exponential_func, x, data_segment, maxfev=10000, p0=(1, -0.1, 0))
         fitted_curve = exponential_func(x, *popt)
-        print(popt)
+        #print(popt)
     except RuntimeError:
         popt = (0, 0, np.mean(data_segment))
         fitted_curve = np.full_like(data_segment, np.mean(data_segment))
@@ -58,9 +57,6 @@ def replace_artifacts_with_spline_smooth(array, artifacts):
     clean_array[artifacts] = smooth_curve[artifacts]
 
     return clean_array[artifacts]
-
-def prepare_array_for_spline(original_signal):
-    return
 
 
 def process_signal(signal, signal_index, dsp_instance, apply_filter, percentage_limit, threshold):
@@ -177,39 +173,6 @@ def find_connected_ranges(data):
 
     return ranges
 
-
-
-def plot_artifact_ranges(signal, filtered_signal, cleaned_signal, cleaned_filtered_signal, titles, std_devs, means, artifact_ranges, indices_range, figsize=(12, 8)):
-    signals = [signal, filtered_signal, cleaned_signal, cleaned_filtered_signal]
-    plt.figure(figsize=figsize)
-    for i, (signal, title, std_dev, mean) in enumerate(zip(signals, titles, std_devs, means), 1):
-        plt.subplot(len(signals), 1, i)
-        start, end = indices_range
-        if indices_range is not None:
-            plt.plot(signal[start:end], label=title)
-        else:
-            plt.plot(signal, label=title)
-        plt.axhline(mean + 10 * std_dev, color='r', linestyle=':', label='Mean + 10*StdDev')
-        plt.axhline(mean - 10 * std_dev, color='r', linestyle=':', label='Mean - 10*StdDev')
-        plt.title(title)
-        plt.xlabel("Index")
-        plt.ylabel("Amplitude")
-        #plt.legend(loc='best')
-    plt.tight_layout()
-    plt.show()
-
-def plot_exponential_fit(data_segment, fitted_curve, artifact_range, figsize=(8, 6)):
-    plt.figure(figsize=figsize)
-    plt.plot(data_segment, label='Original Data Segment', color='blue')
-    plt.plot(fitted_curve, label='Fitted Exponential Curve', color='orange')
-    plt.title(f"Exponential Fit for Artifact Range: {artifact_range}")
-    plt.xlabel("Index")
-    plt.ylabel("Amplitude")
-    plt.legend(loc='best')
-    plt.tight_layout()
-    plt.show()
-
-
 def filter_signal_based_on_threshold(signal, threshold_limit, threshold_factor=10):
     if len(signal) == 0:  # If the signal is empty, automatically ignore it
         return False
@@ -233,26 +196,6 @@ def filter_signals_by_percentage(signal, threshold, percentage_limit=30):
 
     return percentage_above < percentage_limit
 
-
-def plot_std_boxplot(signals):
-    std_values = [np.std(signal) for signal in signals[1:] if len(signal) > 0]  # Ignorieren leerer Signale
-    plt.figure(figsize=(8, 6))
-    plt.boxplot(std_values, vert=True, patch_artist=True)
-    plt.title("Boxplot der Standardabweichungen")
-    plt.ylabel("Standardabweichung (STDW)")
-    plt.xlabel("Signalgruppe")
-    plt.show()
-
-
-def plot_std_histogram(signals, bins=20):
-    std_values = [np.std(signal) for signal in signals[1:] if len(signal) > 0]  # Ignoriere erstes Signal
-    plt.figure(figsize=(8, 6))
-    plt.hist(std_values, bins=bins, edgecolor='black', alpha=0.7)
-    plt.title("Histogramm der Standardabweichungen (erstes Signal ignoriert)")
-    plt.xlabel("Standardabweichung (STD)")
-    plt.ylabel("Häufigkeit")
-    plt.grid(axis="y", linestyle="--", alpha=0.7)
-    plt.show()
 
 def process_signals(result_arrays, dsp_instance, apply_filter, percentage_limit, threshold):
     plot_counter = 0
@@ -295,30 +238,31 @@ if __name__ == "__main__":
         t_dly=0
     )
 
-    plot_counter = 0
+    """plot_counter = 0
     percentage_counter = -1     # -1, da Zeit immer als %-Threshold klassifiziert wird
-    threshold_counter = 0
+    threshold_counter = 0"""
+
     dsp_instance = DSP(settings)
 
     # Flag zur Steuerung der Filterung
     apply_filter = False  # Setze auf False, falls die Filterung übersprungen werden soll
+    show_plot = False
 
     #TODO: loop über alle files und abspeichern als neue Arrays
 
     dsp_instance.use_filtfilt = True
     path = r"C:\\Users\\jo-di\\Documents\\Masterarbeit\\Rohdaten"
     filename = "A1R1a_elec_stim_50biphasic_400us0001"
-    key = "A1R1a_elec_stim_50biphasic_400us0001"
 
     data = load_data(path, filename)
-    result_arrays = extract_arrays(data, key)
+    result_arrays = extract_arrays(data, filename)
 
     threshold = 150  # Beispiel-Schwellenwert
     percentage_limit = 5  # Beispiel-Prozentwert
     percent_array = []
     threshold_array = []
     #TODO: Flag für Plot (mit verschiedenen Levels ggf)
-    #TODO: plot_artifact_ranges is now used for modular plotting
+
     result = process_signals(
         result_arrays=result_arrays,
         dsp_instance=dsp_instance,
