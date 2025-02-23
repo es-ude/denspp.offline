@@ -11,6 +11,12 @@ def detect_artifacts(array, threshold_factor=10):
     mean = np.mean(array)
     std_dev = np.std(array)
     artifacts = np.where(np.abs(array - mean) > threshold_factor * std_dev)[0]
+    try:
+        if len(artifacts) == 0:
+            raise ValueError("Keine Artefakte im aktuellen Array gefunden.")
+    except ValueError as e:
+        print(f"Fehler: {e}")
+        return np.array([]), mean, std_dev
     return artifacts, mean, std_dev
 
 
@@ -34,7 +40,7 @@ def replace_artifacts_with_spline_smooth(array, artifacts):
     Ersetzt Artefakte mit glatterer Interpolation (CubicSpline) und gibt
     das gesamte glatte Array oder eine geglättete Kurve zurück.
     """
-    clean_array = array.copy()
+    clean_array = array.astype(float).copy()
 
     for artifact_range in find_connected_ranges(artifacts):
         start = artifact_range[1]-20
@@ -59,7 +65,16 @@ def replace_artifacts_with_spline_smooth(array, artifacts):
     return clean_array[artifacts]
 
 
-def process_signal(signal, signal_index, dsp_instance, apply_filter, percentage_limit, threshold):
+def process_signal(signal, signal_index, dsp_instance, apply_filter, percentage_limit, threshold, plot_flag=False):
+    if len(signal) == 0:
+        print(f"Signal {signal_index} is empty. Skipping process.")
+        return {
+            "plot_counter": 0,
+            "percentage_counter": 0,
+            "threshold_counter": 0,
+            "percent_array": [],
+            "threshold_array": [],
+        }
     cleaned_signal = signal.copy()
     plot_counter = 0
     percentage_counter = 0
@@ -124,13 +139,12 @@ def process_signal(signal, signal_index, dsp_instance, apply_filter, percentage_
 
     cleaned_signal = process_artifact_ranges(
         signal, filtered_signal, cleaned_signal, cleaned_filtered_signal,
-        original_artifacts, titles, std_devs, means
-    )
-
-    plot_artifact_ranges(
-        signal, filtered_signal, cleaned_signal, cleaned_filtered_signal,
-        titles, std_devs, means, original_artifacts, (None, None)
-    )
+        original_artifacts, titles, std_devs, means, plot_flag)
+    if plot_flag:
+        plot_artifact_ranges(
+            signal, filtered_signal, cleaned_signal, cleaned_filtered_signal,
+            titles, std_devs, means, original_artifacts, (None, None)
+        )
 
     return {
         "plot_counter": plot_counter,
@@ -141,7 +155,10 @@ def process_signal(signal, signal_index, dsp_instance, apply_filter, percentage_
     }
 
 
-def process_artifact_ranges(signal, filtered_signal, cleaned_signal, cleaned_filtered_signal, original_artifacts, titles, std_devs, means):
+def process_artifact_ranges(signal, filtered_signal, cleaned_signal, cleaned_filtered_signal, original_artifacts, titles, std_devs, means, plot_flag):
+    if len(original_artifacts) == 0:
+        print("Original artifacts are empty. Returning the signal as is.")
+        return signal
     cleaned_signal = signal.copy()
     for ranges in find_connected_ranges(original_artifacts):
         x = ranges[0]
@@ -151,15 +168,17 @@ def process_artifact_ranges(signal, filtered_signal, cleaned_signal, cleaned_fil
         range_indices = list(range(start, end))
         replaced_signal = replace_artifacts_with_spline_smooth(signal, range_indices)
         cleaned_signal[start:end] = replaced_signal
-
-        plot_artifact_ranges(
-            signal, filtered_signal, cleaned_signal, cleaned_filtered_signal,
-            titles, std_devs, means, original_artifacts, indices_range
-        )
+        if plot_flag:
+            plot_artifact_ranges(
+                signal, filtered_signal, cleaned_signal, cleaned_filtered_signal,
+                titles, std_devs, means, original_artifacts, indices_range
+            )
 
     return cleaned_signal
 
 def find_connected_ranges(data):
+    if len(data) == 0:
+        return []
     diffs = np.diff(data)
     breaks = np.where(diffs >= 5)[0]
 
@@ -173,7 +192,7 @@ def find_connected_ranges(data):
 
     return ranges
 
-def filter_signal_based_on_threshold(signal, threshold_limit, threshold_factor=10):
+def filter_signal_based_on_threshold(signal, threshold_limit, threshold_factor=15):
     if len(signal) == 0:  # If the signal is empty, automatically ignore it
         return False
 
@@ -197,7 +216,7 @@ def filter_signals_by_percentage(signal, threshold, percentage_limit=30):
     return percentage_above < percentage_limit
 
 
-def process_signals(result_arrays, dsp_instance, apply_filter, percentage_limit, threshold):
+def process_signals(result_arrays, dsp_instance, apply_filter, percentage_limit, threshold, plot_flag):
     plot_counter = 0
     percentage_counter = -1  # -1, da Zeit immer als %-Threshold klassifiziert wird
     threshold_counter = 0
@@ -210,7 +229,8 @@ def process_signals(result_arrays, dsp_instance, apply_filter, percentage_limit,
             dsp_instance=dsp_instance,
             apply_filter=apply_filter,
             percentage_limit=percentage_limit,
-            threshold=threshold
+            threshold=threshold,
+            plot_flag=plot_flag
         )
         plot_counter += result["plot_counter"]
         percentage_counter += result["percentage_counter"]
@@ -251,8 +271,8 @@ if __name__ == "__main__":
     #TODO: loop über alle files und abspeichern als neue Arrays
 
     dsp_instance.use_filtfilt = True
-    path = r"C:\\Users\\jo-di\\Documents\\Masterarbeit\\Rohdaten"
-    filename = "A1R1a_elec_stim_50biphasic_400us0001"
+    path = r"C:/Users/jo-di/Documents/Masterarbeit/Rohdaten"
+    filename = "A1R1b_ASIC_stim_sine_1kHz_6uA_5s_gap_reproduction"
 
     data = load_data(path, filename)
     result_arrays = extract_arrays(data, filename)
@@ -268,7 +288,8 @@ if __name__ == "__main__":
         dsp_instance=dsp_instance,
         apply_filter=apply_filter,
         percentage_limit=percentage_limit,
-        threshold=threshold
+        threshold=threshold,
+        plot_flag=True
     )
     plot_counter = result["plot_counter"]
     percentage_counter = result["percentage_counter"]

@@ -14,7 +14,7 @@ def plot_std_histogram(signals, bins=20):
     std_values = [np.std(signal) for signal in signals[1:] if len(signal) > 0]  # Ignoriere erstes Signal
     plt.figure(figsize=(8, 6))
     plt.hist(std_values, bins=bins, edgecolor='black', alpha=0.7)
-    plt.title("Histogramm der Standardabweichungen (erstes Signal ignoriert)")
+    plt.title("Histogramm der Standardabweichungen")
     plt.xlabel("Standardabweichung (STD)")
     plt.ylabel("Häufigkeit")
     plt.grid(axis="y", linestyle="--", alpha=0.7)
