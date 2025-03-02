@@ -35,7 +35,34 @@ def fit_exponential(data_segment):
         fitted_curve = np.full_like(data_segment, np.mean(data_segment))
     return popt, fitted_curve
 
-def replace_artifacts_with_spline_smooth(array, artifacts):
+def compare_std_deviation_exponential(artifact_array, threshold):
+    """
+    Vergleicht die Standardabweichung zwischen einer Exponentialfunktion und den letzten 20 Werten
+    des Artefakts mit einem gegebenen Schwellenwert.
+
+    :param artifact_array: Array mit Artefaktwerten
+    :param threshold: Schwellenwert für die Standardabweichung
+    :return: True, wenn die Standardabweichung unter dem Schwellenwert liegt, andernfalls False
+    """
+    if len(artifact_array) < 20:
+        raise ValueError("Das Artefakt-Array enthält weniger als 20 Werte.")
+
+    # Extrahiere die letzten 20 Werte
+    data_segment = artifact_array[-20:]
+
+    # Führe den Fit der Exponentialfunktion durch
+    popt, fitted_curve = fit_exponential(data_segment)
+
+    # Berechne die Differenz zwischen tatsächlichen Werten und der Anpassung
+    differences = data_segment - fitted_curve
+
+    # Berechne die Standardabweichung der Differenzen
+    std_dev = np.std(differences)
+
+    # Vergleiche mit dem Schwellenwert
+    return std_dev <= threshold
+
+def replace_artifacts_with_spline_smooth(array, artifacts, std_threshold=10):
     """
     Ersetzt Artefakte mit glatterer Interpolation (CubicSpline) und gibt
     das gesamte glatte Array oder eine geglättete Kurve zurück.
@@ -47,22 +74,25 @@ def replace_artifacts_with_spline_smooth(array, artifacts):
         end = artifact_range[1]
         exp_data_segment = clean_array[start:end]
         _, fitted_curve = fit_exponential(exp_data_segment)
-        plot_exponential_fit(exp_data_segment, fitted_curve, artifact_range)
-        x_artifact = np.arange(len(clean_array))[artifact_range[0]:artifact_range[1]]
-        extrapolated_values = exponential_func(np.arange(len(x_artifact)), *_)
-        clean_array[artifact_range[0]:artifact_range[1]] -= extrapolated_values
+        std_dev_check = compare_std_deviation_exponential(exp_data_segment, std_threshold)
+        if std_dev_check:
+            x_artifact = np.arange(len(clean_array))[artifact_range[0]:artifact_range[1]]
+            extrapolated_values = exponential_func(np.arange(len(x_artifact)), *_)
+            clean_array[artifact_range[0]:artifact_range[1]] -= extrapolated_values
+        else:
+            continue
 
     valid_indices = np.setdiff1d(np.arange(len(array)), artifacts)
     if len(valid_indices) < 4:  # Mindestens 4 Punkte für CubicSpline erforderlich
         raise ValueError("Nicht genug gültige Punkte für Interpolation.")
+    else:
+        #Interpolation mit CubicSpline
+        spline = CubicSpline(valid_indices, clean_array[valid_indices], bc_type='natural')
+        smooth_curve = spline(np.arange(len(clean_array)))
+        # Punkte ersetzen
+        clean_array[artifacts] = smooth_curve[artifacts]
 
-    # Interpolation mit CubicSpline
-    spline = CubicSpline(valid_indices, clean_array[valid_indices], bc_type='natural')
-    smooth_curve = spline(np.arange(len(clean_array)))
-    # Punkte ersetzen
-    clean_array[artifacts] = smooth_curve[artifacts]
-
-    return clean_array[artifacts]
+    return  clean_array[artifacts]
 
 
 def process_signal(signal, signal_index, dsp_instance, apply_filter, percentage_limit, threshold, plot_flag=False):
@@ -266,7 +296,7 @@ if __name__ == "__main__":
 
     # Flag zur Steuerung der Filterung
     apply_filter = False  # Setze auf False, falls die Filterung übersprungen werden soll
-    show_plot = False
+    show_plot = True
 
     #TODO: loop über alle files und abspeichern als neue Arrays
 
