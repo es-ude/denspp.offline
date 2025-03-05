@@ -24,6 +24,7 @@ dependencies = [
     "logdecorator==2.*",
     "pyxdf>=1.16.8",
     "elasticai-creator",
+    "notebook>=7.3.2",
 ]
 
 [dependency-groups]

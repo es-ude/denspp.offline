@@ -2,8 +2,9 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-
 from torch import Tensor, zeros, load, save, concatenate, inference_mode, cuda, cat, randn, add, div
+
+from denspp.offline.dnn.ptq_help import quantize_model_fxp
 from denspp.offline.dnn.pytorch_handler import ConfigPytorch, ConfigDataset, PyTorchHandler
 from denspp.offline.metric.data import calculate_number_true_predictions, calculate_precision, calculate_recall, calculate_fbeta
 
@@ -27,7 +28,8 @@ class TrainClassifier(PyTorchHandler):
         self._metric_methods = {'accuracy': self.__determine_accuracy_per_class,
                                 'precision': self.__determine_buffering_metric_calculation,
                                 'recall': self.__determine_buffering_metric_calculation,
-                                'fbeta': self.__determine_buffering_metric_calculation}
+                                'fbeta': self.__determine_buffering_metric_calculation,
+                                'ptq_loss': self.__determine_buffering_metric_calculation}
 
     def __do_training_epoch(self) -> [float, float]:
         """Do training during epoch of training
@@ -122,6 +124,8 @@ class TrainClassifier(PyTorchHandler):
                             self.__metric_buffer.update({key0: [[], []]})
                         case 'fbeta':
                             self.__metric_buffer.update({key0: [[], []]})
+                        case 'ptq_loss':
+                            self.__metric_buffer.update({key0: [[], []]})
                 else:
                     raise NotImplementedError(f"Used custom metric ({key0}) is not implemented - Please check!")
         # --- Processing results
@@ -152,6 +156,10 @@ class TrainClassifier(PyTorchHandler):
                         )
                         self.__metric_result[key0].append(out[0])
                         self.__metric_buffer.update({key0: [[], []]})
+                    case 'ptq_loss':
+                        # TODO: Anpassen
+                        self.__metric_result[key0].append(())
+                        self.__metric_buffer.update({key0: [zeros((len(self.cell_classes),)), zeros((len(self.cell_classes),))]})
 
     def __determine_accuracy_per_class(self, pred: Tensor, true: Tensor, *args) -> None:
         out = self._separate_classes_from_label(pred, true, args[0], calculate_number_true_predictions)
@@ -165,6 +173,20 @@ class TrainClassifier(PyTorchHandler):
         else:
             self.__metric_buffer[args[0]][0] = concatenate((self.__metric_buffer[args[0]][0], true), dim=0)
             self.__metric_buffer[args[0]][1] = concatenate((self.__metric_buffer[args[0]][1], pred), dim=0)
+
+    # TODO: Testen
+    def __determine_ptq_loss(self, input_waveform: Tensor, pred: Tensor, true: Tensor, *args) -> None:
+        # --- Load model and make inference
+        model_ptq = quantize_model_fxp(self.model, self._ptq_level[0], self._ptq_level[1])
+        pred_cl, dec_cl = model_ptq(input_waveform)
+        model_ptq.eval()
+        loss = self.loss_fn(pred_cl, true).item() / self.total_batches_valid
+
+        # --- Saving results
+        if len(self.__metric_buffer[args[0]]):
+            self.__metric_buffer[args[0]][0] = self.__metric_buffer[args[0]][0] + loss
+        else:
+            self.__metric_buffer[args[0]].append(loss)
 
     def do_training(self, path2save: str='', metrics: list=()) -> dict:
         """Start model training incl. validation and custom-own metric calculation

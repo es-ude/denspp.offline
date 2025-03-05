@@ -2,7 +2,7 @@ import numpy as np
 from os.path import join
 from shutil import copy
 from datetime import datetime
-from torch import Tensor, load, save, inference_mode, flatten, cuda, cat, concatenate, randn, sum, abs
+from torch import Tensor, load, save, inference_mode, flatten, cuda, cat, concatenate, randn
 
 from denspp.offline.dnn.ptq_help import quantize_model_fxp
 from denspp.offline.dnn.pytorch_handler import ConfigPytorch, ConfigDataset, PyTorchHandler
@@ -22,22 +22,12 @@ class TrainAutoencoder(PyTorchHandler):
             None
         """
         PyTorchHandler.__init__(self, config_train, config_data, do_train, do_print)
-        # --- Structure for calculating custom metrics during training
-        self._ptq_level = [12, 8]
         self.__metric_buffer = dict()
         self.__metric_result = dict()
         self._metric_methods = {'snr_in': self.__determine_snr_input, 'snr_in_cl': self.__determine_snr_input_class,
                                 'snr_out': self.__determine_snr_output, 'snr_out_cl': self.__determine_snr_output_class,
                                 'dsnr_all': self.__determine_dsnr_all, 'dsnr_cl': self.__determine_dsnr_class,
                                 'ptq_loss': self.__determine_ptq_loss}
-
-    def define_ptq_level(self, total_bitwidth: int, frac_bitwidth: int) -> None:
-        """Function for defining the post-training quantization level of the model
-        :param total_bitwidth: Total bitwidth of the model
-        :param frac_bitwidth: Fraction of bitwidth used for quantization
-        :return: None
-        """
-        self._ptq_level = [total_bitwidth, frac_bitwidth]
 
     def __do_training_epoch(self) -> float:
         """Do training during epoch of training
@@ -198,7 +188,6 @@ class TrainAutoencoder(PyTorchHandler):
             self.__metric_buffer[args[0]][0] = self.__metric_buffer[args[0]][0] + loss
         else:
             self.__metric_buffer[args[0]].append(loss)
-
 
     def do_training(self, path2save='', metrics=()) -> dict:
         """Start model training incl. validation and custom-own metric calculation

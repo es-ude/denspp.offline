@@ -32,6 +32,7 @@ class PyTorchHandler:
     selected_samples: dict
     cell_classes: list
     _metric_methods: dict
+    _ptq_level: list = [12, 8]
 
     def __init__(self, config_train: ConfigPytorch, config_dataset: ConfigDataset,
                  do_train: bool=True, do_print: bool=True) -> None:
@@ -409,3 +410,11 @@ class PyTorchHandler:
     def get_number_parameters_from_model(self) -> int:
         """Getting the number of used parameters of used DNN model"""
         return int(sum(p.numel() for p in self.model.parameters()))
+
+    def define_ptq_level(self, total_bitwidth: int, frac_bitwidth: int) -> None:
+        """Function for defining the post-training quantization level of the model
+        :param total_bitwidth: Total bitwidth of the model
+        :param frac_bitwidth: Fraction of bitwidth used for quantization
+        :return: None
+        """
+        self._ptq_level = [total_bitwidth, frac_bitwidth]
