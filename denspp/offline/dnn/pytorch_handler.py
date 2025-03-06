@@ -32,6 +32,7 @@ class PyTorchHandler:
     selected_samples: dict
     cell_classes: list
     _metric_methods: dict
+    _ptq_do_validation: bool = False
     _ptq_level: list = [12, 8]
 
     def __init__(self, config_train: ConfigPytorch, config_dataset: ConfigDataset,

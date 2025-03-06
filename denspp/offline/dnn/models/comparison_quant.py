@@ -1,6 +1,6 @@
-from torch import nn, Tensor
-from elasticai.creator.nn import Sequential
-from elasticai.creator.nn.fixed_point import Linear, BatchNormedLinear, Tanh
+from torch import nn, Tensor, argmax, flatten
+from elasticai.creator.nn import Sequential as SequantialCreator
+from elasticai.creator.nn.fixed_point import Linear, BatchNormedLinear, Tanh, ReLU
 
 
 class CompareDNN_Autoencoder_v1_Torch(nn.Module):
@@ -40,7 +40,8 @@ class CompareDNN_Autoencoder_v1_Torch(nn.Module):
 
 
 class CompareDNN_Autoencoder_v1_Creator(nn.Module):
-    def __init__(self, input_size=32, output_size=3, total_bits: int=12, frac_bits: int = 8, num_steps_activation: int = 32):
+    def __init__(self, input_size: int=32, output_size: int=3,
+                 total_bits: int=12, frac_bits: int = 8, num_steps_activation: int = 32):
         super().__init__()
         self.bit_config = [total_bits, frac_bits]
         self.model_shape = (1, input_size)
@@ -50,7 +51,7 @@ class CompareDNN_Autoencoder_v1_Creator(nn.Module):
         do_train_batch = True
 
         # --- Encoder Path
-        self.encoder = Sequential(
+        self.encoder = SequantialCreator(
             BatchNormedLinear(in_features=iohiddenlayer[0], out_features=iohiddenlayer[1], bias=do_train_bias, total_bits=total_bits, frac_bits=frac_bits, bn_affine=do_train_batch),
             Tanh(total_bits=total_bits, frac_bits=frac_bits, num_steps=num_steps_activation),
             BatchNormedLinear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[2], bias=do_train_bias, total_bits=total_bits, frac_bits=frac_bits, bn_affine=do_train_batch),
@@ -58,7 +59,7 @@ class CompareDNN_Autoencoder_v1_Creator(nn.Module):
             BatchNormedLinear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[3], bias=do_train_bias, total_bits=total_bits, frac_bits=frac_bits, bn_affine=do_train_batch),
         )
         # --- Decoder Path
-        self.decoder = Sequential(
+        self.decoder = SequantialCreator(
             Tanh(total_bits=total_bits, frac_bits=frac_bits, num_steps=num_steps_activation),
             BatchNormedLinear(in_features=iohiddenlayer[3], out_features=iohiddenlayer[2], bias=do_train_bias, total_bits=total_bits, frac_bits=frac_bits, bn_affine=do_train_batch),
             Tanh(total_bits=total_bits, frac_bits=frac_bits, num_steps=num_steps_activation),
@@ -122,7 +123,7 @@ class CompareDNN_Autoencoder_woBN_v1_Creator(nn.Module):
 
 
         # --- Encoder Path
-        self.encoder = Sequential(
+        self.encoder = SequantialCreator(
             Linear(in_features=iohiddenlayer[0], out_features=iohiddenlayer[1], bias=do_train_bias,
                    total_bits=total_bits, frac_bits=frac_bits),
             Tanh(total_bits=total_bits, frac_bits=frac_bits, num_steps=num_steps_activation),
@@ -133,7 +134,7 @@ class CompareDNN_Autoencoder_woBN_v1_Creator(nn.Module):
                    total_bits=total_bits, frac_bits=frac_bits),
         )
         # --- Decoder Path
-        self.decoder = Sequential(
+        self.decoder = SequantialCreator(
             Tanh(total_bits=total_bits, frac_bits=frac_bits, num_steps=num_steps_activation),
             Linear(in_features=iohiddenlayer[3], out_features=iohiddenlayer[2], bias=do_train_bias,
                    total_bits=total_bits, frac_bits=frac_bits),
@@ -156,3 +157,65 @@ class CompareDNN_Autoencoder_woBN_v1_Creator(nn.Module):
         encoder = self.encoder.create_design(f"{name}_encoder")
         decoder = self.decoder.create_design(f"{name}_decoder")
         return encoder, decoder
+
+
+class CompareDNN_Classifier_v1_Torch(nn.Module):
+    def __init__(self, input_size: int=32, output_size: int=6):
+        """DL model for classifying neural spike activity (MLP)"""
+        super().__init__()
+        self.model_shape = (1, input_size)
+        # --- Settings of model
+        do_train_bias = True
+        do_train_batch = True
+        config_network = [input_size, 12, output_size]
+
+        # --- Model Deployment
+        self.model = nn.Sequential()
+        for idx, layer_size in enumerate(config_network[1:], start=1):
+            self.model.add_module(f"linear_{idx:02d}",
+                                  nn.Linear(in_features=config_network[idx - 1], out_features=layer_size,
+                                            bias=do_train_bias))
+            self.model.add_module(f"batch1d_{idx:02d}",
+                                  nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch))
+            if not idx == len(config_network) - 1:
+                self.model.add_module(f"act_{idx:02d}", nn.ReLU())
+            else:
+                # self.model.add_module(f"soft", nn.Softmax(dim=1))
+                pass
+
+    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+        x = flatten(x, start_dim=1)
+        prob = self.model(x)
+        return prob, argmax(prob, 1)
+
+
+class CompareDNN_Classifier_v1_Creator(nn.Module):
+    def __init__(self, input_size: int=32, output_size:int=6,
+                 total_bits: int = 12, frac_bits: int = 8):
+        """DL model for classifying neural spike activity (MLP)"""
+        super().__init__()
+        self.model_shape = (1, input_size)
+        # --- Settings of model
+        do_train_bias = True
+        do_train_batch = True
+        config_network = [input_size, 12, output_size]
+
+        # --- Model Deployment
+        self.model = SequantialCreator()
+        for idx, layer_size in enumerate(config_network[1:], start=1):
+            self.model.add_module(f"linear_{idx:02d}",
+                                  BatchNormedLinear(
+                                      in_features=config_network[idx - 1],
+                                      out_features=layer_size,
+                                      bias=do_train_bias,
+                                      total_bits=total_bits, frac_bits=frac_bits
+                                  ))
+            if not idx == len(config_network) - 1:
+                self.model.add_module(f"act_{idx:02d}", ReLU(total_bits=total_bits))
+            else:
+                pass
+
+    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+        x = flatten(x, start_dim=1)
+        prob = self.model(x)
+        return prob, argmax(prob, 1)

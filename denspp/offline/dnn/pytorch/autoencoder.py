@@ -82,7 +82,7 @@ class TrainAutoencoder(PyTorchHandler):
 
                 # --- Calculating custom made metrics
                 for metric_used in epoch_custom_metrics:
-                    self._determine_epoch_metrics(metric_used)(data_x, data_p, data_m, metric_used, data_id)
+                    self._determine_epoch_metrics(metric_used)(data_x, data_p, data_m, metric=metric_used, id=data_id)
 
         return float(valid_loss / self.total_batches_valid)
 
@@ -115,67 +115,67 @@ class TrainAutoencoder(PyTorchHandler):
                 self.__metric_result[key0].append(self.__metric_buffer[key0])
                 self.__metric_buffer.update({key0: list()})
 
-    def __determine_snr_input(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, *args) -> None:
+    def __determine_snr_input(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, **kwargs) -> None:
         out = calculate_snr_tensor_waveform(input_waveform, mean_waveform)
-        if isinstance(self.__metric_buffer[args[0]], list):
-            self.__metric_buffer[args[0]] = out
+        if isinstance(self.__metric_buffer[kwargs['metric']], list):
+            self.__metric_buffer[kwargs['metric']] = out
         else:
-            self.__metric_buffer[args[0]] = concatenate((self.__metric_buffer[args[0]], out), dim=0)
+            self.__metric_buffer[kwargs['metric']] = concatenate((self.__metric_buffer[kwargs['metric']], out), dim=0)
 
-    def __determine_snr_input_class(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, *args) -> None:
+    def __determine_snr_input_class(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, **kwargs) -> None:
         out = self._separate_classes_from_label(
             pred=calculate_snr_tensor_waveform(input_waveform, mean_waveform),
-            true=args[1], label=args[0]
+            true=kwargs['id'], label=kwargs['metric']
         )
-        if len(self.__metric_buffer[args[0]]) == 0:
-            self.__metric_buffer[args[0]] = out[0]
+        if len(self.__metric_buffer[kwargs['metric']]) == 0:
+            self.__metric_buffer[kwargs['metric']] = out[0]
         else:
             for idx, snr_class in enumerate(out[0]):
-                old = self.__metric_buffer[args[0]][idx]
-                self.__metric_buffer[args[0]][idx] = concatenate((old, snr_class), dim=0)
+                old = self.__metric_buffer[kwargs['metric']][idx]
+                self.__metric_buffer[kwargs['metric']][idx] = concatenate((old, snr_class), dim=0)
 
-    def __determine_snr_output(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, *args) -> None:
+    def __determine_snr_output(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, **kwargs) -> None:
         out = calculate_snr_tensor_waveform(pred_waveform, mean_waveform)
-        if isinstance(self.__metric_buffer[args[0]], list):
-            self.__metric_buffer[args[0]] = out
+        if isinstance(self.__metric_buffer[kwargs['metric']], list):
+            self.__metric_buffer[kwargs['metric']] = out
         else:
-            self.__metric_buffer[args[0]] = concatenate((self.__metric_buffer[args[0]], out), dim=0)
+            self.__metric_buffer[kwargs['metric']] = concatenate((self.__metric_buffer[kwargs['metric']], out), dim=0)
 
-    def __determine_snr_output_class(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, *args) -> None:
+    def __determine_snr_output_class(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, **kwargs) -> None:
         out = self._separate_classes_from_label(
             pred=calculate_snr_tensor_waveform(pred_waveform, mean_waveform),
-            true=args[1], label=args[0]
+            true=kwargs['id'], label=kwargs['metric']
         )
-        if len(self.__metric_buffer[args[0]]) == 0:
-            self.__metric_buffer[args[0]] = out[0]
+        if len(self.__metric_buffer[kwargs['metric']]) == 0:
+            self.__metric_buffer[kwargs['metric']] = out[0]
         else:
             for idx, snr_class in enumerate(out[0]):
-                old = self.__metric_buffer[args[0]][idx][0]
-                self.__metric_buffer[args[0]][idx] = concatenate((old, snr_class), dim=0)
+                old = self.__metric_buffer[kwargs['metric']][idx][0]
+                self.__metric_buffer[kwargs['metric']][idx] = concatenate((old, snr_class), dim=0)
 
-    def __determine_dsnr_all(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, *args) -> None:
+    def __determine_dsnr_all(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, **kwargs) -> None:
         out = calculate_dsnr_tensor_waveform(input_waveform, pred_waveform, mean_waveform)
-        if isinstance(self.__metric_buffer[args[0]], list):
-            self.__metric_buffer[args[0]] = out
+        if isinstance(self.__metric_buffer[kwargs['metric']], list):
+            self.__metric_buffer[kwargs['metric']] = out
         else:
-            self.__metric_buffer[args[0]] = concatenate((self.__metric_buffer[args[0]], out), dim=0)
+            self.__metric_buffer[kwargs['metric']] = concatenate((self.__metric_buffer[kwargs['metric']], out), dim=0)
 
-    def __determine_dsnr_class(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, *args) -> None:
+    def __determine_dsnr_class(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, **kwargs) -> None:
         out = calculate_dsnr_tensor_waveform(input_waveform, pred_waveform, mean_waveform)
-        if isinstance(self.__metric_buffer[args[0]], list):
-            self.__metric_buffer[args[0]] = out
+        if isinstance(self.__metric_buffer[kwargs['metric']], list):
+            self.__metric_buffer[kwargs['metric']] = out
         else:
-            self.__metric_buffer[args[0]] = concatenate((self.__metric_buffer[args[0]], out), dim=0)
+            self.__metric_buffer[kwargs['metric']] = concatenate((self.__metric_buffer[kwargs['metric']], out), dim=0)
 
-    def __determine_ptq_loss(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, *args) -> None:
+    def __determine_ptq_loss(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, **kwargs) -> None:
         """if not hasattr(self.model, 'bit_config'):
             raise NotImplementedError('PTQ Test is only available with elasticAI.creator Models or '
                                       'model includes variable \"bit_config\" = [total_bitwidth, frac_bitwidth]')
         else:"""
         # --- Load model and make inference
         model_ptq = quantize_model_fxp(self.model, self._ptq_level[0], self._ptq_level[1])
-        pred_waveform_ptq = model_ptq(input_waveform)[1]
         model_ptq.eval()
+        pred_waveform_ptq = model_ptq(input_waveform)[1]
 
         # --- Calculate loss
         if len(input_waveform) > 2:
@@ -184,10 +184,10 @@ class TrainAutoencoder(PyTorchHandler):
             loss = self.loss_fn(pred_waveform_ptq, input_waveform).item() / self.total_batches_valid
 
         # --- Saving results
-        if len(self.__metric_buffer[args[0]]):
-            self.__metric_buffer[args[0]][0] = self.__metric_buffer[args[0]][0] + loss
+        if len(self.__metric_buffer[kwargs['metric']]):
+            self.__metric_buffer[kwargs['metric']][0] = self.__metric_buffer[kwargs['metric']][0] + loss
         else:
-            self.__metric_buffer[args[0]].append(loss)
+            self.__metric_buffer[kwargs['metric']].append(loss)
 
     def do_training(self, path2save='', metrics=()) -> dict:
         """Start model training incl. validation and custom-own metric calculation
@@ -198,8 +198,6 @@ class TrainAutoencoder(PyTorchHandler):
             Dictionary with metrics from training (loss_train, loss_valid, own_metrics)
         """
         self._init_train(path2save=path2save, addon='_AE')
-
-        # --- Handling Kfold cross validation training
         if self._kfold_do and self._do_print_state:
             print(f"Starting Kfold cross validation training in {self.settings_train.num_kfold} steps")
 
@@ -273,17 +271,24 @@ class TrainAutoencoder(PyTorchHandler):
         np.save(f"{self._path2save}/metric_ae", metric_save, allow_pickle=True)
         return metric_out
 
-    def do_validation_after_training(self) -> dict:
+    def do_validation_after_training(self, do_ptq_valid: bool=False) -> dict:
         """Performing the validation with the best model after training for plotting and saving results"""
         if cuda.is_available():
             cuda.empty_cache()
 
         # --- Do the Inference with Best Model
         path2model = self.get_best_model('ae')[0]
+        if do_ptq_valid:
+            model_test = quantize_model_fxp(
+                model=load(path2model, weights_only=False),
+                total_bits=self._ptq_level[0],
+                frac_bits=self._ptq_level[1]
+            )
+        else:
+            model_test = load(path2model, weights_only=False)
         if self._do_print_state:
             print("\n================================================================="
                   f"\nDo Validation with best model: {path2model}")
-        model_test = load(path2model, weights_only=False)
 
         pred_model = randn(32, 1)
         feat_model = randn(32, 1)
@@ -311,43 +316,3 @@ class TrainAutoencoder(PyTorchHandler):
         result_pred = pred_model.numpy()
         return self._getting_data_for_plotting(data_orig_list.numpy(), clus_orig_list.numpy(),
                                                {'feat': result_feat, 'pred': result_pred}, addon='ae')
-
-    def do_validation_after_training_ptq(self) -> dict:
-        """Performing the validation with the best model after training for plotting and saving results"""
-        if cuda.is_available():
-            cuda.empty_cache()
-
-        # --- Do the Inference with Best Model
-        path2model = self.get_best_model('ae')[0]
-        if self._do_print_state:
-            print("\n================================================================="
-                  f"\nDo Validation with best model: {path2model}")
-        model_test = load(path2model, weights_only=False)
-        model_quant = quantize_model_fxp(model_test, self._ptq_level[0], self._ptq_level[1])
-
-        pred_model = randn(32, 1)
-        feat_model = randn(32, 1)
-        clus_orig_list = randn(32, 1)
-        data_orig_list = randn(32, 1)
-
-        first_cycle = True
-        model_quant.eval()
-        for ite_cycle, vdata in enumerate(self.valid_loader[-1]):
-            feat, pred = model_quant(vdata['in'].to(self.used_hw_dev))
-            if first_cycle:
-                feat_model = feat.detach().cpu()
-                pred_model = pred.detach().cpu()
-                clus_orig_list = vdata['class']
-                data_orig_list = vdata['in']
-            else:
-                feat_model = cat((feat_model, feat.detach().cpu()), dim=0)
-                pred_model = cat((pred_model, pred.detach().cpu()), dim=0)
-                clus_orig_list = cat((clus_orig_list, vdata['class']), dim=0)
-                data_orig_list = cat((data_orig_list, vdata['in']), dim=0)
-            first_cycle = False
-
-        # --- Preparing output
-        result_feat = feat_model.numpy()
-        result_pred = pred_model.numpy()
-        return self._getting_data_for_plotting(data_orig_list.numpy(), clus_orig_list.numpy(),
-                                               {'feat': result_feat, 'pred': result_pred}, addon='ae_quant')

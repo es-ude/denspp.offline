@@ -22,14 +22,13 @@ class TrainClassifier(PyTorchHandler):
             None
         """
         PyTorchHandler.__init__(self, config_train, config_data, do_train, do_print)
-        # --- Structure for calculating custom metrics during training
         self.__metric_buffer = dict()
         self.__metric_result = dict()
         self._metric_methods = {'accuracy': self.__determine_accuracy_per_class,
                                 'precision': self.__determine_buffering_metric_calculation,
                                 'recall': self.__determine_buffering_metric_calculation,
                                 'fbeta': self.__determine_buffering_metric_calculation,
-                                'ptq_loss': self.__determine_buffering_metric_calculation}
+                                'ptq_loss': self.__determine_ptq_loss}
 
     def __do_training_epoch(self) -> [float, float]:
         """Do training during epoch of training
@@ -86,7 +85,7 @@ class TrainClassifier(PyTorchHandler):
 
                 # --- Calculating custom made metrics
                 for metric_used in epoch_custom_metrics:
-                    self._determine_epoch_metrics(metric_used)(dec_cl, true_cl, metric_used)
+                    self._determine_epoch_metrics(metric_used)(dec_cl, true_cl, metric=metric_used, frame=vdata['in'].to(self.used_hw_dev))
 
         valid_acc = float(int(total_correct) / total_samples)
         valid_loss = float(valid_loss / total_batches)
@@ -125,7 +124,7 @@ class TrainClassifier(PyTorchHandler):
                         case 'fbeta':
                             self.__metric_buffer.update({key0: [[], []]})
                         case 'ptq_loss':
-                            self.__metric_buffer.update({key0: [[], []]})
+                            self.__metric_buffer.update({key0: [zeros((1,)), zeros((1,))]})
                 else:
                     raise NotImplementedError(f"Used custom metric ({key0}) is not implemented - Please check!")
         # --- Processing results
@@ -157,36 +156,34 @@ class TrainClassifier(PyTorchHandler):
                         self.__metric_result[key0].append(out[0])
                         self.__metric_buffer.update({key0: [[], []]})
                     case 'ptq_loss':
-                        # TODO: Anpassen
-                        self.__metric_result[key0].append(())
-                        self.__metric_buffer.update({key0: [zeros((len(self.cell_classes),)), zeros((len(self.cell_classes),))]})
+                        self.__metric_result[key0].append(div(self.__metric_buffer[key0][0], self.__metric_buffer[key0][1]))
+                        self.__metric_buffer.update({key0: [zeros((1,)), zeros((1,))]})
 
-    def __determine_accuracy_per_class(self, pred: Tensor, true: Tensor, *args) -> None:
-        out = self._separate_classes_from_label(pred, true, args[0], calculate_number_true_predictions)
-        self.__metric_buffer[args[0]][0] = add(self.__metric_buffer[args[0]][0], out[0])
-        self.__metric_buffer[args[0]][1] = add(self.__metric_buffer[args[0]][1], out[1])
+    def __determine_accuracy_per_class(self, pred: Tensor, true: Tensor, **kwargs) -> None:
+        out = self._separate_classes_from_label(pred, true, kwargs['metric'], calculate_number_true_predictions)
+        self.__metric_buffer[kwargs['metric']][0] = add(self.__metric_buffer[kwargs['metric']][0], out[0])
+        self.__metric_buffer[kwargs['metric']][1] = add(self.__metric_buffer[kwargs['metric']][1], out[1])
 
-    def __determine_buffering_metric_calculation(self, pred: Tensor, true: Tensor, *args) -> None:
-        if len(self.__metric_buffer[args[0]][0]) == 0:
-            self.__metric_buffer[args[0]][0] = true
-            self.__metric_buffer[args[0]][1] = pred
+    def __determine_buffering_metric_calculation(self, pred: Tensor, true: Tensor, **kwargs) -> None:
+        if len(self.__metric_buffer[kwargs['metric']][0]) == 0:
+            self.__metric_buffer[kwargs['metric']][0] = true
+            self.__metric_buffer[kwargs['metric']][1] = pred
         else:
-            self.__metric_buffer[args[0]][0] = concatenate((self.__metric_buffer[args[0]][0], true), dim=0)
-            self.__metric_buffer[args[0]][1] = concatenate((self.__metric_buffer[args[0]][1], pred), dim=0)
+            self.__metric_buffer[kwargs['metric']][0] = concatenate((self.__metric_buffer[kwargs['metric']][0], true), dim=0)
+            self.__metric_buffer[kwargs['metric']][1] = concatenate((self.__metric_buffer[kwargs['metric']][1], pred), dim=0)
 
-    # TODO: Testen
-    def __determine_ptq_loss(self, input_waveform: Tensor, pred: Tensor, true: Tensor, *args) -> None:
-        # --- Load model and make inference
-        model_ptq = quantize_model_fxp(self.model, self._ptq_level[0], self._ptq_level[1])
-        pred_cl, dec_cl = model_ptq(input_waveform)
+    def __determine_ptq_loss(self, pred: Tensor, true: Tensor, **kwargs) -> None:
+        model_ptq = quantize_model_fxp(
+            model=self.model,
+            total_bits=self._ptq_level[0],
+            frac_bits=self._ptq_level[1]
+        )
         model_ptq.eval()
-        loss = self.loss_fn(pred_cl, true).item() / self.total_batches_valid
+        pred_cl, dec_cl = model_ptq(kwargs['frame'])
+        num_true = calculate_number_true_predictions(dec_cl, true)
 
-        # --- Saving results
-        if len(self.__metric_buffer[args[0]]):
-            self.__metric_buffer[args[0]][0] = self.__metric_buffer[args[0]][0] + loss
-        else:
-            self.__metric_buffer[args[0]].append(loss)
+        self.__metric_buffer[kwargs['metric']][0] = add(self.__metric_buffer[kwargs['metric']][0], num_true)
+        self.__metric_buffer[kwargs['metric']][1] = add(self.__metric_buffer[kwargs['metric']][1], kwargs['frame'].shape[0])
 
     def do_training(self, path2save: str='', metrics: list=()) -> dict:
         """Start model training incl. validation and custom-own metric calculation
@@ -197,8 +194,6 @@ class TrainClassifier(PyTorchHandler):
             Dictionary with metrics from training (loss_train, loss_valid, own_metrics)
         """
         self._init_train(path2save=path2save, addon='_CL')
-
-        # --- Handling Kfold cross validation training
         if self._kfold_do and self._do_print_state:
             print(f"Starting Kfold cross validation training in {self.settings_train.num_kfold} steps")
 
@@ -269,8 +264,8 @@ class TrainClassifier(PyTorchHandler):
             self._save_train_results(best_acc[0], best_acc[1], 'Acc.')
 
             # --- Saving metrics after each fold
-            metric_fold.update({"train_acc": epoch_train_acc, "train_loss": epoch_train_loss,
-                                "valid_acc": epoch_valid_acc, "valid_loss": epoch_valid_loss})
+            metric_fold.update({"acc_train": epoch_train_acc, "loss_train": epoch_train_loss,
+                                "acc_valid": epoch_valid_acc, "loss_valid": epoch_valid_loss})
             metric_fold.update(self.__metric_result)
             metric_out.update({f"fold_{fold:03d}": metric_fold})
 
@@ -280,14 +275,21 @@ class TrainClassifier(PyTorchHandler):
         np.save(f"{self._path2save}/metric_cl", metric_save, allow_pickle=True)
         return metric_save
 
-    def do_validation_after_training(self) -> dict:
+    def do_validation_after_training(self, do_ptq_valid: bool=False) -> dict:
         """Performing the training with the best model after"""
         if cuda.is_available():
             cuda.empty_cache()
 
         # --- Do the Inference with Best Model
         path2model = self.get_best_model('class')[0]
-        model_test = load(path2model, weights_only=False)
+        if do_ptq_valid:
+            model_test = quantize_model_fxp(
+                model=load(path2model, weights_only=False),
+                total_bits=self._ptq_level[0],
+                frac_bits=self._ptq_level[1]
+            )
+        else:
+            model_test = load(path2model, weights_only=False)
         print("\n================================================================="
               f"\nDo Validation with best model: {path2model}")
 
