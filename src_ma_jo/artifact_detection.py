@@ -5,6 +5,56 @@ from scipy.optimize import curve_fit
 from denspp.offline.digital.dsp import DSP, SettingsDSP, RecommendedSettingsDSP
 from src_ma_jo.data_handler_artifacts import load_data, extract_arrays
 from src_ma_jo.show_plots_artifacts import *
+import re
+
+
+def extract_voltage_from_filename(filename):
+    """
+    Extrahiert den Spannungswert aus dem Dateinamen.
+    Erwartet eine Zahl vor 'us'.
+
+    :param filename: Dateiname als String
+    :return: Spannungswert als Float
+    """
+    match = 400
+    if match:
+        return match
+    else:
+        raise ValueError("Spannungswert konnte aus dem Dateinamen nicht extrahiert werden.")
+
+
+def create_signal_dictionary(filenames, signals):
+    """
+    Erstellt ein Dictionary mit den verarbeiteten Signalen.
+
+    :param filenames: Liste von Dateinamen
+    :param signals: Liste der zugehörigen verarbeiteten Signale (Arrays)
+    :return: Verschachteltes Dictionary
+    """
+    processed_signals = {}
+
+    for filename, signal in zip(filenames, signals):
+        if signal is None or len(signal) == 0:
+            continue
+
+        # Extrahiere die Volt-Zahl aus dem Dateinamen
+        voltage = extract_voltage_from_filename(filename)
+
+        # Generiere das Zeit-Array (angenommen, es ist einfach der Index in Form eines Arrays)
+        time = np.arange(len(signal))  # Zeit als Sequenz von Indizes (0, 1, ..., len(signal)-1)
+
+        # Bereinige das Signal
+        cleaned_signal = signal  # Dies sollte das bereinigte Signal sein
+
+        # Verschachteltes Dictionary erstellen
+        processed_signals[filename] = {
+            "time": time,
+            "cleaned_signal": cleaned_signal,
+            "voltage": voltage,
+        }
+
+    return processed_signals
+
 
 def detect_artifacts(array, threshold_factor=10):
     """Detects artifacts in an array based on standard deviation."""
@@ -277,6 +327,7 @@ def process_signals(result_arrays, dsp_instance, apply_filter, percentage_limit,
 
 # Main script
 if __name__ == "__main__":
+    processed_signals_list = []
     settings = SettingsDSP(
         gain=1,
         fs=25e3,
@@ -288,21 +339,20 @@ if __name__ == "__main__":
         t_dly=0
     )
 
-    """plot_counter = 0
+    plot_counter = 0
     percentage_counter = -1     # -1, da Zeit immer als %-Threshold klassifiziert wird
-    threshold_counter = 0"""
+    threshold_counter = 0
 
     dsp_instance = DSP(settings)
 
     # Flag zur Steuerung der Filterung
     apply_filter = False  # Setze auf False, falls die Filterung übersprungen werden soll
-    show_plot = True
 
     #TODO: loop über alle files und abspeichern als neue Arrays
 
     dsp_instance.use_filtfilt = True
     path = r"C:/Users/jo-di/Documents/Masterarbeit/Rohdaten"
-    filename = "A1R1b_ASIC_stim_sine_1kHz_6uA_5s_gap_reproduction"
+    filename = "A1R1a_elec_stim_50biphasic_400us0001"
 
     data = load_data(path, filename)
     result_arrays = extract_arrays(data, filename)
@@ -319,8 +369,10 @@ if __name__ == "__main__":
         apply_filter=apply_filter,
         percentage_limit=percentage_limit,
         threshold=threshold,
-        plot_flag=True
+        plot_flag=False
     )
+    processed_signals_list.append(result)
+    signal_dictionary = create_signal_dictionary(filename, processed_signals_list)
     plot_counter = result["plot_counter"]
     percentage_counter = result["percentage_counter"]
     threshold_counter = result["threshold_counter"]
@@ -328,3 +380,5 @@ if __name__ == "__main__":
     threshold_array = result["threshold_array"]
     plot_std_boxplot(result_arrays)
     plot_std_histogram(result_arrays)
+    print(plot_counter, percentage_counter, threshold_counter)
+    print(signal_dictionary)
