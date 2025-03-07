@@ -6,7 +6,8 @@ from torch import Tensor, zeros, load, save, concatenate, inference_mode, cuda, 
 
 from denspp.offline.dnn.ptq_help import quantize_model_fxp
 from denspp.offline.dnn.pytorch_handler import ConfigPytorch, ConfigDataset, PyTorchHandler
-from denspp.offline.metric.data import calculate_number_true_predictions, calculate_precision, calculate_recall, calculate_fbeta
+from denspp.offline.metric.data_torch import calculate_number_true_predictions, calculate_precision, calculate_recall, \
+    calculate_fbeta
 
 
 class TrainClassifier(PyTorchHandler):

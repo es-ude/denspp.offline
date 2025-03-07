@@ -6,7 +6,6 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "fxpmath>=0.4.9",
-    "impedancefitter>=2.0.11",
     "mat73>=0.65",
     "matplotlib>=3.9.2",
     "numpy>=1.26.4",
