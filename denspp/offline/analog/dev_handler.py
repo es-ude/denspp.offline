@@ -7,7 +7,7 @@ from scipy.optimize import least_squares, curve_fit
 
 from denspp.offline.structure_builder import init_project_folder
 from denspp.offline.plot_helper import save_figure
-from denspp.offline.metric.data import calculate_error_rae, calculate_error_mse
+from denspp.offline.metric.data_numpy import calculate_error_rae, calculate_error_mse
 
 
 @dataclass
