@@ -6,7 +6,7 @@ import numpy.lib.scimath as sm
 from datetime import datetime
 
 from denspp.offline.structure_builder import init_project_folder
-from denspp.offline.metric.data import calculate_error_mse
+from denspp.offline.metric.data_numpy import calculate_error_mse
 from denspp.offline.metric.snr import calculate_snr
 
 

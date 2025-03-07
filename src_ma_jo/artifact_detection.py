@@ -1,55 +1,214 @@
-import os
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.io import loadmat
-from scipy.interpolate import interp1d, CubicSpline
+from scipy.interpolate import CubicSpline
+from scipy.optimize import curve_fit
 from denspp.offline.digital.dsp import DSP, SettingsDSP, RecommendedSettingsDSP
-
-
-def load_data(path, filename):
-    """Loads a .mat file and returns its content."""
-    full_path = os.path.join(path, filename)
-    return loadmat(full_path)
-
-def extract_arrays(data, key, num_arrays=61):
-    """Extracts a specified number of arrays from the loaded .mat data."""
-    return [np.array([arr[i] for arr in data[key]]) for i in range(num_arrays)]
+from src_ma_jo.data_handler_artifacts import load_data, extract_arrays
+from src_ma_jo.show_plots_artifacts import *
 
 def detect_artifacts(array, threshold_factor=10):
     """Detects artifacts in an array based on standard deviation."""
     mean = np.mean(array)
     std_dev = np.std(array)
     artifacts = np.where(np.abs(array - mean) > threshold_factor * std_dev)[0]
+    try:
+        if len(artifacts) == 0:
+            raise ValueError("Keine Artefakte im aktuellen Array gefunden.")
+    except ValueError as e:
+        print(f"Fehler: {e}")
+        return np.array([]), mean, std_dev
     return artifacts, mean, std_dev
 
 
-def replace_artifacts_with_spline_smooth(array, artifacts):
+def exponential_func(x, a, b, c):
+    return a * np.exp(b * x) + c
+
+def fit_exponential(data_segment):
+    x = np.arange(len(data_segment))
+    try:
+        # noinspection PyTupleAssignmentBalance
+        popt, _ = curve_fit(exponential_func, x, data_segment, maxfev=10000, p0=(1, -0.1, 0))
+        fitted_curve = exponential_func(x, *popt)
+        #print(popt)
+    except RuntimeError:
+        popt = (0, 0, np.mean(data_segment))
+        fitted_curve = np.full_like(data_segment, np.mean(data_segment))
+    return popt, fitted_curve
+
+def compare_std_deviation_exponential(artifact_array, threshold):
+    """
+    Vergleicht die Standardabweichung zwischen einer Exponentialfunktion und den letzten 20 Werten
+    des Artefakts mit einem gegebenen Schwellenwert.
+
+    :param artifact_array: Array mit Artefaktwerten
+    :param threshold: Schwellenwert für die Standardabweichung
+    :return: True, wenn die Standardabweichung unter dem Schwellenwert liegt, andernfalls False
+    """
+    if len(artifact_array) < 20:
+        raise ValueError("Das Artefakt-Array enthält weniger als 20 Werte.")
+
+    # Extrahiere die letzten 20 Werte
+    data_segment = artifact_array[-20:]
+
+    # Führe den Fit der Exponentialfunktion durch
+    popt, fitted_curve = fit_exponential(data_segment)
+
+    # Berechne die Differenz zwischen tatsächlichen Werten und der Anpassung
+    differences = data_segment - fitted_curve
+
+    # Berechne die Standardabweichung der Differenzen
+    std_dev = np.std(differences)
+
+    # Vergleiche mit dem Schwellenwert
+    return std_dev <= threshold
+
+def replace_artifacts_with_spline_smooth(array, artifacts, std_threshold=10):
     """
     Ersetzt Artefakte mit glatterer Interpolation (CubicSpline) und gibt
     das gesamte glatte Array oder eine geglättete Kurve zurück.
     """
-    # Kopie des Arrays erstellen
-    clean_array = array.copy()
-    clean_array[artifacts[0:10]] = clean_array[artifacts[0]]
+    clean_array = array.astype(float).copy()
 
-    # Gültige Indizes bestimmen
-    valid_indices = np.setdiff1d(np.arange(len(array)), artifacts[:-20])
+    for artifact_range in find_connected_ranges(artifacts):
+        start = artifact_range[1]-20
+        end = artifact_range[1]
+        exp_data_segment = clean_array[start:end]
+        _, fitted_curve = fit_exponential(exp_data_segment)
+        std_dev_check = compare_std_deviation_exponential(exp_data_segment, std_threshold)
+        if std_dev_check:
+            x_artifact = np.arange(len(clean_array))[artifact_range[0]:artifact_range[1]]
+            extrapolated_values = exponential_func(np.arange(len(x_artifact)), *_)
+            clean_array[artifact_range[0]:artifact_range[1]] -= extrapolated_values
+        else:
+            continue
+
+    valid_indices = np.setdiff1d(np.arange(len(array)), artifacts)
     if len(valid_indices) < 4:  # Mindestens 4 Punkte für CubicSpline erforderlich
         raise ValueError("Nicht genug gültige Punkte für Interpolation.")
+    else:
+        #Interpolation mit CubicSpline
+        spline = CubicSpline(valid_indices, clean_array[valid_indices], bc_type='natural')
+        smooth_curve = spline(np.arange(len(clean_array)))
+        # Punkte ersetzen
+        clean_array[artifacts] = smooth_curve[artifacts]
 
-    # Interpolation mit CubicSpline
-    spline = CubicSpline(valid_indices, clean_array[valid_indices], bc_type='natural')
-    smooth_curve = spline(np.arange(len(clean_array)))
-    # Punkte ersetzen
-    clean_array[artifacts] = smooth_curve[artifacts]
+    return  clean_array[artifacts]
 
-    return clean_array[artifacts]
 
-def prepare_array_for_spline(original_signal):
-    return
+def process_signal(signal, signal_index, dsp_instance, apply_filter, percentage_limit, threshold, plot_flag=False):
+    if len(signal) == 0:
+        print(f"Signal {signal_index} is empty. Skipping process.")
+        return {
+            "plot_counter": 0,
+            "percentage_counter": 0,
+            "threshold_counter": 0,
+            "percent_array": [],
+            "threshold_array": [],
+        }
+    cleaned_signal = signal.copy()
+    plot_counter = 0
+    percentage_counter = 0
+    threshold_counter = 0
+    percent_array = []
+    threshold_array = []
 
+    if not filter_signals_by_percentage(signal, threshold, percentage_limit):
+        percentage_counter += 1
+        percent_array.append(signal_index)
+        return {
+            "plot_counter": plot_counter,
+            "percentage_counter": percentage_counter,
+            "threshold_counter": threshold_counter,
+            "percent_array": percent_array,
+            "threshold_array": threshold_array,
+        }
+
+    if not filter_signal_based_on_threshold(signal, threshold):
+        threshold_counter += 1
+        threshold_array.append(signal_index)
+        return {
+            "plot_counter": plot_counter,
+            "percentage_counter": percentage_counter,
+            "threshold_counter": threshold_counter,
+            "percent_array": percent_array,
+            "threshold_array": threshold_array,
+        }
+    else:
+        plot_counter += 1
+
+    if apply_filter:
+        filtered_signal = dsp_instance.filter(signal)
+        filtered_artifacts, filtered_mean, filtered_std_dev = detect_artifacts(filtered_signal)
+        cleaned_filtered_signal = replace_artifacts_with_spline_smooth(
+            filtered_signal, filtered_artifacts
+        )
+    else:
+        filtered_signal = signal
+        cleaned_filtered_signal = signal
+
+    original_artifacts, original_mean, original_std_dev = detect_artifacts(signal)
+
+    titles = [
+        f"Original Signal {signal_index}",
+        "Filtered Signal" if apply_filter else "Original Signal (Filter Skipped)",
+        "Original Signal with Artifacts Replaced",
+        "Filtered Signal with Artifacts Replaced" if apply_filter else "Original Signal with Artifacts Replaced (Filter Skipped)",
+    ]
+    std_devs = [
+        original_std_dev,
+        filtered_std_dev if apply_filter else original_std_dev,
+        original_std_dev,
+        filtered_std_dev if apply_filter else original_std_dev,
+    ]
+    means = [
+        original_mean,
+        filtered_mean if apply_filter else original_mean,
+        original_mean,
+        filtered_mean if apply_filter else original_mean,
+    ]
+
+    cleaned_signal = process_artifact_ranges(
+        signal, filtered_signal, cleaned_signal, cleaned_filtered_signal,
+        original_artifacts, titles, std_devs, means, plot_flag)
+    if plot_flag:
+        plot_artifact_ranges(
+            signal, filtered_signal, cleaned_signal, cleaned_filtered_signal,
+            titles, std_devs, means, original_artifacts, (None, None)
+        )
+
+    return {
+        "plot_counter": plot_counter,
+        "percentage_counter": percentage_counter,
+        "threshold_counter": threshold_counter,
+        "percent_array": percent_array,
+        "threshold_array": threshold_array,
+    }
+
+
+def process_artifact_ranges(signal, filtered_signal, cleaned_signal, cleaned_filtered_signal, original_artifacts, titles, std_devs, means, plot_flag):
+    if len(original_artifacts) == 0:
+        print("Original artifacts are empty. Returning the signal as is.")
+        return signal
+    cleaned_signal = signal.copy()
+    for ranges in find_connected_ranges(original_artifacts):
+        x = ranges[0]
+        y = ranges[1]
+        indices_range = (max(0, x - 10), min(len(signal) - 1, y + 10))
+        start, end = indices_range
+        range_indices = list(range(start, end))
+        replaced_signal = replace_artifacts_with_spline_smooth(signal, range_indices)
+        cleaned_signal[start:end] = replaced_signal
+        if plot_flag:
+            plot_artifact_ranges(
+                signal, filtered_signal, cleaned_signal, cleaned_filtered_signal,
+                titles, std_devs, means, original_artifacts, indices_range
+            )
+
+    return cleaned_signal
 
 def find_connected_ranges(data):
+    if len(data) == 0:
+        return []
     diffs = np.diff(data)
     breaks = np.where(diffs >= 5)[0]
 
@@ -63,28 +222,7 @@ def find_connected_ranges(data):
 
     return ranges
 
-
-
-def plot_signals(signals, titles, std_devs, means, artifact_ranges, indices_range, figsize=(12, 8)):
-    plt.figure(figsize=figsize)
-    for i, (signal, title, std_dev, mean) in enumerate(zip(signals, titles, std_devs, means), 1):
-        plt.subplot(len(signals), 1, i)
-        start, end = indices_range
-        if indices_range is not None:
-            plt.plot(signal[start:end], label=title)
-        else:
-            plt.plot(signal, label=title)
-        plt.axhline(mean + 10 * std_dev, color='r', linestyle=':', label='Mean + 10*StdDev')
-        plt.axhline(mean - 10 * std_dev, color='r', linestyle=':', label='Mean - 10*StdDev')
-        plt.title(title)
-        plt.xlabel("Index")
-        plt.ylabel("Amplitude")
-        #plt.legend(loc='best')
-    plt.tight_layout()
-    plt.show()
-
-
-def filter_signal_based_on_threshold(signal, threshold_limit, threshold_factor=10):
+def filter_signal_based_on_threshold(signal, threshold_limit, threshold_factor=15):
     if len(signal) == 0:  # If the signal is empty, automatically ignore it
         return False
 
@@ -108,26 +246,34 @@ def filter_signals_by_percentage(signal, threshold, percentage_limit=30):
     return percentage_above < percentage_limit
 
 
-def plot_std_boxplot(signals):
-    std_values = [np.std(signal) for signal in signals[1:] if len(signal) > 0]  # Ignorieren leerer Signale
-    plt.figure(figsize=(8, 6))
-    plt.boxplot(std_values, vert=True, patch_artist=True)
-    plt.title("Boxplot der Standardabweichungen")
-    plt.ylabel("Standardabweichung (STDW)")
-    plt.xlabel("Signalgruppe")
-    plt.show()
-
-
-def plot_std_histogram(signals, bins=20):
-    std_values = [np.std(signal) for signal in signals[1:] if len(signal) > 0]  # Ignoriere erstes Signal
-    plt.figure(figsize=(8, 6))
-    plt.hist(std_values, bins=bins, edgecolor='black', alpha=0.7)
-    plt.title("Histogramm der Standardabweichungen (erstes Signal ignoriert)")
-    plt.xlabel("Standardabweichung (STD)")
-    plt.ylabel("Häufigkeit")
-    plt.grid(axis="y", linestyle="--", alpha=0.7)
-    plt.show()
-
+def process_signals(result_arrays, dsp_instance, apply_filter, percentage_limit, threshold, plot_flag):
+    plot_counter = 0
+    percentage_counter = -1  # -1, da Zeit immer als %-Threshold klassifiziert wird
+    threshold_counter = 0
+    percent_array = []
+    threshold_array = []
+    for i, signal in enumerate(result_arrays):
+        result = process_signal(
+            signal=signal,
+            signal_index=i,
+            dsp_instance=dsp_instance,
+            apply_filter=apply_filter,
+            percentage_limit=percentage_limit,
+            threshold=threshold,
+            plot_flag=plot_flag
+        )
+        plot_counter += result["plot_counter"]
+        percentage_counter += result["percentage_counter"]
+        threshold_counter += result["threshold_counter"]
+        percent_array.extend(result["percent_array"])
+        threshold_array.extend(result["threshold_array"])
+    return {
+        "plot_counter": plot_counter,
+        "percentage_counter": percentage_counter,
+        "threshold_counter": threshold_counter,
+        "percent_array": percent_array,
+        "threshold_array": threshold_array,
+    }
 
 # Main script
 if __name__ == "__main__":
@@ -142,94 +288,43 @@ if __name__ == "__main__":
         t_dly=0
     )
 
-    plot_counter = 0
+    """plot_counter = 0
     percentage_counter = -1     # -1, da Zeit immer als %-Threshold klassifiziert wird
-    threshold_counter = 0
+    threshold_counter = 0"""
+
     dsp_instance = DSP(settings)
 
     # Flag zur Steuerung der Filterung
     apply_filter = False  # Setze auf False, falls die Filterung übersprungen werden soll
+    show_plot = True
 
     #TODO: loop über alle files und abspeichern als neue Arrays
 
     dsp_instance.use_filtfilt = True
-    path = r"C:\\Users\\jo-di\\Documents\\Masterarbeit\\Rohdaten"
-    filename = "A1R1a_elec_stim_50biphasic_400us0001"
-    key = "A1R1a_elec_stim_50biphasic_400us0001"
+    path = r"C:/Users/jo-di/Documents/Masterarbeit/Rohdaten"
+    filename = "A1R1b_ASIC_stim_sine_1kHz_6uA_5s_gap_reproduction"
 
     data = load_data(path, filename)
-    result_arrays = extract_arrays(data, key)
+    result_arrays = extract_arrays(data, filename)
 
     threshold = 150  # Beispiel-Schwellenwert
-    percentage_limit = 10  # Beispiel-Prozentwert
+    percentage_limit = 5  # Beispiel-Prozentwert
     percent_array = []
     threshold_array = []
-    #TODO: Funktion mit übergabeparameter Signal X verarbeiten
     #TODO: Flag für Plot (mit verschiedenen Levels ggf)
-    for i in range(2):
-        original_signal = result_arrays[i]
 
-        if not filter_signals_by_percentage(original_signal, threshold, percentage_limit):
-            # Signal ignorieren, wenn Prozentsatz zu hoch ist
-            percentage_counter += 1
-            percent_array.append(i)
-            continue
-
-        if not filter_signal_based_on_threshold(original_signal, threshold):
-            # Signal ignorieren, wenn Threshold überschritten wird
-            threshold_counter += 1
-            threshold_array.append(i)
-            continue
-        else:
-            plot_counter += 1
-
-        if apply_filter:
-            # Filterung anwenden, wenn das Flag aktiviert ist
-            filtered_signal = dsp_instance.filter(original_signal)
-            filtered_artifacts, filtered_mean, filtered_std_dev = detect_artifacts(filtered_signal)
-
-            # Bereinigung des gefilterten Signals
-            cleaned_filtered_signal = replace_artifacts_with_spline(filtered_signal,
-                filtered_artifacts)
-        else:
-            # Filterung überspringen
-            filtered_signal = original_signal
-            cleaned_filtered_signal = original_signal
-
-        # Artefakterkennung und Bereinigung des Originalsignals
-        original_artifacts, original_mean, original_std_dev = detect_artifacts(original_signal)
-
-        # Signale und Metadaten für die Darstellung
-
-        titles = [
-            f"Original Signal {i}",
-            "Filtered Signal" if apply_filter else "Original Signal (Filter Skipped)",
-            "Original Signal with Artifacts Replaced",
-            "Filtered Signal with Artifacts Replaced" if apply_filter else "Original Signal with Artifacts Replaced (Filter Skipped)"
-        ]
-        std_devs = [original_std_dev, filtered_std_dev if apply_filter else original_std_dev, original_std_dev,
-                    filtered_std_dev if apply_filter else original_std_dev]
-        means = [original_mean, filtered_mean if apply_filter else original_mean, original_mean,
-                 filtered_mean if apply_filter else original_mean]
-
-        # Plot für Artefaktbereiche
-        cleaned_signal = original_signal.copy()
-        for ranges in find_connected_ranges(original_artifacts):
-            x = ranges[0]
-            y = ranges[1]
-            indices_range = (max(0, x - 10), min(len(original_signal) - 1, y + 10))  # Grenzen einhalten
-            start, end = indices_range
-            range_indices = list(range(start, end))
-            replaced_signal = replace_artifacts_with_spline_smooth(original_signal, range_indices)
-            cleaned_signal[start:end] = replaced_signal
-
-            signals = [original_signal, filtered_signal, cleaned_signal, cleaned_filtered_signal]
-            plot_signals(signals, titles, std_devs, means, [original_artifacts], indices_range)
-
-        signals = [original_signal, filtered_signal, cleaned_signal, cleaned_filtered_signal]
-        # Optional: Gesamtes Signal anzeigen
-        indices_range = (None, None)
-        plot_signals(signals, titles, std_devs, means, [original_artifacts], indices_range)
-
+    result = process_signals(
+        result_arrays=result_arrays,
+        dsp_instance=dsp_instance,
+        apply_filter=apply_filter,
+        percentage_limit=percentage_limit,
+        threshold=threshold,
+        plot_flag=True
+    )
+    plot_counter = result["plot_counter"]
+    percentage_counter = result["percentage_counter"]
+    threshold_counter = result["threshold_counter"]
+    percent_array = result["percent_array"]
+    threshold_array = result["threshold_array"]
     plot_std_boxplot(result_arrays)
     plot_std_histogram(result_arrays)

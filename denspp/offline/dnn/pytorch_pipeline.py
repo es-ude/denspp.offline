@@ -9,7 +9,8 @@ from denspp.offline.dnn.pytorch.autoencoder import TrainAutoencoder
 
 def do_train_classifier(config_ml: ConfigMLPipeline, config_data: ConfigDataset,
                         config_train: ConfigPytorch, used_dataset, used_model,
-                        path2save: str='', calc_custom_metrics: list=(), print_results: bool=True) -> [dict, dict, str]:
+                        path2save: str='', calc_custom_metrics: list=(), print_results: bool=True,
+                        ptq_quant_lvl: list = (12, 11)) -> [dict, dict, str]:
     """Template for training DL classifiers using PyTorch (incl. plotting)
     Args:
         config_ml:          Settings for handling the ML Pipeline
@@ -20,6 +21,8 @@ def do_train_classifier(config_ml: ConfigMLPipeline, config_data: ConfigDataset,
         path2save:          Path for saving the results [Default: '' --> generate new subfolder in runs]
         calc_custom_metrics:List with metric names (custom-made) to determine during trainings process
         print_results:      Printing the results into Terminal
+        ptq_validation_do:  Bool for doing the PTQ validation (instead of normal)
+        ptq_quant_lvl:      Quantization level for PTQ [total bitwidth, frac bitwidth]
     Returns:
         Dictionaries with results from training [metrics, validation data] + String to path for saving plots
     """
@@ -27,6 +30,7 @@ def do_train_classifier(config_ml: ConfigMLPipeline, config_data: ConfigDataset,
     train_handler = TrainClassifier(config_train=config_train, config_data=config_data, do_train=True)
     train_handler.load_model(model=used_model, print_model=print_results)
     train_handler.load_data(data_set=used_dataset)
+    train_handler.define_ptq_level(ptq_quant_lvl[0], ptq_quant_lvl[1])
     train_handler.get_metric_methods()
 
     # --- Processing Step #2: Do Training and Validation
@@ -39,9 +43,9 @@ def do_train_classifier(config_ml: ConfigMLPipeline, config_data: ConfigDataset,
         plt.close('all')
         used_first_fold = [key for key in metrics.keys()][0]
 
-        plot_loss(metrics[used_first_fold]['train_acc'], metrics[used_first_fold]['valid_acc'],
+        plot_loss(metrics[used_first_fold]['acc_train'], metrics[used_first_fold]['acc_valid'],
                   type='Acc.', path2save=path2folder)
-        plot_loss(metrics[used_first_fold]['train_loss'], metrics[used_first_fold]['valid_loss'],
+        plot_loss(metrics[used_first_fold]['loss_train'], metrics[used_first_fold]['loss_valid'],
                   type=f'{config_train.loss} (CL)', path2save=path2folder)
         plot_confusion(data_result['valid_clus'], data_result['yclus'],
                        path2save=path2folder, cl_dict=used_dataset.get_dictionary)
@@ -55,7 +59,7 @@ def do_train_classifier(config_ml: ConfigMLPipeline, config_data: ConfigDataset,
 def do_train_autoencoder(config_ml: ConfigMLPipeline, config_data: ConfigDataset,
                          config_train: ConfigPytorch, used_dataset, used_model,
                          path2save: str='', calc_custom_metrics: list=(), print_results: bool=True,
-                         ptq_validation_do: bool=False, ptq_quant_lvl: list = (12, 8)) -> [dict, dict, str]:
+                         ptq_quant_lvl: list = (12, 8)) -> [dict, dict, str]:
     """Template for training DL classifiers using PyTorch (incl. plotting)
     Args:
         config_ml:              Settings for handling the ML Pipeline
@@ -66,7 +70,6 @@ def do_train_autoencoder(config_ml: ConfigMLPipeline, config_data: ConfigDataset
         path2save:              Path for saving the results [Default: '' --> generate new subfolder in runs]
         calc_custom_metrics:    List with metric names (custom-made) to determine during trainings process
         print_results:          Printing the results into Terminal
-        ptq_validation_do:      Bool for doing the PTQ validation (instead of normal)
         ptq_quant_lvl:          Quantization level for PTQ [total bitwidth, frac bitwidth]
     Returns:
         Dictionaries with results from training [metrics, validation data] + String to path for saving plots
@@ -75,16 +78,12 @@ def do_train_autoencoder(config_ml: ConfigMLPipeline, config_data: ConfigDataset
     train_handler = TrainAutoencoder(config_train=config_train, config_data=config_data, do_train=True)
     train_handler.load_model(model=used_model, print_model=print_results)
     train_handler.load_data(data_set=used_dataset)
+    train_handler.define_ptq_level(ptq_quant_lvl[0], ptq_quant_lvl[1])
 
     # --- Processing Step #2: Do Training and Validation
-    train_handler.get_metric_methods()
     metrics = train_handler.do_training(path2save=path2save, metrics=calc_custom_metrics)
     path2folder = train_handler.get_saving_path()
-    if ptq_validation_do:
-        train_handler.define_ptq_level(ptq_quant_lvl[0], ptq_quant_lvl[1])
-        data_result = train_handler.do_validation_after_training_ptq()
-    else:
-        data_result = train_handler.do_validation_after_training()
+    data_result = train_handler.do_validation_after_training()
 
     # --- Processing Step #3: Plotting
     if config_ml.do_plot:
