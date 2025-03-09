@@ -4,6 +4,7 @@ from denspp.offline.digital.dsp import DSP, SettingsDSP, RecommendedSettingsDSP
 from src_ma_jo.data_handler_artifacts import load_data, extract_arrays
 from src_ma_jo.show_plots_artifacts import *
 import re
+import numpy as np
 
 
 def extract_voltage_from_filename(filename):
@@ -322,7 +323,16 @@ def process_signals(result_arrays, dsp_instance, apply_filter, percentage_limit,
         "percent_array": percent_array,
         "threshold_array": threshold_array,
     }
+def save_signal_dictionary(signal_dict, filename="signal_dictionary.npy"):
+    """
+    Speichert ein gegebenes Signal-Dictionary in einer .npy-Datei.
 
+    :param signal_dict: Das zu speichernde Signal-Dictionary
+    :param filename: Name der Datei, in der das Dictionary gespeichert wird
+    """
+    np.save(filename, signal_dict)
+
+# Main script
 # Main script
 if __name__ == "__main__":
     processed_signals_list = []
@@ -371,6 +381,7 @@ if __name__ == "__main__":
     )
     processed_signals_list.append(result_arrays)
     signal_dictionary = create_signal_dictionary(filename, processed_signals_list)
+    save_signal_dictionary(signal_dictionary, filename +".npy")
     plot_counter = result["plot_counter"]
     percentage_counter = result["percentage_counter"]
     threshold_counter = result["threshold_counter"]
