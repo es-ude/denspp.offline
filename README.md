@@ -26,11 +26,15 @@ It is recommended that each working group will create a new branch for editing t
 their input will be merged with the main branch. Further informations about this software framework are described in the
 paper at the end of the readme file.
 
-If you have downloaded the repo and no *.py files or no folder are available, then run the following code to initialize the project.
+If you create a new repo and you want to use the functionalities of this Python tool. Then please initilise the project.toml using uv and write the following code into the terminal.
+```
+uv add "git+https://github.com/AErbsloeh/denspp.offline.git"
+```
+After initlialisation, then run the following code to initialize the project.
 ```
 python ./denspp/offline/init_project.py 
 ```
-Important! Please start from your repo folder!
+Important! Please start every script from your repo folder!
 
 ## Project File structure
 
