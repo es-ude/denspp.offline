@@ -2,14 +2,16 @@
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.setuptools.packages.find]
-where = ["."]  # list of folders that contain the packages (["."] by default)
-include = ["denspp"]  # package names should match these glob patterns (["*"] by default)
-exclude = []  # exclude packages matching these glob patterns (empty by default)
-namespaces = false  # to disable scanning PEP 420 namespaces (true by default)
 
- [tool.hatch.build.targets.wheel]
- packages = ["denspp"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["denspp"]
+exclude = ["example", "src_dnn", "src_ma_jo", "src_neuro"]
+namespaces = false
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["denspp"]
 
 
 [project]
@@ -49,6 +51,7 @@ dependencies = [
     "notebook>=7.3.2",
 ]
 
+
 [dependency-groups]
 dev = [
     "pytest>=8.3.3",
@@ -61,6 +64,7 @@ lint = [
     "pylsp-mypy>=0.6.9",
     "python-lsp-ruff>=2.2.2",
 ]
+
 
 [tool.ruff]
 exclude = [
@@ -96,6 +100,7 @@ line-length = 88
 indent-width = 4
 target-version = "py311"
 
+
 [tool.ruff.lint]
 select = [
     "F",   # pyflakes
@@ -108,14 +113,13 @@ select = [
 ]
 unfixable = ["B"]
 
+
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
 line-ending = "auto"
 docstring-code-format = false
 
-[tool.uv.sources]
-elasticai-creator = { git = "https://github.com/es-ude/elastic-ai.creator.git"}
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
