@@ -4,10 +4,10 @@ build-backend = "hatchling.build"
 
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["denspp"]
-exclude = ["example", "src_dnn", "src_ma_jo", "src_neuro"]
-namespaces = false
+where = ["."]  # list of folders that contain the packages (["."] by default)
+include = ["denspp"]  # package names should match these glob patterns (["*"] by default)
+exclude = ["example", "src_dnn", "src_ma_jo", "src_neuro"]  # exclude packages matching these glob patterns (empty by default)
+namespaces = false  # to disable scanning PEP 420 namespaces (true by default)
 
 
 [tool.hatch.build.targets.wheel]
@@ -50,6 +50,10 @@ dependencies = [
     "elasticai-creator",
     "notebook>=7.3.2",
 ]
+
+
+[tool.uv.sources]
+elasticai-creator = { git = "https://github.com/es-ude/elastic-ai.creator.git"}
 
 
 [dependency-groups]
