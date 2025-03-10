@@ -69,10 +69,6 @@ class PreAmp(CommonAnalogFunctions):
                                 self.settings.f_type)
         (self.__b_iir_spk, self.__a_iir_spk) = iir_spk_result[0], iir_spk_result[1]
 
-    @property
-    def vcm(self) -> float:
-        return self._settings.vcm
-
     def __gen_chop(self, size: int) -> np.ndarray:
         """Generate the chopping clock signal"""
         t = np.arange(0, size, 1) / self.settings.fs_ana

@@ -4,10 +4,10 @@ build-backend = "hatchling.build"
 
 
 [tool.setuptools.packages.find]
-where = ["."]  # list of folders that contain the packages (["."] by default)
-include = ["denspp"]  # package names should match these glob patterns (["*"] by default)
-exclude = ["example", "src_dnn", "src_ma_jo", "src_neuro"]  # exclude packages matching these glob patterns (empty by default)
-namespaces = false  # to disable scanning PEP 420 namespaces (true by default)
+where = ["."]
+include = ["denspp"]  
+exclude = ["example", "src_dnn", "src_ma_jo", "src_neuro"]  
+namespaces = false
 
 
 [tool.hatch.build.targets.wheel]
@@ -17,7 +17,7 @@ packages = ["denspp"]
 [project]
 name = "denspp.offline"
 version = "0.1.0"
-description = "Python API for analysing extracellular recordings"
+description = "Python Framework for End-To-End and Hardware-Aware Signal Processing"
 readme = "README.md"
 license =  {file = "LICENSE"}
 requires-python = ">=3.12"

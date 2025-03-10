@@ -4,6 +4,10 @@ import numpy as np
 class CommonAnalogFunctions:
     def __init__(self, settings) -> None:
         self._settings = settings
+        
+    @property
+    def vcm(self) -> float:
+        return (self._settings.vdd - self._settings.vss) / 2
 
     def voltage_clipping(self, uin: np.ndarray | float) -> np.ndarray:
         """Do voltage clipping at voltage supply"""
