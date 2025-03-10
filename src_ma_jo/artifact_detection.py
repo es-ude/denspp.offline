@@ -1,11 +1,10 @@
-import numpy as np
-import matplotlib.pyplot as plt
 from scipy.interpolate import CubicSpline
 from scipy.optimize import curve_fit
 from denspp.offline.digital.dsp import DSP, SettingsDSP, RecommendedSettingsDSP
 from src_ma_jo.data_handler_artifacts import load_data, extract_arrays
 from src_ma_jo.show_plots_artifacts import *
 import re
+import numpy as np
 
 
 def extract_voltage_from_filename(filename):
@@ -33,21 +32,21 @@ def create_signal_dictionary(filenames, signals):
     """
     processed_signals = {}
 
-    for filename, signal in zip(filenames, signals):
+    for signal in zip(signals):
         if signal is None or len(signal) == 0:
             continue
 
         # Extrahiere die Volt-Zahl aus dem Dateinamen
-        voltage = extract_voltage_from_filename(filename)
+        voltage = extract_voltage_from_filename(filenames)
 
         # Generiere das Zeit-Array (angenommen, es ist einfach der Index in Form eines Arrays)
-        time = np.arange(len(signal))  # Zeit als Sequenz von Indizes (0, 1, ..., len(signal)-1)
+        time = signal[0]
 
         # Bereinige das Signal
         cleaned_signal = signal  # Dies sollte das bereinigte Signal sein
 
         # Verschachteltes Dictionary erstellen
-        processed_signals[filename] = {
+        processed_signals[filenames] = {
             "time": time,
             "cleaned_signal": cleaned_signal,
             "voltage": voltage,
@@ -324,7 +323,16 @@ def process_signals(result_arrays, dsp_instance, apply_filter, percentage_limit,
         "percent_array": percent_array,
         "threshold_array": threshold_array,
     }
+def save_signal_dictionary(signal_dict, filename="signal_dictionary.npy"):
+    """
+    Speichert ein gegebenes Signal-Dictionary in einer .npy-Datei.
 
+    :param signal_dict: Das zu speichernde Signal-Dictionary
+    :param filename: Name der Datei, in der das Dictionary gespeichert wird
+    """
+    np.save(filename, signal_dict)
+
+# Main script
 # Main script
 if __name__ == "__main__":
     processed_signals_list = []
@@ -371,8 +379,9 @@ if __name__ == "__main__":
         threshold=threshold,
         plot_flag=False
     )
-    processed_signals_list.append(result)
+    processed_signals_list.append(result_arrays)
     signal_dictionary = create_signal_dictionary(filename, processed_signals_list)
+    save_signal_dictionary(signal_dictionary, filename +".npy")
     plot_counter = result["plot_counter"]
     percentage_counter = result["percentage_counter"]
     threshold_counter = result["threshold_counter"]
