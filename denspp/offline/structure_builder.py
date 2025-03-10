@@ -1,6 +1,7 @@
 from os import getcwd, makedirs
-from os.path import join, exists
+from os.path import join, exists, dirname, abspath
 from shutil import copy
+import denspp.offline
 
 
 def get_path_project_start(new_folder: str = '') -> str:
@@ -8,13 +9,14 @@ def get_path_project_start(new_folder: str = '') -> str:
     :param new_folder:              New folder path (optional)
     :return:                        String of absolute path to start the project structure
     """
-    folder_reference = 'denspp.offline'
-    folder_start = getcwd().split(folder_reference)[0]
-    return join(folder_start, folder_reference, new_folder)
+    folder_reference = 'denspp'
+    folder_start = getcwd().split(folder_reference)[0] if folder_reference in getcwd() else getcwd()
+    return abspath(join(folder_start, new_folder))
 
 
 def get_path_to_templates() -> str:
-    return join(get_path_project_start(), 'denspp/offline/template')
+    path2start = dirname(denspp.offline.__file__)
+    return join(path2start, 'template')
 
 
 def init_project_folder(new_folder: str = '') -> None:
