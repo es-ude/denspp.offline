@@ -49,10 +49,6 @@ class Comp(CommonAnalogFunctions):
         self.settings = setting
         self.__noise_dis = 1e-3
 
-    @property
-    def vcm(self) -> float:
-        return (self.settings.vdd + self.settings.vss) / 2
-
     def __gen_noise(self, input: int, scale: float=0.1) -> np.ndarray:
         """Generate the input noise"""
         return np.random.normal(self.settings.offset, scale, input) if self.settings.noise else self.settings.offset * np.ones(input)

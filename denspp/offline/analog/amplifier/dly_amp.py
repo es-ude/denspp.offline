@@ -54,10 +54,6 @@ class DlyAmp(CommonAnalogFunctions):
         self.settings = settings_dly
 
     @property
-    def vcm(self) -> float:
-        return (self.settings.vdd + self.settings.vss) / 2
-
-    @property
     def num_dly_taps(self) -> int:
         return int(self.settings.fs_ana * self.settings.t_dly)
 

@@ -54,10 +54,6 @@ class CurrentAmplifier(CommonAnalogFunctions):
         self.handler_noise = ProcessNoise(settings_noise, settings_dev.fs_ana)
         self._settings = settings_dev
 
-    @property
-    def vcm(self) -> float:
-        return (self._settings.vdd + self._settings.vss) / 2
-
     def __add_parasitic(self, size: int, resistance: float=1.0) -> np.ndarray:
         """"""
         u_para = np.zeros((size, ))
