@@ -1,6 +1,6 @@
 # End-To-End Deep Neural Signal Pre-Processing (DeNSPP.offline)
 
-This Python package is developed in the research project Sp:AI:ke, funded by MERCUR (Germany). This software framework / API
+This Python package is developed in the research project Sp:AI:ke, funded by MERCUR foundation (Germany). This software framework / API
 enables a development of user-specific neural signal processing pipeline for extracellular recordings with offline data (already recorded and available). It helps to accelerate the next-gen hardware development of end-to-end neural signal processors (Brain-Computer Interfaces, retinal implants, ...).
 
 **Table of Content**
@@ -20,7 +20,7 @@ For using this framework, the following software tools are necessary / recommend
 - PyCharm Community Version ([Link](https://www.jetbrains.com/de-de/pycharm/download/#section=windows))
 - Python Interpreter 3.11 ([Link](https://www.python.org/downloads/release/python-3116/))
 - Git ([Link](https://git-scm.com/downloads))
-- `uv` package manager ([Link](https://docs.astral.sh/uv/))
+- `uv` package manager ([Link](https://docs.astral.sh/uv/), [Using](https://www.saaspegasus.com/guides/uv-deep-dive/))
 
 It is recommended that each working group will create a new branch for editing their input. At the end of each project,
 their input will be merged with the main branch. Further informations about this software framework are described in the
@@ -151,9 +151,8 @@ Most package managers only provide the latest version of ngspice which is far gr
 > dnf install libngspice-32
 > ```
 
-## More information about other APIs
+## More information about 3rd party tools
 - `PySpice` [Official Documentation](https://pyspice.fabrice-salvaire.fr/releases/v1.5/)
-- `impedancefitter` [Official Documentation](https://impedancefitter.readthedocs.io/en/latest/index.html)
 
 ## Citation / Documentation
 If you want to understand what is the idea behind DeNSPP, please have a look on the corresponding [paper](https://doi.org/10.1515/cdbme-2023-1118).
