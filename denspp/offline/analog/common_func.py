@@ -7,7 +7,7 @@ class CommonAnalogFunctions:
         
     @property
     def vcm(self) -> float:
-        return (self._settings.vdd - self._settings.vss) / 2
+        return (self._settings.vdd + self._settings.vss) / 2
 
     def voltage_clipping(self, uin: np.ndarray | float) -> np.ndarray:
         """Do voltage clipping at voltage supply"""

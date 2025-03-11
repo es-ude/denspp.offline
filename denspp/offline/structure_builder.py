@@ -9,8 +9,8 @@ def get_path_project_start(new_folder: str = '') -> str:
     :param new_folder:              New folder path (optional)
     :return:                        String of absolute path to start the project structure
     """
-    folder_reference = 'denspp'
-    folder_start = getcwd().split(folder_reference)[0] if folder_reference in getcwd() else getcwd()
+    folder_reference = 'denspp.offline'
+    folder_start = join(getcwd().split(folder_reference)[0], folder_reference) if folder_reference in getcwd() else getcwd()
     return abspath(join(folder_start, new_folder))
 
 
@@ -18,6 +18,19 @@ def get_path_to_templates() -> str:
     path2start = dirname(denspp.offline.__file__)
     return join(path2start, 'template')
 
+
+def copy_template_files(copy_files: dict, path2start: str) -> None:
+    """Function for copying template files to new folder.
+    :param copy_files:          Dictionary of file paths to copy
+    :param path2start:          Path to start folder
+    :return:                    None
+    """
+    first_element = list(copy_files.items())[0]
+    path2test = join(path2start, first_element[1], first_element[0])
+    if not exists(path2test):
+        path2temp = get_path_to_templates()
+        for key, value in copy_files.items():
+            copy(join(path2temp, key), join(path2start, value) + '/')
 
 def init_project_folder(new_folder: str = '') -> None:
     """Generating folder structure in first run
@@ -34,13 +47,7 @@ def init_project_folder(new_folder: str = '') -> None:
         for folder_name in folder_structure:
             makedirs(join(path2start, folder_name), exist_ok=True)
 
-    # --- Copy process
-    first_element = list(copy_files.items())[0]
-    path2test = join(path2start, first_element[1], first_element[0])
-    if not exists(path2test):
-        path2temp = get_path_to_templates()
-        for key, value in copy_files.items():
-            copy(join(path2temp, key), join(path2start, value) + '/')
+    copy_template_files(copy_files, path2start)
 
 
 def init_dnn_folder(new_folder: str = '') -> None:
@@ -58,15 +65,4 @@ def init_dnn_folder(new_folder: str = '') -> None:
         for folder_name in folder_structure:
             makedirs(join(path2start, folder_name), exist_ok=True)
 
-    # --- Copy process
-    first_element = list(copy_files.items())[0]
-    path2test = join(path2proj, first_element[1], first_element[0])
-    if not exists(path2test):
-        path2temp = get_path_to_templates()
-        for key, value in copy_files.items():
-            copy(join(path2temp, key), join(path2proj, value) + '/')
-
-
-if __name__ == '__main__':
-    init_project_folder()
-    init_dnn_folder()
+    copy_template_files(copy_files, path2start)

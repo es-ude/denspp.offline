@@ -149,8 +149,7 @@ class WaveformGenerator:
             print("Signal not available")
             signal = self.__generate_zero(time_duration)
         waveform = self.__switching_polarity(signal, do_cathodic)
-        noise = self.__handler_noise.gen_noise_real_pwr(waveform.size) if self.__add_noise else np.zeros_like(waveform)
-        return waveform + noise
+        return waveform
 
     def generate_waveform(self, time_points: list, time_duration: list,
                           waveform_select: list, polarity_cathodic: list) -> dict:
@@ -178,8 +177,9 @@ class WaveformGenerator:
 
                 waveform = self.__select_waveform_template(time_duration[idx], waveform_select[idx], do_polarity)
                 out[time_xpos:time_xpos+waveform.size] = waveform
+                noise = self.__handler_noise.gen_noise_real_pwr(out.size) if self.__add_noise else np.zeros_like(out)
                 rms_value = np.sqrt(np.sum(np.square(waveform)) / waveform.size)
-            return {'time': time, 'sig': out, 'rms': rms_value}
+            return {'time': time, 'sig': out + noise, 'rms': rms_value}
 
     def generate_biphasic_waveform(self, anodic_mode: int, anodic_duration: float,
                                    cathodic_mode: int, cathodic_duration: float,
@@ -209,12 +209,11 @@ class WaveformGenerator:
             waveforms.append(self.__select_waveform_template(window, mode[idx], poly[idx]))
 
         if do_charge_balancing:
-            k = self.__get_charge_balancing_factor(waveforms)
-            waveform = k * waveforms[-1]
+            waveform = self.__get_charge_balancing_factor(waveforms) * waveforms[-1]
             waveforms[-1] = waveform
-
 
         # --- Creating the output signal
         out = np.concatenate([waveform for waveform in waveforms], axis=0)
+        noise = self.__handler_noise.gen_noise_real_pwr(out.size) if self.__add_noise else np.zeros_like(out)
         time = np.linspace(0, out.size, out.size) / self._sampling_rate
-        return {'t': time, 'y': out}
+        return {'t': time, 'y': out + noise}
