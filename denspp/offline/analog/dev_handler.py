@@ -35,8 +35,8 @@ def _calc_error(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float
 
 def _raise_voltage_violation(du: np.ndarray | float, range_volt: list) -> None:
     """Checking differential voltage input for violation of voltage range for given branch"""
-    violation_dwn = np.count_nonzero(du < range_volt[slice(0)], axis=0)
-    violation_up = np.count_nonzero(du > range_volt[slice(1)], axis=0)
+    violation_dwn = np.count_nonzero(du < range_volt[0], axis=0)
+    violation_up = np.count_nonzero(du > range_volt[1], axis=0)
 
     if violation_up or violation_dwn:
         val = du.min if violation_dwn else du.max
