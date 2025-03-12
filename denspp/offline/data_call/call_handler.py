@@ -115,7 +115,7 @@ def transform_label_from_csv_to_numpy(marker_loaded: list, label_text: list, sta
 
 class DataController:
     """Class for loading and manipulating the used dataset"""
-    __download_handler = OwncloudDownloader(use_dataset=False)
+    __download_handler: OwncloudDownloader
     _raw_data: DataHandler
     _settings: SettingsDATA
     _path2file: str = ''
@@ -131,6 +131,7 @@ class DataController:
         self._methods_available = dir(DataController)
         self.__default_data_path = join(get_path_project_start(), 'data')
         self.__config_data_selection = [self.__default_data_path, 0, 0]
+        self.__download_handler = OwncloudDownloader(use_dataset=False)
 
     def do_cut(self) -> None:
         """Cutting all transient electrode signals in the given range"""
