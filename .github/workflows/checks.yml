@@ -1,0 +1,70 @@
+name: Checks
+on:
+  pull_request:
+  workflow_call:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-code-lint:
+    name: Lint Source Code
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repo shallowly
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: prepare devenv
+        uses: ./.github/actions/prepare-devenv
+      - name: run python linting
+        run: devenv shell devenv tasks run check:code-lint
+
+  check-commit-lint:
+    name: Lint Commits
+    runs-on: ubuntu-latest
+    steps:
+      - name: "get PR commits + 1"
+        run: echo "PR_FETCH_DEPTH=$(( ${{ github.event.pull_request.commits }} + 1 ))" >> "${GITHUB_ENV}"
+      - name: "Checkout PR branch and all PR commits"
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: ${{ github.env.PR_FETCH_DEPTH }}
+      - name: prepare devenv
+        uses: ./.github/actions/prepare-devenv
+      - name: run commit linting
+        run: devenv shell devenv tasks run check:commit-lint
+
+  check-package-build:
+    name: Check that package builds
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repo shallowly
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: prepare devenv
+        uses: ./.github/actions/prepare-devenv
+
+      - name: run build check
+        run: devenv shell devenv tasks run package:build
+
+  check-tests:
+    name: Run all tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repo shallowly
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: prepare devenv
+        uses: ./.github/actions/prepare-devenv
+      - name: run tests
+        run: devenv shell devenv tasks run check:tests
+      - name: Publish coverage report
+        uses: orgoro/coverage@v3.1
+        with:
+          coverageFile: coverage.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
