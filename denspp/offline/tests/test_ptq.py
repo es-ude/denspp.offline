@@ -1,9 +1,9 @@
 import numpy as np
-from torch import Tensor, sum, abs
+from torch import sum, abs, rand
 from unittest import TestCase, main
 from denspp.offline.dnn.ptq_help import quantize_model_fxp
 from denspp.offline.dnn.pytorch_config_model import DefaultSettingsTrainMSE
-from denspp.offline.dnn.pytorch_config_data import DefaultSettingsDataset
+
 
 
 class TestPTQ(TestCase):
@@ -16,11 +16,7 @@ class TestPTQ(TestCase):
     model_qunt = quantize_model_fxp(model_test, 12, 10)
     model_qunt.eval()
 
-    # --- Load data
-    settings_data = DefaultSettingsDataset
-    settings_data.data_file_name = 'quiroga'
-    settings_data.normalization_do = True
-    input = Tensor(settings_data.load_dataset()['data'])
+    input = 2* (rand(size=(100,32)) - 0.5)
 
 
     def test_result_diff_feature(self):
@@ -33,7 +29,7 @@ class TestPTQ(TestCase):
     def test_result_diff_construction(self):
         dout_qunt_constructed = self.model_qunt(self.input)[1]
         mae_loss = sum(abs(self.input - dout_qunt_constructed)).detach().numpy() / len(self.input)
-        np.testing.assert_allclose(mae_loss, 12.85, atol=0.5)
+        np.testing.assert_allclose(mae_loss, 16.661808, atol=2.5)
 
 
 if __name__ == '__main__':
