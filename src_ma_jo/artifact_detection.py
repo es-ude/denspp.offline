@@ -1,9 +1,8 @@
 from scipy.interpolate import CubicSpline
 from scipy.optimize import curve_fit
-from denspp.offline.digital.dsp import DSP, SettingsDSP, RecommendedSettingsDSP
+from denspp.offline.digital.dsp import DSP, SettingsDSP
 from src_ma_jo.data_handler_artifacts import load_data, extract_arrays
 from src_ma_jo.show_plots_artifacts import *
-import re
 import numpy as np
 
 
@@ -72,17 +71,26 @@ def detect_artifacts(array, threshold_factor=10):
 def exponential_func(x, a, b, c):
     return a * np.exp(b * x) + c
 
-def fit_exponential(data_segment):
+def fit_exponential(data_segment, debug=True):
     x = np.arange(len(data_segment))
     try:
-        # noinspection PyTupleAssignmentBalance
         popt, _ = curve_fit(exponential_func, x, data_segment, maxfev=10000, p0=(1, -0.1, 0))
         fitted_curve = exponential_func(x, *popt)
-        #print(popt)
+        residuals = data_segment - fitted_curve
     except RuntimeError:
         popt = (0, 0, np.mean(data_segment))
         fitted_curve = np.full_like(data_segment, np.mean(data_segment))
-    return popt, fitted_curve
+        residuals = data_segment - fitted_curve
+    rmse = np.sqrt(np.mean(residuals**2))
+    ss_total = np.sum((data_segment - np.mean(data_segment))**2)
+    ss_residual = np.sum(residuals**2)
+    r_squared = 1 - (ss_residual / ss_total if ss_total != 0 else 0)
+    if debug:
+        print("Fit Parameters:", popt)
+        print("RMSE:", rmse)
+        print("R²:", r_squared)
+        residuals = data_segment - fitted_curve
+    return popt, fitted_curve, residuals, rmse, r_squared
 
 def compare_std_deviation_exponential(artifact_array, threshold):
     """
@@ -100,13 +108,14 @@ def compare_std_deviation_exponential(artifact_array, threshold):
     data_segment = artifact_array[-20:]
 
     # Führe den Fit der Exponentialfunktion durch
-    popt, fitted_curve = fit_exponential(data_segment)
+    popt, fitted_curve, residuals, rmse, r_squared = fit_exponential(data_segment, debug=True)
 
     # Berechne die Differenz zwischen tatsächlichen Werten und der Anpassung
     differences = data_segment - fitted_curve
 
     # Berechne die Standardabweichung der Differenzen
     std_dev = np.std(differences)
+    print(std_dev)
 
     # Vergleiche mit dem Schwellenwert
     return std_dev <= threshold
@@ -122,14 +131,19 @@ def replace_artifacts_with_spline_smooth(array, artifacts, std_threshold=10):
         start = artifact_range[1]-20
         end = artifact_range[1]
         exp_data_segment = clean_array[start:end]
-        _, fitted_curve = fit_exponential(exp_data_segment)
-        std_dev_check = compare_std_deviation_exponential(exp_data_segment, std_threshold)
-        if std_dev_check:
+        _, fitted_curve, residuals, rmse, r_squared = fit_exponential(exp_data_segment, debug=False)
+        rmse_check = rmse < 8
+        r2_check = r_squared > 0.9
+        print(rmse_check, r2_check, rmse, r_squared)
+        plot_exponential_fit(exp_data_segment, fitted_curve, artifact_range)
+        if rmse_check and r2_check:
             x_artifact = np.arange(len(clean_array))[artifact_range[0]:artifact_range[1]]
             extrapolated_values = exponential_func(np.arange(len(x_artifact)), *_)
             clean_array[artifact_range[0]:artifact_range[1]] -= extrapolated_values
         else:
-            continue
+            valid_indices = np.setdiff1d(np.arange(len(array)), artifacts)
+            spline = CubicSpline(valid_indices, clean_array[valid_indices], bc_type='natural')
+            clean_array[artifact_range[0]:artifact_range[1]] = spline(np.arange(artifact_range[0], artifact_range[1]))
 
     valid_indices = np.setdiff1d(np.arange(len(array)), artifacts)
     if len(valid_indices) < 4:  # Mindestens 4 Punkte für CubicSpline erforderlich
@@ -290,6 +304,7 @@ def filter_signals_by_percentage(signal, threshold, percentage_limit=30):
     values_above_threshold = np.sum(abs(signal) > threshold)
 
     # Prozentsatz berechnen
+    # (no changes to this part)
     percentage_above = (values_above_threshold / len(signal)) * 100
 
     return percentage_above < percentage_limit
@@ -356,11 +371,9 @@ if __name__ == "__main__":
     # Flag zur Steuerung der Filterung
     apply_filter = False  # Setze auf False, falls die Filterung übersprungen werden soll
 
-    #TODO: loop über alle files und abspeichern als neue Arrays
-
     dsp_instance.use_filtfilt = True
     path = r"C:/Users/jo-di/Documents/Masterarbeit/Rohdaten"
-    filename = "A1R1a_elec_stim_50biphasic_400us0001"
+    filename = "A1R1b_ASIC_stim_sine_1kHz_6uA_5s_gap"
 
     data = load_data(path, filename)
     result_arrays = extract_arrays(data, filename)
@@ -377,7 +390,7 @@ if __name__ == "__main__":
         apply_filter=apply_filter,
         percentage_limit=percentage_limit,
         threshold=threshold,
-        plot_flag=False
+        plot_flag=True
     )
     processed_signals_list.append(result_arrays)
     signal_dictionary = create_signal_dictionary(filename, processed_signals_list)
