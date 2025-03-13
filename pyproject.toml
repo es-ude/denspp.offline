@@ -1,9 +1,34 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["denspp"]  
+exclude = ["example", "src_dnn", "src_ma_jo", "src_neuro"]  
+namespaces = false
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["denspp"]
+
+
 [project]
 name = "denspp.offline"
 version = "0.1.0"
-description = "Python API for analysing extracellular recordings"
+description = "Python Framework for End-To-End and Hardware-Aware Signal Processing"
 readme = "README.md"
-requires-python = ">=3.11"
+license =  {file = "LICENSE"}
+requires-python = ">=3.12"
+keywords = ["machine learning", "signal processing", "end-to-end", "neural recordings", "biosignal processing"]
+authors = [
+  {name = "Andreas Erbsloeh", email = "andreas.erbsloeh@uni-due.de"},
+]
+maintainers = [
+    {name = 'Leo Buron', email = 'leo.buron@uni-due.de'},
+    {name = "Nick Lorenz", email = "nick.lorenz@uni-due.de"}
+]
 dependencies = [
     "fxpmath>=0.4.9",
     "mat73>=0.65",
@@ -26,6 +51,11 @@ dependencies = [
     "notebook>=7.3.2",
 ]
 
+
+[tool.uv.sources]
+elasticai-creator = { git = "https://github.com/es-ude/elastic-ai.creator.git"}
+
+
 [dependency-groups]
 dev = [
     "pytest>=8.3.3",
@@ -38,6 +68,7 @@ lint = [
     "pylsp-mypy>=0.6.9",
     "python-lsp-ruff>=2.2.2",
 ]
+
 
 [tool.ruff]
 exclude = [
@@ -73,6 +104,7 @@ line-length = 88
 indent-width = 4
 target-version = "py311"
 
+
 [tool.ruff.lint]
 select = [
     "F",   # pyflakes
@@ -85,14 +117,13 @@ select = [
 ]
 unfixable = ["B"]
 
+
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
 line-ending = "auto"
 docstring-code-format = false
 
-[tool.uv.sources]
-elasticai-creator = { git = "https://github.com/es-ude/elastic-ai.creator.git"}
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

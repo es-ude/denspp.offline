@@ -38,7 +38,6 @@ class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
         # --- Internal voltage values
         self.__input_snh = 0.0
 
-
     def __do_snh_sample(self, uin: np.ndarray, do: bool | np.ndarray) -> np.ndarray:
         """Performing sample-and-hold (S&H) stage for buffering input value"""
         uout = uin
