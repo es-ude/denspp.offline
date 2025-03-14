@@ -8,6 +8,13 @@ import numpy as np
 
 def extract_amplitude_from_filename(filename):
     """
+    Extracts the amplitude from a given filename.
+
+    :param filename: Filename as a string
+    :return: Voltage value as a float
+    :raises ValueError: If the amplitude cannot be extracted from the filename
+    """
+    """
     Extahiert die Amplitude aus dem Dateinamen.
 
     :param filename: Dateiname als String
@@ -24,6 +31,13 @@ def extract_amplitude_from_filename(filename):
 
 
 def create_signal_dictionary(filenames, signals):
+    """
+    Creates a dictionary of processed signals.
+
+    :param filenames: List of filenames
+    :param signals: List of associated processed signals (arrays)
+    :return: Nested dictionary with processed signals
+    """
     """
     Erstellt ein Dictionary mit den verarbeiteten Signalen.
 
@@ -52,6 +66,13 @@ def create_signal_dictionary(filenames, signals):
 
 
 def detect_artifacts(array, threshold_factor=10):
+    """
+    Detects artifacts in an array based on standard deviation and a threshold factor.
+
+    :param array: Input array to check for artifacts
+    :param threshold_factor: Multiplier for the standard deviation to define thresholds
+    :return: Tuple containing indices of artifacts, mean, and standard deviation
+    """
     """Detects artifacts in an array based on standard deviation."""
     mean = np.mean(array)
     std_dev = np.std(array)
@@ -66,9 +87,25 @@ def detect_artifacts(array, threshold_factor=10):
 
 
 def exponential_func(x, a, b, c):
+    """
+    Exponential mathematical function.
+
+    :param x: Input value or array
+    :param a: Amplitude parameter
+    :param b: Exponent parameter
+    :param c: Offset parameter
+    :return: Resultant value of the function
+    """
     return a * np.exp(b * x) + c
 
 def fit_exponential(data_segment, debug=True):
+    """
+    Fits an exponential function to a given data segment.
+
+    :param data_segment: Array of data points to fit
+    :param debug: If True, additional logs will be printed
+    :return: Fitted parameters, curve, residuals, RMSE, and R² value
+    """
     x = np.arange(len(data_segment))
     try:
         popt, _ = curve_fit(exponential_func, x, data_segment, maxfev=10000, p0=(1, -0.1, 0))
@@ -90,6 +127,15 @@ def fit_exponential(data_segment, debug=True):
     return popt, fitted_curve, residuals, rmse, r_squared
 
 def compare_std_deviation_exponential(artifact_array, threshold):
+    """
+    Compares the standard deviation between an exponential fit and the last 20 values
+    of the artifact array below a defined threshold.
+
+    :param artifact_array: Array of artifact values to analyze
+    :param threshold: Threshold for acceptable standard deviation
+    :return: True if deviation is below threshold, otherwise False
+    :raises ValueError: If the artifact array contains fewer than 20 values
+    """
     """
     Vergleicht die Standardabweichung zwischen einer Exponentialfunktion und den letzten 20 Werten
     des Artefakts mit einem gegebenen Schwellenwert.
@@ -118,6 +164,15 @@ def compare_std_deviation_exponential(artifact_array, threshold):
     return std_dev <= threshold
 
 def replace_artifacts_with_spline_smooth(array, artifacts, std_threshold=10):
+    """
+    Replaces artifacts in an array with smoother interpolated (CubicSpline) values.
+
+    :param array: Original signal array
+    :param artifacts: Indices of artifact values
+    :param std_threshold: Threshold for standard deviation during artifact checking
+    :return: Cleaned signal array with artifacts replaced
+    :raises ValueError: If there are insufficient valid points for interpolation
+    """
     """
     Ersetzt Artefakte mit glatterer Interpolation (CubicSpline) und gibt
     das gesamte glatte Array oder eine geglättete Kurve zurück.
@@ -156,6 +211,18 @@ def replace_artifacts_with_spline_smooth(array, artifacts, std_threshold=10):
 
 
 def process_signal(signal, signal_index, dsp_instance, apply_filter, percentage_limit, threshold, plot_flag=False):
+    """
+    Processes a single signal by applying filtering, detecting artifacts, and replacing them.
+
+    :param signal: Signal array to process
+    :param signal_index: Index of the signal in the array
+    :param dsp_instance: DSP instance to apply filtering
+    :param apply_filter: Whether to apply a filter to the signal
+    :param percentage_limit: Limit for percentage-based filtering
+    :param threshold: Threshold for artifact detection
+    :param plot_flag: If True, plots may be generated
+    :return: Dictionary of processing results
+    """
     if len(signal) == 0:
         print(f"Signal {signal_index} is empty. Skipping process.")
         return {
@@ -246,6 +313,20 @@ def process_signal(signal, signal_index, dsp_instance, apply_filter, percentage_
 
 
 def process_artifact_ranges(signal, filtered_signal, cleaned_signal, cleaned_filtered_signal, original_artifacts, titles, std_devs, means, plot_flag):
+    """
+    Processes artifact ranges in the signal and applies corrections.
+
+    :param signal: Original unprocessed signal
+    :param filtered_signal: Signal after filtering
+    :param cleaned_signal: Signal with artifacts replaced
+    :param cleaned_filtered_signal: Filtered signal with artifacts replaced
+    :param original_artifacts: Detected artifact ranges
+    :param titles: Titles for plots being generated
+    :param std_devs: Standard deviation values
+    :param means: Mean values of different signals
+    :param plot_flag: If True, plots the artifact ranges
+    :return: Signal with artifact ranges corrected
+    """
     if len(original_artifacts) == 0:
         print("Original artifacts are empty. Returning the signal as is.")
         return signal
@@ -267,6 +348,12 @@ def process_artifact_ranges(signal, filtered_signal, cleaned_signal, cleaned_fil
     return cleaned_signal
 
 def find_connected_ranges(data):
+    """
+    Groups connected values in the data into ranges.
+
+    :param data: Array of indices or values
+    :return: List of tuples representing start and end points of connected ranges
+    """
     if len(data) == 0:
         return []
     diffs = np.diff(data)
@@ -283,6 +370,14 @@ def find_connected_ranges(data):
     return ranges
 
 def filter_signal_based_on_threshold(signal, threshold_limit, threshold_factor=15):
+    """
+    Filters signals based on a dynamic threshold calculated from standard deviation.
+
+    :param signal: Signal array to evaluate
+    :param threshold_limit: Maximum allowable threshold
+    :param threshold_factor: Multiplier for standard deviation
+    :return: True if the calculated threshold is within the limit, otherwise False
+    """
     if len(signal) == 0:  # If the signal is empty, automatically ignore it
         return False
 
@@ -295,6 +390,14 @@ def filter_signal_based_on_threshold(signal, threshold_limit, threshold_factor=1
 
 
 def filter_signals_by_percentage(signal, threshold, percentage_limit=30):
+    """
+    Filters signals based on the percentage of values exceeding a given threshold.
+
+    :param signal: Signal array to evaluate
+    :param threshold: Threshold for evaluation
+    :param percentage_limit: Maximum allowed percentage of values exceeding the threshold
+    :return: True if the percentage is below the limit, otherwise False
+    """
     if len(signal) == 0:
         return False  # Leere Signale ignorieren
 
@@ -309,6 +412,17 @@ def filter_signals_by_percentage(signal, threshold, percentage_limit=30):
 
 
 def process_signals(result_arrays, dsp_instance, apply_filter, percentage_limit, threshold, plot_flag):
+    """
+    Processes a list of signal arrays, applying filtering and artifact detection.
+
+    :param result_arrays: List of signal arrays
+    :param dsp_instance: DSP instance for filtering
+    :param apply_filter: Whether to enable filtering
+    :param percentage_limit: Limit for percentage-based filtering
+    :param threshold: Threshold for artifact detection
+    :param plot_flag: If True, triggers plot generation
+    :return: Dictionary of processing results containing counters and indices
+    """
     plot_counter = 0
     percentage_counter = -1  # -1, da Zeit immer als %-Threshold klassifiziert wird
     threshold_counter = 0
@@ -337,6 +451,12 @@ def process_signals(result_arrays, dsp_instance, apply_filter, percentage_limit,
         "threshold_array": threshold_array,
     }
 def save_signal_dictionary(signal_dict, filename="signal_dictionary.npy"):
+    """
+    Saves a given signal dictionary to a .npy file.
+
+    :param signal_dict: Signal dictionary to save
+    :param filename: Name of the file to save the dictionary
+    """
     """
     Speichert ein gegebenes Signal-Dictionary in einer .npy-Datei.
 
