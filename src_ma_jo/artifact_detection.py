@@ -6,19 +6,21 @@ from src_ma_jo.show_plots_artifacts import *
 import numpy as np
 
 
-def extract_voltage_from_filename(filename):
+def extract_amplitude_from_filename(filename):
     """
-    Extrahiert den Spannungswert aus dem Dateinamen.
-    Erwartet eine Zahl vor 'us'.
+    Extahiert die Amplitude aus dem Dateinamen.
 
     :param filename: Dateiname als String
     :return: Spannungswert als Float
     """
-    match = 400
-    if match:
-        return match
+    try:
+        parts = filename.split('_')
+        extracted_value = parts[4]
+        return extracted_value
+    except (IndexError, ValueError) as e:
+        raise ValueError(f"Fehler beim Extrahieren der Amplitude aus dem Dateinamen '{filename}': {e}")
     else:
-        raise ValueError("Spannungswert konnte aus dem Dateinamen nicht extrahiert werden.")
+        raise ValueError("Amplitude konnte aus dem Dateinamen nicht extrahiert werden.")
 
 
 def create_signal_dictionary(filenames, signals):
@@ -31,25 +33,20 @@ def create_signal_dictionary(filenames, signals):
     """
     processed_signals = {}
 
-    for signal in zip(signals):
-        if signal is None or len(signal) == 0:
-            continue
+    # Extrahiere die Volt-Zahl aus dem Dateinamen
+    amplitude = extract_amplitude_from_filename(filenames)
 
-        # Extrahiere die Volt-Zahl aus dem Dateinamen
-        voltage = extract_voltage_from_filename(filenames)
+    # Generiere das Zeit-Array (angenommen, es ist einfach der Index in Form eines Arrays)
+    time = signals[0]
 
-        # Generiere das Zeit-Array (angenommen, es ist einfach der Index in Form eines Arrays)
-        time = signal[0]
+    # Bereinige das Signal
 
-        # Bereinige das Signal
-        cleaned_signal = signal  # Dies sollte das bereinigte Signal sein
-
-        # Verschachteltes Dictionary erstellen
-        processed_signals[filenames] = {
-            "time": time,
-            "cleaned_signal": cleaned_signal,
-            "voltage": voltage,
-        }
+    # Verschachteltes Dictionary erstellen
+    processed_signals[filenames] = {
+        "time": time,
+        "cleaned_signal": signals[1::],
+        "amplitude": amplitude,
+    }
 
     return processed_signals
 
@@ -132,10 +129,10 @@ def replace_artifacts_with_spline_smooth(array, artifacts, std_threshold=10):
         end = artifact_range[1]
         exp_data_segment = clean_array[start:end]
         _, fitted_curve, residuals, rmse, r_squared = fit_exponential(exp_data_segment, debug=False)
-        rmse_check = rmse < 8
+        rmse_check = rmse < 20
         r2_check = r_squared > 0.9
         print(rmse_check, r2_check, rmse, r_squared)
-        plot_exponential_fit(exp_data_segment, fitted_curve, artifact_range)
+        #plot_exponential_fit(exp_data_segment, fitted_curve, artifact_range)
         if rmse_check and r2_check:
             x_artifact = np.arange(len(clean_array))[artifact_range[0]:artifact_range[1]]
             extrapolated_values = exponential_func(np.arange(len(x_artifact)), *_)
@@ -291,7 +288,8 @@ def filter_signal_based_on_threshold(signal, threshold_limit, threshold_factor=1
 
     std_dev = np.std(signal)
     computed_threshold = threshold_factor * std_dev
-    #print(f"Computed Threshold: {std_dev}")
+    print(f"Computed Threshold: {computed_threshold}")
+    print(f"std_dev: {std_dev}")
 
     return computed_threshold <= threshold_limit
 
@@ -373,12 +371,12 @@ if __name__ == "__main__":
 
     dsp_instance.use_filtfilt = True
     path = r"C:/Users/jo-di/Documents/Masterarbeit/Rohdaten"
-    filename = "A1R1b_ASIC_stim_sine_1kHz_6uA_5s_gap"
+    filename = "A1R1a_elec_stim_50biphasic_400us0001"
 
     data = load_data(path, filename)
     result_arrays = extract_arrays(data, filename)
 
-    threshold = 150  # Beispiel-Schwellenwert
+    threshold = 400  # Beispiel-Schwellenwert
     percentage_limit = 5  # Beispiel-Prozentwert
     percent_array = []
     threshold_array = []
@@ -390,10 +388,10 @@ if __name__ == "__main__":
         apply_filter=apply_filter,
         percentage_limit=percentage_limit,
         threshold=threshold,
-        plot_flag=True
+        plot_flag=False
     )
-    processed_signals_list.append(result_arrays)
-    signal_dictionary = create_signal_dictionary(filename, processed_signals_list)
+
+    signal_dictionary = create_signal_dictionary(filename, result_arrays)
     save_signal_dictionary(signal_dictionary, filename +".npy")
     plot_counter = result["plot_counter"]
     percentage_counter = result["percentage_counter"]
