@@ -4,6 +4,21 @@ from denspp.offline.digital.dsp import DSP, SettingsDSP
 from src_ma_jo.data_handler_artifacts import load_data, extract_arrays
 from src_ma_jo.show_plots_artifacts import *
 import numpy as np
+from scipy.io import savemat
+
+
+def save_signal_dictionary_as_mat(signal_dict, filename="signal_dictionary.mat"):
+    """
+    Speichert ein gegebenes Signal-Dictionary in einer .mat-Datei.
+
+    :param signal_dict: Das zu speichernde Signal-Dictionary
+    :param filename: Name der Datei, in der das Dictionary gespeichert wird
+    """
+    try:
+        savemat(filename, signal_dict)
+        print(f"Signal-Dictionary wurde erfolgreich als '{filename}' gespeichert.")
+    except Exception as e:
+        print(f"Fehler beim Speichern der .mat-Datei: {e}")
 
 
 def extract_amplitude_from_filename(filename):
@@ -38,24 +53,13 @@ def create_signal_dictionary(filenames, signals):
     :param signals: List of associated processed signals (arrays)
     :return: Nested dictionary with processed signals
     """
-    """
-    Erstellt ein Dictionary mit den verarbeiteten Signalen.
 
-    :param filenames: Liste von Dateinamen
-    :param signals: Liste der zugehörigen verarbeiteten Signale (Arrays)
-    :return: Verschachteltes Dictionary
-    """
     processed_signals = {}
 
-    # Extrahiere die Volt-Zahl aus dem Dateinamen
     amplitude = extract_amplitude_from_filename(filenames)
 
-    # Generiere das Zeit-Array (angenommen, es ist einfach der Index in Form eines Arrays)
     time = signals[0]
 
-    # Bereinige das Signal
-
-    # Verschachteltes Dictionary erstellen
     processed_signals[filenames] = {
         "time": time,
         "cleaned_signal": signals[1::],
@@ -147,16 +151,10 @@ def compare_std_deviation_exponential(artifact_array, threshold):
     if len(artifact_array) < 20:
         raise ValueError("Das Artefakt-Array enthält weniger als 20 Werte.")
 
-    # Extrahiere die letzten 20 Werte
     data_segment = artifact_array[-20:]
 
-    # Führe den Fit der Exponentialfunktion durch
     popt, fitted_curve, residuals, rmse, r_squared = fit_exponential(data_segment, debug=True)
-
-    # Berechne die Differenz zwischen tatsächlichen Werten und der Anpassung
     differences = data_segment - fitted_curve
-
-    # Berechne die Standardabweichung der Differenzen
     std_dev = np.std(differences)
     print(std_dev)
 
@@ -201,10 +199,8 @@ def replace_artifacts_with_spline_smooth(array, artifacts, std_threshold=10):
     if len(valid_indices) < 4:  # Mindestens 4 Punkte für CubicSpline erforderlich
         raise ValueError("Nicht genug gültige Punkte für Interpolation.")
     else:
-        #Interpolation mit CubicSpline
         spline = CubicSpline(valid_indices, clean_array[valid_indices], bc_type='natural')
         smooth_curve = spline(np.arange(len(clean_array)))
-        # Punkte ersetzen
         clean_array[artifacts] = smooth_curve[artifacts]
 
     return  clean_array[artifacts]
@@ -378,7 +374,7 @@ def filter_signal_based_on_threshold(signal, threshold_limit, threshold_factor=1
     :param threshold_factor: Multiplier for standard deviation
     :return: True if the calculated threshold is within the limit, otherwise False
     """
-    if len(signal) == 0:  # If the signal is empty, automatically ignore it
+    if len(signal) == 0:
         return False
 
     std_dev = np.std(signal)
@@ -399,13 +395,12 @@ def filter_signals_by_percentage(signal, threshold, percentage_limit=30):
     :return: True if the percentage is below the limit, otherwise False
     """
     if len(signal) == 0:
-        return False  # Leere Signale ignorieren
+        return False
 
     # Berechnen, wie viele Werte den Threshold überschreiten
     values_above_threshold = np.sum(abs(signal) > threshold)
 
     # Prozentsatz berechnen
-    # (no changes to this part)
     percentage_above = (values_above_threshold / len(signal)) * 100
 
     return percentage_above < percentage_limit
@@ -466,7 +461,7 @@ def save_signal_dictionary(signal_dict, filename="signal_dictionary.npy"):
     np.save(filename, signal_dict)
 
 # Main script
-# Main script
+
 if __name__ == "__main__":
     processed_signals_list = []
     settings = SettingsDSP(
@@ -512,7 +507,8 @@ if __name__ == "__main__":
     )
 
     signal_dictionary = create_signal_dictionary(filename, result_arrays)
-    save_signal_dictionary(signal_dictionary, filename +".npy")
+    #save_signal_dictionary(signal_dictionary, filename +".npy")
+    save_signal_dictionary_as_mat(signal_dictionary, filename + ".mat")
     plot_counter = result["plot_counter"]
     percentage_counter = result["percentage_counter"]
     threshold_counter = result["threshold_counter"]
