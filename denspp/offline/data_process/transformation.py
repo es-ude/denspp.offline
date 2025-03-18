@@ -69,3 +69,12 @@ def do_fft_withimag(
     fft_out = np.fft.rfft(fft_in)
     freq = np.fft.rfftfreq(fft_in.size, d=1 / fs)
     return freq, fft_out
+
+def do_irfft(y: np.ndarray, len_original: int) -> np.ndarray:
+    """Perform inverse real FFT.
+
+    :param y: Fourier domain signal
+    :param len_original: Length of original time domain signal
+    :return: Time domain signal
+    """
+    return np.fft.irfft(y, n=len_original)
