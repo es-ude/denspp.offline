@@ -37,7 +37,7 @@ def extract_amplitude_from_filename(filename):
     """
     try:
         parts = filename.split('_')
-        extracted_value = parts[4]
+        extracted_value = parts[3]
         return extracted_value
     except (IndexError, ValueError) as e:
         raise ValueError(f"Fehler beim Extrahieren der Amplitude aus dem Dateinamen '{filename}': {e}")
@@ -45,28 +45,47 @@ def extract_amplitude_from_filename(filename):
         raise ValueError("Amplitude konnte aus dem Dateinamen nicht extrahiert werden.")
 
 
-def create_signal_dictionary(filenames, signals):
+def create_signal_dictionary(filenames, signals, signal_index, artifacts):
     """
     Creates a dictionary of processed signals.
 
     :param filenames: List of filenames
     :param signals: List of associated processed signals (arrays)
-    :return: Nested dictionary with processed signals
+    :param signal_index: Index of the current signal being processed
+    :param artifacts: List of artifact data for each signal
+    :return: Nested dictionary with processed signals and metadata
     """
 
-    processed_signals = {}
-
+    # Extract amplitude from filename
     amplitude = extract_amplitude_from_filename(filenames)
 
+    # Initialize the dictionary
+    processed_signals = {}
+
+    # Assign time (typically the first element in the signals list)
     time = signals[0]
 
-    processed_signals[filenames] = {
-        "time": time,
-        "cleaned_signal": signals[1::],
+    # Assign cleaned signals (everything except the first element in the signals list)
+    cleaned_signals = signals[1:]
+
+    # Iterate over the cleaned signals and create individual entries
+    for idx, signal in enumerate(cleaned_signals):
+        processed_signals[f"signal_{idx + 1}"] = {
+            "timestamps": {
+                "signal": signal.tolist() if hasattr(signal, "tolist") else signal,
+                "artifacts": artifacts[idx] if idx < len(artifacts) else []
+            }
+        }
+
+    # Return the final signal dictionary
+    final_dictionary = {
+        "time": time.tolist() if hasattr(time, "tolist") else time,
+        "cleaned_signals": cleaned_signals,
         "amplitude": amplitude,
+        "details": processed_signals
     }
 
-    return processed_signals
+    return final_dictionary
 
 
 def detect_artifacts(array, threshold_factor=10):
@@ -185,8 +204,9 @@ def replace_artifacts_with_spline_smooth(array, artifacts, std_threshold=10):
         rmse_check = rmse < 20
         r2_check = r_squared > 0.9
         print(rmse_check, r2_check, rmse, r_squared)
-        #plot_exponential_fit(exp_data_segment, fitted_curve, artifact_range)
+
         if rmse_check and r2_check:
+            plot_exponential_fit(exp_data_segment, fitted_curve, artifact_range)
             x_artifact = np.arange(len(clean_array))[artifact_range[0]:artifact_range[1]]
             extrapolated_values = exponential_func(np.arange(len(x_artifact)), *_)
             clean_array[artifact_range[0]:artifact_range[1]] -= extrapolated_values
@@ -485,14 +505,14 @@ if __name__ == "__main__":
     apply_filter = False  # Setze auf False, falls die Filterung übersprungen werden soll
 
     dsp_instance.use_filtfilt = True
-    path = r"C:/Users/jo-di/Documents/Masterarbeit/Rohdaten"
-    filename = "A1R1a_elec_stim_50biphasic_400us0001"
+    path = r"C:/Users/jo-di/Documents/Masterarbeit/Rohdaten/A1R1a_1s"
+    filename = "A1R1a_ASIC_1S_800_3"
 
     data = load_data(path, filename)
     result_arrays = extract_arrays(data, filename)
 
     threshold = 400  # Beispiel-Schwellenwert
-    percentage_limit = 5  # Beispiel-Prozentwert
+    percentage_limit = 8  # Beispiel-Prozentwert
     percent_array = []
     threshold_array = []
     #TODO: Flag für Plot (mit verschiedenen Levels ggf)
@@ -506,8 +526,8 @@ if __name__ == "__main__":
         plot_flag=False
     )
 
-    signal_dictionary = create_signal_dictionary(filename, result_arrays)
-    #save_signal_dictionary(signal_dictionary, filename +".npy")
+    signal_dictionary = create_signal_dictionary(filename, result_arrays, signal_index=0, artifacts=[])
+    save_signal_dictionary(signal_dictionary, filename +".npy")
     save_signal_dictionary_as_mat(signal_dictionary, filename + ".mat")
     plot_counter = result["plot_counter"]
     percentage_counter = result["percentage_counter"]
