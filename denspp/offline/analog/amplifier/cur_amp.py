@@ -50,7 +50,8 @@ class CurrentAmplifier(CommonAnalogFunctions):
         :param settings_dev:        Dataclass for handling the current amplifier
         :param settings_noise:      Dataclass for handling the noise and parasitic simulation
         """
-        super().__init__(settings_dev)
+        super().__init__()
+        self.define_voltage_range(volt_low=settings_dev.vss, volt_hgh=settings_dev.vdd)
         self.handler_noise = ProcessNoise(settings_noise, settings_dev.fs_ana)
         self._settings = settings_dev
 
@@ -76,7 +77,7 @@ class CurrentAmplifier(CommonAnalogFunctions):
         """
         u_out = self._settings.transimpedance * iin + uref
         u_out += self.__add_parasitic(u_out.size)
-        return self.voltage_clipping(u_out)
+        return self.clamp_voltage(u_out)
 
     def instrumentation_amplifier(self, iin: np.ndarray, uoff: np.ndarray | float, v_gain: float=1.0) -> np.ndarray:
         """Using an instrumentation amplifier for current sensing
@@ -103,7 +104,7 @@ class CurrentAmplifier(CommonAnalogFunctions):
         x_neg = np.argwhere(iin < 0)
         u_out[x_neg,] = iin[x_neg,] * self._settings.transimpedance
         u_out += self.__add_parasitic(u_out.size, self._settings.transimpedance)
-        return self.voltage_clipping(u_out)
+        return self.clamp_voltage(u_out)
 
     def pull_amplifier(self, iin: np.ndarray) -> np.ndarray:
         """Performing the CMOS pull/sink current amplifier
@@ -116,7 +117,7 @@ class CurrentAmplifier(CommonAnalogFunctions):
         x_pos = np.argwhere(iin >= 0)
         u_out[x_pos, ] = iin[x_pos, ] * self._settings.transimpedance
         u_out += self.__add_parasitic(u_out.size, self._settings.transimpedance)
-        return self.voltage_clipping(u_out)
+        return self.clamp_voltage(u_out)
 
     def push_pull_amplifier(self, iin: np.ndarray) -> [np.ndarray, np.ndarray]:
         """Performing the CMOS push-pull current amplifier

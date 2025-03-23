@@ -15,8 +15,9 @@ class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
         :param settings_adc: SettingsADC
         :param settings_noise: SettingsNoise
         """
-        CommonAnalogFunctions(settings_adc)
-        CommonDigitalFunctions(settings_adc)
+        super().__init__()
+        self.define_voltage_range(volt_low=settings_adc.vref[0], volt_hgh=settings_adc.vref[1])
+        self.define_limits(bit_signed= settings_adc.type_out == "signed", total_bitwidth=settings_adc.Nadc, frac_bitwidth=0)
 
         self.handler_noise = ProcessNoise(settings_noise, settings_adc.fs_ana)
         self._settings = settings_adc
@@ -27,8 +28,7 @@ class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
         self.__lsb = self._settings.lsb
         self.__oversampling_ratio = self._settings.osr
         self.__snr_ideal = 10 * np.log10(4) * self._settings.Nadc + 10 * np.log10(3 / 2)
-        self._digital_border = np.array([0, 2 ** self._settings.Nadc - 1])
-        self._digital_border -= 2 ** (self._settings.Nadc - 1) if self._settings.type_out == "signed" else 0
+
         # --- Resampling stuff
         (self.__p_ratio, self.__q_ratio) = (
             Fraction(self._settings.fs_adc / self._settings.fs_ana)
@@ -82,12 +82,12 @@ class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
             Tuple with three numpy arrays [x_out = Output digital value, u_out = Output digitized voltage, uerr = Quantization error]
         """
         # Pre-Processing
-        uin_adc = self.voltage_clipping(uin)
+        uin_adc = self.clamp_voltage(uin)
         uin0 = self._do_resample(uin_adc)
         uin0 += self._gen_noise(uin0.size)
         # ADC conversion
         xout = np.floor((uin0 - self._settings.vcm) / self.__lsb)
-        xout = self.digital_clipping(xout)
+        xout = self.clamp_digital(xout)
         uout = self._settings.vref[1] + xout * self.__lsb
         # Calculating quantization error
         uerr = uin0 - uout

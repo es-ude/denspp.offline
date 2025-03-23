@@ -43,7 +43,7 @@ class SuccessiveApproximation(BasicADC):
             Tuple with three numpy arrays [x_out = Output digital value, u_out = Output digitized voltage, quant_er = Quantization error]
         """
         # Resampling of input
-        uin_adc = self.voltage_clipping(uin)
+        uin_adc = self.clamp_voltage(uin)
         uin0 = self._do_resample(uin_adc)
         unoise = self._gen_noise(uin0.size) if self.__use_noise else np.zeros(shape=uin0.shape)
 
@@ -64,7 +64,7 @@ class SuccessiveApproximation(BasicADC):
             Tuple with three numpy arrays [x_out = Output digital value, u_out = Output digitized voltage, quant_er = Quantization error]
         """
         # Resampling of input
-        uin_adc = self.voltage_clipping(uin)
+        uin_adc = self.clamp_voltage(uin)
         uin0 = self._do_resample(uin_adc)
         unoise = self._gen_noise(uin0.size) if self.__use_noise else np.zeros(shape=uin0.shape)
         # Running SAR code
@@ -87,7 +87,7 @@ class SuccessiveApproximation(BasicADC):
             Tuple with three numpy arrays [x_out = Output digital value, u_out = Output digitized voltage, quant_er = Quantization error]
         """
         # Resampling of input
-        uin_adc = self.voltage_clipping(uin)
+        uin_adc = self.clamp_voltage(uin)
         uin0 = self._do_resample(uin_adc)
         unoise = self._gen_noise(uin0.size) if self.__use_noise else np.zeros(shape=uin0.shape)
         # Running SAR code
@@ -111,7 +111,7 @@ class SuccessiveApproximation(BasicADC):
             Tuple with three numpy arrays [x_out = Output digital value, u_out = Output digitized voltage, quant_er = Quantization error]
         """
         # Resampling of input
-        uin_adc = self.voltage_clipping(uin)
+        uin_adc = self.clamp_voltage(uin)
         uin0 = self._do_resample(uin_adc)
         unoise = self._gen_noise(uin0.size) if self.__use_noise else np.zeros(
             shape=uin0.shape)

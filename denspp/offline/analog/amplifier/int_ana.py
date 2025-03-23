@@ -66,7 +66,8 @@ class IntegratorStage(CommonAnalogFunctions):
 
     def __init__(self, settings_dev: SettingsINT, fs: float, settings_noise: SettingsNoise=RecommendedSettingsNoise):
         """Class for emulating an analogue integrator for voltage and current transient signals"""
-        super().__init__(settings_dev)
+        super().__init__()
+        self.define_voltage_range(volt_low=settings_dev.vss, volt_hgh=settings_dev.vdd)
         self.handler_noise = ProcessNoise(settings_noise, fs)
         self._sampling_rate = fs
         self._settings = settings_dev
@@ -124,7 +125,7 @@ class IntegratorStage(CommonAnalogFunctions):
         for idx, u_top in enumerate(x_inp[1:], start=1):
             u_bot = (x_inn[idx] if x_inn.size > 1 else x_inn) if isinstance(x_inn, np.ndarray) else x_inn
             du = scale * self.__do_inversion(u_top - u_bot)
-            u_out[idx] = self.voltage_clipping(u_out[idx-1] + du)
+            u_out[idx] = self.clamp_voltage(u_out[idx - 1] + du)
         return u_out
 
     def __do_accumulation_active(self, x_inp: np.ndarray, x_inn: np.ndarray | float, scale: float=1.0) -> np.ndarray:
@@ -140,7 +141,7 @@ class IntegratorStage(CommonAnalogFunctions):
         for idx, u_top in enumerate(x_inp[1:], start=1):
             u_bot = (x_inn[idx] if x_inn.size > 1 else x_inn) if isinstance(x_inn, np.ndarray) else x_inn
             u_int = u_out[idx-1] + scale * self.__do_inversion(u_top - u_bot)
-            u_out[idx] = self.voltage_clipping(u_int)
+            u_out[idx] = self.clamp_voltage(u_int)
         return u_out
 
     def __do_accumulation_resistance(self, u_inp: np.ndarray, u_inn: np.ndarray, scale: float=1.0) -> np.ndarray:
@@ -165,7 +166,7 @@ class IntegratorStage(CommonAnalogFunctions):
         """
         u_n = self.__noise_generation_circuit(u_inp.size)
         u_out = self.__do_accumulation_sample(u_inp + u_n, u_inn, self.tau_active_scale)
-        return self.voltage_clipping(u_out)
+        return self.clamp_voltage(u_out)
 
     def do_ideal_integration(self, u_inp: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
         """Performs an ideal active-integration behaviour
@@ -177,7 +178,7 @@ class IntegratorStage(CommonAnalogFunctions):
         """
         u_out = self.__do_accumulation_active(u_inp, u_inn, self.tau_active_scale)
         u_out += self.__noise_generation_circuit(u_out.size)
-        return self.voltage_clipping(u_out)
+        return self.clamp_voltage(u_out)
 
     def do_opa_volt_integration(self, u_inp: np.ndarray, u_inn: np.ndarray) -> np.ndarray:
         """Performs an active-integration behaviour using operational amplifiers (OPA)
@@ -190,7 +191,7 @@ class IntegratorStage(CommonAnalogFunctions):
         u_top = u_inp + self._settings.u_error
         u_out = self.__do_accumulation_resistance(u_top, u_inn, self.tau_active_scale) + self._settings.offset_v
         u_out += self.__noise_generation_circuit(u_out.size)
-        return self.voltage_clipping(u_out)
+        return self.clamp_voltage(u_out)
 
     def do_opa_curr_integration(self, iin: np.ndarray, uref: np.ndarray) -> np.ndarray:
         """Performs a capacitive passiv-integration behaviour
@@ -202,7 +203,7 @@ class IntegratorStage(CommonAnalogFunctions):
         """
         u_out = self.__do_accumulation_active(iin, 0.0) + uref
         u_out += self.__noise_generation_circuit(u_out.size)
-        return self.voltage_clipping(u_out)
+        return self.clamp_voltage(u_out)
 
     def do_cap_curr_integration(self, iin: np.ndarray) -> np.ndarray:
         """Performs a capacitive passiv-integration behaviour
@@ -212,4 +213,4 @@ class IntegratorStage(CommonAnalogFunctions):
             Numpy array with voltage signal
         """
         u_out = self.__do_accumulation_passive(iin, 0.0)
-        return self.voltage_clipping(u_out)
+        return self.clamp_voltage(u_out)

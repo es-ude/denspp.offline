@@ -59,7 +59,8 @@ class PreAmp(CommonAnalogFunctions):
 
     def __init__(self, settings_amp: SettingsAMP, settings_noise: SettingsNoise=RecommendedSettingsNoise):
         """Class for emulating an analogue pre-amplifier"""
-        super().__init__(settings_amp)
+        super().__init__()
+        self.define_voltage_range(volt_low=settings_amp.vss, volt_hgh=settings_amp.vdd)
         self.handler_noise = ProcessNoise(settings_noise, settings_amp.fs_ana)
         self.settings = settings_amp
 
@@ -96,7 +97,7 @@ class PreAmp(CommonAnalogFunctions):
         u_out += self.settings.gain * self.settings.offset
         u_out += self.settings.vcm
         u_out += self.settings.gain * self.__noise_generation_circuit(du.size)
-        return self.voltage_clipping(u_out)
+        return self.clamp_voltage(u_out)
 
     def pre_amp_chopper(self, uinp: np.ndarray, uinn: np.ndarray) -> [np.ndarray, np.ndarray]:
         """Performs the pre-amplification (single, chopper) with input signal
@@ -117,4 +118,4 @@ class PreAmp(CommonAnalogFunctions):
         u_out = lfilter(self.__b_iir_spk, self.__a_iir_spk, u_filt)
         u_out += self.settings.vcm
 
-        return self.voltage_clipping(u_out), self.voltage_clipping(uchp_in)
+        return self.clamp_voltage(u_out), self.clamp_voltage(uchp_in)

@@ -26,7 +26,7 @@ class NyquistADC(BasicADC):
         x_out = np.zeros(shape=uin.shape)
         for idx, vol in enumerate(uin):
             x_out[idx] = self.__adc_conv_sample(vol)
-        return self.digital_clipping(x_out).astype(np.int)
+        return self.clamp_digital(x_out)
 
     def adc_nyquist(self, uin: np.ndarray) -> [np.ndarray, np.ndarray]:
         """Using the Nyquist Topology as an ADC
@@ -36,7 +36,7 @@ class NyquistADC(BasicADC):
             Tuple with two numpy arrays [x_out = Output digital value, quant_er = Quantization error]
         """
         # Do resampling and conversion
-        uin_adc = self.voltage_clipping(uin)
+        uin_adc = self.clamp_voltage(uin)
         uin0 = self._do_resample(uin_adc)
         x_out = self.__adc_conv_stream(uin0)
         # Add noise and calc quantization error

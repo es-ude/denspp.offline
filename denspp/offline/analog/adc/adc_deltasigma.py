@@ -64,7 +64,7 @@ class DeltaSigmaADC(BasicADC):
             Corresponding digitized data value from Delta-Sigma ADC
         """
         # Resampling the input to sampling frequency of ADC with oversampling
-        uin_adc = self.voltage_clipping(uin)
+        uin_adc = self.clamp_voltage(uin)
         uin0 = self._do_resample(uin_adc)
         uin0 += self._gen_noise(uin0.size) if self.use_noise == True else np.zeros(shape=uin0.shape)
 
@@ -88,7 +88,7 @@ class DeltaSigmaADC(BasicADC):
         # --- Correction and output
         xout = xout4
         xout -= 2 ** (self._settings.Nadc - 1) if self._settings.type_out == "signed" else 0
-        xout = self.digital_clipping(xout)
+        xout = self.clamp_digital(xout)
         return xout
 
     def adc_deltasigma_order_two(self, uin: np.ndarray) -> np.ndarray:
@@ -99,7 +99,7 @@ class DeltaSigmaADC(BasicADC):
             Corresponding digitized data value from Delta-Sigma ADC
         """
         # Resampling the input to sampling frequency of ADC with oversampling
-        uin_adc = self.voltage_clipping(uin)
+        uin_adc = self.clamp_voltage(uin)
         uin0 = self._do_resample(uin_adc)
         uin0 += self._gen_noise(uin0.size) if self.use_noise else np.zeros(shape=uin0.shape)
 
@@ -125,5 +125,5 @@ class DeltaSigmaADC(BasicADC):
         # --- Correction and output
         xout = xout4
         xout -= 2 ** (self._settings.Nadc - 1) if self._settings.type_out == "signed" else 0
-        xout = self.digital_clipping(xout)
+        xout = self.clamp_digital(xout)
         return xout

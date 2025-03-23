@@ -41,11 +41,11 @@ class Comp(CommonAnalogFunctions):
     _int_state: np.ndarray
 
     def __init__(self, setting: SettingsCMP) -> None:
-        super().__init__(setting)
         """Class for emulating an analogue comparator
         :param setting:        Dataclass for handling the comparator amplifier
         """
-        # --- Settings
+        super().__init__()
+        self.define_voltage_range(volt_low=setting.vss, volt_hgh=setting.vdd)
         self.settings = setting
         self.__noise_dis = 1e-3
 
@@ -108,7 +108,7 @@ class Comp(CommonAnalogFunctions):
             Corresponding numpy array with boolean values
         """
         u_cmp = self.__cmp_calc(uinp, uinn)
-        return self.voltage_clipping(u_cmp)
+        return self.clamp_voltage(u_cmp)
 
     def cmp_normal(self, uinp: np.ndarray, uinn: np.ndarray) -> np.ndarray:
         """Performs a normal comparator with input signal
@@ -120,7 +120,7 @@ class Comp(CommonAnalogFunctions):
         """
         u_cmp = self.__cmp_calc(uinp, uinn)
         self._unoise = self.__gen_noise(u_cmp.size, self.__noise_dis)
-        u_out = self.voltage_clipping(u_cmp - self._unoise)
+        u_out = self.clamp_voltage(u_cmp - self._unoise)
         if not self.settings.out_analog:
             u_out = self.__dig_output(u_out)
         return u_out
@@ -137,7 +137,7 @@ class Comp(CommonAnalogFunctions):
         du = uinp - uinn
         self._unoise = self.__gen_noise(du.size, self.__noise_dis)
         thr0 = self.__type_hysteresis(2, scale_thr)
-        u_out = self.voltage_clipping(self.__cmp_hysteresis(du, thr0))
+        u_out = self.clamp_voltage(self.__cmp_hysteresis(du, thr0))
         if not self.settings.out_analog:
             u_out = self.__dig_output(u_out)
         return u_out
@@ -154,7 +154,7 @@ class Comp(CommonAnalogFunctions):
         du = uinp - uinn
         self._unoise = self.__gen_noise(du.size, self.__noise_dis)
         thr0 = self.__type_hysteresis(1, scale_thr)
-        u_out = self.voltage_clipping(self.__cmp_hysteresis(du, thr0))
+        u_out = self.clamp_voltage(self.__cmp_hysteresis(du, thr0))
         if not self.settings.out_analog:
             u_out = self.__dig_output(u_out)
         return u_out
@@ -171,7 +171,7 @@ class Comp(CommonAnalogFunctions):
         du = uinp - uinn
         self._unoise = self.__gen_noise(du.size, self.__noise_dis)
         thr0 = self.__type_hysteresis(3, scale_thr)
-        u_out = self.voltage_clipping(self.__cmp_hysteresis(du, thr0))
+        u_out = self.clamp_voltage(self.__cmp_hysteresis(du, thr0))
         if not self.settings.out_analog:
             u_out = self.__dig_output(u_out)
         return u_out
