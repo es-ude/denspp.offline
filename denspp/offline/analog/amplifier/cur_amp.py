@@ -41,7 +41,7 @@ RecommendedSettingsCUR = SettingsCUR(
 
 
 class CurrentAmplifier(CommonAnalogFunctions):
-    handler_noise: ProcessNoise
+    _handler_noise: ProcessNoise
     _settings: SettingsCUR
     __print_device = "current amplifier"
 
@@ -52,7 +52,7 @@ class CurrentAmplifier(CommonAnalogFunctions):
         """
         super().__init__()
         self.define_voltage_range(volt_low=settings_dev.vss, volt_hgh=settings_dev.vdd)
-        self.handler_noise = ProcessNoise(settings_noise, settings_dev.fs_ana)
+        self._handler_noise = ProcessNoise(settings_noise, settings_dev.fs_ana)
         self._settings = settings_dev
 
     def __add_parasitic(self, size: int, resistance: float=1.0) -> np.ndarray:
@@ -63,7 +63,7 @@ class CurrentAmplifier(CommonAnalogFunctions):
         u_para += self.vcm
         # Adding noise
         if self._settings.noise_en:
-            u_para += self.handler_noise.gen_noise_real_volt(size, resistance)
+            u_para += self._handler_noise.gen_noise_real_volt(size, resistance)
 
         return u_para
 

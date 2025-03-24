@@ -1,21 +1,26 @@
 import numpy as np
 from .adc_basic import BasicADC
-from denspp.offline.analog.adc import SettingsADC, RecommendedSettingsNon
+from .adc_settings import SettingsADC, SettingsNon, RecommendedSettingsNon
+from denspp.offline.analog.dev_noise import ProcessNoise
 
 
 class SuccessiveApproximation(BasicADC):
-    """"Class for applying a Successive Approximation (SAR) Analogue-Digital-Converter (ADC) on the raw data"""
-    def __init__(self, settings_adc: SettingsADC, use_noise: bool = False):
-        super().__init__(settings_adc)
-        self._settings = settings_adc
-        self.__use_noise = use_noise
+    _settings: SettingsADC
+    _handler_noise: ProcessNoise
+
+    def __init__(self, settings_dev: SettingsADC, settings_non: SettingsNon = RecommendedSettingsNon) -> None:
+        """"Class for applying a Successive Approximation (SAR) Analogue-Digital-Converter (ADC) on the raw data
+            :param settings_dev:    Configuration class for defining properties of ADC
+            :param settings_non:    Configuration class for non-idealities / parasitics of ADC (next feature)
+        """
+        super().__init__(settings_dev)
+        self.__use_noise = settings_non.use_noise
         # --- Transfer function
-        self.__dv = self._settings.vref[0] - self._settings.vref[1]
         self.__partition_digital = 2 ** np.arange(0, self._settings.Nadc)
-        self.__partition_voltage = (self.__partition_digital / 2 ** self._settings.Nadc) * self.__dv
-        self.__type_offset = [2 ** (self._settings.Nadc - 1) if self._settings.type_out == "signed" else 0]
+        self.__partition_voltage = (self.__partition_digital / 2 ** self._settings.Nadc) * self._settings.vref_range
+        self.__type_offset = [2 ** (self._settings.Nadc - 1) if self._settings.is_signed else 0]
         # --- Internal signals for noise shaping
-        self.alpha_int = [1, 0.5]
+        self.alpha_int = [1.0, 0.5]
         self.__stage_one_dly = self._settings.vcm
         self.__stage_two_dly = self._settings.vcm
 

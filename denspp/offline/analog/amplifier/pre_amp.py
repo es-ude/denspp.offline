@@ -53,33 +53,36 @@ RecommendedSettingsAMP = SettingsAMP(
 
 
 class PreAmp(CommonAnalogFunctions):
-    handler_noise: ProcessNoise
-    settings: SettingsAMP
+    _handler_noise: ProcessNoise
+    _settings: SettingsAMP
     __print_device = "pre-amplifier"
 
-    def __init__(self, settings_amp: SettingsAMP, settings_noise: SettingsNoise=RecommendedSettingsNoise):
-        """Class for emulating an analogue pre-amplifier"""
+    def __init__(self, settings_dev: SettingsAMP, settings_noise: SettingsNoise=RecommendedSettingsNoise):
+        """Class for emulating an analogue pre-amplifier
+        :param settings_dev:        Dataclass for handling the pre-amplifier
+        :param settings_noise:      Dataclass for handling the noise simulation
+        """
         super().__init__()
-        self.define_voltage_range(volt_low=settings_amp.vss, volt_hgh=settings_amp.vdd)
-        self.handler_noise = ProcessNoise(settings_noise, settings_amp.fs_ana)
-        self.settings = settings_amp
+        self.define_voltage_range(volt_low=settings_dev.vss, volt_hgh=settings_dev.vdd)
+        self._handler_noise = ProcessNoise(settings_noise, settings_dev.fs_ana)
+        self._settings = settings_dev
 
         # --- Filter properties
-        f_filt = np.array(self.settings.f_filt)
-        iir_spk_result = butter(self.settings.n_filt, 2 * f_filt / self.settings.fs_ana,
-                                self.settings.f_type)
+        f_filt = np.array(self._settings.f_filt)
+        iir_spk_result = butter(self._settings.n_filt, 2 * f_filt / self._settings.fs_ana,
+                                self._settings.f_type)
         (self.__b_iir_spk, self.__a_iir_spk) = iir_spk_result[0], iir_spk_result[1]
 
     def __gen_chop(self, size: int) -> np.ndarray:
         """Generate the chopping clock signal"""
-        t = np.arange(0, size, 1) / self.settings.fs_ana
-        clk_chop = square(2 * np.pi * t * self.settings.f_chop, duty=0.5)
+        t = np.arange(0, size, 1) / self._settings.fs_ana
+        clk_chop = square(2 * np.pi * t * self._settings.f_chop, duty=0.5)
         return clk_chop
 
     def __noise_generation_circuit(self, size: int) -> np.ndarray:
         """Generating of noise using circuit noise properties"""
-        if self.settings.noise_en:
-            u_out = self.handler_noise.gen_noise_awgn_dev(size, self.settings.noise_edev)
+        if self._settings.noise_en:
+            u_out = self._handler_noise.gen_noise_awgn_dev(size, self._settings.noise_edev)
         else:
             u_out = np.zeros((size,))
         return u_out
@@ -93,10 +96,10 @@ class PreAmp(CommonAnalogFunctions):
             Corresponding numpy array with output voltage signal
         """
         du = uinp - uinn
-        u_out = self.settings.gain * lfilter(b=self.__b_iir_spk, a=self.__a_iir_spk, x=du)
-        u_out += self.settings.gain * self.settings.offset
-        u_out += self.settings.vcm
-        u_out += self.settings.gain * self.__noise_generation_circuit(du.size)
+        u_out = self._settings.gain * lfilter(b=self.__b_iir_spk, a=self.__a_iir_spk, x=du)
+        u_out += self._settings.gain * self._settings.offset
+        u_out += self._settings.vcm
+        u_out += self._settings.gain * self.__noise_generation_circuit(du.size)
         return self.clamp_voltage(u_out)
 
     def pre_amp_chopper(self, uinp: np.ndarray, uinn: np.ndarray) -> [np.ndarray, np.ndarray]:
@@ -110,12 +113,12 @@ class PreAmp(CommonAnalogFunctions):
         du = uinp - uinn
         clk_chop = self.__gen_chop(du.size)
         # --- Chopping
-        du = (du + self.settings.offset - self.settings.vcm) * clk_chop
-        uchp_in = self.settings.vcm + self.settings.gain * du
-        uchp_in += self.settings.gain * self.__noise_generation_circuit(du.size)
+        du = (du + self._settings.offset - self._settings.vcm) * clk_chop
+        uchp_in = self._settings.vcm + self._settings.gain * du
+        uchp_in += self._settings.gain * self.__noise_generation_circuit(du.size)
         # --- Back chopping and Filtering
         u_filt = uchp_in * clk_chop
         u_out = lfilter(self.__b_iir_spk, self.__a_iir_spk, u_filt)
-        u_out += self.settings.vcm
+        u_out += self._settings.vcm
 
         return self.clamp_voltage(u_out), self.clamp_voltage(uchp_in)

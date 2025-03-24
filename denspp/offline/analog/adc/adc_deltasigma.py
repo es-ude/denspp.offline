@@ -1,20 +1,25 @@
 import numpy as np
-
 from .adc_basic import BasicADC
-from denspp.offline.analog.adc import SettingsADC, SettingsNon, RecommendedSettingsNon
+from .adc_settings import SettingsADC, RecommendedSettingsADC, SettingsNon, RecommendedSettingsNon
+from denspp.offline.analog.dev_noise import ProcessNoise
 
 
 class DeltaSigmaADC(BasicADC):
-    """Class for using Continuous Time Delta Sigma ADC"""
-    def __init__(self, settings_adc: SettingsADC, settings_non=RecommendedSettingsNon):
-        super().__init__(settings_adc)
+    _settings: SettingsADC
+    _handler_noise: ProcessNoise
+
+    def __init__(self, settings_dev: SettingsADC, settings_non=RecommendedSettingsNon, dac_order: int=2) -> None:
+        """Class for using Continuous Time Delta Sigma ADC
+        :param settings_dev:    Configuration class for defining properties of ADC
+        :param settings_non:    Configuration class for non-idealities / parasitics of ADC (next feature)
+        :param dac_order:       Number of bits of used DAC in feedback
+        """
+        super().__init__(settings_dev)
         # --- Internal variables
         self.use_noise = False
-        self.__dac_order = 2
-        self.__dac_dvrange = self._settings.vref[0] - self._settings.vref[1]
-        self.__dac_lsb = self.__dac_dvrange / 2 ** self.__dac_order
+        self.__dac_order = dac_order
         self.__partition_digital = np.arange(0, 2 ** self.__dac_order, 1) / 2 ** self.__dac_order
-        self.__partition_voltage = self._settings.vref[1] + self.__partition_digital * self.__dac_dvrange + self.__dac_lsb / 2
+        self.__partition_voltage = self._settings.vref[1] + self.__partition_digital * self._settings.vref_range + self._settings.lsb / 2
 
         # --- Variables for post-processing (noise-shaping)
         self.__stage_one_dly = self._settings.vcm
@@ -52,7 +57,7 @@ class DeltaSigmaADC(BasicADC):
         input = uin * np.ones(shape=self.__partition_voltage.shape)
         result = np.heaviside(input - self.__partition_voltage, 1)
         xout = np.sum(result)
-        ufb = self._settings.vref[1] + xout * self.__dac_lsb
+        ufb = self._settings.vref[1] + xout * self._settings.lsb
 
         return xout, ufb
 

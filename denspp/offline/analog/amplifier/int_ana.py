@@ -59,16 +59,20 @@ RecommendedSettingsINT = SettingsINT(
 
 
 class IntegratorStage(CommonAnalogFunctions):
-    handler_noise: ProcessNoise
+    _handler_noise: ProcessNoise
     _settings: SettingsINT
     _sampling_rate: float
     __print_device = "voltage integrator"
 
     def __init__(self, settings_dev: SettingsINT, fs: float, settings_noise: SettingsNoise=RecommendedSettingsNoise):
-        """Class for emulating an analogue integrator for voltage and current transient signals"""
+        """Class for emulating an analogue integrator for voltage and current transient signals
+        :param settings_dev:        Dataclass for handling the delay amplifier
+        :param fs:                  Sampling frequency [Hz]
+        :param settings_noise:      Dataclass for handling the noise simulation
+        """
         super().__init__()
         self.define_voltage_range(volt_low=settings_dev.vss, volt_hgh=settings_dev.vdd)
-        self.handler_noise = ProcessNoise(settings_noise, fs)
+        self._handler_noise = ProcessNoise(settings_noise, fs)
         self._sampling_rate = fs
         self._settings = settings_dev
 
@@ -80,7 +84,7 @@ class IntegratorStage(CommonAnalogFunctions):
     def __noise_generation_resistance(self, size: int) -> np.ndarray:
         """Generating of noise using input resistance"""
         if self._settings.noise_en:
-            u_out = self.handler_noise.gen_noise_awgn_volt(size, self._settings.res_in)
+            u_out = self._handler_noise.gen_noise_awgn_volt(size, self._settings.res_in)
         else:
             u_out = np.zeros((size,))
         return u_out
@@ -88,7 +92,7 @@ class IntegratorStage(CommonAnalogFunctions):
     def __noise_generation_circuit(self, size: int) -> np.ndarray:
         """Generating of noise using circuit noise properties"""
         if self._settings.noise_en:
-            u_out = self.handler_noise.gen_noise_awgn_dev(size, self._settings.noise_edev)
+            u_out = self._handler_noise.gen_noise_awgn_dev(size, self._settings.noise_edev)
         else:
             u_out = np.zeros((size, ))
         return u_out

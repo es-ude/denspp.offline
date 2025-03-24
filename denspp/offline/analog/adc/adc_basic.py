@@ -8,26 +8,23 @@ from denspp.offline.analog.dev_noise import SettingsNoise, RecommendedSettingsNo
 
 
 class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
-    handler_noise: ProcessNoise
+    _settings: SettingsADC
+    _handler_noise: ProcessNoise
 
-    def __init__(self, settings_adc: SettingsADC, settings_noise: SettingsNoise = RecommendedSettingsNoise):
+    def __init__(self, settings_dev: SettingsADC, settings_noise: SettingsNoise = RecommendedSettingsNoise):
         """Basic class for applying an Analogue-Digital-Converter (ADC) on the raw data
-        :param settings_adc: SettingsADC
-        :param settings_noise: SettingsNoise
+        :param settings_dev:    Configuration class for defining properties of ADC
+        :param settings_noise:  Configuration class for defining noise properties of device
         """
         super().__init__()
-        self.define_voltage_range(volt_low=settings_adc.vref[0], volt_hgh=settings_adc.vref[1])
-        self.define_limits(bit_signed= settings_adc.type_out == "signed", total_bitwidth=settings_adc.Nadc, frac_bitwidth=0)
-
-        self.handler_noise = ProcessNoise(settings_noise, settings_adc.fs_ana)
-        self._settings = settings_adc
+        self.define_voltage_range(volt_low=settings_dev.vref[0], volt_hgh=settings_dev.vref[1])
+        self.define_limits(bit_signed=settings_dev.is_signed, total_bitwidth=settings_dev.Nadc, frac_bitwidth=0)
+        self._handler_noise = ProcessNoise(settings_noise, settings_dev.fs_ana)
+        self._settings = settings_dev
 
         # --- Internal characteristic
         self.noise_eff_out = 0.0
         self.__dvrange = self._settings.vref[0] - self._settings.vref[1]
-        self.__lsb = self._settings.lsb
-        self.__oversampling_ratio = self._settings.osr
-        self.__snr_ideal = 10 * np.log10(4) * self._settings.Nadc + 10 * np.log10(3 / 2)
 
         # --- Resampling stuff
         (self.__p_ratio, self.__q_ratio) = (
@@ -37,6 +34,11 @@ class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
         )
         # --- Internal voltage values
         self.__input_snh = 0.0
+
+    @property
+    def snr_ideal(self) -> float:
+        """Getting the ideal Signal-to-Noise ratio"""
+        return 10 * np.log10(4) * self._settings.Nadc + 10 * np.log10(3 / 2)
 
     def __do_snh_sample(self, uin: np.ndarray, do: bool | np.ndarray) -> np.ndarray:
         """Performing sample-and-hold (S&H) stage for buffering input value"""
@@ -68,9 +70,9 @@ class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
 
     def _gen_noise(self, size: int) -> np.ndarray:
         """Generate the transient input noise of the amplifier"""
-        unoise = self.handler_noise.gen_noise_awgn_pwr(
+        unoise = self._handler_noise.gen_noise_awgn_pwr(
             size = size,
-            e_n=-self.__snr_ideal
+            e_n=-self.snr_ideal
         )
         return unoise
 
@@ -86,9 +88,9 @@ class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
         uin0 = self._do_resample(uin_adc)
         uin0 += self._gen_noise(uin0.size)
         # ADC conversion
-        xout = np.floor((uin0 - self._settings.vcm) / self.__lsb)
+        xout = np.floor((uin0 - self._settings.vcm) / self._settings.lsb)
         xout = self.clamp_digital(xout)
-        uout = self._settings.vref[1] + xout * self.__lsb
+        uout = self._settings.vref[1] + xout * self._settings.lsb
         # Calculating quantization error
         uerr = uin0 - uout
         return xout, uout, uerr
