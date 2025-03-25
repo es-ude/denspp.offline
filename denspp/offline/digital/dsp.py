@@ -3,7 +3,7 @@ import scipy.signal as scft
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
 from fxpmath import Fxp
-
+from denspp.offline.analog.common_func import CommonDigitalFunctions
 
 
 @dataclass
@@ -26,9 +26,10 @@ RecommendedSettingsDSP = SettingsDSP(
 )
 
 
-class DSP:
+class DSP(CommonDigitalFunctions):
     """Class for Emulating Digital Signal Processing on FPGA"""
     def __init__(self, setting: SettingsDSP):
+        super().__init__()
         self.settings = setting
 
         self.coeff_a = None
@@ -126,6 +127,8 @@ class DSP:
 
     def coeff_verilog(self, bit_size: int, bit_frac: int, signed: bool=True) -> None:
         """Printing the coefficients with given bit fraction for adding into FPGA designs"""
+        self.define_limits(bit_signed=signed, total_bitwidth=bit_size, frac_bitwidth=bit_frac)
+
         print(f"\n//--- Used filter coefficients for {self.settings.b_type, self.settings.f_type} with {np.array(self.settings.f_filt) / 1000:.3f} kHz @ {self.settings.fs / 1000:.3f} kHz")
         if not self.type1 == 'fir':
             coeffa_size = len(self.coeff_a)

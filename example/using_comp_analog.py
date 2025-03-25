@@ -14,7 +14,7 @@ if __name__ == "__main__":
     inp1 = np.zeros((n_samples, ))
 
     # --- Defining the output
-    vcm = cmp.settings.vcm
+    vcm = cmp._settings.vcm
     out0 = cmp.cmp_normal(inp0, vcm)
     out1 = cmp.cmp_single_pos_hysteresis(inp0, vcm)
     out2 = cmp.cmp_single_neg_hysteresis(inp0, vcm)

@@ -13,7 +13,7 @@ class SettingsADC:
         fs_dig      - Output sampling rate after decimation [Hz]
         Nadc        - Quantization level of ADC [/]
         osr         - Oversampling ratio of ADC [/]
-        type_out    - Output type of digital value {"signed" | "unsigned"}
+        type_out    - Output type of digital value {"signed": True | "unsigned": False}
     """
     vdd:        float
     vss:        float
@@ -22,7 +22,7 @@ class SettingsADC:
     fs_dig:     float
     Nadc:       int
     osr:        int
-    type_out:   str
+    is_signed:  bool
 
     @property
     def vcm(self) -> float:
@@ -39,6 +39,10 @@ class SettingsADC:
         vrefn = self.vcm - self.dvref
         vrefn = vrefn if vrefn > self.vss else self.vss
         return [vrefp, vrefn]
+
+    @property
+    def vref_range(self) -> float:
+        return self.vref[0] - self.vref[1]
 
     @property
     def lsb(self) -> float:
@@ -65,7 +69,7 @@ RecommendedSettingsADC = SettingsADC(
     vdd=0.6, vss=-0.6, dvref=0.1,
     fs_ana=40e3,
     Nadc=12, fs_dig=20e3, osr=1,
-    type_out="signed"
+    is_signed=False
 )
 RecommendedSettingsNon = SettingsNon(
     use_noise=True,

@@ -40,22 +40,23 @@ RecommendedSettingsDLY = SettingsDLY(
 
 
 class DlyAmp(CommonAnalogFunctions):
-    handler_noise: ProcessNoise
-    settings: SettingsDLY
+    _handler_noise: ProcessNoise
+    _settings: SettingsDLY
     __print_device = "delay amplifier"
 
-    def __init__(self, settings_dly: SettingsDLY, settings_noise: SettingsNoise=RecommendedSettingsNoise) -> None:
+    def __init__(self, settings_dev: SettingsDLY, settings_noise: SettingsNoise=RecommendedSettingsNoise) -> None:
         """Class for emulating an analogue delay amplifier
-        :param settings_dly:        Dataclass for handling the delay amplifier
+        :param settings_dev:        Dataclass for handling the delay amplifier
         :param settings_noise:      Dataclass for handling the noise simulation
         """
-        super().__init__(settings_dly)
-        self.handler_noise = ProcessNoise(settings_noise, settings_dly.fs_ana)
-        self.settings = settings_dly
+        super().__init__()
+        self.define_voltage_range(volt_low=settings_dev.vss, volt_hgh=settings_dev.vdd)
+        self._handler_noise = ProcessNoise(settings_noise, settings_dev.fs_ana)
+        self._settings = settings_dev
 
     @property
     def num_dly_taps(self) -> int:
-        return int(self.settings.fs_ana * self.settings.t_dly)
+        return int(self._settings.fs_ana * self._settings.t_dly)
 
     def do_simple_delay(self, u_inp: np.ndarray) -> np.ndarray:
         """Performing a simple delay stage using taps
@@ -66,7 +67,7 @@ class DlyAmp(CommonAnalogFunctions):
         """
         uout = np.zeros(u_inp.shape) + self.vcm
         uout[self.num_dly_taps:] = u_inp[:-self.num_dly_taps]
-        return self.voltage_clipping(uout)
+        return self.clamp_voltage(uout)
 
     def do_recursive_delay(self, u_inp: np.ndarray) -> np.ndarray:
         """Performing a recursive delay stage using taps
@@ -78,7 +79,7 @@ class DlyAmp(CommonAnalogFunctions):
         uout = np.zeros(u_inp.shape)
         uout[:self.num_dly_taps] = u_inp[-self.num_dly_taps:]
         uout[self.num_dly_taps:] = u_inp[:-self.num_dly_taps]
-        return self.voltage_clipping(uout)
+        return self.clamp_voltage(uout)
 
     def do_allpass_first_order(self, uin: np.ndarray, f_b: float=1.0) -> np.ndarray:
         """Performing a 1st order all-pass filter (IIR) for adding time delay
@@ -88,12 +89,12 @@ class DlyAmp(CommonAnalogFunctions):
         Returns:
             Corresponding numpy array with shifted voltage signal
         """
-        val = np.tan(np.pi * f_b / self.settings.fs_ana)
+        val = np.tan(np.pi * f_b / self._settings.fs_ana)
         iir_c0 = (val - 1) / (val + 1)
 
         b = [iir_c0, 1.0]
         a = [1.0, iir_c0]
-        return self.voltage_clipping(lfilter(b, a, uin))
+        return self.clamp_voltage(lfilter(b, a, uin))
 
     def do_allpass_second_order(self, uin: np.ndarray, f_b: float=1.0, bandwidth: float=0.5) -> np.ndarray:
         """Performing a 2nd order all-pass filter (IIR) for adding time delay
@@ -104,10 +105,10 @@ class DlyAmp(CommonAnalogFunctions):
         Returns:
             Corresponding numpy array with shifted voltage signal
         """
-        val = np.tan(np.pi * bandwidth / self.settings.fs_ana)
+        val = np.tan(np.pi * bandwidth / self._settings.fs_ana)
         iir_c0 = (val - 1) / (val + 1)
-        iir_c1 = -np.cos(2 * np.pi * f_b / self.settings.fs_ana)
+        iir_c1 = -np.cos(2 * np.pi * f_b / self._settings.fs_ana)
 
         b = [-iir_c0, iir_c1*(1-iir_c0), 1.0]
         a = [1.0, iir_c1*(1-iir_c0), -iir_c0]
-        return self.voltage_clipping(lfilter(b, a, uin))
+        return self.clamp_voltage(lfilter(b, a, uin))

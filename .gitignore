@@ -128,3 +128,11 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+
+/src_ma_jo/A1R1a_elec_stim_50biphasic_400us0001.npy
+/src_ma_jo/A1R1a_light_stim_1500_20ms.npy
+/src_ma_jo/A1R1a_light_stim_1500_20ms0001.npy
+/src_ma_jo/A1R1b_ASIC_stim_sine_1kHz_6uA_5s_gap.npy
+/src_ma_jo/A1R1a_ASIC_1S_800_3.mat
+/src_ma_jo/A1R1a_ASIC_1S_800_3.npy
+/src_ma_jo/A1R1a_elec_stim_50biphasic_400us0001.mat
