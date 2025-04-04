@@ -1,6 +1,6 @@
 from denspp.offline.data_call.call_handler import RecommendedSettingsDATA
 from denspp.offline.pipeline.plot_mea import plot_mea_transient_total
-from src_neuro.call_spike import DataLoader
+from src_neuro.call_data import DataLoader
 
 
 if __name__ == "__main__":
