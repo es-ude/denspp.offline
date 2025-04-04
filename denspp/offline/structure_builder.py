@@ -39,7 +39,7 @@ def init_project_folder(new_folder: str = '') -> None:
     """
     folder_structure = ['data', 'runs', 'temp', 'config', 'src_neuro']
     copy_files = {'main_pipeline.py': '', 'main_data_merge.py': '', 'main_dnn_train.py': '',
-                  'call_template.py': 'src_neuro', 'pipeline_v0.py': 'src_neuro'}
+                  'call_data.py': 'src_neuro', 'call_dataset.py': 'src_neuro', 'pipeline_v0.py': 'src_neuro'}
 
     path2start = get_path_project_start(new_folder)
     makedirs(path2start, exist_ok=True)
