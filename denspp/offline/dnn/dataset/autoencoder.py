@@ -1,7 +1,7 @@
 import numpy as np
 from torch import is_tensor
 from torch.utils.data import Dataset
-from denspp.offline.dnn.pytorch_config_data import ConfigDataset
+from denspp.offline.dnn.pytorch_config_data import SettingsDataset
 
 
 class DatasetAE(Dataset):
@@ -82,7 +82,7 @@ class DatasetAE(Dataset):
         return out
 
 
-def prepare_training(settings: ConfigDataset, do_classification: bool=False,
+def prepare_training(settings: SettingsDataset, do_classification: bool=False,
                      mode_train_ae: int=0, noise_std: float=0.1, print_state: bool=True) -> DatasetAE:
     """Preparing dataset incl. augmentation for spike-frame based training
     Args:

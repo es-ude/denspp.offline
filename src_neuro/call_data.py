@@ -4,17 +4,17 @@ from scipy.io import loadmat
 from mat73 import loadmat as loadmat_mat73
 from pyxdf import load_xdf
 from denspp.offline.data_call.call_cellbib import CellSelector
-from denspp.offline.data_call.call_handler import DataController, DataHandler, SettingsDATA, translate_unit_to_scale_value
+from denspp.offline.data_call.call_handler import ControllerData, DataHandler, SettingsData, translate_unit_to_scale_value
 
 
-class DataLoader(DataController):
+class DataLoader(ControllerData):
     """Class for loading and manipulating the used dataset"""
     _raw_data: DataHandler
-    _settings: SettingsDATA
+    _settings: SettingsData
     _path2file: str = ""
 
-    def __init__(self, setting: SettingsDATA) -> None:
-        DataController.__init__(self)
+    def __init__(self, setting: SettingsData) -> None:
+        ControllerData.__init__(self)
         self._settings = setting
         self.select_electrodes = list()
         self._methods_available = dir(DataLoader)
