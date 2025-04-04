@@ -1,7 +1,7 @@
 from unittest import TestCase, main
 import numpy as np
 from denspp.offline.data_process.frame_normalization import DataNormalization
-from denspp.offline.tests.test_helper import generate_test_data
+from tests.test_helper import generate_test_data
 
 
 class TestSum(TestCase):

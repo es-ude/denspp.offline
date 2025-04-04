@@ -1,6 +1,5 @@
 from unittest import TestCase, main
 import numpy as np
-from denspp.offline.tests.test_helper import generate_reference_array
 from denspp.offline.analog.adc.adc_basic import BasicADC
 from denspp.offline.analog.adc.adc_settings import SettingsADC, SettingsNon
 
