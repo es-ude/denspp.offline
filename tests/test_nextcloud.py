@@ -1,7 +1,7 @@
 from unittest import TestCase, main
 from shutil import rmtree
 from os.path import splitext, join, exists
-from denspp.offline.data_call.owncloud_handler import ConfigCloud, OwnCloudDownloader
+from denspp.offline.data_call.nextcloud_handler import ConfigCloud, NextCloudDownloader
 from denspp.offline.structure_builder import get_path_project_start
 
 
@@ -12,9 +12,9 @@ TestConfigCloud = ConfigCloud(
 )
 
 
-class TestOwnCloud(TestCase):
+class TestNextCloud(TestCase):
     path2temp = get_path_project_start('temp_test')
-    handler = OwnCloudDownloader(
+    handler = NextCloudDownloader(
         path2config=path2temp,
         use_config=TestConfigCloud
     )
