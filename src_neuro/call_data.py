@@ -17,7 +17,7 @@ class DataLoader(ControllerData):
         ControllerData.__init__(self)
         self._settings = setting
         self.select_electrodes = list()
-        self._methods_available = dir(DataLoader)
+        self._methods_available = self._extract_func(self.__class__)
 
     def __load_martinez_simulation(self) -> None:
         """Loading synthethic files from Quiroga simulation (2009)"""

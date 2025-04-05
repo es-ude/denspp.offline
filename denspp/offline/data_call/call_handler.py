@@ -131,7 +131,11 @@ class ControllerData:
         self._methods_available = dir(ControllerData)
         self.__default_data_path = join(get_path_project_start(), 'data')
         self.__config_data_selection = [self.__default_data_path, 0, 0]
-        self.__download_handler = OwnCloudDownloader(use_dataset=False)
+        self.__download_handler = OwnCloudDownloader()
+
+    @staticmethod
+    def _extract_func(class_obj: object) -> list:
+        return  [method for method in dir(class_obj) if class_obj.__name__ in method]
 
     def do_cut(self) -> None:
         """Cutting all transient electrode signals in the given range"""
@@ -491,24 +495,20 @@ class ControllerData:
 
     def do_call(self):
         """Loading the dataset"""
-        # --- Searching the load function for dataset translation
-        search_param = '_DataLoader'
-        methods_load_data = [method for method in self._methods_available if search_param in method]
-
         # --- Getting the function to call
-        used_data_source_idx = -1
         warning_text = "\nPlease select key words in variable 'data_set' for calling methods to read transient data"
         warning_text += "\n=========================================================================================="
-        for method in methods_load_data:
+        for method in self._methods_available:
             warning_text += f"\n\t{method}"
 
-        for idx, method in enumerate(methods_load_data):
+        # --- Call the function
+        used_data_source_idx = -1
+        for idx, method in enumerate(self._methods_available):
             if self._settings.data_set in method:
                 used_data_source_idx = idx
                 break
 
-        # --- Call the function
         if not self._settings.data_set or used_data_source_idx == -1:
             raise ValueError(warning_text)
         else:
-            getattr(self, methods_load_data[idx])()
+            getattr(self, self._methods_available[idx])()
