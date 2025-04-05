@@ -37,9 +37,9 @@ def init_project_folder(new_folder: str = '') -> None:
     :param new_folder:      Name of the new folder to create (test case)
     :return:                None
     """
-    folder_structure = ['data', 'runs', 'temp', 'config', 'src_neuro']
+    folder_structure = ['data', 'dataset', 'runs', 'temp', 'config', 'src_pipe']
     copy_files = {'main_pipeline.py': '', 'main_data_merge.py': '', 'main_dnn_train.py': '',
-                  'call_data.py': 'src_neuro', 'call_dataset.py': 'src_neuro', 'pipeline_v0.py': 'src_neuro'}
+                  'call_data.py': 'src_pipe', 'pipeline_v0.py': 'src_pipe'}
 
     path2start = get_path_project_start(new_folder)
     makedirs(path2start, exist_ok=True)
@@ -55,12 +55,13 @@ def init_dnn_folder(new_folder: str = '') -> None:
     :param new_folder:      Name of the new folder to create (test case)
     :return:                None
     """
+    folder_start = 'src_dnn'
     folder_structure = ['models', 'dataset']
-    copy_files = {'main_dnn_train.py': ''}
+    copy_files = {'main_dnn_train.py': '', 'call_dataset.py': folder_start}
 
     # --- Generation process
     path2proj = get_path_project_start(new_folder)
-    path2start = join(path2proj, 'src_dnn')
+    path2start = join(path2proj, folder_start)
     if not exists(path2start):
         for folder_name in folder_structure:
             makedirs(join(path2start, folder_name), exist_ok=True)

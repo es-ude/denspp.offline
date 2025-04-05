@@ -8,7 +8,7 @@ from denspp.offline.structure_builder import get_path_project_start
 from denspp.offline.plot_helper import save_figure, cm_to_inch, scale_auto_value
 from denspp.offline.data_call.call_cellbib import CellSelector
 
-from src_neuro.call_spike import DataLoader, SettingsDATA
+from src_neuro.call_data import DataLoader, SettingsData
 from denspp.offline.data_merge.pipeline_data import Pipeline
 
 
@@ -104,7 +104,7 @@ if __name__ == "__main__":
         ch = channel_number[idx]
 
         # --- Getting the Data
-        data_set = SettingsDATA(
+        data_set = SettingsData(
             path="C:\HomeOffice\Data_Neurosignal",
             data_set=7, data_case=0, data_point=file,
             t_range=[0], ch_sel=[],

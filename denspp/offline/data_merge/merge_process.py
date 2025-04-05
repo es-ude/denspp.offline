@@ -1,5 +1,5 @@
 from denspp.offline.yaml_handler import YamlConfigHandler
-from denspp.offline.data_call.call_handler import SettingsDATA, RecommendedSettingsDATA
+from denspp.offline.data_call.call_handler import SettingsData, RecommendedSettingsDATA
 from denspp.offline.data_merge.merge_datasets_frames import MergeDatasets
 
 
@@ -16,7 +16,7 @@ def start_merge_process(data_loader, pipeline) -> None:
         path2yaml='config',
         yaml_name='Config_Merge'
     )
-    settings = yaml_handler.get_class(SettingsDATA)
+    settings = yaml_handler.get_class(SettingsData)
 
     # ---- Merging spike frames from several files to one file
 

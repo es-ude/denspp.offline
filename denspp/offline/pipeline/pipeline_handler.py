@@ -1,5 +1,5 @@
 from denspp.offline import YamlConfigHandler
-from denspp.offline.data_call import SettingsDATA, RecommendedSettingsDATA
+from denspp.offline.data_call import SettingsData, RecommendedSettingsDATA
 from denspp.offline.pipeline.pipeline_cmds import ProcessingData, SettingsThread, RecommendedSettingsThread
 
 
@@ -42,7 +42,7 @@ def start_pipeline_processing(object_dataloader, object_pipeline) -> None:
 def read_yaml_pipeline_config(
         yaml_data_index: str = 'Config_PipelineData',
         yaml_pipe_index: str = 'Config_Pipeline',
-    ) -> [SettingsDATA, SettingsThread]:
+    ) -> [SettingsData, SettingsThread]:
     """
     Function for reading/generating the yaml configuration files for getting the transient data and pipeline processing
     :param yaml_data_index: Index with name for reading the yaml configuration file for data loading
@@ -50,7 +50,7 @@ def read_yaml_pipeline_config(
     :return:                Classes for handling the data (SettingsDATA) and pipeline processor (SettingsThread)
     """
     yaml_data = YamlConfigHandler(RecommendedSettingsDATA, yaml_name=yaml_data_index)
-    settings_data = yaml_data.get_class(SettingsDATA)
+    settings_data = yaml_data.get_class(SettingsData)
 
     yaml_threads = YamlConfigHandler(RecommendedSettingsThread, yaml_name=yaml_pipe_index)
     settings_thr = yaml_threads.get_class(SettingsThread)

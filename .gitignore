@@ -2,6 +2,7 @@
 Config_*.yaml
 **/config
 **/data
+**/dataset
 **/runs
 **/src_mem
 **/test
