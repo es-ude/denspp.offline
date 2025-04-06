@@ -11,7 +11,7 @@ settings_adc = SettingsADC(
     fs_dig=10e3,
     Nadc=12,
     osr=4,
-    type_out='signed'
+    is_signed=True
 )
 RecommendedSettingsNon = SettingsNon(
     use_noise=False,
@@ -22,7 +22,6 @@ RecommendedSettingsNon = SettingsNon(
 
 
 def inp_samp(time: np.ndarray) -> np.ndarray:
-    """"""
     freq = [4, 400]
     z = 0* time
     for f in freq:

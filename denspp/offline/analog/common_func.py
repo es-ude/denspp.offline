@@ -6,9 +6,6 @@ from fxpmath import Fxp, Config
 class CommonAnalogFunctions:
     _range: list = (-5.0, 5.0)
 
-    def __init__(self) -> None:
-        pass
-
     def define_voltage_range(self, volt_hgh: float, volt_low: float) -> list:
         """Defining the voltage range values"""
         self._range = [volt_low, volt_hgh]
@@ -28,16 +25,8 @@ class CommonAnalogFunctions:
 
 class CommonDigitalFunctions:
     _digital_border: np.ndarray
-    _config_fxp: Config
     _bitwidth: list = (2, 0)
     _bitsigned: bool = False
-
-    def __init__(self) -> None:
-        self._config_fxp = Config()
-        self._config_fxp.rounding = "around"
-        self._config_fxp.overflow = "saturate"
-        self._config_fxp.underflow = "saturate"
-
 
     def define_limits(self, bit_signed: bool, total_bitwidth: int, frac_bitwidth: int) -> np.ndarray:
         """Defining the digital limitation values
@@ -69,6 +58,11 @@ class CommonDigitalFunctions:
         :param xin:     Input data stream
         :return:        Quantized output data stream
         """
+        config_fxp = Config()
+        config_fxp.rounding = "around"
+        config_fxp.overflow = "saturate"
+        config_fxp.underflow = "saturate"
+
         val = Fxp(val=xin, signed=self._bitsigned, n_word=self._bitwidth[0], n_frac=self._bitwidth[1],
-                   config=self._config_fxp).get_val()
+                   config=config_fxp).get_val()
         return val if not type(xin) == type(float(1.2)) else float(val)

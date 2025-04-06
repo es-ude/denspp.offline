@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 import unittest
 from os.path import join, exists
-from shutil import rmtree
 from denspp.offline.yaml_handler import YamlConfigHandler
 from denspp.offline.structure_builder import get_path_project_start
 
@@ -23,7 +22,7 @@ DefaultSettingsTest = SettingsTest(
 )
 
 # --- DATA FOR TESTING
-path2yaml = join(get_path_project_start(), 'temp_test/config')
+path2yaml = join(get_path_project_start(), join('temp_test', 'config'))
 filename = 'Config_Test'
 data_wr = {
     'Name': 'John Doe',
@@ -48,24 +47,20 @@ class TestSum(unittest.TestCase):
     )
 
     def test_folder_generation(self):
-        self.assertEqual(exists(path2yaml), True)
+        self.assertTrue(exists(path2yaml))
 
     def test_yaml_create(self):
         self.dummy0.write_dict_to_yaml(data_wr)
         path2chck = join(path2yaml, f"{filename}0.yaml")
-        self.assertEqual(exists(path2chck), True)
+        self.assertTrue(exists(path2chck))
 
     def test_yaml_class(self):
         class_out = self.dummy1.get_class(SettingsTest)
-        self.assertEqual(DefaultSettingsTest == class_out, True)
+        self.assertTrue(DefaultSettingsTest == class_out)
 
     def test_yaml_read(self):
         data_rd = self.dummy0.read_yaml_to_dict()
-        self.assertEqual(data_wr == data_rd, True)
-
-    def test_yaml_stop_test(self):
-        rmtree(path2yaml)
-        self.assertEqual(exists(path2yaml), False)
+        self.assertTrue(data_wr == data_rd)
 
 
 if __name__ == '__main__':
