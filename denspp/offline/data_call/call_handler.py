@@ -7,11 +7,11 @@ from glob import glob
 from fractions import Fraction
 from scipy.signal import resample_poly
 from denspp.offline.structure_builder import init_project_folder, get_path_project_start
-from denspp.offline.data_call.owncloud_handler import OwncloudDownloader
+from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
 
 
 @dataclass
-class SettingsDATA:
+class SettingsData:
     """Class for configuring the dataloader
     input:
     path        - Path to data storage
@@ -32,7 +32,7 @@ class SettingsDATA:
     do_mapping: bool
 
 
-RecommendedSettingsDATA = SettingsDATA(
+DefaultSettingsData = SettingsData(
     path='data',
     data_set='quiroga',
     data_case=0, data_point=0,
@@ -74,50 +74,11 @@ class DataHandler:
         return np.zeros((self.mapping_dimension[0], self.mapping_dimension[1]), dtype=bool)
 
 
-def translate_unit_to_scale_value(unit_str: str, pos: int) -> float:
-    """Translating the unit of a value from string to float"""
-    gain_base = 1e0
-    if not len(unit_str) == 1:
-        if unit_str[pos] == 'm':
-            gain_base = 1e-3
-        elif unit_str[pos] == 'u':
-            gain_base = 1e-6
-        elif unit_str[pos] == 'n':
-            gain_base = 1e-9
-    return gain_base
-
-
-def transform_label_from_csv_to_numpy(marker_loaded: list, label_text: list, start_pos: int) -> [list, list]:
-    """Translating the event labels from csv file to numpy
-    Args:
-        marker_loaded:
-        label_text:
-        start_pos:      Start position from reading the csv file
-    Returns:
-        Two list with type information and marker information
-        """
-    loaded_type = list()
-    for idx, label in enumerate(marker_loaded[0]):
-        if idx > start_pos:
-            id = -1
-            for num, type in enumerate(label_text):
-                if type in label:
-                    id = num
-            loaded_type.append(id)
-
-    loaded_marker = list()
-    for idx, label in enumerate(marker_loaded[1]):
-        if idx > 0:
-            loaded_marker.append(int(label[:-1]))
-
-    return loaded_type, loaded_marker
-
-
-class DataController:
+class ControllerData:
     """Class for loading and manipulating the used dataset"""
-    __download_handler: OwncloudDownloader
+    __download_handler: OwnCloudDownloader
     _raw_data: DataHandler
-    _settings: SettingsDATA
+    _settings: SettingsData
     _path2file: str = ''
     _path2folder: str = ''
     path2mapping_local: list = []
@@ -128,10 +89,14 @@ class DataController:
         init_project_folder()
         self.__fill_factor = 1
         self.__scaling = 1
-        self._methods_available = dir(DataController)
+        self._methods_available = dir(ControllerData)
         self.__default_data_path = join(get_path_project_start(), 'data')
         self.__config_data_selection = [self.__default_data_path, 0, 0]
-        self.__download_handler = OwncloudDownloader(use_dataset=False)
+        self.__download_handler = OwnCloudDownloader()
+
+    @staticmethod
+    def _extract_func(class_obj: object) -> list:
+        return  [method for method in dir(class_obj) if class_obj.__name__ in method]
 
     def do_cut(self) -> None:
         """Cutting all transient electrode signals in the given range"""
@@ -303,18 +268,18 @@ class DataController:
             return "" if len(chck) == 0 else chck[0]
 
     def __get_path_available_remote(self, folder_name: str, data_type: str) -> str:
-        overview = self.__download_handler.get_overview_folder()
+        overview = self.__download_handler.get_overview_folder(False)
         path2folder = [s for s in overview if any(folder_name in s for xs in overview)]
-        self.path2mapping_remote = self.__download_handler.get_overview_data(path2folder[0], 'Mapping_*.csv')
+        self.path2mapping_remote = self.__download_handler.get_overview_data(False, path2folder[0], 'Mapping_*.csv')
 
         if len(path2folder) == 0:
             return ""
         else:
-            folder_structure = self.__download_handler.get_overview_folder(path2folder[0])
+            folder_structure = self.__download_handler.get_overview_folder(False, path2folder[0])
             if len(folder_structure):
                 folder_content = self.__download_handler.get_overview_data(folder_structure[self.__config_data_selection[1]], data_type)
             else:
-                folder_content = self.__download_handler.get_overview_data(path2folder[0], data_type)
+                folder_content = self.__download_handler.get_overview_data(False, path2folder[0], data_type)
             folder_content.sort()
             return folder_content[self.__config_data_selection[2]]
 
@@ -331,7 +296,7 @@ class DataController:
             path2data = join(self._settings.path, dirname(path2chck[1:]))
             path2file = join(self._settings.path, path2chck[1:])
             makedirs(path2data, exist_ok=True)
-            self.__download_handler.download_file(path2chck, path2file)
+            self.__download_handler.download_file(use_dataset=False, file_name=path2chck, destination_download=path2file)
             self._path2file = path2file
         else:
             raise FileNotFoundError("--- File is not available. Please check! ---")
@@ -412,7 +377,7 @@ class DataController:
         if not path2csv:
             if len(self.path2mapping_local) == 0 and len(self.path2mapping_remote):
                 self.path2mapping = join(self._path2folder, basename(self.path2mapping_remote[0]))
-                self.__download_handler.download_file(self.path2mapping_remote[0], self.path2mapping)
+                self.__download_handler.download_file(use_dataset=False, file_name=self.path2mapping_remote[0], destination_download=self.path2mapping)
             elif len(self.path2mapping_local) == 0 and len(self.path2mapping_remote) == 0:
                 self.path2mapping = ''
             else:
@@ -491,25 +456,20 @@ class DataController:
 
     def do_call(self):
         """Loading the dataset"""
-        # --- Searching the load function for dataset translation
-        methods_list_all = [method for method in self._methods_available]
-        search_param = '_DataLoader'
-        methods_load_data = [method for method in methods_list_all if search_param in method]
-
         # --- Getting the function to call
-        used_data_source_idx = -1
         warning_text = "\nPlease select key words in variable 'data_set' for calling methods to read transient data"
         warning_text += "\n=========================================================================================="
-        for method in methods_load_data:
+        for method in self._methods_available:
             warning_text += f"\n\t{method}"
 
-        for idx, method in enumerate(methods_load_data):
+        # --- Call the function
+        used_data_source_idx = -1
+        for idx, method in enumerate(self._methods_available):
             if self._settings.data_set in method:
                 used_data_source_idx = idx
                 break
 
-        # --- Call the function
         if not self._settings.data_set or used_data_source_idx == -1:
             raise ValueError(warning_text)
         else:
-            getattr(self, methods_load_data[idx])()
+            getattr(self, self._methods_available[idx])()

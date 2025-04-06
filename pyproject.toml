@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["denspp"]  
-exclude = ["example", "src_dnn", "src_ma_jo", "src_neuro"]  
+exclude = ["example", "src_dnn", "src_ma_jo", "src_neuro", "src_pipe", "tests"]
 namespaces = false
 
 
@@ -16,7 +16,7 @@ packages = ["denspp"]
 
 [project]
 name = "denspp.offline"
-version = "0.1.1"
+version = "0.1.2"
 description = "Python Framework for End-To-End and Hardware-Aware Signal Processing"
 readme = "README.md"
 license =  {file = "LICENSE"}
@@ -49,6 +49,7 @@ dependencies = [
     "pyxdf>=1.16.8",
     "elasticai-creator",
     "notebook>=7.3.2",
+    "nc-py-api>=0.19.2",
 ]
 
 

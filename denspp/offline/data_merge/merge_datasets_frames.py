@@ -6,11 +6,11 @@ from os.path import join, exists
 from shutil import rmtree
 from datetime import datetime
 from tqdm import tqdm
-from denspp.offline.data_call.call_handler import SettingsDATA
+from denspp.offline.data_call.call_handler import SettingsData
 
 
 class MergeDatasets:
-    def __init__(self, pipeline, settings_data: SettingsDATA, do_list: bool=False) -> None:
+    def __init__(self, pipeline, settings_data: SettingsData, do_list: bool=False) -> None:
         """Class for handling the merging process for generating datasets from transient input signals
         :param pipeline:        Selected pipeline for processing data
         :param settings_data:   Dataclass for handling the transient data

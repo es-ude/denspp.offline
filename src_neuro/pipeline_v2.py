@@ -31,7 +31,7 @@ class _SettingsPipe:
     )
     SettingsADC = SettingsADC(
         vdd=0.6, vss=-0.6,
-        type_out="signed",
+        is_signed=True,
         dvref=0.1,
         fs_ana=0.0,
         fs_dig=20e3, osr=1, Nadc=12

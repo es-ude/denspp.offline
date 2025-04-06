@@ -2,23 +2,23 @@ import numpy as np
 from os.path import join
 from scipy.io import loadmat
 from pyxdf import load_xdf
-from denspp.offline.data_call.call_handler import DataController, SettingsDATA, DataHandler
+from denspp.offline.data_call.call_handler import ControllerData, SettingsData, DataHandler
 
 
-class DataLoader(DataController):
+class DataLoader(ControllerData):
     _raw_data: DataHandler
-    _settings: SettingsDATA
+    _settings: SettingsData
     _path2file: str
 
-    def __init__(self, setting: SettingsDATA) -> None:
+    def __init__(self, setting: SettingsData) -> None:
         """Class for loading and manipulating the used dataset
         :param setting: Settings class instance
         """
-        DataController.__init__(self)
+        ControllerData.__init__(self)
         self._settings = setting
         self.select_electrodes = list()
         self._path2file = str()
-        self._methods_available = dir(DataLoader)
+        self._methods_available = self._extract_func(self.__class__)
 
     def __load_martinez_simulation(self) -> None:
         """Loading synthethic files from Quiroga simulation (2009)"""

@@ -2,10 +2,10 @@ from unittest import TestCase, main
 from denspp.offline.dnn.model_library import ModelLibrary
 
 
-class TestSum(TestCase):
+class TestModelLibrary(TestCase):
     method = ModelLibrary()
 
-    def test_result_value(self):
+    def test_model_overview(self):
         result = self.method.get_registry().get_model_library_overview()
         check = len(result) > 3
         self.assertEqual(check, True)

@@ -44,12 +44,14 @@ The Python folder contains the following folder structure:
 ```bash
   <path_to_project>
     ├── config              # Includes yaml files for configuring the pipelines (only local)
-    ├── data                # Merged datasets from your dataset or transient data (only local)
+    ├── data                # Include transient data (only local)
+    ├── data                # Include datasets for DNN training (only local)
     ├── denspp              # All functionalities for data analysis (will be removed in next releases)
     ├── example             # Example for using API (will be removed in next releases)
     ├── runs                # Saving all results from analysis (only local)
     ├── src_dnn             # Contains functions for training deep neural networks which are not in package 
-    ├── src_<xyz>           # Contains functions for data analysis which are not in package (only local)
+    ├── src_pipe            # Contains functions for data analysis which are not in package (only local)
+    ├── tests               # Include All test functions 
     ├── access_cloud.yaml   # Yaml file with information for cloud access 
     ├── main_pipeline.py    # For normal pipeline processing 
     ├── main_data_merge.py  # For merging of given datasets

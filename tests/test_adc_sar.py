@@ -12,7 +12,7 @@ settings_adc = SettingsADC(
     fs_dig=1e3,
     Nadc=12,
     osr=1,
-    type_out='signed'
+    is_signed=True
 )
 RecommendedSettingsNon = SettingsNon(
     use_noise=False,

@@ -55,11 +55,9 @@ def scale_auto_value(data: np.ndarray | float) -> [float, str]:
     Returns:
         Tuple with [0] = scaling value and [1] = SI pre-unit
     """
-    if isinstance(data, np.ndarray):
-        value = np.max(np.abs(data))
-    else:
-        value = data
+    ref_dict = {'T': -4, 'G': -3, 'M': -2, 'k': -1, '': 0, 'm': 1, 'µ': 2, 'n': 3, 'p': 4, 'f': 5}
 
+    value = np.max(np.abs(data)) if isinstance(data, np.ndarray) else data
     str_value = str(value).split('.')
     digit = 0
     if 'e' not in str_value[1]:
@@ -77,31 +75,21 @@ def scale_auto_value(data: np.ndarray | float) -> [float, str]:
         sys = -np.floor(abs(val) / 3) if np.sign(val) == 1 else np.ceil(abs(val) / 3)
 
     scale = 10 ** (sys * 3)
-    match sys:
-        case -4:
-            units = 'T'
-        case -3:
-            units = 'G'
-        case -2:
-            units = 'M'
-        case -1:
-            units = 'k'
-        case 0:
-            units = ''
-        case 1:
-            units = 'm'
-        case 2:
-            units = 'µ'
-        case 3:
-            units = 'n'
-        case 4:
-            units = 'p'
-        case 5:
-            units = 'f'
-        case _:
-            units = 'f'
-
+    units = [key for key, div in ref_dict.items() if sys == div][0]
     return scale, units
+
+
+def translate_unit_to_scale_value(unit_str: str, pos: int) -> float:
+    """Translating the unit of a value from string to float
+    :param unit_str:    String representation of the input value
+    :param pos:         Index of scaling value in string
+    :return:            Scaled value
+    """
+    ref_dict = {'T': 1e12, 'G': 1e9, 'M': 1e6, 'k': 1e3, ' ': 1e0,
+                'm': 1e-3, 'µ': 1e-6, 'u': 1e-6, 'n': 1e-9, 'p': 1e-12, 'f': 1e-15}
+    check = unit_str[pos] if not len(unit_str) == 1 else unit_str
+    value = [val for key, val in ref_dict.items() if key == check]
+    return value[0]
 
 
 def _get_median(parameter: list) -> float:

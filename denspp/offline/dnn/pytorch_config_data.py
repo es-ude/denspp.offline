@@ -1,21 +1,15 @@
+import numpy as np
 from dataclasses import dataclass
 from os import makedirs
-from os.path import join, abspath, exists, basename
-import numpy as np
-from torch import concat
+from os.path import join, abspath, isabs, exists
+from torch import Tensor, concat, from_numpy
 from torchvision import datasets, transforms
-
-from .model_library import CellLibrary
 from denspp.offline.structure_builder import get_path_project_start
-from denspp.offline.data_call.owncloud_handler import OwncloudDownloader
-from denspp.offline.data_process.frame_preprocessing import calculate_frame_snr, calculate_frame_mean, calculate_frame_median
-from denspp.offline.data_process.frame_preprocessing import reconfigure_cluster_with_cell_lib, generate_zero_frames
-from denspp.offline.data_process.frame_normalization import DataNormalization
-from denspp.offline.data_process.frame_augmentation import augmentation_change_position, augmentation_reducing_samples
+from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
 
 
 @dataclass
-class ConfigDataset:
+class SettingsDataset:
     """Class for handling preparation of dataset"""
     # --- Settings of Datasets
     data_path: str
@@ -34,14 +28,13 @@ class ConfigDataset:
     @property
     def get_path2data(self) -> str:
         """Getting the path name to the file"""
-        a = join(self.get_path2folder, self.data_file_name)
-        return a
+        return join(self.get_path2folder, self.data_file_name)
 
     @property
     def get_path2folder(self) -> str:
         """Getting the path name to the file"""
-        if not self.data_path == '':
-            path = join(self.get_path2folder_project, self.data_path)
+        if not isabs(self.data_path):
+            path = join(self.get_path2folder_project, 'dataset')
         else:
             path = join(self.data_path)
         return abspath(path)
@@ -51,180 +44,9 @@ class ConfigDataset:
         """Getting the default path of the Python Project"""
         return get_path_project_start()
 
-    def print_overview_datasets(self, do_print: bool=True) -> list:
-        """"""
-        oc_handler = OwncloudDownloader(self.get_path2folder_project, use_dataset=True)
-        list_datasets = oc_handler.get_overview_data()
-        if do_print:
-            print("\nNo local dataset is available. Enter the number of available datasets from remote:"
-                  "\n==============================================================================")
-            for idx, file in enumerate(list_datasets):
-                print(f"\t{idx}: \t{file}")
 
-        oc_handler.close()
-        return list_datasets
-
-    def load_dataset(self) -> dict:
-        """Loading the dataset from defined data file"""
-        self.__download_if_missing()
-        return self.__process_spike_dataset() if not self.data_file_name.lower() == 'mnist' else self.__process_mnist_dataset()
-
-    def __download_if_missing(self) -> None:
-        """Function for calling a dataset from remote"""
-        makedirs(self.get_path2folder, exist_ok=True)
-
-        if self.data_file_name.lower() == 'mnist':
-            self.__download_mnist()
-        elif self.data_file_name == '':
-            list_datasets = self.print_overview_datasets(True)
-            sel_data = input()
-            self.data_file_name = list_datasets[int(sel_data)]
-            self.__download_spike()
-        else:
-            list_datasets = self.print_overview_datasets(False)
-            for file in list_datasets:
-                if self.data_file_name.lower() in file.lower():
-                    self.data_file_name = basename(file)
-                    break
-            self.__download_spike()
-
-    def __download_spike(self) -> None:
-        if not exists(self.get_path2data):
-            oc_handler = OwncloudDownloader(self.get_path2folder_project, use_dataset=True)
-            oc_handler.download_file(self.data_file_name, self.get_path2data)
-            oc_handler.close()
-
-    def __download_mnist(self) -> None:
-        do_download = not exists(self.get_path2data)
-        datasets.MNIST(self.data_path, train=True, download=do_download)
-        datasets.MNIST(self.data_path, train=False, download=do_download)
-
-    def __process_mnist_dataset(self) -> dict:
-        """"""
-        # --- Resampling of MNIST dataset
-        transform = transforms.Compose([
-            transforms.Resize((28, 28)),
-            transforms.Grayscale(),
-            transforms.ToTensor()
-        ])
-        data_train = datasets.MNIST(self.data_path, train=True, download=False, transform=transform)
-        data_valid = datasets.MNIST(self.data_path, train=False, download=False, transform=transform)
-
-        data_raw = concat((data_train.data, data_valid.data), 0).numpy()
-        data_label = concat((data_train.targets, data_valid.targets), 0).numpy()
-        data_dict = data_train.classes
-        return {'data': data_raw, 'label': data_label, 'dict': data_dict}
-
-    def __process_spike_dataset(self, use_median_for_mean: bool = True, print_state: bool = True,
-                                add_noise_cluster: bool = False) -> dict:
-        """Function for processing neural spike frame events from dataset
-        Args:
-
-            use_median_for_mean:    Using median for calculating mean waveform (Boolean)
-            print_state:            Printing the state and results into Terminal
-            add_noise_cluster:      Adding the noise cluster to dataset
-        Return:
-            Dict with {'data': frames_in, 'label': frames_cl, 'dict': frames_dict, 'mean': frames_me}
-        """
-        if print_state:
-            print("... loading and processing the dataset")
-
-        # --- Loading rawdata ['data'=frames, 'label'= label id, 'peak'=amplitude values, 'dict'=label names]
-        rawdata = np.load(self.get_path2data, allow_pickle=True).flatten()[0]
-        frames_dict = rawdata['dict']
-        frames_in = rawdata['data']
-        frames_cl = rawdata['label']
-
-        # --- Using cell_bib for clustering
-        cell_libs_handler = CellLibrary().get_registry()
-        libs_class_overview = [lib.split("resort_")[-1] for lib in cell_libs_handler.get_model_library_overview(do_print=False)]
-        libs_use = [f'resort_{lib}' for lib in libs_class_overview if lib in self.get_path2data.lower()]
-        if len(libs_use):
-            new_data = reconfigure_cluster_with_cell_lib(
-                fn=cell_libs_handler.build_model(libs_use[0]),
-                sel_mode_classes=self.use_cell_sort_mode,
-                frames_in=frames_in,
-                frames_cl=frames_cl
-            )
-            frames_in = new_data['frame']
-            frames_cl = new_data['cl']
-            frames_dict = new_data['dict']
-
-        # --- PART: Reducing samples per cluster (if too large)
-        if self.reduce_samples_per_cluster_do:
-            if print_state:
-                print("... do data augmentation with reducing the samples per cluster")
-            frames_in, frames_cl = augmentation_reducing_samples(
-                frames_in, frames_cl,
-                self.reduce_samples_per_cluster_num,
-                do_shuffle=False
-            )
-
-        # --- PART: Exclusion of selected clusters
-        if not len(self.exclude_cluster) == 0:
-            for id in self.exclude_cluster:
-                selX = np.argwhere(frames_cl == id).flatten()
-                frames_in = np.delete(frames_in, selX, 0)
-                frames_cl = np.delete(frames_cl, selX, 0)
-                if isinstance(frames_dict, list):
-                    frames_dict.pop(id)
-
-        # --- Generate dict with labeled names
-        if isinstance(frames_dict, dict):
-            frames_dict = list()
-            for id in np.unique(frames_cl):
-                frames_dict.append(f"Neuron #{id}")
-
-        # --- PART: Data Normalization
-        if self.normalization_do:
-            if print_state:
-                print(f"... do data normalization")
-            data_class_frames_in = DataNormalization(self.normalization_method)
-            frames_in = data_class_frames_in.normalize(frames_in)
-
-        # --- PART: Mean waveform calculation and data augmentation
-        if use_median_for_mean:
-            frames_me = calculate_frame_median(frames_in, frames_cl)
-        else:
-            frames_me = calculate_frame_mean(frames_in, frames_cl)
-
-        # --- PART: Calculate SNR if desired
-        if self.augmentation_do or add_noise_cluster:
-            snr_mean = calculate_frame_snr(frames_in, frames_cl, frames_me)
-        else:
-            snr_mean = np.zeros(0, dtype=float)
-
-        # --- PART: Data Augmentation
-        if self.augmentation_do and not self.reduce_samples_per_cluster_do:
-            if print_state:
-                print("... do data augmentation")
-            new_frames, new_clusters = augmentation_change_position(
-                frames_in=frames_in,
-                frames_cl=frames_cl,
-                num_min_frames=self.augmentation_num
-            )
-            frames_in = np.append(frames_in, new_frames, axis=0)
-            frames_cl = np.append(frames_cl, new_clusters, axis=0)
-
-        # --- PART: Generate and add noise cluster
-        if add_noise_cluster:
-            snr_range_zero = [np.median(snr_mean[:, 0]), np.median(snr_mean[:, 2])]
-            info = np.unique(frames_cl, return_counts=True)
-            num_cluster = np.max(info[0]) + 1
-            num_frames = np.max(info[1])
-            if print_state:
-                print(f"... adding a zero-noise cluster: cluster = {num_cluster} - number of frames = {num_frames}")
-
-            new_mean, new_clusters, new_frames = generate_zero_frames(frames_in.shape[1], num_frames, snr_range_zero)
-            frames_in = np.append(frames_in, new_frames, axis=0)
-            frames_cl = np.append(frames_cl, num_cluster + new_clusters, axis=0)
-            frames_me = np.vstack([frames_me, new_mean])
-
-        return {'data': frames_in, 'label': frames_cl, 'dict': frames_dict, 'mean': frames_me}
-
-
-DefaultSettingsDataset = ConfigDataset(
-    data_path='data/datasets',
+DefaultSettingsDataset = SettingsDataset(
+    data_path='',
     data_file_name='',
     use_cell_sort_mode=0,
     augmentation_do=False,
@@ -237,4 +59,176 @@ DefaultSettingsDataset = ConfigDataset(
 )
 
 
+class ControllerDataset:
+    _settings: SettingsDataset
+    _methods: list
+    _index_search: list=['_get_', '_prepare_']
 
+    def __init__(self, settings: SettingsDataset) -> None:
+        self._settings = settings
+        self._methods = self._extract_func(self.__class__)
+
+    def _extract_func(self, class_obj: object) -> list:
+        return [method for method in dir(class_obj) if self._index_search[0] in method or self._index_search[1] in method]
+
+    def _extract_methods(self, search_index: str) -> list:
+        return [method.split('_')[-1].lower() for method in self._methods if search_index in method]
+
+    def _extract_executive_method(self, search_index: str) -> int:
+        used_data_source_idx = -1
+        for idx, method in enumerate(self._methods):
+            check = method.split(search_index)[-1].lower()
+            if self._settings.data_file_name.lower() == check:
+                used_data_source_idx = idx
+                break
+        return used_data_source_idx
+
+    @staticmethod
+    def _merge_data(data_train: Tensor, data_test: Tensor) -> np.ndarray:
+        return concat(tensors=(data_train, data_test), dim=0).numpy()
+
+    def __download_if_missing(self) -> None:
+        idx = self._extract_executive_method(self._index_search[0])
+        if idx == -1:
+            raise NotImplementedError
+        else:
+            getattr(self, self._methods[idx])()
+
+    def __process_data(self) -> dict:
+        idx = self._extract_executive_method(self._index_search[1])
+        if idx == -1:
+            raise NotImplementedError
+        else:
+            return getattr(self, self._methods[idx])()
+
+    def print_overview_datasets(self, do_print: bool=True) -> list:
+        """Giving an overview of available datasets on the cloud storage
+        :param do_print:    Printing the results
+        :return:            Return a list with dataset names
+        """
+        oc_handler = OwnCloudDownloader(path2config=self._settings.get_path2folder_project)
+        list_datasets = self._extract_methods(self._index_search[1])
+        list_datasets.extend(oc_handler.get_overview_data(use_dataset=True))
+        if do_print:
+            print("\nAvailable datasets in repository and from remote:"
+                  "\n==============================================================================")
+            for idx, file in enumerate(list_datasets):
+                print(f"\t{idx}: \t{file}")
+
+        oc_handler.close()
+        return list_datasets
+
+    def load_dataset(self) -> dict:
+        """Loading the dataset from defined data file
+        :return:    Dictionary with entries ['data', 'label', 'dict']
+        """
+        if self._settings.data_file_name.lower() == '':
+            self.print_overview_datasets(do_print=True)
+            raise FileNotFoundError("--- Dataset is not available. Please type-in the data set name into the yaml file ---")
+        else:
+            makedirs(self._settings.get_path2folder, exist_ok=True)
+            self.__download_if_missing()
+            return self.__process_data()
+
+    def __pipeline_for_torchvision_datasets(self, picture: np.ndarray, label: np.ndarray) -> dict:
+        # --- Normalization
+        if self._settings.normalization_do:
+            picture = picture / 255.0
+            print("... do data normalization on input")
+
+        # --- Exclusion of selected clusters
+        if len(self._settings.exclude_cluster):
+            for i, id in enumerate(self._settings.exclude_cluster):
+                selX = np.where(label != id)
+                picture = picture[selX[0], :]
+                label = label[selX]
+            print(f"... class reduction done to {np.unique(label).size} classes")
+
+        # --- Using cell library
+        if self._settings.use_cell_sort_mode:
+            raise NotImplementedError("No cell library for this case is available - Please disable flag!")
+
+        # --- Data Augmentation
+        if self._settings.augmentation_do:
+            raise NotImplementedError("No augmentation method is implemented - Please disable flag!")
+
+        if self._settings.reduce_samples_per_cluster_do:
+            raise NotImplementedError(f"No reducing samples technique is implemented - Please disable flag!")
+        return {'data': picture, 'label': label}
+
+    def __get_mnist(self) -> None:
+        do_download = not exists(self._settings.get_path2data)
+        datasets.MNIST(self._settings.get_path2folder, train=True, download=do_download)
+        datasets.MNIST(self._settings.get_path2folder, train=False, download=do_download)
+
+    def __prepare_mnist(self) -> dict:
+        transform = transforms.Compose([
+            transforms.Grayscale(),
+            transforms.ToTensor()
+        ])
+        data_train = datasets.MNIST(self._settings.get_path2folder, train=True, download=False, transform=transform)
+        data_valid = datasets.MNIST(self._settings.get_path2folder, train=False, download=False,
+                                    transform=transform)
+        data_process = self.__pipeline_for_torchvision_datasets(
+            picture=self._merge_data(data_train.data, data_valid.data),
+            label=self._merge_data(data_train.targets, data_valid.targets)
+        )
+        return {'data': data_process['data'], 'label': data_process['label'], 'dict': data_train.classes}
+
+    def __get_fashion(self) -> None:
+        do_download = not exists(self._settings.get_path2data)
+        datasets.FashionMNIST(self._settings.get_path2folder, train=True, download=do_download)
+        datasets.FashionMNIST(self._settings.get_path2folder, train=False, download=do_download)
+
+    def __prepare_fashion(self) -> dict:
+        transform = transforms.Compose([
+            transforms.Grayscale(),
+            transforms.ToTensor()
+        ])
+        data_train = datasets.FashionMNIST(self._settings.get_path2folder, train=True, download=False,
+                                           transform=transform)
+        data_valid = datasets.FashionMNIST(self._settings.get_path2folder, train=False, download=False,
+                                           transform=transform)
+        data_process = self.__pipeline_for_torchvision_datasets(
+            picture=self._merge_data(data_train.data, data_valid.data),
+            label=self._merge_data(data_train.targets, data_valid.targets)
+        )
+        return {'data': data_process['data'], 'label': data_process['label'], 'dict': data_train.classes}
+
+    def __get_cifar10(self) -> None:
+        do_download = not exists(self._settings.get_path2data)
+        datasets.CIFAR10(self._settings.get_path2folder, train=True, download=do_download)
+        datasets.CIFAR10(self._settings.get_path2folder, train=False, download=do_download)
+
+    def __prepare_cifar10(self) -> dict:
+        transform = transforms.Compose([
+            transforms.ToTensor()
+        ])
+        data_train = datasets.CIFAR10(self._settings.get_path2folder, train=True, download=False,
+                                      transform=transform)
+        data_valid = datasets.CIFAR10(self._settings.get_path2folder, train=False, download=False,
+                                      transform=transform)
+        data_process = self.__pipeline_for_torchvision_datasets(
+            picture=self._merge_data(from_numpy(data_train.data), from_numpy(data_valid.data)),
+            label=self._merge_data(Tensor(data_train.targets), Tensor(data_valid.targets))
+        )
+        return {'data': data_process['data'], 'label': data_process['label'], 'dict': data_train.classes}
+
+    def __get_cifar100(self) -> None:
+        do_download = not exists(self._settings.get_path2data)
+        datasets.CIFAR100(self._settings.get_path2folder, train=True, download=do_download)
+        datasets.CIFAR100(self._settings.get_path2folder, train=False, download=do_download)
+
+    def __prepare_cifar100(self) -> dict:
+        transform = transforms.Compose([
+            transforms.ToTensor()
+        ])
+        data_train = datasets.CIFAR100(self._settings.get_path2folder, train=True, download=False,
+                                       transform=transform)
+        data_valid = datasets.CIFAR100(self._settings.get_path2folder, train=False, download=False,
+                                       transform=transform)
+        data_process = self.__pipeline_for_torchvision_datasets(
+            picture=self._merge_data(from_numpy(data_train.data), from_numpy(data_valid.data)),
+            label=self._merge_data(Tensor(data_train.targets), Tensor(data_valid.targets))
+        )
+        return {'data': data_process['data'], 'label': data_process['label'], 'dict': data_train.classes}

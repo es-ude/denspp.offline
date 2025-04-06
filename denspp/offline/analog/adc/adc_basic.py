@@ -17,7 +17,7 @@ class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
         :param settings_noise:  Configuration class for defining noise properties of device
         """
         super().__init__()
-        self.define_voltage_range(volt_low=settings_dev.vref[0], volt_hgh=settings_dev.vref[1])
+        self.define_voltage_range(volt_low=settings_dev.vref[1], volt_hgh=settings_dev.vref[0])
         self.define_limits(bit_signed=settings_dev.is_signed, total_bitwidth=settings_dev.Nadc, frac_bitwidth=0)
         self._handler_noise = ProcessNoise(settings_noise, settings_dev.fs_ana)
         self._settings = settings_dev

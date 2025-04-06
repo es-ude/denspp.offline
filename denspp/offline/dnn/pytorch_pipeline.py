@@ -1,13 +1,13 @@
 import matplotlib.pyplot as plt
 from denspp.offline.dnn.plots.plot_metric import plot_confusion, plot_loss, plot_statistic_data
 from denspp.offline.dnn.dnn_handler import ConfigMLPipeline
-from denspp.offline.dnn.pytorch_config_data import ConfigDataset
+from denspp.offline.dnn.pytorch_config_data import SettingsDataset
 from denspp.offline.dnn.pytorch_config_model import ConfigPytorch
 from denspp.offline.dnn.pytorch.classifier import TrainClassifier
 from denspp.offline.dnn.pytorch.autoencoder import TrainAutoencoder
 
 
-def do_train_classifier(config_ml: ConfigMLPipeline, config_data: ConfigDataset,
+def do_train_classifier(config_ml: ConfigMLPipeline, config_data: SettingsDataset,
                         config_train: ConfigPytorch, used_dataset, used_model,
                         path2save: str='', calc_custom_metrics: list=(), print_results: bool=True,
                         ptq_quant_lvl: list = (12, 11)) -> [dict, dict, str]:
@@ -56,7 +56,7 @@ def do_train_classifier(config_ml: ConfigMLPipeline, config_data: ConfigDataset,
     return metrics, data_result, path2folder
 
 
-def do_train_autoencoder(config_ml: ConfigMLPipeline, config_data: ConfigDataset,
+def do_train_autoencoder(config_ml: ConfigMLPipeline, config_data: SettingsDataset,
                          config_train: ConfigPytorch, used_dataset, used_model,
                          path2save: str='', calc_custom_metrics: list=(), print_results: bool=True,
                          ptq_quant_lvl: list = (12, 8)) -> [dict, dict, str]:
