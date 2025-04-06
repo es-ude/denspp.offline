@@ -32,7 +32,7 @@ class SettingsData:
     do_mapping: bool
 
 
-RecommendedSettingsDATA = SettingsData(
+DefaultSettingsData = SettingsData(
     path='data',
     data_set='quiroga',
     data_case=0, data_point=0,
@@ -72,45 +72,6 @@ class DataHandler:
     @property
     def generate_empty_mapping_array_boolean(self) -> np.ndarray:
         return np.zeros((self.mapping_dimension[0], self.mapping_dimension[1]), dtype=bool)
-
-
-def translate_unit_to_scale_value(unit_str: str, pos: int) -> float:
-    """Translating the unit of a value from string to float"""
-    gain_base = 1e0
-    if not len(unit_str) == 1:
-        if unit_str[pos] == 'm':
-            gain_base = 1e-3
-        elif unit_str[pos] == 'u':
-            gain_base = 1e-6
-        elif unit_str[pos] == 'n':
-            gain_base = 1e-9
-    return gain_base
-
-
-def transform_label_from_csv_to_numpy(marker_loaded: list, label_text: list, start_pos: int) -> [list, list]:
-    """Translating the event labels from csv file to numpy
-    Args:
-        marker_loaded:
-        label_text:
-        start_pos:      Start position from reading the csv file
-    Returns:
-        Two list with type information and marker information
-        """
-    loaded_type = list()
-    for idx, label in enumerate(marker_loaded[0]):
-        if idx > start_pos:
-            id = -1
-            for num, type in enumerate(label_text):
-                if type in label:
-                    id = num
-            loaded_type.append(id)
-
-    loaded_marker = list()
-    for idx, label in enumerate(marker_loaded[1]):
-        if idx > 0:
-            loaded_marker.append(int(label[:-1]))
-
-    return loaded_type, loaded_marker
 
 
 class ControllerData:

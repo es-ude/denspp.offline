@@ -66,4 +66,4 @@ def init_dnn_folder(new_folder: str = '') -> None:
         for folder_name in folder_structure:
             makedirs(join(path2start, folder_name), exist_ok=True)
 
-    copy_template_files(copy_files, path2start)
+    copy_template_files(copy_files, path2proj)

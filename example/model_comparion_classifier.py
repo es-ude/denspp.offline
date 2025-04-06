@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from denspp.offline.yaml_handler import YamlConfigHandler
 from denspp.offline.dnn.dataset.autoencoder import prepare_training
 from denspp.offline.dnn.dnn_handler import ConfigMLPipeline, DefaultSettings_MLPipe
-from denspp.offline.dnn.pytorch_config_data import ConfigDataset, DefaultSettingsDataset
+from denspp.offline.dnn.pytorch_config_data import SettingsDataset, DefaultSettingsDataset
 from denspp.offline.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainCE
 from denspp.offline.dnn.pytorch_pipeline import do_train_classifier
 
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     default_data.data_file_name = 'quiroga'
     default_data.normalization_do = True
     yaml_data = YamlConfigHandler(default_data, 'config', f'ConfigCL_Dataset')
-    config_data = yaml_data.get_class(ConfigDataset)
+    config_data = yaml_data.get_class(SettingsDataset)
     dataset = prepare_training(settings=config_data, do_classification=True)
 
     # --- Training and Plotting

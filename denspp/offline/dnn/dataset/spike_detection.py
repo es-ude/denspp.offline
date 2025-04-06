@@ -1,7 +1,6 @@
 import numpy as np
 from torch import is_tensor
 from torch.utils.data import Dataset, DataLoader
-from denspp.offline.dnn.pytorch_handler import ConfigDataset
 
 
 class DatasetSDA(Dataset):
@@ -38,34 +37,17 @@ class DatasetSDA(Dataset):
         return int(np.unique(self.__sda_class).size)
 
 
-def prepare_plotting(data_in: DataLoader) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Getting data from DataLoader for Plotting Results"""
-    din = None
-    dsda = None
-    dout = None
-    first_run = True
-    for vdata in data_in:
-        for data in vdata:
-            din = data['in'] if first_run else np.append(din, data['in'], axis=0)
-            dsda = data['sda'] if first_run else np.append(dsda, data['sda'], axis=0)
-            dout = data['out'] if first_run else np.append(dout, data['out'], axis=0)
-            first_run = False
-
-    return din, dsda, dout
-
-
-def prepare_training(settings: ConfigDataset, threshold: int) -> DatasetSDA:
+def prepare_training(rawdata: dict, threshold: int) -> DatasetSDA:
     """Preparing datasets incl. augmentation for spike-detection-based training (without pre-processing)"""
-    print("... loading the datasets")
+    frames_in = rawdata["data"]
+    frames_cl = rawdata["label"]
 
-    # --- MATLAB reading file
-    data = settings.load_dataset()
-    frames_in = data["data"]
-    frames_cl = data["label"]
-
-    # --- Output
     check = np.unique(frames_cl, return_counts=True)
     print(f"... for training are {frames_in.shape[0]} frames with each {frames_in.shape[1]} points available")
     print(f"... used data points for training: class = {check[0]} and num = {check[1]}")
 
-    return DatasetSDA(frames_in, frames_cl, threshold)
+    return DatasetSDA(
+        frame=frames_in,
+        sda=frames_cl,
+        threshold=threshold
+    )

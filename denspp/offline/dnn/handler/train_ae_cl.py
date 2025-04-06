@@ -1,7 +1,7 @@
 from copy import deepcopy
 from denspp.offline.yaml_handler import YamlConfigHandler
 from denspp.offline.dnn.dnn_handler import ConfigMLPipeline
-from denspp.offline.dnn.pytorch_config_data import ConfigDataset, DefaultSettingsDataset
+from denspp.offline.dnn.pytorch_config_data import SettingsDataset, DefaultSettingsDataset
 from denspp.offline.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE
 from denspp.offline.dnn.pytorch_pipeline import do_train_autoencoder, do_train_classifier
 from denspp.offline.dnn.plots.plot_dnn import results_training
@@ -9,17 +9,18 @@ from denspp.offline.dnn.dataset.autoencoder import prepare_training as get_datas
 from denspp.offline.dnn.dataset.autoencoder_class import prepare_training as get_dataset_cl
 
 
-def do_train_ae_classifier(settings: ConfigMLPipeline, yaml_name_index: str= 'Config_ACL',
-                           model_ae_default_name: str='', model_cl_default_name: str='', used_dataset_name:str='quiroga',
-                           add_noise_cluster: bool=False) -> dict:
+def do_train_ae_classifier(class_dataset, settings: ConfigMLPipeline,
+                           yaml_name_index: str= 'Config_ACL',
+                           model_ae_default_name: str='', model_cl_default_name: str='',
+                           used_dataset_name:str='quiroga') -> dict:
     """Training routine for Autoencoders and Classifier with Encoder after Autoencoder-Training
     Args:
+        class_dataset:      Class of custom-made SettingsDataset from src_dnn/call_dataset.py
         settings:           Handler for configuring the routine selection for train deep neural networks
         yaml_name_index:    Index of yaml file name
         model_ae_default_name:  Default name of the autoencoder model
         model_cl_default_name:  Default name of the classifier model
         used_dataset_name:  Default name of the dataset for training [default: quiroga]
-        add_noise_cluster:  Adding noise cluster to dataset [Default: False]
     Returns:
         Dictionary with metric results from Autoencoder and Classifier Training
     """
@@ -28,7 +29,7 @@ def do_train_ae_classifier(settings: ConfigMLPipeline, yaml_name_index: str= 'Co
     default_data = deepcopy(DefaultSettingsDataset)
     default_data.data_file_name = used_dataset_name
     yaml_data = YamlConfigHandler(default_data, settings.get_path2config, f'{yaml_name_index}_Dataset')
-    config_data = yaml_data.get_class(ConfigDataset)
+    config_data = yaml_data.get_class(SettingsDataset)
     del yaml_data
 
     # --- Loading the YAML file: Autoencoder Model training
@@ -46,9 +47,12 @@ def do_train_ae_classifier(settings: ConfigMLPipeline, yaml_name_index: str= 'Co
     del default_train_cl, yaml_nn1
 
     # --- Processing Step #1.1: Loading dataset and Build Model
-    dataset = get_dataset_ae(settings=config_data, do_classification=False,
-                             mode_train_ae=settings.autoencoder_mode,
-                             noise_std=settings.autoencoder_noise_std)
+    dataset = get_dataset_ae(
+        rawdata=class_dataset(settings=config_data).load_dataset(),
+        do_classification=False,
+        mode_train_ae=settings.autoencoder_mode,
+        noise_std=settings.autoencoder_noise_std
+    )
     if settings.autoencoder_feat_size:
         used_model_ae = config_train_ae.get_model(output_size=settings.autoencoder_feat_size)
     else:
@@ -71,7 +75,11 @@ def do_train_ae_classifier(settings: ConfigMLPipeline, yaml_name_index: str= 'Co
 
     print("\n# ----------- Step #2: TRAINING CLASSIFIER")
     # --- Processing Step #2.1: Loading dataset and Build Model
-    dataset = get_dataset_cl(settings=config_data, path2model=path2folder, add_noise_cluster=add_noise_cluster)
+    dataset = get_dataset_cl(
+        rawdata=class_dataset(settings=config_data).load_dataset(),
+        path2model=path2folder,
+        print_state=True
+    )
     num_feat = dataset[0]['in'].shape[0] if not settings.autoencoder_feat_size else settings.autoencoder_feat_size
     used_model_cl = config_train_cl.get_model(input_size=num_feat, output_size=dataset.get_cluster_num)
 
@@ -80,7 +88,4 @@ def do_train_ae_classifier(settings: ConfigMLPipeline, yaml_name_index: str= 'Co
         config_ml=settings, config_data=config_data, config_train=config_train_cl,
         used_dataset=dataset, used_model=used_model_cl, path2save=path2folder
     )
-    del dataset
-
-    # --- Generate output dictionary with results
     return {"path2model_ae": path2folder, 'metric_ae': metrics_ae, 'metrics_cl': metrics_cl}

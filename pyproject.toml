@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["denspp"]  
-exclude = ["example", "src_dnn", "src_ma_jo", "src_neuro"]  
+exclude = ["example", "src_dnn", "src_ma_jo", "src_neuro", "src_pipe", "tests"]
 namespaces = false
 
 

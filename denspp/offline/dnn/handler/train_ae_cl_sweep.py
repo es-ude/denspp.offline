@@ -5,19 +5,20 @@ from copy import deepcopy
 from datetime import datetime
 from denspp.offline.yaml_handler import YamlConfigHandler
 from denspp.offline.dnn.dnn_handler import ConfigMLPipeline, DefaultSettings_MLPipe
-from denspp.offline.dnn.pytorch_config_data import ConfigDataset, DefaultSettingsDataset
+from denspp.offline.dnn.pytorch_config_data import SettingsDataset, DefaultSettingsDataset
 from denspp.offline.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE
 from denspp.offline.dnn.pytorch_pipeline import do_train_autoencoder, do_train_classifier
 from denspp.offline.dnn.dataset.autoencoder import prepare_training as get_dataset_ae
 from denspp.offline.dnn.dataset.autoencoder_class import prepare_training as get_dataset_cl
 
 
-def do_train_ae_cl_sweep(settings: ConfigMLPipeline,
+def do_train_ae_cl_sweep(class_dataset, settings: ConfigMLPipeline,
                          feat_layer_start: int, feat_layer_inc: int, feat_layer_stop: int,
                          num_epochs_trial: int=50,
                          yaml_name_index: str='Config_AECL_Sweep') -> str:
     """Training routine for Autoencoders and Classification after Encoder (Sweep)
     Args:
+        class_dataset:      Class of custom-made SettingsDataset from src_dnn/call_dataset.py
         settings:           Handler for configuring the routine selection for train deep neural networks
         feat_layer_start:   Increasing value for feature layer
         feat_layer_inc:     Increasing value for feature layer
@@ -31,7 +32,7 @@ def do_train_ae_cl_sweep(settings: ConfigMLPipeline,
     # --- Loading the YAML file: Dataset
     default_data = deepcopy(DefaultSettingsDataset)
     yaml_data = YamlConfigHandler(default_data, settings.get_path2config, f'{yaml_name_index}_Dataset')
-    config_data = yaml_data.get_class(ConfigDataset)
+    config_data = yaml_data.get_class(SettingsDataset)
 
     # --- Loading the YAML file: Autoencoder Model Load and building
     default_ae = deepcopy(DefaultSettingsTrainMSE)
@@ -63,7 +64,7 @@ def do_train_ae_cl_sweep(settings: ConfigMLPipeline,
         path2save_base = f"{path2save}/sweep_{idx:02d}_size{feat_size}"
         # ----------- Step #1: TRAINING AUTOENCODER
         used_dataset_ae = get_dataset_ae(
-            settings=config_data,
+            rawdata=class_dataset(settings=config_data).load_dataset(),
             mode_train_ae=settings.autoencoder_mode,
             noise_std=settings.autoencoder_noise_std,
             do_classification=False
@@ -82,7 +83,7 @@ def do_train_ae_cl_sweep(settings: ConfigMLPipeline,
 
         # ----------- Step #2: TRAINING CLASSIFIER
         used_dataset_cl = get_dataset_cl(
-            settings=config_data,
+            rawdata=class_dataset(settings=config_data).load_dataset(),
             path2model=path2folder
         )
         used_model_cl = config_train_cl.get_model(input_size=feat_size, output_size=used_dataset_cl.get_cluster_num)
@@ -105,25 +106,3 @@ def do_train_ae_cl_sweep(settings: ConfigMLPipeline,
     # ----------- Step #3: Output results
     np.save(f'{path2save}/results_sweep.npy', metrics_runs, allow_pickle=True)
     return path2save
-
-
-if __name__ == "__main__":
-    from denspp.offline.dnn.dnn_handler import ConfigMLPipeline
-    from denspp.offline.dnn.plots.plot_ae_cl_sweep import extract_data_from_files, plot_common_loss, plot_common_params, plot_architecture_metrics_isolated
-
-    yaml_handler = YamlConfigHandler(DefaultSettings_MLPipe, 'config', 'Config_DNN')
-    dnn_handler = yaml_handler.get_class(ConfigMLPipeline)
-    dnn_handler.do_plot = True
-    dnn_handler.do_block = False
-
-    # --- Step #1: Run results
-    print("========================================\n Sweep Run for Training Autoencoder + Classification System\n")
-    path2save = do_train_ae_cl_sweep(dnn_handler, 1, 1, 32)
-
-    # --- Step #2: Plot results
-    print("===========================================\n Printing results and plot results\n")
-    data = extract_data_from_files(path2save)
-    plot_common_loss(data, path2save=path2save)
-    plot_common_params(data, path2save=path2save)
-    plot_architecture_metrics_isolated(data, show_plots=True, path2save=path2save)
-    print("\n.done")

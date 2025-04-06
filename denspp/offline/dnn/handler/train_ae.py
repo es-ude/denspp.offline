@@ -1,18 +1,18 @@
 from copy import deepcopy
-from datetime import date
 from denspp.offline.yaml_handler import YamlConfigHandler
 from denspp.offline.dnn.dnn_handler import ConfigMLPipeline
-from denspp.offline.dnn.pytorch_config_data import ConfigDataset, DefaultSettingsDataset
+from denspp.offline.dnn.pytorch_config_data import SettingsDataset, DefaultSettingsDataset
 from denspp.offline.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainMSE
 from denspp.offline.dnn.pytorch_pipeline import do_train_autoencoder
 from denspp.offline.dnn.plots.plot_dnn import results_training
 from denspp.offline.dnn.dataset.autoencoder import prepare_training
 
 
-def do_train_neural_autoencoder(settings: ConfigMLPipeline, yaml_name_index: str='Config_AE',
+def do_train_neural_autoencoder(class_dataset, settings: ConfigMLPipeline, yaml_name_index: str='Config_AE',
                                 model_default_name: str='', used_dataset_name: str='quiroga') -> [dict, dict]:
     """Training routine for Autoencoders in Neural Applications (Spike Frames)
     Args:
+        class_dataset:          Class of custom-made SettingsDataset from src_dnn/call_dataset.py
         settings:               Handler for configuring the routine selection for train deep neural networks
         yaml_name_index:        Index of yaml file name
         model_default_name:     Optional name for the model to load
@@ -24,7 +24,7 @@ def do_train_neural_autoencoder(settings: ConfigMLPipeline, yaml_name_index: str
     default_data = deepcopy(DefaultSettingsDataset)
     default_data.data_file_name = used_dataset_name
     yaml_data = YamlConfigHandler(default_data, settings.get_path2config, f'{yaml_name_index}_Dataset')
-    config_data = yaml_data.get_class(ConfigDataset)
+    config_data = yaml_data.get_class(SettingsDataset)
 
     # --- Loading the YAML file: Model training
     default_train = deepcopy(DefaultSettingsTrainMSE)
@@ -34,8 +34,13 @@ def do_train_neural_autoencoder(settings: ConfigMLPipeline, yaml_name_index: str
     del default_train, yaml_nn
 
     # --- Loading Data, Build Model and Do Training
-    dataset = prepare_training(settings=config_data, do_classification=False,
-                               mode_train_ae=settings.autoencoder_mode, noise_std=settings.autoencoder_noise_std)
+    dataset = prepare_training(
+        rawdata=class_dataset(settings=config_data).load_dataset(),
+        do_classification=False,
+        mode_train_ae=settings.autoencoder_mode,
+        noise_std=settings.autoencoder_noise_std,
+        print_state=True
+    )
     if settings.autoencoder_feat_size:
         used_model = config_train.get_model(output_size=settings.autoencoder_feat_size)
     else:
@@ -43,8 +48,7 @@ def do_train_neural_autoencoder(settings: ConfigMLPipeline, yaml_name_index: str
 
     metrics, data_result, path2folder = do_train_autoencoder(
         config_ml=settings, config_data=config_data, config_train=config_train,
-        used_dataset=dataset, used_model=used_model, calc_custom_metrics=['dsnr_all', 'ptq_loss'],
-        save_vhdl=True, path4vhdl=f'vhdl/run_{date.today()}'
+        used_dataset=dataset, used_model=used_model, calc_custom_metrics=['dsnr_all', 'ptq_loss']
     )
 
     # --- Plotting

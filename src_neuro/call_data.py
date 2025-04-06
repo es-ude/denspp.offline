@@ -4,7 +4,8 @@ from scipy.io import loadmat
 from mat73 import loadmat as loadmat_mat73
 from pyxdf import load_xdf
 from denspp.offline.data_call.call_cellbib import CellSelector
-from denspp.offline.data_call.call_handler import ControllerData, DataHandler, SettingsData, translate_unit_to_scale_value
+from denspp.offline.data_call.call_handler import ControllerData, DataHandler, SettingsData
+from denspp.offline.plot_helper import translate_unit_to_scale_value
 
 
 class DataLoader(ControllerData):

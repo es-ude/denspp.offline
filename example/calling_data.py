@@ -1,10 +1,10 @@
-from denspp.offline.data_call.call_handler import RecommendedSettingsDATA
+from denspp.offline.data_call.call_handler import DefaultSettingsData
 from denspp.offline.pipeline.plot_mea import plot_mea_transient_total
 from src_neuro.call_data import DataLoader
 
 
 if __name__ == "__main__":
-    settings = RecommendedSettingsDATA
+    settings = DefaultSettingsData
     settings.data_set = 'mcs_fzj'
     settings.data_case = 0
     settings.fs_resample = 20e3

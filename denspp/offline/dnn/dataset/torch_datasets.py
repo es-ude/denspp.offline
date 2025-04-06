@@ -1,13 +1,19 @@
 import numpy as np
 from torch import is_tensor
 from torch.utils.data import Dataset
-from denspp.offline.dnn.pytorch_config_data import ConfigDataset
+from denspp.offline.dnn.pytorch_config_data import SettingsDataset
 
 
-class DatasetMNIST(Dataset):
-    """Dataset Preparator for training Autoencoder"""
+class DatasetTorchVision(Dataset):
     def __init__(self, picture: np.ndarray, label: np.ndarray,
-                 cluster_dict=None, do_classification=False):
+                 cluster_list: list=(), do_classification: bool=False) -> None:
+        """Dataset Preparation for training Deep Learning Model using pre-defined datasets from torchvision.datasets
+        :param picture:             Numpy data with images to be preprocessed
+        :param label:               Numpy data with labels corresponding to the picture
+        :param cluster_list:        List of cluster labels corresponding to the labels
+        :param do_classification:   Boolean for doing classification (True) or autoencoder (False)
+        :return:                    None
+        """
 
         # --- Input Parameters
         self.__frames_orig = np.array(picture, dtype=np.float32)
@@ -15,7 +21,7 @@ class DatasetMNIST(Dataset):
         self.__cluster_id = np.array(label, dtype=np.uint8)
         self.__do_classification = do_classification
         # --- Parameters for Confusion Matrix for Classification
-        self.__labeled_dictionary = cluster_dict if isinstance(cluster_dict, list) else []
+        self.__labeled_dictionary = cluster_list
 
     def __len__(self):
         return self.__cluster_id.shape[0]
@@ -41,46 +47,21 @@ class DatasetMNIST(Dataset):
 
     @property
     def get_cluster_num(self) -> int:
-        """"""
+        """Getting the number of classes"""
         return int(np.unique(self.__cluster_id).size)
 
 
-def prepare_training(settings: ConfigDataset, do_classification: bool=True) -> DatasetMNIST:
-    """Loading and preparing the MNIST dataset for Deep Learning
+def prepare_training(rawdata: dict, do_classification: bool) -> DatasetTorchVision:
+    """Loading and preparing any dataset for training Deep Learning models from torchvision.datasets
     Args:
-        settings:           Class for loading and pre-processing the data for DataLoader
+        rawdata:            Dictionary with rawdata for training with labels ['data', 'label', 'dict']
         do_classification:  Option for doing a classification, otherwise Autoencoder
     Returns:
-        Getting the prepared Dataset for MNIST
+        Getting the prepared Dataset
     """
-    dataset = settings.load_dataset()
-    data_raw = dataset['data']
-    data_dict = dataset['dict']
-    data_label = dataset['label']
-
-    # --- Normalization
-    if settings.normalization_do:
-        data_raw = data_raw / 255.0
-        print("... do data normalization on input")
-
-    # --- Exclusion of selected clusters
-    if len(settings.exclude_cluster):
-        for i, id in enumerate(settings.exclude_cluster):
-            selX = np.where(data_label != id)
-            data_raw = data_raw[selX[0], :]
-            data_label = data_label[selX]
-        print(f"... class reduction done to {np.unique(data_label).size} classes")
-
-    # --- Using cell library
-    if settings.use_cell_library:
-        raise NotImplementedError("No cell library for this case is available - Please disable flag!")
-
-    # --- Data Augmentation
-    if settings.augmentation_do:
-        raise NotImplementedError("No augmentation method is implemented - Please disable flag!")
-
-    if settings.reduce_samples_per_cluster_do:
-        raise NotImplementedError(f"No reducing samples technique is implemented - Please disable flag!")
+    data_raw = rawdata['data']
+    data_dict = rawdata['dict']
+    data_label = rawdata['label']
 
     # --- Print Output
     check = np.unique(data_label, return_counts=True)
@@ -91,5 +72,9 @@ def prepare_training(settings: ConfigDataset, do_classification: bool=True) -> D
     for idx, id in enumerate(check[0]):
         addon = f'' if not isinstance(data_dict, list) else f' ({data_dict[idx]})'
         print(f"\tclass {id}{addon} --> {check[1][idx]} samples")
-
-    return DatasetMNIST(data_raw, data_label, data_dict, do_classification)
+    return DatasetTorchVision(
+        picture=data_raw,
+        label=data_label,
+        cluster_list=data_dict,
+        do_classification=do_classification
+    )
