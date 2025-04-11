@@ -1,8 +1,8 @@
 from scipy.interpolate import CubicSpline
 from scipy.optimize import curve_fit
 from denspp.offline.digital.dsp import DSP, SettingsDSP
-from src_ma_jo.data_handler_artifacts import load_data, extract_arrays
-from src_ma_jo.show_plots_artifacts import *
+from src_ma_jo.src.data_handler_artifacts import load_data, extract_arrays
+from src_ma_jo.src.show_plots_artifacts import *
 import numpy as np
 from scipy.io import savemat
 
@@ -45,7 +45,7 @@ def extract_amplitude_from_filename(filename):
         raise ValueError("Amplitude konnte aus dem Dateinamen nicht extrahiert werden.")
 
 
-def create_signal_dictionary(filenames, signals, signal_index, artifacts, artifact_indices):
+def create_signal_dictionary(filenames, signals, time, artifacts, artifact_indices):
     """
     Creates a dictionary of processed signals.
 
@@ -64,7 +64,7 @@ def create_signal_dictionary(filenames, signals, signal_index, artifacts, artifa
     processed_signals = {}
 
     # Assign time (typically the first element in the signals list)
-    time = signals[0]
+    time = time
 
     # Assign cleaned signals (everything except the first element in the signals list)
     cleaned_signals = signals[1:]
@@ -284,7 +284,7 @@ def process_signal(signal, signal_index, dsp_instance, apply_filter, percentage_
         threshold_array.append(signal_index)
         return {
             "plot_counter": plot_counter,
-            "percentage_counter": percentage_counter,
+
             "threshold_counter": threshold_counter,
             "percent_array": percent_array,
             "threshold_array": threshold_array,
@@ -292,9 +292,9 @@ def process_signal(signal, signal_index, dsp_instance, apply_filter, percentage_
     else:
         plot_counter += 1
 
-    if apply_filter:
+    if apply_filter or apply_spline_modification:
         filtered_signal = dsp_instance.filter(signal)
-        filtered_artifacts, filtered_mean, filtered_std_dev = detect_artifacts(filtered_signal)
+        filtered_artifacts, filtered_mean, filtered_std_dev = detect_artifacts(filtered_signal, threshold_factor=15)
         cleaned_filtered_signal = replace_artifacts_with_spline_smooth(
             filtered_signal, filtered_artifacts
         )
@@ -539,7 +539,8 @@ if __name__ == "__main__":
     dsp_instance = DSP(settings)
 
     # Flag zur Steuerung der Filterung
-    apply_filter = False  # Setze auf False, falls die Filterung übersprungen werden soll
+    apply_filter = True  # Setze auf False, falls die Filterung übersprungen werden soll
+    apply_spline_modification = True  # Neues Flag für Spline-Modifikation
 
     dsp_instance.use_filtfilt = True
     path = r"C:/Users/jo-di/Documents/Masterarbeit/Rohdaten"
@@ -547,6 +548,7 @@ if __name__ == "__main__":
 
     data = load_data(path, filename)
     result_arrays = extract_arrays(data, filename)
+    time = result_arrays[0]
 
     threshold = 400  # Beispiel-Schwellenwert
     percentage_limit = 8  # Beispiel-Prozentwert
@@ -554,7 +556,7 @@ if __name__ == "__main__":
     threshold_array = []
 
     processed_signals = replace_signals_with_zeros(
-        signals=result_arrays,
+        signals=result_arrays[1:],  # Zeit wird ausgelassen
         percentage_limit=percentage_limit,
         threshold=threshold
     )
@@ -572,7 +574,7 @@ if __name__ == "__main__":
         detect_artifacts(signal, threshold_factor=10)[0].tolist() if len(signal) > 0 else []
         for signal in processed_signals
     ]
-    signal_dictionary = create_signal_dictionary(filename, processed_signals, signal_index=0, artifacts=[], artifact_indices=artifact_indices)
+    signal_dictionary = create_signal_dictionary(filename, processed_signals, time, artifacts=[], artifact_indices=artifact_indices)
     save_signal_dictionary(signal_dictionary, filename +".npy")
     #save_signal_dictionary_as_mat(signal_dictionary, filename + ".mat")
     plot_counter = result["plot_counter"]
