@@ -15,7 +15,7 @@ from torchinfo import summary
 from sklearn.model_selection import KFold
 
 from denspp.offline.structure_builder import get_path_project_start
-from denspp.offline.dnn.pytorch_config_data import ConfigDataset
+from denspp.offline.dnn.pytorch_config_data import SettingsDataset
 from denspp.offline.dnn.pytorch_config_model import ConfigPytorch
 from denspp.offline.structure_builder import init_project_folder, init_dnn_folder
 from denspp.offline.yaml_handler import YamlConfigHandler
@@ -35,7 +35,7 @@ class PyTorchHandler:
     _ptq_do_validation: bool = False
     _ptq_level: list = [12, 8]
 
-    def __init__(self, config_train: ConfigPytorch, config_dataset: ConfigDataset,
+    def __init__(self, config_train: ConfigPytorch, config_dataset: SettingsDataset,
                  do_train: bool=True, do_print: bool=True) -> None:
         """Class for Handling Training of Deep Neural Networks in PyTorch
         Args:

@@ -5,12 +5,12 @@ from datetime import datetime
 from torch import Tensor, load, save, inference_mode, flatten, cuda, cat, concatenate, randn
 
 from denspp.offline.dnn.ptq_help import quantize_model_fxp
-from denspp.offline.dnn.pytorch_handler import ConfigPytorch, ConfigDataset, PyTorchHandler
+from denspp.offline.dnn.pytorch_handler import ConfigPytorch, SettingsDataset, PyTorchHandler
 from denspp.offline.metric.snr import calculate_snr_tensor_waveform, calculate_dsnr_tensor_waveform
 
 
 class TrainAutoencoder(PyTorchHandler):
-    def __init__(self, config_train: ConfigPytorch, config_data: ConfigDataset,
+    def __init__(self, config_train: ConfigPytorch, config_data: SettingsDataset,
                  do_train: bool=True, do_print: bool=True) -> None:
         """Class for Handling Training of Autoencoders
         Args:

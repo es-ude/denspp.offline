@@ -3,7 +3,6 @@ from os.path import join
 from glob import glob
 from torch import is_tensor, load, from_numpy
 from torch.utils.data import Dataset
-from denspp.offline.dnn.pytorch_config_data import ConfigDataset
 
 
 class DatasetAE_Class(Dataset):
@@ -51,12 +50,9 @@ class DatasetAE_Class(Dataset):
         return "Autoencoder-based Classification"
 
 
-def prepare_training(settings: ConfigDataset, path2model: str,
-                     add_noise_cluster: bool=False, use_median_for_mean: bool=True,
-                     print_state: bool=True) -> DatasetAE_Class:
+def prepare_training(rawdata: dict, path2model: str, print_state: bool=True) -> DatasetAE_Class:
     """Preparing dataset incl. augmentation for spike-frame based training
     Args:
-        settings:               Class for loading the data and do pre-processing
         path2model:             Path to already-trained autoencoder
         add_noise_cluster:      Adding the noise cluster to dataset
         use_median_for_mean:    Using median for calculating mean waveform (Boolean)
@@ -64,11 +60,10 @@ def prepare_training(settings: ConfigDataset, path2model: str,
     Returns:
         Dataloader for training autoencoder-based classifier
     """
-    data = settings.load_dataset()
-    frames_in = data['data']
-    frames_cl = data['label']
-    frames_dict = data['dict']
-    frames_me = data['mean']
+    frames_in = rawdata['data']
+    frames_cl = rawdata['label']
+    frames_dict = rawdata['dict']
+    frames_me = rawdata['mean']
 
     # --- PART: Calculating the features with given Autoencoder model
     overview_model = glob(join(path2model, '*.pt'))
@@ -86,5 +81,10 @@ def prepare_training(settings: ConfigDataset, path2model: str,
             addon = f'' if len(frames_dict) == 0 else f' ({frames_dict[idx]})'
             print(f"\tclass {id}{addon} --> {check[1][idx]} samples")
 
-    return DatasetAE_Class(frames_raw=frames_in, frames_feat=frames_feat, cluster_id=frames_cl,
-                           frames_cluster_me=frames_me, cluster_dict=frames_dict)
+    return DatasetAE_Class(
+        frames_raw=frames_in,
+        frames_feat=frames_feat,
+        cluster_id=frames_cl,
+        frames_cluster_me=frames_me,
+        cluster_dict=frames_dict
+    )

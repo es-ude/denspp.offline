@@ -1,5 +1,5 @@
 from denspp.offline.yaml_handler import YamlConfigHandler
-from denspp.offline.data_call.call_handler import SettingsDATA, RecommendedSettingsDATA
+from denspp.offline.data_call.call_handler import SettingsData, DefaultSettingsData
 from denspp.offline.data_merge.merge_datasets_frames import MergeDatasets
 
 
@@ -12,11 +12,11 @@ def start_merge_process(data_loader, pipeline) -> None:
           "end-to-end spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
 
     yaml_handler = YamlConfigHandler(
-        yaml_template=RecommendedSettingsDATA,
+        yaml_template=DefaultSettingsData,
         path2yaml='config',
         yaml_name='Config_Merge'
     )
-    settings = yaml_handler.get_class(SettingsDATA)
+    settings = yaml_handler.get_class(SettingsData)
 
     # ---- Merging spike frames from several files to one file
 

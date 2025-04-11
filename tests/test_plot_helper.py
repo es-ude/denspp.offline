@@ -1,6 +1,6 @@
 from unittest import TestCase, main
 import numpy as np
-from denspp.offline.plot_helper import scale_auto_value
+from denspp.offline.plot_helper import scale_auto_value, translate_unit_to_scale_value
 
 
 class TestPlots(TestCase):
@@ -15,6 +15,12 @@ class TestPlots(TestCase):
     def test_scaling_unit(self):
         check = ['f', 'p', 'p', 'n', 'µ', 'm', 'm', '', 'k', 'k', 'M', 'G']
         self.assertEqual("".join(self.result1), "".join(check))
+
+    def test_translate_unit_to_scale_value(self):
+        input = {'T': 0, 'M': 0, 'km': 0, ' V': 0, 'mA': 0, 'uV': 0, 'µV': 0, 'nF': 0, 'pC': 0, 'fA': 0, ' fA': 1}
+        check = [1e12, 1e6, 1e3, 1e0, 1e-3, 1e-6, 1e-6, 1e-9, 1e-12, 1e-15, 1e-15]
+        result = [translate_unit_to_scale_value(val, pos) for val, pos in input.items()]
+        self.assertEqual(result, check)
 
 
 if __name__ == '__main__':

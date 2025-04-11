@@ -1,7 +1,6 @@
 import numpy as np
 from torch import is_tensor
 from torch.utils.data import Dataset
-from denspp.offline.dnn.pytorch_config_data import ConfigDataset
 
 
 class DatasetAE(Dataset):
@@ -82,19 +81,19 @@ class DatasetAE(Dataset):
         return out
 
 
-def prepare_training(settings: ConfigDataset, do_classification: bool=False,
-                     mode_train_ae: int=0, noise_std: float=0.1, print_state: bool=True) -> DatasetAE:
-    """Preparing dataset incl. augmentation for spike-frame based training
+def prepare_training(rawdata: dict, do_classification: bool=False,
+                     mode_train_ae: int=0, noise_std: float=0.1,
+                     print_state: bool=True) -> DatasetAE:
+    """Preparing dataset for Autoencoder Tasks
     Args:
-        settings:               Class for loading the data and do pre-processing
+        rawdata:                Dictionary with rawdata for training with labels ['data', 'label', 'dict']
         do_classification:      Decision if output should be a classification
         mode_train_ae:          Mode for training the autoencoder (0: normal, 1: Denoising (mean), 2: Denoising (input))
         noise_std:              Std of noise distribution
         print_state:            Printing the state and results into Terminal
     Returns:
-        Dataloader for training autoencoder-based classifier
+        Dataloader for training autoencoders
     """
-    rawdata = settings.load_dataset()
     frames_in = rawdata['data']
     frames_cl = rawdata['label']
     frames_dict = rawdata['dict']
@@ -109,6 +108,12 @@ def prepare_training(settings: ConfigDataset, do_classification: bool=False,
             addon = f'' if len(frames_dict) == 0 else f' ({frames_dict[idx]})'
             print(f"\tclass {id}{addon} --> {check[1][idx]} samples")
 
-    return DatasetAE(frames_raw=frames_in, cluster_id=frames_cl, frames_cluster_me=frames_me,
-                     cluster_dict=frames_dict, mode_train=mode_train_ae, do_classification=do_classification,
-                     noise_std=noise_std)
+    return DatasetAE(
+        frames_raw=frames_in,
+        cluster_id=frames_cl,
+        frames_cluster_me=frames_me,
+        cluster_dict=frames_dict,
+        mode_train=mode_train_ae,
+        do_classification=do_classification,
+        noise_std=noise_std
+    )
