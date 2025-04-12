@@ -1,5 +1,6 @@
 from pathlib import Path
 import numpy as np
+from denspp.offline.digital.sda import SpikeDetection, SettingsSDA
 
 
 def get_path(data_subdir="data", output_subdir="output", data_file_name="A1R1a_elec_stim_50biphasic_400us0001.npy"):
@@ -11,13 +12,12 @@ def get_path(data_subdir="data", output_subdir="output", data_file_name="A1R1a_e
     :param data_file_name: Name der Zieldatei
     :return: Tuple (Datenpfad, Ausgabeordner)
     """
-    base_dir = Path(__file__).resolve().parent.parent  # Gehe 1 Ebene über das aktuelle Skript hinaus
+    base_dir = Path(__file__).resolve().parent.parent
 
     data_dir = base_dir / data_subdir
     output_dir = base_dir / output_subdir
     data_file = data_dir / data_file_name
 
-    # Validierung der Existenz der Datei und Verzeichnisse
     if not data_file.exists():
         print(f"Die Datei existiert NICHT: {data_file}")
     if not output_dir.exists():
@@ -38,7 +38,6 @@ def load_file_as_dict(file_path):
         return None
 
     try:
-        # allow_pickle=True, um gespeicherte Python-Objekte (z.B. Dictionaries) zu laden
         data = np.load(file_path, allow_pickle=True).item()
         print(f".npy-Datei erfolgreich als Dictionary geladen: {file_path}")
         return data
@@ -57,10 +56,8 @@ def process_dictionary(data_dict):
         print("Fehler: Geladene Daten sind kein Dictionary!")
         return
 
-    # Ausgabe aller Keys im obersten Dictionary-Level
     print(f"Keys im geladenen Dictionary: {list(data_dict.keys())}")
 
-    # Extra: Zugriff auf Daten in 'details'
     details = data_dict.get("details")
     if details and isinstance(details, dict):
         for signal_key, signal_data in details.items():
@@ -82,13 +79,32 @@ def process_dictionary(data_dict):
 if __name__ == "__main__":
     file_path, output_dir = get_path()
     data_dict = load_file_as_dict(file_path)
-
+    CustomSettingsSDA = SettingsSDA(
+        fs=25e3,
+        dx_sda=[1],
+        mode_align=1,
+        t_frame_lgth=1.6e-3, t_frame_start=0.4e-3,
+        dt_offset=[0.1e-3, 0.1e-3],
+        t_dly=0.3e-3,
+        window_size=7,
+        thr_gain=1.0,
+        thr_min_value=100.0
+    )
+    spike_detection = SpikeDetection(CustomSettingsSDA)
     if data_dict:
         process_dictionary(data_dict)
 
         cleaned_signals = data_dict.get("cleaned_signals")
         if cleaned_signals:
-            print(cleaned_signals[1])
+            processed_signals = []
+            for signal in cleaned_signals:
+                if isinstance(signal, np.ndarray):
+                    processed_signal = spike_detection.sda_neo(signal)
+                    processed_signals.append(processed_signal)
+            if "processed_signals" not in data_dict:
+                data_dict["processed_signals"] = processed_signals
+            else:
+                print("'processed_signals' bereits vorhanden, bestehende Daten werden nicht überschrieben.")
         else:
             print("Key 'cleaned_signals' fehlt!")
 
