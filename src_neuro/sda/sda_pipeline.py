@@ -23,7 +23,7 @@ class _SettingsPipe:
     )
     SettingsADC = SettingsADC(
         vdd=0.6, vss=-0.6,
-        type_out="signed",
+        is_signed=True,
         dvref=0.1,
         fs_ana=100,
         fs_dig=20e3, osr=1, Nadc=12
@@ -43,6 +43,7 @@ class _SettingsPipe:
         t_frame_lgth=1.6e-3, t_frame_start=0.4e-3,
         dt_offset=[0.1e-3, 0.1e-3],
         t_dly=0.4e-3,
+        thr_min_value=100.0,
         window_size=7,
         thr_gain=1
     )
