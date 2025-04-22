@@ -78,7 +78,7 @@ if __name__ == "__main__":
         cleaned_signals = data_dict.get("cleaned_signals")
         if cleaned_signals:
             if isinstance(cleaned_signals, list) and all(isinstance(s, np.ndarray) for s in cleaned_signals):
-                run_pipeline(cleaned_signals, fs=100)  # Beispiel-Samplingrate
+                run_pipeline(cleaned_signals, fs=25e3)
             else:
                 print("Fehler: 'cleaned_signals' ist kein gültiger Array-Container.")
         else:

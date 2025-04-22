@@ -32,7 +32,8 @@ RecommendedSettingsCMP = SettingsCMP(
     out_analog=False,
     gain=100,
     offset=-1e-3,
-    noise=True
+    noise=True,
+    noise_dis=0.1e-3,
 )
 
 
