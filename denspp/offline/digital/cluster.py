@@ -1,7 +1,9 @@
 import numpy as np
 import joblib
 from dataclasses import dataclass
+from os import environ
 from os.path import join
+from psutil import cpu_count
 from sklearn.metrics import accuracy_score
 from sklearn.cluster import KMeans, DBSCAN
 from sklearn.neighbors import KNeighborsClassifier
@@ -23,8 +25,14 @@ RecommendedSettingsCluster = SettingsCluster(
     no_cluster=3
 )
 
-# TODO: Warning with kmeans and local core number estimation (warning)
+
 class Clustering:
+    @staticmethod
+    def __define_number_physical_cores() -> int:
+        number_cores = cpu_count(logical=True)
+        environ['OMP_NUM_THREADS'] = str(number_cores)
+        return number_cores
+
     def __init__(self, settings: SettingsCluster) -> None:
         """Initialization of module for clustering
         Args:
@@ -32,6 +40,7 @@ class Clustering:
         Returns:
             None
         """
+        self.__define_number_physical_cores()
         self._settings = settings
         self._cluster = None
         self._cluster_init_done = False
