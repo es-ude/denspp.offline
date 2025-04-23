@@ -13,9 +13,9 @@ class _SettingsPipe:
     """Settings class for handling the src_neuro setting"""
     SettingsAMP = SettingsAMP(
         vss=-0.6, vdd=0.6,
-        fs_ana=100,
+        fs_ana=25e3,
         gain=40,
-        n_filt=1, f_filt=[10, 8e3], f_type="band",
+        n_filt=1, f_filt=[100, 8e3], f_type="band",
         offset=1e-6,
         noise_en=True,
         noise_edev=1e-9,
@@ -25,7 +25,7 @@ class _SettingsPipe:
         vdd=0.6, vss=-0.6,
         is_signed=True,
         dvref=0.1,
-        fs_ana=100,
+        fs_ana=25e3,
         fs_dig=20e3, osr=1, Nadc=12
     )
 
@@ -84,7 +84,9 @@ class Pipeline_Digital(PipelineCMD):
         self.signals.x_dly = self.sda.time_delay(self.signals.x_spk)
         self.__do_sda(self.signals.x_spk, self.mode_sda, self.mode_thr, do_smooth=do_smooth)
         if do_get_frames:
-            (_, self.frames_align, self.x_pos) = self.sda.frame_generation(self.signals.x_dly, self.signals.x_sda, self.signals.x_thr)
+            (frames_out0, frames_out1) = self.sda.frame_generation(self.signals.x_dly, self.signals.x_sda, self.signals.x_thr)
+            self.frames_align = frames_out1[0]
+            self.x_pos = frames_out1[1]
         else:
             self.signals.x_pos = self.sda.frame_position(self.signals.x_sda, self.signals.x_thr)
 
