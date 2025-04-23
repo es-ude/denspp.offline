@@ -6,9 +6,11 @@ authors:
   orcid: "https://orcid.org/0000-0001-6702-892X"
 - family-names: "Buron"
   given-names: "Leo"
+  orcid: "https://orcid.org/0009-0001-8939-4784"
 - family-names: "Schiele"
   given-names: "Gregor"
-title: "AI-enhanced End-To-End Neural Signal Processing Python API"
+  orcid: "https://orcid.org/0000-0003-4266-4828"
+title: "Python Framework for Emulating a Machine Learning-enhanced End-To-End Signal Processing Pipeline"
 version: 2.0.4
 doi: 10.1515/cdbme-2023-1118
 date-released: 2023-10-20
