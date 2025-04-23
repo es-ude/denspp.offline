@@ -243,17 +243,17 @@ class SpikeDetection:
     def frame_generation(self, xraw: np.ndarray, xsda: np.ndarray, xthr: np.ndarray) -> [list, list]:
         """Frame generation of SDA output and threshold"""
         xpos = self.frame_position(xsda, xthr)
-        frames_orig, frames_xpos0, frames_align, frames_xpos1 = self.__frame_extraction(xraw, xpos)
+        frames_orig, frames_xpos_orig, frames_align, frames_xpos_align = self.__frame_extraction(xraw, xpos)
 
         frames_orig = np.array(frames_orig, dtype=np.dtype('int16'))
-        frames_xpos0 = np.array(frames_xpos0, dtype=np.dtype('uint64'))
+        frames_xpos_orig = np.array(frames_xpos_orig, dtype=np.dtype('uint64'))
         frames_align = np.array(frames_align, dtype=np.dtype('int16'))
-        frames_xpos1 = np.array(frames_xpos1, dtype=np.dtype('uint64'))
+        frames_xpos_align = np.array(frames_xpos_align, dtype=np.dtype('uint64'))
 
-        frames_out0 = [frames_orig, frames_xpos0, np.zeros(shape=frames_xpos0.shape, dtype=np.dtype('uint8'))]
-        frames_out1 = [frames_align, frames_xpos1, np.zeros(shape=frames_xpos1.size, dtype=np.dtype('uint8'))]
+        frames_out_orig = [frames_orig, frames_xpos_orig, np.zeros(shape=frames_xpos_orig.shape, dtype=np.dtype('uint8'))]
+        frames_out_align = [frames_align, frames_xpos_align, np.zeros(shape=frames_xpos_align.size, dtype=np.dtype('uint8'))]
 
-        return frames_out0, frames_out1
+        return frames_out_orig, frames_out_align
 
     def frame_generation_pos(self, xraw: np.ndarray, xpos: np.ndarray, xoffset: int) -> [np.ndarray, np.ndarray, np.ndarray]:
         """Frame generation from already detected positions (in datasets with groundtruth)"""
