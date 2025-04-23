@@ -1,7 +1,11 @@
+import logging
 from os import getcwd, makedirs
 from os.path import join, exists, dirname, abspath
 from shutil import copy
 import denspp.offline
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_path_project_start(new_folder: str = '') -> str:
@@ -11,11 +15,13 @@ def get_path_project_start(new_folder: str = '') -> str:
     """
     folder_reference = 'denspp.offline'
     folder_start = join(getcwd().split(folder_reference)[0], folder_reference) if folder_reference in getcwd() else getcwd()
+    logger.debug(f"Folder start defined at {folder_start}")
     return abspath(join(folder_start, new_folder))
 
 
 def get_path_to_templates() -> str:
     path2start = dirname(denspp.offline.__file__)
+    logger.debug(f"Folder start defined at {path2start}")
     return join(path2start, 'template')
 
 
@@ -30,7 +36,10 @@ def copy_template_files(copy_files: dict, path2start: str) -> None:
     if not exists(path2test):
         path2temp = get_path_to_templates()
         for key, value in copy_files.items():
+            src = join(path2temp, key)
+            dst = join(path2start, value) + '/'
             copy(join(path2temp, key), join(path2start, value) + '/')
+            logger.debug(f"Copy file - {src} - to - {dst}")
 
 def init_project_folder(new_folder: str = '') -> None:
     """Generating folder structure in first run
@@ -39,7 +48,7 @@ def init_project_folder(new_folder: str = '') -> None:
     """
     folder_structure = ['data', 'dataset', 'runs', 'temp', 'config', 'src_pipe']
     copy_files = {'main_pipeline.py': '', 'main_data_merge.py': '', 'main_dnn_train.py': '',
-                  'call_data.py': 'src_pipe', 'pipeline_v0.py': 'src_pipe',
+                  'call_data.py': 'src_pipe', 'pipeline_v0.py': 'src_pipe', 'pipeline_data.py': 'src_pipe',
                   '.gitignore': ''}
 
     path2start = get_path_project_start(new_folder)
@@ -47,6 +56,7 @@ def init_project_folder(new_folder: str = '') -> None:
     if not exists(join(path2start, folder_structure[0])):
         for folder_name in folder_structure:
             makedirs(join(path2start, folder_name), exist_ok=True)
+            logger.debug(f"Creating template folder: {folder_name}")
 
     copy_template_files(copy_files, path2start)
 
@@ -66,5 +76,6 @@ def init_dnn_folder(new_folder: str = '') -> None:
     if not exists(path2start):
         for folder_name in folder_structure:
             makedirs(join(path2start, folder_name), exist_ok=True)
+            logger.debug(f"Creating template folder: {folder_name}")
 
     copy_template_files(copy_files, path2proj)

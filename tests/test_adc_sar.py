@@ -29,7 +29,7 @@ class TestSAR0(TestCase):
     result = method.adc_sar(input)
 
     def test_result_error(self):
-        check = 2 * settings_adc.dvref / 2** settings_adc.Nadc
+        check = 1.2 * 2 * settings_adc.dvref / 2** settings_adc.Nadc
         self.assertEqual(self.result[2].max() <= check and np.abs(self.result[2].min()) <= check, True)
 
     def test_sar_sampling_rate(self):

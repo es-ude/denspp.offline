@@ -4,9 +4,9 @@ Config_*.yaml
 **/data
 **/dataset
 **/runs
-**/src_mem
 **/test
 **/temp*
+tests/*.log
 uv.lock
 
 ### venv template

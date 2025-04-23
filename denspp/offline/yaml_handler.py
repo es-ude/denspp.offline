@@ -1,4 +1,5 @@
 import yaml
+import logging
 from typing import Any
 from os import makedirs
 from os.path import join, exists
@@ -22,14 +23,15 @@ class YamlConfigHandler:
             path2yaml:          String with path to the folder which has the YAML file [Default: '']
             yaml_name:          String with name of the YAML file [Default: 'Config_Train']
         """
+        self.__logger = logging.getLogger(__name__)
         self.__path2yaml_folder = join(get_path_project_start(), path2yaml)
         self.__yaml_name = self.__remove_ending_from_filename(yaml_name)
-        makedirs(self.__path2yaml_folder, exist_ok=True)
 
+        makedirs(self.__path2yaml_folder, exist_ok=True)
         if not exists(self.path2chck):
             data2yaml = yaml_template if isinstance(yaml_template, dict) else self.translate_dataclass_to_dict(yaml_template)
             self.write_dict_to_yaml(data2yaml)
-            print("... created new yaml file in folder!")
+            self.__logger.info("... created new yaml file in folder!")
 
         self._data = self.read_yaml_to_dict()
         self.__check_scheme_validation(yaml_template, self._data)
@@ -94,6 +96,7 @@ class YamlConfigHandler:
         Returns:
             None
         """
+        makedirs(self.__path2yaml_folder, exist_ok=True)
         with open(self.path2chck, 'w') as f:
             yaml.dump(config_data, f, sort_keys=False)
 
@@ -113,7 +116,7 @@ class YamlConfigHandler:
             # --- Reading YAML file
             with open(self.path2chck, 'r') as f:
                 config_data = yaml.safe_load(f)
-            print(f"... read YAML file: {self.path2chck}")
+            self.__logger.debug(f"... read YAML file: {self.path2chck}")
 
             # --- Printing output
             if print_output:

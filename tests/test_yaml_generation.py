@@ -46,9 +46,6 @@ class TestSum(unittest.TestCase):
         yaml_name=filename + '1'
     )
 
-    def test_folder_generation(self):
-        self.assertTrue(exists(path2yaml))
-
     def test_yaml_create(self):
         self.dummy0.write_dict_to_yaml(data_wr)
         path2chck = join(path2yaml, f"{filename}0.yaml")

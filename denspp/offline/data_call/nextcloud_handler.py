@@ -1,6 +1,7 @@
+import logging
+import fnmatch
 from os.path import join
 from dataclasses import dataclass
-import fnmatch
 from nc_py_api import Nextcloud, NextcloudException
 from denspp.offline.yaml_handler import YamlConfigHandler
 from denspp.offline.structure_builder import get_path_project_start
