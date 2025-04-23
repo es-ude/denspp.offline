@@ -11,7 +11,7 @@ class TestSum(TestCase):
 
     def test_list_methods(self):
         test_func = DataNormalization(method='minmax', peak_mode=0)
-        key = test_func.list_normalization_methods()
+        key = test_func.list_normalization_methods(False)
         self.assertEqual(len(key), 6)
 
     def test_error_wrong_input(self):
