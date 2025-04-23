@@ -1,5 +1,6 @@
 import csv
 import numpy as np
+import logging
 from dataclasses import dataclass
 from os.path import join, exists, dirname, basename
 from os import makedirs
@@ -87,6 +88,8 @@ class ControllerData:
 
     def __init__(self) -> None:
         init_project_folder()
+
+        self.__logger = logging.getLogger(__name__)
         self.__fill_factor = 1
         self.__scaling = 1
         self._methods_available = dir(ControllerData)
@@ -179,13 +182,13 @@ class ControllerData:
 
     def output_meta(self) -> None:
         """Print some meta information into the console"""
-        print(f"... using data set of: {self._raw_data.data_name}"
+        self.__logger.info(f"... using data set of: {self._raw_data.data_name}"
               "\n... using data point:", self._path2file)
         if not self._raw_data.data_fs_used == 0 and not self._raw_data.data_fs_used == self._raw_data.data_fs_orig:
             fs_addon = f" (resampling to {int(1e-3 * self._raw_data.data_fs_used)} kHz)"
         else:
             fs_addon = ""
-        print(f"... original sampling rate of {int(1e-3 * self._raw_data.data_fs_orig)} kHz{fs_addon}"
+        self.__logger.info(f"... original sampling rate of {int(1e-3 * self._raw_data.data_fs_orig)} kHz{fs_addon}"
               f"\n... using {self.__fill_factor * 100:.2f}% of the data "
               f"(time length of {self._raw_data.data_time / self.__fill_factor:.2f} s)")
 
@@ -204,9 +207,9 @@ class ControllerData:
             for idx, spk_num in enumerate(self._raw_data.evnt_xpos):
                 num_spikes += spk_num.size
 
-            print(f"... includes labels (noSpikes: {num_spikes} - noCluster: {cluster_no.size})")
+            self.__logger.info(f"... includes labels (noSpikes: {num_spikes} - noCluster: {cluster_no.size})")
         else:
-            print(f"... has no labels / groundtruth")
+            self.__logger.info(f"... has no labels / groundtruth")
 
     def get_data(self) -> DataHandler:
         """Calling the raw data with groundtruth of the called data"""
@@ -301,8 +304,7 @@ class ControllerData:
         else:
             raise FileNotFoundError("--- File is not available. Please check! ---")
 
-    @staticmethod
-    def _read_csv_file(path2csv: str, num_channels: int, split_option: str, start_pos_csvfile: int=0) -> list:
+    def _read_csv_file(self, path2csv: str, num_channels: int, split_option: str, start_pos_csvfile: int=0) -> list:
         """Reading the csv file
         Args:
             path2csv:           Path to csv file for reading content
@@ -318,7 +320,7 @@ class ControllerData:
             loaded_data = []
 
         if not exists(path2csv):
-            print("... file not available. Electrode mapping will be skipped")
+            self.__logger.info("... file not available. Electrode mapping will be skipped")
             return []
         else:
             file = open(path2csv, 'r')
@@ -423,7 +425,7 @@ class ControllerData:
     def _generate_electrode_activation_mapping(self) -> None:
         """Generating the electrode activation map (Reference/Empty = False, Activity/Data = True)"""
         if not self._raw_data.mapping_exist:
-            print("... skipped generation of electrode activitaion map")
+            self.__logger.info("... skipped generation of electrode activitaion map")
         else:
             activation_map = self._raw_data.generate_empty_mapping_array_boolean
             posx, posy = np.where(self._raw_data.mapping_used != 0)
@@ -437,7 +439,7 @@ class ControllerData:
         data_map = self._raw_data.mapping_used
 
         if not self._raw_data.mapping_exist:
-            print("... raw data array cannot be transformed into 2D-format")
+            self.__logger.info("... raw data array cannot be transformed into 2D-format")
             data_out = data_in
         else:
             data_out = np.zeros((data_map.shape[0], data_map.shape[1], data_in[0].size), dtype=float)
@@ -451,7 +453,7 @@ class ControllerData:
                                 data_out[x, y, :] = data_in[column]
                                 break
                             column += 1
-            print("... transforming raw data array from 1D to 2D")
+            self.__logger.info("... transforming raw data array from 1D to 2D")
         self._raw_data.data_raw = data_out
 
     def do_call(self):

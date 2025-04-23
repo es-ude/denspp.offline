@@ -1,8 +1,8 @@
 from scipy.interpolate import CubicSpline
 from scipy.optimize import curve_fit
 from denspp.offline.digital.dsp import DSP, SettingsDSP
-from src_ma_jo.data_handler_artifacts import load_data, extract_arrays
-from src_ma_jo.show_plots_artifacts import *
+from src_ma_jo.src.data_handler_artifacts import load_data, extract_arrays
+from src_ma_jo.src.show_plots_artifacts import *
 import numpy as np
 from scipy.io import savemat
 
@@ -45,7 +45,7 @@ def extract_amplitude_from_filename(filename):
         raise ValueError("Amplitude konnte aus dem Dateinamen nicht extrahiert werden.")
 
 
-def create_signal_dictionary(filenames, signals, signal_index, artifacts, artifact_indices):
+def create_signal_dictionary(filenames, signals, time, artifacts, artifact_indices):
     """
     Creates a dictionary of processed signals.
 
@@ -64,7 +64,7 @@ def create_signal_dictionary(filenames, signals, signal_index, artifacts, artifa
     processed_signals = {}
 
     # Assign time (typically the first element in the signals list)
-    time = signals[0]
+    time = time
 
     # Assign cleaned signals (everything except the first element in the signals list)
     cleaned_signals = signals[1:]
@@ -194,10 +194,6 @@ def replace_artifacts_with_spline_smooth(array, artifacts, std_threshold=10):
     :return: Cleaned signal array with artifacts replaced
     :raises ValueError: If there are insufficient valid points for interpolation
     """
-    """
-    Ersetzt Artefakte mit glatterer Interpolation (CubicSpline) und gibt
-    das gesamte glatte Array oder eine geglättete Kurve zurück.
-    """
     clean_array = array.astype(float).copy()
 
     for artifact_range in find_connected_ranges(artifacts):
@@ -209,14 +205,27 @@ def replace_artifacts_with_spline_smooth(array, artifacts, std_threshold=10):
         r2_check = r_squared > 0.9
         print(rmse_check, r2_check, rmse, r_squared)
 
+        # Überarbeiteter Bereich
         if rmse_check and r2_check:
             plot_exponential_fit(exp_data_segment, fitted_curve, artifact_range)
             x_artifact = np.arange(len(clean_array))[artifact_range[0]:artifact_range[1]]
             extrapolated_values = exponential_func(np.arange(len(x_artifact)), *_)
             clean_array[artifact_range[0]:artifact_range[1]] -= extrapolated_values
         else:
-            valid_indices = np.setdiff1d(np.arange(len(array)), artifacts)
-            spline = CubicSpline(valid_indices, clean_array[valid_indices], bc_type='natural')
+            clean_array[start:end] = np.mean(exp_data_segment)
+            print(clean_array[start:end])
+            valid_indices = np.setdiff1d(
+                np.arange(max(0, artifacts[0] - 10), min(len(array), artifacts[-1] + 10)),
+                artifacts
+            )
+            if len(valid_indices) < 2:
+                raise ValueError("Zu wenige Punkte für die CubicSpline-Interpolation.")
+
+            spline = CubicSpline(valid_indices, clean_array[valid_indices], bc_type='natural', extrapolate=True)
+            artifact_range = (
+                max(0, artifact_range[0]),
+                min(len(clean_array), artifact_range[1])
+            )
             clean_array[artifact_range[0]:artifact_range[1]] = spline(np.arange(artifact_range[0], artifact_range[1]))
 
     valid_indices = np.setdiff1d(np.arange(len(array)), artifacts)
@@ -243,7 +252,7 @@ def process_signal(signal, signal_index, dsp_instance, apply_filter, percentage_
     :param plot_flag: If True, plots may be generated
     :return: Dictionary of processing results
     """
-    if len(signal) == 0:
+    if len(signal) == 0 or any(signal) == 0:
         print(f"Signal {signal_index} is empty. Skipping process.")
         return {
             "plot_counter": 0,
@@ -275,7 +284,7 @@ def process_signal(signal, signal_index, dsp_instance, apply_filter, percentage_
         threshold_array.append(signal_index)
         return {
             "plot_counter": plot_counter,
-            "percentage_counter": percentage_counter,
+
             "threshold_counter": threshold_counter,
             "percent_array": percent_array,
             "threshold_array": threshold_array,
@@ -283,9 +292,9 @@ def process_signal(signal, signal_index, dsp_instance, apply_filter, percentage_
     else:
         plot_counter += 1
 
-    if apply_filter:
+    if apply_filter or apply_spline_modification:
         filtered_signal = dsp_instance.filter(signal)
-        filtered_artifacts, filtered_mean, filtered_std_dev = detect_artifacts(filtered_signal)
+        filtered_artifacts, filtered_mean, filtered_std_dev = detect_artifacts(filtered_signal, threshold_factor=15)
         cleaned_filtered_signal = replace_artifacts_with_spline_smooth(
             filtered_signal, filtered_artifacts
         )
@@ -347,6 +356,7 @@ def process_artifact_ranges(signal, filtered_signal, cleaned_signal, cleaned_fil
     :param plot_flag: If True, plots the artifact ranges
     :return: Signal with artifact ranges corrected
     """
+    #TODO: artefakt merge
     if len(original_artifacts) == 0:
         print("Original artifacts are empty. Returning the signal as is.")
         return signal
@@ -357,8 +367,12 @@ def process_artifact_ranges(signal, filtered_signal, cleaned_signal, cleaned_fil
         indices_range = (max(0, x - 10), min(len(signal) - 1, y + 10))
         start, end = indices_range
         range_indices = list(range(start, end))
+        signal[start:start+20] = np.mean(signal[start:start+20])
         replaced_signal = replace_artifacts_with_spline_smooth(signal, range_indices)
-        cleaned_signal[start:end] = replaced_signal
+        if len(replaced_signal) != (end - start):
+            trimmed_length = min(len(replaced_signal), end - start)
+            replaced_signal = replaced_signal[:trimmed_length]
+        cleaned_signal[start:start+len(replaced_signal)] = replaced_signal
         if plot_flag:
             plot_artifact_ranges(
                 signal, filtered_signal, cleaned_signal, cleaned_filtered_signal,
@@ -367,25 +381,25 @@ def process_artifact_ranges(signal, filtered_signal, cleaned_signal, cleaned_fil
 
     return cleaned_signal
 
-def find_connected_ranges(data):
+def find_connected_ranges(artifacts_data):
     """
     Groups connected values in the data into ranges.
 
     :param data: Array of indices or values
     :return: List of tuples representing start and end points of connected ranges
     """
-    if len(data) == 0:
+    if len(artifacts_data) == 0:
         return []
-    diffs = np.diff(data)
-    breaks = np.where(diffs >= 5)[0]
+    diffs = np.diff(artifacts_data)
+    breaks = np.where(diffs >= 100)[0]
 
     ranges = []
     start_index = 0
     for index in breaks:
-        ranges.append((data[start_index], data[index]))
+        ranges.append((artifacts_data[start_index], artifacts_data[index]))
         start_index = index + 1
 
-    ranges.append((data[start_index], data[len(data) - 1]))
+    ranges.append((artifacts_data[start_index], artifacts_data[len(artifacts_data) - 1]))
 
     return ranges
 
@@ -480,8 +494,9 @@ def replace_signals_with_zeros(signals, percentage_limit, threshold):
     """
     processed_signals = []
     for signal in signals[1::]:
-        if not filter_signals_by_percentage(signal, threshold, percentage_limit) and \
-           not filter_signal_based_on_threshold(signal, threshold):
+        if not filter_signals_by_percentage(signal, threshold, percentage_limit):
+            processed_signals.append(np.zeros_like(signal))
+        elif not filter_signal_based_on_threshold(signal, threshold):
             processed_signals.append(np.zeros_like(signal))
         else:
             processed_signals.append(signal)
@@ -524,29 +539,30 @@ if __name__ == "__main__":
     dsp_instance = DSP(settings)
 
     # Flag zur Steuerung der Filterung
-    apply_filter = False  # Setze auf False, falls die Filterung übersprungen werden soll
+    apply_filter = True  # Setze auf False, falls die Filterung übersprungen werden soll
+    apply_spline_modification = True  # Neues Flag für Spline-Modifikation
 
     dsp_instance.use_filtfilt = True
-    path = r"C:/Users/jo-di/Documents/Masterarbeit/Rohdaten/A1R1a_1s"
-    filename = "A1R1a_ASIC_1S_800_3"
+    path = r"C:/Users/jo-di/Documents/Masterarbeit/Rohdaten"
+    filename = "A1R1a_elec_stim_50biphasic_400us0001"
 
     data = load_data(path, filename)
     result_arrays = extract_arrays(data, filename)
+    time = result_arrays[0]
 
     threshold = 400  # Beispiel-Schwellenwert
     percentage_limit = 8  # Beispiel-Prozentwert
     percent_array = []
     threshold_array = []
-    #TODO: Flag für Plot (mit verschiedenen Levels ggf)
 
     processed_signals = replace_signals_with_zeros(
-        signals=result_arrays,
+        signals=result_arrays[1:],  # Zeit wird ausgelassen
         percentage_limit=percentage_limit,
         threshold=threshold
     )
 
     result = process_signals(
-        result_arrays=result_arrays,
+        result_arrays=processed_signals,
         dsp_instance=dsp_instance,
         apply_filter=apply_filter,
         percentage_limit=percentage_limit,
@@ -558,9 +574,9 @@ if __name__ == "__main__":
         detect_artifacts(signal, threshold_factor=10)[0].tolist() if len(signal) > 0 else []
         for signal in processed_signals
     ]
-    signal_dictionary = create_signal_dictionary(filename, processed_signals, signal_index=0, artifacts=[], artifact_indices=artifact_indices)
+    signal_dictionary = create_signal_dictionary(filename, processed_signals, time, artifacts=[], artifact_indices=artifact_indices)
     save_signal_dictionary(signal_dictionary, filename +".npy")
-    save_signal_dictionary_as_mat(signal_dictionary, filename + ".mat")
+    #save_signal_dictionary_as_mat(signal_dictionary, filename + ".mat")
     plot_counter = result["plot_counter"]
     percentage_counter = result["percentage_counter"]
     threshold_counter = result["threshold_counter"]

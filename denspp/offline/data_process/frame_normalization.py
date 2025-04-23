@@ -29,9 +29,10 @@ class DataNormalization:
                                     'zscore': self._normalize_zscore, 'medianmad': self._normalize_medianmad,
                                     'meanmad': self._normalize_medianmad}
 
-    def list_normalization_methods(self) -> list:
+    def list_normalization_methods(self, print_output: bool=True) -> list:
         """Printing all available methods for normalization"""
-        print(self.__list_norm_methods.keys())
+        if print_output:
+            print(self.__list_norm_methods.keys())
         return [key for key in self.__list_norm_methods.keys()]
 
     def get_peak_amplitude_values(self) -> np.ndarray | torch.Tensor:

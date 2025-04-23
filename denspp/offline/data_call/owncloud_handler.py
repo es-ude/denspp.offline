@@ -1,7 +1,8 @@
+import fnmatch
+import logging
+import owncloud
 from os.path import join
 from dataclasses import dataclass
-import fnmatch
-import owncloud
 from denspp.offline.yaml_handler import YamlConfigHandler
 from denspp.offline.structure_builder import get_path_project_start
 
@@ -30,6 +31,7 @@ class OwnCloudDownloader:
         :param use_config:  Class for handling the owncloud handler
         :return:            None
         """
+        self.__logger = logging.getLogger(__name__)
         yaml_hndl = YamlConfigHandler(use_config, path2config, 'access_cloud')
         self.__settings = yaml_hndl.get_class(ConfigCloud)
 
@@ -84,13 +86,14 @@ class OwnCloudDownloader:
         :return:                        None
         """
         self.__oc_handler = owncloud.Client.from_public_link(self.__settings.remote_link)
-        print("... downloading file from sciebo")
+        self.__logger.info("... downloading file from remote")
+        print("... downloading file from remote")
         path_selected = self.__settings.remote_transient if not use_dataset else self.__settings.remote_dataset
         self.__oc_handler.get_file(
             remote_path=join(path_selected, file_name),
             local_file=destination_download
         )
-        print("... download done")
+        self.__logger.info("... download done")
 
     def close(self) -> None:
         self.__oc_handler.logout()
