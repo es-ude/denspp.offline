@@ -16,11 +16,11 @@ class CommonAnalogFunctions:
         """Returning the common mode voltage value"""
         return (self._range[0] + self._range[1]) / 2
 
-    def clamp_voltage(self, uin: np.ndarray | float) -> np.ndarray:
+    def clamp_voltage(self, uin: np.ndarray | float) -> np.ndarray | float:
         """Do voltage clipping at voltage supply"""
-        uout = deepcopy(uin)
+        uout = np.array(deepcopy(uin))
         np.clip(uout, a_max=self._range[1], a_min=self._range[0], out=uout)
-        return uout
+        return float(uout) if isinstance(uin, float) else uout
 
 
 class CommonDigitalFunctions:
