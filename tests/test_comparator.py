@@ -11,7 +11,8 @@ TestSettings = SettingsComparator(
     gain=1000,
     noise_dis=1e-12,
     hysteresis=0.25,
-    out_analog=False
+    out_analog=False,
+    out_invert=False
 )
 
 
@@ -40,6 +41,48 @@ class Test_AnalogComparator(TestCase):
         result = Comparator(settings_dev=set0).cmp_ideal(self.data_tran_in, self.method.vcm)
         ref = np.array([0.0000000e+00,  1.8000000e+00,  1.8000000e+00,  1.8000000e+00,  1.8000000e+00,  1.2246468e-13, -1.8000000e+00, -1.8000000e+00, -1.8000000e+00, -1.8000000e+00, -2.4492936e-13,  1.8000000e+00,  1.8000000e+00,  1.8000000e+00,  1.8000000e+00,  3.6739404e-13, -1.8000000e+00, -1.8000000e+00, -1.8000000e+00, -1.8000000e+00, -4.8985872e-13])
         np.testing.assert_array_almost_equal(result, ref, decimal=2)
+
+    def test_comp_ideal_offset_boolean(self):
+        set0 = deepcopy(TestSettings)
+        set0.out_analog = False
+        set0.offset = 0.1
+
+        data_in = self.method.vcm + set0.offset + np.array([-1, +1]) * 0.01
+        result = Comparator(settings_dev=set0).cmp_ideal(data_in, self.method.vcm)
+        ref = np.array([False, True])
+        np.testing.assert_array_equal(result, ref)
+
+    def test_comp_ideal_offset_boolean_inverted(self):
+        set0 = deepcopy(TestSettings)
+        set0.out_analog = False
+        set0.out_invert = True
+        set0.offset = 0.1
+
+        data_in = self.method.vcm + set0.offset + np.array([-1, +1]) * 0.01
+        result = Comparator(settings_dev=set0).cmp_ideal(data_in, self.method.vcm)
+        ref = np.array([True, False])
+        np.testing.assert_array_equal(result, ref)
+
+    def test_comp_ideal_normal_boolean(self):
+        set0 = deepcopy(TestSettings)
+        set0.out_analog = False
+        set0.offset = 0.1
+
+        data_in = self.method.vcm + set0.offset + np.array([-1, +1]) * 0.01
+        result = Comparator(settings_dev=set0).cmp_normal(data_in, self.method.vcm)
+        ref = np.array([False, True])
+        np.testing.assert_array_equal(result, ref)
+
+    def test_comp_ideal_normal_boolean_inverted(self):
+        set0 = deepcopy(TestSettings)
+        set0.out_analog = False
+        set0.out_invert = True
+        set0.offset = 0.1
+
+        data_in = self.method.vcm + set0.offset + np.array([-1, +1]) * 0.01
+        result = Comparator(settings_dev=set0).cmp_normal(data_in, self.method.vcm)
+        ref = np.array([True, False])
+        np.testing.assert_array_equal(result, ref)
 
     def test_comp_normal_positive_boolean(self):
         set0 = deepcopy(TestSettings)
