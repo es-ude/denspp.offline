@@ -7,7 +7,7 @@ ExampleSettingsComparator = SettingsComparator(
     vdd=0.6, vss=-0.6,
     gain=100,
     offset=-100e-3,
-    noise_dis=1.0e-3,
+    noise_dis=1.0e0,
     hysteresis=0.25,
     out_analog=False,
     out_invert=False
