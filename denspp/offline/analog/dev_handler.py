@@ -471,17 +471,19 @@ class ElectricalLoadHandler:
                 idx += 1
             return u_response
 
-    def raise_voltage_violation(self, du: np.ndarray | float) -> bool:
-        """Checking differential voltage input for violation of voltage range for given branch
-        :param du:          Numpy array with applied voltage difference [V]
-        :return:            Boolean if warning violation is available
+    def check_value_range_violation(self, signal: np.ndarray | float, mode_voltage: bool=True) -> bool:
+        """Checking differential input stream has a violation against given range
+        :param signal:          Numpy array with applied voltage difference [V]
+        :param mode_voltage:    Boolean if input signal is voltage [True] or current [False]
+        :return:                Boolean if warning violation is available
         """
-        violation_dwn = np.count_nonzero(du < self._bounds_volt[0], axis=0)
-        violation_up = np.count_nonzero(du > self._bounds_volt[1], axis=0)
+        range_list = self._bounds_volt if mode_voltage else self._bounds_curr
+        violation_dwn = np.count_nonzero(signal < range_list[0], axis=0)
+        violation_up = np.count_nonzero(signal > range_list[1], axis=0)
 
         if violation_up or violation_dwn:
-            val = du.min if violation_dwn else du.max
-            limit = self._bounds_volt[0] if violation_dwn else self._bounds_volt[1]
+            val = signal.min if violation_dwn else signal.max
+            limit = range_list[0] if violation_dwn else range_list[1]
             addon = f'(Upper limit)' if not violation_dwn else '(Downer limit)'
             self._logger.warn(f"Voltage Range Violation {addon}! With {val} of {limit} ---")
         return violation_up or violation_dwn
