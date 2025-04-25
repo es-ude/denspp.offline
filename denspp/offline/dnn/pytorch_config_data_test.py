@@ -37,7 +37,7 @@ class TestDataset(TestCase):
         set = deepcopy(TestSettingsDataset)
         set.data_file_name = 'mnist'
         chck = set.get_path2data
-        self.assertEqual(chck, join(get_path_project_start(), 'temp_test', 'dataset', 'mnist'))
+        self.assertEqual(chck, join(get_path_project_start(), TestSettingsDataset.data_path, 'dataset', 'mnist'))
 
     def test_dataset_overview(self):
         set = deepcopy(TestSettingsDataset)
