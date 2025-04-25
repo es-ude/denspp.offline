@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 from scipy.constants import Boltzmann, elementary_charge
 from scipy.optimize import least_squares, curve_fit
 
-from denspp.offline.structure_builder import init_project_folder
 from denspp.offline.plot_helper import save_figure
 from denspp.offline.metric.data_numpy import calculate_error_rae, calculate_error_mse
 
@@ -30,7 +29,6 @@ class SettingsDEV:
 
 
 class ElectricalLoadHandler:
-    """Class for emulating an electrical device"""
     _settings: SettingsDEV
     _poly_fit: np.ndarray
     _curve_fit: np.ndarray
@@ -54,9 +52,8 @@ class ElectricalLoadHandler:
         return calculate_error_rae(y_pred, y_true)
 
     def __init__(self) -> None:
-        init_project_folder()
+        """Class for emulating an electrical device"""
         self._init_class()
-
 
     def _init_class(self) -> None:
         self._logger = getLogger(__name__)

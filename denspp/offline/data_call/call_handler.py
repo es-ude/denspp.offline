@@ -7,7 +7,7 @@ from os import makedirs
 from glob import glob
 from fractions import Fraction
 from scipy.signal import resample_poly
-from denspp.offline.structure_builder import init_project_folder, get_path_project_start
+from denspp.offline.structure_builder import get_path_project_start
 from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
 
 
@@ -87,8 +87,6 @@ class ControllerData:
 
     def __init__(self) -> None:
         """Class for loading and manipulating the used dataset"""
-        init_project_folder()
-
         self.__logger = logging.getLogger(__name__)
         self.__fill_factor = 1
         self.__scaling = 1

@@ -2,7 +2,6 @@ import numpy as np
 from dataclasses import dataclass
 from PySpice.Spice.Netlist import Circuit
 from .pyspice_handler import PySpiceHandler
-from denspp.offline.structure_builder import init_project_folder
 
 
 @dataclass
@@ -42,8 +41,6 @@ class PySpiceLoad(PySpiceHandler):
 
     def __init__(self, settings_pyspice: SettingsPySpice) -> None:
         super().__init__(settings_pyspice.temp, True)
-
-        init_project_folder()
         self._settings = settings_pyspice
 
         self._circuit = Circuit("Test")
