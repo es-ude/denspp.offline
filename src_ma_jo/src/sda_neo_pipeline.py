@@ -4,42 +4,41 @@ from src_neuro.sda.sda_pipeline import Pipeline_Digital
 
 
 def get_path(data_subdir="data", output_subdir="output", data_file_name="A1R1a_elec_stim_50biphasic_400us0001.npy"):
-    base_dir = Path(__file__).resolve().parent.parent
-    data_dir = base_dir / data_subdir
-    output_dir = base_dir / output_subdir
-    data_file = data_dir / data_file_name
+    project_base_dir = Path(__file__).resolve().parent.parent
+    data_dir_path = project_base_dir / data_subdir
+    output_dir_path = project_base_dir / output_subdir
 
-    if not data_file.exists():
-        print(f"Die Datei existiert NICHT: {data_file}")
-    if not output_dir.exists():
-        print(f"Das Ausgabeverzeichnis existiert NICHT: {output_dir}")
+    data_file_path = data_dir_path / data_file_name
 
-    return data_file, output_dir
+    if not data_file_path.exists():
+        print(f"Die Datei existiert NICHT: {data_file_path}")
+    if not output_dir_path.exists():
+        print(f"Das Ausgabeverzeichnis existiert NICHT: {output_dir_path}")
 
+    return data_file_path, output_dir_path
 
-def load_file_as_dict(file_path):
-    if not Path(file_path).exists():
-        print(f"Fehler: Datei wurde nicht gefunden: {file_path}")
+def load_file_as_dict(input_file_path):
+    if not Path(input_file_path).exists():
+        print(f"Fehler: Datei wurde nicht gefunden: {input_file_path}")
         return None
 
     try:
-        data = np.load(file_path, allow_pickle=True).item()
-        print(f".npy-Datei erfolgreich als Dictionary geladen: {file_path}")
+        data = np.load(input_file_path, allow_pickle=True).item()
+        print(f".npy-Datei erfolgreich als Dictionary geladen: {input_file_path}")
         return data
     except Exception as e:
         print(f"Fehler beim Laden der Datei: {file_path}. Details: {e}")
         return None
 
-
-def process_dictionary(data_dict):
+def process_dictionary(local_data_dict):
     artifact_indices = []
-    if not isinstance(data_dict, dict):
+    if not isinstance(local_data_dict, dict):
         print("Fehler: Geladene Daten sind kein Dictionary!")
         return
 
-    print(f"Keys im geladenen Dictionary: {list(data_dict.keys())}")
+    print(f"Keys im geladenen Dictionary: {list(local_data_dict.keys())}")
 
-    details = data_dict.get("details")
+    details = local_data_dict.get("details")
     if details and isinstance(details, dict):
         for signal_key, signal_data in details.items():
             print(f"\nVerarbeite '{signal_key}':")
@@ -58,18 +57,16 @@ def process_dictionary(data_dict):
         print("Keine Details im Dictionary gefunden.")
     return artifact_indices
 
-def compare_indices_in_loop(spike_index_array, artifact_index_array):
-    # Überprüfe, ob beide Arrays die gleiche Länge haben
-    if len(spike_index_array) != len(artifact_index_array):
+def compare_indices_in_loop(spike_indices_list, artifact_indices_list):
+    if len(spike_indices_list) != len(artifact_indices_list):
         raise ValueError("Die Arrays haben unterschiedliche Längen und können nicht verglichen werden.")
 
-    # Schleife durch beide Arrays
-    for i in range(len(spike_index_array)):
-        spike_indices = spike_index_array[i]
-        artifact_indices = artifact_index_array[i]
+    for i in range(len(spike_indices_list)):
+        spikes = spike_indices_list[i]
+        artifacts = artifact_indices_list[i]
 
         # Finde Überschneidungen der Indizes
-        common_indices = np.intersect1d(spike_indices, artifact_indices)
+        common_indices = np.intersect1d(spikes, artifacts)
 
         if common_indices.size > 0:
             print(f"Index {i}: Es gibt {len(common_indices)} Überschneidungen: {common_indices}")
@@ -77,8 +74,6 @@ def compare_indices_in_loop(spike_index_array, artifact_index_array):
             print(f"Index {i}: Keine Überschneidungen gefunden.")
 
     print("Vergleich der Arrays abgeschlossen.")
-
-
 
 def get_spike_indices(cleaned_signals, fs=100):
     spike_indices = []
@@ -97,18 +92,18 @@ def get_spike_indices(cleaned_signals, fs=100):
 
 if __name__ == "__main__":
     file_path, output_dir = get_path()
-    data_dict = load_file_as_dict(file_path)
+    loaded_data_dict = load_file_as_dict(file_path)
 
-    if data_dict:
-        artifact_indices = process_dictionary(data_dict)
+    if loaded_data_dict:
+        artifact_indices = process_dictionary(loaded_data_dict)
 
-        cleaned_signals = data_dict.get("cleaned_signals")
+        cleaned_signals = loaded_data_dict.get("cleaned_signals")
         if cleaned_signals:
             if isinstance(cleaned_signals, list) and all(isinstance(s, np.ndarray) for s in cleaned_signals):
-                spikes = get_spike_indices(cleaned_signals, fs=25e3)
+                spike_indices_list = get_spike_indices(cleaned_signals, fs=25e3)
             else:
                 raise Exception("Fehler: 'cleaned_signals' ist kein gültiger Array-Container.")
         else:
             raise Exception("Key 'cleaned_signals' fehlt!")
 
-        compare_indices_in_loop(spikes, artifact_indices)
+        compare_indices_in_loop(spike_indices_list, artifact_indices)
