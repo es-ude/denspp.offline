@@ -46,7 +46,7 @@ class SettingsDataset:
     def get_path2folder(self) -> str:
         """Getting the path name to the file"""
         if not isabs(self.data_path):
-            path = join(self.get_path2folder_project, 'dataset')
+            path = join(self.get_path2folder_project, self.data_path, 'dataset')
         else:
             path = join(self.data_path)
         return abspath(path)
@@ -130,12 +130,12 @@ class ControllerDataset:
         oc_handler.close()
         return list_datasets
 
-    def load_dataset(self) -> dict:
+    def load_dataset(self, do_print: bool=True) -> dict:
         """Loading the dataset from defined data file
         :return:    Dictionary with entries ['data', 'label', 'dict']
         """
         if self._settings.data_file_name.lower() == '':
-            self.print_overview_datasets(do_print=True)
+            self.print_overview_datasets(do_print=do_print)
             raise FileNotFoundError("--- Dataset is not available. Please type-in the data set name into the yaml file ---")
         else:
             makedirs(self._settings.get_path2folder, exist_ok=True)

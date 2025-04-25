@@ -29,16 +29,15 @@ class TestDataset(TestCase):
 
     def test_path2folder1(self):
         set = deepcopy(TestSettingsDataset)
-        set.data_path = join(get_path_project_start(), 'test')
+        set.data_path = join(get_path_project_start(), 'temp_test')
         chck = set.get_path2folder
-        self.assertEqual(chck, join(get_path_project_start(), 'test'))
+        self.assertEqual(chck, join(get_path_project_start(), 'temp_test'))
 
     def test_path2data(self):
         set = deepcopy(TestSettingsDataset)
         set.data_file_name = 'mnist'
-        set.data_path = ''
         chck = set.get_path2data
-        self.assertEqual(chck, join(get_path_project_start(), 'dataset', 'mnist'))
+        self.assertEqual(chck, join(get_path_project_start(), 'temp_test', 'dataset', 'mnist'))
 
     def test_dataset_overview(self):
         set = deepcopy(TestSettingsDataset)
@@ -50,7 +49,7 @@ class TestDataset(TestCase):
         set = deepcopy(TestSettingsDataset)
         set.data_file_name = ''
         try:
-            DatasetLoader(settings=set).load_dataset()
+            DatasetLoader(settings=set).load_dataset(do_print=False)
             self.assertTrue(False)
         except:
             self.assertTrue(True)
