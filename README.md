@@ -117,7 +117,7 @@ uv sync
 ### PySPICE
 
 `PySPICE` (Python Interface for using `NGSpice`) is a easy-to-use circuit simulation using SPICE commands in Python.
-This API provides several workarounds for using PySpice in order to allow easy-to-use circuit simulation for single-pole
+This framework provides several workarounds for using PySpice in order to allow easy-to-use circuit simulation for single-pole
 and two-pole circuits.
 
 #### Setup on Windows
