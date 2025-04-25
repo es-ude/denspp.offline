@@ -1,7 +1,7 @@
 from inspect import getfile
 from importlib import import_module
 from importlib import resources as res
-import logging
+from logging import getLogger
 import re
 
 
@@ -10,7 +10,7 @@ class ModuleRegistryManager:
 
     def __init__(self, regex: str):
         """Class for building a registry of desired type"""
-        self._logger = logging.getLogger(__name__)
+        self._logger = getLogger(__name__)
         self._regex = regex
 
     def register(self, fn):
@@ -56,7 +56,7 @@ class ModuleRegistryManager:
                 print("Model is not available")
         return model_chck
 
-    def register_package(self, package: str ) -> None:
+    def register_package(self, package: str) -> None:
         for resource in res.files(package).iterdir():
             if not resource.name.endswith("__"):
                 module_name = f"{package}.{resource.name[:-3]}"
