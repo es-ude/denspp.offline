@@ -63,6 +63,7 @@ class ModuleRegistryManager:
                 m = import_module(module_name)
                 self._logger.debug(f"importing module from: {module_name}")
                 for name in m.__dict__:
+                    self._logger.debug(f"available module: {name}")
                     if re.match(self._regex, name.lower()):
                         self._logger.debug(f"registering module: {name}")
                         item = getattr(m, name)
