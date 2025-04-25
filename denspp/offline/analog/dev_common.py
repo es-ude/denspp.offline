@@ -1,12 +1,8 @@
 import numpy as np
-import matplotlib.pyplot as plt
-
-from denspp.offline.plot_helper import scale_auto_value, save_figure
-from denspp.offline.analog.dev_load import ElectricalLoad, SettingsDEV
-from denspp.offline.analog.pyspice_load import PySpiceLoad, SettingsPySpice
+from matplotlib import pyplot as plt
+from denspp.offline import scale_auto_value, save_figure
 
 
-# ================================ FUNCTIONS FOR TESTING ===================================
 def generate_signal(t_end: float, fs: float, upp: list, fsig: list, uoff: float=0.0) -> [np.ndarray, np.ndarray]:
     """Generating a signal for testing
     Args:
@@ -95,45 +91,3 @@ def plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray,
         save_figure(plt, path2save, 'test_signal')
     if show_plot:
         plt.show(block=True)
-
-
-if __name__ == "__main__":
-    # --- Declaration of input
-    fs_ana = 100e3
-    do_ylog = False
-    t_end = 0.5e-3
-    u_off = 1.35
-
-    t0, uinp = generate_signal(0.5e-3, fs_ana, [2.5, 0.3, 0.1], [10e3, 18e3, 28e3], 0.0)
-    uinp = 0.125 * uinp + u_off
-    uinn = 0.0
-
-    # --------------------- TEST CASE #2: Using Own Class ------------------------------------
-    settings = SettingsDEV(
-        type='R',
-        fs_ana=fs_ana,
-        noise_en=False,
-        para_en=False,
-        dev_value=100e3,
-        temp=300
-    )
-
-    # --- Model declaration
-    plt.close('all')
-    dev = ElectricalLoad(settings)
-    dev.print_types()
-
-    # --- Plotting: Current response
-    print("\nPlotting transient current response")
-    iout = dev.get_current(uinp, uinn)
-    plot_test_results(t0, uinp - uinn, iout, False, do_ylog)
-
-    # --- Plotting: Voltage response
-    print("\nPlotting transient voltage response")
-    uout = dev.get_voltage(iout, uinn, u_off, 1e-2)
-    plot_test_results(t0, uout + uinn, iout, True, do_ylog)
-
-    # --- Plotting: I-V curve
-    print("\nPlotting I-V curve")
-    dev.change_boundary_voltage(1.0, 6.0)
-    dev.plot_fit_curve()
