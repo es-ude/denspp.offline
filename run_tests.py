@@ -1,16 +1,10 @@
 import unittest
-import logging
 from shutil import rmtree
+from denspp.offline.logger import define_logger_testing
 
 
 if __name__ == '__main__':
-    logger = logging.basicConfig(
-        level=logging.DEBUG,
-        filename='run_test_report.log',
-        filemode='w',
-        format='%(asctime)s - %(name)s - %(levelname)s = %(message)s'
-    )
-
+    logger = define_logger_testing()
     test_loader = unittest.TestLoader()
     test_suite = test_loader.discover('denspp', pattern='*_test.py')
 
