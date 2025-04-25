@@ -41,11 +41,11 @@ class DatasetLoader(ControllerDataset):
 
         # --- Using cell_bib for clustering
         cell_libs_handler = CellLibrary().get_registry()
-        libs_class_overview = [lib.split("resort_")[-1] for lib in cell_libs_handler.get_model_library_overview(do_print=False)]
+        libs_class_overview = [lib.split("resort_")[-1] for lib in cell_libs_handler.get_library_overview(do_print=False)]
         libs_use = [f'resort_{lib}' for lib in libs_class_overview if lib in self._settings.get_path2data.lower()]
         if len(libs_use):
             new_data = reconfigure_cluster_with_cell_lib(
-                fn=cell_libs_handler.build_model(libs_use[0]),
+                fn=cell_libs_handler.build(libs_use[0]),
                 sel_mode_classes=self._settings.use_cell_sort_mode,
                 frames_in=frames_in,
                 frames_cl=frames_cl
