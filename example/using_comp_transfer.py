@@ -6,7 +6,7 @@ from denspp.offline.analog.amplifier.comparator import Comparator, SettingsCompa
 ExampleSettingsComparator = SettingsComparator(
     vdd=0.6, vss=-0.6,
     gain=100,
-    offset=-100e-3,
+    offset=-1e-3,
     noise_dis=1.0e0,
     hysteresis=0.25,
     out_analog=False,

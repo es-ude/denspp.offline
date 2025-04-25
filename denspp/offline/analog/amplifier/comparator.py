@@ -42,7 +42,7 @@ DefaultSettingsComparator = SettingsComparator(
 class Comparator(CommonAnalogFunctions):
     _settings: SettingsComparator
     _unoise: np.ndarray
-    _int_state: np.ndarray
+    _int_state: bool
 
     @property
     def get_noise_signal(self) -> np.ndarray:
@@ -76,13 +76,12 @@ class Comparator(CommonAnalogFunctions):
 
         u_out = np.zeros(du.shape)
         u_out += self._unoise
-        self._int_state = np.zeros(du.shape, dtype=np.bool_)
-        # state == 0 --> not active, state == 1 --> active
+        self._int_state = False
+        # int_state == 0 --> not active, int_state == 1 --> active
         for idx, val in enumerate(du):
-            thr_run = thr[0] if not self._int_state[idx] else thr[1]
-            out = np.array(val - thr_run)
-            if idx < u_out.size-2:
-                self._int_state[idx+1] = np.sign(out) == 1
+            thr_run = thr[0] if not self._int_state else thr[1]
+            out = np.subtract(val, thr_run)
+            self._int_state = np.sign(out) == 1
             u_out[idx] = self.vcm + self._settings.gain * out
         return u_out
 
@@ -119,7 +118,7 @@ class Comparator(CommonAnalogFunctions):
         """
         u_cmp = self.__apply_gain_comparator(uinp, uinn)
         self._unoise = self.__generate_noise(input_size=u_cmp.size, scale=self._settings.noise_dis, use_noise=False)
-        u_cmp = self.clamp_voltage(u_cmp)
+        u_cmp = self.clamp_voltage(u_cmp + self._unoise)
         return self.__apply_inverter(self.__generate_output(u_cmp))
 
     def cmp_normal(self, uinp: np.ndarray | float, uinn: np.ndarray | float) -> np.ndarray:
