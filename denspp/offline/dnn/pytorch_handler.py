@@ -17,7 +17,7 @@ from sklearn.model_selection import KFold
 from denspp.offline.structure_builder import get_path_project_start
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset
 from denspp.offline.dnn.pytorch_config_model import ConfigPytorch
-from denspp.offline.structure_builder import init_project_folder, init_dnn_folder
+from denspp.offline.structure_builder import init_dnn_folder
 from denspp.offline.yaml_handler import YamlConfigHandler
 
 
@@ -46,7 +46,6 @@ class PyTorchHandler:
         Returns:
             None
         """
-        init_project_folder()
         init_dnn_folder()
         # --- Preparing Neural Network
         self.os_type = platform.system()

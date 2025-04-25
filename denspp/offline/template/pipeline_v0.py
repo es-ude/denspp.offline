@@ -7,7 +7,7 @@ from denspp.offline.nsp.spike_analyse import calc_spiketicks
 from denspp.offline.analog.amplifier.pre_amp import PreAmp, SettingsAMP
 from denspp.offline.analog.adc import SettingsADC
 from denspp.offline.analog.adc.adc_sar import SuccessiveApproximation as ADC0
-from denspp.offline.digital.dsp import DSP, SettingsDSP
+from denspp.offline.digital.dsp import DSP, SettingsFilter
 from denspp.offline.digital.sda import SpikeDetection, SettingsSDA
 from denspp.offline.digital.fex import FeatureExtraction, SettingsFeature
 from denspp.offline.digital.cluster import Clustering, SettingsCluster
@@ -50,14 +50,14 @@ class SettingsPipe:
     )
 
     # --- Digital filtering for ADC output and CIC
-    SettingsDSP_LFP = SettingsDSP(
+    SettingsDSP_LFP = SettingsFilter(
         gain=1,
         fs=SettingsADC.fs_adc,
         n_order=2, f_filt=[0.1, 100],
         type='iir', f_type='butter', b_type='bandpass',
         t_dly=0
     )
-    SettingsDSP_SPK = SettingsDSP(
+    SettingsDSP_SPK = SettingsFilter(
         gain=1,
         fs=SettingsADC.fs_adc,
         n_order=2, f_filt=[200, 8e3],

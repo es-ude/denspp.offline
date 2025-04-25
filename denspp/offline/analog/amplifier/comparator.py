@@ -7,7 +7,7 @@ from denspp.offline.analog.common_func import CommonAnalogFunctions
 @dataclass
 class SettingsComparator:
     """Individual data class to configure an analogue voltage comparator
-    Params:
+    Attributes:
         vdd:        Positive supply voltage [V],
         vss:        Negative supply voltage [V],
         gain:       Amplification factor of comparator [V/V]

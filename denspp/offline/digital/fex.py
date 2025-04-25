@@ -6,7 +6,10 @@ from torch import load, from_numpy
 
 @dataclass
 class SettingsFeature:
-    """"Individual data class to configure feature extractor and cluster"""
+    """"Individual data class to configure feature extractor and cluster
+    Attributes:
+        no_features:    Number of features to extract
+    """
     no_features: int
 
 

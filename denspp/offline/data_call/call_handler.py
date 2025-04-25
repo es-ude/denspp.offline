@@ -7,21 +7,21 @@ from os import makedirs
 from glob import glob
 from fractions import Fraction
 from scipy.signal import resample_poly
-from denspp.offline.structure_builder import init_project_folder, get_path_project_start
+from denspp.offline.structure_builder import get_path_project_start
 from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
 
 
 @dataclass
 class SettingsData:
     """Class for configuring the dataloader
-    input:
-    path        - Path to data storage
-    data_set    - String with key for used data set
-    data_point  - Number within the dataset
-    t_range     - List of the given time range for cutting the data [x, y]
-    ch_sel      - List of electrodes to use [empty=all]
-    fs_resample - Resampling frequency of the datapoint
-    do_mapping  - Decision if mapping (if available) is used
+    Attributes:
+    path:           Path to data storage
+    data_set:       String with key for used data set
+    data_point:     Number within the dataset
+    t_range:        List of the given time range for cutting the data [x, y]
+    ch_sel:         List of electrodes to use [empty=all]
+    fs_resample:    Resampling frequency of the datapoint
+    do_mapping:     Decision if mapping (if available) is used
     """
     path: str
     data_set: str
@@ -76,7 +76,6 @@ class DataHandler:
 
 
 class ControllerData:
-    """Class for loading and manipulating the used dataset"""
     __download_handler: OwnCloudDownloader
     _raw_data: DataHandler
     _settings: SettingsData
@@ -87,8 +86,7 @@ class ControllerData:
     path2mapping: str = ''
 
     def __init__(self) -> None:
-        init_project_folder()
-
+        """Class for loading and manipulating the used dataset"""
         self.__logger = logging.getLogger(__name__)
         self.__fill_factor = 1
         self.__scaling = 1

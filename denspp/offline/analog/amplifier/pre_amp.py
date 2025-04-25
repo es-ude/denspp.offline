@@ -8,8 +8,7 @@ from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, Recomme
 @dataclass
 class SettingsAMP:
     """Individual data class to configure the PreAmp
-
-    Params:
+    Attributes:
         vdd:        Positive supply voltage [V]
         vss:        Negative supply voltage [V]
         fs_ana:     Sampling frequency of input [Hz]

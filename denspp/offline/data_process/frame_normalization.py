@@ -9,7 +9,7 @@ class DataNormalization:
 
     def __init__(self, method: str, do_global_scaling: bool=False, peak_mode: int=2):
         """Normalizing the input data to enhance classification performance.
-        Args:
+        Parameters:
             method (str):               The normalization method ["minmax", "norm", "zscore", "medianmad", or "meanmad"]
             do_global_scaling (bool):   Applied global scaling in normalization else sample scaling
             peak_mode (int):            Mode for taking peak value (0: max, 1: min, 2: abs-max)

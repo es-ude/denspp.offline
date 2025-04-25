@@ -4,16 +4,15 @@ from dataclasses import dataclass
 @dataclass
 class SettingsADC:
     """Individual data class to configure the ADC
-
-    Params:
-        vdd         - Positive supply voltage [V]
-        vss         - Negative supply voltage [V]
-        dvref       - Half Range of reference voltage [V]
-        fs_ana      - Analogue input sampling frequency [Hz]
-        fs_dig      - Output sampling rate after decimation [Hz]
-        Nadc        - Quantization level of ADC [/]
-        osr         - Oversampling ratio of ADC [/]
-        type_out    - Output type of digital value {"signed": True | "unsigned": False}
+    Attributes:
+        vdd:        Positive supply voltage [V]
+        vss:        Negative supply voltage [V]
+        dvref:      Half Range of reference voltage [V]
+        fs_ana:     Analogue input sampling frequency [Hz]
+        fs_dig:     Output sampling rate after decimation [Hz]
+        Nadc:       Quantization level of ADC [/]
+        osr:        Oversampling ratio of ADC [/]
+        type_out:   Output type of digital value {"signed": True | "unsigned": False}
     """
     vdd:        float
     vss:        float
@@ -51,13 +50,12 @@ class SettingsADC:
 
 @dataclass
 class SettingsNon:
-    """Settings for configuring the parasitics/non-linearities of the ADC
-
-    Params:
-        use_noise - Boolean for using noise in output
-        wgndB  - effective power spectral noise [dB/sqrt(Hz)]
-        offset - Corner frequency of the flicker (1/f) noise [Hz]
-        slope  - Alpha coefficient of the flicker noise []
+    """Settings for configuring the parasitic/non-linearity properties of the ADC
+    Attributes:
+        use_noise:  Boolean for using noise in output
+        wgndB:      Float with effective power spectral noise [dB/sqrt(Hz)]
+        offset:     Corner frequency of the flicker (1/f) noise [Hz]
+        slope:      Alpha coefficient of the flicker noise []
     """
     use_noise: bool
     wgndB: float

@@ -23,6 +23,13 @@ def logic_combination(true_labels: np.ndarray, pred_labels: np.ndarray, translat
 
 @dataclass
 class CellMergeClass:
+    """Class for Merging different labels of a dataset to a new dataset
+    Attributes:
+         cell_type_to_id:       Dictionary with original label names [key] and given id [value]
+         cell_class_to_id:      Dictionary with new label class [key] and corresponding id as list [value]
+         cell_class_to_group:   Dictionary with new label sub-class [key] and corresponding id as list [value]
+         cell_class_to_type:    Dictionary with new label sub-class [key] and corresponding id as list [value]
+    """
     cell_type_to_id: dict
     cell_class_to_id: dict
     cell_class_to_group: dict
@@ -30,7 +37,6 @@ class CellMergeClass:
 
 
 class CellSelector:
-    """Cell Selection Functions"""
     handler: CellMergeClass
     cell_type_to_id: dict
     cell_class_to_id: dict

@@ -1,5 +1,4 @@
 import numpy as np
-from denspp.offline.structure_builder import init_project_folder
 from .dev_handler import ElectricalLoadHandler, SettingsDEV
 from .dev_noise import ProcessNoise, SettingsNoise
 
@@ -42,8 +41,6 @@ class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
 
     def __init__(self, settings_dev: SettingsDEV, settings_noise=RecommendedSettingsNoise):
         super().__init__(settings_noise, settings_dev.fs_ana)
-
-        init_project_folder()
         self._init_class()
 
         self._settings = settings_dev

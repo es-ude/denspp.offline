@@ -4,7 +4,7 @@ from denspp.offline.pipeline.pipeline_signal import PipelineSignal
 from denspp.offline.analog.amplifier.pre_amp import PreAmp, SettingsAMP
 from denspp.offline.analog.adc import SettingsADC
 from denspp.offline.analog.adc.adc_sar import SuccessiveApproximation as ADC0
-from denspp.offline.digital.dsp import DSP, SettingsDSP
+from denspp.offline.digital.dsp import DSP, SettingsFilter
 from denspp.offline.digital.sda import SpikeDetection, SettingsSDA
 
 
@@ -30,7 +30,7 @@ class _SettingsPipe:
     )
 
     # --- Digital filtering for ADC output and CIC
-    SettingsDSP_SPK = SettingsDSP(
+    SettingsDSP_SPK = SettingsFilter(
         gain=1,
         fs=SettingsADC.fs_adc,
         n_order=2, f_filt=[100, 8e3],

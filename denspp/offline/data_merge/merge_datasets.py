@@ -5,7 +5,6 @@ from tqdm import tqdm
 import numpy.lib.scimath as sm
 from datetime import datetime
 
-from denspp.offline.structure_builder import init_project_folder
 from denspp.offline.metric.data_numpy import calculate_error_mse
 from denspp.offline.metric.snr import calculate_snr
 
@@ -99,7 +98,6 @@ def plot_results(data_packet_X, data_packet_Y, data_packet_mean, path2fig, name)
 
 class SortDataset:
     def __init__(self, path_2_file: str):
-        init_project_folder()
         """Tool for loading and processing dataset to generate a sorted dataset"""
         self.setOptions = dict()
         self.setOptions['do_2nd_run'] = False

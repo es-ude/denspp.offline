@@ -1,11 +1,10 @@
 from dataclasses import dataclass
-from warnings import warn
+from logging import getLogger
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.constants import Boltzmann, elementary_charge
 from scipy.optimize import least_squares, curve_fit
 
-from denspp.offline.structure_builder import init_project_folder
 from denspp.offline.plot_helper import save_figure
 from denspp.offline.metric.data_numpy import calculate_error_rae, calculate_error_mse
 
@@ -13,7 +12,7 @@ from denspp.offline.metric.data_numpy import calculate_error_rae, calculate_erro
 @dataclass
 class SettingsDEV:
     """Individual data class to configure the electrical device
-    Inputs:
+    Attributes:
         type:       Type of electrical device ['R': resistor, 'C': capacitor, 'L': inductor, 'RDs': Resistive diode]
         fs_ana:     Sampling frequency of input [Hz]
         noise_en:   Enable noise on output [True / False]
@@ -29,24 +28,7 @@ class SettingsDEV:
     temp:       float
 
 
-def _calc_error(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
-    return calculate_error_rae(y_pred, y_true)
-
-
-def _raise_voltage_violation(du: np.ndarray | float, range_volt: list) -> None:
-    """Checking differential voltage input for violation of voltage range for given branch"""
-    violation_dwn = np.count_nonzero(du < range_volt[0], axis=0)
-    violation_up = np.count_nonzero(du > range_volt[1], axis=0)
-
-    if violation_up or violation_dwn:
-        val = du.min if violation_dwn else du.max
-        limit = range_volt[slice(0)] if violation_dwn else range_volt[slice(1)]
-        addon = f'(Upper limit)' if not violation_dwn else '(Downer limit)'
-        warn(f"--- Warning: Voltage Range Violation {addon}! With {val} of {limit} ---")
-
-
 class ElectricalLoadHandler:
-    """Class for emulating an electrical device"""
     _settings: SettingsDEV
     _poly_fit: np.ndarray
     _curve_fit: np.ndarray
@@ -65,11 +47,17 @@ class ElectricalLoadHandler:
     def temperature_voltage(self) -> float:
         return Boltzmann * self._settings.temp / elementary_charge
 
+    @staticmethod
+    def calc_error(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
+        return calculate_error_rae(y_pred, y_true)
+
     def __init__(self) -> None:
-        init_project_folder()
+        """Class for emulating an electrical device"""
         self._init_class()
 
     def _init_class(self) -> None:
+        self._logger = getLogger(__name__)
+
         self._poly_fit = np.zeros((1, ), dtype=float)
         self._curve_fit = np.zeros((1, ), dtype=float)
         self._approx_fit = np.zeros((1, ), dtype=float)
@@ -121,7 +109,7 @@ class ElectricalLoadHandler:
                     i_path = np.concatenate((-np.flipud(i_pathp)[1:], i_pathp), axis=0)
                     u_path = np.concatenate((-np.flipud(u_pathp)[1:], i_pathp), axis=0)
         else:
-            warn("Using normal device equation for getting I-V-behaviour")
+            self._logger.warn("Using normal device equation for getting I-V-behaviour")
             u_path = np.linspace(bounds_voltage[0], bounds_voltage[1], self._fit_options[1], endpoint=True)
             i_path = self.get_current(u_path, 0.0)
 
@@ -188,7 +176,7 @@ class ElectricalLoadHandler:
             u_poly = np.linspace(self._bounds_volt[0], self._bounds_volt[1], self._fit_options[1], endpoint=True)
             i_poly = self._type_device[self._settings.type](u_poly, 0.0)
             i_test = self._do_regression(u_poly, 0.0, params_dev, self._bounds_curr)
-            error = _calc_error(i_poly, i_test)
+            error = self.calc_error(i_poly, i_test)
             if do_plot:
                 self._plot_fit_curve(
                     u_poly, i_poly, i_test, metric=['1e3 * RAE', 1e3 * error],
@@ -227,7 +215,7 @@ class ElectricalLoadHandler:
             # --- Calculating the metric
             if do_test and self._settings.type != 'R':
                 i_test = self._do_regression(u_poly, 0.0, params_dev, self._bounds_curr)
-                error = _calc_error(i_poly, i_test)
+                error = self.calc_error(i_poly, i_test)
             else:
                 i_test = np.zeros_like(u_poly)
                 error = -1.0
@@ -316,7 +304,6 @@ class ElectricalLoadHandler:
         error_search = np.array(error_search)
         xmin = np.argwhere(error_search == error_search.min()).flatten()
         print(f"\nBest solution: Order = {np.array(order_search)[xmin]} with an error of {error_search[xmin]}!")
-        print("TEST")
 
     def plot_fit_curve(self, find_best_order: bool=False, show_plots: bool=True,
                        order_start: int=2, order_stop: int=18, mode_fit: int=0) -> None:
@@ -482,3 +469,20 @@ class ElectricalLoadHandler:
                 u_response[idx] = u_top
                 idx += 1
             return u_response
+
+    def check_value_range_violation(self, signal: np.ndarray | float, mode_voltage: bool=True) -> bool:
+        """Checking differential input stream has a violation against given range
+        :param signal:          Numpy array with applied voltage difference [V]
+        :param mode_voltage:    Boolean if input signal is voltage [True] or current [False]
+        :return:                Boolean if warning violation is available
+        """
+        range_list = self._bounds_volt if mode_voltage else self._bounds_curr
+        violation_dwn = np.count_nonzero(signal < range_list[0], axis=0)
+        violation_up = np.count_nonzero(signal > range_list[1], axis=0)
+
+        if violation_up or violation_dwn:
+            val = signal.min if violation_dwn else signal.max
+            limit = range_list[0] if violation_dwn else range_list[1]
+            addon = f'(Upper limit)' if not violation_dwn else '(Downer limit)'
+            self._logger.warn(f"Voltage Range Violation {addon}! With {val} of {limit} ---")
+        return violation_up or violation_dwn

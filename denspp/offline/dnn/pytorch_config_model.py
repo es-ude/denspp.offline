@@ -7,7 +7,20 @@ from denspp.offline.dnn.model_library import ModelLibrary
 
 @dataclass
 class ConfigPytorch:
-    """Class for handling the PyTorch training/inference pipeline"""
+    """Class for handling the PyTorch training/inference pipeline
+    Attributes:
+        model_name:         String with the model name
+        patience:           Integer value with number of epochs before early stopping
+        optimizer:          String with PyTorch optimizer name
+        loss:               String with method name for the loss function
+        deterministic_do:   Boolean if deterministic training should be done
+        deterministic_seed: Integer with the seed for deterministic training
+        num_kfold:          Integer value with applying k-fold cross validation
+        num_epochs:         Integer value with number of epochs
+        batch_size:         Integer value with batch size
+        data_split_ratio:   Float value for splitting the input dataset between training and validation
+        data_do_shuffle:    Boolean if data should be shuffled before training
+    """
     model_name: str
     patience: int
     optimizer: str
@@ -24,7 +37,7 @@ class ConfigPytorch:
     def get_model_overview(print_overview: bool=False, index: str='') -> None:
         """Function for getting an overview of existing models inside library"""
         models_bib = ModelLibrary().get_registry()
-        models_bib.get_model_library_overview(index, do_print=print_overview)
+        models_bib.get_library_overview(index, do_print=print_overview)
 
     def get_loss_func(self) -> Any:
         """Getting the loss function"""
@@ -56,15 +69,15 @@ class ConfigPytorch:
         """Function for loading the model to train"""
         models_bib = ModelLibrary().get_registry()
         if not self.model_name:
-            models_bib.get_model_library_overview(do_print=True)
+            models_bib.get_library_overview(do_print=True)
             raise NotImplementedError("Please select one model above and type-in the name into yaml file")
         else:
-            if models_bib.check_model_available(self.model_name):
-                used_model = deepcopy(models_bib.build_model(self.model_name, *args, **kwargs))
+            if models_bib.check_module_available(self.model_name):
+                used_model = deepcopy(models_bib.build(self.model_name, *args, **kwargs))
                 return used_model
             else:
                 raise NotImplementedError(f"Model is not available - Please check again! "
-                                          f"\n{models_bib.get_model_library_overview_string()}")
+                                          f"\n{models_bib.get_library_overview_string()}")
 
 
 DefaultSettingsTrainMSE = ConfigPytorch(

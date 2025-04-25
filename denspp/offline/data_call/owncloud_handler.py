@@ -9,6 +9,12 @@ from denspp.offline.structure_builder import get_path_project_start
 
 @dataclass
 class ConfigCloud:
+    """Configuration class for handling remote control using NextCloud
+    Attributes:
+        remote_link:        String with shared URL to data storage
+        remote_transient:   String with path to transient data
+        remote_dataset:     String with path to datasets
+    """
     remote_link: str
     remote_transient: str
     remote_dataset: str
@@ -22,7 +28,7 @@ DefaultConfigCloud = ConfigCloud(
 
 
 class OwnCloudDownloader:
-    __oc_handler: owncloud.Client
+    __handler: owncloud.Client
     __settings: ConfigCloud
 
     def __init__(self, path2config: str = get_path_project_start(), use_config: ConfigCloud = DefaultConfigCloud) -> None:
@@ -41,12 +47,12 @@ class OwnCloudDownloader:
         :param search_folder:   folder to search for remote content
         :param depth:           depth of search
         """
-        self.__oc_handler = owncloud.Client.from_public_link(self.__settings.remote_link)
+        self.__handler = owncloud.Client.from_public_link(self.__settings.remote_link)
         path_start = self.__settings.remote_transient if not use_dataset else self.__settings.remote_dataset
         path_select = join(path_start, search_folder) if search_folder else path_start
 
-        dict_list = self.__oc_handler.list(path_select, depth)
-        self.__oc_handler.logout()
+        dict_list = self.__handler.list(path_select, depth)
+        self.__handler.logout()
         return dict_list
 
     def get_overview_folder(self, use_dataset: bool, search_folder: str = '') -> list:
@@ -85,15 +91,15 @@ class OwnCloudDownloader:
         :param  destination_download:   Folder name to save the data locally
         :return:                        None
         """
-        self.__oc_handler = owncloud.Client.from_public_link(self.__settings.remote_link)
+        self.__handler = owncloud.Client.from_public_link(self.__settings.remote_link)
         self.__logger.info("... downloading file from remote")
         print("... downloading file from remote")
         path_selected = self.__settings.remote_transient if not use_dataset else self.__settings.remote_dataset
-        self.__oc_handler.get_file(
+        self.__handler.get_file(
             remote_path=join(path_selected, file_name),
             local_file=destination_download
         )
         self.__logger.info("... download done")
 
     def close(self) -> None:
-        self.__oc_handler.logout()
+        self.__handler.logout()

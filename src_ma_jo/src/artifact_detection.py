@@ -1,6 +1,6 @@
 from scipy.interpolate import CubicSpline
 from scipy.optimize import curve_fit
-from denspp.offline.digital.dsp import DSP, SettingsDSP
+from denspp.offline.digital.dsp import DSP, SettingsFilter
 from src_ma_jo.src.data_handler_artifacts import load_data, extract_arrays
 from src_ma_jo.src.show_plots_artifacts import *
 import numpy as np
@@ -67,7 +67,7 @@ def create_signal_dictionary(filenames, signals, time, artifacts, artifact_indic
     time = time
 
     # Assign cleaned signals (everything except the first element in the signals list)
-    cleaned_signals = signals[1:]
+    cleaned_signals = signals
 
     # Iterate over the cleaned signals and create individual entries
     for idx, signal in enumerate(cleaned_signals):
@@ -493,7 +493,7 @@ def replace_signals_with_zeros(signals, percentage_limit, threshold):
     :return: List of processed signals with invalid signals replaced by zeros
     """
     processed_signals = []
-    for signal in signals[1::]:
+    for signal in signals:
         if not filter_signals_by_percentage(signal, threshold, percentage_limit):
             processed_signals.append(np.zeros_like(signal))
         elif not filter_signal_based_on_threshold(signal, threshold):
@@ -521,7 +521,7 @@ def save_signal_dictionary(signal_dict, filename="signal_dictionary.npy"):
 
 if __name__ == "__main__":
     processed_signals_list = []
-    settings = SettingsDSP(
+    settings = SettingsFilter(
         gain=1,
         fs=25e3,
         n_order=2,
@@ -539,7 +539,7 @@ if __name__ == "__main__":
     dsp_instance = DSP(settings)
 
     # Flag zur Steuerung der Filterung
-    apply_filter = True  # Setze auf False, falls die Filterung übersprungen werden soll
+    apply_filter = False     # Setze auf False, falls die Filterung übersprungen werden soll
     apply_spline_modification = True  # Neues Flag für Spline-Modifikation
 
     dsp_instance.use_filtfilt = True

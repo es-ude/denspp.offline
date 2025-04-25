@@ -7,8 +7,7 @@ from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, Recomme
 @dataclass
 class SettingsINT:
     """Individual data class to configure an analog voltage integrator
-
-    Params:
+    Attributes:
         vdd:        Positive supply voltage [V]
         vss:        Negative supply voltage [V]
         vmargin:    Margin range from supply voltage for non-idealities [V]

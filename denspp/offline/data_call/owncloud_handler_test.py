@@ -1,5 +1,4 @@
 from unittest import TestCase, main
-from shutil import rmtree
 from os.path import splitext, join, exists
 from denspp.offline.data_call.owncloud_handler import ConfigCloud, OwnCloudDownloader
 from denspp.offline.structure_builder import get_path_project_start
@@ -42,10 +41,7 @@ class TestOwnCloud(TestCase):
             file_name=overview[0],
             destination_download=path2file
         )
-        file_exits = exists(path2file)
-        if file_exits:
-            rmtree(self.path2temp)
-        self.assertTrue(file_exits)
+        self.assertTrue(exists(path2file))
 
 
 if __name__ == '__main__':
