@@ -58,13 +58,13 @@ def process_dictionary(data_dict):
 
 def run_pipeline(cleaned_signals, fs=100):
     pipeline = Pipeline_Digital(fs)
-    pipeline.define_sda(mode_sda=1, mode_thr=0)  # Beispiel: NEO + CONST
+    pipeline.define_sda(mode_sda=1, mode_thr=6)  # Beispiel: NEO + CONST
     for idx, signal in enumerate(cleaned_signals):
         if isinstance(signal, np.ndarray):
             print(f"\nVerarbeite Signal {idx+1}/{len(cleaned_signals)}")
             pipeline.run_preprocess(signal, do_smooth=True,do_get_frames=True)
             print(f"  - Verwendete Methoden: {pipeline.used_methods}")
-            print(f"  - SDA Output Shape: {pipeline.signals.x_sda.shape}")
+            print(f"  - SDA Output Shape: {pipeline.x_pos.shape}")
             print(f"  - Threshold Shape: {pipeline.signals.x_thr.shape}")
 
 
