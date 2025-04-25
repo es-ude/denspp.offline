@@ -46,7 +46,7 @@ class SettingsADC:
 
     @property
     def lsb(self) -> float:
-        return (self.vref[0]-self.vref[1]) / (2 ** self.Nadc)
+        return self.vref_range / (2 ** self.Nadc)
 
 
 @dataclass
