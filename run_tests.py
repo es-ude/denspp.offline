@@ -1,5 +1,7 @@
 import unittest
 import logging
+from shutil import rmtree
+
 
 if __name__ == '__main__':
     logger = logging.basicConfig(
@@ -14,3 +16,5 @@ if __name__ == '__main__':
 
     test_runner = unittest.TextTestRunner()
     test_runner.run(test_suite)
+
+    rmtree('temp_test', ignore_errors=True)

@@ -1,7 +1,6 @@
 import unittest
 from os import getcwd
 from os.path import exists, join
-from shutil import rmtree
 from denspp.offline.structure_builder import init_project_folder, init_dnn_folder
 
 
@@ -9,7 +8,7 @@ class TestSum(unittest.TestCase):
     folder_general = ['config', 'data', 'dataset', 'runs', 'src_pipe', 'temp']
     folder_dnn = ['models', 'dataset']
     folder2search = 'denspp.offline'
-    folder_name_test = 'temp_tests'
+    folder_name_test = 'temp_test'
 
     def test_check_folder_general(self):
         init_project_folder(self.folder_name_test)
@@ -20,7 +19,6 @@ class TestSum(unittest.TestCase):
             path2test = join(path2start, folder)
             num_pass += 1 if exists(path2test) else 0
 
-        rmtree(path2start)
         self.assertEqual(num_pass, len(self.folder_general))
 
     def test_check_folder_dnn(self):
@@ -32,7 +30,6 @@ class TestSum(unittest.TestCase):
             path2test = join(path2start, folder)
             num_pass += 1 if exists(path2test) else 0
 
-        rmtree(path2start)
         self.assertEqual(num_pass == len(self.folder_dnn), True, "Folders not there")
 
 
