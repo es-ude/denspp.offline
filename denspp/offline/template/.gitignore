@@ -1,0 +1,13 @@
+.venv
+venv
+**/__pycache__
+
+Config_*.yaml
+**/config
+**/data
+**/dataset
+**/runs
+**/test
+**/temp*
+tests/*.log
+uv.lock
