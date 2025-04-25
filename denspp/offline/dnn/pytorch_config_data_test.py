@@ -7,7 +7,7 @@ from denspp.offline.template.call_dataset import DatasetLoader
 
 
 TestSettingsDataset = SettingsDataset(
-    data_path='',
+    data_path='temp_test',
     data_file_name='',
     use_cell_sort_mode=0,
     augmentation_do=False,
