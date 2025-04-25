@@ -13,7 +13,7 @@ from denspp.offline.metric.data_numpy import calculate_error_rae, calculate_erro
 @dataclass
 class SettingsDEV:
     """Individual data class to configure the electrical device
-    Inputs:
+    Attributes:
         type:       Type of electrical device ['R': resistor, 'C': capacitor, 'L': inductor, 'RDs': Resistive diode]
         fs_ana:     Sampling frequency of input [Hz]
         noise_en:   Enable noise on output [True / False]
@@ -56,9 +56,11 @@ class ElectricalLoadHandler:
     def __init__(self) -> None:
         init_project_folder()
         self._init_class()
-        self._logger = getLogger(__name__)
+
 
     def _init_class(self) -> None:
+        self._logger = getLogger(__name__)
+
         self._poly_fit = np.zeros((1, ), dtype=float)
         self._curve_fit = np.zeros((1, ), dtype=float)
         self._approx_fit = np.zeros((1, ), dtype=float)

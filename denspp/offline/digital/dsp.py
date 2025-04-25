@@ -7,18 +7,29 @@ from denspp.offline.analog.common_func import CommonDigitalFunctions
 
 
 @dataclass
-class SettingsDSP:
+class SettingsFilter:
+    """Configuration class for defining the filter processor
+    Attributes:
+        gain:       Integer with applied amplification factor [V/V]
+        fs:         Sampling rate [Hz]
+        n_order:    Integer with number of filter order
+        f_filt:     List with filter frequencies [Hz] (low/high-pass: only one value, band-pass/stop: two values)
+        type:       String with selected filter algorithm ['iir', 'fir']
+        f_type:     String with selected filter structure ['butter', 'cheby1', 'cheby2', 'ellip', 'bessel']
+        b_type:     String with selected filter type ['lowpass', 'highpass', 'bandpass', 'bandstop']
+        t_dly:      Float with delay time [s] if FIR delay filter is used
+    """
     gain: int
     fs: float
     n_order: int
     f_filt: list
-    type: str           # type = ['iir', 'fir']
-    f_type: str         # f_type = ['butter', 'cheby1', 'cheby2', 'ellip', 'bessel']
-    b_type: str         # btype = ['lowpass', 'highpass', 'bandpass', 'bandstop']
+    type: str
+    f_type: str
+    b_type: str
     t_dly: float
 
 
-RecommendedSettingsDSP = SettingsDSP(
+RecommendedSettingsFilter = SettingsFilter(
     gain=1, fs=0.3e3,
     n_order=2, f_filt=[0.1, 100],
     type='iir', f_type='butter', b_type='bandpass',
@@ -28,7 +39,7 @@ RecommendedSettingsDSP = SettingsDSP(
 
 class DSP(CommonDigitalFunctions):
     """Class for Emulating Digital Signal Processing on FPGA"""
-    def __init__(self, setting: SettingsDSP):
+    def __init__(self, setting: SettingsFilter):
         super().__init__()
         self.settings = setting
 

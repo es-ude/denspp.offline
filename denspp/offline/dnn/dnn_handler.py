@@ -5,7 +5,16 @@ from denspp.offline.structure_builder import get_path_project_start
 
 @dataclass
 class ConfigMLPipeline:
-    """Handling for training depp neural networks"""
+    """Configuration class for handling the training phase of deep neural networks
+    Attributes:
+        mode_train_dnn:             Integer value of selected training routine regarding the training handler
+        path2yaml:                  String with path to the folder with yaml configuration files
+        do_plot:                    Boolean value to generate the plots after training
+        do_block:                   Boolean value to block the generated plots after training
+        autoencoder_mode:           Integer value for selecting the autoencoder mode [0: normal, 1: Denoising Autoencoder with mean, 2: Denoising Autoencoder with adding random noise on input, 3: Denoising Autoencoder with adding guassian noise on input]
+        autoencoder_feat_size:      Integer value with dimension of the encoder output for building the feature space
+        autoencoder_noise_std:      Floating value with noise std applied on autoencoder input
+    """
     # --- Selection of DL Pipeline
     mode_train_dnn: int
     path2yaml: str

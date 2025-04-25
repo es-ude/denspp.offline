@@ -7,8 +7,7 @@ from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, Recomme
 @dataclass
 class SettingsCUR:
     """Individual data class to configure the current amplifier
-
-    Params:
+    Attributes:
         vdd:            Positive supply voltage [V]
         vss:            Negative supply voltage [V]
         fs_ana:         Sampling frequency of input [Hz]
@@ -30,7 +29,7 @@ class SettingsCUR:
     para_en:        bool
 
 
-RecommendedSettingsCUR = SettingsCUR(
+DefaultSettingsCUR = SettingsCUR(
     vdd=0.9, vss=-0.9,
     fs_ana=50e3,
     transimpedance=1e3,

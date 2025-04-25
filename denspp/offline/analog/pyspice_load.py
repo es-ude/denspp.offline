@@ -8,7 +8,7 @@ from denspp.offline.structure_builder import init_project_folder
 @dataclass
 class SettingsPySpice:
     """Individual data class to configure the electrical device
-    Inputs:
+    Attributes:
         type:       Type of electrical device ['R': resistor, 'C': capacitor, 'L': inductor, 'RDs': Resistive diode]
         fs_ana:     Sampling frequency of input [Hz]
         noise_en:   Enable noise on output [True / False]

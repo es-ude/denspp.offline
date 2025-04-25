@@ -12,7 +12,14 @@ from sklearn.mixture import GaussianMixture
 
 @dataclass
 class SettingsCluster:
-    """"Individual data class to configure clustering"""
+    """"Individual data class to configure clustering
+    Attributes:
+        type:           String with used cluster/classification method [kMeans, GMM, DBSCAN, kNN]
+        no_cluster:     Integer with number of clusters
+        max_iter:       Integer with maximum number of iterations
+        tolerance:      Float with tolerance between iterations
+        random_state:   Definition of the state to start
+    """
     type: str
     no_cluster: int
     max_iter: int = 1000

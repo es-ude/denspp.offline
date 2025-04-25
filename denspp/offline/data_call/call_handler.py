@@ -14,14 +14,14 @@ from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
 @dataclass
 class SettingsData:
     """Class for configuring the dataloader
-    input:
-    path        - Path to data storage
-    data_set    - String with key for used data set
-    data_point  - Number within the dataset
-    t_range     - List of the given time range for cutting the data [x, y]
-    ch_sel      - List of electrodes to use [empty=all]
-    fs_resample - Resampling frequency of the datapoint
-    do_mapping  - Decision if mapping (if available) is used
+    Attributes:
+    path:           Path to data storage
+    data_set:       String with key for used data set
+    data_point:     Number within the dataset
+    t_range:        List of the given time range for cutting the data [x, y]
+    ch_sel:         List of electrodes to use [empty=all]
+    fs_resample:    Resampling frequency of the datapoint
+    do_mapping:     Decision if mapping (if available) is used
     """
     path: str
     data_set: str
@@ -76,7 +76,6 @@ class DataHandler:
 
 
 class ControllerData:
-    """Class for loading and manipulating the used dataset"""
     __download_handler: OwnCloudDownloader
     _raw_data: DataHandler
     _settings: SettingsData
@@ -87,6 +86,7 @@ class ControllerData:
     path2mapping: str = ''
 
     def __init__(self) -> None:
+        """Class for loading and manipulating the used dataset"""
         init_project_folder()
 
         self.__logger = logging.getLogger(__name__)

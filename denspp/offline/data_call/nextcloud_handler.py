@@ -1,7 +1,7 @@
-import logging
 import fnmatch
 from os.path import join
 from dataclasses import dataclass
+from logging import getLogger
 from nc_py_api import Nextcloud, NextcloudException
 from denspp.offline.yaml_handler import YamlConfigHandler
 from denspp.offline.structure_builder import get_path_project_start
@@ -9,6 +9,12 @@ from denspp.offline.structure_builder import get_path_project_start
 
 @dataclass
 class ConfigCloud:
+    """Configuration class for handling remote control using NextCloud
+    Attributes:
+        remote_link:        String with shared URL to data storage
+        remote_transient:   String with path to transient data
+        remote_dataset:     String with path to datasets
+    """
     remote_link: str
     remote_transient: str
     remote_dataset: str
@@ -22,7 +28,7 @@ DefaultConfigCloud = ConfigCloud(
 
 
 class NextCloudDownloader:
-    __oc_handler: Nextcloud
+    __handler: Nextcloud
     __settings: ConfigCloud
 
     def __init__(self, path2config: str = get_path_project_start(), use_config: ConfigCloud = DefaultConfigCloud) -> None:
@@ -31,8 +37,8 @@ class NextCloudDownloader:
         :param use_config:  Class for handling the owncloud handler
         :return:            None
         """
-        yaml_hndl = YamlConfigHandler(use_config, path2config, 'access_cloud')
-        self.__settings = yaml_hndl.get_class(ConfigCloud)
+        self.__logger = getLogger(__name__)
+        self.__settings = YamlConfigHandler(use_config, path2config, 'access_cloud').get_class(ConfigCloud)
 
     def __get_remote_content(self, use_dataset: bool, search_folder: str = '', depth: int=1) -> list:
         """Function for getting the remote content in folder
@@ -40,18 +46,18 @@ class NextCloudDownloader:
         :param search_folder:   folder to search for remote content
         :param depth:           depth of search
         """
-        self.__oc_handler = Nextcloud(
+        self.__handler = Nextcloud(
             nextcloud_url=self.__settings.remote_link,
             nc_auth_user = "admin",
             nc_auth_pass = "admin"
         )
         try:
-            self.__oc_handler.update_server_info()
+            self.__handler.update_server_info()
         except NextcloudException as e:
             print(e)
 
         path_selected = join(self.__settings.remote_transient if not use_dataset else self.__settings.remote_dataset, search_folder)
-        dict_list = self.__oc_handler.files.listdir(depth=depth)
+        dict_list = self.__handler.files.listdir(depth=depth)
         return dict_list
 
     def get_overview_folder(self, use_dataset: bool, search_folder: str = '') -> list:
@@ -90,11 +96,11 @@ class NextCloudDownloader:
         :param  destination_download:   Folder name to save the data locally
         :return:                        None
         """
-        self.__oc_handler = owncloud.Client.from_public_link(self.__settings.remote_link)
-        print("... downloading file from sciebo")
+        self.__handler = Nextcloud.Client.from_public_link(self.__settings.remote_link)
+        self.__logger.info("... downloading file from remote")
         path_selected = self.__settings.remote_transient if not use_dataset else self.__settings.remote_dataset
-        self.__oc_handler.get_file(join(path_selected, file_name), destination_download)
-        print("... download done")
+        self.__handler.get_file(join(path_selected, file_name), destination_download)
+        self.__logger.info("... download done")
 
     def close(self) -> None:
-        self.__oc_handler.logout()
+        self.__handler.logout()

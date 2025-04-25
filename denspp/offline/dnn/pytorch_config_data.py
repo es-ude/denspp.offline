@@ -10,7 +10,19 @@ from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
 
 @dataclass
 class SettingsDataset:
-    """Class for handling preparation of dataset"""
+    """Class for handling preparation of dataset
+    Attributes:
+        data_path:              String with path to dataset
+        data_file_name:         String with name of dataset file
+        use_cell_sort_mode:     Number for building a sub-dataset from original dataset [0: None, 1: Reduced, 2: Type, 3: Group]
+        augmentation_do:        Boolean for applying data augmentation (only 1D data)
+        augmentation_num:       Number of the samples of each class
+        normalization_do:       Boolean for applying data normalization
+        normalization_method:   String with applied normalization method ['zeroone', 'minmax', 'norm', 'zscore', 'medianmad', 'meanmad']
+        reduce_samples_per_cluster_do:  Boolean for reducing number of samples per class
+        reduce_samples_per_cluster_num: Number of reduced samples per class
+        exclude_cluster:        List with IDs for excluding cluster/label IDs
+    """
     # --- Settings of Datasets
     data_path: str
     data_file_name: str
