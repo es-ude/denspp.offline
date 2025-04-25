@@ -1,6 +1,6 @@
 # End-To-End Deep Neural Signal Pre-Processing (DeNSPP.offline)
 
-This Python package is developed in the research project Sp:AI:ke, funded by MERCUR foundation (Germany). This software framework / API
+This Python package is developed in the research project Sp:AI:ke, funded by MERCUR foundation (Germany). This Python framework
 enables a development of user-specific neural signal processing pipeline for extracellular recordings with offline data (already recorded and available). It helps to accelerate the next-gen hardware development of end-to-end neural signal processors (Brain-Computer Interfaces, retinal implants, ...).
 
 **Table of Content**
@@ -18,7 +18,7 @@ enables a development of user-specific neural signal processing pipeline for ext
 For using this framework, the following software tools are necessary / recommended.
 
 - PyCharm Community Version ([Link](https://www.jetbrains.com/de-de/pycharm/download/#section=windows))
-- Python Interpreter 3.11 ([Link](https://www.python.org/downloads/release/python-3116/))
+- Python Interpreter 3.12 ([Link](https://www.python.org/downloads/release/python-3116/))
 - Git ([Link](https://git-scm.com/downloads))
 - `uv` package manager ([Link](https://docs.astral.sh/uv/), [Using](https://www.saaspegasus.com/guides/uv-deep-dive/))
 
@@ -28,7 +28,7 @@ paper at the end of the readme file.
 
 If you create a new repo and you want to use the functionalities of this Python tool. Then please initialise the project.toml using `uv` and write the following code into the terminal.
 ```
-uv add "git+https://github.com/AErbsloeh/denspp.offline.git"
+uv add "git+https://github.com/es-ude/denspp.offline.git"
 ```
 After initialisation, then run the following code to create the project folder structure.
 ```
@@ -51,7 +51,7 @@ The Python folder contains the following folder structure:
     ├── runs                # Saving all results from analysis (only local)
     ├── src_dnn             # Contains functions for training deep neural networks which are not in package 
     ├── src_pipe            # Contains functions for data analysis which are not in package (only local)
-    ├── tests               # Include All test functions 
+    ├── temp                # Include functions which are temporary (only local) 
     ├── access_cloud.yaml   # Yaml file with information for cloud access 
     ├── main_pipeline.py    # For normal pipeline processing 
     ├── main_data_merge.py  # For merging of given datasets
