@@ -6,7 +6,7 @@ from scipy.constants import Boltzmann, elementary_charge
 @dataclass
 class SettingsNoise:
     """Settings for configuring the pre-amp parasitics
-    Args:
+    Attributes:
         temp:       Temperature [K]
         wgn_dB:     Effective spectral input noise power [dBW/sqrt(Hz)]
         Fc:         Corner frequency of the flicker (1/f) noise [Hz]

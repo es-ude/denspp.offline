@@ -1,13 +1,13 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from denspp.offline.digital.dsp import SettingsDSP, RecommendedSettingsDSP, DSP
+from denspp.offline.digital.dsp import SettingsFilter, RecommendedSettingsFilter, DSP
 
 
 if __name__ == "__main__":
     plt.close('all')
 
     t_end = 200e-3
-    settings = RecommendedSettingsDSP
+    settings = RecommendedSettingsFilter
     demo_dsp = DSP(settings)
     num_points = int(settings.fs * t_end)
 

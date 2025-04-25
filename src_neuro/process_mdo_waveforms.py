@@ -59,10 +59,10 @@ if __name__ == '__main__':
     print(path_file)
 
     mcs_data = read_mdo_rawdata(path_file)
-    filterSettings = SettingsDSP(gain=1,
-    fs=mcs_data['Fs'], f_filt=[20e3], n_order=2,
-    type='iir', f_type='butter', b_type='lowpass',
-    t_dly=0)
+    filterSettings = SettingsFilter(gain=1,
+                                    fs=mcs_data['Fs'], f_filt=[20e3], n_order=2,
+                                    type='iir', f_type='butter', b_type='lowpass',
+                                    t_dly=0)
     DSP = DSP(filterSettings)
     DSP.use_filtfilt = True
 

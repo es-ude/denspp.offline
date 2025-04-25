@@ -1,15 +1,15 @@
 class PipelineSignal:
-    def __init__(self) -> None:
-        """Pipeline signals for saving 1d signal processing
+    """Pipeline signals for saving 1d signal processing
+    Attributes:
+        fs_ana:     Sampling rate of the analog processing stage [Hz]
+        u_in:       Electrode Array Input voltage [V]
+        u_pre:      Output voltage of the pre-amplifier [V]
+        u_spk:      Output voltage of the bandpass filter for extracting spike activities [V]
+        u_lfp:      Output voltage of the low-pass filter for extracting LFP activities [V]
+        x_adc:      ADC output of spike activities []
+    """
 
-        Params:
-            fs_ana - Sampling rate of the analog processing stage [Hz]
-            u_in - Electrode Array Input voltage [V]
-            u_pre - Output voltage of the pre-amplifier [V]
-            u_spk - Output voltage of the bandpass filter for extracting spike activities [V]
-            u_lfp - Output voltage of the low-pass filter for extracting LFP activities [V]
-            x_adc - ADC output of spike activities []
-        """
+    def __init__(self) -> None:
         # --- Analog processing stage
         self.u_in = None
         self.u_pre = None

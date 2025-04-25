@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from denspp.offline.analog.amplifier.cur_amp import CurrentAmplifier, RecommendedSettingsCUR
+from denspp.offline.analog.amplifier.cur_amp import CurrentAmplifier, DefaultSettingsCUR
 
 
 if __name__ == "__main__":
@@ -17,7 +17,7 @@ if __name__ == "__main__":
         i_in += i_pp[idx] * np.sin(2 * np.pi * f0 * tA)
 
     # --- Data Processing
-    dev_cur = CurrentAmplifier(RecommendedSettingsCUR)
+    dev_cur = CurrentAmplifier(DefaultSettingsCUR)
 
     u_out = list()
     u_out.append(i_in)

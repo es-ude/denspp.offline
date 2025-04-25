@@ -7,7 +7,20 @@ from denspp.offline.dnn.model_library import ModelLibrary
 
 @dataclass
 class ConfigPytorch:
-    """Class for handling the PyTorch training/inference pipeline"""
+    """Class for handling the PyTorch training/inference pipeline
+    Attributes:
+        model_name:         String with the model name
+        patience:           Integer value with number of epochs before early stopping
+        optimizer:          String with PyTorch optimizer name
+        loss:               String with method name for the loss function
+        deterministic_do:   Boolean if deterministic training should be done
+        deterministic_seed: Integer with the seed for deterministic training
+        num_kfold:          Integer value with applying k-fold cross validation
+        num_epochs:         Integer value with number of epochs
+        batch_size:         Integer value with batch size
+        data_split_ratio:   Float value for splitting the input dataset between training and validation
+        data_do_shuffle:    Boolean if data should be shuffled before training
+    """
     model_name: str
     patience: int
     optimizer: str

@@ -6,6 +6,19 @@ from denspp.offline.data_process.transformation import window_method
 
 @dataclass
 class SettingsSDA:
+    """Configuration class for defining the Spike Detection Algorithm
+    Attributes:
+        fs:             Sampling rate [Hz]
+        dx_sda:         Position difference for extracting SDA method. Configuration with length(x) == 1: with dX = 1 --> NEO, dX > 1 --> k-NEO
+        mode_align:     Aligning mode of the detected spike frames [0: None, 1: Max, 2: Min, 3: Positive turning point, 4: Negative turning point, 5: Absolute maximum]
+        t_frame_lgth:   Floating value with total window length [s]
+        t_frame_start:  Floating value with time point for aligned position [s]
+        dt_offset:      Time offset for the first larger spike window [neg, pos]
+        t_dly:          Applied time delay between spike buffer and SDA method
+        window_size:    Integer value of the window for smoothing the SDA output
+        thr_gain:       Floating value with amplification factor on SDA output
+        thr_min_value:  Integer value with minimum threshold value on SDA output
+    """
     fs: float
     dx_sda: list
     mode_align: int
@@ -122,7 +135,6 @@ class SpikeDetection:
 
     def sda_neo(self, xin: np.ndarray) -> np.ndarray:
         """Applying Non-Linear Energy Operator (NEO, same like Teager-Kaiser-Operator) with dx_sda = 1 or kNEO with dx_sda > 1"""
-        # length(x) == 1: with dX = 1 --> NEO, dX > 1 --> k-NEO
         ksda0 = self.settings.dx_sda[0]
         x_neo0 = np.floor(xin[ksda0:-ksda0] ** 2 - xin[:-2 * ksda0] * xin[2 * ksda0:])
         x_neo = np.concatenate([x_neo0[:ksda0, ], x_neo0, x_neo0[-ksda0:, ]], axis=None)

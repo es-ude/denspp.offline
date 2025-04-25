@@ -1,6 +1,6 @@
 from scipy.interpolate import CubicSpline
 from scipy.optimize import curve_fit
-from denspp.offline.digital.dsp import DSP, SettingsDSP
+from denspp.offline.digital.dsp import DSP, SettingsFilter
 from src_ma_jo.src.data_handler_artifacts import load_data, extract_arrays
 from src_ma_jo.src.show_plots_artifacts import *
 import numpy as np
@@ -521,7 +521,7 @@ def save_signal_dictionary(signal_dict, filename="signal_dictionary.npy"):
 
 if __name__ == "__main__":
     processed_signals_list = []
-    settings = SettingsDSP(
+    settings = SettingsFilter(
         gain=1,
         fs=25e3,
         n_order=2,
