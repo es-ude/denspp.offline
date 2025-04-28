@@ -1,8 +1,9 @@
-from pathlib import Path
 import numpy as np
+from pathlib import Path
+
 from src_neuro.sda.sda_pipeline import Pipeline_Digital
 from denspp.offline.digital.sda import SpikeDetection, SettingsSDA
-from denspp.offline.data_process.transformation import window_method
+
 
 def get_path(data_subdir="data", output_subdir="output", data_file_name="A1R1a_elec_stim_50biphasic_400us0001.npy"):
     project_base_dir = Path(__file__).resolve().parent.parent
@@ -18,6 +19,7 @@ def get_path(data_subdir="data", output_subdir="output", data_file_name="A1R1a_e
 
     return data_file_path, output_dir_path
 
+
 def load_file_as_dict(input_file_path):
     if not Path(input_file_path).exists():
         print(f"Fehler: Datei wurde nicht gefunden: {input_file_path}")
@@ -30,6 +32,7 @@ def load_file_as_dict(input_file_path):
     except Exception as e:
         print(f"Fehler beim Laden der Datei: {file_path}. Details: {e}")
         return None
+
 
 def process_dictionary(local_data_dict):
     artifact_indices = []
@@ -58,23 +61,26 @@ def process_dictionary(local_data_dict):
         print("Keine Details im Dictionary gefunden.")
     return artifact_indices
 
-def compare_indices_in_loop(spike_indices_list, artifact_indices_list):
-    if len(spike_indices_list) != len(artifact_indices_list):
+
+def compare_indices_in_loop(spike_list, artifact_list):
+    common_indices_list = []
+    if len(spike_list) != len(artifact_list):
         raise ValueError("Die Arrays haben unterschiedliche Längen und können nicht verglichen werden.")
 
-    for i in range(len(spike_indices_list)):
-        spikes = spike_indices_list[i]
-        artifacts = artifact_indices_list[i]
-
-        # Finde Überschneidungen der Indizes
+    for i in range(len(spike_list)):
+        spikes = spike_list[i]
+        artifacts = artifact_list[i]
         common_indices = np.intersect1d(spikes, artifacts)
+        common_indices_list.append(common_indices)
 
         if common_indices.size > 0:
-            print(f"Index {i}: Es gibt {len(common_indices)} Überschneidungen: {common_indices}")
+            print(f"Signal {i + 1}: Es gibt {len(common_indices)} Überschneidungen: {common_indices}")
         else:
-            print(f"Index {i}: Keine Überschneidungen gefunden.")
+            print(f"Signal {i + 1}: Keine Überschneidungen gefunden.")
 
     print("Vergleich der Arrays abgeschlossen.")
+    return common_indices_list
+
 
 def get_spike_indices_existing_pipeline(cleaned_signals, fs=100):
     spike_indices = []
@@ -82,8 +88,8 @@ def get_spike_indices_existing_pipeline(cleaned_signals, fs=100):
     pipeline.define_sda(mode_sda=1, mode_thr=2)  # Beispiel: NEO + CONST
     for idx, signal in enumerate(cleaned_signals):
         if isinstance(signal, np.ndarray):
-            print(f"\nVerarbeite Signal {idx+1}/{len(cleaned_signals)}")
-            pipeline.run_preprocess(signal, do_smooth=True,do_get_frames=True)
+            print(f"\nVerarbeite Signal {idx + 1}/{len(cleaned_signals)}")
+            pipeline.run_preprocess(signal, do_smooth=True, do_get_frames=True)
             print(f"  - Verwendete Methoden: {pipeline.used_methods}")
             print(f"  - SDA Output Shape: {pipeline.x_pos.shape}")
             print(f"  - Threshold Shape: {pipeline.signals.x_thr.shape}")
@@ -92,13 +98,16 @@ def get_spike_indices_existing_pipeline(cleaned_signals, fs=100):
     return spike_indices
 
     # --------- Pre-Processing of SDA -------------
-def time_delay(uin, fs):
+
+
+def time_delay(uin):
     """Applying a time delay on the input signal"""
     t_dly = 0.3e-3  #Wert aus Settings
     set_delay = round(t_dly * settings_sda.fs)
     mat = np.zeros(shape=(set_delay,), dtype=float)
     uout = np.concatenate((mat, uin[0:uin.size - set_delay]), axis=None)
     return uout
+
 
 def sda_neo(xin):
     """Applying Non-Linear Energy Operator (NEO, same like Teager-Kaiser-Operator) with dx_sda = 1 or kNEO with dx_sda > 1"""
@@ -107,15 +116,39 @@ def sda_neo(xin):
     x_neo = np.concatenate([x_neo0[:ksda0, ], x_neo0, x_neo0[-ksda0:, ]], axis=None)
     return x_neo
 
+
 def sda_smooth(xin: np.ndarray, window_method='Hamming') -> np.ndarray:
     """Smoothing the input with defined window ['Hamming', 'Gaussian', 'Flat', 'Bartlett', 'Blackman']"""
     return spike_detector.smoothing_1d(xin, 4 * 1 + 1, window_method)
 
+
 def thres_rms(xin: np.ndarray) -> np.ndarray:
     """Applying the root-mean-squre (RMS) on neural input"""
-    C = settings_sda.thr_gain
-    M = settings_sda.window_size
-    return C * np.sqrt(np.convolve(xin ** 2, np.ones(M) / M, mode='same'))
+    threshold_gain = settings_sda.thr_gain
+    window_size = settings_sda.window_size
+    return threshold_gain * np.sqrt(np.convolve(xin ** 2, np.ones(window_size) / window_size, mode='same'))
+
+
+def process_signals(cleaned_signals):
+    spike_indices_list = []
+    aligned_frames_list = []
+
+    for signal in cleaned_signals:
+        x_dly = time_delay(signal)
+        x_sda = sda_neo(x_dly)
+        smooth_data = sda_smooth(x_sda, "Hamming")
+        threshold_data = thres_rms(smooth_data)
+        (frames_out0, frames_out1) = spike_detector.frame_generation(signal, smooth_data, threshold_data)
+        frames_align = frames_out1[0]
+        x_pos = frames_out1[1]
+        aligned_frames_list.append(frames_align)
+        spike_indices_list.append(x_pos)
+
+    return spike_indices_list, aligned_frames_list
+
+def remove_duplicates(duplicates, frames, position):
+    pass
+
 
 
 if __name__ == "__main__":
@@ -130,7 +163,7 @@ if __name__ == "__main__":
         thr_gain=1.0,
         thr_min_value=100.0
     )
-    file_path, output_dir = get_path()
+    file_path, output_dir = get_path(data_file_name="A1R1a_ASIC_1S_800_3.npy")
     loaded_data_dict = load_file_as_dict(file_path)
     spike_detector = SpikeDetection(settings_sda)
 
@@ -141,14 +174,12 @@ if __name__ == "__main__":
         if cleaned_signals:
             if isinstance(cleaned_signals, list) and all(isinstance(s, np.ndarray) for s in cleaned_signals):
                 #spike_indices_list = get_spike_indices_existing_pipeline(cleaned_signals, fs=25e3)
-                for signal in cleaned_signals:
-                    x_dly = time_delay(signal, settings_sda.fs)
-                    x_sda = sda_neo(x_dly)
-                    smooth_data = sda_smooth(x_sda, "Hamming")
-                    threhold_data = thres_rms(smooth_data)
+                spike_indices_list, aligned_frames = process_signals(cleaned_signals)
             else:
                 raise Exception("Fehler: 'cleaned_signals' ist kein gültiger Array-Container.")
         else:
             raise Exception("Key 'cleaned_signals' fehlt!")
 
-        compare_indices_in_loop(spike_indices_list, artifact_indices)
+        deletable_indices = compare_indices_in_loop(spike_indices_list, artifact_indices)
+        preprocessed_frames, preprocessed_position = remove_duplicates(deletable_indices, aligned_frames,
+                                                                       spike_indices_list)
