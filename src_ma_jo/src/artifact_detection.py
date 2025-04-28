@@ -543,8 +543,8 @@ if __name__ == "__main__":
     apply_spline_modification = True  # Neues Flag für Spline-Modifikation
 
     dsp_instance.use_filtfilt = True
-    path = r"C:/Users/jo-di/Documents/Masterarbeit/Rohdaten"
-    filename = "A1R1a_elec_stim_50biphasic_400us0001"
+    path = r"C:/Users/jo-di/Documents/Masterarbeit/Rohdaten/A1R1a_1S"
+    filename = "A1R1a_ASIC_1S_800_3"
 
     data = load_data(path, filename)
     result_arrays = extract_arrays(data, filename)
