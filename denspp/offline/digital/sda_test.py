@@ -1,6 +1,8 @@
+import numpy as np
 from unittest import TestCase, main
 from copy import deepcopy
 from denspp.offline.digital.sda import SpikeDetection, SettingsSDA
+
 
 TestSetting = SettingsSDA(
     fs=20e3,
@@ -26,7 +28,7 @@ class TestSettingsSDA(TestCase):
             result.append(set0.get_integer_for_negative_offset)
 
         check = [0, 2, 4, 6, 8, 10]
-        self.assertEqual(result, check)
+        np.testing.assert_array_equal(result, check)
 
     def test_integer_positive(self):
         set0 = deepcopy(TestSetting)
@@ -38,7 +40,7 @@ class TestSettingsSDA(TestCase):
             result.append(set0.get_integer_for_positive_offset)
 
         check = [0, 2, 4, 6, 8, 10]
-        self.assertEqual(result, check)
+        np.testing.assert_array_equal(result, check)
 
     def test_integer_total(self):
         set0 = deepcopy(TestSetting)
@@ -51,7 +53,7 @@ class TestSettingsSDA(TestCase):
             result.append(set0.get_integer_offset_total)
 
         check = [4, 10, 8, 12, 16, 12]
-        self.assertEqual(result, check)
+        np.testing.assert_array_equal(result, check)
 
     def test_integer_spike_size(self):
         set0 = deepcopy(TestSetting)
@@ -63,7 +65,7 @@ class TestSettingsSDA(TestCase):
             result.append(set0.get_integer_spike_frame)
 
         check = [20, 24, 28, 32, 36]
-        self.assertEqual(result, check)
+        np.testing.assert_array_equal(result, check)
 
     def test_integer_spike_start(self):
         set0 = deepcopy(TestSetting)
@@ -75,7 +77,7 @@ class TestSettingsSDA(TestCase):
             result.append(set0.get_integer_spike_start)
 
         check = [0, 2, 4, 6, 8, 10]
-        self.assertEqual(result, check)
+        np.testing.assert_array_equal(result, check)
 
 
 if __name__ == '__main__':
