@@ -32,23 +32,29 @@ class SettingsSDA:
 
     @property
     def get_integer_for_negative_offset(self) -> int:
+        """Getting the integer offset for negative offset in building the spike window"""
         return round(self.dt_offset[0] * self.fs)
 
     @property
     def get_integer_for_positive_offset(self) -> int:
+        """Getting the integer offset for positive offset in building the spike window"""
         return round(self.dt_offset[1] * self.fs)
 
     @property
     def get_integer_offset_total(self) -> int:
+        """Getting the total integer offset in building the spike window"""
         return self.get_integer_for_negative_offset + self.get_integer_for_positive_offset
 
     @property
     def get_integer_spike_frame(self) -> int:
+        """Getting the integer for total length of a spike window"""
         return round(self.t_frame_lgth * self.fs)
 
     @property
     def get_integer_spike_start(self) -> int:
+        """Getting the integer for starting the aligned method on each spike window"""
         return round(self.t_frame_start * self.fs)
+
 
 RecommendedSettingsSDA = SettingsSDA(
     fs=20e3,
@@ -69,17 +75,17 @@ class SpikeDetection:
 
         # --- Parameters for Frame generation and aligning
         self.__offset_frame_neg = self.settings.get_integer_for_negative_offset
-        self.__offset_frame_pos = self.settings.get_integer_for_positive_offset
-        self.offset_frame = self.settings.get_integer_offset_total
-
         self.frame_length = self.settings.get_integer_spike_frame
-        self.frame_length_total = self.frame_length + self.offset_frame
+        self.frame_length_total = self.frame_length + self.settings.get_integer_offset_total
         self.frame_start = self.settings.get_integer_spike_start
         self.frame_ends = self.frame_length - self.frame_start
 
     # --------- Pre-Processing of SDA -------------
     def time_delay(self, uin: np.ndarray) -> np.ndarray:
-        """Applying a time delay on the input signal"""
+        """Applying a time delay on the input signal
+        :param uin:     Numpy array with transient input signal / data stream
+        :return:        Numpy array with time-delayed signal
+        """
         set_delay = round(self.settings.t_dly * self.settings.fs)
         mat = np.zeros(shape=(set_delay,), dtype=float)
         uout = np.concatenate((mat, uin[0:uin.size - set_delay]), axis=None)
@@ -182,26 +188,31 @@ class SpikeDetection:
         x_aso = np.concatenate([x_sda[:ksda0], x_sda], axis=None)
         return x_aso
 
-    def sda_eed(self, xin: np.ndarray, fs: float, f_hp=150.0) -> np.ndarray:
-        """Applying the enhanced energy-derivation operator (eED) on input signal"""
+    def sda_eed(self, xin: np.ndarray, f_hp: float=150.0) -> np.ndarray:
+        """Applying the enhanced energy-derivation operator (eED) on input signal
+        :param xin:     Numpy array with transient neural signal with spikes
+        :param f_hp:    Floating value for applied high-pass filter in this function
+        """
         filter = iirfilter(
-            N=2, Wn=2 * f_hp / fs, ftype="butter", btype="highpass",
+            N=2, Wn=2 * f_hp / self.settings.fs, ftype="butter", btype="highpass",
             analog=True, output='ba'
         )
         eed = np.array(lfilter(filter[0], filter[1], xin))
         return np.square(eed)
 
     def sda_spb(self, xin: np.ndarray, f_bp: list=(100.0, 1000.0)) -> [np.ndarray, np.ndarray]:
-        """Performing the spike detection with spike band-power estimation [Nason et al., 2020]"""
-        fs = self.settings.fs
-        filter = iirfilter(N=2, Wn=2 * np.array(f_bp) / fs, ftype="butter", btype="bandpass", analog=False, output='ba')
+        """Performing the spike detection with spike band-power estimation [Nason et al., 2020]
+        :param xin:     Numpy array with transient neural signal with spikes
+        :param f_bp:    List with floating value for applied band-power filtering in this function
+        """
+        filter = iirfilter(N=2, Wn=2 * np.array(f_bp) / self.settings.fs, ftype="butter", btype="bandpass", analog=False, output='ba')
         filt0 = lfilter(filter[0], filter[1], xin)
-        sbp = self.smoothing_1d(np.abs(filt0), int(1e-3 * fs), 'Gaussian')
+        sbp = self.smoothing_1d(np.abs(filt0), int(1e-3 * self.settings.fs), 'Gaussian')
         return np.floor(sbp)
 
-    def sda_smooth(self, xin: np.ndarray, window_method='Hamming') -> np.ndarray:
+    def sda_smooth(self, xin: np.ndarray, method: str= 'Hamming') -> np.ndarray:
         """Smoothing the input with defined window ['Hamming', 'Gaussian', 'Flat', 'Bartlett', 'Blackman']"""
-        return self.smoothing_1d(xin, 4 * self.settings.dx_sda[0] + 1, window_method)
+        return self.smoothing_1d(xin, 4 * self.settings.dx_sda[0] + 1, method)
 
     # --------- Frame Generation -------------
     def __gen_findpeaks(self, xtrg: np.ndarray, width: int) -> list:
@@ -224,7 +235,11 @@ class SpikeDetection:
         return x_out
 
     def frame_position(self, xsda: np.ndarray, xthr: np.ndarray) -> np.ndarray:
-        """Getting frame position of SDA output and thresholding"""
+        """Getting frame position of SDA output and thresholding
+        :param xsda:    Numpy array with transient signal of SDA output
+        :param xthr:    Numpy array with applied thresholding
+        :return:        Numpy array with positions where a spike frame is available
+        """
         xtrg = ((xsda - xthr) > 0).astype("int")
         # --- Extraction of x-positions
         mode = 0
@@ -317,7 +332,12 @@ class SpikeDetection:
 
     # --------- Frame Aligning -------------
     def __frame_correction(self, frame_in: np.ndarray, dx_neg: int, dx_pos: int) -> np.ndarray:
-        """Do a frame correction if set x-values are out-of-range"""
+        """Do a frame correction if set x-values are out-of-range
+        :param frame_in:    Numpy array with detected spike frames (orignial, large windows)
+        :param dx_neg:      Integer value with negative x-values to start reducing
+        :param dx_pos:      Integer value with positive x-values to stop reducing
+        :return:            Numpy array with corrected spike frames (in final size)
+        """
         if dx_pos > frame_in.size:  # Add right side
             mat = np.ones(shape=(1, np.abs(dx_pos - len(frame_in) + 1))) * frame_in[-1]
             frame1 = np.concatenate((frame_in[dx_neg:-1], mat), axis=None)
@@ -373,7 +393,10 @@ class SpikeDetection:
         return dxneg, dxpos
 
     def get_aligning_position(self, frame_in: np.ndarray) -> [int, int]:
-        """Extracting aligning position of spike frames"""
+        """Extracting aligning position of spike frames
+        :param frame_in:    Numpy array with detected spike frames
+        :return:            List with [0] negative position and [1] positive position for aligning spike frame
+        """
         align_mode = self.settings.mode_align
         if align_mode == 0:
             dxneg, dxpos = self.__frame_align_none(frame_in)
@@ -393,7 +416,10 @@ class SpikeDetection:
         return dxneg, dxpos
 
     def do_aligning_frames(self, frame_in: np.ndarray) -> np.ndarray:
-        """Aligning method for detected spike frames"""
+        """Aligning method for detected spike frames
+        :param frame_in:    Numpy array with detected spike frames after detection
+        :return:            Numpy array with aligned spike frames (final)
+        """
         frame_out = np.zeros(shape=(frame_in.shape[0], self.frame_length), dtype="int")
         # --- Window method
         f0 = self.__offset_frame_neg
@@ -408,6 +434,11 @@ class SpikeDetection:
 
     @staticmethod
     def smoothing_1d(xin: np.ndarray, window_size: int, method: str= 'Hamming') -> np.ndarray:
-        """Smoothing the input"""
+        """Smoothing the input
+        :param xin:         Numpy array with transient signal of SDA output
+        :param window_size: Integer value for applied smoothing method
+        :param method:      String with method for smoothing input
+        :return:            Numpy array with smoothed SDA output
+        """
         window = window_method(window_size, method)
         return np.convolve(xin, window, mode='same') # / np.sum(window), mode='same')
