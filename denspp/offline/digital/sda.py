@@ -1,5 +1,5 @@
-from dataclasses import dataclass
 import numpy as np
+from dataclasses import dataclass
 from scipy.signal import savgol_filter, find_peaks, iirfilter, lfilter
 from denspp.offline.data_process.transformation import window_method
 
@@ -30,6 +30,25 @@ class SettingsSDA:
     thr_gain: float
     thr_min_value: float
 
+    @property
+    def get_integer_for_negative_offset(self) -> int:
+        return round(self.dt_offset[0] * self.fs)
+
+    @property
+    def get_integer_for_positive_offset(self) -> int:
+        return round(self.dt_offset[1] * self.fs)
+
+    @property
+    def get_integer_offset_total(self) -> int:
+        return self.get_integer_for_negative_offset + self.get_integer_for_positive_offset
+
+    @property
+    def get_integer_spike_frame(self) -> int:
+        return round(self.t_frame_lgth * self.fs)
+
+    @property
+    def get_integer_spike_start(self) -> int:
+        return round(self.t_frame_start * self.fs)
 
 RecommendedSettingsSDA = SettingsSDA(
     fs=20e3,
@@ -49,13 +68,13 @@ class SpikeDetection:
         self.settings = setting
 
         # --- Parameters for Frame generation and aligning
-        self.__offset_frame_neg = round(self.settings.dt_offset[0] * self.settings.fs)
-        self.__offset_frame_pos = round(self.settings.dt_offset[1] * self.settings.fs)
-        self.offset_frame = self.__offset_frame_neg + self.__offset_frame_pos
+        self.__offset_frame_neg = self.settings.get_integer_for_negative_offset
+        self.__offset_frame_pos = self.settings.get_integer_for_positive_offset
+        self.offset_frame = self.settings.get_integer_offset_total
 
-        self.frame_length = round(self.settings.t_frame_lgth * self.settings.fs)
+        self.frame_length = self.settings.get_integer_spike_frame
         self.frame_length_total = self.frame_length + self.offset_frame
-        self.frame_start = round(self.settings.t_frame_start * self.settings.fs)
+        self.frame_start = self.settings.get_integer_spike_start
         self.frame_ends = self.frame_length - self.frame_start
 
     # --------- Pre-Processing of SDA -------------
@@ -220,7 +239,12 @@ class SpikeDetection:
         return xpos_out
 
     def __frame_extraction(self, xraw: np.ndarray, xpos: np.ndarray, xoffset: int=0) -> [list, list, list, list]:
-        """Extraction of the frames"""
+        """Function for extracting the frames from transient data steam
+       :param xraw:         Numpy array with transient raw input signal
+       :param xpos:         Numpy array with positions where a spike frame is available
+       :param xoffset:      Integer value with offset to generate larger spike windows
+       :return:             Tuple with [0] first generated spike frame (large), [1] original position, [2] aligned spike frames [3] and position
+        """
         f0 = self.__offset_frame_neg
         f1 = f0 + int(self.frame_length_total / 2)
 
@@ -253,7 +277,12 @@ class SpikeDetection:
         return orig_frames, orig_xpos, alig_frames, alig_xpos
 
     def frame_generation(self, xraw: np.ndarray, xsda: np.ndarray, xthr: np.ndarray) -> [list, list]:
-        """Frame generation of SDA output and threshold"""
+        """Frame generation of SDA output and threshold
+        :param xraw:    Numpy array with transient raw data
+        :param xsda:    Numpy array with transient signal from spike detection algorithm
+        :param xthr:    Numpy array with transient signal with thresholding
+        :return:        Tuple with [0] large frame (non-aligned) and [1] aligned frame
+        """
         xpos = self.frame_position(xsda, xthr)
         frames_orig, frames_xpos_orig, frames_align, frames_xpos_align = self.__frame_extraction(xraw, xpos)
 
@@ -268,9 +297,18 @@ class SpikeDetection:
         return frames_out_orig, frames_out_align
 
     def frame_generation_pos(self, xraw: np.ndarray, xpos: np.ndarray, xoffset: int) -> [np.ndarray, np.ndarray, np.ndarray]:
-        """Frame generation from already detected positions (in datasets with groundtruth)"""
-        frames_orig, frames_xpos, frames_algn,_ = self.__frame_extraction(xraw, xpos, xoffset=xoffset)
+        """Frame generation from already detected positions (in datasets with groundtruth)
+        :param xraw:    Numpy array with transient raw data
+        :param xpos:    Numpy array with position where a spike frame is available
+        :param xoffset: Integer value with offset to generate larger spike windows
+        :return:        Tuple with [0] original (large) spike frame, [1] algined spike frame and [2] positions
 
+        """
+        frames_orig, frames_xpos, frames_algn,_ = self.__frame_extraction(
+            xraw=xraw,
+            xpos=xpos,
+            xoffset=xoffset
+        )
         frames_orig = np.array(frames_orig, dtype=np.dtype('int16'))
         frames_algn = np.array(frames_algn, dtype=np.dtype('int16'))
         frames_xpos = np.array(frames_xpos, dtype=np.dtype('uint64'))
