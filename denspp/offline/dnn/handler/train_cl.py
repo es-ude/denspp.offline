@@ -23,14 +23,21 @@ def do_train_spike_class(class_dataset, settings: ConfigMLPipeline,
     # --- Loading the YAML file: Dataset
     default_data = deepcopy(DefaultSettingsDataset)
     default_data.data_file_name = used_dataset_name
-    yaml_data = YamlConfigHandler(default_data, settings.get_path2config, f'{yaml_name_index}_Dataset')
-    config_data = yaml_data.get_class(SettingsDataset)
+    config_data = YamlConfigHandler(
+        yaml_template=default_data,
+        path2yaml=settings.get_path2config,
+        yaml_name=f'{yaml_name_index}_Dataset'
+    ).get_class(SettingsDataset)
 
     # --- Loading the YAML file: Model training
     default_train = deepcopy(DefaultSettingsTrainCE)
     default_train.model_name = used_model_name
-    yaml_train = YamlConfigHandler(default_train, settings.get_path2config, f'{yaml_name_index}_TrainCL')
-    config_train = yaml_train.get_class(ConfigPytorch)
+    config_train = YamlConfigHandler(
+        yaml_template=default_train,
+        path2yaml=settings.get_path2config,
+        yaml_name=f'{yaml_name_index}_TrainCL'
+    ).get_class(ConfigPytorch)
+    del default_train, default_data
 
     # --- Loading Data, Build Model and Do Inference
     dataset = prepare_training(

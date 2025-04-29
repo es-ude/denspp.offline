@@ -28,23 +28,30 @@ def do_train_ae_classifier(class_dataset, settings: ConfigMLPipeline,
     # --- Loading the YAML file: Dataset
     default_data = deepcopy(DefaultSettingsDataset)
     default_data.data_file_name = used_dataset_name
-    yaml_data = YamlConfigHandler(default_data, settings.get_path2config, f'{yaml_name_index}_Dataset')
-    config_data = yaml_data.get_class(SettingsDataset)
-    del yaml_data
+    config_data = YamlConfigHandler(
+        yaml_template=default_data,
+        path2yaml=settings.get_path2config,
+        yaml_name=f'{yaml_name_index}_Dataset'
+    ).get_class(SettingsDataset)
 
     # --- Loading the YAML file: Autoencoder Model training
     default_train_ae = deepcopy(DefaultSettingsTrainMSE)
     default_train_ae.model_name = model_ae_default_name
-    yaml_nn0 = YamlConfigHandler(default_train_ae, settings.get_path2config, f'{yaml_name_index}_TrainAE')
-    config_train_ae = yaml_nn0.get_class(ConfigPytorch)
-    del default_train_ae, yaml_nn0
+    config_train_ae = YamlConfigHandler(
+        yaml_template=default_train_ae,
+        path2yaml=settings.get_path2config,
+        yaml_name=f'{yaml_name_index}_TrainAE'
+    ).get_class(ConfigPytorch)
 
     # --- Loading the YAML file: Classifier Model training
     default_train_cl = deepcopy(DefaultSettingsTrainCE)
     default_train_cl.model_name = model_cl_default_name
-    yaml_nn1 = YamlConfigHandler(default_train_cl, settings.get_path2config, f'{yaml_name_index}_TrainCL')
-    config_train_cl = yaml_nn1.get_class(ConfigPytorch)
-    del default_train_cl, yaml_nn1
+    config_train_cl = YamlConfigHandler(
+        yaml_template=default_train_cl,
+        path2yaml=settings.get_path2config,
+        yaml_name=f'{yaml_name_index}_TrainCL'
+    ).get_class(ConfigPytorch)
+    del default_train_cl, default_train_ae, default_data
 
     # --- Processing Step #1.1: Loading dataset and Build Model
     dataset = get_dataset_ae(

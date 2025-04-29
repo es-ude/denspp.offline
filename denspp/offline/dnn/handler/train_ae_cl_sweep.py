@@ -31,24 +31,32 @@ def do_train_ae_cl_sweep(class_dataset, settings: ConfigMLPipeline,
     # ------------ STEP #0: Loading YAML files
     # --- Loading the YAML file: Dataset
     default_data = deepcopy(DefaultSettingsDataset)
-    yaml_data = YamlConfigHandler(default_data, settings.get_path2config, f'{yaml_name_index}_Dataset')
-    config_data = yaml_data.get_class(SettingsDataset)
+    config_data = YamlConfigHandler(
+        yaml_template=default_data,
+        path2yaml=settings.get_path2config,
+        yaml_name=f'{yaml_name_index}_Dataset'
+    ).get_class(SettingsDataset)
 
     # --- Loading the YAML file: Autoencoder Model Load and building
     default_ae = deepcopy(DefaultSettingsTrainMSE)
     default_ae.model_name = ''
     default_ae.num_epochs = num_epochs_trial
-    yaml_train = YamlConfigHandler(default_ae, settings.get_path2config, f'{yaml_name_index}_TrainAE')
-    config_train_ae = yaml_train.get_class(ConfigPytorch)
-    del yaml_train, default_ae
+    config_train_ae = YamlConfigHandler(
+        yaml_template=default_ae,
+        path2yaml=settings.get_path2config,
+        yaml_name=f'{yaml_name_index}_TrainAE'
+    ).get_class(ConfigPytorch)
 
     # --- Loading the YAML file: Classifier Model Load and building
     default_cl = deepcopy(DefaultSettingsTrainCE)
     default_cl.model_name = ''
     default_cl.num_epochs = num_epochs_trial
-    yaml_train = YamlConfigHandler(default_cl, settings.get_path2config, f'{yaml_name_index}_TrainCL')
-    config_train_cl = yaml_train.get_class(ConfigPytorch)
-    del yaml_train, default_cl
+    config_train_cl = YamlConfigHandler(
+        yaml_template=default_cl,
+        path2yaml=settings.get_path2config,
+        yaml_name=f'{yaml_name_index}_TrainCL'
+    ).get_class(ConfigPytorch)
+    del default_data, default_ae, default_cl
 
     time_now = datetime.now().strftime("%Y%m%d_%H%M%S")
     sweep_foldername = f'{time_now}_{config_train_ae.model_name}_sweep'
