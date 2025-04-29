@@ -2,9 +2,11 @@ from dataclasses import dataclass
 from logging import getLogger
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import pyplot as plt
 from scipy.constants import Boltzmann, elementary_charge
 from scipy.optimize import least_squares, curve_fit
 
+from denspp.offline import scale_auto_value, save_figure
 from denspp.offline.plot_helper import save_figure
 from denspp.offline.metric.data_numpy import calculate_error_rae, calculate_error_mse
 
@@ -27,6 +29,10 @@ class SettingsDEV:
     dev_value:  float
     temp:       float
 
+    @property
+    def temperature_voltage(self) -> float:
+        return Boltzmann * self.temp / elementary_charge
+
 
 class ElectricalLoadHandler:
     _settings: SettingsDEV
@@ -42,10 +48,6 @@ class ElectricalLoadHandler:
     _bounds_curr: list
     _bounds_volt: list
     _params_used: list
-
-    @property
-    def temperature_voltage(self) -> float:
-        return Boltzmann * self._settings.temp / elementary_charge
 
     @staticmethod
     def calc_error(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
@@ -69,7 +71,7 @@ class ElectricalLoadHandler:
 
     def _extract_iv_curve_from_regression(self, params_dev: list,
                                           bounds_voltage: list, bounds_current: list,
-                                          mode_fit: int=0) -> [np.ndarray, np.ndarray]:
+                                          mode_fit: int=0) -> dict:
         """Function for getting the I-V curve from regression
         Args:
             params_dev:             List with parameters from device
@@ -77,32 +79,31 @@ class ElectricalLoadHandler:
             bounds_current:         List for current limitation / range
             mode_fit:               Fit Range Mode [0: Full Pos., 1: Full +/-, 2: Take Pos., Mirror Neg., 3: Take Neg., Mirror Pos.]
         Returns:
-            Two numpy arrays with current and voltage from device
+            Dictionary with two numpy arrays with current ['I'] and voltage ['V'] from device
         """
-
         u_path = np.zeros((1,), dtype=float)
         i_path = np.zeros((1,), dtype=float)
 
         if self._settings.type in self._type_func2reg:
             match mode_fit:
                 case 0:
-                    # --- Get Data (Given Range)
+                    self._logger.debug("Generate I-V regression for given current boundries (positive range)")
                     i_path = np.logspace(bounds_current[0], bounds_current[1], self._fit_options[1], endpoint=True)
                     u_path = -self._type_func2reg[self._settings.type](i_path, params_dev, np.zeros(i_path.shape))
                 case 1:
-                    # --- Get Data (Full Range)
+                    self._logger.debug("Generate I-V regression for given current boundries (Full range)")
                     i_pathp = np.logspace(bounds_current[0], bounds_current[1], self._fit_options[1], endpoint=True)
                     i_path = np.concatenate((-np.flipud(i_pathp[1:]), i_pathp), axis=0)
                     u_path = -self._type_func2reg[self._settings.type](i_path, params_dev, np.zeros(i_path.shape))
                 case 2:
-                    # --- Get Data (Symmetric, Pos. mirrored)
+                    self._logger.debug("Generate I-V regression for given current boundries (Symmetric, Pos. mirrored)")
                     i_pathn = -np.logspace(bounds_current[1], bounds_current[0], self._fit_options[1], endpoint=True)
                     u_pathn = self._type_func2reg[self._settings.type](-i_pathn, params_dev, np.zeros(i_pathn.shape))
                     # --- Concatenate arrays
                     i_path = np.concatenate((i_pathn, -np.flipud(i_pathn)[1:]), axis=0)
                     u_path = np.concatenate((u_pathn, -np.flipud(u_pathn)[1:]), axis=0)
                 case 3:
-                    # --- Get Data (Symmetric, Neg. mirrored)
+                    self._logger.debug("Generate I-V regression for given current boundries (Symmetric, Neg. mirrored)")
                     i_pathp = np.logspace(bounds_current[0], bounds_current[1], self._fit_options[1], endpoint=True)
                     u_pathp = self._type_func2reg[self._settings.type](i_pathp, params_dev, np.zeros(i_pathp.shape))
                     # --- Concatenate arrays
@@ -116,7 +117,7 @@ class ElectricalLoadHandler:
         # --- Limiting with voltage boundaries
         x_start = int(np.argwhere(u_path >= bounds_voltage[0])[0])
         x_stop = int(np.argwhere(u_path >= bounds_voltage[1])[0])
-        return i_path[x_start:x_stop], u_path[x_start:x_stop]
+        return {'I': i_path[x_start:x_stop], 'V': u_path[x_start:x_stop]}
 
     def _do_regression(self, u_inp: np.ndarray | float, u_inn: np.ndarray | float,
                        params: list, bounds_current: list) -> np.ndarray:
@@ -486,3 +487,93 @@ class ElectricalLoadHandler:
             addon = f'(Upper limit)' if not violation_dwn else '(Downer limit)'
             self._logger.warn(f"Voltage Range Violation {addon}! With {val} of {limit} ---")
         return violation_up or violation_dwn
+
+
+def generate_test_signal(t_end: float, fs: float, upp: list, fsig: list, uoff: float=0.0) -> [np.ndarray, np.ndarray]:
+    """Generating a signal for testing
+    Args:
+        t_end:      End of simulation
+        fs:         Sampling rate
+        upp:        List with amplitude values
+        fsig:       List with corresponding frequency
+        uoff:       Offset voltage
+    Returns:
+        List with two numpy arrays (time, voltage signal)
+    """
+    t0 = np.linspace(start=0, stop=t_end, num=int(t_end * fs)+1, endpoint=True)
+    uinp = np.zeros(t0.shape) + uoff
+    for upp0, fsig0 in zip(upp, fsig):
+        uinp += upp0 * np.sin(2 * np.pi * t0 * fsig0)
+    return t0, uinp
+
+
+def plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray,
+                      mode_current_input: bool, do_ylog: bool=False, plot_gray: bool=False,
+                      path2save: str='', show_plot: bool=False) -> None:
+    """Function for plotting transient signal and I-V curve of the used electrical device
+    Args:
+        time:       Numpy array with time information
+        u_in:       Numpy array with input voltage (mode_current_input = False) or output voltage (True)
+        i_in:       Numpy array with output current (mode_current_input = False) or input current (True)
+        mode_current_input: Bool decision for selecting right source and sink value
+        do_ylog:    Plotting the current in the I-V-curve normal (False) or logarithmic (True)
+        plot_gray:  Plotting the response of device in red dashed (False) or gray dashed (True)
+        path2save:  Path for saving the plot
+        show_plot:  Showing and blocking the plot
+    Returns:
+        None
+    """
+    scale_i, units_i = scale_auto_value(i_in)
+    scale_u, units_u = scale_auto_value(u_in)
+    scale_t, units_t = scale_auto_value(time)
+
+    signalx = scale_i * i_in if mode_current_input else scale_u * u_in
+    signaly = scale_u * u_in if mode_current_input else scale_i * i_in
+    label_axisx = f'Voltage U_x [{units_u}V]' if mode_current_input else f'Current I_x [{units_i}A]'
+    label_axisy = f'Current I_x [{units_i}A]' if mode_current_input else f'Voltage U_x [{units_u}V]'
+    label_legx = 'i_in' if mode_current_input else 'u_in'
+    label_legy = 'u_out' if mode_current_input else 'i_out'
+
+    # --- Plotting: Transient signals
+    plt.figure()
+    num_rows = 2
+    axs = [plt.subplot(num_rows, 1, idx + 1) for idx in range(num_rows)]
+
+    axs[0].set_xlim(scale_t * time[0], scale_t * time[-1])
+    twin1 = axs[0].twinx()
+    a = axs[0].plot(scale_t * time, signalx, 'k', label=label_legx)
+    axs[0].set_ylabel(label_axisy)
+    axs[0].set_xlabel(f'Time t [{units_t}s]')
+    if plot_gray:
+        b = twin1.plot(scale_t * time, signaly, linestyle='dashed', color=[0.5, 0.5, 0.5], label=label_legy)
+    else:
+        b = twin1.plot(scale_t * time, signaly, 'r--', label=label_legy)
+    twin1.set_ylabel(label_axisx)
+    axs[0].grid()
+
+    # Generate common legend
+    lns = a + b
+    labs = [l.get_label() for l in lns]
+    axs[0].legend(lns, labs, loc=0)
+
+    # --- Plotting: I-U curve
+    if mode_current_input:
+        if do_ylog:
+            axs[1].semilogy(signaly, signalx, 'k', marker='.', linestyle='None')
+        else:
+            axs[1].plot(signaly, signalx, 'k', marker='.', linestyle='None')
+        axs[1].set_xlabel(label_axisx)
+        axs[1].set_ylabel(label_axisy)
+    else:
+        if do_ylog:
+            axs[1].semilogy(signalx, abs(signaly), 'k', marker='.', linestyle='None')
+        else:
+            axs[1].plot(signalx, signaly, 'k', marker='.', linestyle='None')
+        axs[1].set_xlabel(label_axisy)
+        axs[1].set_ylabel(label_axisx)
+    axs[1].grid()
+    plt.tight_layout()
+    if path2save:
+        save_figure(plt, path2save, 'test_signal')
+    if show_plot:
+        plt.show(block=True)
