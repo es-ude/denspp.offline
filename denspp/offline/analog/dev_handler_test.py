@@ -14,7 +14,7 @@ TestSettings = SettingsDEV(
 )
 
 
-class TestDeviceHandler(TestCase):
+class TestDeviceSettings(TestCase):
     t_sim_duration = 1e-3
     volt_peak = [2.0]
     volt_fsig = [2e3]

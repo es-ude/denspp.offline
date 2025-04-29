@@ -122,7 +122,7 @@ class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
             Corresponding current signal
         """
         du = u_inp - u_inn
-        i_out = params[0] * np.exp((du - params[2]) / (params[1] * self.temperature_voltage))
+        i_out = params[0] * np.exp((du - params[2]) / (params[1] * self._settings.temperature_voltage))
 
         # --- Current limitation
         xpos = np.argwhere(i_out >= 1.0).flatten()
@@ -166,7 +166,7 @@ class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
         Returns:
             Numpy value with corresponding difference voltage (goes to zero with further optimization)
         """
-        v1 = params[2] + params[1] * self.temperature_voltage * np.log(i_path / params[0] + 1)
+        v1 = params[2] + params[1] * self._settings.temperature_voltage * np.log(i_path / params[0] + 1)
         v3 = params[3] * i_path
         return xd - v1 - v3
 
