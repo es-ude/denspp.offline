@@ -1,7 +1,7 @@
 import numpy as np
 from copy import deepcopy
 from unittest import TestCase, main
-from denspp.offline.analog.dev_handler import generate_test_signal, SettingsDEV
+from denspp.offline.analog.dev_handler import generate_test_signal, SettingsDEV, ElectricalLoadHandler
 
 
 TestSettings = SettingsDEV(

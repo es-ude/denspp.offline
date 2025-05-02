@@ -42,4 +42,4 @@ if __name__ == "__main__":
     # --- Plotting: I-V curve
     print("\nPlotting I-V curve")
     dev.change_boundary_voltage(1.0, 6.0)
-    dev.plot_fit_curve()
+    dev.plot_polyfit_tranfer_function()
