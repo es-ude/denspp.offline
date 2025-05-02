@@ -173,7 +173,7 @@ class ElectricalLoadHandler:
         else:
             raise KeyError("Parameter keys are not identical")
 
-    def _test_fit_option(self, params_used: dict, methods_compare: list, u_inn: float=0.0,
+    def _test_fit_option(self, params_used: dict | np.ndarray, methods_compare: list, u_inn: float=0.0,
                          do_test: bool=False, do_plot: bool=True, plot_title_prefix: str='', path2save: str='') -> float:
         """Function for testing and plotting the comparison
         :param params_used:             Dictionary with device parameters
@@ -188,7 +188,7 @@ class ElectricalLoadHandler:
         if do_test:
             self._logger.debug(f"Make IV comparison: {methods_compare[0]} vs. {methods_compare[1]}")
             u_poly = np.linspace(self._bounds_volt[0], self._bounds_volt[1], self._fit_options[1], endpoint=True)
-            i_poly = self._type_device[self._settings.type](u_poly, u_inn)
+            i_poly = self._type_device[self._settings.type]['equa'](u_poly, u_inn, **params_used) if isinstance(params_used, dict) else np.polyval(params_used, u_poly)
             i_test = self._do_regression(u_poly, u_inn)
             error = self.calc_error(i_poly, i_test)
 
@@ -231,12 +231,19 @@ class ElectricalLoadHandler:
             current=current,
             use_param_bounds=len(bounds_params) > 0
         )
-        i_path, u_path = self._extract_iv_curve_with_regression(
+        raise NotImplementedError
+        signals = self._extract_iv_curve_with_regression(
             params_dev=params,
             bounds_voltage=self._bounds_volt,
             bounds_current=self._bounds_curr,
             mode_fit=mode_fit
         )
+        params = self.get_params_from_fitting_data(
+            voltage=signals['V'],
+            current=signals['I'],
+            use_param_bounds=len(bounds_params) > 0
+        )
+
         self._logger.debug(f"Start curve fitting of device: {self._settings.type}")
         error = self._test_fit_option(
             params_used=params,
@@ -261,17 +268,17 @@ class ElectricalLoadHandler:
         Returns:
             List with polynom fit parameter and floating value with Relative Squared Error
         """
-        params_used = self._settings.dev_value
-        i_path, u_path = self._extract_iv_curve_with_regression(
-            params_dev=params_used,
+        signals = self._extract_iv_curve_with_regression(
+            params_dev=self._settings.dev_value,
             bounds_voltage=self._bounds_volt,
             bounds_current=self._bounds_curr,
             mode_fit=mode_fit
         )
         self._logger.debug(f"Start polynom fitting of device: {self._settings.type}")
-        params = np.polyfit(x=u_path, y=i_path, deg=self._fit_options[0])
+
+        params = np.polyfit(x=signals['V'], y=signals['I'], deg=self._fit_options[0])
         error = self._test_fit_option(
-            params_used=params_used,
+            params_used=params,
             methods_compare=['Poly. fitting', 'Regression'],
             u_inn=0.0,
             do_test=do_test,
@@ -408,7 +415,7 @@ class ElectricalLoadHandler:
         print("\n==========================================="
               "\nAvailable types of electrical devices")
         for idx, type in enumerate(self._type_device.keys()):
-            print(f"\t#{idx:03d}: {type} = {self._type_device[type]['desp']}")
+            print(f"\t#{idx:03d}: {type} = {self._type_device[type]['desp']} and params = {self._type_device[type]['param']}")
 
     def get_current(self, u_top: np.ndarray | float, u_bot: np.ndarray | float) -> np.ndarray:
         """Getting the current response from electrical device
