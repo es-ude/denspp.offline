@@ -9,8 +9,9 @@ TestSettings = SettingsDEV(
     fs_ana=50e3,
     noise_en=False,
     para_en=False,
-    dev_value=100e3,
-    temp=300
+    dev_value={'r': 100e3},
+    temp=300,
+    use_mode=0
 )
 
 
