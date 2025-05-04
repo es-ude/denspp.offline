@@ -24,14 +24,17 @@ def do_train_torchvision_cl(class_dataset, settings: ConfigMLPipeline, dataset_t
     # --- Loading the YAML files: Dataset
     default_data = deepcopy(DefaultSettingsDataset)
     default_data.data_file_name = dataset_type.upper()
-    yaml_data = YamlConfigHandler(default_data, path2yaml=settings.get_path2config, yaml_name=f'{yaml_name_index}_Dataset')
-    config_data = yaml_data.get_class(SettingsDataset)
+    config_data = YamlConfigHandler(
+        yaml_template=default_data,
+        path2yaml=settings.get_path2config,
+        yaml_name=f'{yaml_name_index}_Dataset'
+    ).get_class(SettingsDataset)
 
     # --- Loading the YAML file: Model training
     default_train = deepcopy(DefaultSettingsTrainCE)
     default_train.model_name = f'{dataset_type.lower()}_mlp_cl_v1'
-    yaml_train = YamlConfigHandler(default_train, path2yaml=settings.get_path2config, yaml_name=f'{yaml_name_index}_TrainCL')
-    config_train = yaml_train.get_class(ConfigPytorch)
+    config_train = YamlConfigHandler(
+        yaml_template=default_train, path2yaml=settings.get_path2config, yaml_name=f'{yaml_name_index}_TrainCL').get_class(ConfigPytorch)
 
     # --- Loading Data, Build Model and Do Training
     dataset = prepare_training(
@@ -59,14 +62,21 @@ def do_train_torchvision_ae(class_dataset, settings: ConfigMLPipeline, dataset_t
     # --- Loading the YAML file: Dataset
     default_data = DefaultSettingsDataset
     default_data.data_file_name = f'{dataset_type.upper()}'
-    yaml_data = YamlConfigHandler(default_data, settings.get_path2config, f'{yaml_name_index}_Dataset')
-    config_data = yaml_data.get_class(SettingsDataset)
+    config_data = YamlConfigHandler(
+        yaml_template=default_data,
+        path2yaml=settings.get_path2config,
+        yaml_name=f'{yaml_name_index}_Dataset'
+    ).get_class(SettingsDataset)
 
     # --- Loading the YAML file: Model training
     default_train = DefaultSettingsTrainMSE
     default_train.model_name = f'{dataset_type.lower()}_mlp_ae_v1'
-    yaml_train = YamlConfigHandler(default_train, settings.get_path2config, f'{yaml_name_index}_TrainAE')
-    config_train = yaml_train.get_class(ConfigPytorch)
+    config_train = YamlConfigHandler(
+        yaml_template=default_train,
+        path2yaml=settings.get_path2config,
+        yaml_name=f'{yaml_name_index}_TrainAE'
+    ).get_class(ConfigPytorch)
+    del default_data, default_train
 
     # --- Loading Data, Build Model and Do Training
     dataset = prepare_training(

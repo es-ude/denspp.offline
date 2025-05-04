@@ -23,15 +23,21 @@ def do_train_neural_autoencoder(class_dataset, settings: ConfigMLPipeline, yaml_
     # --- Loading the YAML file: Dataset
     default_data = deepcopy(DefaultSettingsDataset)
     default_data.data_file_name = used_dataset_name
-    yaml_data = YamlConfigHandler(default_data, settings.get_path2config, f'{yaml_name_index}_Dataset')
-    config_data = yaml_data.get_class(SettingsDataset)
+    config_data = YamlConfigHandler(
+        yaml_template=default_data,
+        path2yaml=settings.get_path2config,
+        yaml_name=f'{yaml_name_index}_Dataset'
+    ).get_class(SettingsDataset)
 
     # --- Loading the YAML file: Model training
     default_train = deepcopy(DefaultSettingsTrainMSE)
     default_train.model_name = model_default_name
-    yaml_nn = YamlConfigHandler(default_train, settings.get_path2config, f'{yaml_name_index}_Training')
-    config_train = yaml_nn.get_class(ConfigPytorch)
-    del default_train, yaml_nn
+    config_train = YamlConfigHandler(
+        yaml_template=default_train,
+        path2yaml=settings.get_path2config,
+        yaml_name=f'{yaml_name_index}_Training'
+    ).get_class(ConfigPytorch)
+    del default_train, default_data
 
     # --- Loading Data, Build Model and Do Training
     dataset = prepare_training(

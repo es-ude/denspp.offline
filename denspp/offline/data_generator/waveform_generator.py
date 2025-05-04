@@ -42,14 +42,14 @@ class WaveformGenerator:
             print("It is not a biphasic waveform available - Please check!")
             return 1.0
         else:
-            area_first = np.trapz(waveforms[0])
-            area_second = np.trapz(waveforms[-1])
+            area_first = np.trapezoid(waveforms[0])
+            area_second = np.trapezoid(waveforms[-1])
             return np.abs(area_first / area_second)
 
     @staticmethod
     def check_charge_balancing(signal: np.ndarray) -> float:
         """Checking if stimulation signal is charge balanced"""
-        dq = np.trapz(signal)
+        dq = np.trapezoid(signal)
         print(f"... waveform has an error of {dq:.6f}")
         return dq
 
