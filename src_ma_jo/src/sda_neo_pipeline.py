@@ -1,5 +1,6 @@
 import numpy as np
 from pathlib import Path
+import matplotlib.pyplot as plt
 
 from src_neuro.sda.sda_pipeline import Pipeline_Digital
 from denspp.offline.digital.sda import SpikeDetection, SettingsSDA
@@ -128,6 +129,10 @@ def thres_rms(xin: np.ndarray) -> np.ndarray:
     window_size = settings_sda.window_size
     return threshold_gain * np.sqrt(np.convolve(xin ** 2, np.ones(window_size) / window_size, mode='same'))
 
+def thres_const(xin: np.ndarray) -> np.ndarray:
+    """Applying a constant value for thresholding"""
+    return np.zeros(shape=xin.size) + settings_sda.thr_min_value
+
 
 def process_signals(cleaned_signals):
     spike_indices_list = []
@@ -137,7 +142,7 @@ def process_signals(cleaned_signals):
         x_dly = time_delay(signal)
         x_sda = sda_neo(x_dly)
         smooth_data = sda_smooth(x_sda, "Hamming")
-        threshold_data = thres_rms(smooth_data)
+        threshold_data = thres_rms(x_sda)
         (frames_out0, frames_out1) = spike_detector.frame_generation(signal, smooth_data, threshold_data)
         frames_align = frames_out1[0]
         x_pos = frames_out1[1]
@@ -147,7 +152,78 @@ def process_signals(cleaned_signals):
     return spike_indices_list, aligned_frames_list
 
 def remove_duplicates(duplicates, frames, position):
-    pass
+    for i, signal in enumerate(duplicates):
+        for duplicate in signal:
+            indices = np.where(position[i] == duplicate)[0]
+            position[i] = np.delete(position[i], indices)
+            frames[i] = np.delete(frames[i], indices, axis=0)
+    print("Löschen der Überschneidungen abgeschlossen.")
+
+    return frames, position
+
+def limit_spikes(spikes, limit=100):
+    """
+    Begrenze die Werte in den Listen auf den Bereich [-limit, +limit],
+    und ersetze alle Werte außerhalb des Bereichs durch 0.
+
+    :param spikes: Liste von Listen mit Spike-Werten
+    :param limit: Grenzwert, Standardwert: 100
+    :return: Liste von Listen mit begrenzten Werten
+    """
+    limited_spike_list = []
+    for inner_list in spikes:  # Iteriere durch die äußere Liste
+        if isinstance(inner_list, np.ndarray):  # Überprüfe, ob inner_list ein Numpy-Array ist
+            # Begrenze die Werte innerhalb des Numpy-Arrays
+            limited_spike_list.append(
+                np.where(np.logical_and(inner_list >= -limit, inner_list <= limit), inner_list, 0))
+        else:  # Falls es keine Arrays, sondern z. B. Python-Listen sind
+            limited_spike_list.append(
+                [value if -limit <= value <= limit else 0 for value in inner_list]
+            )
+    return limited_spike_list
+
+
+
+
+def plot_signals_with_mean(preprocessed_frames):
+    """
+    Plottet für jedes Signal in preprocessed_frames die einzelnen Kurven mit einer ausgegrauten Darstellung
+    und stellt zusätzlich den Mittelwert als schwarze Linie dar.
+
+    :param preprocessed_frames: Liste von Listen von Kurven. preprocessed_frames[i] enthält x Einträge,
+                                die wiederum einzelne Arrays/Kurven enthalten.
+    """
+    for i, signal_frames in enumerate(preprocessed_frames):
+        if len(signal_frames) > 0:  # Nur Plot erstellen, wenn signal_frames nicht leer ist
+            all_curves = np.array(signal_frames)  # Konvertiere zur einfachen Handhabung in ein numpy Array
+
+            if all_curves.ndim < 2:  # Sicherstellen, dass es mindestens 2D ist (z.B. [Kurven, Daten])
+                print(f"Signal {i}: Nicht genügend Daten, überspringe Plot.")
+                continue
+
+
+            # Berechne den Mittelwert (mean) entlang der Achse 0 (über alle Kurven)
+            mean_curve = np.mean(all_curves, axis=0)
+
+            # Erstelle den Plot
+            plt.figure(figsize=(10, 6))
+
+            # Zeichne jede einzelne Kurve ausgegraut
+            for curve in all_curves:
+                if max(curve)-min(curve) > 30 and max(curve) < 50 and min(curve) > -50:
+                    plt.plot(curve, color='gray', alpha=0.5, linewidth=0.5)
+
+            # Zeichne die mittlere Kurve als schwarze Linie
+            plt.plot(mean_curve, color='black', linewidth=2, label="Mean Curve")
+
+            # Plot-Titel und Beschriftungen
+            plt.title(f"Signal {i + 1}: Mean Curve und einzelne Kurven", fontsize=14)
+            plt.xlabel("Sample Index", fontsize=12)
+            plt.ylabel("Signal Amplitude", fontsize=12)
+            plt.grid(alpha=0.3)
+
+            # Plot anzeigen
+            plt.show()
 
 
 
@@ -161,9 +237,9 @@ if __name__ == "__main__":
         t_dly=0.3e-3,
         window_size=7,
         thr_gain=1.0,
-        thr_min_value=100.0
+        thr_min_value=30
     )
-    file_path, output_dir = get_path(data_file_name="A1R1a_ASIC_1S_800_3.npy")
+    file_path, output_dir = get_path(data_file_name="A1R1a_ASIC_1S_1000_15.npy")
     loaded_data_dict = load_file_as_dict(file_path)
     spike_detector = SpikeDetection(settings_sda)
 
@@ -183,3 +259,6 @@ if __name__ == "__main__":
         deletable_indices = compare_indices_in_loop(spike_indices_list, artifact_indices)
         preprocessed_frames, preprocessed_position = remove_duplicates(deletable_indices, aligned_frames,
                                                                        spike_indices_list)
+        limited_spike_list = limit_spikes(preprocessed_frames)
+        plot_signals_with_mean(limited_spike_list)
+#hohe Peak2Peak amplitude
