@@ -14,7 +14,7 @@ class ArtifactConfig:
     path: str
     filename: str
     plot_flag: bool = True
-    apply_filter: bool = True
+    apply_filter: bool = False
     percentage_limit: float = 8
     threshold_limit: float = 600
     threshold_factor: float = 10
@@ -152,9 +152,7 @@ class ArtifactDetection:
             if rmse_check and r2_check:
                 self.do_spline_interpolation(range_list[0:-20], signal[range_list[0:-20]])
             else:
-                self.do_spline_interpolation(range_list, signal)
-
-
+                signal = self.replace_artifacts_with_sigmoid(range_list, signal[range_list])
 
     def fit_exponential(self, data_segment):
         x = np.arange(len(data_segment))
@@ -176,6 +174,9 @@ class ArtifactDetection:
     def exponential_func(self, x, a, b, c):
         return a * np.exp(b * x) + c
 
+    def sigmoid(self, x, L, k, x0, d):
+        return L / (1 + np.exp(-k * (x - x0))) + d
+
     def do_spline_interpolation(self, artifact_range, signal):
         if self.is_saturation(signal[20::]):
             print("Sättigung erkannt, Interpolation übersprungen.")
@@ -195,6 +196,28 @@ class ArtifactDetection:
 
         return smooth_curve
 
+    def replace_artifacts_with_sigmoid(self, artifact_range, signal):
+        x = np.arange(len(signal))
+        valid_indices = np.setdiff1d(x, artifact_range)
+
+        if len(valid_indices) < 5:
+            print("Zu wenig Daten für sigmoid Fit.")
+            return signal
+
+        x_valid = valid_indices
+        y_valid = signal[valid_indices]
+
+        try:
+            p0 = [np.max(y_valid) - np.min(y_valid), 1, np.median(x_valid), np.min(y_valid)]
+            popt, _ = curve_fit(self.sigmoid, x_valid, y_valid, p0=p0, maxfev=10000)
+
+            smooth_curve = self.sigmoid(x, *popt)
+        except Exception as e:
+            print(f"Sigmoid-Fit fehlgeschlagen: {e}")
+            return signal
+
+        return smooth_curve
+
     @staticmethod
     def is_saturation(signal, flat_length=10):
         diffs = np.diff(signal)
@@ -203,7 +226,7 @@ class ArtifactDetection:
         for val in flat:
             if val:
                 count += 1
-                if count >= flat_length:22
+                if count >= flat_length:
                     return True
             else:
                 count = 0
