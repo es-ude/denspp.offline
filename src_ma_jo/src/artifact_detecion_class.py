@@ -18,6 +18,8 @@ class ArtifactConfig:
     percentage_limit: float = 8
     threshold_limit: float = 600
     threshold_factor: float = 10
+    rmse_limit: float = 20
+    r_squared_limit: float = 0.9
 
 
 class ArtifactDetection:
@@ -145,14 +147,15 @@ class ArtifactDetection:
             end = artifact_range[1]
             exp_data_segment = signal[start:end]
             fitted_curve, rmse, r_squared = self.fit_exponential(exp_data_segment)
-            rmse_check = rmse < 20
-            r2_check = r_squared > 0.9
-
+            rmse_check = rmse < config.rmse_limit
+            r2_check = r_squared > config.r_squared_limit
 
             if rmse_check and r2_check:
-                self.do_spline_interpolation(range_list[0:-20], signal[range_list[0:-20]])
+                interpolated_signal = self.do_sigmoid_interpolation(range_list[0:-20], signal[range_list[0:-20]])
+                np.append(interpolated_signal, fitted_curve, axis=0)
             else:
-                signal = self.replace_artifacts_with_sigmoid(range_list, signal[range_list])
+                interpolated_signal = self.do_sigmoid_interpolation(range_list, signal[range_list])
+                print(interpolated_signal)
 
     def fit_exponential(self, data_segment):
         x = np.arange(len(data_segment))
@@ -196,7 +199,7 @@ class ArtifactDetection:
 
         return smooth_curve
 
-    def replace_artifacts_with_sigmoid(self, artifact_range, signal):
+    def do_sigmoid_interpolation(self, artifact_range, signal):
         x = np.arange(len(signal))
         valid_indices = np.setdiff1d(x, artifact_range)
 
@@ -214,6 +217,7 @@ class ArtifactDetection:
             smooth_curve = self.sigmoid(x, *popt)
         except Exception as e:
             print(f"Sigmoid-Fit fehlgeschlagen: {e}")
+
             return signal
 
         return smooth_curve
