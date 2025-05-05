@@ -151,10 +151,11 @@ class ArtifactDetection:
             r2_check = r_squared > config.r_squared_limit
 
             if rmse_check and r2_check:
-                interpolated_signal = self.do_sigmoid_interpolation(range_list[0:-20], signal[range_list[0:-20]])
-                np.append(interpolated_signal, fitted_curve, axis=0)
+                #interpolated_signal = self.do_spline_interpolation(range_list[0:-20], signal[range_list[0:-20]])
+                #np.append(interpolated_signal, fitted_curve, axis=0)
+                continue
             else:
-                interpolated_signal = self.do_sigmoid_interpolation(range_list, signal[range_list])
+                interpolated_signal = self.do_spline_interpolation(range_list, signal[range_list])
                 print(interpolated_signal)
 
     def fit_exponential(self, data_segment):
@@ -181,46 +182,23 @@ class ArtifactDetection:
         return L / (1 + np.exp(-k * (x - x0))) + d
 
     def do_spline_interpolation(self, artifact_range, signal):
-        if self.is_saturation(signal[20::]):
-            print("Sättigung erkannt, Interpolation übersprungen.")
+        if not self.is_saturation(signal):
+            print("Keine Sättigung erkannt, Interpolation wird nicht aufgeführt.")
             return signal
 
-        validated_indices = np.setdiff1d(np.arange(len(signal)), artifact_range)
+        index_array = np.arange(len(artifact_range))
+        start = signal[0]
+        end = signal[-1]
+        indices = np.linspace(0, len(signal), 5, dtype=int)
+        y = np.linspace(start, end, 5)
+        max_deviation = 0.1 * (end - start)
+        y[1:-1] += np.random.uniform(-max_deviation, max_deviation, size=3)
 
-        if len(validated_indices) < 4:
-            raise ValueError("Nicht genügend gültige Punkte für die Spline-Interpolation.")
+        spline = CubicSpline(indices, y, bc_type='natural')
+        interpolated_signal = spline(index_array)
 
-        try:
-            spline = CubicSpline(validated_indices, signal[validated_indices], bc_type="natural", extrapolate=True)
-            smooth_curve = spline(np.arange(len(signal)))
-        except Exception as e:
-            print(f"Fehler bei der Spline-Interpolation: {e}")
-            smooth_curve = signal
-
-        return smooth_curve
-
-    def do_sigmoid_interpolation(self, artifact_range, signal):
-        x = np.arange(len(signal))
-        valid_indices = np.setdiff1d(x, artifact_range)
-
-        if len(valid_indices) < 5:
-            print("Zu wenig Daten für sigmoid Fit.")
-            return signal
-
-        x_valid = valid_indices
-        y_valid = signal[valid_indices]
-
-        try:
-            p0 = [np.max(y_valid) - np.min(y_valid), 1, np.median(x_valid), np.min(y_valid)]
-            popt, _ = curve_fit(self.sigmoid, x_valid, y_valid, p0=p0, maxfev=10000)
-
-            smooth_curve = self.sigmoid(x, *popt)
-        except Exception as e:
-            print(f"Sigmoid-Fit fehlgeschlagen: {e}")
-
-            return signal
-
-        return smooth_curve
+        signal = interpolated_signal
+        return signal
 
     @staticmethod
     def is_saturation(signal, flat_length=10):
@@ -250,7 +228,7 @@ if __name__ == "__main__":
     )
 
     config = ArtifactConfig(
-        path=r"C:/Users/jo-di/Documents/Masterarbeit/Rohdaten",
+        path=r"C:\Users\jo-di\Dokumente\Uni Due\Masterarbeit\08_RGC_FZJuelich",
         filename="A1R1a_elec_stim_50biphasic_400us0001"
     )
 
