@@ -4,7 +4,7 @@ from denspp.offline.analog.dev_load import (ElectricalLoad, SettingsDEV, Default
                                             DefaultSettingsDEVResistiveDiodeSingle, DefaultSettingsDEVResistiveDiodeDouble)
 
 
-settings = DefaultSettingsDEVResistiveDiodeDouble
+settings = DefaultSettingsDEVResistiveDiodeSingle
 
 
 if __name__ == "__main__":
@@ -28,6 +28,7 @@ if __name__ == "__main__":
     dev.print_types()
 
     # --- Plotting: Current response
+    """
     print("\nPlotting transient current response")
     iout = dev.get_current(uinp, uinn)
     plot_test_results(t0, uinp - uinn, iout, False, do_ylog)
@@ -37,12 +38,13 @@ if __name__ == "__main__":
     uout = dev.get_voltage(iout, uinn, u_off, 1e-2)
     plot_test_results(t0, uout + uinn, iout, True, do_ylog)
 
+    """
     # --- Plotting: I-V curve
     print("\nPlotting I-V curve for polynom fitting")
     dev.change_boundary_voltage(0.01, 5.0)
-    dev.plot_polyfit_tranfer_function()
+    dev.plot_polyfit_transfer_function()
 
     print("\nPlotting I-V curve for parameter fitting")
     dev.plot_param_fitting(
-        bounds_param={'uth0': [0.095, 0.105], 'i_sat':[1e-15, 1e-10], 'n_eff': [2.799, 2.801], 'r_sh': [19e3, 21e3]}
+        bounds_param={'uth0': [0.05, 0.2], 'i_sat':[0.5e-12, 2e-12], 'n_eff': [1.799, 2.801], 'r_sh': [10e3, 40e3]}
     )

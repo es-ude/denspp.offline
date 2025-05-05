@@ -90,41 +90,27 @@ class ElectricalLoadHandler:
         """Function for getting the I-V curve using electrical device description with regression
         Args:
             params_dev:             Dictionary with parameters from device
-            mode_fit:               Fit Range Mode [0: Full Pos., 1: Full +/-, 2: Take Pos., Mirror Neg., 3: Take Neg., Mirror Pos.]
+            mode_fit:               Fit Range Mode [0: Full positive, 1: Full negative, 2: Full +/-,]
         Returns:
             Dictionary with two numpy arrays with current ['I'] and voltage ['V'] from device
         """
         if self._settings.type in self._type_device[self._settings.type]:
-            device_method = self._type_device[self._settings.type]['reg']
             self._logger.debug(f"Apply regression function for getting device transfer function of {self._settings.type}")
             match mode_fit:
                 case 1:
-                    self._logger.debug("Generate I-V regression for given current boundries (Full range)")
-                    i_pathp = np.logspace(self._bounds_curr[0], self._bounds_curr[1], self._fit_options[1], endpoint=True)
-                    i_path = np.concatenate((-np.flipud(i_pathp[1:]), i_pathp), axis=0)
-                    u_path = -device_method(i_path, np.zeros(i_path.shape), params_dev)
+                    self._logger.debug("Generate I-V regression for given current boundries (Negative range)")
+                    u_path = np.logspace(start=-self._bounds_volt[1], stop=-self._bounds_volt[0], num=self._fit_options[1], endpoint=True)
                 case 2:
-                    self._logger.debug("Generate I-V regression for given current boundries (Symmetric, Pos. mirrored)")
-                    i_pathn = -np.logspace(self._bounds_curr[1], self._bounds_curr[0], self._fit_options[1], endpoint=True)
-                    u_pathn = device_method(-i_pathn, np.zeros(i_pathn.shape), params_dev)
-                    # --- Concatenate arrays
-                    i_path = np.concatenate((i_pathn, -np.flipud(i_pathn)[1:]), axis=0)
-                    u_path = np.concatenate((u_pathn, -np.flipud(u_pathn)[1:]), axis=0)
-                case 3:
-                    self._logger.debug("Generate I-V regression for given current boundries (Symmetric, Neg. mirrored)")
-                    i_pathp = np.logspace(self._bounds_curr[0], self._bounds_curr[1], self._fit_options[1], endpoint=True)
-                    u_pathp = device_method(i_pathp, np.zeros(i_pathp.shape), params_dev)
-                    # --- Concatenate arrays
-                    i_path = np.concatenate((-np.flipud(i_pathp)[1:], i_pathp), axis=0)
-                    u_path = np.concatenate((-np.flipud(u_pathp)[1:], i_pathp), axis=0)
+                    self._logger.debug("Generate I-V regression for given current boundries (Full range)")
+                    u_path = np.logspace(start=-self._bounds_volt[1], stop=self._bounds_volt[1], num=2*self._fit_options[1]+1, endpoint=True)
                 case _:
-                    self._logger.debug("Generate I-V regression for given current boundries (positive range)")
-                    i_path = np.logspace(self._bounds_curr[0], self._bounds_curr[1], self._fit_options[1], endpoint=True)
-                    u_path = -device_method(i_path, np.zeros(i_path.shape), params_dev)
+                    self._logger.debug("Generate I-V regression for given current boundries (Positive range)")
+                    u_path = np.logspace(start=self._bounds_volt[0], stop=self._bounds_volt[1], num=self._fit_options[1], endpoint=True)
+            i_path = self._do_regression(u_inp=u_path, u_inn=0.0, params=params_dev, disable_print=True)
         else:
             self._logger.debug("Using normal device equation for getting I-V-behaviour")
             u_path = np.linspace(self._bounds_volt[0], self._bounds_volt[1], self._fit_options[1], endpoint=True)
-            i_path = self.get_current(u_path, 0.0)
+            i_path = self._get_current_from_equation(u_path, 0.0, params_dev)
 
         # --- Limiting with voltage boundaries
         self._logger.debug("Truncating the electrical signals to desired bounds")
@@ -210,7 +196,7 @@ class ElectricalLoadHandler:
         """Function to extract the params of electrical device behaviour with curve fitting
         Args:
             bounds_params:          Dictionary with param bounds
-            mode_fit:               Fit Range Mode [0: Full Pos., 1: Full +/-, 2: Take Pos., Mirror Neg., 3: Take Neg., Mirror Pos.]
+            mode_fit:               Fit Range Mode [0: Full Positive, 1: Full negative, 2: Full +/-]
             do_test:                Performing a test
             do_plot:                Plotting the results of regression and polynom fitting
             path2save:              String with path to save the figure
@@ -222,14 +208,14 @@ class ElectricalLoadHandler:
             mode_fit=mode_fit
         )
         self._logger.debug(f"Start curve fitting of device: {self._settings.type}")
-        params = self.get_params_from_fitting_data(
+        params_ext = self.get_params_from_fitting_data(
             voltage=signals['V'],
             current=signals['I'],
             param_bounds=bounds_params
         )
         error = self._test_fit_option(
             voltage_test=signals['V'],
-            params_used=params,
+            params_used=params_ext,
             methods_compare=['Curve fitting (Remodeled)', 'Regression (Orig.)'],
             u_inn=0.0,
             plot_title='Model parameter extraction',
@@ -237,7 +223,7 @@ class ElectricalLoadHandler:
             do_plot=do_plot,
             path2save=path2save
         )
-        return [params, error]
+        return [params_ext, error]
 
     def _extract_params_for_polynomfit(self, current: np.ndarray, voltage: np.ndarray, is_current_out: bool=True) -> np.ndarray:
         self._fit_params = np.polyfit(x=voltage, y=current, deg=self._fit_options[0]) if is_current_out else np.polyfit(x=current, y=voltage, deg=self._fit_options[0])
@@ -246,7 +232,7 @@ class ElectricalLoadHandler:
     def _get_params_for_polynomfit(self, mode_fit: int=0, do_test: bool=False, do_plot: bool=False, path2save: str='') -> [np.ndarray, float]:
         """Function to extract the params of electrical device behaviour with polynom fit function
         Args:
-            mode_fit:               Fit Range Mode [0: Full Pos., 1: Full +/-, 2: Take Pos., Mirror Neg., 3: Take Neg., Mirror Pos.]
+            mode_fit:               Fit Range Mode [0: Full Positive, 1: Full negative, 2: Full +/-]
             do_test:                Performing a test
             do_plot:                Plotting the results of regression and polynom fitting
             path2save:              String with path to save the figure
@@ -349,8 +335,8 @@ class ElectricalLoadHandler:
         xmin = np.argwhere(error_search == error_search.min()).flatten()
         print(f"\nBest solution: Order = {np.array(order_search)[xmin]} with an error of {error_search[xmin]}!")
 
-    def plot_polyfit_tranfer_function(self, find_best_order: bool=False, show_plots: bool=True,
-                                      order_start: int=2, order_stop: int=18, mode_fit: int=0) -> None:
+    def plot_polyfit_transfer_function(self, find_best_order: bool=False, show_plots: bool=True,
+                                       order_start: int=2, order_stop: int=18, mode_fit: int=0) -> None:
         """Extracting the polynom fit parameters and plotting it compared to regression task
         Args:
             find_best_order:    Find the best poly.-fit order
@@ -439,6 +425,14 @@ class ElectricalLoadHandler:
         else:
             raise KeyError(f"Wrong parameter names! Use: {self._type_device[self._settings]['param']}")
 
+    def _build_param_initial_guess(self) -> list:
+        guess_values = list()
+        for val_min, val_max in zip(self._param_bounds[0], self._param_bounds[1]):
+            val_end = val_min + np.random.ranf(1) * (val_max-val_min)
+            val_inf = 0.0
+            guess_values.append(float(val_inf if np.isinf(val_min) or np.isinf(val_max) else val_end))
+        return guess_values
+
     def get_params_from_fitting_data(self, voltage: np.ndarray, current: np.ndarray, param_bounds: dict) -> dict:
         """Function to extract the model parameters from fitting the measurement to model
         :param voltage:         Numpy array with voltage signal from IV-measurement [V]
@@ -456,7 +450,9 @@ class ElectricalLoadHandler:
                 f=self._type_device[self._settings.type]['fit'],
                 ydata=voltage,
                 xdata=current,
-                bounds=self._param_bounds
+                bounds=self._param_bounds,
+                p0=self._build_param_initial_guess(),
+                method='trf'
             )
             self._logger.debug(f"Coinv values of curve fitting: {coinv}")
             return dict(zip(arg_names, params))

@@ -20,7 +20,7 @@ DefaultSettingsDEVResistiveDiodeSingle = SettingsDEV(
     noise_en=False,
     para_en=False,
     use_mode=0,
-    dev_value={'i_sat': 1e-12, 'n_eff': 2.8, 'uth0': 0.1, 'r_sh': 20e3},
+    dev_value={'i_sat': 10e-12, 'n_eff': 2.8, 'uth0': 0.1, 'r_sh': 20e3},
     temp=300
 )
 
