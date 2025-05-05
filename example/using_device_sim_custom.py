@@ -1,17 +1,11 @@
 import matplotlib.pyplot as plt
+from copy import deepcopy
 from denspp.offline.analog.dev_handler import generate_test_signal, plot_test_results
-from denspp.offline.analog.dev_load import ElectricalLoad, SettingsDEV, DefaultSettingsDEVResistiveDiodeSingle, DefaultSettingsDEVResistiveDiodeDouble
+from denspp.offline.analog.dev_load import (ElectricalLoad, SettingsDevice, DefaultSettingsDEVResistor,
+                                            DefaultSettingsDEVResistiveDiodeSingle, DefaultSettingsDEVResistiveDiodeDouble)
 
 
-settings = SettingsDEV(
-    type='R',
-    fs_ana=100e3,
-    noise_en=False,
-    para_en=False,
-    dev_value={'r': 100e3},
-    temp=300,
-    use_mode=0
-)
+settings = deepcopy(DefaultSettingsDEVResistiveDiodeSingle)
 
 
 if __name__ == "__main__":
@@ -27,7 +21,12 @@ if __name__ == "__main__":
 
     # --- Model declaration
     plt.close('all')
+    settings.use_poly = True
     dev = ElectricalLoad(settings)
+    dev.change_options_fit(
+        poly_order=7,
+        num_points_fit=101
+    )
     dev.print_types()
 
     # --- Plotting: Current response
@@ -37,10 +36,15 @@ if __name__ == "__main__":
 
     # --- Plotting: Voltage response
     print("\nPlotting transient voltage response")
-    uout = dev.get_voltage(iout, uinn, u_off, 1e-2)
+    uout = dev.get_voltage(iout, uinn)
     plot_test_results(t0, uout + uinn, iout, True, do_ylog)
 
     # --- Plotting: I-V curve
-    print("\nPlotting I-V curve")
-    dev.change_boundary_voltage(1.0, 6.0)
-    dev.plot_polyfit_tranfer_function()
+    print("\nPlotting I-V curve for polynom fitting")
+    dev.change_boundary_voltage(0.01, 5.0)
+    dev.plot_polyfit_transfer_function()
+
+    print("\nPlotting I-V curve for parameter fitting")
+    dev.plot_param_fitting(
+        bounds_param={'uth0': [0.05, 0.2], 'i_sat':[0.5e-12, 2e-12], 'n_eff': [1.799, 2.801], 'r_sh': [10e3, 40e3]}
+    )

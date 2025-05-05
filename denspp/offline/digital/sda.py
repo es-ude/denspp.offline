@@ -6,7 +6,7 @@ from denspp.offline.data_process.transformation import window_method
 
 @dataclass
 class SettingsSDA:
-    """Configuration class for defining the Spike Detection Algorithm
+    """Configuration class for defining the Spike Detection Algorithm (SDA)
     Attributes:
         fs:             Sampling rate [Hz]
         dx_sda:         Position difference for extracting SDA method. Configuration with length(x) == 1: with dX = 1 --> NEO, dX > 1 --> k-NEO
@@ -18,6 +18,7 @@ class SettingsSDA:
         window_size:    Integer value of the window for smoothing the SDA output
         thr_gain:       Floating value with amplification factor on SDA output
         thr_min_value:  Integer value with minimum threshold value on SDA output
+
     """
     fs: float
     dx_sda: list
@@ -83,6 +84,7 @@ class SpikeDetection:
     # --------- Pre-Processing of SDA -------------
     def time_delay(self, uin: np.ndarray) -> np.ndarray:
         """Applying a time delay on the input signal
+        :math:         "\sum x_i"
         :param uin:     Numpy array with transient input signal / data stream
         :return:        Numpy array with time-delayed signal
         """

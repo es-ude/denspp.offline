@@ -1,10 +1,10 @@
 import numpy as np
 from copy import deepcopy
 from unittest import TestCase, main
-from denspp.offline.analog.dev_load import ElectricalLoad, SettingsDEV
+from denspp.offline.analog.dev_load import ElectricalLoad, SettingsDevice
 
 
-TestSettings0 = SettingsDEV(
+TestSettings0 = SettingsDevice(
     type='R',
     fs_ana=50e3,
     noise_en=False,
@@ -13,7 +13,7 @@ TestSettings0 = SettingsDEV(
     dev_value={'r': 100e3},
     temp=300
 )
-TestSettings1 = SettingsDEV(
+TestSettings1 = SettingsDevice(
     type='RDs',
     fs_ana=50e3,
     noise_en=False,
@@ -44,11 +44,10 @@ class TestElectricalLoad(TestCase):
         model = ElectricalLoad(settings_dev=TestSettings0)
 
         current_model = model.get_current(self.voltage, 0.0)
-        model.declare_param_bounds({'r': [0.5 * set0.dev_value['r'], 2 * set0.dev_value['r']]})
         params = model.get_params_from_fitting_data(
             voltage=self.voltage,
             current=current_model,
-            use_param_bounds=False
+            param_bounds={'r': [0.5 * set0.dev_value['r'], 2 * set0.dev_value['r']]}
         )
         np.testing.assert_almost_equal(set0.dev_value['r'], params['R'.lower()], decimal=-1)
 
@@ -59,11 +58,10 @@ class TestElectricalLoad(TestCase):
         model = ElectricalLoad(settings_dev=TestSettings0)
 
         current_model = model.get_current(self.voltage, 0.0)
-        model.declare_param_bounds({'r': [0.5* set0.dev_value['r'], 2 * set0.dev_value['r']]})
         params = model.get_params_from_fitting_data(
             voltage=self.voltage,
             current=current_model,
-            use_param_bounds=True
+            param_bounds={'r': [0.5* set0.dev_value['r'], 2 * set0.dev_value['r']]}
         )
         np.testing.assert_almost_equal(set0.dev_value['r'], params['r'], decimal=-1)
 
@@ -74,14 +72,13 @@ class TestElectricalLoad(TestCase):
         model = ElectricalLoad(settings_dev=TestSettings1)
 
         current_model = model.get_current(self.voltage, 0.0)
-        model.declare_param_bounds({'i_sat': [1e-15, 1e-9], 'n_eff': [0.8, 5.0], 'r_sh': [1e3, 100e3], 'uth0': [0.3, 0.5]})
         params = model.get_params_from_fitting_data(
             voltage=self.voltage,
             current=current_model,
-            use_param_bounds=True
+            param_bounds={'i_sat': [1e-15, 1e-9], 'n_eff': [0.8, 5.0], 'r_sh': [1e3, 100e3], 'uth0': [0.3, 0.5]}
         )
 
-        result_current = model.get_current_from_fitting(self.voltage, params)
+        result_current = model._get_current_from_equation(self.voltage, 0.0, params)
         check_current = current_model
         np.testing.assert_almost_equal(result_current, check_current, decimal=-3)
 
