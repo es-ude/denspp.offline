@@ -8,10 +8,9 @@ TestSettings = SettingsDEV(
     type='R',
     fs_ana=50e3,
     noise_en=False,
-    para_en=False,
     dev_value={'r': 100e3},
     temp=300,
-    use_mode=0
+    use_poly=False
 )
 
 

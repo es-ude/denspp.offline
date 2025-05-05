@@ -1,10 +1,11 @@
 import matplotlib.pyplot as plt
+from copy import deepcopy
 from denspp.offline.analog.dev_handler import generate_test_signal, plot_test_results
 from denspp.offline.analog.dev_load import (ElectricalLoad, SettingsDEV, DefaultSettingsDEVResistor,
                                             DefaultSettingsDEVResistiveDiodeSingle, DefaultSettingsDEVResistiveDiodeDouble)
 
 
-settings = DefaultSettingsDEVResistiveDiodeSingle
+settings = deepcopy(DefaultSettingsDEVResistiveDiodeSingle)
 
 
 if __name__ == "__main__":
@@ -20,6 +21,7 @@ if __name__ == "__main__":
 
     # --- Model declaration
     plt.close('all')
+    settings.use_poly = True
     dev = ElectricalLoad(settings)
     dev.change_options_fit(
         poly_order=7,
@@ -28,17 +30,15 @@ if __name__ == "__main__":
     dev.print_types()
 
     # --- Plotting: Current response
-    """
     print("\nPlotting transient current response")
     iout = dev.get_current(uinp, uinn)
     plot_test_results(t0, uinp - uinn, iout, False, do_ylog)
 
     # --- Plotting: Voltage response
     print("\nPlotting transient voltage response")
-    uout = dev.get_voltage(iout, uinn, u_off, 1e-2)
+    uout = dev.get_voltage(iout, uinn)
     plot_test_results(t0, uout + uinn, iout, True, do_ylog)
 
-    """
     # --- Plotting: I-V curve
     print("\nPlotting I-V curve for polynom fitting")
     dev.change_boundary_voltage(0.01, 5.0)

@@ -7,10 +7,9 @@ DefaultSettingsDEVResistor = SettingsDEV(
     type='R',
     fs_ana=50e3,
     noise_en=False,
-    para_en=False,
-    use_mode=0,
     dev_value={'r': 100e3},
-    temp=300
+    temp=300,
+    use_poly=False
 )
 
 
@@ -18,10 +17,9 @@ DefaultSettingsDEVResistiveDiodeSingle = SettingsDEV(
     type='RDs',
     fs_ana=50e3,
     noise_en=False,
-    para_en=False,
-    use_mode=0,
     dev_value={'i_sat': 10e-12, 'n_eff': 2.8, 'uth0': 0.1, 'r_sh': 20e3},
-    temp=300
+    temp=300,
+    use_poly=False
 )
 
 
@@ -29,10 +27,9 @@ DefaultSettingsDEVResistiveDiodeDouble = SettingsDEV(
     type='RDd',
     fs_ana=50e3,
     noise_en=False,
-    para_en=False,
-    use_mode=0,
     dev_value={'i_sat': 1e-12, 'n_eff': 2.8, 'uth0': 0.1, 'r_sh': 20e3},
-    temp=300
+    temp=300,
+    use_poly=False
 )
 
 
@@ -46,9 +43,9 @@ RecommendedSettingsNoise = SettingsNoise(
 
 class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
     _settings: SettingsDEV
-
-    _fit_done: bool
     _fit_options: list
+    _fit_params_current: np.ndarray
+    _fit_params_voltage: np.ndarray
     _type_device: dict
     _bounds_curr: list
     _bounds_volt: list

@@ -18,18 +18,16 @@ class SettingsDEV:
         type:       Type of electrical device ['R': resistor, 'C': capacitor, 'L': inductor, 'RDs': Resistive diode]
         fs_ana:     Sampling frequency of input [Hz]
         noise_en:   Enable noise on output [True / False]
-        para_en:    Enable parasitic [True / False]
-        use_mode:   Mode for getting the electrical signals [0: regression, 1: equation, 2: polynom fitting]
         dev_value:  Dictionary with device parameters
         temp:       Temperature [K]
+        use_poly:   Boolean for using polynom fit [True] of IV curve for transient data analysis instead of regression [False]
     """
     type:       str
     fs_ana:     float
     noise_en:   bool
-    para_en:    bool
-    use_mode:   int
     dev_value:  dict
     temp:       float
+    use_poly:   bool
 
     @property
     def temperature_voltage(self) -> float:
@@ -40,7 +38,8 @@ class ElectricalLoadHandler:
     _settings: SettingsDEV
     _type_device: dict
     # --- Fitting options
-    _fit_params: np.ndarray
+    _fit_params_current: np.ndarray # Voltage input
+    _fit_params_voltage: np.ndarray # Current input
     _fit_options: list
     # --- Electrical Signal limitations
     _param_bounds: list
@@ -62,8 +61,10 @@ class ElectricalLoadHandler:
         self._type_device = dict()
 
         self._fit_options = [1, 1001]
+        self._fit_params_current = np.zeros((0, 0))
+        self._fit_params_voltage = np.zeros((0, 0))
         self._bounds_curr = [-14, -3]
-        self._bounds_volt = [1.0, 6.0]
+        self._bounds_volt = [0.0, 5.0]
 
     def _check_right_param_format(self, new_list: list=()) -> bool:
         """Function for checking right keys of registered module and settings are equal"""
@@ -156,7 +157,7 @@ class ElectricalLoadHandler:
         else:
             raise KeyError("Parameter keys are not identical")
 
-    def _test_fit_option(self, voltage_test: np.ndarray, params_used: dict | np.ndarray,
+    def _test_fit_option(self, voltage_test: np.ndarray, params_used: dict | list,
                          methods_compare: list, u_inn: float=0.0, plot_title: str='',
                          do_test: bool=False, do_plot: bool=True, path2save: str='') -> float:
         """Function for testing and plotting the comparison
@@ -171,10 +172,13 @@ class ElectricalLoadHandler:
         """
         if do_test:
             self._logger.debug(f"Make IV comparison: {methods_compare[0]} vs. {methods_compare[1]}")
-            i_poly = self._get_current_from_equation(voltage_test, u_inn, params_used) if isinstance(params_used, dict) else self._get_current_from_fitting(voltage_test, u_inn)
             i_test = self._do_regression(voltage_test, u_inn)
-            error = self.calc_error(i_poly, i_test)
+            if isinstance(params_used, dict):
+                i_poly = [self._get_current_from_equation(voltage_test, u_inn, params_used)]
+            else:
+                i_poly = [self._get_current_from_fitting(voltage_test, u_inn), self._get_voltage_from_fitting(i_test, u_inn)]
 
+            error = self.calc_error(i_poly[0], i_test)
             plot_title_new = f"{plot_title}, 1e3* RAE = {error:.3f}" if plot_title else f"1e3* RAE = {error:.3f}"
             self._plot_transfer_function_comparison(
                 u_transfer=voltage_test,
@@ -226,10 +230,11 @@ class ElectricalLoadHandler:
         return [params_ext, error]
 
     def _extract_params_for_polynomfit(self, current: np.ndarray, voltage: np.ndarray, is_current_out: bool=True) -> np.ndarray:
-        self._fit_params = np.polyfit(x=voltage, y=current, deg=self._fit_options[0]) if is_current_out else np.polyfit(x=current, y=voltage, deg=self._fit_options[0])
-        return self._fit_params
+        self._fit_params_current = np.polyfit(x=voltage, y=current, deg=self._fit_options[0])
+        self._fit_params_voltage = np.polyfit(x=current, y=voltage, deg=self._fit_options[0])
+        return self._fit_params_current if is_current_out else self._fit_params_voltage
 
-    def _get_params_for_polynomfit(self, mode_fit: int=0, do_test: bool=False, do_plot: bool=False, path2save: str='') -> [np.ndarray, float]:
+    def _get_params_for_polynomfit(self, mode_fit: int=0, do_test: bool=False, do_plot: bool=False, path2save: str='') -> list:
         """Function to extract the params of electrical device behaviour with polynom fit function
         Args:
             mode_fit:               Fit Range Mode [0: Full Positive, 1: Full negative, 2: Full +/-]
@@ -237,7 +242,7 @@ class ElectricalLoadHandler:
             do_plot:                Plotting the results of regression and polynom fitting
             path2save:              String with path to save the figure
         Returns:
-            List with polynom fit parameter and floating value with Relative Squared Error
+            List with polynom fit parameter for voltage output, current output and floating value with Relative Squared Error
         """
         signals = self._extract_iv_curve_with_regression(
             params_dev=self._settings.dev_value,
@@ -251,18 +256,18 @@ class ElectricalLoadHandler:
         )
         error = self._test_fit_option(
             voltage_test=signals['V'],
-            params_used=self._fit_params,
+            params_used=[self._fit_params_current, self._fit_params_voltage],
             methods_compare=['Poly. fitting', 'Regression'],
             u_inn=0.0,
-            plot_title=f"n_p={self._fit_params.size}",
+            plot_title=f"n_p={self._fit_params_voltage.size}",
             do_test=do_test,
             do_plot=do_plot,
             path2save=path2save
         )
-        return [self._fit_params, error]
+        return [self._fit_params_voltage, self._fit_params_current, error]
 
     @staticmethod
-    def _plot_transfer_function_comparison(u_transfer: np.ndarray, i_dev0: np.ndarray, i_dev1: np.ndarray,
+    def _plot_transfer_function_comparison(u_transfer: np.ndarray, i_dev0: np.ndarray | list, i_dev1: np.ndarray,
                                            method_types: list, plot_title: str='',
                                            path2save: str='', show_plot: bool=False) -> None:
         """Plotting the transfer function of electrical device for comparison
@@ -284,20 +289,24 @@ class ElectricalLoadHandler:
         axs = list()
         axs.append(plt.subplot(2, 1, 1))
         axs.append(plt.subplot(2, 1, 2, sharex=axs[0]))
-        axs[0].semilogy(u_transfer, scaley * np.abs(i_dev0), 'r', marker='.', markersize=2, label=method_types[0])
+        axs[0].semilogy(u_transfer, scaley * np.abs(i_dev0[0]), 'r', marker='.', markersize=2, label=f"{method_types[0]} (Current)")
         axs[0].grid()
         axs[0].set_ylabel(r'Current $\log_{10}(I_F)$ / µA')
 
-        axs[1].plot(u_transfer, scaley * i_dev0, 'r', marker='.', markersize=2, label=method_types[0])
+        axs[1].plot(u_transfer, scaley * i_dev0[0], 'r', marker='.', markersize=2, label=f"{method_types[0]} (Current)")
         axs[1].grid()
         axs[1].set_ylabel(fr'Current $I_F$ / {unity}A')
         axs[1].set_xlabel(r'Voltage $\Delta U$ / V')
 
-        if not np.array_equal(i_dev1, np.zeros_like(i_dev0)):
+        if len(i_dev0) > 1:
+            axs[0].semilogy(i_dev0[1], scaley * np.abs(i_dev1), 'g', marker='.', markersize=2, label=f"{method_types[0]} (Voltage)")
+            axs[1].plot(i_dev0[1], scaley * i_dev1, 'g', marker='.', markersize=2, label=f"{method_types[0]} (Voltage)")
+
+        if not np.array_equal(i_dev1, np.zeros_like(i_dev0[0])):
             axs[0].semilogy(u_transfer, scaley * np.abs(i_dev1), 'k', marker='.', markersize=2, label=method_types[1])
             axs[1].plot(u_transfer, scaley * i_dev1, 'k', marker='.', markersize=2, label=method_types[1])
-            axs[1].legend()
 
+        axs[1].legend()
         axs[0].set_title(plot_title)
         if path2save:
             save_figure(plt, path2save, 'device_iv_charac', ['svg'])
@@ -479,48 +488,24 @@ class ElectricalLoadHandler:
     def _get_current_from_equation(self, voltage_pos: np.ndarray | float, voltage_neg: np.ndarray | float, params: dict) -> np.ndarray:
         return self._type_device[self._settings.type]['equa'](voltage_pos, voltage_neg, params)
 
-    def _get_current_from_fitting(self, voltage_pos: np.ndarray | float, voltage_neg: np.ndarray | float) -> np.ndarray:
-        if not self._fit_params.size == 0:
-            return np.polyval(self._fit_params, voltage_pos - voltage_neg)
-        else:
-            raise RuntimeError("Polyfit not done!")
+    def _get_current_from_fitting(self, voltage_pos: np.ndarray | float, voltage_neg: np.ndarray | float, mode_poly: int=0) -> np.ndarray:
+        if self._fit_params_current.size == 0:
+            self._get_params_for_polynomfit(
+                mode_fit=mode_poly, do_test=False, do_plot=False, path2save=''
+            )
+        return np.polyval(self._fit_params_current, voltage_pos - voltage_neg)
 
-    def _get_voltage_from_fitting(self, current: np.ndarray) -> np.ndarray:
-        if not self._fit_params.size == 0:
-            return np.polyval(self._fit_params, current)
-        else:
-            raise RuntimeError("Polyfit not done!")
+    def _get_voltage_from_fitting(self, current: np.ndarray, u_inn: float, mode_poly: int=0) -> np.ndarray:
+        if self._fit_params_voltage.size == 0:
+            self._get_params_for_polynomfit(
+                mode_fit=mode_poly, do_test=False, do_plot=False, path2save=''
+            )
+        return np.polyval(self._fit_params_voltage, current)
 
     def _get_voltage_from_regression(self, current: np.ndarray, params: dict) -> np.ndarray:
         return -self._type_device[self._settings.type]['reg'](current, np.zeros_like(current), params)
 
-    def get_current(self, u_top: np.ndarray | float, u_bot: np.ndarray | float) -> np.ndarray:
-        """Getting the current response from electrical device
-        Args:
-            u_top:      Applied voltage on top electrode [V]
-            u_bot:      Applied voltage on bottom electrode  [V]
-        Returns:
-            Corresponding current response
-        """
-        method = [method for method in self._type_device.keys() if method == self._settings.type]
-        if len(method) and self._check_right_param_format():
-            return self._get_current_from_equation(u_top, u_bot, self._settings.dev_value)
-        else:
-            raise Exception("Error: Model not available - Please check!")
-
-    def get_current_density(self, u_top: np.ndarray, u_bot: np.ndarray | float, area: float) -> np.ndarray:
-        """Getting the current response from electrical device
-        Args:
-            u_top:      Applied voltage on top electrode [V]
-            u_bot:      Applied voltage on bottom electrode  [V]
-            area:       Area of device [mm^2]
-        Returns:
-            Corresponding current density response [A/mm^2]
-        """
-        return self.get_current(u_top, u_bot) / area
-
-    def get_voltage(self, i_in: np.ndarray, u_inn: np.ndarray | float,
-                    start_value: float=0.0, start_step: float=1e-3, take_last_value: bool=True) -> np.ndarray:
+    def _get_voltage_with_search(self, i_in: np.ndarray, u_inn: np.ndarray | float, start_value: float=0.0, start_step: float=1e-3, take_last_value: bool=True) -> np.ndarray:
         """Getting the voltage response from electrical device
         Args:
             i_in:               Applied current input [A]
@@ -586,6 +571,41 @@ class ElectricalLoadHandler:
             u_response[idx] = u_top
             idx += 1
         return u_response
+
+    def get_voltage(self, current: np.ndarray, u_inn: float) -> np.ndarray:
+        """Getting the voltage response from electrical device
+        :param current: Applied current into device [A]
+        :param u_inn:   Applied voltage on bottom electrode  [V]
+        :returns:       Corresponding voltage response
+        """
+        method = [method for method in self._type_device.keys() if method == self._settings.type]
+        if len(method) and self._check_right_param_format():
+            return self._get_voltage_with_search(current, u_inn) if not self._settings.use_poly else self._get_voltage_from_fitting(current, u_inn)
+        else:
+            raise Exception("Error: Model not available - Please check!")
+
+    def get_current(self, u_top: np.ndarray | float, u_bot: np.ndarray | float) -> np.ndarray:
+        """Getting the current response from electrical device
+        :param u_top:   Applied voltage on top electrode [V]
+        :param u_bot:   Applied voltage on bottom electrode  [V]
+        :returns:       Corresponding current response
+        """
+        method = [method for method in self._type_device.keys() if method == self._settings.type]
+        if len(method) and self._check_right_param_format():
+            return self._get_current_from_equation(u_top, u_bot, self._settings.dev_value) if not self._settings.use_poly else self._get_current_from_fitting(u_top, u_bot)
+        else:
+            raise Exception("Error: Model not available - Please check!")
+
+    def get_current_density(self, u_top: np.ndarray, u_bot: np.ndarray | float, area: float) -> np.ndarray:
+        """Getting the current response from electrical device
+        Args:
+            u_top:      Applied voltage on top electrode [V]
+            u_bot:      Applied voltage on bottom electrode  [V]
+            area:       Area of device [mm^2]
+        Returns:
+            Corresponding current density response [A/mm^2]
+        """
+        return self.get_current(u_top, u_bot) / area
 
 
 def generate_test_signal(t_end: float, fs: float, upp: list, fsig: list, uoff: float=0.0) -> [np.ndarray, np.ndarray]:
