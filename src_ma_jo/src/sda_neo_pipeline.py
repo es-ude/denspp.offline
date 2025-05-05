@@ -194,7 +194,7 @@ def plot_signals_with_mean(preprocessed_frames):
                                 die wiederum einzelne Arrays/Kurven enthalten.
     """
     for i, signal_frames in enumerate(preprocessed_frames):
-        if len(signal_frames) > 0:  # Nur Plot erstellen, wenn signal_frames nicht leer ist
+        if len(signal_frames) > 0 and i == 2:  # Nur Plot erstellen, wenn signal_frames nicht leer ist
             all_curves = np.array(signal_frames)  # Konvertiere zur einfachen Handhabung in ein numpy Array
 
             if all_curves.ndim < 2:  # Sicherstellen, dass es mindestens 2D ist (z.B. [Kurven, Daten])
@@ -210,20 +210,20 @@ def plot_signals_with_mean(preprocessed_frames):
 
             # Zeichne jede einzelne Kurve ausgegraut
             for curve in all_curves:
-                if max(curve)-min(curve) > 30 and max(curve) < 50 and min(curve) > -50:
-                    plt.plot(curve, color='gray', alpha=0.5, linewidth=0.5)
 
-            # Zeichne die mittlere Kurve als schwarze Linie
-            plt.plot(mean_curve, color='black', linewidth=2, label="Mean Curve")
+                plt.plot(curve, color='gray', alpha=0.5, linewidth=0.5)
 
-            # Plot-Titel und Beschriftungen
-            plt.title(f"Signal {i + 1}: Mean Curve und einzelne Kurven", fontsize=14)
-            plt.xlabel("Sample Index", fontsize=12)
-            plt.ylabel("Signal Amplitude", fontsize=12)
-            plt.grid(alpha=0.3)
+                # Zeichne die mittlere Kurve als schwarze Linie
+                #plt.plot(mean_curve, color='black', linewidth=2, label="Mean Curve")
 
-            # Plot anzeigen
-            plt.show()
+                # Plot-Titel und Beschriftungen
+                plt.title(f"Signal {i + 1}: Mean Curve und einzelne Kurven", fontsize=14)
+                plt.xlabel("Sample Index", fontsize=12)
+                plt.ylabel("Signal Amplitude", fontsize=12)
+                plt.grid(alpha=0.3)
+
+                # Plot anzeigen
+                plt.show()
 
 
 
@@ -239,7 +239,7 @@ if __name__ == "__main__":
         thr_gain=1.0,
         thr_min_value=30
     )
-    file_path, output_dir = get_path(data_file_name="A1R1a_ASIC_1S_1000_15.npy")
+    file_path, output_dir = get_path(data_file_name="signal_dictionary.npy")
     loaded_data_dict = load_file_as_dict(file_path)
     spike_detector = SpikeDetection(settings_sda)
 
