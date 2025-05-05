@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 from copy import deepcopy
 from denspp.offline.analog.dev_handler import generate_test_signal, plot_test_results
-from denspp.offline.analog.dev_load import (ElectricalLoad, SettingsDEV, DefaultSettingsDEVResistor,
+from denspp.offline.analog.dev_load import (ElectricalLoad, SettingsDevice, DefaultSettingsDEVResistor,
                                             DefaultSettingsDEVResistiveDiodeSingle, DefaultSettingsDEVResistiveDiodeDouble)
 
 

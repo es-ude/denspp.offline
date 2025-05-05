@@ -1,10 +1,10 @@
 import numpy as np
 from copy import deepcopy
 from unittest import TestCase, main
-from denspp.offline.analog.dev_load import ElectricalLoad, SettingsDEV
+from denspp.offline.analog.dev_load import ElectricalLoad, SettingsDevice
 
 
-TestSettings0 = SettingsDEV(
+TestSettings0 = SettingsDevice(
     type='R',
     fs_ana=50e3,
     noise_en=False,
@@ -13,7 +13,7 @@ TestSettings0 = SettingsDEV(
     dev_value={'r': 100e3},
     temp=300
 )
-TestSettings1 = SettingsDEV(
+TestSettings1 = SettingsDevice(
     type='RDs',
     fs_ana=50e3,
     noise_en=False,

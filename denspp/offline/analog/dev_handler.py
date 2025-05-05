@@ -8,14 +8,15 @@ from scipy.constants import Boltzmann, elementary_charge
 from scipy.optimize import least_squares, curve_fit
 
 from denspp.offline.plot_helper import scale_auto_value, save_figure
+from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, RecommendedSettingsNoise
 from denspp.offline.metric.data_numpy import calculate_error_rae, calculate_error_mse
 
 
 @dataclass
-class SettingsDEV:
-    """Individual data class to configure the electrical device
+class SettingsDevice:
+    """Individual data class to configure an electrical device for simulation
     Attributes:
-        type:       Type of electrical device ['R': resistor, 'C': capacitor, 'L': inductor, 'RDs': Resistive diode]
+        type:       Type of electrical device ['R': resistor, 'RDs': Resistive diode (series), 'RDd': Resistive diode (antiparallel)]
         fs_ana:     Sampling frequency of input [Hz]
         noise_en:   Enable noise on output [True / False]
         dev_value:  Dictionary with device parameters
@@ -31,11 +32,13 @@ class SettingsDEV:
 
     @property
     def temperature_voltage(self) -> float:
+        """Getting the """
         return Boltzmann * self.temp / elementary_charge
 
 
-class ElectricalLoadHandler:
-    _settings: SettingsDEV
+class ElectricalLoadHandler(ProcessNoise):
+    _settings_device: SettingsDevice
+    _settings_noise: SettingsNoise
     _type_device: dict
     # --- Fitting options
     _fit_params_current: np.ndarray # Voltage input
@@ -46,17 +49,19 @@ class ElectricalLoadHandler:
     _bounds_curr: list
     _bounds_volt: list
 
-    @property
-    def temperature_voltage(self) -> float:
-        return Boltzmann * self._settings.temp / elementary_charge
-
     @staticmethod
     def calc_error(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
         return calculate_error_rae(y_pred, y_true)
 
-    def __init__(self, settings_dev: SettingsDEV) -> None:
-        """Class for emulating an electrical device"""
-        self._settings = settings_dev
+    def __init__(self, settings_dev: SettingsDevice, settings_noise: SettingsNoise=RecommendedSettingsNoise) -> None:
+        """Class for emulating an electrical device
+        :param settings_dev:        Class for controlling the device simulation
+        :param settings_noise:      Class for controlling the noise behaviour
+        :return:                    None
+        """
+        super().__init__(settings_noise, settings_dev.fs_ana)
+
+        self._settings_device = settings_dev
         self._logger = getLogger(__name__)
         self._type_device = dict()
 
@@ -68,9 +73,9 @@ class ElectricalLoadHandler:
 
     def _check_right_param_format(self, new_list: list=()) -> bool:
         """Function for checking right keys of registered module and settings are equal"""
-        keys_set = sorted([key for key in self._settings.dev_value.keys()])
+        keys_set = sorted([key for key in self._settings_device.dev_value.keys()])
         keys_bnd = sorted(new_list)
-        keys_ref = sorted(self._type_device[self._settings.type]['param'])
+        keys_ref = sorted(self._type_device[self._settings_device.type]['param'])
         check = keys_set == keys_ref if len(new_list) == 0 else keys_bnd == keys_ref
         return check
 
@@ -95,8 +100,8 @@ class ElectricalLoadHandler:
         Returns:
             Dictionary with two numpy arrays with current ['I'] and voltage ['V'] from device
         """
-        if self._settings.type in self._type_device[self._settings.type]:
-            self._logger.debug(f"Apply regression function for getting device transfer function of {self._settings.type}")
+        if self._settings_device.type in self._type_device[self._settings_device.type]:
+            self._logger.debug(f"Apply regression function for getting device transfer function of {self._settings_device.type}")
             match mode_fit:
                 case 1:
                     self._logger.debug("Generate I-V regression for given current boundries (Negative range)")
@@ -128,7 +133,7 @@ class ElectricalLoadHandler:
         :param disable_print:   Disabling the tqdm print
         :return:                Corresponding current signal
         """
-        params_used = self._settings.dev_value if len(params) == 0 else params
+        params_used = self._settings_device.dev_value if len(params) == 0 else params
         if self._check_right_param_format():
             du = u_inp - u_inn
             if isinstance(du, float):
@@ -141,12 +146,12 @@ class ElectricalLoadHandler:
 
             # --- Run optimization
             iout = list()
-            self._logger.debug(f"Start regression of device: {self._settings.type}")
+            self._logger.debug(f"Start regression of device: {self._settings_device.type}")
             for idx, u_sample in enumerate(tqdm(du, desc="Regression Progress:", disable=disable_print)):
                 sign_pos = u_sample >= 0.0
                 y_start = y_initial if idx == 0 else abs(iout[-1])
                 result = least_squares(
-                    self._type_device[self._settings.type]['reg'],
+                    self._type_device[self._settings_device.type]['reg'],
                     y_start,
                     jac='3-point',
                     bounds=(bounds[0], bounds[1]),
@@ -208,10 +213,10 @@ class ElectricalLoadHandler:
             List with device parameter and floating value with Relative Squared Error
         """
         signals = self._extract_iv_curve_with_regression(
-            params_dev=self._settings.dev_value,
+            params_dev=self._settings_device.dev_value,
             mode_fit=mode_fit
         )
-        self._logger.debug(f"Start curve fitting of device: {self._settings.type}")
+        self._logger.debug(f"Start curve fitting of device: {self._settings_device.type}")
         params_ext = self.get_params_from_fitting_data(
             voltage=signals['V'],
             current=signals['I'],
@@ -245,10 +250,10 @@ class ElectricalLoadHandler:
             List with polynom fit parameter for voltage output, current output and floating value with Relative Squared Error
         """
         signals = self._extract_iv_curve_with_regression(
-            params_dev=self._settings.dev_value,
+            params_dev=self._settings_device.dev_value,
             mode_fit=mode_fit
         )
-        self._logger.debug(f"Start polynom fitting of device: {self._settings.type}")
+        self._logger.debug(f"Start polynom fitting of device: {self._settings_device.type}")
         self._extract_params_for_polynomfit(
             voltage=signals['V'],
             current=signals['I'],
@@ -426,13 +431,13 @@ class ElectricalLoadHandler:
         :return:                List with bounds in right order
         """
         if self._check_right_param_format():
-            arg_names_must = [key for key in self._settings.dev_value.keys()]
+            arg_names_must = [key for key in self._settings_device.dev_value.keys()]
             arg_names_have = [key for key in param_bounds.keys()]
             self._param_bounds = [[param_bounds[key][0] if key in arg_names_have else -np.inf for key in arg_names_must],
                                   [param_bounds[key][1] if key in arg_names_have else np.inf for key in arg_names_must]]
             return self._param_bounds
         else:
-            raise KeyError(f"Wrong parameter names! Use: {self._type_device[self._settings]['param']}")
+            raise KeyError(f"Wrong parameter names! Use: {self._type_device[self._settings_device]['param']}")
 
     def _build_param_initial_guess(self) -> list:
         guess_values = list()
@@ -452,11 +457,11 @@ class ElectricalLoadHandler:
         self.declare_param_bounds(param_bounds)
 
         if self._check_right_param_format():
-            arg_names = [key for key in self._settings.dev_value.keys()]
+            arg_names = [key for key in self._settings_device.dev_value.keys()]
             self._logger.debug(f"Getting the model parameters: {arg_names}")
 
             params, coinv = curve_fit(
-                f=self._type_device[self._settings.type]['fit'],
+                f=self._type_device[self._settings_device.type]['fit'],
                 ydata=voltage,
                 xdata=current,
                 bounds=self._param_bounds,
@@ -486,7 +491,7 @@ class ElectricalLoadHandler:
         return violation_up or violation_dwn
 
     def _get_current_from_equation(self, voltage_pos: np.ndarray | float, voltage_neg: np.ndarray | float, params: dict) -> np.ndarray:
-        return self._type_device[self._settings.type]['equa'](voltage_pos, voltage_neg, params)
+        return self._type_device[self._settings_device.type]['equa'](voltage_pos, voltage_neg, params)
 
     def _get_current_from_fitting(self, voltage_pos: np.ndarray | float, voltage_neg: np.ndarray | float, mode_poly: int=0) -> np.ndarray:
         if self._fit_params_current.size == 0:
@@ -503,7 +508,7 @@ class ElectricalLoadHandler:
         return np.polyval(self._fit_params_voltage, current)
 
     def _get_voltage_from_regression(self, current: np.ndarray, params: dict) -> np.ndarray:
-        return -self._type_device[self._settings.type]['reg'](current, np.zeros_like(current), params)
+        return -self._type_device[self._settings_device.type]['reg'](current, np.zeros_like(current), params)
 
     def _get_voltage_with_search(self, i_in: np.ndarray, u_inn: np.ndarray | float, start_value: float=0.0, start_step: float=1e-3, take_last_value: bool=True) -> np.ndarray:
         """Getting the voltage response from electrical device
@@ -578,9 +583,9 @@ class ElectricalLoadHandler:
         :param u_inn:   Applied voltage on bottom electrode  [V]
         :returns:       Corresponding voltage response
         """
-        method = [method for method in self._type_device.keys() if method == self._settings.type]
+        method = [method for method in self._type_device.keys() if method == self._settings_device.type]
         if len(method) and self._check_right_param_format():
-            return self._get_voltage_with_search(current, u_inn) if not self._settings.use_poly else self._get_voltage_from_fitting(current, u_inn)
+            return self._get_voltage_with_search(current, u_inn) if not self._settings_device.use_poly else self._get_voltage_from_fitting(current, u_inn)
         else:
             raise Exception("Error: Model not available - Please check!")
 
@@ -590,9 +595,9 @@ class ElectricalLoadHandler:
         :param u_bot:   Applied voltage on bottom electrode  [V]
         :returns:       Corresponding current response
         """
-        method = [method for method in self._type_device.keys() if method == self._settings.type]
+        method = [method for method in self._type_device.keys() if method == self._settings_device.type]
         if len(method) and self._check_right_param_format():
-            return self._get_current_from_equation(u_top, u_bot, self._settings.dev_value) if not self._settings.use_poly else self._get_current_from_fitting(u_top, u_bot)
+            return self._get_current_from_equation(u_top, u_bot, self._settings_device.dev_value) if not self._settings_device.use_poly else self._get_current_from_fitting(u_top, u_bot)
         else:
             raise Exception("Error: Model not available - Please check!")
 

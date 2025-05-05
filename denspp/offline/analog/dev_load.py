@@ -1,9 +1,10 @@
 import numpy as np
-from .dev_handler import ElectricalLoadHandler, SettingsDEV
-from .dev_noise import ProcessNoise, SettingsNoise
+from .dev_noise import SettingsNoise
+from .dev_handler import ElectricalLoadHandler, SettingsDevice
 
 
-DefaultSettingsDEVResistor = SettingsDEV(
+
+DefaultSettingsDEVResistor = SettingsDevice(
     type='R',
     fs_ana=50e3,
     noise_en=False,
@@ -13,7 +14,7 @@ DefaultSettingsDEVResistor = SettingsDEV(
 )
 
 
-DefaultSettingsDEVResistiveDiodeSingle = SettingsDEV(
+DefaultSettingsDEVResistiveDiodeSingle = SettingsDevice(
     type='RDs',
     fs_ana=50e3,
     noise_en=False,
@@ -23,7 +24,7 @@ DefaultSettingsDEVResistiveDiodeSingle = SettingsDEV(
 )
 
 
-DefaultSettingsDEVResistiveDiodeDouble = SettingsDEV(
+DefaultSettingsDEVResistiveDiodeDouble = SettingsDevice(
     type='RDd',
     fs_ana=50e3,
     noise_en=False,
@@ -41,17 +42,9 @@ RecommendedSettingsNoise = SettingsNoise(
     do_print=False
 )
 
-class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
-    _settings: SettingsDEV
-    _fit_options: list
-    _fit_params_current: np.ndarray
-    _fit_params_voltage: np.ndarray
-    _type_device: dict
-    _bounds_curr: list
-    _bounds_volt: list
+class ElectricalLoad(ElectricalLoadHandler):
 
-    def __init__(self, settings_dev: SettingsDEV, settings_noise=RecommendedSettingsNoise):
-        ProcessNoise.__init__(self, settings_noise, settings_dev.fs_ana)
+    def __init__(self, settings_dev: SettingsDevice, settings_noise=RecommendedSettingsNoise):
         ElectricalLoadHandler.__init__(self, settings_dev)
 
         # --- Registering electrical devices
@@ -86,7 +79,7 @@ class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
         """
         du = u_inp - u_inn
         i_out = du / params['r']
-        if self._settings.noise_en:
+        if self._settings_device.noise_en:
             i_out += self.gen_noise_awgn_curr(du.size, params['r'])
         return i_out
 
@@ -144,7 +137,7 @@ class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
         :param i_sat:       Saturation current
         :return:            Corresponding voltage signal
         """
-        return uth0 + r_sh * i_path + n_eff * self._settings.temperature_voltage * np.log(i_path / i_sat + 1)
+        return uth0 + r_sh * i_path + n_eff * self._settings_device.temperature_voltage * np.log(i_path / i_sat + 1)
 
     def _func2reg_resistive_diode(self, i_path: np.ndarray, xd: np.ndarray, params: dict) -> np.ndarray:
         """Function for do least_squared regression
@@ -179,6 +172,6 @@ class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
             i_fit[xpos_i0] = params['i_sat']
 
         # --- Adding noise
-        if self._settings.noise_en:
+        if self._settings_device.noise_en:
             i_fit += self.gen_noise_awgn_curr(du.size, params['r_sh'])
         return i_fit

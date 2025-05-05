@@ -1,10 +1,10 @@
 import numpy as np
 from copy import deepcopy
 from unittest import TestCase, main
-from denspp.offline.analog.dev_handler import generate_test_signal, SettingsDEV, ElectricalLoadHandler
+from denspp.offline.analog.dev_handler import generate_test_signal, SettingsDevice, ElectricalLoadHandler
 
 
-TestSettings = SettingsDEV(
+TestSettings = SettingsDevice(
     type='R',
     fs_ana=50e3,
     noise_en=False,
