@@ -1,5 +1,4 @@
 import numpy as np
-from logging import getLogger
 from .dev_handler import ElectricalLoadHandler, SettingsDEV
 from .dev_noise import ProcessNoise, SettingsNoise
 
@@ -55,18 +54,13 @@ class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
     _bounds_volt: list
 
     def __init__(self, settings_dev: SettingsDEV, settings_noise=RecommendedSettingsNoise):
-        super().__init__(settings_noise, settings_dev.fs_ana)
-        self._init_class()
-        self._logger = getLogger(__name__)
-
-        self._settings = settings_dev
-        self._fit_options = [6, 1001]
+        ProcessNoise.__init__(self, settings_noise, settings_dev.fs_ana)
+        ElectricalLoadHandler.__init__(self, settings_dev)
 
         # --- Registering electrical devices
         self.register_device(
             short_label='R',
             description='Resistor',
-            param=['r'],
             func_equa=self._equation_resistor,
             func_reg=self._func2reg_resistor,
             func_fit=self._func2cur_resistor
@@ -74,7 +68,6 @@ class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
         self.register_device(
             short_label='RDs',
             description='Resistive diode (single)',
-            param=['i_sat', 'n_eff', 'r_sh', 'uth0'],
             func_equa=self._equation_resistive_diode_single,
             func_reg=self._func2reg_resistive_diode,
             func_fit=self._func2cur_resistive_diode
@@ -82,7 +75,6 @@ class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
         self.register_device(
             short_label='RDd',
             description='Resistive diode (anti-parallel)',
-            param=['i_sat', 'n_eff', 'r_sh', 'uth0'],
             func_equa=self._equation_resistive_diode_antiparallel,
             func_reg=self._func2reg_resistive_diode,
             func_fit=self._func2cur_resistive_diode
@@ -90,12 +82,10 @@ class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
 
     def _equation_resistor(self, u_inp: np.ndarray, u_inn: np.ndarray | float, params: dict) -> np.ndarray:
         """Performing the behaviour of an electrical resistor
-        Args:
-            u_inp:      Positive input voltage [V]
-            u_inn:      Negative input voltage [V]
-            params:     Dictionary with device parameters
-        Returns:
-            Corresponding current signal
+        :param u_inp:       Positive input voltage [V]
+        :param u_inn:       Negative input voltage [V]
+        :param params:      Dictionary with device parameters
+        :return:            Corresponding current signal
         """
         du = u_inp - u_inn
         i_out = du / params['r']
@@ -103,8 +93,7 @@ class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
             i_out += self.gen_noise_awgn_curr(du.size, params['r'])
         return i_out
 
-    @staticmethod
-    def _func2cur_resistor(i_device: np.ndarray, r: float) -> np.ndarray:
+    def _func2cur_resistor(self, i_device: np.ndarray, r: float) -> np.ndarray:
         """Function for fitting the electrical inputs (voltage/ current) to model parameters for a resistor
         :param i_device:    Numpy array with current parameters
         :param r:           Resistance
@@ -114,12 +103,10 @@ class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
 
     def _func2reg_resistor(self, i_path: np.ndarray, xd: np.ndarray, params: dict) -> np.ndarray:
         """Function for do least_squared regression
-        Args:
-            i_path:     Input current sample (--> output value)
-            xd:         Input difference voltage sample
-            params:     Dictionary with device parameters
-        Returns:
-            Numpy value with corresponding difference voltage (goes to zero with further optimization)
+        :param i_path:      Input current sample (--> output value)
+        :param xd:          Input difference voltage sample
+        :param params:      Dictionary with device parameters
+        :return:            Numpy value with corresponding difference voltage (goes to zero with further optimization)
         """
         v1 = self._func2cur_resistor(i_path, **params)
         return xd - v1
@@ -168,28 +155,23 @@ class ElectricalLoad(ProcessNoise, ElectricalLoadHandler):
         :param xd:      Input difference voltage sample
         :return:        Numpy value with corresponding difference voltage (goes to zero with further optimization)
         """
-        v1 = self._func2cur_resistive_diode(i_path, uth0=params['uth0'], n_eff=params['n_eff'],i_sat=params['i_sat'], r_sh=params['r_sh'])
+        v1 = self._func2cur_resistive_diode(i_path, **params)
         return xd - v1
 
     def _get_current_resistive_diode(self, u_inp: np.ndarray, u_inn: np.ndarray | float, params: dict, mode: bool) -> np.ndarray:
         """Performing the behaviour of a series connection of resistor and a diode
-        Args:
-            u_inp:          Positive input voltage [V]
-            u_inn:          Negative input voltage [V]
-            params:         Dictionary with device parameters
-            mode:           Single side Connection (False) or anti-parallel Connection (True)
-        Returns:
-            Corresponding current signal
+        :param u_inp:   Positive input voltage [V]
+        :parma u_inn:   Negative input voltage [V]
+        :param params:  Dictionary with device parameters
+        :param mode:    Single side Connection (False) or antiparallel Connection (True)
+        :return:        Corresponding current signal
         """
-        self._bounds_volt = [1.0, self._bounds_volt[1]]
-        self._bounds_curr = [-15, -2]
-
         du = u_inp - u_inn if not mode else np.abs(u_inp - u_inn)
         if isinstance(du, float):
             du = np.zeros(shape=(1,))
             du[0] = u_inp - u_inn
 
-        i_fit = self._do_regression(u_inp, u_inn)
+        i_fit = self._do_regression(u_inp=u_inp, u_inn=u_inn, params=params, disable_print=True)
 
         # --- Checking if voltage limits or current limits are reached
         xpos_uth = np.argwhere(du < 0.0).flatten()
