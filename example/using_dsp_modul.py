@@ -7,7 +7,7 @@ example_settings = SettingsFilter(
     gain=1, fs=0.3e3,
     n_order=2, f_filt=[0.1, 100],
     type='iir', f_type='butter', b_type='bandpass',
-    t_dly=100e-6, q_fac=1
+    t_dly=100e-6
 )
 
 if __name__ == "__main__":

@@ -14,35 +14,35 @@ class SettingsFilter:
     Attributes:
         gain:       Integer with applied amplification factor [V/V]
         fs:         Sampling rate [Hz]
-        n_order:    Integer with number of filter order
+        n_order:    Integer with number of filter order or as Quality factor (only for Notch filter)
         f_filt:     List with filter frequencies [Hz] (low/high-pass: only one value, band-pass/stop: two values)
         type:       String with selected filter algorithm ['iir', 'fir']
         f_type:     String with selected filter structure ['butter', 'cheby1', 'cheby2', 'ellip', 'bessel']
         b_type:     String with selected filter type ['lowpass', 'highpass', 'bandpass', 'bandstop', 'notch' (only IIR)]
         t_dly:      Float with delay time [s] if FIR delay filter is used
-        q_fac:      Quality factor (relevant for Notch filter)
     """
     gain: int
     fs: float
-    n_order: int
+    n_order: int | float
     f_filt: list
     type: str
     f_type: str
     b_type: str
     t_dly: float
-    q_fac: float
 
 
 RecommendedSettingsFilter = SettingsFilter(
     gain=1, fs=0.3e3,
     n_order=2, f_filt=[0.1, 100],
     type='iir', f_type='butter', b_type='bandpass',
-    t_dly=100e-6,
-    q_fac=10
+    t_dly=100e-6
 )
 
 
 class DSP(CommonDigitalFunctions):
+    coeff_a: np.ndarray
+    coeff_b: np.ndarray
+
     def __init__(self, setting: SettingsFilter):
         """Class for Emulating Digital Signal Processing on FPGA
         :param setting:     Class for handling the filter stage (using SettingsFilter)
@@ -51,9 +51,6 @@ class DSP(CommonDigitalFunctions):
         super().__init__()
         self._logger = getLogger(__name__)
         self.settings = setting
-
-        self.coeff_a = None
-        self.coeff_b = None
         self.do_analog = False
         self.use_filtfilt = False
         self.__process_filter()
@@ -76,7 +73,7 @@ class DSP(CommonDigitalFunctions):
             else:
                 filter = scft.iirnotch(
                     w0=float(self.settings.f_filt[0]),
-                    Q=self.settings.q_fac,
+                    Q=self.settings.n_order,
                     fs=self.settings.fs
                 )
             self.coeff_b = filter[0]
@@ -103,13 +100,13 @@ class DSP(CommonDigitalFunctions):
                 b=self.coeff_b,
                 a=self.coeff_a,
                 x=xin
-            ).astype("int")
+            )
         else:
             xout = self.settings.gain * scft.filtfilt(
                 b=self.coeff_b,
                 a=self.coeff_a,
                 x=xin
-            ).astype("int")
+            )
         return xout
 
     def time_delay_fir(self, xin: np.ndarray) -> np.ndarray:

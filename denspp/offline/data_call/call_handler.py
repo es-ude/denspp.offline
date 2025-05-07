@@ -246,18 +246,14 @@ class ControllerData:
             trgg_out.append(self.generate_label_stream_channel(ch_used, window_time))
         return trgg_out
 
-    def __get_data_available_local(self, folder_name: str, data_type: str, path_ref: str = '') -> str:
-        folder_structure = glob(join(self.__config_data_selection[0], '*'))
-        path2folder = [folder for folder in folder_structure if folder_name in folder]
-        file_name = basename(path_ref)
-
-        if len(path2folder) == 0:
+    def __get_data_available_local(self, data_type: str, path_ref: str = '') -> str:
+        if not exists(join(self.__config_data_selection[0], path_ref)):
             return ""
         else:
-            self._path2folder = path2folder[0]
-            self.path2mapping_local = glob(join(path2folder[0], 'Mapping_*.csv'))
-            folder_structure = glob(join(path2folder[0], '*'))
-            folder_content = glob(join(path2folder[0], data_type))
+            self._path2folder = glob(join(self.__config_data_selection[0], '*'))[0]
+            self.path2mapping_local = glob(join(self._path2folder, 'Mapping_*.csv'))
+            folder_structure = glob(join(self._path2folder, '*'))
+            folder_content = glob(join(self._path2folder, data_type))
             if len(folder_structure) > len(folder_content):
                 folder_content = glob(join(folder_structure[self.__config_data_selection[1]], data_type))
                 folder_content.sort()
@@ -289,7 +285,7 @@ class ControllerData:
         self.__config_data_selection = [used_datapath, self._settings.data_case, self._settings.data_point]
 
         path2chck = self.__get_path_available_remote(folder_name, data_type)
-        pathlocal = self.__get_data_available_local(folder_name, data_type, path2chck)
+        pathlocal = self.__get_data_available_local(data_type, path2chck)
         if basename(pathlocal) == basename(path2chck) and path2chck:
             self._path2file = pathlocal
         elif path2chck and not pathlocal:
