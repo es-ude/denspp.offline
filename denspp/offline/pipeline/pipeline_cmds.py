@@ -2,6 +2,7 @@ from os import mkdir
 from os.path import exists, join
 from shutil import copy
 from datetime import datetime
+from logging import getLogger
 import numpy as np
 import matplotlib.pyplot as plt
 from threading import Thread, active_count
@@ -17,6 +18,7 @@ class PipelineCMD:
 
     def __init__(self) -> None:
         """Class for handling the pipeline processing"""
+        self._logger = getLogger(__name__)
         self._path2start = get_path_project_start()
 
     def get_pipeline_name(self) -> str:
@@ -55,7 +57,7 @@ class PipelineCMD:
         """
         path2data = join(self.path2save, name)
         np.save(path2data, data, allow_pickle=False)
-        print(f"... data saved in: {path2data}")
+        self._logger.info(f"... data saved in: {path2data}")
 
 
 class ThreadProcessor(Thread):
@@ -108,6 +110,7 @@ class ProcessingData:
         Returns:
             None
         """
+        self._logger = getLogger(__name__)
         # --- Preparing data
         self.data = data_in
         self.sampling_rate = fs
@@ -126,7 +129,7 @@ class ProcessingData:
     def __perform_single_threads(self) -> None:
         """Handler for processing all channels with one single thread"""
         self.__threads_worker = list()
-        print('... processing data via single threading')
+        self._logger.info('... processing data via single threading')
         for idx, elec in enumerate(tqdm(self._channel_id, ncols=100, desc='Progress: ')):
             self.__threads_worker.append(ThreadProcessor(self.data[idx], self.sampling_rate, self._pipeline))
             self.__threads_worker[idx].start()
@@ -141,7 +144,7 @@ class ProcessingData:
         for ite in range(self._num_iterations):
             process_threads.append(self._channel_id[ite * self._max_num_workers : (ite + 1) * self._max_num_workers])
 
-        print(f"... processing data with {self._max_num_workers} of {active_count()} threading workers")
+        self._logger.info(f"... processing data with {self._max_num_workers} of {active_count()} threading workers")
         for thr in tqdm(process_threads, ncols=100, desc='Progress: '):
             self.__threads_worker = list()
             # --- Starting all threads

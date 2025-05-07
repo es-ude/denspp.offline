@@ -11,10 +11,10 @@ def define_logger_testing():
     )
 
 
-def define_logger_runtime():
+def define_logger_runtime(save_file: bool=True):
     return logging.basicConfig(
         level=logging.INFO,
-        filename=join('runs', 'runtime_report_normal.log'),
+        filename=join('runs', 'runtime_report_normal.log') if save_file else None,
         filemode='w',
         format='%(asctime)s - %(name)s - %(levelname)s = %(message)s'
     )

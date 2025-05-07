@@ -1,3 +1,4 @@
+from logging import getLogger
 from denspp.offline import YamlConfigHandler
 from denspp.offline.data_call import SettingsData, DefaultSettingsData
 from denspp.offline.pipeline.pipeline_cmds import ProcessingData, SettingsThread, RecommendedSettingsThread
@@ -8,13 +9,16 @@ def start_pipeline_processing(object_dataloader, object_pipeline) -> None:
     :param object_dataloader:   object dataloader
     :param object_pipeline:     object pipeline
     """
+    logger = getLogger(__name__)
+
     # --- Calling YAML config handler
     settings_data, settings_thr = read_yaml_pipeline_config()
 
     # ----- Preparation: Module calling -----
-    print("\nRunning framework for end-to-end neural signal processing (DeNSPP)"
-          "\n\nStep #1: Loading data"
-          "\n=================================================")
+    logger.info("Running framework for end-to-end neural signal processing (DeNSPP)")
+    logger.info("Step #1: Loading data")
+    logger.info("=================================================")
+
     datahand = object_dataloader(settings_data)
     datahand.do_call()
     datahand.do_cut()
@@ -27,8 +31,8 @@ def start_pipeline_processing(object_dataloader, object_pipeline) -> None:
     del datahand
 
     # --- Thread Preparation: Processing data
-    print("\nStep #2: Processing data"
-          "\n=================================================")
+    logger.info("Step #2: Processing data")
+    logger.info("=================================================")
     thr_station = ProcessingData(
         pipeline=object_pipeline,
         settings=settings_thr,
@@ -39,8 +43,8 @@ def start_pipeline_processing(object_dataloader, object_pipeline) -> None:
     thr_station.do_processing()
 
     # --- Plot all plots and save results
-    print("\nStep #3: Saving results and plotting"
-          "\n=================================================")
+    logger.info("Step #3: Saving results and plotting")
+    logger.info("=================================================")
     thr_station.do_save_results()
     thr_station.do_plot_results()
 

@@ -186,9 +186,8 @@ class ControllerData:
             fs_addon = f" (resampling to {int(1e-3 * self._raw_data.data_fs_used)} kHz)"
         else:
             fs_addon = ""
-        self.__logger.info(f"... original sampling rate of {int(1e-3 * self._raw_data.data_fs_orig)} kHz{fs_addon}"
-              f"\n... using {self.__fill_factor * 100:.2f}% of the data "
-              f"(time length of {self._raw_data.data_time / self.__fill_factor:.2f} s)")
+        self.__logger.info(f"... original sampling rate of {int(1e-3 * self._raw_data.data_fs_orig)} kHz{fs_addon}")
+        self.__logger.info(f"\n... using {self.__fill_factor * 100:.2f}% of the data (time length of {self._raw_data.data_time / self.__fill_factor:.2f} s)")
 
         if self._raw_data.label_exist:
             cluster_array = None
