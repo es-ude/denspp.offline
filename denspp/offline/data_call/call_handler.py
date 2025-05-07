@@ -302,13 +302,15 @@ class ControllerData:
         else:
             raise FileNotFoundError("--- File is not available. Please check! ---")
 
-    def _read_csv_file(self, path2csv: str, num_channels: int, split_option: str, start_pos_csvfile: int=0) -> list:
+    def _read_csv_file(self, path2csv: str, num_channels: int, split_option: str,
+                       start_pos_csvfile: int=0, skip_first_line: bool=False) -> list:
         """Reading the csv file
         Args:
             path2csv:           Path to csv file for reading content
             num_channels:       Given number of channels for seperating the list
             split_option:       Option for splitting the strings of csv reading
             start_pos_csvfile:  Selection list element from csv line-read for processing
+            skip_first_line:    Boolean for skipping first line of csv file
         Returns:
             One list with converted informations
         """
@@ -322,13 +324,16 @@ class ControllerData:
             return []
         else:
             file = open(path2csv, 'r')
-            for line in file:
-                input = line.split(split_option)
-                sel_list = start_pos_csvfile
-                for val in input:
-                    if val:
-                        loaded_data[sel_list].append(val)
-                        sel_list += 1
+            for idx, line in enumerate(file):
+                if skip_first_line and idx == 0:
+                    pass
+                else:
+                    input = line.split(split_option)
+                    sel_list = start_pos_csvfile
+                    for val in input:
+                        if val:
+                            loaded_data[sel_list].append(val)
+                            sel_list += 1
             return loaded_data
 
     @staticmethod
@@ -339,7 +344,7 @@ class ControllerData:
         for idx, data0 in enumerate(data):
             num_samples.append(len(data0))
         num_samples = np.array(num_samples)
-        num_channels = len(data) + 1
+        num_channels = len(data)
 
         # --- Getting data in right format
         data_used = np.zeros((num_channels, num_samples.min()), dtype=float)
