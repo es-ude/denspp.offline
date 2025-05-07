@@ -9,6 +9,12 @@ Config_*.yaml
 tests/*.log
 uv.lock
 
+# Just for not uploading new features/files into main folder (just for local development)
+**/src_*
+**/main_*.py
+**/access_cloud.yaml
+
+
 ### venv template
 # Virtualenv
 # http://iamzed.com/2009/05/07/a-primer-on-virtualenv/
