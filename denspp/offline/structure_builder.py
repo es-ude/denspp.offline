@@ -71,11 +71,10 @@ def init_dnn_folder(new_folder: str = '') -> None:
     copy_files = {'main_dnn_train.py': '', 'call_dataset.py': folder_start}
 
     # --- Generation process
-    path2proj = get_path_project_start(new_folder)
-    path2start = join(path2proj, folder_start)
+    path2start = get_path_project_start(new_folder)
     for folder_name in folder_structure:
-        makedirs(join(path2start, folder_name), exist_ok=True)
+        makedirs(join(path2start, folder_start, folder_name), exist_ok=True)
         if not exists(path2start):
             logger.debug(f"Creating template folder: {folder_name}")
 
-    copy_template_files(copy_files, path2proj)
+    copy_template_files(copy_files, path2start)
