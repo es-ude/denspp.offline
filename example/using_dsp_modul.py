@@ -1,15 +1,21 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from denspp.offline.digital.dsp import SettingsFilter, RecommendedSettingsFilter, DSP
+from denspp.offline.digital.dsp import SettingsFilter, DSP
 
+
+example_settings = SettingsFilter(
+    gain=1, fs=0.3e3,
+    n_order=2, f_filt=[0.1, 100],
+    type='iir', f_type='butter', b_type='bandpass',
+    t_dly=100e-6, q_fac=1
+)
 
 if __name__ == "__main__":
     plt.close('all')
 
     t_end = 200e-3
-    settings = RecommendedSettingsFilter
-    demo_dsp = DSP(settings)
-    num_points = int(settings.fs * t_end)
+    demo_dsp = DSP(example_settings)
+    num_points = int(example_settings.fs * t_end)
 
     f0 = 0.18e3
     f1 = 0.2e3

@@ -55,14 +55,14 @@ class SettingsPipe:
         fs=SettingsADC.fs_adc,
         n_order=2, f_filt=[0.1, 100],
         type='iir', f_type='butter', b_type='bandpass',
-        t_dly=0
+        t_dly=0, q_fac=1
     )
     SettingsDSP_SPK = SettingsFilter(
         gain=1,
         fs=SettingsADC.fs_adc,
         n_order=2, f_filt=[200, 8e3],
         type='iir', f_type='butter', b_type='bandpass',
-        t_dly=0
+        t_dly=0, q_fac=1
     )
 
     # --- Options for Spike Detection and Frame Aligning
