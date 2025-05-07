@@ -108,7 +108,7 @@ class Pipeline_Digital(PipelineCMD):
             xsda = self.sda.sda_ado(xin)
             text_sda = 'ADO'
         elif mode_sda == 5:
-            xsda = self.sda.sda_eed(xin, self.signals.fs_adc)
+            xsda = self.sda.sda_eed(xin)
             text_sda = 'EED'
         elif mode_sda == 6:
             xsda = self.sda.sda_spb(xin)

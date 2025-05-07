@@ -1,7 +1,7 @@
 from denspp.offline.dnn.dnn_handler import ConfigMLPipeline, DefaultSettings_MLPipe
 from denspp.offline.yaml_handler import YamlConfigHandler
 from denspp.offline.structure_builder import init_project_folder
-from denspp.offline.template.call_dataset import DatasetLoader
+from src_dnn.call_dataset import DatasetLoader
 
 
 if __name__ == "__main__":

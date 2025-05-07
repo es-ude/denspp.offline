@@ -9,7 +9,7 @@ def load_data(path, filename):
     return loadmat(full_path)
 
 
-def extract_arrays(data, key, num_arrays=61):
+def extract_arrays(data, key):
     """
     Extrahiert eine bestimmte Anzahl von Arrays aus den geladenen Daten.
     Args:
@@ -20,4 +20,5 @@ def extract_arrays(data, key, num_arrays=61):
     Returns:
         Liste der extrahierten Arrays.
     """
+    num_arrays = len(data[key][2])
     return [np.array([arr[i] for arr in data[key]]) for i in range(num_arrays)]

@@ -24,7 +24,7 @@ def do_train_rgc_class(class_dataset, settings: ConfigMLPipeline) -> None:
 
 
 def do_train_rgc_aecl(class_dataset, settings: ConfigMLPipeline) -> None:
-    """Training routine for Autoencoders and Classification after Encoder for Retinal Ganglion Celltype Classification
+    """Training routine for Autoencoders and Classification after Encoder for Retinal Ganglion Cell-Type Classification
     Args:
         class_dataset:  Class of custom-made SettingsDataset from src_dnn/call_dataset.py
         settings:       Handler for configuring the routine selection for train deep neural networks
