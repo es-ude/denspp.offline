@@ -47,9 +47,8 @@ def init_project_folder(new_folder: str = '') -> None:
     :return:                None
     """
     folder_structure = ['data', 'dataset', 'runs', 'temp', 'config', 'src_pipe']
-    copy_files = {'main_pipeline.py': '', 'main_data_merge.py': '', 'main_dnn_train.py': '',
-                  'call_data.py': 'src_pipe', 'pipeline_v0.py': 'src_pipe', 'pipeline_data.py': 'src_pipe',
-                  'template_test.py': '', '.gitignore': ''}
+    copy_files = {'main_pipeline.py': '', 'main_data_merge.py': '', 'template_test.py': '', '.gitignore': '',
+                  'call_data.py': 'src_pipe', 'pipeline_v0.py': 'src_pipe', 'pipeline_data.py': 'src_pipe'}
 
     path2start = get_path_project_start(new_folder)
     makedirs(path2start, exist_ok=True)
@@ -59,6 +58,7 @@ def init_project_folder(new_folder: str = '') -> None:
             logger.debug(f"Creating template folder: {folder_name}")
 
     copy_template_files(copy_files, path2start)
+    init_dnn_folder(new_folder=new_folder)
 
 
 def init_dnn_folder(new_folder: str = '') -> None:
