@@ -93,7 +93,6 @@ class OwnCloudDownloader:
         """
         self.__handler = owncloud.Client.from_public_link(self.__settings.remote_link)
         self.__logger.info("... downloading file from remote")
-        print("... downloading file from remote")
         path_selected = self.__settings.remote_transient if not use_dataset else self.__settings.remote_dataset
         self.__handler.get_file(
             remote_path=join(path_selected, file_name),

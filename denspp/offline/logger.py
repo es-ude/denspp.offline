@@ -16,7 +16,7 @@ def define_logger_runtime(save_file: bool=True):
         level=logging.INFO,
         filename=join('runs', 'runtime_report_normal.log') if save_file else None,
         filemode='w',
-        format='%(asctime)s - %(name)s - %(levelname)s = %(message)s'
+        format='%(asctime)s: %(message)s'
     )
 
 

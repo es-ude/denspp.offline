@@ -180,8 +180,8 @@ class ControllerData:
 
     def output_meta(self) -> None:
         """Print some meta information into the console"""
-        self.__logger.info(f"... using data set of: {self._raw_data.data_name}"
-              "\n... using data point:", self._path2file)
+        self.__logger.info(f"... using data set of: {self._raw_data.data_name}")
+        self.__logger.info("... using data point:", self._path2file)
         if not self._raw_data.data_fs_used == 0 and not self._raw_data.data_fs_used == self._raw_data.data_fs_orig:
             fs_addon = f" (resampling to {int(1e-3 * self._raw_data.data_fs_used)} kHz)"
         else:
@@ -391,9 +391,12 @@ class ControllerData:
 
         # --- Generating mapping information
         if self._settings.do_mapping and exists(self.path2mapping) and self.path2mapping:
+            self.__logger.info("Apply electrode mapping")
             self._generate_electrode_mapping_from_csv()
             self._generate_electrode_activation_mapping()
             self._transform_rawdata_mapping()
+        else:
+            self.__logger.info("No electrode mapping is available")
 
     def _generate_electrode_mapping_from_csv(self) -> None:
         """Function for reading the CSV file for electrode mapping of used (non-electrodes = 0)"""
@@ -414,7 +417,9 @@ class ControllerData:
 
         electrode_mapping = self._raw_data.generate_empty_mapping_array_integer
         if not num_rows == self._raw_data.mapping_dimension[0] and not num_cols == self._raw_data.mapping_dimension[1]:
-            raise ValueError("Array dimenson given in DataLoader and from csv file is not identical - Please check!")
+            text = "Array dimenson given in DataLoader and from csv file is not identical - Please check!"
+            self.__logger.error(text)
+            raise ValueError(text)
         else:
             for row_idx, elec_row in enumerate(mapping_from_csv):
                 for col_idx, elec_id in enumerate(elec_row):
@@ -474,6 +479,7 @@ class ControllerData:
                 break
 
         if not self._settings.data_set or used_data_source_idx == -1:
+            self.__logger.error(warning_text)
             raise ValueError(warning_text)
         else:
             getattr(self, self._methods_available[idx])()
