@@ -22,6 +22,14 @@ if __name__ == "__main__":
     dsp = DSP(example_settings1)
     coeffs = dsp.get_filter_coeffs
 
+    coeff_quant = dsp.quantize_coeffs(
+        bit_size=12,
+        bit_frac=10,
+        signed=True
+    )
+    dsp.coeff_print(12, 10, signed=True)
+    dsp.coeff_verilog(12, 10, signed=True)
+
     dsp.plot_freq_response(
         b=coeffs['b'],
         a=coeffs['a'],
