@@ -29,7 +29,13 @@ def start_pipeline_processing(object_dataloader, object_pipeline) -> None:
     # --- Thread Preparation: Processing data
     print("\nStep #2: Processing data"
           "\n=================================================")
-    thr_station = ProcessingData(object_pipeline, settings_thr, dataIn.data_raw, dataIn.electrode_id)
+    thr_station = ProcessingData(
+        pipeline=object_pipeline,
+        settings=settings_thr,
+        data_in=dataIn.data_raw,
+        fs=dataIn.data_fs_used,
+        channel_id=dataIn.electrode_id
+    )
     thr_station.do_processing()
 
     # --- Plot all plots and save results

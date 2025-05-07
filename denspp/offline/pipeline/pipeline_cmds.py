@@ -87,30 +87,30 @@ class SettingsThread:
     use_multithreading: bool
     num_max_workers: int
     block_plots: bool
-    fs_ana: float
 
 
 RecommendedSettingsThread = SettingsThread(
     use_multithreading=False,
     num_max_workers=1,
-    block_plots=True,
-    fs_ana=20e3
+    block_plots=True
 )
 
 
 class ProcessingData:
-    def __init__(self, pipeline, settings: SettingsThread, data_in: np.ndarray, channel_id: np.ndarray) -> None:
+    def __init__(self, pipeline, settings: SettingsThread, data_in: np.ndarray, channel_id: np.ndarray, fs: float) -> None:
         """Thread processor for analyzing data
         Args:
             pipeline:       Used pipeline for signal processing
             settings:       Settings for handling the threads
             data_in:        Numpy array of input data for signal processing
             channel_id:     Corresponding ID of used electrode / channel
+            fs:             Sampling rate of data
         Returns:
             None
         """
         # --- Preparing data
         self.data = data_in
+        self.sampling_rate = fs
         self._channel_id = channel_id
         self.results_full = dict()
         self.results_save = dict()
@@ -128,7 +128,7 @@ class ProcessingData:
         self.__threads_worker = list()
         print('... processing data via single threading')
         for idx, elec in enumerate(tqdm(self._channel_id, ncols=100, desc='Progress: ')):
-            self.__threads_worker.append(ThreadProcessor(self.data[idx], self._settings.fs_ana, self._pipeline))
+            self.__threads_worker.append(ThreadProcessor(self.data[idx], self.sampling_rate, self._pipeline))
             self.__threads_worker[idx].start()
             self.__threads_worker[idx].join()
             self.results_full.update({f'Elec_{elec:03d}': self.__threads_worker[idx].output_full})

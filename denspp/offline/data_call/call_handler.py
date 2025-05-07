@@ -20,7 +20,7 @@ class SettingsData:
     data_point:     Number within the dataset
     t_range:        List of the given time range for cutting the data [x, y]
     ch_sel:         List of electrodes to use [empty=all]
-    fs_resample:    Resampling frequency of the datapoint
+    fs_resample:    Resampling frequency of the datapoint (== 0.0, no resampling)
     do_mapping:     Decision if mapping (if available) is used
     """
     path: str
@@ -147,7 +147,7 @@ class ControllerData:
     def do_resample(self) -> None:
         """Do resampling all transient signals"""
         desired_fs = self._settings.fs_resample
-        do_resampling = bool(desired_fs != self._raw_data.data_fs_orig)
+        do_resampling = bool(desired_fs != self._raw_data.data_fs_orig) and desired_fs != 0.0
 
         data_out = list()
         spike_out = list()
@@ -278,7 +278,7 @@ class ControllerData:
         else:
             folder_structure = self.__download_handler.get_overview_folder(False, path2folder[0])
             if len(folder_structure):
-                folder_content = self.__download_handler.get_overview_data(folder_structure[self.__config_data_selection[1]], data_type)
+                folder_content = self.__download_handler.get_overview_data(False, folder_structure[self.__config_data_selection[1]], data_type)
             else:
                 folder_content = self.__download_handler.get_overview_data(False, path2folder[0], data_type)
             folder_content.sort()
