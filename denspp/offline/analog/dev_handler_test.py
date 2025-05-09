@@ -8,7 +8,7 @@ TestSettings = SettingsDevice(
     type='R',
     fs_ana=50e3,
     noise_en=False,
-    dev_value={'r': 100e3},
+    params_use={'r': 100e3},
     temp=300,
     use_poly=False
 )

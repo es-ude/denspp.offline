@@ -8,18 +8,16 @@ TestSettings0 = SettingsDevice(
     type='R',
     fs_ana=50e3,
     noise_en=False,
-    para_en=False,
-    use_mode=0,
-    dev_value={'r': 100e3},
+    use_poly=False,
+    params_use={'r': 100e3},
     temp=300
 )
 TestSettings1 = SettingsDevice(
     type='RDs',
     fs_ana=50e3,
     noise_en=False,
-    para_en=False,
-    use_mode=0,
-    dev_value={'i_sat': 1e-12, 'n_eff': 2.8, 'uth0': 0.1, 'r_sh': 20e3},
+    use_poly=False,
+    params_use={'i_sat': 1e-12, 'n_eff': 2.8, 'uth0': 0.1, 'r_sh': 20e3},
     temp=300
 )
 
@@ -40,7 +38,7 @@ class TestElectricalLoad(TestCase):
     def test_extract_params_from_measurement_for_resistor_wo_bounds(self) -> None:
         set0 = deepcopy(TestSettings0)
         set0.type = 'R'
-        set0.dev_value = {'r': 100e3}
+        set0.params_use = {'r': 100e3}
         model = ElectricalLoad(settings_dev=TestSettings0)
 
         current_model = model.get_current(self.voltage, 0.0)
@@ -54,7 +52,7 @@ class TestElectricalLoad(TestCase):
     def test_extract_params_from_measurement_for_resistor_with_bounds(self) -> None:
         set0 = deepcopy(TestSettings0)
         set0.type = 'R'
-        set0.dev_value = {'r': 100e3}
+        set0.params_use = {'r': 100e3}
         model = ElectricalLoad(settings_dev=TestSettings0)
 
         current_model = model.get_current(self.voltage, 0.0)
@@ -68,7 +66,7 @@ class TestElectricalLoad(TestCase):
     def test_extract_params_from_measurement_for_diode_with_bounds(self) -> None:
         set0 = deepcopy(TestSettings1)
         set0.type = 'RDd'
-        set0.dev_value = {'i_sat': 1e-12, 'n_eff': 2.8, 'uth0': 0.4, 'r_sh': 20e3}
+        set0.params_use = {'i_sat': 1e-12, 'n_eff': 2.8, 'uth0': 0.4, 'r_sh': 20e3}
         model = ElectricalLoad(settings_dev=TestSettings1)
 
         current_model = model.get_current(self.voltage, 0.0)

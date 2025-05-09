@@ -19,21 +19,26 @@ class SettingsDevice:
         type:       Type of electrical device ['R': resistor, 'RDs': Resistive diode (series), 'RDd': Resistive diode (antiparallel)]
         fs_ana:     Sampling frequency of input [Hz]
         noise_en:   Enable noise on output [True / False]
-        dev_value:  Dictionary with device parameters
+        params_use: Dictionary with device parameters
         temp:       Temperature [K]
         use_poly:   Boolean for using polynom fit [True] of IV curve for transient data analysis instead of regression [False]
     """
     type:       str
     fs_ana:     float
     noise_en:   bool
-    dev_value:  dict
+    params_use: dict
     temp:       float
     use_poly:   bool
 
     @property
     def temperature_voltage(self) -> float:
-        """Getting the """
+        """Getting the Temperature voltage of electrical device"""
         return Boltzmann * self.temp / elementary_charge
+
+    @property
+    def dev_value(self) -> dict:
+        """Getting the model device parameter for simulation (can be rewritten in new classes)"""
+        return self.params_use
 
 
 class ElectricalLoadHandler(ProcessNoise):
