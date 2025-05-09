@@ -51,9 +51,9 @@ def create_signal_dictionary(filenames, signals, time, artifacts, artifact_indic
 
     :param filenames: List of filenames
     :param signals: List of associated processed signals (arrays)
-    :param signal_index: Index of the current signal being processed
+    :param time: List or array of timestamps
+    :param artifacts: List of artifact details for each signal
     :param artifact_indices: List of artifact indices for each signal
-    :return: Nested dictionary with processed signals and metadata
     :return: Nested dictionary with processed signals and metadata
     """
 
@@ -63,20 +63,21 @@ def create_signal_dictionary(filenames, signals, time, artifacts, artifact_indic
     # Initialize the dictionary
     processed_signals = {}
 
-    # Assign time (typically the first element in the signals list)
-    time = time
+    # Ensure lengths of artifacts and artifact_indices match signals
+    num_signals = len(signals)
+    if len(artifacts) < num_signals:
+        artifacts.extend([[]] * (num_signals - len(artifacts)))
+    if len(artifact_indices) < num_signals:
+        artifact_indices.extend([[]] * (num_signals - len(artifact_indices)))
 
-    # Assign cleaned signals (everything except the first element in the signals list)
-    cleaned_signals = signals
-
-    # Iterate over the cleaned signals and create individual entries
-    for idx, signal in enumerate(cleaned_signals):
+    # Iterate over the signals and create individual entries
+    for idx, signal in enumerate(signals):
         processed_signals[f"signal_{idx + 1}"] = {
             "timestamps": {
                 "signal": signal.tolist() if hasattr(signal, "tolist") else signal,
                 "artifacts": {
                     "indices": artifact_indices[idx],
-                    "details": artifacts[idx] if idx < len(artifacts) else []
+                    "details": artifacts[idx]
                 }
             }
         }
@@ -84,12 +85,13 @@ def create_signal_dictionary(filenames, signals, time, artifacts, artifact_indic
     # Return the final signal dictionary
     final_dictionary = {
         "time": time.tolist() if hasattr(time, "tolist") else time,
-        "cleaned_signals": cleaned_signals,
+        "cleaned_signals": signals,
         "amplitude": amplitude,
         "details": processed_signals
     }
 
     return final_dictionary
+
 
 
 def detect_artifacts(array, threshold_factor=10):
