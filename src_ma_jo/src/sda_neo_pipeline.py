@@ -6,20 +6,22 @@ from src_neuro.sda.sda_pipeline import Pipeline_Digital
 from denspp.offline.digital.sda import SpikeDetection, SettingsSDA
 
 
+
 class SDAPipeline:
-    def __init__(self, data_subdir="data", output_subdir="output", data_file_name="signal_dictionary.npy"):
+    def __init__(self, data_subdir="data", output_subdir="output"):
         """
         Initialisiert die SDA Pipeline mit Standardverzeichnissen und Dateinamen.
         """
+        self.data_file_name = "A1R1a_ASIC_1S_1000_15_artifact_dictionary.npy"
         self.artifact_indices = []
         self.project_base_dir = Path(__file__).resolve().parent.parent
         self.data_dir_path = self.project_base_dir / data_subdir
         self.output_dir_path = self.project_base_dir / output_subdir
-        self.file_path = self.data_dir_path / data_file_name
+        self.file_path = self.data_dir_path / self.data_file_name
         self.settings_sda = SettingsSDA(
             fs=25e3,
             dx_sda=[1],
-            mode_align=1,
+            mode_align=2,
             t_frame_lgth=1.6e-3,
             t_frame_start=0.4e-3,
             dt_offset=[0.1e-3, 0.1e-3],
@@ -87,17 +89,17 @@ class SDAPipeline:
             print("Keine Details im Dictionary gefunden.")
 
 
-    def compare_indices_in_loop(self, spike_list, artifact_list):
+    def compare_indices_in_loop(self):
         """
         Vergleicht zwei Listen (Spike- und Artifact-Indizes) auf Überschneidungen.
         """
         common_indices_list = []
-        if len(spike_list) != len(artifact_list):
+        if len(self.spike_indices_list) != len(self.artifact_indices):
             raise ValueError("Die Arrays haben unterschiedliche Längen und können nicht verglichen werden.")
 
-        for i in range(len(spike_list)):
-            spikes = spike_list[i]
-            artifacts = artifact_list[i]
+        for i in range(len(self.spike_indices_list)):
+            spikes = self.spike_indices_list[i]
+            artifacts = self.artifact_indices[i]
             common_indices = np.intersect1d(spikes, artifacts)
             common_indices_list.append(common_indices)
 
@@ -156,9 +158,14 @@ class SDAPipeline:
 
         for signal in cleaned_signals:
             x_dly = self.time_delay(signal)
-            x_sda = self.sda_neo(x_dly)
-            smooth_data = self.sda_smooth(x_sda, "Hamming")
-            threshold_data = self.thres_rms(x_sda)
+            x_sda_neo = self.sda_neo(x_dly)
+            x_sda_mteo = self.spike_detector.sda_mteo(x_dly)
+            x_sda_ado = self.spike_detector.sda_ado(x_dly)
+            x_sda_aso = self.spike_detector.sda_aso(x_dly)
+            x_sda_spb = self.spike_detector.sda_spb(x_dly)
+            x_sda_eed = self.spike_detector.sda_eed(x_dly)
+            smooth_data = self.sda_smooth(x_sda_neo, "Hamming")
+            threshold_data = self.thres_rms(x_sda_neo)
             frames_out0, frames_out1 = self.spike_detector.frame_generation(signal, smooth_data, threshold_data)
             frames_align = frames_out1[0]
             x_pos = frames_out1[1]
@@ -170,7 +177,7 @@ class SDAPipeline:
         Plottet Signale aus vorverarbeiteten Frames und hebt den Mittelwert hervor.
         """
         for i, signal_frames in enumerate(self.aligned_frames_list):
-            if len(signal_frames) > 0 and i == 1:  # Nur Plot erstellen, wenn Frames vorhanden sind
+            if len(signal_frames) > 0 and i == 2:  # Nur Plot erstellen, wenn Frames vorhanden sind
                 all_curves = np.array(signal_frames)
 
                 if all_curves.ndim < 2:
@@ -188,8 +195,46 @@ class SDAPipeline:
                         plt.xlabel("Sample Index", fontsize=12)
                         plt.ylabel("Signal Amplitude", fontsize=12)
                         plt.grid(alpha=0.3)
-                        plt.legend()
                         plt.show()
+
+    def delete_common_indices(self, common_indices_list):
+        """
+            Löscht die Werte von common_indices aus `self.spike_indices_list`
+            und entfernt die zugehörigen Indizes aus `self.aligned_frames_list`.
+
+            Args:
+            common_indices_list (list): Liste von numpy-Arrays mit den gemeinsamen Indizes,
+                                         die entfernt werden sollen.
+            """
+        if not isinstance(common_indices_list, list):
+            raise ValueError("common_indices_list muss eine Liste sein.")
+
+        for i, common_indices in enumerate(common_indices_list):
+            if i >= len(self.spike_indices_list) or i >= len(self.aligned_frames_list):
+                raise IndexError(f"Ungültiger Index {i} in den Listen.")
+
+            if not isinstance(common_indices, np.ndarray):
+                raise ValueError("common_indices muss ein numpy-Array sein.")
+
+            # Ermitteln der Indizes, wo Überschneidungen vorliegen
+            mask = np.isin(self.spike_indices_list[i], common_indices)
+
+            # Entfernen der gemeinsamen Indizes
+            self.spike_indices_list[i] = self.spike_indices_list[i][~mask]
+
+            # Entfernen der Zeilen basierend auf der Maske
+            self.aligned_frames_list[i] = self.aligned_frames_list[i][~mask]
+
+    def add_to_signal_dict(self):
+        """
+        Fügt `aligned_frames_list` und `spike_indices_list` dem signal_dict hinzu.
+        """
+        if isinstance(self.signal_dict, dict):
+            self.signal_dict["aligned_frames_list"] = self.aligned_frames_list
+            self.signal_dict["spike_indices_list"] = self.spike_indices_list
+            print("aligned_frames_list und spike_indices_list zum signal_dict hinzugefügt.")
+        else:
+            print("Fehler: signal_dict ist kein Dictionary!")
 
 
 if __name__ == "__main__":
@@ -199,7 +244,11 @@ if __name__ == "__main__":
 
     if pipeline.signal_dict:
         pipeline.process_dictionary()
-        cleaned_signals = pipeline.signal_dict.get("cleaned_signals", [])
+        cleaned_signals = pipeline.signal_dict.get("cleaned_signal", [])
         if isinstance(cleaned_signals, list):
             pipeline.process_signals(cleaned_signals)
-            pipeline.plot_signals_with_mean()
+            common_indices_list = pipeline.compare_indices_in_loop()
+            pipeline.delete_common_indices(common_indices_list)
+            pipeline.add_to_signal_dict()
+            filename = "_".join(pipeline.data_file_name.rsplit(".", 1)[0].split("_")[:-3]) + "_spike_dictionary.npy"
+            np.save(filename, pipeline.signal_dict)
