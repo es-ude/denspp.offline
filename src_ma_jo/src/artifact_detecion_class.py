@@ -226,9 +226,9 @@ class ArtifactDetection:
 
         for ranges in self.find_connected_ranges():
             x, y = ranges
-            start, end = max(0, x - 10), min(len(self.signal_to_process) - 1, y + 10)
+            start, end = max(0, x - 40), min(len(self.signal_to_process) - 1, y + 10)
             self.signal_to_process[start:start+20] = np.mean(self.signal_to_process[start:start+20])
-            self.replace_artifacts_with_spline([ranges])
+            self.replace_artifacts_with_spline([start, end])
 
     def find_connected_ranges(self):
         """
@@ -256,7 +256,7 @@ class ArtifactDetection:
         Args:
             ranges (list): List of artifact ranges to process.
         """
-        range_list = list(range(ranges[0][0], ranges[0][1] + 1))
+        range_list = list(range(ranges[0], ranges[1] + 1))
         start_index = max(0, len(range_list) - 20)
         start = range_list[start_index]
         end = range_list[-1]
@@ -269,6 +269,7 @@ class ArtifactDetection:
             if rmse_check and r2_check:
                 self.signal_to_process[start:end] -= fitted_curve
                 self.do_spline_interpolation(range_list[:start_index + 1])
+
             else:
                 self.do_spline_interpolation(range_list)
         else:
@@ -318,9 +319,6 @@ class ArtifactDetection:
     def exponential_func(self, x, a, b, c):
         return a * np.exp(b * x) + c
 
-    def sigmoid(self, x, L, k, x0, d):
-        return L / (1 + np.exp(-k * (x - x0))) + d
-
     def do_spline_interpolation(self, artifact_range):
 
         index_array = np.arange(len(artifact_range))
@@ -349,6 +347,7 @@ class ArtifactDetection:
             }
         self.signal_dictionary = {
             "time": self.time.tolist() if hasattr(self.time, "tolist") else self.time,
+            "cleaned_signal": self.signals,
             "amplitude": amplitude,
             "details": processed_signals
         }
