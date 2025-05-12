@@ -74,6 +74,7 @@ class ArtifactDetection:
         self.smoothed_signals = None
         self.signal_to_process = None
         self.filtered_signal_to_process = None
+        self.signal_dictionary = {}
 
         self.filtered_signals_by_percentage_counter = 0
         self.filtered_signals_by_threshold_counter = 0
@@ -335,14 +336,30 @@ class ArtifactDetection:
 
     def create_signal_dictionary(self):
         amplitude = self.extract_amplitude_from_filename()
-        pass
+        processed_signals = {}
+
+        for idx, signal in enumerate(self.signals):
+            processed_signals[f"signal_{idx}"] = {
+                "timestamps": {
+                    "signal": signal.tolist() if hasattr(signal, "tolist") else signal,
+                    "artifacts": {
+                        "indices": self.all_artifacts[idx]
+                    }
+                }
+            }
+        self.signal_dictionary = {
+            "time": self.time.tolist() if hasattr(self.time, "tolist") else self.time,
+            "amplitude": amplitude,
+            "details": processed_signals
+        }
+
     def extract_amplitude_from_filename(self):
         try:
             parts = config.filename.split('_')
             extracted_value = parts[3]
             return extracted_value
         except (IndexError, ValueError) as e:
-            raise ValueError(f"Fehler beim Extrahieren der Amplitude aus dem Dateinamen '{filename}': {e}")
+            raise ValueError(f"Fehler beim Extrahieren der Amplitude aus dem Dateinamen '{config.filename}': {e}")
 
 
     @staticmethod
@@ -374,7 +391,7 @@ if __name__ == "__main__":
 
     config = ArtifactConfig(
         path=r"C:\Users\jo-di\Documents\Masterarbeit\Rohdaten",
-        filename="A1R1a_elec_stim_50biphasic_400us0001"
+        filename="A1R1a_ASIC_1S_1000_15"
     )
 
     ad = ArtifactDetection(settings, config)
@@ -382,4 +399,5 @@ if __name__ == "__main__":
     ad.filter_and_replace_signals()
     ad.process_all_signals()
     ad.get_filtered_signal()
-
+    ad.create_signal_dictionary()
+    np.save(config.filename + "_artifact_dictionary.npy", ad.signal_dictionary)
