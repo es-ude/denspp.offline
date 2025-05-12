@@ -349,7 +349,8 @@ class ArtifactDetection:
             "time": self.time.tolist() if hasattr(self.time, "tolist") else self.time,
             "cleaned_signal": self.signals,
             "amplitude": amplitude,
-            "details": processed_signals
+            "details": processed_signals,
+            "feature": self.add_on
         }
 
     def extract_amplitude_from_filename(self):

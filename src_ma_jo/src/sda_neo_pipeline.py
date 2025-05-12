@@ -12,7 +12,7 @@ class SDAPipeline:
         """
         Initialisiert die SDA Pipeline mit Standardverzeichnissen und Dateinamen.
         """
-        self.data_file_name = "A1R1a_ASIC_1S_1000_15_artifact_dictionary.npy"
+        self.data_file_name = "../data/A1R1a_ASIC_1S_1000_15_artifact_dictionary.npy"
         self.artifact_indices = []
         self.project_base_dir = Path(__file__).resolve().parent.parent
         self.data_dir_path = self.project_base_dir / data_subdir
@@ -250,5 +250,5 @@ if __name__ == "__main__":
             common_indices_list = pipeline.compare_indices_in_loop()
             pipeline.delete_common_indices(common_indices_list)
             pipeline.add_to_signal_dict()
-            filename = "_".join(pipeline.data_file_name.rsplit(".", 1)[0].split("_")[:-3]) + "_spike_dictionary.npy"
+            filename = "_".join(pipeline.data_file_name.rsplit(".", 1)[0].split("_")[:-2]) + "_spike_dictionary.npy"
             np.save(filename, pipeline.signal_dict)
