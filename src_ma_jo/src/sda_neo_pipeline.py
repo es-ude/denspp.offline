@@ -172,30 +172,47 @@ class SDAPipeline:
             self.aligned_frames_list.append(frames_align)
             self.spike_indices_list.append(x_pos)
 
-    def plot_signals_with_mean(self):
+    def plot_single_spikes(self, signal_index=2, save_eps=False):
         """
-        Plottet Signale aus vorverarbeiteten Frames und hebt den Mittelwert hervor.
+        Erstellt für jeden Spikeframe eines bestimmten Kanals (standardmäßig Kanal 3 = Index 2)
+        eine eigene wissenschaftliche Abbildung mit korrekter Zeitachse.
+
+        Args:
+            signal_index (int): Index des zu plottenden Signals (z. B. 2 für Kanal 3).
+            save_eps (bool): Wenn True, wird jede Abbildung als EPS-Datei gespeichert.
         """
-        for i, signal_frames in enumerate(self.aligned_frames_list):
-            if len(signal_frames) > 0 and i == 2:  # Nur Plot erstellen, wenn Frames vorhanden sind
-                all_curves = np.array(signal_frames)
+        if len(self.aligned_frames_list) <= signal_index:
+            print(f"Signalindex {signal_index} ist nicht verfügbar.")
+            return
 
-                if all_curves.ndim < 2:
-                    print(f"Signal {i}: Nicht genügend Daten, überspringe Plot.")
-                    continue
+        signal_frames = self.aligned_frames_list[signal_index]
+        spike_times = self.spike_indices_list[signal_index]
+        time_array = self.signal_dict.get("time")
 
-                #mean_curve = np.mean(all_curves, axis=0)
+        if time_array is None:
+            print("Zeitachse ('time') nicht im Dictionary gefunden.")
+            return
 
-                plt.figure(figsize=(10, 6))
-                for j, curve in enumerate(all_curves):
-                    if 400 > max(curve) - min(curve) > 80:
-                        plt.plot(curve, color="gray", alpha=0.5, linewidth=0.5)
-                        #plt.plot(mean_curve, color="black", linewidth=2, label="Mean Curve")
-                        plt.title(f"Signal {i + 1} with Spike {j+1}", fontsize=14)
-                        plt.xlabel("Sample Index", fontsize=12)
-                        plt.ylabel("Signal Amplitude", fontsize=12)
-                        plt.grid(alpha=0.3)
-                        plt.show()
+        if len(signal_frames) == 0 or len(spike_times) == 0:
+            print(f"Keine Frames oder Spikezeiten für Signal {signal_index + 1} vorhanden.")
+            return
+
+
+        for j, frame in enumerate(signal_frames):
+            if 400 > max(frame) - min(frame) > 80 and j==32267:
+                plt.figure(figsize=(6, 3))
+                plt.plot(frame, color="black", linewidth=1)
+                plt.xlabel("Frame Samples", fontsize=12)
+                plt.ylabel("Amplitude [µV]", fontsize=12)
+                #plt.title(f"Spikeframe {j + 1} – Kanal {signal_index + 1}", fontsize=13)
+                plt.grid(alpha=0.3)
+                plt.tight_layout()
+
+
+                filename = f"spikeframe_channel{signal_index + 1}_spike{j + 1}.eps"
+                plt.savefig(filename, format="eps", dpi=300)
+
+                plt.show()
 
     def delete_common_indices(self, common_indices_list):
         """
@@ -250,5 +267,6 @@ if __name__ == "__main__":
             common_indices_list = pipeline.compare_indices_in_loop()
             pipeline.delete_common_indices(common_indices_list)
             pipeline.add_to_signal_dict()
+            pipeline.plot_single_spikes()
             filename = "_".join(pipeline.data_file_name.rsplit(".", 1)[0].split("_")[:-2]) + "_spike_dictionary.npy"
             np.save(filename, pipeline.signal_dict)
