@@ -49,6 +49,7 @@ def build_waveform_dataset(settings_data: SettingsWaveformDataset, settings_nois
     :param settings_noise:  Dataclass for handling the noise behaviour
     :returns:               Returning a Dictionary with ['data', 'label', and 'dict']
     """
+    assert len(settings_data.wfg_type) == len(settings_data.wfg_freq), "List have not the same length"
     settings0 = deepcopy(settings_noise)
     settings0.wgn_dB = settings_data.noise_pwr_db
     wfg_generator = WaveformGenerator(

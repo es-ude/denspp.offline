@@ -116,8 +116,9 @@ class WaveformGenerator:
     def __generate_gaussian(self, time_duration: float) -> np.ndarray:
         """Creating an output array with gaussian pulse"""
         time = 2 * self.__generate_sawtooth_positive(time_duration)
-        out = signal.gausspulse(time, 2.72, retenv=True)
-        return out[1]
+        out = signal.gausspulse(time, 1.05 * np.sqrt(2)/(np.pi* time_duration), retenv=True)[1]
+        scale_amp = (out.max()+out.min())/(out.max())
+        return out * scale_amp - out.min()
 
     def get_dictionary_classes(self) -> list:
         """Getting a list with class names / labels of waveforms

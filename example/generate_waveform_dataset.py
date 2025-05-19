@@ -9,13 +9,13 @@ if __name__ == "__main__":
     define_logger_runtime(False)
 
     settings = SettingsWaveformDataset(
-        wfg_type=['RECT', 'SAW_NEG', 'LIN_RISE', 'LIN_FALL'],
+        wfg_type=['RECT', 'SAW_NEG', 'LIN_FALL', 'GAUSS'],
         wfg_freq=[2.0, 2.0, 2.0, 2.0],
         num_samples=1,
         time_idle=0.05,
         scale_amp=1.0,
         sampling_rate=10e3,
-        noise_add=True,
+        noise_add=False,
         noise_pwr_db=-30.0,
         do_normalize=False
     )
