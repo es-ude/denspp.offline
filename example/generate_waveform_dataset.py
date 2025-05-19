@@ -1,26 +1,39 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from denspp.offline.data_generator.waveform_dataset import generate_dataset
+from denspp.offline.logger import define_logger_runtime
+from denspp.offline.plot_helper import get_plot_color
+from denspp.offline.data_generator.waveform_dataset import build_waveform_dataset, SettingsWaveformDataset
 
 
 if __name__ == "__main__":
-    num_wfg_class = 1
-    sel_wfg_class = [0, 5, 7, 8]
+    define_logger_runtime(False)
 
-    dataset = generate_dataset(sel_wfg_class, num_wfg_class, 2, 10e3,
-                               get_info_classes=True, adding_noise=True, pwr_noise_db=-30)
-    signal_type = dataset.class_names
+    settings = SettingsWaveformDataset(
+        wfg_type=['RECT', 'SAW_NEG', 'LIN_RISE', 'LIN_FALL'],
+        wfg_freq=[2.0, 2.0, 2.0, 2.0],
+        num_samples=1,
+        time_idle=0.05,
+        scale_amp=1.0,
+        sampling_rate=10e3,
+        noise_add=True,
+        noise_pwr_db=-30.0,
+        do_normalize=False
+    )
+    dataset = build_waveform_dataset(settings_data=settings)
+    signal_type = dataset['dict']
 
     # --- Define plots
     plt.figure()
-    axs = [plt.subplot(len(dataset), 1, idx + 1) for idx in range(0, len(dataset))]
+    axs = [plt.subplot(len(signal_type), 1, idx + 1) for idx in range(0, len(signal_type))]
 
-    color_plot = 'krym'
-    for idx, data in enumerate(dataset):
-        time0 = np.linspace(0, data[0].shape[0], data[0].shape[0]) / dataset.sampling_rate
-        axs[idx].plot(time0, data[0], color=color_plot[idx], label=f"{signal_type[data[1]]}")
+    for idx, (data, label) in enumerate(zip(dataset['data'], dataset['label'])):
+        label_text = signal_type[label]
+        time0 = np.linspace(0, data.shape[0], data.shape[0]) / settings.sampling_rate
+        axs[idx].plot(time0, data, color=get_plot_color(idx), label=f"{label_text}")
         axs[idx].legend()
         axs[idx].grid()
+        axs[idx].set_ylabel(r"$V_{sig}(t)$ / V")
 
+    axs[-1].set_xlabel(r"Time $t$ / s")
     plt.tight_layout()
     plt.show(block=True)

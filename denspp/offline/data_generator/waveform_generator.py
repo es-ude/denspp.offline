@@ -1,4 +1,5 @@
 import numpy as np
+from logging import getLogger
 from scipy import signal
 from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, RecommendedSettingsNoise
 
@@ -12,6 +13,7 @@ class WaveformGenerator:
         :param add_noise:       Boolean for adding noise to output
         :param settings_noise:  Settings noise to add to output
         """
+        self._logger = getLogger(__name__)
         self.__handler_noise = ProcessNoise(settings_noise, sampling_rate)
         self.__add_noise = add_noise
         self._sampling_rate = sampling_rate
@@ -35,22 +37,20 @@ class WaveformGenerator:
         """Switching the polarity for cathodic-first (True) or anodic-first (False) waveform"""
         return signal_in if not do_cathodic else (-1) * signal_in
 
-    @staticmethod
-    def __get_charge_balancing_factor(waveforms: list) -> float:
+    def __get_charge_balancing_factor(self, waveforms: list) -> float:
         """Getting the coefficient for area-related comparison for charge balancing the biphasic waveform"""
         if not len(waveforms) == 2 and not len(waveforms) == 3:
-            print("It is not a biphasic waveform available - Please check!")
+            self._logger.info("It is not a biphasic waveform available - Please check!")
             return 1.0
         else:
             area_first = np.trapezoid(waveforms[0])
             area_second = np.trapezoid(waveforms[-1])
             return np.abs(area_first / area_second)
 
-    @staticmethod
-    def check_charge_balancing(signal: np.ndarray) -> float:
+    def check_charge_balancing(self, signal: np.ndarray) -> float:
         """Checking if stimulation signal is charge balanced"""
         dq = np.trapezoid(signal)
-        print(f"... waveform has an error of {dq:.6f}")
+        self._logger.info(f"... waveform has an error of {dq:.6f}")
         return dq
 
     def __generate_zero(self, time_duration: float) -> np.ndarray:
@@ -119,18 +119,24 @@ class WaveformGenerator:
         out = signal.gausspulse(time, 2.72, retenv=True)
         return out[1]
 
-    def get_dictionary_classes(self, do_print: bool=False) -> list:
-        """Getting a list with class names"""
-        out_list = [val for val in self.__func_dict.keys()]
-        if do_print:
-            print("\nGetting information about signal types")
-            print("\n====================================================")
-            for idx, type_id in enumerate(out_list):
-                print(f"Class {idx:02d} = {type_id}")
-            print("====================================================")
-        return out_list
+    def get_dictionary_classes(self) -> list:
+        """Getting a list with class names / labels of waveforms
+        :return:            List with class names
+        """
+        return [val for val in self.__func_dict.keys()]
 
-    def __select_waveform_template(self, time_duration: float, sel_wfg: int, do_cathodic: bool=False) -> np.ndarray:
+    def print_dictionary_classes(self) -> None:
+        """Printing the available waveform types available in class
+        :return:            List with class names
+        """
+        out_list = self.get_dictionary_classes()
+        self._logger.info("\nGetting information about signal types")
+        self._logger.info("\n====================================================")
+        for idx, type_id in enumerate(out_list):
+            self._logger.info(f"Class {idx:02d} = {type_id}")
+        self._logger.info("====================================================")
+
+    def __select_waveform_template(self, time_duration: float, sel_wfg: str, do_cathodic: bool=False) -> np.ndarray:
         """Selection for generating a waveform template
         Args:
             time_duration:  Time window for the waveform
@@ -141,14 +147,11 @@ class WaveformGenerator:
         Returns:
             Numpy array with selected waveform
         """
-        class_name = self.get_dictionary_classes()
-
-        if class_name[sel_wfg] in self.__func_dict.keys():
-            signal = self.__func_dict[class_name[sel_wfg]](time_duration)
+        if sel_wfg in self.__func_dict.keys():
+            signal = self.__func_dict[sel_wfg](time_duration)
+            waveform = self.__switching_polarity(signal, do_cathodic)
         else:
-            print("Signal not available")
-            signal = self.__generate_zero(time_duration)
-        waveform = self.__switching_polarity(signal, do_cathodic)
+            raise NotImplementedError("Waveform is not implemented!")
         return waveform
 
     def generate_waveform(self, time_points: list, time_duration: list,
@@ -167,6 +170,7 @@ class WaveformGenerator:
         else:
             # Generate dummy
             out = self.__generate_zero(2 * time_points[-1] + time_duration[-1])
+            noise = np.zeros_like(out)
             time = np.linspace(0, out.size, out.size, endpoint=False) / self._sampling_rate
             rms_value = 0.0
 
