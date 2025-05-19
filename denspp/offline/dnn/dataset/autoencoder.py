@@ -1,6 +1,7 @@
 import numpy as np
 from torch import is_tensor
 from torch.utils.data import Dataset
+from denspp.offline.data_process.frame_preprocessing import calculate_frame_mean
 
 
 class DatasetAE(Dataset):
@@ -97,7 +98,7 @@ def prepare_training(rawdata: dict, do_classification: bool=False,
     frames_in = rawdata['data']
     frames_cl = rawdata['label']
     frames_dict = rawdata['dict']
-    frames_me = rawdata['mean']
+    frames_me = rawdata['mean'] if 'mean' in rawdata.keys() else calculate_frame_mean(frames_in, frames_cl, False)
 
     # --- Output
     check = np.unique(frames_cl, return_counts=True)
