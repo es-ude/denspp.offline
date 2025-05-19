@@ -36,7 +36,7 @@ class waveforms_mlp_ae_v1(nn.Module):
         # --- Settings of model
         do_train_bias = True
         do_train_batch = True
-        config_network = [input_size, 40, input_size]
+        config_network = [input_size, 600, 96, output_size]
 
         # --- Model Deployment: Encoder
         self.encoder = nn.Sequential()

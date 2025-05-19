@@ -3,6 +3,7 @@ from os.path import join
 from glob import glob
 from torch import is_tensor, load, from_numpy
 from torch.utils.data import Dataset
+from denspp.offline.data_process.frame_preprocessing import calculate_frame_mean
 
 
 class DatasetAE_Class(Dataset):
@@ -53,17 +54,16 @@ class DatasetAE_Class(Dataset):
 def prepare_training(rawdata: dict, path2model: str, print_state: bool=True) -> DatasetAE_Class:
     """Preparing dataset incl. augmentation for spike-frame based training
     Args:
-        path2model:             Path to already-trained autoencoder
-        add_noise_cluster:      Adding the noise cluster to dataset
-        use_median_for_mean:    Using median for calculating mean waveform (Boolean)
-        print_state:            Printing state and results into Terminal
+        rawdata:        Dict with raw data for training ['data', 'label', 'dict', 'mean']
+        path2model:     Path to already-trained autoencoder
+        print_state:    Printing state and results into Terminal
     Returns:
         Dataloader for training autoencoder-based classifier
     """
     frames_in = rawdata['data']
     frames_cl = rawdata['label']
     frames_dict = rawdata['dict']
-    frames_me = rawdata['mean']
+    frames_me = rawdata['mean'] if 'mean' in rawdata.keys() else calculate_frame_mean(frames_in, frames_cl, False)
 
     # --- PART: Calculating the features with given Autoencoder model
     overview_model = glob(join(path2model, '*.pt'))
@@ -75,7 +75,7 @@ def prepare_training(rawdata: dict, path2model: str, print_state: bool=True) -> 
     # --- Output
     check = np.unique(frames_cl, return_counts=True)
     if print_state:
-        print("... for training are", frames_in.shape[0], "frames with each", frames_in.shape[1], "points available")
+        print("... for training are", frames_feat.shape[0], "frames with each", frames_feat.shape[1], "extracted features available")
         print(f"... used data points for training: in total {check[0].size} classes with {np.sum(check[1])} samples")
         for idx, id in enumerate(check[0]):
             addon = f'' if len(frames_dict) == 0 else f' ({frames_dict[idx]})'
