@@ -48,18 +48,26 @@ if __name__ == "__main__":
             from denspp.offline.dnn.handler.train_torchvision import do_train_torchvision_ae
             do_train_torchvision_ae(DatasetLoader, dnn_handler, 'cifar-100')
         case 8:
+            # --- Waveform Classification
+            from denspp.offline.dnn.handler.train_cl import do_train_spike_class
+            do_train_spike_class(DatasetLoader, dnn_handler, 'Config_Waveform', 'Waveforms')
+        case 9:
+            # --- Waveform Autoencoder
+            from denspp.offline.dnn.handler.train_ae import do_train_neural_autoencoder
+            do_train_neural_autoencoder(DatasetLoader, dnn_handler, 'Config_Waveform', 'Waveforms')
+        case 10:
             # --- Neural Classifier (Normal)
             from denspp.offline.dnn.handler.train_cl import do_train_spike_class
             do_train_spike_class(DatasetLoader, dnn_handler, used_model_name='synthetic_cl_v1')
-        case 9:
+        case 11:
             # --- Autoencoder (Normal)
             from denspp.offline.dnn.handler.train_ae import do_train_neural_autoencoder
             do_train_neural_autoencoder(DatasetLoader, dnn_handler)
-        case 10:
+        case 12:
             # --- Autoencoder + Classifier
             from denspp.offline.dnn.handler.train_ae_cl import do_train_ae_classifier
             do_train_ae_classifier(DatasetLoader, dnn_handler)
-        case 11:
+        case 13:
             # --- Autoencoder + Classifier (Sweep Run of Hidden Layer Size)
             from denspp.offline.dnn.handler.train_ae_cl_sweep import do_train_ae_cl_sweep
             from denspp.offline.dnn.plots.plot_ae_cl_sweep import extract_data_from_files, plot_common_loss, plot_common_params, plot_architecture_metrics_isolated
@@ -68,7 +76,7 @@ if __name__ == "__main__":
             plot_common_loss(data, path2save=path2data)
             plot_common_params(data, path2save=path2data)
             plot_architecture_metrics_isolated(data, show_plots=True, path2save=path2data)
-        case 12:
+        case 14:
             # --- Spike Detection
             from denspp.offline.dnn.handler.train_cl import do_train_spike_class
             do_train_spike_class(DatasetLoader, dnn_handler, 'Config_SDA', '', 'sda_dnn_v1')
