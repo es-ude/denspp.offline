@@ -12,7 +12,7 @@ class SettingsWaveformDataset:
         wfg_type:       List with waveform type
         wfg_freq:       List with frequencies of each waveform
         num_samples:    Number of samples for each class
-        time_idle:      Time window at the beginning and ending of each sample with zero values [sec.]
+        time_idle:      Additional time window at the beginning and ending of each sample with zero values [in %]
         scale_amp:      Scaling factor for all amplitudes
         sampling_rate:  Sampling rate of waveforms
         noise_add:      Boolean for adding noise to waveforms
@@ -31,13 +31,13 @@ class SettingsWaveformDataset:
 
 
 DefaultSettingsWaveformDataset = SettingsWaveformDataset(
-    wfg_type=['RECT', 'LIN_RISE', 'LIN_FALL'],
-    wfg_freq=[1e2, 1e2, 1e2],
-    num_samples=100,
-    time_idle=0.05,
+    wfg_type=['RECT', 'LIN_RISE', 'LIN_FALL', 'SINE_HALF', 'SINE_HALF_INV', 'SINE_FULL', 'TRI_HALF', 'TRI_FULL', 'SAW_POS', 'SAW_NEG', 'GAUSS'],
+    wfg_freq=[1e2, 1e2, 1e2, 1e2, 1e2, 1e2, 1e2, 1e2, 1e2, 1e2, 1e2],
+    num_samples=1000,
+    time_idle=20,
     scale_amp=1.0,
     sampling_rate=20e3,
-    noise_add=False,
+    noise_add=True,
     noise_pwr_db=-30.0,
     do_normalize=False
 )
@@ -60,7 +60,7 @@ def build_waveform_dataset(settings_data: SettingsWaveformDataset, settings_nois
     # --- Generation of signal
     num_class_samples = settings_data.num_samples
     num_total_samples = len(settings_data.wfg_type) * num_class_samples
-    t_window = 1 / np.array(settings_data.wfg_freq).min() + 2 * settings_data.time_idle
+    t_window = (2 * settings_data.time_idle / 100 + 1) / np.array(settings_data.wfg_freq).min()
 
     waveforms_signals = np.zeros((num_total_samples, int(settings_data.sampling_rate * t_window)), dtype=float)
     waveforms_classes = np.zeros((num_total_samples,), dtype=int)
@@ -69,7 +69,7 @@ def build_waveform_dataset(settings_data: SettingsWaveformDataset, settings_nois
     for idx, (sel_wfg, freq_wfg) in enumerate(zip(settings_data.wfg_type, settings_data.wfg_freq)):
         for num_ite in range(0, settings_data.num_samples):
             waveform = wfg_generator.generate_waveform(
-                time_points=[settings_data.time_idle],
+                time_points=[settings_data.time_idle / 100 / freq_wfg],
                 time_duration=[1 / freq_wfg],
                 waveform_select=[sel_wfg],
                 polarity_cathodic=[False]
