@@ -38,8 +38,7 @@ RecommendedSettingsNoise = SettingsNoise(
     temp=300,
     wgn_dB=-120,
     Fc=10,
-    slope=0.6,
-    do_print=False
+    slope=0.6
 )
 
 class ElectricalLoad(ElectricalLoadHandler):
