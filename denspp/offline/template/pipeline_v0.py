@@ -129,7 +129,7 @@ class Pipeline(PipelineCMD):
     def run(self, uinp: np.ndarray) -> None:
         self.signals.u_in = uinp
         # ---- Analogue Front End Module ----
-        self.signals.u_pre, _ = self.__preamp0.pre_amp_chopper(uinp, np.array(self.__preamp0.vcm))
+        self.signals.u_pre = self.__preamp0.pre_amp_chopper(uinp, np.array(self.__preamp0.vcm))['out']
         self.signals.x_adc, _, self.signals.u_quant = self.__adc.adc_ideal(self.signals.u_pre)
         # ---- Digital Pre-processing ----
         self.signals.x_lfp = self.__dsp0.filter(self.signals.x_adc)
