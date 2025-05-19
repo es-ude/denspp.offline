@@ -4,8 +4,10 @@ from os import makedirs
 from os.path import join, abspath, isabs, exists
 from torch import Tensor, concat, from_numpy
 from torchvision import datasets, transforms
+from denspp.offline.yaml_handler import YamlConfigHandler
 from denspp.offline.structure_builder import get_path_project_start
 from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
+from denspp.offline.data_generator import SettingsWaveformDataset, DefaultSettingsWaveformDataset, build_waveform_dataset
 
 
 @dataclass
@@ -244,3 +246,15 @@ class ControllerDataset:
             label=self._merge_data(Tensor(data_train.targets), Tensor(data_valid.targets))
         )
         return {'data': data_process['data'], 'label': data_process['label'], 'dict': data_train.classes}
+
+    def __get_waveforms(self) -> SettingsWaveformDataset:
+        return YamlConfigHandler(
+            yaml_template=DefaultSettingsWaveformDataset,
+            path2yaml='config',
+            yaml_name='Config_Waveform_DatasetBuild'
+        ).get_class(SettingsWaveformDataset)
+
+    def __prepare_waveforms(self) -> dict:
+        return build_waveform_dataset(
+            settings_data=self.__get_waveforms()
+        )

@@ -61,7 +61,7 @@ def do_train_ae_classifier(class_dataset, settings: ConfigMLPipeline,
         noise_std=settings.autoencoder_noise_std
     )
     if settings.autoencoder_feat_size:
-        used_model_ae = config_train_ae.get_model(output_size=settings.autoencoder_feat_size)
+        used_model_ae = config_train_ae.get_model(input_size=dataset[0]['in'].size, output_size=settings.autoencoder_feat_size)
     else:
         used_model_ae = config_train_ae.get_model()
 
@@ -69,7 +69,7 @@ def do_train_ae_classifier(class_dataset, settings: ConfigMLPipeline,
     # --- Processing Step #1.2: Train Autoencoder and Plot Results
     metrics_ae, valid_data_ae, path2folder = do_train_autoencoder(
         config_ml=settings, config_data=config_data, config_train=config_train_ae,
-        used_dataset=dataset, used_model=used_model_ae, path2save='', calc_custom_metrics=['dsnr_all']
+        used_dataset=dataset, used_model=used_model_ae, path2save=''
     )
     if settings.do_plot:
         used_first_fold = [key for key in metrics_ae.keys()][0]

@@ -9,13 +9,12 @@ from denspp.offline.dnn.dataset.torch_datasets import prepare_training
 from denspp.offline.dnn.plots.plot_dnn import plot_mnist_graphs
 
 
-def do_train_torchvision_cl(class_dataset, settings: ConfigMLPipeline, dataset_type: str, custom_metrics: list=()) -> None:
+def do_train_torchvision_cl(class_dataset, settings: ConfigMLPipeline, dataset_type: str) -> None:
     """Training routine for classifying MNIST
     Args:
         class_dataset:      Class of custom-made SettingsDataset from src_dnn/call_dataset.py
         settings:           Handler for configuring the routine selection for train deep neural networks
         dataset_type:       Selected dataset type from Torchvision [MNIST, Fashion, Cifar-10, Cifar-100]
-        custom_metrics:     List with metrics for calculation during validation phase ['accuracy', 'precision', 'recall', 'fbeta']
     Returns:
         None
     """
@@ -44,7 +43,7 @@ def do_train_torchvision_cl(class_dataset, settings: ConfigMLPipeline, dataset_t
     used_model = config_train.get_model()
     do_train_classifier(
         config_ml=settings, config_data=config_data, config_train=config_train,
-        used_dataset=dataset, used_model=used_model, calc_custom_metrics=custom_metrics
+        used_dataset=dataset, used_model=used_model
     )
 
 

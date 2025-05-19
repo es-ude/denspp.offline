@@ -20,6 +20,7 @@ class ConfigPytorch:
         batch_size:         Integer value with batch size
         data_split_ratio:   Float value for splitting the input dataset between training and validation
         data_do_shuffle:    Boolean if data should be shuffled before training
+        custom_metrics:     List with string of custom metrics to calculate during training
     """
     model_name: str
     patience: int
@@ -32,6 +33,7 @@ class ConfigPytorch:
     batch_size: int
     data_split_ratio: float
     data_do_shuffle: bool
+    custom_metrics: list
 
     @staticmethod
     def get_model_overview(print_overview: bool=False, index: str='') -> None:
@@ -91,7 +93,8 @@ DefaultSettingsTrainMSE = ConfigPytorch(
     num_epochs=10,
     batch_size=256,
     data_do_shuffle=True,
-    data_split_ratio=0.2
+    data_split_ratio=0.2,
+    custom_metrics=['dsnr_all']
 )
 DefaultSettingsTrainCE = ConfigPytorch(
     model_name='',
@@ -104,5 +107,6 @@ DefaultSettingsTrainCE = ConfigPytorch(
     data_do_shuffle=True,
     data_split_ratio=0.2,
     deterministic_do=False,
-    deterministic_seed=42
+    deterministic_seed=42,
+    custom_metrics=[]
 )

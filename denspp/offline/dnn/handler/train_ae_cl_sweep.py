@@ -77,15 +77,14 @@ def do_train_ae_cl_sweep(class_dataset, settings: ConfigMLPipeline,
             noise_std=settings.autoencoder_noise_std,
             do_classification=False
         )
-        used_model_ae = config_train_ae.get_model(output_size=feat_size)
+        used_model_ae = config_train_ae.get_model(input_size=class_dataset[0]['in'].size, output_size=feat_size)
         metrics_ae, valid_data_ae, path2folder = do_train_autoencoder(
             config_ml=settings,
             config_train=config_train_ae,
             config_data=config_data,
             path2save=path2save_base,
             used_dataset=used_dataset_ae,
-            used_model=used_model_ae,
-            calc_custom_metrics=['snr_in', 'snr_in_cl', 'dsnr_all', 'dsnr_cl']
+            used_model=used_model_ae
         )
         del used_dataset_ae, used_model_ae
 
@@ -101,8 +100,7 @@ def do_train_ae_cl_sweep(class_dataset, settings: ConfigMLPipeline,
             config_data=config_data,
             path2save=path2save_base,
             used_dataset=used_dataset_cl,
-            used_model=used_model_cl,
-            calc_custom_metrics=['precision']
+            used_model=used_model_cl
         )
         if idx == 0:
             num_clusters = used_dataset_cl.get_cluster_num

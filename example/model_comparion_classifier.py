@@ -19,7 +19,7 @@ def train_model_normal(used_model_name: str, config_train, config_data, dnn_hand
 
     model_stats['metrics'], model_stats['data_result'], _ = do_train_classifier(
         config_ml=dnn_handler, config_data=config_data, config_train=config_train,
-        used_dataset=dataset, used_model=config_train.get_model(), calc_custom_metrics=['ptq_loss'],
+        used_dataset=dataset, used_model=config_train.get_model(),
         print_results=False, ptq_quant_lvl=ptq_level
     )
     return model_stats
@@ -86,7 +86,10 @@ if __name__ == "__main__":
     default_data.normalization_do = True
     yaml_data = YamlConfigHandler(default_data, 'config', f'ConfigCL_Dataset')
     config_data = yaml_data.get_class(SettingsDataset)
-    dataset = prepare_training(settings=config_data, do_classification=True)
+    dataset = prepare_training(
+        rawdata=config_data.rawdata,
+        do_classification=True
+    )
 
     # --- Training and Plotting
     model_stats_torch = train_model_normal(used_models[0], config_train, config_data, dnn_handler, dataset, ptq_level)

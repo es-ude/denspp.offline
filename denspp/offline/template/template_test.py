@@ -1,5 +1,7 @@
 import numpy as np
+from copy import deepcopy
 from unittest import TestCase, main
+
 
 # --- Info: Function have to start with test_*
 class TestSum(TestCase):

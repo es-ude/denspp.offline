@@ -9,7 +9,7 @@ from denspp.offline.dnn.pytorch.autoencoder import TrainAutoencoder
 
 def do_train_classifier(config_ml: ConfigMLPipeline, config_data: SettingsDataset,
                         config_train: ConfigPytorch, used_dataset, used_model,
-                        path2save: str='', calc_custom_metrics: list=(), print_results: bool=True,
+                        path2save: str='', print_results: bool=True,
                         ptq_quant_lvl: list = (12, 11)) -> [dict, dict, str]:
     """Template for training DL classifiers using PyTorch (incl. plotting)
     Args:
@@ -19,9 +19,7 @@ def do_train_classifier(config_ml: ConfigMLPipeline, config_data: SettingsDatase
         used_dataset:       Used custom-made DataLoader with data set
         used_model:         Used custom-made PyTorch DL model
         path2save:          Path for saving the results [Default: '' --> generate new subfolder in runs]
-        calc_custom_metrics:List with metric names (custom-made) to determine during trainings process
         print_results:      Printing the results into Terminal
-        ptq_validation_do:  Bool for doing the PTQ validation (instead of normal)
         ptq_quant_lvl:      Quantization level for PTQ [total bitwidth, frac bitwidth]
     Returns:
         Dictionaries with results from training [metrics, validation data] + String to path for saving plots
@@ -34,7 +32,7 @@ def do_train_classifier(config_ml: ConfigMLPipeline, config_data: SettingsDatase
     train_handler.get_metric_methods()
 
     # --- Processing Step #2: Do Training and Validation
-    metrics = train_handler.do_training(path2save=path2save, metrics=calc_custom_metrics)
+    metrics = train_handler.do_training(path2save=path2save, metrics=config_train.custom_metrics)
     path2folder = train_handler.get_saving_path()
     data_result = train_handler.do_validation_after_training()
 
@@ -58,7 +56,7 @@ def do_train_classifier(config_ml: ConfigMLPipeline, config_data: SettingsDatase
 
 def do_train_autoencoder(config_ml: ConfigMLPipeline, config_data: SettingsDataset,
                          config_train: ConfigPytorch, used_dataset, used_model,
-                         path2save: str='', calc_custom_metrics: list=(), print_results: bool=True,
+                         path2save: str='', print_results: bool=True,
                          ptq_quant_lvl: list = (12, 8)) -> [dict, dict, str]:
     """Template for training DL classifiers using PyTorch (incl. plotting)
     Args:
@@ -68,7 +66,6 @@ def do_train_autoencoder(config_ml: ConfigMLPipeline, config_data: SettingsDatas
         used_dataset:           Used custom-made DataLoader with data set
         used_model:             Used custom-made PyTorch DL model
         path2save:              Path for saving the results [Default: '' --> generate new subfolder in runs]
-        calc_custom_metrics:    List with metric names (custom-made) to determine during trainings process
         print_results:          Printing the results into Terminal
         ptq_quant_lvl:          Quantization level for PTQ [total bitwidth, frac bitwidth]
     Returns:
@@ -81,7 +78,7 @@ def do_train_autoencoder(config_ml: ConfigMLPipeline, config_data: SettingsDatas
     train_handler.define_ptq_level(ptq_quant_lvl[0], ptq_quant_lvl[1])
 
     # --- Processing Step #2: Do Training and Validation
-    metrics = train_handler.do_training(path2save=path2save, metrics=calc_custom_metrics)
+    metrics = train_handler.do_training(path2save=path2save, metrics=config_train.custom_metrics)
     path2folder = train_handler.get_saving_path()
     data_result = train_handler.do_validation_after_training()
 

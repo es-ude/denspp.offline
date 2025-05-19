@@ -9,7 +9,7 @@ from denspp.offline.dnn.dataset.autoencoder import prepare_training
 
 
 def do_train_neural_autoencoder(class_dataset, settings: ConfigMLPipeline, yaml_name_index: str='Config_AE',
-                                model_default_name: str='', used_dataset_name: str='quiroga') -> [dict, dict]:
+                                used_dataset_name: str='quiroga', model_default_name: str='') -> [dict, dict]:
     """Training routine for Autoencoders in Neural Applications (Spike Frames)
     Args:
         class_dataset:          Class of custom-made SettingsDataset from src_dnn/call_dataset.py
@@ -35,7 +35,7 @@ def do_train_neural_autoencoder(class_dataset, settings: ConfigMLPipeline, yaml_
     config_train = YamlConfigHandler(
         yaml_template=default_train,
         path2yaml=settings.get_path2config,
-        yaml_name=f'{yaml_name_index}_Training'
+        yaml_name=f'{yaml_name_index}_TrainAE'
     ).get_class(ConfigPytorch)
     del default_train, default_data
 
@@ -48,13 +48,13 @@ def do_train_neural_autoencoder(class_dataset, settings: ConfigMLPipeline, yaml_
         print_state=True
     )
     if settings.autoencoder_feat_size:
-        used_model = config_train.get_model(output_size=settings.autoencoder_feat_size)
+        used_model = config_train.get_model(input_size=dataset[0]['in'].size, output_size=settings.autoencoder_feat_size)
     else:
-        used_model = config_train.get_model()
+        used_model = config_train.get_model(input_size=dataset[0]['in'].size, output_size=dataset[0]['in'].size)
 
     metrics, data_result, path2folder = do_train_autoencoder(
         config_ml=settings, config_data=config_data, config_train=config_train,
-        used_dataset=dataset, used_model=used_model, calc_custom_metrics=['dsnr_all', 'ptq_loss']
+        used_dataset=dataset, used_model=used_model
     )
 
     # --- Plotting

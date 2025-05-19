@@ -20,7 +20,7 @@ def train_model_normal(used_model_name: str, config_train, config_data, dnn_hand
 
     model_stats['metrics'], model_stats['data_result'], model_stats['path2folder'] = do_train_autoencoder(
         config_ml=dnn_handler, config_data=config_data, config_train=config_train,
-        used_dataset=dataset, used_model=config_train.get_model(), calc_custom_metrics=['dsnr_all', 'ptq_loss'],
+        used_dataset=dataset, used_model=config_train.get_model(),
         print_results=False, ptq_quant_lvl=ptq_level
     )
     used_first_fold = [key for key in model_stats["metrics"].keys()][0]
@@ -42,7 +42,7 @@ def train_model_quantized(used_model_name: str, config_train, config_data, dnn_h
     config_train.model_name = used_model_name
     model_stats['metrics'], model_stats['data_result'], model_stats['path2folder'] = do_train_autoencoder(
         config_ml=dnn_handler, config_data=config_data, config_train=config_train,
-        used_dataset=dataset, used_model=config_train.get_model(), calc_custom_metrics=['dsnr_all'],
+        used_dataset=dataset, used_model=config_train.get_model(),
         print_results=False, ptq_quant_lvl=ptq_level
     )
     used_first_fold = [key for key in model_stats["metrics"].keys()][0]
