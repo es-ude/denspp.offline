@@ -1,4 +1,5 @@
 import numpy as np
+from logging import getLogger
 from dataclasses import dataclass
 from scipy.constants import Boltzmann, elementary_charge
 
@@ -42,7 +43,10 @@ RecommendedSettingsNoise = SettingsNoise(
 
 
 def _calculate_params(noise_in: np.ndarray) -> [float, float]:
-    """Calculating the parameters of effective input and std"""
+    """Calculating the parameters of effective input and std
+    :param noise_in:    Numpy array of the noise input
+    :return:            List with effective noise value and peak-to-peak noise value
+    """
     noise_eff = np.std(noise_in)
     noise_pp = np.max(noise_in) - np.min(noise_in)
     return noise_eff, noise_pp
@@ -58,6 +62,7 @@ class ProcessNoise:
         """
         self.__settings_noise = settings
         self.__noise_sampling_rate = fs_ana
+        self._logger = getLogger(__name__)
 
     ######################## FUNCTIONS FOR GENERATE NOISE ########################
     def __do_fft(self, y: np.ndarray) -> dict:
@@ -167,7 +172,10 @@ class ProcessNoise:
         return 3.01 + 10 * np.log10(val)
 
     def _do_print(self, noise_in: np.ndarray, mode_output: int=0) -> None:
-        """Printing output from noise analysis"""
+        """Printing output from noise analysis
+        :param noise_in:        Numpy array with generated noise signal
+        :param mode_output:     Output mode [0: power in mW, 1: voltage in µV, 2: current in nA]
+        """
         if self.__settings_noise.do_print:
             match mode_output:
                 case 0:
@@ -189,8 +197,8 @@ class ProcessNoise:
             text_dev = f"" if len(self.__print_device) == 0 else f" ({self.__print_device})"
 
             noise_eff, noise_pp = _calculate_params(noise_in)
-            print(f"... effective input noise {unit_type}{text_dev}: {unit_scale * noise_eff:.4f} {unit_text}")
-            print(f"... effective peak-to-peak noise {unit_type}{text_dev}: {unit_scale * noise_pp:.4f} {unit_text}")
+            self._logger.debug(f"... effective input noise {unit_type}{text_dev}: {unit_scale * noise_eff:.4f} {unit_text}")
+            self._logger.debug(f"... effective peak-to-peak noise {unit_type}{text_dev}: {unit_scale * noise_pp:.4f} {unit_text}")
 
     def gen_noise_real_pwr(self, size: int, e_n: float=0.0) -> np.ndarray:
         """Generating real transient noise power

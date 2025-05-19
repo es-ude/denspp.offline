@@ -67,10 +67,17 @@ class PreAmp(CommonAnalogFunctions):
         self._settings = settings_dev
 
         # --- Filter properties
-        f_filt = np.array(self._settings.f_filt)
-        iir_spk_result = butter(self._settings.n_filt, 2 * f_filt / self._settings.fs_ana,
-                                self._settings.f_type)
-        (self.__b_iir_spk, self.__a_iir_spk) = iir_spk_result[0], iir_spk_result[1]
+        self.__coeffb, self.__coeffa = butter(
+            N=self._settings.n_filt,
+            Wn=2 * np.array(self._settings.f_filt) / self._settings.fs_ana,
+            btype=self._settings.f_type,
+            analog=False
+        )
+
+    @property
+    def get_filter_coeffs(self) -> dict:
+        """Getting the filter coefficients"""
+        return {'b': self.__coeffb, 'a': self.__coeffa}
 
     def __gen_chop(self, size: int) -> np.ndarray:
         """Generate the chopping clock signal"""
@@ -86,7 +93,7 @@ class PreAmp(CommonAnalogFunctions):
             u_out = np.zeros((size,))
         return u_out
 
-    def pre_amp(self, uinp: np.ndarray, uinn: np.ndarray) -> np.ndarray:
+    def pre_amp(self, uinp: np.ndarray, uinn: np.ndarray | float) -> np.ndarray:
         """Performs the pre-amplification (single, normal) with input signal
         Args:
             uinp:   Positive input voltage [V]
@@ -95,13 +102,13 @@ class PreAmp(CommonAnalogFunctions):
             Corresponding numpy array with output voltage signal
         """
         du = uinp - uinn
-        u_out = self._settings.gain * lfilter(b=self.__b_iir_spk, a=self.__a_iir_spk, x=du)
+        u_out = self._settings.gain * lfilter(b=self.__coeffb, a=self.__coeffa, x=du)
         u_out += self._settings.gain * self._settings.offset
         u_out += self._settings.vcm
         u_out += self._settings.gain * self.__noise_generation_circuit(du.size)
         return self.clamp_voltage(u_out)
 
-    def pre_amp_chopper(self, uinp: np.ndarray, uinn: np.ndarray) -> [np.ndarray, np.ndarray]:
+    def pre_amp_chopper(self, uinp: np.ndarray, uinn: np.ndarray | float) -> dict:
         """Performs the pre-amplification (single, chopper) with input signal
         Args:
             uinp:   Positive input voltage
@@ -117,7 +124,7 @@ class PreAmp(CommonAnalogFunctions):
         uchp_in += self._settings.gain * self.__noise_generation_circuit(du.size)
         # --- Back chopping and Filtering
         u_filt = uchp_in * clk_chop
-        u_out = lfilter(self.__b_iir_spk, self.__a_iir_spk, u_filt)
+        u_out = lfilter(self.__coeffb, self.__coeffa, u_filt)
         u_out += self._settings.vcm
 
-        return self.clamp_voltage(u_out), self.clamp_voltage(uchp_in)
+        return {'out': self.clamp_voltage(u_out), 'chop': self.clamp_voltage(uchp_in)}
