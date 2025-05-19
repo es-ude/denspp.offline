@@ -16,7 +16,7 @@ packages = ["denspp"]
 
 [project]
 name = "denspp.offline"
-version = "0.2.0"
+version = "0.2.1"
 description = "Python Framework for End-To-End and Hardware-Aware Signal Processing"
 readme = "README.md"
 license =  {file = "LICENSE"}
