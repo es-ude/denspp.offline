@@ -2,8 +2,7 @@ from torch import nn, Tensor, argmax, flatten
 
 
 class waveforms_mlp_cl_v1(nn.Module):
-    """Class of a classifier with Dense-Layer for feature extraction"""
-    def __init__(self, input_size: int=400, output_size: int=4):
+    def __init__(self, input_size: int=240, output_size: int=4):
         super().__init__()
         self.model_shape = (1, input_size)
         # --- Settings of model
@@ -29,14 +28,13 @@ class waveforms_mlp_cl_v1(nn.Module):
 
 
 class waveforms_mlp_ae_v1(nn.Module):
-    """Class of an autoencoder with Dense-Layer for feature extraction"""
-    def __init__(self, input_size: int=400, output_size: int=4):
+    def __init__(self, input_size: int=240, output_size: int=4):
         super().__init__()
         self.model_shape = (1, input_size)
         # --- Settings of model
         do_train_bias = True
         do_train_batch = True
-        config_network = [input_size, 600, 96, output_size]
+        config_network = [input_size, 120, 36, output_size]
 
         # --- Model Deployment: Encoder
         self.encoder = nn.Sequential()
