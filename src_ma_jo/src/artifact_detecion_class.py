@@ -91,7 +91,7 @@ class ArtifactDetection:
             result_arrays = extract_arrays(data, self.config.filename)
 
             self.time = result_arrays[0]
-            self.signals = result_arrays[1:60]
+            self.signals = result_arrays[1:61]
             if len(result_arrays) > 61:
                 self.add_on = result_arrays[-1]
 
@@ -391,7 +391,7 @@ if __name__ == "__main__":
 
     config = ArtifactConfig(
         path=r"C:\Users\jo-di\Documents\Masterarbeit\Rohdaten",
-        filename="A1R1a_ASIC_1S_1000_15"
+        filename="A1R1a_light_stim_pre"
     )
 
     ad = ArtifactDetection(settings, config)

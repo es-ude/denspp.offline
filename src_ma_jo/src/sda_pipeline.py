@@ -12,7 +12,7 @@ class SDAPipeline:
         """
         Initialisiert die SDA Pipeline mit Standardverzeichnissen und Dateinamen.
         """
-        self.data_file_name = "../data/A1R1a_ASIC_1S_1000_15_artifact_dictionary.npy"
+        self.data_file_name = "../data/A1R1a_light_stim_pre_artifact_dictionary.npy"
         self.artifact_indices = []
         self.project_base_dir = Path(__file__).resolve().parent.parent
         self.data_dir_path = self.project_base_dir / data_subdir
@@ -27,8 +27,8 @@ class SDAPipeline:
             dt_offset=[0.1e-3, 0.1e-3],
             t_dly=0.3e-3,
             window_size=7,
-            thr_gain=1.0,
-            thr_min_value=30
+            thr_gain=2.0,
+            thr_min_value=50
         )
         self.spike_detector = SpikeDetection(self.settings_sda)
         self.signal_dict = {}
@@ -159,18 +159,27 @@ class SDAPipeline:
         for signal in cleaned_signals:
             x_dly = self.time_delay(signal)
             x_sda_neo = self.sda_neo(x_dly)
-            x_sda_mteo = self.spike_detector.sda_mteo(x_dly)
-            x_sda_ado = self.spike_detector.sda_ado(x_dly)
-            x_sda_aso = self.spike_detector.sda_aso(x_dly)
-            x_sda_spb = self.spike_detector.sda_spb(x_dly)
-            x_sda_eed = self.spike_detector.sda_eed(x_dly)
-            smooth_data = self.sda_smooth(x_sda_neo, "Hamming")
+            smooth_data_hamming = self.sda_smooth(x_sda_neo, "Hamming")
             threshold_data = self.thres_rms(x_sda_neo)
-            frames_out0, frames_out1 = self.spike_detector.frame_generation(signal, smooth_data, threshold_data)
+            frames_out0, frames_out1 = self.spike_detector.frame_generation(signal, smooth_data_hamming, threshold_data)
             frames_align = frames_out1[0]
             x_pos = frames_out1[1]
-            self.aligned_frames_list.append(frames_align)
-            self.spike_indices_list.append(x_pos)
+            # Nur hinzufügen, wenn die Bedingung erfüllt ist
+            valid_frames_align = []
+            valid_x_pos = []
+            for frame, pos in zip(frames_align, x_pos):
+                if max(frame) - min(frame) > 50:
+                    valid_frames_align.append(frame)
+                    valid_x_pos.append(pos)
+
+            # Nur gültige Einträge anhängen
+            if valid_frames_align:
+                self.aligned_frames_list.append(np.array(valid_frames_align))
+            if valid_x_pos:
+                self.spike_indices_list.append(np.array(valid_x_pos))
+            else:
+                self.aligned_frames_list.append([])
+                self.spike_indices_list.append([])
 
     def plot_single_spikes(self, signal_index=2, save_eps=False):
         """
@@ -199,7 +208,7 @@ class SDAPipeline:
 
 
         for j, frame in enumerate(signal_frames):
-            if 400 > max(frame) - min(frame) > 80 and j==32267:
+            if 100 > max(frame) - min(frame) > 50:
                 plt.figure(figsize=(6, 3))
                 plt.plot(frame, color="black", linewidth=1)
                 plt.xlabel("Frame Samples", fontsize=12)
@@ -216,13 +225,13 @@ class SDAPipeline:
 
     def delete_common_indices(self, common_indices_list):
         """
-            Löscht die Werte von common_indices aus `self.spike_indices_list`
-            und entfernt die zugehörigen Indizes aus `self.aligned_frames_list`.
+        Löscht die Werte von common_indices aus `self.spike_indices_list`
+        und entfernt die zugehörigen Indizes aus `self.aligned_frames_list`.
 
-            Args:
+        Args:
             common_indices_list (list): Liste von numpy-Arrays mit den gemeinsamen Indizes,
                                          die entfernt werden sollen.
-            """
+        """
         if not isinstance(common_indices_list, list):
             raise ValueError("common_indices_list muss eine Liste sein.")
 
@@ -233,14 +242,21 @@ class SDAPipeline:
             if not isinstance(common_indices, np.ndarray):
                 raise ValueError("common_indices muss ein numpy-Array sein.")
 
+            # sicherstellen, dass spike_indices_list[i] ein numpy-Array ist
+            self.spike_indices_list[i] = np.array(self.spike_indices_list[i])
+
             # Ermitteln der Indizes, wo Überschneidungen vorliegen
             mask = np.isin(self.spike_indices_list[i], common_indices)
+
+            # Sicherstellen, dass aligned_frames_list[i] ebenfalls ein Array ist
+            self.aligned_frames_list[i] = np.array(self.aligned_frames_list[i])
 
             # Entfernen der gemeinsamen Indizes
             self.spike_indices_list[i] = self.spike_indices_list[i][~mask]
 
             # Entfernen der Zeilen basierend auf der Maske
-            self.aligned_frames_list[i] = self.aligned_frames_list[i][~mask]
+            if len(self.aligned_frames_list[i]) > 0:
+                self.aligned_frames_list[i] = self.aligned_frames_list[i][~mask]
 
     def add_to_signal_dict(self):
         """
@@ -267,6 +283,6 @@ if __name__ == "__main__":
             common_indices_list = pipeline.compare_indices_in_loop()
             pipeline.delete_common_indices(common_indices_list)
             pipeline.add_to_signal_dict()
-            pipeline.plot_single_spikes()
+            #pipeline.plot_single_spikes()
             filename = "_".join(pipeline.data_file_name.rsplit(".", 1)[0].split("_")[:-2]) + "_spike_dictionary.npy"
             np.save(filename, pipeline.signal_dict)
