@@ -1,9 +1,15 @@
-# End-To-End Deep Neural Signal Pre-Processing (DeNSPP.offline)
+# End-To-End Deep (Neural) Signal Pre-Processing for Offline Transient Data Analysis (DeNSPP.offline)
 
-This Python package is developed in the research project Sp:AI:ke, funded by MERCUR foundation (Germany). This Python framework
-enables a development of user-specific neural signal processing pipeline for extracellular recordings with offline data (already recorded and available). It helps to accelerate the next-gen hardware development of end-to-end neural signal processors (Brain-Computer Interfaces, retinal implants, ...).
+This Python framework is developed for analysing transient data to evaluate an user-specific implementation of an 
+end-to-end signal processor in any application. The journey of this framework starts in the research project Sp:AI:ke, 
+funded by MERCUR foundation (Germany) with searching a neural signal processing pipeline for extracellular recordings 
+with offline data (already recorded and available). 
 
-**Table of Content**
+In general, this framework aims to accelerate the deployment of signal processor pipelines in next-gen hardware development. 
+For building the digital hardware accelerators (in C for microcontrollers and in Verilog/VHDL for FPGAs/ASICs), there is the access
+to the [elasticAI.creator](https://github.com/es-ude/elastic-ai.creator).
+
+# Table of Content
 1. [Installation guide](#installation-guide)
 3. [Project File structure](#project-file-structure)
 4. [Data File Structure](#data-file-structure)
@@ -23,7 +29,7 @@ For using this framework, the following software tools are necessary / recommend
 - `uv` package manager ([Link](https://docs.astral.sh/uv/), [Using](https://www.saaspegasus.com/guides/uv-deep-dive/))
 
 It is recommended that each working group will create a new branch for editing their input. At the end of each project,
-their input will be merged with the main branch. Further informations about this software framework are described in the
+their input will be merged with the main branch. Further information about this software framework are described in the
 paper at the end of the readme file.
 
 If you create a new repo and you want to use the functionalities of this Python tool. Then please initialise the project.toml using `uv` and write the following code into the terminal.
