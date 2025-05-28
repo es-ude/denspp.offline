@@ -12,11 +12,12 @@ namespaces = false
 
 [tool.hatch.build.targets.wheel]
 packages = ["denspp"]
+exclude = ['*_test.py']
 
 
 [project]
 name = "denspp.offline"
-version = "0.2.1"
+version = "0.2.2"
 description = "Python Framework for End-To-End and Hardware-Aware Signal Processing"
 readme = "README.md"
 license =  {file = "LICENSE"}
