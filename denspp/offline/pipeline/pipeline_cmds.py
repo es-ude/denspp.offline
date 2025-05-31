@@ -9,7 +9,7 @@ from threading import Thread, active_count
 from tqdm import tqdm
 from dataclasses import dataclass
 
-from denspp.offline.structure_builder import get_path_project_start
+from denspp.offline.structure_builder import get_path_to_project_start
 
 
 class PipelineCMD:
@@ -19,7 +19,7 @@ class PipelineCMD:
     def __init__(self) -> None:
         """Class for handling the pipeline processing"""
         self._logger = getLogger(__name__)
-        self._path2start = get_path_project_start()
+        self._path2start = get_path_to_project_start()
 
     def get_pipeline_name(self) -> str:
         """Getting the name of the pipeline"""

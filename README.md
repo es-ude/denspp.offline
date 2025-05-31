@@ -23,10 +23,10 @@ to the [elasticAI.creator](https://github.com/es-ude/elastic-ai.creator).
 
 For using this framework, the following software tools are necessary / recommended.
 
-- PyCharm Community Version ([Link](https://www.jetbrains.com/de-de/pycharm/download/#section=windows))
-- Python Interpreter 3.12 ([Link](https://www.python.org/downloads/release/python-3116/))
-- Git ([Link](https://git-scm.com/downloads))
 - `uv` package manager ([Link](https://docs.astral.sh/uv/), [Using](https://www.saaspegasus.com/guides/uv-deep-dive/))
+- Git ([Link](https://git-scm.com/downloads))
+- PyCharm Community Version ([Link](https://www.jetbrains.com/de-de/pycharm/download/#section=windows))
+- Python Interpreter 3.13 ([Link](https://www.python.org/downloads/release/python-3132/))
 
 It is recommended that each working group will create a new branch for editing their input. At the end of each project,
 their input will be merged with the main branch. Further information about this software framework are described in the
@@ -36,9 +36,10 @@ If you create a new repo and you want to use the functionalities of this Python 
 ```
 uv add "git+https://github.com/es-ude/denspp.offline.git"
 ```
-After initialisation, then run the following code to create the project folder structure.
+After initialisation, then run the following code to create the project folder structure in the Python Console.
 ```
-python ./denspp/offline/init_project.py 
+from denspp.offline import init_project_folder
+init_project_folder()
 ```
 Important! Please start every script from your repo folder!
 
@@ -115,10 +116,9 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 ````
 Afterwards you can create the venv and installing all packages using this line.
 ````
-uv venv
-.\.venv\Scripts\activate  
-uv sync
+uv sync (--refresh --upgrade)
 ````
+In the last step, you activate the Python Environment of your ``venv``. 
 
 ### PySPICE
 

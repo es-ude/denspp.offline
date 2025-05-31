@@ -3,7 +3,7 @@ import logging
 from typing import Any
 from os import makedirs
 from os.path import join, exists
-from denspp.offline.structure_builder import get_path_project_start
+from denspp.offline.structure_builder import get_path_to_project_start
 
 
 class YamlConfigHandler:
@@ -24,7 +24,7 @@ class YamlConfigHandler:
             yaml_name:          String with name of the YAML file [Default: 'Config_Train']
         """
         self.__logger = logging.getLogger(__name__)
-        self.__path2yaml_folder = join(get_path_project_start(), path2yaml)
+        self.__path2yaml_folder = join(get_path_to_project_start(), path2yaml)
         self.__yaml_name = self.__remove_ending_from_filename(yaml_name)
 
         makedirs(self.__path2yaml_folder, exist_ok=True)
