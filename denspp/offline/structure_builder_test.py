@@ -5,7 +5,7 @@ from denspp.offline.structure_builder import init_project_folder, init_dnn_folde
 
 
 class TestSum(unittest.TestCase):
-    folder_general = ['config', 'data', 'dataset', 'runs', 'src_pipe', 'temp']
+    folder_general = ['config', 'data', 'dataset', 'runs', 'src_pipe']
     folder_dnn = ['models', 'dataset']
     folder2search = 'denspp.offline'
     folder_name_test = 'temp_test'

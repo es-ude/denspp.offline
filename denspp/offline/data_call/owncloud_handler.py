@@ -4,7 +4,7 @@ import owncloud
 from os.path import join
 from dataclasses import dataclass
 from denspp.offline.yaml_handler import YamlConfigHandler
-from denspp.offline.structure_builder import get_path_project_start
+from denspp.offline.structure_builder import get_path_to_project_start
 
 
 @dataclass
@@ -31,7 +31,7 @@ class OwnCloudDownloader:
     __handler: owncloud.Client
     __settings: ConfigCloud
 
-    def __init__(self, path2config: str = get_path_project_start(), use_config: ConfigCloud = DefaultConfigCloud) -> None:
+    def __init__(self, path2config: str = get_path_to_project_start(), use_config: ConfigCloud = DefaultConfigCloud) -> None:
         """Class for handling cloud repositories to get datasets from remote
         :param path2config: path to config file
         :param use_config:  Class for handling the owncloud handler

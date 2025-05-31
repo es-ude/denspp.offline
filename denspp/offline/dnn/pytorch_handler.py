@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
 from sklearn.model_selection import KFold
 
-from denspp.offline.structure_builder import get_path_project_start
+from denspp.offline.structure_builder import get_path_to_project_start
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset
 from denspp.offline.dnn.pytorch_config_model import ConfigPytorch
 from denspp.offline.structure_builder import init_dnn_folder
@@ -72,7 +72,7 @@ class PyTorchHandler:
 
     def __check_start_folder(self, new_folder: str='runs'):
         """Checking for starting folder to generate"""
-        self._path2run = get_path_project_start(new_folder)
+        self._path2run = get_path_to_project_start(new_folder)
         makedirs(self._path2run, exist_ok=True)
 
 

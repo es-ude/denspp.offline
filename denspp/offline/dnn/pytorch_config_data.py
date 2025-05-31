@@ -5,7 +5,7 @@ from os.path import join, abspath, isabs, exists
 from torch import Tensor, concat, from_numpy
 from torchvision import datasets, transforms
 from denspp.offline.yaml_handler import YamlConfigHandler
-from denspp.offline.structure_builder import get_path_project_start
+from denspp.offline.structure_builder import get_path_to_project_start
 from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
 from denspp.offline.data_generator import SettingsWaveformDataset, DefaultSettingsWaveformDataset, build_waveform_dataset
 
@@ -56,7 +56,7 @@ class SettingsDataset:
     @property
     def get_path2folder_project(self) -> str:
         """Getting the default path of the Python Project"""
-        return get_path_project_start()
+        return get_path_to_project_start()
 
 
 DefaultSettingsDataset = SettingsDataset(

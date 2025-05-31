@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import unittest
 from os.path import join, exists
 from denspp.offline.yaml_handler import YamlConfigHandler
-from denspp.offline.structure_builder import get_path_project_start
+from denspp.offline.structure_builder import get_path_to_project_start
 
 
 @dataclass
@@ -22,7 +22,7 @@ DefaultSettingsTest = SettingsTest(
 )
 
 # --- DATA FOR TESTING
-path2yaml = join(get_path_project_start(), join('temp_test', 'config'))
+path2yaml = join(get_path_to_project_start('temp_test'), 'config')
 filename = 'Config_Test'
 data_wr = {
     'Name': 'John Doe',

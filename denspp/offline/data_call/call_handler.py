@@ -7,7 +7,7 @@ from os import makedirs
 from glob import glob
 from fractions import Fraction
 from scipy.signal import resample_poly
-from denspp.offline.structure_builder import get_path_project_start
+from denspp.offline.structure_builder import get_path_to_project_start
 from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
 
 
@@ -91,7 +91,7 @@ class ControllerData:
         self.__fill_factor = 1
         self.__scaling = 1
         self._methods_available = dir(ControllerData)
-        self.__default_data_path = join(get_path_project_start(), 'data')
+        self.__default_data_path = join(get_path_to_project_start(), 'data')
         self.__config_data_selection = [self.__default_data_path, 0, 0]
         self.__download_handler = OwnCloudDownloader()
 

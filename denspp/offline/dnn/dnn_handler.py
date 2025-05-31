@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from os.path import exists, join
-from denspp.offline.structure_builder import get_path_project_start
+from denspp.offline.structure_builder import get_path_to_project_start
 
 
 @dataclass
@@ -29,7 +29,7 @@ class ConfigMLPipeline:
     @property
     def get_path2config(self) -> str:
         """Getting the path to the yaml config file"""
-        path2start = join(get_path_project_start(), self.path2yaml)
+        path2start = join(get_path_to_project_start(), self.path2yaml)
         if not exists(path2start):
             raise ImportError("Folder with YAML files not available - Please check!")
         else:
