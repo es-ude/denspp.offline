@@ -1,7 +1,8 @@
 import fnmatch
 import logging
 import owncloud
-from os.path import join
+from os import makedirs
+from os.path import join, dirname
 from dataclasses import dataclass
 from denspp.offline.yaml_handler import YamlConfigHandler
 from denspp.offline.structure_builder import get_path_to_project_start
@@ -51,7 +52,7 @@ class OwnCloudDownloader:
         path_start = self.__settings.remote_transient if not use_dataset else self.__settings.remote_dataset
         path_select = join(path_start, search_folder) if search_folder else path_start
 
-        dict_list = self.__handler.list(path_select, depth)
+        dict_list = self.__handler.list(path=path_select, depth=depth)
         self.__handler.logout()
         return dict_list
 
@@ -94,6 +95,7 @@ class OwnCloudDownloader:
         self.__handler = owncloud.Client.from_public_link(self.__settings.remote_link)
         self.__logger.info("... downloading file from remote")
         path_selected = self.__settings.remote_transient if not use_dataset else self.__settings.remote_dataset
+        makedirs(dirname(destination_download), exist_ok=True)
         self.__handler.get_file(
             remote_path=join(path_selected, file_name),
             local_file=destination_download

@@ -12,7 +12,7 @@ TestConfigCloud = ConfigCloud(
 
 
 class TestOwnCloud(TestCase):
-    path2temp = get_path_to_project_start('temp_test')
+    path2temp = get_path_to_project_start()
     handler = OwnCloudDownloader(
         path2config=path2temp,
         use_config=TestConfigCloud
@@ -34,14 +34,16 @@ class TestOwnCloud(TestCase):
 
     def test_download(self):
         overview = self.handler.get_overview_data(True)
-        path2file = join(self.path2temp, overview[0].split('/')[-1])
+        path2dest = join(self.path2temp, 'data')
+        path2file = join(path2dest, overview[0].split('/')[-1])
 
         self.handler.download_file(
             use_dataset=True,
             file_name=overview[0],
             destination_download=path2file
         )
-        self.assertTrue(exists(path2file))
+        file_exists = exists(path2file)
+        self.assertTrue(file_exists)
 
 
 if __name__ == '__main__':

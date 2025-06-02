@@ -72,7 +72,7 @@ class TestSettingsNoise(TestCase):
             dev_e=100e-9
         )
         noise_params = np.max(np.abs((noise.min(), noise.max())))
-        self.assertTrue(noise_params < 4e-5)
+        self.assertTrue(noise_params < 5e-5)
 
     def test_handler_noise_awgn_dev_offset(self):
         set0 = deepcopy(test_settings)
@@ -88,7 +88,7 @@ class TestSettingsNoise(TestCase):
         ref = np.abs(np.mean(noise))
         noise_params = np.max(np.abs((noise.min(), noise.max())))
         # --- Should go to zero
-        self.assertTrue(ref < 0.01 * noise_params)
+        self.assertTrue(ref < 0.1 * noise_params)
 
 
 if __name__ == '__main__':

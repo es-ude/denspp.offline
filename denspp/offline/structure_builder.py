@@ -28,7 +28,7 @@ def get_path_to_project_start(new_folder: str='', folder_ref: str='') -> str:
         path_to_proj = dirname(join(*[path_seg for path_seg in path_split], ''))
     else:
         path_to_proj = join(getcwd().split(folder_ref)[0], folder_ref) if folder_ref else getcwd()
-    path_start = dirname(join(path_to_proj, new_folder))
+    path_start = join(path_to_proj, new_folder)
     logger.debug(f"Project start at: {path_start}")
     return abspath(path_start)
 
