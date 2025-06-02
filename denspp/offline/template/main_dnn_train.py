@@ -1,5 +1,5 @@
 from denspp.offline.dnn.dnn_handler import ConfigMLPipeline, DefaultSettings_MLPipe
-from denspp.offline.yaml_handler import YamlConfigHandler
+from denspp.offline.yaml_handler import YamlHandler
 from denspp.offline.structure_builder import init_project_folder
 from src_dnn.call_dataset import DatasetLoader
 
@@ -10,7 +10,7 @@ if __name__ == "__main__":
 
     # --- Loading YAML-Settings file
     init_project_folder()
-    yaml_handler = YamlConfigHandler(DefaultSettings_MLPipe, 'config', 'Config_DNN')
+    yaml_handler = YamlHandler(DefaultSettings_MLPipe, 'config', 'Config_DNN')
     dnn_handler = yaml_handler.get_class(ConfigMLPipeline)
 
     # --- Selecting model for train

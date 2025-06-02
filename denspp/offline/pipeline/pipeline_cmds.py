@@ -9,7 +9,7 @@ from threading import Thread, active_count
 from tqdm import tqdm
 from dataclasses import dataclass
 
-from denspp.offline.structure_builder import get_path_to_project_start
+from denspp.offline import get_path_to_project_start
 
 
 class PipelineCMD:

@@ -1,5 +1,5 @@
 from logging import getLogger
-from denspp.offline import YamlConfigHandler
+from denspp.offline.yaml_handler import YamlHandler
 from denspp.offline.data_call import SettingsData, DefaultSettingsData
 from denspp.offline.pipeline.pipeline_cmds import ProcessingData, SettingsThread, RecommendedSettingsThread
 
@@ -59,10 +59,10 @@ def read_yaml_pipeline_config(
     :param yaml_pipe_index: Index with name for reading the yaml configuration file for pipeline processing
     :return:                Classes for handling the data (SettingsDATA) and pipeline processor (SettingsThread)
     """
-    yaml_data = YamlConfigHandler(DefaultSettingsData, yaml_name=yaml_data_index)
+    yaml_data = YamlHandler(DefaultSettingsData, file_name=yaml_data_index)
     settings_data = yaml_data.get_class(SettingsData)
 
-    yaml_threads = YamlConfigHandler(RecommendedSettingsThread, yaml_name=yaml_pipe_index)
+    yaml_threads = YamlHandler(RecommendedSettingsThread, file_name=yaml_pipe_index)
     settings_thr = yaml_threads.get_class(SettingsThread)
 
     return settings_data, settings_thr

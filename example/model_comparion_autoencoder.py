@@ -4,7 +4,7 @@ from copy import deepcopy
 import numpy as np
 import matplotlib.pyplot as plt
 
-from denspp.offline.yaml_handler import YamlConfigHandler
+from denspp.offline.yaml_handler import YamlHandler
 from denspp.offline.dnn.dataset.autoencoder import prepare_training
 from denspp.offline.dnn.dnn_handler import ConfigMLPipeline, DefaultSettings_MLPipe
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset, DefaultSettingsDataset
@@ -91,19 +91,19 @@ if __name__ == "__main__":
     default_hndl = deepcopy(DefaultSettings_MLPipe)
     default_hndl.mode_train_dnn = 3
     default_hndl.do_plot = False
-    yaml_handler = YamlConfigHandler(default_hndl, 'config', 'Config_DNN')
+    yaml_handler = YamlHandler(default_hndl, 'config', 'Config_DNN')
     dnn_handler = yaml_handler.get_class(ConfigMLPipeline)
 
     default_train = DefaultSettingsTrainMSE
     default_train.model_name = used_models[0]
-    yaml_nn = YamlConfigHandler(default_train, 'config', f'ConfigAE_Training')
+    yaml_nn = YamlHandler(default_train, 'config', f'ConfigAE_Training')
     config_train = yaml_nn.get_class(ConfigPytorch)
 
     # --- Get Dataset
     default_data = DefaultSettingsDataset
     default_data.data_file_name = 'quiroga'
     default_data.normalization_do = True
-    yaml_data = YamlConfigHandler(default_data, 'config', f'ConfigAE_Dataset')
+    yaml_data = YamlHandler(default_data, 'config', f'ConfigAE_Dataset')
     config_data = yaml_data.get_class(SettingsDataset)
     dataset = prepare_training(settings=config_data, do_classification=False,
                                mode_train_ae=default_hndl.mode_train_dnn, noise_std=default_hndl.autoencoder_noise_std)

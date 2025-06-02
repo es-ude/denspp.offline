@@ -4,8 +4,8 @@ import owncloud
 from os import makedirs
 from os.path import join, dirname
 from dataclasses import dataclass
-from denspp.offline.yaml_handler import YamlConfigHandler
-from denspp.offline.structure_builder import get_path_to_project_start
+from denspp.offline.yaml_handler import YamlHandler
+from denspp.offline import get_path_to_project_start
 
 
 @dataclass
@@ -39,7 +39,7 @@ class OwnCloudDownloader:
         :return:            None
         """
         self.__logger = logging.getLogger(__name__)
-        yaml_hndl = YamlConfigHandler(use_config, path2config, 'access_cloud')
+        yaml_hndl = YamlHandler(use_config, path2config, 'access_cloud')
         self.__settings = yaml_hndl.get_class(ConfigCloud)
 
     def __get_remote_content(self, use_dataset: bool, search_folder: str = '', depth: int=1) -> list:

@@ -1,5 +1,5 @@
 from copy import deepcopy
-from denspp.offline.yaml_handler import YamlConfigHandler
+from denspp.offline.yaml_handler import YamlHandler
 from denspp.offline.dnn.dnn_handler import ConfigMLPipeline
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset, DefaultSettingsDataset
 from denspp.offline.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE
@@ -28,28 +28,28 @@ def do_train_ae_classifier(class_dataset, settings: ConfigMLPipeline,
     # --- Loading the YAML file: Dataset
     default_data = deepcopy(DefaultSettingsDataset)
     default_data.data_file_name = used_dataset_name
-    config_data = YamlConfigHandler(
-        yaml_template=default_data,
-        path2yaml=settings.get_path2config,
-        yaml_name=f'{yaml_name_index}_Dataset'
+    config_data = YamlHandler(
+        template=default_data,
+        path=settings.get_path2config,
+        file_name=f'{yaml_name_index}_Dataset'
     ).get_class(SettingsDataset)
 
     # --- Loading the YAML file: Autoencoder Model training
     default_train_ae = deepcopy(DefaultSettingsTrainMSE)
     default_train_ae.model_name = model_ae_default_name
-    config_train_ae = YamlConfigHandler(
-        yaml_template=default_train_ae,
-        path2yaml=settings.get_path2config,
-        yaml_name=f'{yaml_name_index}_TrainAE'
+    config_train_ae = YamlHandler(
+        template=default_train_ae,
+        path=settings.get_path2config,
+        file_name=f'{yaml_name_index}_TrainAE'
     ).get_class(ConfigPytorch)
 
     # --- Loading the YAML file: Classifier Model training
     default_train_cl = deepcopy(DefaultSettingsTrainCE)
     default_train_cl.model_name = model_cl_default_name
-    config_train_cl = YamlConfigHandler(
-        yaml_template=default_train_cl,
-        path2yaml=settings.get_path2config,
-        yaml_name=f'{yaml_name_index}_TrainCL'
+    config_train_cl = YamlHandler(
+        template=default_train_cl,
+        path=settings.get_path2config,
+        file_name=f'{yaml_name_index}_TrainCL'
     ).get_class(ConfigPytorch)
     del default_train_cl, default_train_ae, default_data
 

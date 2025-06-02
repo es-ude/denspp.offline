@@ -7,7 +7,7 @@ from os import makedirs
 from glob import glob
 from fractions import Fraction
 from scipy.signal import resample_poly
-from denspp.offline.structure_builder import get_path_to_project_start
+from denspp.offline import get_path_to_project_start
 from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
 
 

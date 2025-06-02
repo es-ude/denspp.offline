@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from os.path import exists, join
-from denspp.offline.structure_builder import get_path_to_project_start
+from denspp.offline import get_path_to_project_start
 
 
 @dataclass

@@ -1,6 +1,6 @@
 from denspp.offline.template.call_dataset import DatasetLoader
 
-from denspp.offline.yaml_handler import YamlConfigHandler
+from denspp.offline.yaml_handler import YamlHandler
 from denspp.offline.dnn.handler.train_ae_cl_sweep import do_train_ae_cl_sweep
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset
 from denspp.offline.dnn.dnn_handler import ConfigMLPipeline, DefaultSettings_MLPipe
@@ -23,7 +23,7 @@ settings = SettingsDataset(
 
 
 if __name__ == "__main__":
-    yaml_handler = YamlConfigHandler(DefaultSettings_MLPipe, 'config', 'Config_DNN')
+    yaml_handler = YamlHandler(DefaultSettings_MLPipe, 'config', 'Config_DNN')
     dnn_handler = yaml_handler.get_class(ConfigMLPipeline)
     dnn_handler.do_plot = True
     dnn_handler.do_block = False

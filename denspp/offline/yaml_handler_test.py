@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 import unittest
 from os.path import join, exists
-from denspp.offline.yaml_handler import YamlConfigHandler
-from denspp.offline.structure_builder import get_path_to_project_start
+from denspp.offline.yaml_handler import YamlHandler
+from denspp.offline import get_path_to_project_start
 
 
 @dataclass
@@ -13,6 +13,7 @@ class SettingsTest:
     data: list
     meta: dict
 
+
 DefaultSettingsTest = SettingsTest(
     path='test',
     val=1,
@@ -21,9 +22,6 @@ DefaultSettingsTest = SettingsTest(
     meta={1: 'company', 2: 'street', 3: 'city'}
 )
 
-# --- DATA FOR TESTING
-path2yaml = join(get_path_to_project_start('temp_test'), 'config')
-filename = 'Config_Test'
 data_wr = {
     'Name': 'John Doe',
     'Position': 'DevOps Engineer',
@@ -34,30 +32,37 @@ data_wr = {
 }
 
 
-class TestSum(unittest.TestCase):
-    dummy0 = YamlConfigHandler(
-        yaml_template=data_wr,
-        path2yaml=path2yaml,
-        yaml_name=filename + '0'
+class TestYamlHandler(unittest.TestCase):
+    path = join(get_path_to_project_start('temp_test'), 'config')
+    file = 'Config_Test'
+
+    dummy0 = YamlHandler(
+        template=data_wr,
+        path=path,
+        file_name=file + '0'
     )
-    dummy1 = YamlConfigHandler(
-        yaml_template=DefaultSettingsTest,
-        path2yaml=path2yaml,
-        yaml_name=filename + '1'
+    dummy1 = YamlHandler(
+        template=DefaultSettingsTest,
+        path=path,
+        file_name=file + '1'
     )
 
-    def test_yaml_create(self):
+    def test_yaml_create_file(self):
         self.dummy0.write_dict_to_yaml(data_wr)
-        path2chck = join(path2yaml, f"{filename}0.yaml")
+        path2chck = join(self.path, f"{self.file}0.yaml")
         self.assertTrue(exists(path2chck))
 
-    def test_yaml_class(self):
+    def test_yaml_read_class(self):
         class_out = self.dummy1.get_class(SettingsTest)
         self.assertTrue(DefaultSettingsTest == class_out)
 
-    def test_yaml_read(self):
-        data_rd = self.dummy0.read_yaml_to_dict()
+    def test_yaml_read_dict(self):
+        data_rd = self.dummy0.get_dict()
         self.assertTrue(data_wr == data_rd)
+
+    def test_yaml_class_type(self):
+        class_rd = self.dummy1.get_class(SettingsTest)
+        self.assertTrue(type(class_rd) == type(DefaultSettingsTest))
 
 
 if __name__ == '__main__':

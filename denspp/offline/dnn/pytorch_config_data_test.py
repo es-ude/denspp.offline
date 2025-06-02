@@ -1,7 +1,7 @@
 from unittest import TestCase, main
 from copy import deepcopy
 from os.path import join
-from denspp.offline.structure_builder import get_path_to_project_start
+from denspp.offline import get_path_to_project_start
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset
 from denspp.offline.template.call_dataset import DatasetLoader
 

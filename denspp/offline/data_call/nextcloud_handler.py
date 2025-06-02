@@ -3,8 +3,8 @@ from os.path import join
 from dataclasses import dataclass
 from logging import getLogger
 from nc_py_api import Nextcloud, NextcloudException
-from denspp.offline.yaml_handler import YamlConfigHandler
-from denspp.offline.structure_builder import get_path_to_project_start
+from denspp.offline.yaml_handler import YamlHandler
+from denspp.offline import get_path_to_project_start
 
 
 @dataclass
@@ -38,7 +38,7 @@ class NextCloudDownloader:
         :return:            None
         """
         self.__logger = getLogger(__name__)
-        self.__settings = YamlConfigHandler(use_config, path2config, 'access_cloud').get_class(ConfigCloud)
+        self.__settings = YamlHandler(use_config, path2config, 'access_cloud').get_class(ConfigCloud)
 
     def __get_remote_content(self, use_dataset: bool, search_folder: str = '', depth: int=1) -> list:
         """Function for getting the remote content in folder

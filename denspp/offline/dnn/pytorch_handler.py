@@ -14,11 +14,11 @@ from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
 from sklearn.model_selection import KFold
 
-from denspp.offline.structure_builder import get_path_to_project_start
+from denspp.offline import get_path_to_project_start
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset
 from denspp.offline.dnn.pytorch_config_model import ConfigPytorch
 from denspp.offline.structure_builder import init_dnn_folder
-from denspp.offline.yaml_handler import YamlConfigHandler
+from denspp.offline.yaml_handler import YamlHandler
 
 
 class PyTorchHandler:
@@ -122,15 +122,15 @@ class PyTorchHandler:
         self.model.to(device=self.used_hw_dev)
 
         # --- Copy settings to YAML file
-        YamlConfigHandler(
-            yaml_template=self.settings_data,
-            path2yaml=self._path2save,
-            yaml_name='Config_Dataset'
+        YamlHandler(
+            template=self.settings_data,
+            path=self._path2save,
+            file_name='Config_Dataset'
         )
-        YamlConfigHandler(
-            yaml_template=self.settings_train,
-            path2yaml=self._path2save,
-            yaml_name=f'Config_Training{addon}'
+        YamlHandler(
+            template=self.settings_train,
+            path=self._path2save,
+            file_name=f'Config_Training{addon}'
         )
 
     def __deterministic_training_preparation(self) -> None:

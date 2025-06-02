@@ -1,12 +1,11 @@
 import unittest
 from os import getcwd
 from os.path import exists, join
-from denspp.offline.structure_builder import (get_repo_name, get_path_to_project,
-                                              get_path_to_project_start, get_path_to_project_templates,
-                                              init_project_folder, init_dnn_folder)
+from denspp.offline.structure_builder import init_project_folder, init_dnn_folder
+from denspp.offline import get_repo_name, get_path_to_project_templates, get_path_to_project, get_path_to_project_start
 
 
-class TestSum(unittest.TestCase):
+class TestStructureBuilder(unittest.TestCase):
     folder_general = ['config', 'data', 'dataset', 'runs', 'src_pipe']
     folder_dnn = ['models', 'dataset']
     folder2search = 'denspp.offline'

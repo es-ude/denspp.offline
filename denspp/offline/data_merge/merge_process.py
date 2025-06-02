@@ -1,4 +1,4 @@
-from denspp.offline.yaml_handler import YamlConfigHandler
+from denspp.offline.yaml_handler import YamlHandler
 from denspp.offline.data_call.call_handler import SettingsData, DefaultSettingsData
 from denspp.offline.data_merge.merge_datasets_frames import MergeDatasets
 
@@ -11,10 +11,10 @@ def start_merge_process(data_loader, pipeline) -> None:
     print("\nPreparing datasets for AI Training in "
           "end-to-end spike-sorting frame-work (MERCUR-project Sp:AI:ke, 2022-2024)")
 
-    yaml_handler = YamlConfigHandler(
-        yaml_template=DefaultSettingsData,
-        path2yaml='config',
-        yaml_name='Config_Merge'
+    yaml_handler = YamlHandler(
+        template=DefaultSettingsData,
+        path='config',
+        file_name='Config_Merge'
     )
     settings = yaml_handler.get_class(SettingsData)
 
