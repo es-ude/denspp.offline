@@ -50,20 +50,29 @@ class CsvHandler:
         if len(chapter_line) > 0:
             dimension_data = data.shape[1] if len(data.shape) > 1 else 1
             assert len(chapter_line) == dimension_data, 'The dimension of chapter line must be equal to the number of columns.'
-            header = f"{self._delimiter} ".join(chapter_line)
+            header = f"{self._delimiter}".join(chapter_line)
             np.savetxt(self.__path2chck, data, comments='', header=header, delimiter=self._delimiter)
         else:
             np.savetxt(self.__path2chck, data, delimiter=self._delimiter)
 
-
-    def read_data_from_csv(self, include_chapter_line: bool=False) -> np.array:
-        """Writing list with configuration sets to JSON file
+    def read_data_from_csv(self, include_chapter_line: bool = False, start_line: int=0) -> np.array:
+        """Reading data in numpy format from csv file
         :param include_chapter_line:    Boolean for including the chapter line
-        :return:    Dict. with configuration
+        :param start_line:              Number of rows to skip (exclude chapter line)
+        :return:                        Numpy array with data content
         """
         if not exists(self.__path2chck):
             raise FileNotFoundError("CSV does not exists - Please add one!")
         else:
-            num_skip_rows = 1 if include_chapter_line else 0
-            data = np.loadtxt(self.__path2chck, delimiter=self._delimiter, skiprows=num_skip_rows)
-            return data
+            assert start_line >= 0, "start_line must be larger than 0"
+            num_skip_rows = start_line + 1 if include_chapter_line else start_line
+            return np.loadtxt(self.__path2chck, delimiter=self._delimiter, skiprows=num_skip_rows)
+
+    def read_chapter_from_csv(self, start_line: int=0) -> list:
+        """Reading the chapter line in list format from csv file
+        :return:    List with chapter lines
+        """
+        if not exists(self.__path2chck):
+            raise FileNotFoundError("CSV does not exists - Please add one!")
+        else:
+            return np.loadtxt(self.__path2chck, delimiter=self._delimiter, dtype=str, skiprows=start_line, max_rows=1).tolist()

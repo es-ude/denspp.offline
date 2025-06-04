@@ -88,5 +88,19 @@ class TestCSV(TestCase):
         )
         np.testing.assert_array_almost_equal(data, self.data1, decimal=8)
 
+    def test_read_chapter(self):
+        hndl = CsvHandler(
+            path=self.path,
+            file_name=f"{self.file}_mixed"
+        )
+        hndl.write_data_to_csv(
+            data=self.data1,
+            chapter_line=self.chapter_line
+        )
+        chap = hndl.read_chapter_from_csv(
+            start_line=0
+        )
+        self.assertEqual(chap, self.chapter_line)
+
 if __name__ == '__main__':
     main()
