@@ -8,8 +8,9 @@ from denspp.offline import get_path_to_project_start
 
 class YamlHandler:
     __logger: Logger
-    __path2yaml: str
-    __yaml_name: str
+    _ending_chck: list = ['.yaml', '.yml']
+    _path2folder: str
+    _file_name: str
     _template: Any
 
     def __init__(self, template: Any | dict, path: str= 'config', file_name: str= 'Config_Train'):
@@ -19,34 +20,29 @@ class YamlHandler:
         :param file_name:          String with name of the YAML file [Default: 'Config_Train']
         """
         self.__logger = getLogger(__name__)
-        self.__path2yaml = join(get_path_to_project_start(), path) if not isabs(path) else path
-        self.__yaml_name = self.__remove_ending_from_filename(file_name)
+        self._path2folder = join(get_path_to_project_start(), path) if not isabs(path) else path
+        self._file_name = self.__remove_ending_from_filename(file_name)
         self._template = template
 
-        makedirs(self.__path2yaml, exist_ok=True)
+        makedirs(self._path2folder, exist_ok=True)
         if not exists(self.__path2chck):
             data2yaml = template if isinstance(template, dict) else self.__translate_dataclass_to_dict(template)
             self.write_dict_to_yaml(data2yaml)
-            self.__logger.info(f"Create new yaml file in folder: {self.__path2yaml}")
+            self.__logger.info(f"Create new yaml file in folder: {self._path2folder}")
 
     @property
     def __path2chck(self) -> str:
-        """Getting the path to the desired YAML file"""
-        return join(self.__path2yaml, f"{self.__yaml_name}.yaml")
+        """Getting the path to the desired CSV file"""
+        return join(self._path2folder, f"{self._file_name}{self._ending_chck[0]}")
 
-    @staticmethod
-    def __remove_ending_from_filename(file_name: str) -> str:
+    def __remove_ending_from_filename(self, file_name: str) -> str:
         """Function for removing data type ending
-        :param file_name:   String with file name
-        :return:            String with file name without data type ending
+        :param file_name: String with file name
+        :return:
+            String with file name without data type ending
         """
-        yaml_ending_chck = ['.yaml', '.yml']
-        yaml_file_name = file_name
-        for yaml_end in yaml_ending_chck:
-            if yaml_end in yaml_file_name:
-                yaml_file_name = yaml_file_name.split(yaml_end)[0]
-                break
-        return yaml_file_name
+        used_file_name = [file_name.split(file_end)[0] for file_end in self._ending_chck if file_end in file_name]
+        return used_file_name[0] if len(used_file_name) > 0 else file_name
 
     @staticmethod
     def __translate_dataclass_to_dict(class_content: type) -> dict:
@@ -81,7 +77,7 @@ class YamlHandler:
         Returns:
             None
         """
-        makedirs(self.__path2yaml, exist_ok=True)
+        makedirs(self._path2folder, exist_ok=True)
         with open(self.__path2chck, 'w') as f:
             yaml.dump(config_data, f, sort_keys=False)
 
