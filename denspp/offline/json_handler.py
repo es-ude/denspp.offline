@@ -9,6 +9,7 @@ from denspp.offline import get_path_to_project
 class JsonHandler:
     _path2folder: str
     _file_name: str
+    _ending_chck: list = ['.json']
     _logger: Logger
     _template: Any
 
@@ -29,31 +30,25 @@ class JsonHandler:
             self.write_dict_to_json(data2json)
             self._logger.info(f"Create new yaml file in folder: {self._path2folder}")
 
-    @property
-    def __path2chck(self) -> str:
-        """Getting the path to the desired JSON file"""
-        return join(self._path2folder, f"{self._file_name}.json")
-
     @staticmethod
     def __translate_dataclass_to_dict(class_content: type) -> dict:
         """Translating all class variables with default values into dict"""
         return {key: value for key, value in class_content.__dict__.items()
                 if not key.startswith('__') and not callable(key)}
 
-    @staticmethod
-    def __remove_ending_from_filename(file_name: str) -> str:
+    @property
+    def __path2chck(self) -> str:
+        """Getting the path to the desired CSV file"""
+        return join(self._path2folder, f"{self._file_name}{self._ending_chck[0]}")
+
+    def __remove_ending_from_filename(self, file_name: str) -> str:
         """Function for removing data type ending
         :param file_name: String with file name
         :return:
             String with file name without data type ending
         """
-        ending_chck = ['.json']
-        used_file_name = file_name
-        for yaml_end in ending_chck:
-            if yaml_end in used_file_name:
-                used_file_name = used_file_name.split(yaml_end)[0]
-                break
-        return used_file_name
+        used_file_name = [file_name.split(file_end)[0] for file_end in self._ending_chck if file_end in file_name]
+        return used_file_name[0] if len(used_file_name) > 0 else file_name
 
     def __check_scheme_validation(self, template: type | dict, real_file: type | dict) -> bool:
         """Function for validating the key entries from template json and real json file
