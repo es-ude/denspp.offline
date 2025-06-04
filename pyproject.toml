@@ -13,16 +13,17 @@ namespaces = false
 [tool.hatch.build.targets.wheel]
 packages = ["denspp"]
 exclude = ['*_test.py']
+only-packages = true
 
 
 [project]
 name = "denspp.offline"
-version = "0.2.2"
+version = "0.3.0"
 description = "Python Framework for End-To-End and Hardware-Aware Signal Processing"
 readme = "README.md"
 license =  {file = "LICENSE"}
 requires-python = ">=3.12"
-keywords = ["machine learning", "signal processing", "end-to-end", "neural recordings", "biosignal processing"]
+keywords = ["machine learning", "signal processing", "end-to-end", "offline data analysis", "biosignal processing"]
 authors = [
   {name = "Andreas Erbsloeh", email = "andreas.erbsloeh@uni-due.de"},
 ]

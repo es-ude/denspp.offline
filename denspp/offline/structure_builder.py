@@ -52,7 +52,7 @@ def init_dnn_folder(new_folder: str = '') -> None:
     """
     folder_start = 'src_dnn'
     folder_structure = ['models', 'dataset']
-    copy_files = {'main_dnn_train.py': '', 'call_dataset.py': folder_start}
+    copy_files = {'main_dnn_train.py': '', 'call_dataset.py': folder_start, 'example_model.py': join(folder_start, 'models')}
 
     # --- Generation process
     path2start = get_path_to_project_start(new_folder)
