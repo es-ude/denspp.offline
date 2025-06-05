@@ -70,7 +70,6 @@ sphinxcontrib-wavedrom = { git = "https://github.com/glencoe/sphinx-wavedrom.git
 
 
 [dependency-groups]
-[dependency-groups]
 dev = [
     "build>=1.2.2.post1",
     "hatch>=1.14.0",
