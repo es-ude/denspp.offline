@@ -1,4 +1,5 @@
 ### Project ###
+docs/apidocs
 Config_*.yaml
 **/config
 **/data
@@ -7,7 +8,7 @@ Config_*.yaml
 **/test
 **/temp*
 tests/*.log
-uv.lock
+
 
 # Just for not uploading new features/files into main folder (just for local development)
 **/src_*

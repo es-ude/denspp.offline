@@ -38,7 +38,7 @@ uv add "git+https://github.com/es-ude/denspp.offline.git"
 ```
 After initialisation, then run the following code to create the project folder structure in the Python Console.
 ```
-from denspp.offline import init_project_folder
+from denspp.offline.structure_builder import init_project_folder
 init_project_folder()
 ```
 Important! Please start every script from your repo folder!

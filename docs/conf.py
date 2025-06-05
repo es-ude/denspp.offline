@@ -97,8 +97,8 @@ running_in_autobuild = os.getenv("SPHINX_AUTOBUILD", "NO") == "YES"
 
 autodoc2_packages = [
     {
-        "path": "../denspp/offline",
-        "module": "denspp/offline",
+        "path": "../denspp",
+        "module": "denspp.offline",
     },
 ]
 
