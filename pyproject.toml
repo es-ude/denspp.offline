@@ -22,7 +22,8 @@ only-packages = true
 
 [project]
 name = "denspp.offline"
-version = "0.3.0"
+dynamic = ["version"]
+#version = "0.3.0"
 description = "Python Framework for End-To-End and Hardware-Aware Signal Processing"
 readme = "README.md"
 license =  {file = "LICENSE"}
