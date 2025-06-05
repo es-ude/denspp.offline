@@ -26,18 +26,19 @@ def window_method(window_size: int, method: str = "hamming") -> np.ndarray:
     return window
 
 
-def do_fft(
-    y: np.ndarray, fs: float, method_window: Optional[str] = None
-) -> [np.ndarray, np.ndarray]:
+def do_fft(y: np.ndarray, fs: float, method_window: str='') -> [np.ndarray, np.ndarray]:
     """Performing the Discrete Fast Fourier Transformation.
-    :param y:   Transient input signal
-    :param fs:  Sampling rate [Hz]
-    :param method_window:   Selected window
-    :return:    Tuple with (1) freq - Frequency and (2) Y - Discrete output
+    :param y:               Transient input signal
+    :param fs:              Sampling rate [Hz]
+    :param method_window:   Selected window ['': None, 'Hamming', 'guassian', 'bartlett', 'blackman']
+    :return:                Tuple with (1) freq - Frequency and (2) Y - Discrete output
     """
     fft_in = y
-    if method_window is not None:
-        window = window_method(window_size=y.size, method=method_window)
+    if method_window:
+        window = window_method(
+            window_size=y.size,
+            method=method_window
+        )
         fft_in = window * y
     N = y.size // 2
     fft_out = 2 / N * np.abs(np.fft.fft(fft_in))
@@ -48,7 +49,6 @@ def do_fft(
     xsel = np.where(freq >= 0)
     fft_out = fft_out[xsel]
     freq = freq[xsel]
-
     return freq, fft_out
 
 

@@ -13,11 +13,14 @@ def get_path_to_project(new_folder: str='') -> str:
     :param new_folder:  New folder path
     :return:            String of absolute path to start the project structure
     """
-    from os.path import dirname, join, abspath
+    from os.path import dirname, join, abspath, exists
     from pathlib import Path
-    import main_pipeline as ref
+    if exists('main_pipeline.py'):
+        import main_pipeline as ref
+        path_to_import = dirname(ref.__file__)
+    else:
+        path_to_import = get_path_to_project_start(new_folder=new_folder)
 
-    path_to_import = dirname(ref.__file__)
     path_split = Path(path_to_import).parts
     path_to_proj = dirname(join(*[path_seg for path_seg in path_split], new_folder, ''))
     return abspath(path_to_proj)
