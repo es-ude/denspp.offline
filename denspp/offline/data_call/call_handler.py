@@ -23,6 +23,7 @@ class SettingsData:
     ch_sel:         List of electrodes to use [empty=all]
     fs_resample:    Resampling frequency of the datapoint (== 0.0, no resampling)
     do_mapping:     Decision if mapping (if available) is used
+    mapping_type:   Object type for loading mapping file (int or str)
     """
     path: str
     data_set: str
@@ -32,6 +33,7 @@ class SettingsData:
     ch_sel: list
     fs_resample: float
     do_mapping: bool
+    mapping_type: object
 
 
 DefaultSettingsData = SettingsData(
@@ -40,7 +42,8 @@ DefaultSettingsData = SettingsData(
     data_case=0, data_point=0,
     t_range=[0], ch_sel=[],
     fs_resample=100e3,
-    do_mapping=True
+    do_mapping=True,
+    mapping_type=int
 )
 
 
@@ -48,24 +51,23 @@ class DataHandler:
     """Class with data and meta information of the used neural dataset"""
     def __init__(self):
         # --- Meta Information
-        self.data_name = ''
-        self.data_type = ''
-        self.data_fs_orig = 0
-        self.data_fs_used = 0
-        self.data_time = 0.0
+        self.data_name: str = ''
+        self.data_type: str = ''
+        self.data_fs_orig: float = 0.
+        self.data_fs_used: float = 0.
+        self.data_time: float = 0.0
         # --- Raw data
-        self.device_id = ''
-        self.electrode_id = list()
-        self.data_raw = list()
+        self.electrode_id: list = list()
+        self.data_raw: np.ndarray
         # --- Electrode Design Information
-        self.mapping_exist = False
-        self.mapping_dimension = [1, 1]  # [row, colomn]
-        self.mapping_used = self.generate_empty_mapping_array_integer
-        self.mapping_active = self.generate_empty_mapping_array_boolean
+        self.mapping_exist: bool=False
+        self.mapping_dimension: list = [1, 1]  # [row, colomn]
+        self.mapping_used: np.ndarray = self.generate_empty_mapping_array_integer
+        self.mapping_active: np.ndarray = self.generate_empty_mapping_array_boolean
         # --- GroundTruth fpr Event Signal Processing
-        self.label_exist = False
-        self.evnt_xpos = list()
-        self.evnt_id = list()
+        self.label_exist: bool=False
+        self.evnt_xpos: np.ndarray = np.zeros((1, ), dtype=int)
+        self.evnt_id: np.ndarray = np.zeros((1, ), dtype=int)
 
     @property
     def generate_empty_mapping_array_integer(self) -> np.ndarray:
@@ -102,56 +104,45 @@ class ControllerData:
 
     def do_cut(self) -> None:
         """Cutting all transient electrode signals in the given range"""
-        t_range = np.array(self._settings.t_range)
-        rawdata_in = self._raw_data.data_raw
-        evnt_xpos_in = self._raw_data.evnt_xpos
-        cluster_in = self._raw_data.evnt_id
-
-        rawdata_out = list()
-        evnt_xpos_out = list()
-        cluster_out = list()
-
         if self._raw_data.data_fs_used == 0:
             self._raw_data.data_fs_used = self._raw_data.data_fs_orig
 
         # --- Getting the positition of used time range
+        t_range = np.array(self._settings.t_range)
         if t_range.size == 2:
+            rawdata_in = self._raw_data.data_raw
+            evnt_xpos_in = self._raw_data.evnt_xpos
+            cluster_in = self._raw_data.evnt_id
+
             idx0 = int(t_range[0] * self._raw_data.data_fs_used)
             idx1 = int(t_range[1] * self._raw_data.data_fs_used)
-            self.__fill_factor = (idx0 - idx1) / rawdata_in[-1].size
 
-            for idx, data_in in enumerate(rawdata_in):
-                # --- Cutting specific time range out of raw data
-                rawdata_out.append(data_in[idx0:idx1])
+            # --- Cutting labeled information
+            if self._raw_data.label_exist:
+                # Adapting new data
+                pos_start = np.argwhere(evnt_xpos_in >= idx0).flatten()
+                idx2 = int(pos_start[0]) if pos_start.size > 0 else -1
+                pos_stopp = np.argwhere(evnt_xpos_in <= idx1).flatten()
+                idx3 = int(pos_stopp[-1]) if pos_stopp.size > 0 else -1
 
-                # --- Cutting labeled information
-                if self._raw_data.label_exist:
-                    # Adapting new data
-                    pos_start = np.argwhere(evnt_xpos_in[idx] >= idx0).flatten()
-                    idx2 = int(pos_start[0]) if pos_start.size > 0 else -1
-                    pos_stopp = np.argwhere(evnt_xpos_in[idx] <= idx1).flatten()
-                    idx3 = int(pos_stopp[-1]) if pos_stopp.size > 0 else -1
-
-                    if idx2 == -1 or idx3 == -1:
-                        evnt_xpos_out.append([])
-                        cluster_out.append([])
-                    else:
-                        evnt_xpos_out.append(evnt_xpos_in[idx][idx2:idx3] - idx0)
-                        cluster_out.append(cluster_in[idx][idx2:idx3])
+                if idx2 == -1 or idx3 == -1:
+                    evnt_xpos_out = list()
+                    cluster_out = list()
+                else:
+                    evnt_xpos_out = evnt_xpos_in[idx2:idx3] - idx0
+                    cluster_out = cluster_in[idx2:idx3]
+                self._raw_data.evnt_xpos = evnt_xpos_out
+                self._raw_data.evnt_id = cluster_out
 
             # --- Return adapted data
-            self._raw_data.data_raw = rawdata_out
-            self._raw_data.evnt_xpos = evnt_xpos_out
-            self._raw_data.evnt_id = cluster_out
-            self._raw_data.data_time = float(rawdata_out[0].size / self._raw_data.data_fs_used)
+            self._raw_data.data_raw = rawdata_in[:, idx0:idx1] if len(rawdata_in.shape) == 2 else rawdata_in[idx0:idx1]
+            self._raw_data.data_time = float(self._raw_data.data_raw.shape[-1] / self._raw_data.data_fs_used)
+            self.__fill_factor = self._raw_data.data_raw.shape[-1] / rawdata_in.shape[-1]
 
     def do_resample(self) -> None:
         """Do resampling all transient signals"""
         desired_fs = self._settings.fs_resample
         do_resampling = bool(desired_fs != self._raw_data.data_fs_orig) and desired_fs != 0.0
-
-        data_out = list()
-        spike_out = list()
 
         if do_resampling:
             self._raw_data.data_fs_used = desired_fs
@@ -159,19 +150,20 @@ class ControllerData:
             (p, q) = Fraction(self._raw_data.data_fs_used / self._raw_data.data_fs_orig).limit_denominator(10000).as_integer_ratio()
             self.__scaling = p / q
 
-            for idx, data_in in enumerate(self._raw_data.data_raw):
-                # --- Resampling the input
-                u_chck = np.mean(data_in[0:10])
-                if np.abs((u_chck < u_safe) - 1) == 1:
-                    du = u_chck
-                else:
-                    du = 0
-                data_out.append(du + resample_poly(data_in - du, p, q))
+            data_in = self._raw_data.data_raw
+            # --- Resampling the input
+            u_chck = np.mean(data_in[0:10])
+            if np.abs((u_chck < u_safe) - 1) == 1:
+                du = u_chck
+            else:
+                du = 0
+            data_out = du + resample_poly(data_in - du, p, q)
 
-                # --- Resampling the labeled information
-                if self._raw_data.label_exist:
-                    spikepos_in = self._raw_data.evnt_xpos[idx]
-                    spike_out.append(np.array(self.__scaling * spikepos_in, dtype=int))
+            # --- Resampling the labeled information
+            if self._raw_data.label_exist:
+                spike_out = np.array(self.__scaling * self._raw_data.evnt_xpos, dtype=int)
+            else:
+                spike_out = list()
 
             self._raw_data.data_raw = data_out
             self._raw_data.evnt_xpos = spike_out
@@ -188,7 +180,7 @@ class ControllerData:
         else:
             fs_addon = ""
         self.__logger.info(f"... original sampling rate of {int(1e-3 * self._raw_data.data_fs_orig)} kHz{fs_addon}")
-        self.__logger.info(f"\n... using {self.__fill_factor * 100:.2f}% of the data (time length of {self._raw_data.data_time / self.__fill_factor:.2f} s)")
+        self.__logger.info(f"... using {self.__fill_factor * 100:.2f}% of the data (time length of {self._raw_data.data_time / self.__fill_factor:.2f} s)")
 
         if self._raw_data.label_exist:
             cluster_array = None
@@ -199,53 +191,13 @@ class ControllerData:
                 else:
                     cluster_array = np.append(cluster_array, clid)
             cluster_no = np.unique(cluster_array)
-
-            # Extract number of spikes in all inputs
-            num_spikes = 0
-            for idx, spk_num in enumerate(self._raw_data.evnt_xpos):
-                num_spikes += spk_num.size
-
-            self.__logger.info(f"... includes labels (noSpikes: {num_spikes} - noCluster: {cluster_no.size})")
+            self.__logger.info(f"... includes labels (noSpikes: {self._raw_data.evnt_xpos.size} - noCluster: {cluster_no.size})")
         else:
             self.__logger.info(f"... has no labels / groundtruth")
 
     def get_data(self) -> DataHandler:
         """Calling the raw data with groundtruth of the called data"""
-        self._transform_rawdata_to_numpy()
         return self._raw_data
-        
-    def generate_xpos_label(self, used_channel: int) -> np.ndarray:
-        """Generating label ticks"""
-        fs_used = self._raw_data.data_fs_used
-        fs_orig = self._raw_data.data_fs_orig
-        xpos_in = self._raw_data.evnt_xpos[used_channel]
-        return xpos_in / fs_orig * fs_used
-        
-    def generate_label_stream_channel(self, used_channel: int, window_time: float=1.6e-3) -> np.ndarray:
-        """Generating a transient array with labeling event detection
-        Args:
-            used_channel:   Number of used channel for labeling event detection
-            window_time:    Time window of the trigger signal for generating the transient trigger array
-        Returns:
-            Numpy array with transient trigger signal
-        """
-        window_size = int(window_time * self._raw_data.data_fs_used)
-        trgg0 = np.zeros(self._raw_data.data_raw[used_channel], dtype=int)
-        for val in self.generate_xpos_label(used_channel):
-            trgg0[int(val):int(val) + window_size] = 1
-        return trgg0
-
-    def generate_label_stream_all(self, window_time: float=1.6e-3) -> list:
-        """Generating a list with transient arrays to label event detection of all used channels
-        Args:
-            window_time:    Time window of the trigger signal for generating the transient trigger array
-        Returns:
-            List with numpy array of transient trigger signal
-        """
-        trgg_out = list()
-        for ch_used, trgg_used in enumerate(self._raw_data.evnt_xpos):
-            trgg_out.append(self.generate_label_stream_channel(ch_used, window_time))
-        return trgg_out
 
     def __get_data_available_local(self, path_ref: str, folder_name: str, data_type: str) -> str:
         """Function for getting the path to file from remote
@@ -333,20 +285,6 @@ class ControllerData:
         else:
             raise FileNotFoundError("--- File is not available. Please check! ---")
 
-    def _transform_rawdata_to_numpy(self) -> None:
-        """Transforming the initial raw data from list to numpy array"""
-        if isinstance(self._raw_data.data_raw, list):
-            num_channels = len(self._raw_data.data_raw)
-            num_samples = np.zeros((num_channels, ), dtype=int)
-            for idx, data in enumerate(self._raw_data.data_raw):
-                num_samples[idx] = data.shape[0]
-
-            data_out = np.zeros((num_channels, num_samples.min()), dtype=float)
-            for idx, data in enumerate(self._raw_data.data_raw):
-                data_out[idx, :] = data[0:num_samples.min()]
-
-            self._raw_data.data_raw = data_out
-
     def do_mapping(self, path2csv: str='', index_search: str='Mapping_*.csv') -> None:
         """Transforming the input data to electrode array specific design
         (considering electrode format and coordination)
@@ -394,7 +332,8 @@ class ControllerData:
             delimiter=';'
         ).read_data_from_csv(
             include_chapter_line=False,
-            start_line=0
+            start_line=0,
+            type_load=self._settings.mapping_type
         ).tolist()
 
         # --- Generating numpy array
@@ -410,7 +349,11 @@ class ControllerData:
             for row_idx, elec_row in enumerate(mapping_from_csv):
                 for col_idx, elec_id in enumerate(elec_row):
                     if row_idx < electrode_mapping.shape[0] and col_idx < electrode_mapping.shape[1]:
-                        electrode_mapping[row_idx, col_idx] = elec_id
+                        if type(elec_id) == str:
+                            val = [idx + 1 for idx, val in enumerate(self._raw_data.electrode_id) if val == elec_id]
+                            electrode_mapping[row_idx, col_idx] = val[0] if len(val) else 0
+                        else:
+                            electrode_mapping[row_idx, col_idx] = elec_id
 
             self._raw_data.mapping_exist = True
             self._raw_data.mapping_used = electrode_mapping
@@ -428,14 +371,13 @@ class ControllerData:
 
     def _transform_rawdata_mapping(self) -> None:
         """Transforming the numpy array input to 2D array with electrode mapping configuration"""
-        data_in = self._raw_data.data_raw
-        data_map = self._raw_data.mapping_used
-
         if not self._raw_data.mapping_exist:
             self.__logger.info("... raw data array cannot be transformed into 2D-format")
-            data_out = data_in
         else:
-            data_out = np.zeros((data_map.shape[0], data_map.shape[1], data_in[0].size), dtype=float)
+            data_map = self._raw_data.mapping_used
+            data_out = self._raw_data.data_raw
+            dut = np.zeros((data_map.shape[0], data_map.shape[1], data_out.shape[-1]), dtype=data_out.dtype)
+
             for x in range(0, data_map.shape[0]):
                 for y in range(0, data_map.shape[1]):
                     if self._raw_data.mapping_active[x, y]:
@@ -443,11 +385,11 @@ class ControllerData:
                         # Searching the right index of electrode id to map id
                         for channel in self._raw_data.electrode_id:
                             if channel == data_map[x, y]:
-                                data_out[x, y, :] = data_in[column]
+                                dut[x, y, :] = data_out[column]
                                 break
                             column += 1
             self.__logger.info("... transforming raw data array from 1D to 2D")
-        self._raw_data.data_raw = data_out
+            self._raw_data.data_raw = dut
 
     def do_call(self):
         """Loading the dataset"""

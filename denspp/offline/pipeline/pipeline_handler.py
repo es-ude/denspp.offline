@@ -17,7 +17,7 @@ def start_pipeline_processing(object_dataloader, object_pipeline) -> None:
     # ----- Preparation: Module calling -----
     logger.info("Running framework for end-to-end neural signal processing (DeNSPP)")
     logger.info("Step #1: Loading data")
-    logger.info("=================================================")
+    logger.info("==================================================================")
 
     datahand = object_dataloader(settings_data)
     datahand.do_call()
@@ -31,7 +31,7 @@ def start_pipeline_processing(object_dataloader, object_pipeline) -> None:
 
     # --- Thread Preparation: Processing data
     logger.info("Step #2: Processing data")
-    logger.info("=================================================")
+    logger.info("==================================================================")
     thr_station = ProcessingData(
         pipeline=object_pipeline,
         settings=settings_thr,
@@ -43,7 +43,7 @@ def start_pipeline_processing(object_dataloader, object_pipeline) -> None:
 
     # --- Plot all plots and save results
     logger.info("Step #3: Saving results and plotting")
-    logger.info("=================================================")
+    logger.info("==================================================================")
     thr_station.do_save_results()
     thr_station.do_plot_results()
 
