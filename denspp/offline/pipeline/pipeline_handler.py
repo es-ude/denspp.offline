@@ -23,8 +23,7 @@ def start_pipeline_processing(object_dataloader, object_pipeline) -> None:
     datahand.do_call()
     datahand.do_cut()
     datahand.do_resample()
-    if settings_data.do_mapping:
-        datahand.do_mapping()
+    datahand.do_mapping()
 
     datahand.output_meta()
     dataIn = datahand.get_data()

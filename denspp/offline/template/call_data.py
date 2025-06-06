@@ -1,5 +1,5 @@
 import numpy as np
-from os.path import join
+from os.path import join, basename
 from scipy.io import loadmat
 from pyxdf import load_xdf
 from denspp.offline.data_call.call_handler import ControllerData, SettingsData, DataHandler
@@ -29,7 +29,7 @@ class DataLoader(ControllerData):
 
         self._raw_data = DataHandler()
         # Meta information
-        self._raw_data.data_name = folder_name
+        self._raw_data.data_name = basename(self._path2file)
         self._raw_data.data_type = "Synthetic"
         self._raw_data.data_fs_orig = int(1 / loaded_data["samplingInterval"][0][0] * 1000)
         self._raw_data.device_id = [0]
@@ -62,7 +62,7 @@ class DataLoader(ControllerData):
 
         self._raw_data = DataHandler()
         # Meta information
-        self._raw_data.data_name = folder_name
+        self._raw_data.data_name = basename(self._path2file)
         self._raw_data.data_type = "Synthetic"
         self._raw_data.data_fs_orig = 24e3
         self._raw_data.device_id = [0]
@@ -88,8 +88,8 @@ class DataLoader(ControllerData):
         loaded_data = loadmat(self._path2file, mat_dtype=True)
 
         self._raw_data = DataHandler()
-        # --- Input and meta
-        self._raw_data.data_name = folder_name
+        # Meta information
+        self._raw_data.data_name = basename(self._path2file)
         self._raw_data.data_type = "Synthetic"
         self._raw_data.data_fs_orig = float(1000 / loaded_data["samplingInterval"][0][0])
         self._raw_data.device_id = [0]
@@ -116,7 +116,7 @@ class DataLoader(ControllerData):
 
         self._raw_data = DataHandler()
         # Meta information
-        self._raw_data.data_name = folder_name
+        self._raw_data.data_name = basename(self._path2file)
         self._raw_data.data_type = loaded_data['info']['name']
         self._raw_data.data_lsb = 1
         self._raw_data.data_fs_orig = float(loaded_data['info']['nominal_srate'][0])

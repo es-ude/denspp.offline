@@ -4,10 +4,10 @@ venv
 
 Config_*.yaml
 **/config
-**/data
-**/dataset
+data
+dataset
 **/runs
 **/test
 **/temp*
-tests/*.log
+*.log
 uv.lock

@@ -2,14 +2,30 @@ import unittest
 from os import getcwd
 from os.path import exists, join
 from denspp.offline.structure_builder import init_project_folder, init_dnn_folder
-from denspp.offline import get_repo_name, get_path_to_project_templates, get_path_to_project, get_path_to_project_start
+from denspp.offline import check_key_elements, get_repo_name, get_path_to_project_templates, get_path_to_project, get_path_to_project_start
 
 
 class TestStructureBuilder(unittest.TestCase):
-    folder_general = ['config', 'data', 'dataset', 'runs', 'src_pipe']
+    folder_general = ['config', 'data', 'dataset', 'runs', 'src', 'src_pipe']
     folder_dnn = ['models', 'dataset']
     folder2search = 'denspp.offline'
     folder_name_test = 'temp_test'
+
+    def test_check_key_elements_true(self):
+        elements = ['num', 'ber', 'true']
+        rslt = check_key_elements(
+            key='is_the_number_true',
+            elements=elements
+        )
+        self.assertTrue(rslt)
+
+    def test_check_key_elements_false(self):
+        elements = ['num', 'ber', 'false']
+        rslt = check_key_elements(
+            key='is_the_number_true',
+            elements=elements
+        )
+        self.assertFalse(rslt)
 
     def test_get_repo_name(self):
         ref = ['denspp']
@@ -36,7 +52,7 @@ class TestStructureBuilder(unittest.TestCase):
     def test_get_path_to_project_templates(self):
         ref = ['denspp', 'offline', 'template']
         chck = get_path_to_project_templates()
-        rslt = ref[0] in chck and ref[1] in chck and ref[2] in chck
+        rslt = check_key_elements(chck, ref)
         self.assertTrue(rslt)
 
     def test_check_folder_general(self):

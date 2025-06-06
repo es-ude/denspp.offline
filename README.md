@@ -22,11 +22,9 @@ to the [elasticAI.creator](https://github.com/es-ude/elastic-ai.creator).
 ## Installation guide
 
 For using this framework, the following software tools are necessary / recommended.
-
 - `uv` package manager ([Link](https://docs.astral.sh/uv/), [Using](https://www.saaspegasus.com/guides/uv-deep-dive/))
 - Git ([Link](https://git-scm.com/downloads))
 - PyCharm Community Version ([Link](https://www.jetbrains.com/de-de/pycharm/download/#section=windows))
-- Python Interpreter 3.13 ([Link](https://www.python.org/downloads/release/python-3132/))
 
 It is recommended that each working group will create a new branch for editing their input. At the end of each project,
 their input will be merged with the main branch. Further information about this software framework are described in the
@@ -45,24 +43,23 @@ Important! Please start every script from your repo folder!
 
 ## Project File structure
 
-This Git project contains the main folder `denspp` which includes the functions to setup a NSP pipeline incl. plotting examples and training Deep Neural Networks (DNN).
+This Git project contains the main folder `denspp` which includes the functions to setup a signal processing pipeline incl. plotting examples and training Deep Neural Networks (DNN).
 
-The Python folder contains the following folder structure:
+The Python folder contains the following folder structure using ``init_project_folder()`` in your use-case repo:
 ```bash
   <path_to_project>
     ├── config              # Includes yaml files for configuring the pipelines (only local)
     ├── data                # Include transient data (only local)
-    ├── data                # Include datasets for DNN training (only local)
-    ├── denspp              # All functionalities for data analysis (will be removed in next releases)
-    ├── example             # Example for using API (will be removed in next releases)
+    ├── dataset             # Include datasets for DNN training (only local)
     ├── runs                # Saving all results from analysis (only local)
+    ├── src                 # Contains new function which can be added to the DeNSPP.offline repo (with tests)
     ├── src_dnn             # Contains functions for training deep neural networks which are not in package 
-    ├── src_pipe            # Contains functions for data analysis which are not in package (only local)
-    ├── temp                # Include functions which are temporary (only local) 
+    ├── src_pipe            # Contains functions for data analysis which are not in package
     ├── access_cloud.yaml   # Yaml file with information for cloud access 
     ├── main_pipeline.py    # For normal pipeline processing 
     ├── main_data_merge.py  # For merging of given datasets
     ├── main_dnn_train.py   # For training ML models, like Autoencoder and Classifier
+    ├── run_tests.py        # Function for running tests of folder content in 'src'
     └── ...
 ```
 The marked folders with "only local" will only be saved on your computer. It not be sync with git.

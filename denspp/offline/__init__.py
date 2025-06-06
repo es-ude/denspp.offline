@@ -1,3 +1,12 @@
+def check_key_elements(key: str, elements: list[str]):
+    """Function for checking if all elements are in key
+    :param key:         key to check
+    :param elements:    list of elements to check if available in key
+    :return:            True if all elements are present in key
+    """
+    return all(elem in key for elem in elements)
+
+
 def get_repo_name() -> str:
     """Getting string with repo name"""
     from os.path import dirname

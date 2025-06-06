@@ -29,7 +29,7 @@ def init_project_folder(new_folder: str = '') -> None:
     :param new_folder:      Name of the new folder to create (test case)
     :return:                None
     """
-    folder_structure = ['data', 'dataset', 'runs', 'config', 'src_pipe']
+    folder_structure = ['data', 'dataset', 'runs', 'config', 'src', 'src_pipe']
     copy_files = {'main_pipeline.py': '', 'main_data_merge.py': '', 'template_test0.py': '', '.gitignore': '',
                   'call_data.py': 'src_pipe', 'pipeline_v0.py': 'src_pipe', 'pipeline_data.py': 'src_pipe'}
 
