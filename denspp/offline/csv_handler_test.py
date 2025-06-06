@@ -46,6 +46,23 @@ class TestCSV(TestCase):
         chck = exists(join(self.path, 'test_with.csv'))
         self.assertTrue(chck)
 
+    def test_build_file_with_strings(self):
+        hndl = CsvHandler(
+            path=self.path,
+            file_name=f"{self.file}_with_str"
+        )
+        hndl.write_data_to_csv(
+            data=np.array(["Apfel", "Banane", "Kirsche"]),
+            chapter_line=[],
+            type_load=str
+        )
+        hndl.read_data_from_csv(
+            include_chapter_line=False,
+            start_line=0,
+            type_load=str
+        )
+        self.assertTrue(True)
+
     def test_read_file_wo_chapter(self):
         hndl = CsvHandler(
             path=self.path,

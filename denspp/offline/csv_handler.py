@@ -40,10 +40,11 @@ class CsvHandler:
         used_file_name = [file_name.split(file_end)[0] for file_end in self._ending_chck if file_end in file_name]
         return used_file_name[0] if len(used_file_name) > 0 else file_name
 
-    def write_data_to_csv(self, data: np.ndarray, chapter_line: list) -> None:
+    def write_data_to_csv(self, data: np.ndarray, chapter_line: list, type_load=float) -> None:
         """Writing data from numpy array into csv file
         :param data:            Numpy array with data content
         :param chapter_line:    List with line numbers of chapter data for each column
+        :param type_load:       Type of saving and converting numpy content to csv
         :return:                None
         """
         makedirs(self._path2folder, exist_ok=True)
@@ -51,14 +52,24 @@ class CsvHandler:
             dimension_data = data.shape[1] if len(data.shape) > 1 else 1
             assert len(chapter_line) == dimension_data, 'The dimension of chapter line must be equal to the number of columns.'
             header = f"{self._delimiter}".join(chapter_line)
-            np.savetxt(self.__path2chck, data, comments='', header=header, delimiter=self._delimiter)
-        else:
-            np.savetxt(self.__path2chck, data, delimiter=self._delimiter)
 
-    def read_data_from_csv(self, include_chapter_line: bool = False, start_line: int=0) -> np.array:
+            if type_load == str:
+                cmds = dict(comments='', header=header, delimiter=self._delimiter, fmt='%s')
+            else:
+                cmds = dict(comments='', header=header, delimiter=self._delimiter, fmt='%s')
+        else:
+            if type_load == str:
+                cmds = dict(comments='', delimiter=self._delimiter, fmt='%s')
+            else:
+                cmds = dict(comments='', delimiter=self._delimiter)
+
+        np.savetxt(self.__path2chck, data, **cmds)
+
+    def read_data_from_csv(self, include_chapter_line: bool = False, start_line: int=0, type_load=float) -> np.array:
         """Reading data in numpy format from csv file
         :param include_chapter_line:    Boolean for including the chapter line
         :param start_line:              Number of rows to skip (exclude chapter line)
+        :param type_load:               Type of loading and converting csv content to numpy array
         :return:                        Numpy array with data content
         """
         if not exists(self.__path2chck):
@@ -66,7 +77,7 @@ class CsvHandler:
         else:
             assert start_line >= 0, "start_line must be larger than 0"
             num_skip_rows = start_line + 1 if include_chapter_line else start_line
-            return np.loadtxt(self.__path2chck, delimiter=self._delimiter, skiprows=num_skip_rows)
+            return np.loadtxt(self.__path2chck, delimiter=self._delimiter, skiprows=num_skip_rows, dtype=type_load)
 
     def read_chapter_from_csv(self, start_line: int=0) -> list:
         """Reading the chapter line in list format from csv file
