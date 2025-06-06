@@ -22,8 +22,7 @@ def get_path_to_project(new_folder: str='') -> str:
     else:
         path_to_import = get_path_to_project_start(new_folder=new_folder)
 
-    path_split = Path(path_to_import).parts
-    path_to_proj = dirname(join(*[path_seg for path_seg in path_split], new_folder, ''))
+    path_to_proj = dirname(join(*[path_seg for path_seg in Path(path_to_import).parts], new_folder, ''))
     return abspath(path_to_proj)
 
 
@@ -49,8 +48,7 @@ def get_path_to_project_start(new_folder: str='', folder_ref: str='') -> str:
     if get_repo_name() in getcwd() and not folder_ref:
         import denspp.offline as ref
         path_to_import = dirname(ref.__file__)
-        path_split = Path(path_to_import).parts[:-2]
-        path_to_proj = dirname(join(*[path_seg for path_seg in path_split], ''))
+        path_to_proj = dirname(join(*[path_seg for path_seg in Path(path_to_import).parts[:-2]], ''))
     else:
         path_to_proj = join(getcwd().split(folder_ref)[0], folder_ref) if folder_ref else getcwd()
     path_start = join(path_to_proj, new_folder)

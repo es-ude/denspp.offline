@@ -1,13 +1,14 @@
-import csv
 import numpy as np
-import logging
+from logging import getLogger, Logger
 from dataclasses import dataclass
 from os.path import join, exists, dirname, basename
 from os import makedirs
 from glob import glob
+from pathlib import Path
 from fractions import Fraction
 from scipy.signal import resample_poly
 from denspp.offline import get_path_to_project_start
+from denspp.offline.csv_handler import CsvHandler
 from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
 
 
@@ -76,18 +77,18 @@ class DataHandler:
 
 
 class ControllerData:
+    __logger: Logger
     __download_handler: OwnCloudDownloader
     _raw_data: DataHandler
     _settings: SettingsData
-    _path2file: str = ''
-    _path2folder: str = ''
-    path2mapping_local: list = []
-    path2mapping_remote: list = []
-    path2mapping: str = ''
+    _path2file: str=''
+    _path2folder_remote: str=''
+    _path2folder_local: str=''
+    _path2mapping: str=''
 
     def __init__(self) -> None:
         """Class for loading and manipulating the used dataset"""
-        self.__logger = logging.getLogger(__name__)
+        self.__logger = getLogger(__name__)
         self.__fill_factor = 1
         self.__scaling = 1
         self._methods_available = dir(ControllerData)
@@ -246,110 +247,91 @@ class ControllerData:
             trgg_out.append(self.generate_label_stream_channel(ch_used, window_time))
         return trgg_out
 
-    def __get_data_available_local(self, data_type: str, path_ref: str = '') -> str:
-        if not exists(join(self.__config_data_selection[0], path_ref)):
-            return ""
+    def __get_data_available_local(self, path_ref: str, folder_name: str, data_type: str) -> str:
+        """Function for getting the path to file from remote
+        :param path_ref:    Part to the reference folder from remote
+        :param folder_name: Part to the folder name to find local
+        :param data_type:   String with the data type to find local
+        :return:            File name
+        """
+        if path_ref:
+            # --- If data is online available - Checking if is is also local available
+            path2chck = join(self.__config_data_selection[0], dirname(path_ref).lstrip("/"), basename(path_ref))
+            self._path2folder_local = '' if not exists(path2chck) else dirname(join(*[path_seg for path_seg in Path(path2chck).parts[:2]], ''))
+            return '' if not exists(path2chck) else path2chck
         else:
-            self._path2folder = glob(join(self.__config_data_selection[0], '*'))[0]
-            self.path2mapping_local = glob(join(self._path2folder, 'Mapping_*.csv'))
-            folder_structure = glob(join(self._path2folder, '*'))
-            folder_content = glob(join(self._path2folder, data_type))
-            if len(folder_structure) > len(folder_content):
-                folder_content = glob(join(folder_structure[self.__config_data_selection[1]], data_type))
-                folder_content.sort()
-            elif len(folder_content):
-                folder_content.sort()
+            # --- Routine for find local data if online is not available
+            folder2search = [folder for folder in glob(join(self.__config_data_selection[0], '*')) if folder_name in folder][0]
+            if not folder2search:
+                raise FileNotFoundError(f"Folder with index {folder2search} not found (locally and remotely)!")
+            else:
+                self._path2folder_local = folder2search
+                folder_content = glob(join(folder2search, data_type))
+                if len(folder_content) == 0:
+                    # --- Go into next folder structure and look there
+                    folder_structure = glob(join(folder2search, '*'))
+                    folder2search = join(folder2search, self.__config_data_selection[1]) if type(
+                        self.__config_data_selection[1]) == str else join(
+                        folder_structure[self.__config_data_selection[1]])
+                    folder_content = glob(join(folder2search, data_type))
+                    folder_content.sort()
+                else:
+                    # --- Look in folder_content for file
+                    pass
 
-            chck = [file for file in folder_content if file_name in file]
-            return "" if len(chck) == 0 else chck[0]
+                # --- Getting the
+                file_name = join(folder2search, self.__config_data_selection[2]) if type(self.__config_data_selection[2]) == str else join(folder_content[self.__config_data_selection[2]])
+                if file_name:
+                    return file_name
+                else:
+                    raise FileNotFoundError(f"File is not available (locally and remotely)!")
 
     def __get_path_available_remote(self, folder_name: str, data_type: str) -> str:
-        overview = self.__download_handler.get_overview_folder(False)
-        path2folder = [s for s in overview if any(folder_name in s for xs in overview)]
-        self.path2mapping_remote = self.__download_handler.get_overview_data(False, path2folder[0], 'Mapping_*.csv')
+        """Function for getting the path to file from remote
+        :param folder_name:     Part of the folder name to find remote
+        :param data_type:       String with the data type to find remote
+        :return:                File name
+        """
+        # --- Try to get the path from remote
+        try:
+            overview = self.__download_handler.get_overview_folder(False)
+            path2folder = [s for s in overview if any(folder_name in s for xs in overview)]
+        except:
+            return ""
 
         if len(path2folder) == 0:
             return ""
         else:
+            self._path2folder_remote = path2folder[0]
             folder_structure = self.__download_handler.get_overview_folder(False, path2folder[0])
             if len(folder_structure):
-                folder_content = self.__download_handler.get_overview_data(False, folder_structure[self.__config_data_selection[1]], data_type)
+                folder_search = join(path2folder[0], self.__config_data_selection[1]) if type(self.__config_data_selection[1]) == str else folder_structure[self.__config_data_selection[1]]
+                folder_content = self.__download_handler.get_overview_data(False, folder_search, data_type)
             else:
                 folder_content = self.__download_handler.get_overview_data(False, path2folder[0], data_type)
             folder_content.sort()
             return folder_content[self.__config_data_selection[2]]
 
     def _prepare_access_file(self, folder_name: str, data_type: str) -> None:
-        """Getting the file of the corresponding trial"""
+        """Getting the file of the corresponding trial
+        :param folder_name:     String with folder name where the data is located
+        :param data_type:       String with data type of the data
+        """
         used_datapath = self.__default_data_path if self._settings.path == '' else self._settings.path
         self.__config_data_selection = [used_datapath, self._settings.data_case, self._settings.data_point]
 
-        path2chck = self.__get_path_available_remote(folder_name, data_type)
-        pathlocal = self.__get_data_available_local(data_type, path2chck)
-        if basename(pathlocal) == basename(path2chck) and path2chck:
-            self._path2file = pathlocal
-        elif path2chck and not pathlocal:
-            path2data = join(self._settings.path, dirname(path2chck[1:]))
-            path2file = join(self._settings.path, path2chck[1:])
+        path2remote = self.__get_path_available_remote(folder_name, data_type)
+        path2local = self.__get_data_available_local(path2remote, folder_name, data_type)
+        if path2local:
+            self._path2file = path2local
+        elif path2remote and not path2local:
+            path2data = join(self._settings.path, dirname(path2remote[1:]))
+            path2file = join(self._settings.path, path2remote[1:])
             makedirs(path2data, exist_ok=True)
-            self.__download_handler.download_file(use_dataset=False, file_name=path2chck, destination_download=path2file)
+            self.__download_handler.download_file(use_dataset=False, file_name=path2remote, destination_download=path2file)
             self._path2file = path2file
         else:
             raise FileNotFoundError("--- File is not available. Please check! ---")
-
-    def _read_csv_file(self, path2csv: str, num_channels: int, split_option: str,
-                       start_pos_csvfile: int=0, skip_first_line: bool=False) -> list:
-        """Reading the csv file
-        Args:
-            path2csv:           Path to csv file for reading content
-            num_channels:       Given number of channels for seperating the list
-            split_option:       Option for splitting the strings of csv reading
-            start_pos_csvfile:  Selection list element from csv line-read for processing
-            skip_first_line:    Boolean for skipping first line of csv file
-        Returns:
-            One list with converted informations
-        """
-        if not num_channels == 1:
-            loaded_data = [[] for idx in range(num_channels)]
-        else:
-            loaded_data = []
-
-        if not exists(path2csv):
-            self.__logger.info("... file not available. Electrode mapping will be skipped")
-            return []
-        else:
-            file = open(path2csv, 'r')
-            for idx, line in enumerate(file):
-                if skip_first_line and idx == 0:
-                    pass
-                else:
-                    input = line.split(split_option)
-                    sel_list = start_pos_csvfile
-                    for val in input:
-                        if val:
-                            loaded_data[sel_list].append(val)
-                            sel_list += 1
-            return loaded_data
-
-    @staticmethod
-    def _transform_rawdata_from_csv_to_numpy(data: list) -> np.ndarray:
-        """Tranforming the csv data to numpy array"""
-        # --- Getting meta information
-        num_samples = list()
-        for idx, data0 in enumerate(data):
-            num_samples.append(len(data0))
-        num_samples = np.array(num_samples)
-        num_channels = len(data)
-
-        # --- Getting data in right format
-        data_used = np.zeros((num_channels, num_samples.min()), dtype=float)
-        for idx, data_ch in enumerate(data):
-            data_ch0 = list()
-            for value in data_ch:
-                data_ch0.append(float(value))
-            data_used[idx, :] = np.array(data_ch0[0:num_samples.min()])
-
-        return data_used
 
     def _transform_rawdata_to_numpy(self) -> None:
         """Transforming the initial raw data from list to numpy array"""
@@ -365,28 +347,38 @@ class ControllerData:
 
             self._raw_data.data_raw = data_out
 
-    def do_mapping(self, path2csv: str='') -> None:
+    def do_mapping(self, path2csv: str='', index_search: str='Mapping_*.csv') -> None:
         """Transforming the input data to electrode array specific design
         (considering electrode format and coordination)
-        Args:
-            path2csv:   Path to csv file with information about electrode mapping (Default: "")
-        Returns:
-            None
+        :parm path2csv:     Path to csv file with information about electrode mapping (Default: "")
+        :return:            None
         """
-        # --- Checking if mapping file is available
-        if not path2csv:
-            if len(self.path2mapping_local) == 0 and len(self.path2mapping_remote):
-                self.path2mapping = join(self._path2folder, basename(self.path2mapping_remote[0]))
-                self.__download_handler.download_file(use_dataset=False, file_name=self.path2mapping_remote[0], destination_download=self.path2mapping)
-            elif len(self.path2mapping_local) == 0 and len(self.path2mapping_remote) == 0:
-                self.path2mapping = ''
-            else:
-                self.path2mapping = self.path2mapping_local[0]
+        if path2csv:
+            self._path2mapping = path2csv
         else:
-            self.path2mapping = path2csv
+            # --- Checking if mapping file is available
+            mapping_local = glob(join(self._path2folder_local, index_search)) if self._path2folder_local else []
+            mapping_remote = self.__download_handler.get_overview_data(
+                use_dataset=False,
+                search_folder=self._path2folder_remote,
+                format=index_search
+            ) if self._path2folder_remote else []
+
+            # --- Getting the file
+            if len(mapping_local):
+                self._path2mapping = mapping_local[0]
+            elif len(mapping_remote):
+                self._path2mapping = join(self._path2folder_local, basename(mapping_remote[0]))
+                self.__download_handler.download_file(
+                    use_dataset=False,
+                    file_name=mapping_remote[0],
+                    destination_download=self._path2mapping
+                )
+            else:
+                self._path2mapping = ''
 
         # --- Generating mapping information
-        if self._settings.do_mapping and exists(self.path2mapping) and self.path2mapping:
+        if self._settings.do_mapping and exists(self._path2mapping):
             self.__logger.info("Apply electrode mapping")
             self._generate_electrode_mapping_from_csv()
             self._generate_electrode_activation_mapping()
@@ -396,16 +388,14 @@ class ControllerData:
 
     def _generate_electrode_mapping_from_csv(self) -> None:
         """Function for reading the CSV file for electrode mapping of used (non-electrodes = 0)"""
-        mapping_from_csv = []
-        # --- Reading CSV file with electrode infos
-        with open(self.path2mapping, 'r') as file:
-            reader = csv.reader(file)
-            for row in reader:
-                row = row[0]
-                sep_row = row.split(';')
-                numbers_row = [int(value) for value in sep_row]
-                if numbers_row:
-                    mapping_from_csv.append(numbers_row)
+        mapping_from_csv = CsvHandler(
+            path=dirname(self._path2mapping),
+            file_name=basename(self._path2mapping),
+            delimiter=';'
+        ).read_data_from_csv(
+            include_chapter_line=False,
+            start_line=0
+        ).tolist()
 
         # --- Generating numpy array
         num_rows = len(mapping_from_csv)
@@ -476,6 +466,6 @@ class ControllerData:
 
         if not self._settings.data_set or used_data_source_idx == -1:
             self.__logger.error(warning_text)
-            raise ValueError(warning_text)
+            raise ValueError
         else:
-            getattr(self, self._methods_available[idx])()
+            getattr(self, self._methods_available[used_data_source_idx])()
