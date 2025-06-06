@@ -16,14 +16,13 @@ source = "vcs"
 
 [tool.hatch.build.targets.wheel]
 packages = ["denspp"]
-exclude = ['*_test.py']
+exclude = ['.github', 'docs', '*_test.py']
 only-packages = true
 
 
 [project]
 name = "denspp.offline"
 dynamic = ["version"]
-#version = "0.3.0"
 description = "Python Framework for End-To-End and Hardware-Aware Signal Processing"
 readme = "README.md"
 license =  {file = "LICENSE"}
