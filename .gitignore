@@ -7,7 +7,7 @@ Config_*.yaml
 **/runs
 **/test
 **/temp*
-
+.python-version
 tests/*.log
 
 
