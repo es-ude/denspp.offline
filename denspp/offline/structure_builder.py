@@ -30,7 +30,7 @@ def init_project_folder(new_folder: str = '') -> None:
     :return:                None
     """
     folder_structure = ['data', 'dataset', 'runs', 'config', 'src_pipe']
-    copy_files = {'main_pipeline.py': '', 'main_data_merge.py': '', 'template_test.py': '', '.gitignore': '',
+    copy_files = {'main_pipeline.py': '', 'main_data_merge.py': '', 'template_test0.py': '', '.gitignore': '',
                   'call_data.py': 'src_pipe', 'pipeline_v0.py': 'src_pipe', 'pipeline_data.py': 'src_pipe'}
 
     path2start = get_path_to_project_start(new_folder)
