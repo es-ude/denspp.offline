@@ -1,10 +1,19 @@
-def check_key_elements(key: str, elements: list[str]):
-    """Function for checking if all elements are in key
+def check_key_elements_all(key: str, elements: list[str]):
+    """Function for checking if all elements are in key (logical AND)
     :param key:         key to check
     :param elements:    list of elements to check if available in key
     :return:            True if all elements are present in key
     """
     return all(elem in key for elem in elements)
+
+
+def check_key_elements_any(key: str, elements: list[str]):
+    """Function for checking if all elements are in key (logical OR)
+    :param key:         key to check
+    :param elements:    list of elements to check if available in key
+    :return:            True if all elements are present in key
+    """
+    return any(elem in key for elem in elements)
 
 
 def get_repo_name() -> str:

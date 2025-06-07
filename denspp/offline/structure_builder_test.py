@@ -2,7 +2,8 @@ import unittest
 from os import getcwd
 from os.path import exists, join
 from denspp.offline.structure_builder import init_project_folder, init_dnn_folder
-from denspp.offline import check_key_elements, get_repo_name, get_path_to_project_templates, get_path_to_project, get_path_to_project_start
+from denspp.offline import (check_key_elements_all, check_key_elements_any,
+                            get_repo_name, get_path_to_project_templates, get_path_to_project, get_path_to_project_start)
 
 
 class TestStructureBuilder(unittest.TestCase):
@@ -11,18 +12,50 @@ class TestStructureBuilder(unittest.TestCase):
     folder2search = 'denspp.offline'
     folder_name_test = 'temp_test'
 
-    def test_check_key_elements_true(self):
+    def test_check_key_elements_all_true(self):
         elements = ['num', 'ber', 'true']
-        rslt = check_key_elements(
+        rslt = check_key_elements_all(
             key='is_the_number_true',
             elements=elements
         )
         self.assertTrue(rslt)
 
-    def test_check_key_elements_false(self):
+    def test_check_key_elements_all_false(self):
         elements = ['num', 'ber', 'false']
-        rslt = check_key_elements(
+        rslt = check_key_elements_all(
             key='is_the_number_true',
+            elements=elements
+        )
+        self.assertFalse(rslt)
+
+    def test_check_key_elements_any_true_one(self):
+        elements = ['beatiful', 'ber', 'true']
+        rslt = check_key_elements_any(
+            key='beatiful_day_today',
+            elements=elements
+        )
+        self.assertTrue(rslt)
+
+    def test_check_key_elements_any_true_two(self):
+        elements = ['beat', 'iful', 'true']
+        rslt = check_key_elements_any(
+            key='beatiful_day_today',
+            elements=elements
+        )
+        self.assertTrue(rslt)
+
+    def test_check_key_elements_any_true_three(self):
+        elements = ['beat', 'iful', 'today']
+        rslt = check_key_elements_any(
+            key='beatiful_day_today',
+            elements=elements
+        )
+        self.assertTrue(rslt)
+
+    def test_check_key_elements_any_false(self):
+        elements = ['num', 'ber', 'false']
+        rslt = check_key_elements_any(
+            key='beatiful_day_today',
             elements=elements
         )
         self.assertFalse(rslt)
@@ -52,7 +85,7 @@ class TestStructureBuilder(unittest.TestCase):
     def test_get_path_to_project_templates(self):
         ref = ['denspp', 'offline', 'template']
         chck = get_path_to_project_templates()
-        rslt = check_key_elements(chck, ref)
+        rslt = check_key_elements_all(chck, ref)
         self.assertTrue(rslt)
 
     def test_check_folder_general(self):

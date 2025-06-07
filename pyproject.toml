@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["denspp"]  
-exclude = ["example"]
+exclude = ["example", 'snn']
 namespaces = false
 
 
@@ -16,7 +16,7 @@ source = "vcs"
 
 [tool.hatch.build.targets.wheel]
 packages = ["denspp"]
-exclude = ['.github', 'docs', '*_test.py']
+exclude = ['.github', 'docs', '*_test.py', '**/snn']
 only-packages = true
 
 

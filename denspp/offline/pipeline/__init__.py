@@ -1,5 +1,4 @@
 from .pipeline_cmds import ProcessingData
-from .pipeline_handler import read_yaml_pipeline_config
 from .pipeline_signal import PipelineSignal
 
 from .plot_mea import plot_mea_transient_single, plot_mea_transient_total
