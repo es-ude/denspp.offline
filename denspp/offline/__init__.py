@@ -55,6 +55,16 @@ def check_elem_unique(elements: list) -> bool:
     return all(cnt == 1 for cnt in Counter(chck).values())
 
 
+def is_close(value: float, target: float, tolerance: float=0.05) -> bool:
+    """Function for checking if float value is in near of the target value
+    :param value:       Float value to check
+    :param target:      Target value
+    :param tolerance:   Tolerance value [around target value]
+    """
+    assert tolerance > 0
+    return abs(value - target) <= abs(tolerance)
+
+
 def get_repo_name() -> str:
     """Getting string with repo name"""
     from os.path import dirname

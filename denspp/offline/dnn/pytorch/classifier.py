@@ -1,9 +1,11 @@
 import numpy as np
 from os.path import join
+from logging import getLogger, Logger
 from shutil import copy
 from datetime import datetime
 from torch import Tensor, zeros, load, save, concatenate, inference_mode, cuda, cat, randn, add, div
 
+from denspp.offline import check_keylist_elements_any
 from denspp.offline.dnn.ptq_help import quantize_model_fxp
 from denspp.offline.dnn.pytorch_handler import ConfigPytorch, SettingsDataset, PyTorchHandler
 from denspp.offline.metric.data_torch import calculate_number_true_predictions, calculate_precision, calculate_recall, \
@@ -11,18 +13,17 @@ from denspp.offline.metric.data_torch import calculate_number_true_predictions, 
 
 
 class TrainClassifier(PyTorchHandler):
-    def __init__(self, config_train: ConfigPytorch, config_data: SettingsDataset,
-                 do_train: bool=True, do_print: bool=True) -> None:
+    _logger: Logger
+
+    def __init__(self, config_train: ConfigPytorch, config_data: SettingsDataset, do_train: bool=True) -> None:
         """Class for Handling Training of Classifiers
-        Args:
-            config_data:            Settings for handling and loading the dataset (just for saving)
-            config_train:           Settings for handling the PyTorch Trainings Routine
-            do_train:               Do training of model otherwise only inference
-            do_print:               Printing the state and results into Terminal
-        Return:
-            None
+        :param config_data:     Settings for handling and loading the dataset (just for saving)
+        :param config_train:    Settings for handling the PyTorch Trainings Routine
+        :param do_train:        Do training of model otherwise only inference
+        :return:                None
         """
-        PyTorchHandler.__init__(self, config_train, config_data, do_train, do_print)
+        PyTorchHandler.__init__(self, config_train, config_data, do_train)
+        self._logger = getLogger(__name__)
         self.__metric_buffer = dict()
         self.__metric_result = dict()
         self._metric_methods = {'accuracy': self.__determine_accuracy_per_class,
@@ -100,34 +101,27 @@ class TrainClassifier(PyTorchHandler):
         Return:
             None
         """
+        assert check_keylist_elements_any(
+            keylist=custom_made_metrics,
+            elements=self.get_epoch_metric_custom_methods()
+        ), f"Used custom made metrics not found in: {self.get_epoch_metric_custom_methods()} - Please adapt in settings!"
         # --- Init phase for generating empty data structure
         if init_phase:
             for key0 in custom_made_metrics:
-                # --- Checking if called metric calculation is in method available
-                method_avai = False
-                for key1 in self._metric_methods.keys():
-                    if key0 == key1:
-                        method_avai = True
-                        break
-
-                # --- Generating dummy
-                if method_avai:
-                    self.__metric_result.update({key0: list()})
-                    match key0:
-                        case 'accuracy':
-                            self.__metric_buffer.update(
-                                {key0: [zeros((len(self.cell_classes), )), zeros((len(self.cell_classes), ))]}
-                            )
-                        case 'precision':
-                            self.__metric_buffer.update({key0: [[], []]})
-                        case 'recall':
-                            self.__metric_buffer.update({key0: [[], []]})
-                        case 'fbeta':
-                            self.__metric_buffer.update({key0: [[], []]})
-                        case 'ptq_loss':
-                            self.__metric_buffer.update({key0: [zeros((1,)), zeros((1,))]})
-                else:
-                    raise NotImplementedError(f"Used custom metric ({key0}) is not implemented - Please check!")
+                self.__metric_result.update({key0: list()})
+                match key0:
+                    case 'accuracy':
+                        self.__metric_buffer.update(
+                            {key0: [zeros((len(self.cell_classes), )), zeros((len(self.cell_classes), ))]}
+                        )
+                    case 'precision':
+                        self.__metric_buffer.update({key0: [[], []]})
+                    case 'recall':
+                        self.__metric_buffer.update({key0: [[], []]})
+                    case 'fbeta':
+                        self.__metric_buffer.update({key0: [[], []]})
+                    case 'ptq_loss':
+                        self.__metric_buffer.update({key0: [zeros((1,)), zeros((1,))]})
         # --- Processing results
         else:
             for key0 in self.__metric_buffer.keys():
@@ -195,17 +189,16 @@ class TrainClassifier(PyTorchHandler):
             Dictionary with metrics from training (loss_train, loss_valid, own_metrics)
         """
         self._init_train(path2save=path2save, addon='_CL')
-        if self._kfold_do and self._do_print_state:
-            print(f"Starting Kfold cross validation training in {self.settings_train.num_kfold} steps")
+        if self._kfold_do:
+            self._logger.info(f"Starting Kfold cross validation training in {self.settings_train.num_kfold} steps")
 
         path2model = str()
         path2model_init = join(self._path2save, f'model_class_reset.pt')
         save(self.model.state_dict(), path2model_init)
         timestamp_start = datetime.now()
         timestamp_string = timestamp_start.strftime('%H:%M:%S')
-        if self._do_print_state:
-            print(f'\nTraining starts on {timestamp_string}'
-                  f"\n=====================================================================================")
+        self._logger.info(f'Training starts on {timestamp_string}')
+        self._logger.info(f"=====================================================================================")
 
         metric_out = dict()
         self.__process_epoch_metrics_calculation(True, metrics)
@@ -224,8 +217,8 @@ class TrainClassifier(PyTorchHandler):
             self.model.load_state_dict(load(path2model_init, weights_only=False))
             self._run_kfold = fold
 
-            if self._kfold_do and self._do_print_state:
-                print(f'\nStarting with Fold #{fold}')
+            if self._kfold_do:
+                self._logger.info(f'Starting with Fold #{fold}')
 
             for epoch in range(0, self.settings_train.num_epochs):
                 if self.settings_train.deterministic_do:
@@ -233,7 +226,7 @@ class TrainClassifier(PyTorchHandler):
 
                 train_loss, train_acc = self.__do_training_epoch()
                 valid_loss, valid_acc = self.__do_valid_epoch(metrics)
-                print(f'... results of epoch {epoch + 1}/{self.settings_train.num_epochs} '
+                self._logger.info(f'... results of epoch {epoch + 1}/{self.settings_train.num_epochs} '
                       f'[{(epoch + 1) / self.settings_train.num_epochs * 100:.2f} %]: '
                       f'train_loss = {train_loss:.5f}, delta_loss = {train_loss-valid_loss:.5f}, '
                       f'train_acc = {100* train_acc:.4f} %, delta_acc = {100 * (train_acc-valid_acc):.4f} %')
@@ -257,7 +250,7 @@ class TrainClassifier(PyTorchHandler):
 
                 # Early Stopping
                 if patience_counter <= 0:
-                    print(f"... training stopped due to no change after {epoch+1} epochs!")
+                    self._logger.info(f"... training stopped due to no change after {epoch+1} epochs!")
                     break
 
             copy(path2model, self._path2save)
@@ -291,8 +284,8 @@ class TrainClassifier(PyTorchHandler):
             )
         else:
             model_test = load(path2model, weights_only=False)
-        print("\n================================================================="
-              f"\nDo Validation with best model: {path2model}")
+        self._logger.info("=================================================================")
+        self._logger.info(f"Do Validation with best model: {path2model}")
 
         clus_pred_list = randn(32, 1)
         clus_orig_list = randn(32, 1)

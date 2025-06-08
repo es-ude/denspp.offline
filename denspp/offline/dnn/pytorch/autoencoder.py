@@ -1,27 +1,28 @@
 import numpy as np
+from logging import getLogger, Logger
 from os.path import join
 from shutil import copy
 from datetime import datetime
 from torch import Tensor, load, save, inference_mode, flatten, cuda, cat, concatenate, randn
 
+from denspp.offline import check_keylist_elements_any
 from denspp.offline.dnn.ptq_help import quantize_model_fxp
 from denspp.offline.dnn.pytorch_handler import ConfigPytorch, SettingsDataset, PyTorchHandler
 from denspp.offline.metric.snr import calculate_snr_tensor_waveform, calculate_dsnr_tensor_waveform
 
 
 class TrainAutoencoder(PyTorchHandler):
-    def __init__(self, config_train: ConfigPytorch, config_data: SettingsDataset,
-                 do_train: bool=True, do_print: bool=True) -> None:
+    _logger: Logger
+
+    def __init__(self, config_train: ConfigPytorch, config_data: SettingsDataset, do_train: bool=True) -> None:
         """Class for Handling Training of Autoencoders
-        Args:
-            config_data:            Settings for handling and loading the dataset (just for saving)
-            config_train:           Settings for handling the PyTorch Trainings Routine
-            do_train:               Do training of model otherwise only inference
-            do_print:               Printing the state and results into Terminal
-        Return:
-            None
+        :param config_data:     Settings for handling and loading the dataset (just for saving)
+        :param config_train:    Settings for handling the PyTorch Trainings Routine
+        :param do_train:        Do training of model otherwise only inference
+        :return:                None
         """
-        PyTorchHandler.__init__(self, config_train, config_data, do_train, do_print)
+        PyTorchHandler.__init__(self, config_train, config_data, do_train)
+        self._logger = getLogger(__name__)
         self.__metric_buffer = dict()
         self.__metric_result = dict()
         self._metric_methods = {'snr_in': self.__determine_snr_input, 'snr_in_cl': self.__determine_snr_input_class,
@@ -94,21 +95,16 @@ class TrainAutoencoder(PyTorchHandler):
         Return:
             None
         """
+        assert check_keylist_elements_any(
+            keylist=custom_made_metrics,
+            elements=self.get_epoch_metric_custom_methods()
+        ), f"Used custom made metrics not found in: {self.get_epoch_metric_custom_methods()} - Please adapt in settings!"
         # --- Init phase for generating empty data structure
         if init_phase:
             for key0 in custom_made_metrics:
-                # --- Checking if called metric calculation is in method available
-                method_avai = False
-                for key1 in self._metric_methods.keys():
-                    if key0 == key1:
-                        method_avai = True
-                        break
-                # --- Generating dummy
-                if method_avai:
-                    self.__metric_result.update({key0: list()})
-                    self.__metric_buffer.update({key0: list()})
-                else:
-                    raise NotImplementedError(f"Used custom metric ({key0}) is not implemented - Please check!")
+                self.__metric_result.update({key0: list()})
+                self.__metric_buffer.update({key0: list()})
+
         # --- Processing results
         else:
             for key0 in self.__metric_buffer.keys():
@@ -198,8 +194,8 @@ class TrainAutoencoder(PyTorchHandler):
             Dictionary with metrics from training (loss_train, loss_valid, own_metrics)
         """
         self._init_train(path2save=path2save, addon='_AE')
-        if self._kfold_do and self._do_print_state:
-            print(f"Starting Kfold cross validation training in {self.settings_train.num_kfold} steps")
+        if self._kfold_do:
+            self._logger.info(f"Starting Kfold cross validation training in {self.settings_train.num_kfold} steps")
 
         metric_out = dict()
         path2model = str()
@@ -207,9 +203,8 @@ class TrainAutoencoder(PyTorchHandler):
         save(self.model.state_dict(), path2model_init)
         timestamp_start = datetime.now()
         timestamp_string = timestamp_start.strftime('%H:%M:%S')
-        if self._do_print_state:
-            print(f'\nTraining starts on {timestamp_string}'
-                  f"\n=====================================================================================")
+        self._logger.info(f'\nTraining starts on {timestamp_string}')
+        self._logger.info("=====================================================================================")
 
         self.__process_epoch_metrics_calculation(True, metrics)
         for fold in np.arange(self.settings_train.num_kfold):
@@ -222,8 +217,8 @@ class TrainAutoencoder(PyTorchHandler):
 
             self.model.load_state_dict(load(path2model_init, weights_only=False))
             self._run_kfold = fold
-            if self._kfold_do and self._do_print_state:
-                print(f'\nStarting with Fold #{fold}')
+            if self._kfold_do:
+                self._logger.info(f'\nStarting with Fold #{fold}')
 
             for epoch in range(0, self.settings_train.num_epochs):
                 if self.settings_train.deterministic_do:
@@ -235,12 +230,11 @@ class TrainAutoencoder(PyTorchHandler):
                 epoch_loss_valid.append(loss_valid)
                 self.__process_epoch_metrics_calculation(False, metrics)
 
-                if self._do_print_state:
-                    print(f'... results of epoch {epoch + 1}/{self.settings_train.num_epochs} '
-                          f'[{(epoch + 1) / self.settings_train.num_epochs * 100:.2f} %]: '
-                          f'train_loss = {loss_train:.5f},'
-                          f'\tvalid_loss = {loss_valid:.5f},'
-                          f'\tdelta_loss = {loss_train - loss_valid:.6f}')
+                self._logger.info(f'... results of epoch {epoch + 1}/{self.settings_train.num_epochs} '
+                                  f'[{(epoch + 1) / self.settings_train.num_epochs * 100:.2f} %]: '
+                                  f'train_loss = {loss_train:.5f},'
+                                  f'\tvalid_loss = {loss_valid:.5f},'
+                                  f'\tdelta_loss = {loss_train - loss_valid:.6f}')
 
                 # Tracking the best performance and saving the model
                 if loss_valid < best_loss[1]:
@@ -253,8 +247,7 @@ class TrainAutoencoder(PyTorchHandler):
 
                 # Early Stopping
                 if patience_counter <= 0:
-                    if self._do_print_state:
-                        print(f"... training stopped due to no change after {epoch + 1} epochs!")
+                    self._logger.info(f"... training stopped due to no change after {epoch + 1} epochs!")
                     break
 
             copy(path2model, self._path2save)
@@ -286,9 +279,9 @@ class TrainAutoencoder(PyTorchHandler):
             )
         else:
             model_test = load(path2model, weights_only=False)
-        if self._do_print_state:
-            print("\n================================================================="
-                  f"\nDo Validation with best model: {path2model}")
+
+        self._logger.info("=================================================================")
+        self._logger.info(f"Do Validation with best model: {path2model}")
 
         pred_model = randn(32, 1)
         feat_model = randn(32, 1)

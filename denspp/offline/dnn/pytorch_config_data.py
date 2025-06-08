@@ -1,4 +1,5 @@
 import numpy as np
+from logging import getLogger, Logger
 from dataclasses import dataclass
 from os import makedirs
 from os.path import join, abspath, isabs, exists
@@ -6,6 +7,7 @@ from torch import Tensor, concat, from_numpy
 from torchvision import datasets, transforms
 from denspp.offline.yaml_handler import YamlHandler
 from denspp.offline import get_path_to_project_start
+from denspp.offline.data_call.call_cellbib import CellSelector
 from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
 from denspp.offline.data_generator import SettingsWaveformDataset, DefaultSettingsWaveformDataset, build_waveform_dataset
 
@@ -74,12 +76,14 @@ DefaultSettingsDataset = SettingsDataset(
 
 
 class ControllerDataset:
+    _logger: Logger
     _settings: SettingsDataset
     _methods: list
     _index_search: list=['_get_', '_prepare_']
 
     def __init__(self, settings: SettingsDataset) -> None:
         self._settings = settings
+        self._logger = getLogger(__name__)
         self._methods = self._extract_func(self.__class__)
 
     def _extract_func(self, class_obj: object) -> list:
@@ -117,17 +121,16 @@ class ControllerDataset:
 
     def print_overview_datasets(self, do_print: bool=True) -> list:
         """Giving an overview of available datasets on the cloud storage
-        :param do_print:    Printing the results
         :return:            Return a list with dataset names
         """
         oc_handler = OwnCloudDownloader(path2config=self._settings.get_path2folder_project)
         list_datasets = self._extract_methods(self._index_search[1])
         list_datasets.extend(oc_handler.get_overview_data(use_dataset=True))
         if do_print:
-            print("\nAvailable datasets in repository and from remote:"
-                  "\n==============================================================================")
+            self._logger.info("\nAvailable datasets in repository and from remote:")
+            self._logger.info("==================================================")
             for idx, file in enumerate(list_datasets):
-                print(f"\t{idx}: \t{file}")
+                self._logger.info(f"\t{idx}: \t{file}")
 
         oc_handler.close()
         return list_datasets
@@ -144,11 +147,28 @@ class ControllerDataset:
             self.__download_if_missing()
             return self.__process_data()
 
+    def reconfigure_cluster_with_cell_lib(self, fn, sel_mode_classes: int,
+                                          frames_in: np.ndarray, frames_cl: np.ndarray) -> dict:
+        """Function for reducing the samples for a given cell bib
+        :param fn:                  Class with new resorting dictionaries
+        :param sel_mode_classes:    Number of classes to select for each cell bib (0= original, 1= Reduced, 2= Subgroup, 3= Subtype)
+        :param frames_in:           Numpy array with spike frames
+        :param frames_cl:           Numpy array with cluster label to each spike frame
+        :return:                    Dict with ['frame': spike frames, 'cl': new class id, 'dict': new dictionary with names]
+        """
+        cl_sampler = CellSelector(fn, sel_mode_classes)
+        cell_dict = cl_sampler.get_label_list()
+        self._logger.info(f"... Cluster types before reconfiguration: {np.unique(frames_cl)}")
+
+        cluster_new, data_new = cl_sampler.transform_data_into_new(frames_cl, frames_in)
+        self._logger.info(f"... Cluster types after reconfiguration: {np.unique(cluster_new)}")
+        return {'frame': data_new, 'cl': cluster_new, 'dict': cell_dict}
+
     def __pipeline_for_torchvision_datasets(self, picture: np.ndarray, label: np.ndarray) -> dict:
         # --- Normalization
         if self._settings.normalization_do:
             picture = picture / 255.0
-            print("... do data normalization on input")
+            self._logger.info("... do data normalization on input")
 
         # --- Exclusion of selected clusters
         if len(self._settings.exclude_cluster):
@@ -156,7 +176,7 @@ class ControllerDataset:
                 selX = np.where(label != id)
                 picture = picture[selX[0], :]
                 label = label[selX]
-            print(f"... class reduction done to {np.unique(label).size} classes")
+            self._logger.info(f"... class reduction done to {np.unique(label).size} classes")
 
         # --- Using cell library
         if self._settings.use_cell_sort_mode:

@@ -1,3 +1,4 @@
+from denspp.offline.logger import define_logger_runtime
 from denspp.offline.dnn.dnn_handler import ConfigMLPipeline, DefaultSettings_MLPipe
 from denspp.offline.yaml_handler import YamlHandler
 from denspp.offline.structure_builder import init_project_folder
@@ -5,13 +6,17 @@ from src_dnn.call_dataset import DatasetLoader
 
 
 if __name__ == "__main__":
-    print("\nTrain modules of end-to-end neural signal pre-processing frame-work (DeNSPP)"
-          "\n===========================================================================================")
-
     # --- Loading YAML-Settings file
     init_project_folder()
-    yaml_handler = YamlHandler(DefaultSettings_MLPipe, 'config', 'Config_DNN')
-    dnn_handler = yaml_handler.get_class(ConfigMLPipeline)
+    dnn_handler = YamlHandler(
+        template=DefaultSettings_MLPipe,
+        path='config',
+        file_name='Config_DNN'
+    ).get_class(ConfigMLPipeline)
+
+    define_logger_runtime(
+        save_file=False,
+    )
 
     # --- Selecting model for train
     match dnn_handler.mode_train_dnn:
@@ -82,6 +87,3 @@ if __name__ == "__main__":
             do_train_spike_class(DatasetLoader, dnn_handler, 'Config_SDA', '', 'sda_dnn_v1')
         case _:
             raise NotImplementedError("Wrong model! Please select right model!")
-
-    print("================================================================"
-          "\nFinish!")

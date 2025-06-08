@@ -1,7 +1,7 @@
 import numpy as np
 from dataclasses import dataclass
 from scipy.signal import savgol_filter, find_peaks, iirfilter, lfilter
-from denspp.offline.data_process.transformation import window_method
+from denspp.offline.data_process.transformation import transformation_window_method
 
 
 @dataclass
@@ -84,7 +84,6 @@ class SpikeDetection:
     # --------- Pre-Processing of SDA -------------
     def time_delay(self, uin: np.ndarray) -> np.ndarray:
         """Applying a time delay on the input signal
-        :math:         "\sum x_i"
         :param uin:     Numpy array with transient input signal / data stream
         :return:        Numpy array with time-delayed signal
         """
@@ -442,5 +441,5 @@ class SpikeDetection:
         :param method:      String with method for smoothing input
         :return:            Numpy array with smoothed SDA output
         """
-        window = window_method(window_size, method)
+        window = transformation_window_method(window_size, method)
         return np.convolve(xin, window, mode='same') # / np.sum(window), mode='same')

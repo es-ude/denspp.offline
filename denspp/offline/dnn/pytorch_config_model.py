@@ -94,7 +94,7 @@ DefaultSettingsTrainMSE = ConfigPytorch(
     batch_size=256,
     data_do_shuffle=True,
     data_split_ratio=0.2,
-    custom_metrics=['dsnr_all']
+    custom_metrics=[]
 )
 DefaultSettingsTrainCE = ConfigPytorch(
     model_name='',

@@ -1,7 +1,6 @@
 import numpy as np
 from denspp.offline.metric import calculate_snr
 from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise
-from denspp.offline.data_call.call_cellbib import CellSelector
 
 
 def change_frame_size(frames_in: np.ndarray, sel_pos: list) -> np.ndarray:
@@ -98,8 +97,7 @@ def frame_noise(no_frames: int, frame_in: np.ndarray, noise_pwr: list, fs: float
         temp=300,
         wgn_dB=-120,
         Fc=10,
-        slope=0.6,
-        do_print=False
+        slope=0.6
     )
     handler_noise = ProcessNoise(settings_noise, fs)
 
@@ -121,23 +119,3 @@ def frame_noise(no_frames: int, frame_in: np.ndarray, noise_pwr: list, fs: float
         frames_out[idx, :] = np.round(frame_in + noise)
         frames_noise[idx, :] = np.round(noise)
     return frames_noise, frames_out
-
-
-def reconfigure_cluster_with_cell_lib(fn, sel_mode_classes: int,
-                                      frames_in: np.ndarray, frames_cl: np.ndarray) -> dict:
-    """Function for reducing the samples for a given cell bib
-    :param fn:                  Class with new resorting dictionaries
-    :param sel_mode_classes:    Number of classes to select for each cell bib (0= original, 1= Reduced specific, 2= ON/OFF, 3= Sustained/Transient)
-    :param frames_in:           Numpy array with spike frames
-    :param frames_cl:           Numpy array with cluster label to each spike frame
-    :return:                    Dict with ['frame': spike frames, 'cl': new class id, 'dict': new dictionary with names]
-    """
-    cl_sampler = CellSelector(fn, sel_mode_classes)
-    cell_dict = cl_sampler.get_celltype_names()
-    print(f"... Cluster types before reconfiguration: {np.unique(frames_cl)}")
-
-    cluster = cl_sampler.get_class_to_id(frames_cl)
-    pos = np.argwhere(cluster != -1).flatten()
-    print(f"... Cluster types after reconfiguration: {np.unique(cluster)}")
-
-    return {'frame': frames_in[pos, :], 'cl': cluster[pos], 'dict': cell_dict}

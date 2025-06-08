@@ -3,7 +3,7 @@ from denspp.offline.yaml_handler import YamlHandler
 from denspp.offline.dnn.dnn_handler import ConfigMLPipeline
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset, DefaultSettingsDataset
 from denspp.offline.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainCE
-from denspp.offline.dnn.pytorch_pipeline import do_train_classifier
+from denspp.offline.dnn.pytorch_pipeline import train_classifier_template
 from denspp.offline.dnn.dataset.classifier import prepare_training
 
 
@@ -44,7 +44,7 @@ def do_train_spike_class(class_dataset, settings: ConfigMLPipeline,
         rawdata=class_dataset(settings=config_data).load_dataset()
     )
     used_model = config_train.get_model(input_size=dataset[0]['in'].size, output_size=dataset.get_cluster_num)
-    _, _, path2folder = do_train_classifier(
+    _, _, path2folder = train_classifier_template(
         config_ml=settings,
         config_data=config_data,
         config_train=config_train,

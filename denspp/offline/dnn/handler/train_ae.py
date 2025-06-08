@@ -3,14 +3,14 @@ from denspp.offline.yaml_handler import YamlHandler
 from denspp.offline.dnn.dnn_handler import ConfigMLPipeline
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset, DefaultSettingsDataset
 from denspp.offline.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainMSE
-from denspp.offline.dnn.pytorch_pipeline import do_train_autoencoder
+from denspp.offline.dnn.pytorch_pipeline import train_autoencoder_template
 from denspp.offline.dnn.plots.plot_dnn import results_training
 from denspp.offline.dnn.dataset.autoencoder import prepare_training
 
 
 def do_train_neural_autoencoder(class_dataset, settings: ConfigMLPipeline, yaml_name_index: str='Config_AE',
                                 used_dataset_name: str='quiroga', model_default_name: str='') -> [dict, dict]:
-    """Training routine for Autoencoders in Neural Applications (Spike Frames)
+    """Training routine for Autoencoders (e.g. in neural Applications for Spike Frames)
     Args:
         class_dataset:          Class of custom-made SettingsDataset from src_dnn/call_dataset.py
         settings:               Handler for configuring the routine selection for train deep neural networks
@@ -32,6 +32,7 @@ def do_train_neural_autoencoder(class_dataset, settings: ConfigMLPipeline, yaml_
     # --- Loading the YAML file: Model training
     default_train = deepcopy(DefaultSettingsTrainMSE)
     default_train.model_name = model_default_name
+    default_train.custom_metrics = ['dsnr_all']
     config_train = YamlHandler(
         template=default_train,
         path=settings.get_path2config,
@@ -52,7 +53,7 @@ def do_train_neural_autoencoder(class_dataset, settings: ConfigMLPipeline, yaml_
     else:
         used_model = config_train.get_model(input_size=dataset[0]['in'].size, output_size=dataset[0]['in'].size)
 
-    metrics, data_result, path2folder = do_train_autoencoder(
+    metrics, data_result, path2folder = train_autoencoder_template(
         config_ml=settings, config_data=config_data, config_train=config_train,
         used_dataset=dataset, used_model=used_model
     )
