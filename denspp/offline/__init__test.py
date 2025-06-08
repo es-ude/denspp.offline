@@ -53,6 +53,14 @@ class TestHelpFunction(unittest.TestCase):
         )
         self.assertFalse(rslt)
 
+    def test_check_keylist_elements_all_empty(self):
+        elements = ['beat', 'iful', 'true']
+        rslt = check_keylist_elements_all(
+            keylist=[],
+            elements=elements
+        )
+        self.assertTrue(rslt)
+
     def test_check_keylist_elements_all_true(self):
         elements = ['beat', 'iful', 'true']
         rslt = check_keylist_elements_all(
@@ -68,6 +76,14 @@ class TestHelpFunction(unittest.TestCase):
             elements=elements
         )
         self.assertFalse(rslt)
+
+    def test_check_keylist_elements_any_empty(self):
+        elements = ['beat', 'iful', 'true']
+        rslt = check_keylist_elements_any(
+            keylist=[],
+            elements=elements
+        )
+        self.assertTrue(rslt)
 
     def test_check_keylist_elements_any_true(self):
         elements = ['num', 'ber', 'true']

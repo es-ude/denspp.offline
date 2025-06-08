@@ -32,7 +32,7 @@ def check_keylist_elements_all(keylist: list[str], elements: list[str]) -> bool:
     :param elements:    List with elements to check if available in key
     :return:            True if all elements are present in key
     """
-    return all(elem in keylist for elem in elements)
+    return all(elem in keylist for elem in elements) if len(keylist) else True
 
 
 def check_keylist_elements_any(keylist: list[str], elements: list[str]) -> bool:
@@ -41,7 +41,7 @@ def check_keylist_elements_any(keylist: list[str], elements: list[str]) -> bool:
     :param elements:    List with elements to check if available in key
     :return:            True if any elements are present in key
     """
-    return any(elem in keylist for elem in elements)
+    return any(elem in keylist for elem in elements) if len(keylist) else True
 
 
 def check_elem_unique(elements: list) -> bool:
