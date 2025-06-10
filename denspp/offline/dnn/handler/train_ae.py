@@ -8,8 +8,8 @@ from denspp.offline.dnn.plots.plot_dnn import results_training
 from denspp.offline.dnn.dataset.autoencoder import prepare_training
 
 
-def do_train_neural_autoencoder(class_dataset, settings: ConfigMLPipeline, yaml_name_index: str='Config_AE',
-                                used_dataset_name: str='quiroga', model_default_name: str='') -> [dict, dict]:
+def do_train_autoencoder(class_dataset, settings: ConfigMLPipeline, yaml_name_index: str= 'Config_AE',
+                         used_dataset_name: str='quiroga', model_default_name: str='') -> [dict, dict]:
     """Training routine for Autoencoders (e.g. in neural Applications for Spike Frames)
     Args:
         class_dataset:          Class of custom-made SettingsDataset from src_dnn/call_dataset.py

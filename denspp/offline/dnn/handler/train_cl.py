@@ -7,18 +7,15 @@ from denspp.offline.dnn.pytorch_pipeline import train_classifier_template
 from denspp.offline.dnn.dataset.classifier import prepare_training
 
 
-def do_train_spike_class(class_dataset, settings: ConfigMLPipeline,
-                         yaml_name_index: str='Config_Neural',
-                         used_dataset_name: str='', used_model_name: str='') -> str:
+def do_train_classifiers(class_dataset, settings: ConfigMLPipeline,
+                         yaml_name_index: str='Config_Neural', used_dataset_name: str='quiroga', used_model_name: str='') -> str:
     """Training routine for Classification DL models
-    Args:
-        class_dataset:          Class of custom-made SettingsDataset from src_dnn/call_dataset.py
-        settings:               Handler for configuring the routine selection for train deep neural networks
-        yaml_name_index:        Index of yaml file name
-        used_dataset_name:      Used dataset name
-        used_model_name:        Used model for DNN training
-    Returns:
-        String with path to folder in which results are saved
+    :param class_dataset:           Class of custom-made SettingsDataset from src_dnn/call_dataset.py
+    :param settings:                Handler for configuring the routine selection for train deep neural networks
+    :param yaml_name_index:         Index of yaml file name
+    :param used_dataset_name:       Used dataset name
+    :param used_model_name:         Used model for DNN training
+    :return:                        String with path to folder in which results are saved
     """
     # --- Loading the YAML file: Dataset
     default_data = deepcopy(DefaultSettingsDataset)

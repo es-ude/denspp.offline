@@ -4,7 +4,7 @@ from denspp.offline.dnn.pytorch_config_data import SettingsDataset, ControllerDa
 from denspp.offline.dnn.model_library import CellLibrary
 from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
 from denspp.offline.data_process.frame_preprocessing import calculate_frame_snr, calculate_frame_mean
-from denspp.offline.data_process.frame_preprocessing import reconfigure_cluster_with_cell_lib, generate_zero_frames
+from denspp.offline.data_process.frame_preprocessing import generate_zero_frames
 from denspp.offline.data_process.frame_normalization import DataNormalization
 from denspp.offline.data_process.frame_augmentation import augmentation_change_position, augmentation_reducing_samples
 
@@ -44,7 +44,7 @@ class DatasetLoader(ControllerDataset):
         libs_class_overview = [lib.split("resort_")[-1] for lib in cell_libs_handler.get_library_overview(do_print=False)]
         libs_use = [f'resort_{lib}' for lib in libs_class_overview if lib in self._settings.get_path2data.lower()]
         if len(libs_use):
-            new_data = reconfigure_cluster_with_cell_lib(
+            new_data = self.reconfigure_cluster_with_cell_lib(
                 fn=cell_libs_handler.build(libs_use[0]),
                 sel_mode_classes=self._settings.use_cell_sort_mode,
                 frames_in=frames_in,

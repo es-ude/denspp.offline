@@ -14,23 +14,26 @@ from denspp.offline.dnn.dataset.autoencoder_class import prepare_training as get
 
 def do_train_ae_cl_sweep(class_dataset, settings: ConfigMLPipeline,
                          feat_layer_start: int, feat_layer_inc: int, feat_layer_stop: int,
-                         num_epochs_trial: int=50,
-                         yaml_name_index: str='Config_AECL_Sweep') -> str:
+                         num_epochs_trial: int=50,  yaml_name_index: str= 'Config_AECL_Sweep',
+                         model_ae_default_name: str='', model_cl_default_name: str='',
+                         used_dataset_name:str='quiroga') -> str:
     """Training routine for Autoencoders and Classification after Encoder (Sweep)
-    Args:
-        class_dataset:      Class of custom-made SettingsDataset from src_dnn/call_dataset.py
-        settings:           Handler for configuring the routine selection for train deep neural networks
-        feat_layer_start:   Increasing value for feature layer
-        feat_layer_inc:     Increasing value for feature layer
-        feat_layer_stop:    Increasing value for feature layer
-        num_epochs_trial:   Number of epochs of each run
-        yaml_name_index:    Index of yaml file name
-    Return:
-        String with path in which the data is saved
+    :param class_dataset:           Class of custom-made SettingsDataset from src_dnn/call_dataset.py
+    :param settings:                Handler for configuring the routine selection for train deep neural networks
+    :param feat_layer_start:        Increasing value for feature layer
+    :param feat_layer_inc:          Increasing value for feature layer
+    :param feat_layer_stop:         Increasing value for feature layer
+    :param num_epochs_trial:        Number of epochs of each run
+    :param yaml_name_index:         Index of yaml file name
+    :param model_ae_default_name:   Default name for autoencoder model
+    :param model_cl_default_name:   Default name for classifier model
+    :param used_dataset_name:       Default dataset name used in training
+    :return:                        String with path in which the data is saved
     """
     # ------------ STEP #0: Loading YAML files
     # --- Loading the YAML file: Dataset
     default_data = deepcopy(DefaultSettingsDataset)
+    default_data.data_file_name = used_dataset_name
     config_data = YamlHandler(
         template=default_data,
         path=settings.get_path2config,
@@ -39,7 +42,7 @@ def do_train_ae_cl_sweep(class_dataset, settings: ConfigMLPipeline,
 
     # --- Loading the YAML file: Autoencoder Model Load and building
     default_ae = deepcopy(DefaultSettingsTrainMSE)
-    default_ae.model_name = ''
+    default_ae.model_name = model_ae_default_name
     default_ae.num_epochs = num_epochs_trial
     config_train_ae = YamlHandler(
         template=default_ae,
@@ -49,7 +52,7 @@ def do_train_ae_cl_sweep(class_dataset, settings: ConfigMLPipeline,
 
     # --- Loading the YAML file: Classifier Model Load and building
     default_cl = deepcopy(DefaultSettingsTrainCE)
-    default_cl.model_name = ''
+    default_cl.model_name = model_cl_default_name
     default_cl.num_epochs = num_epochs_trial
     config_train_cl = YamlHandler(
         template=default_cl,

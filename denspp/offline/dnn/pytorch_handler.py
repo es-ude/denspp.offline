@@ -4,17 +4,18 @@ import platform
 from copy import deepcopy
 import cpuinfo
 import numpy as np
+from logging import getLogger, Logger
 from random import seed
 from shutil import rmtree
 from glob import glob
 from datetime import datetime
-from torch import (device, cuda, backends, nn, randn, cat, Tensor, is_tensor, zeros, unique, argwhere, float32,
+from torch import (device, cuda, backends, randn, cat, Tensor, is_tensor, zeros, unique, argwhere, float32,
                    Generator, manual_seed, use_deterministic_algorithms)
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
 from sklearn.model_selection import KFold
 
-from denspp.offline import get_path_to_project_start
+from denspp.offline import get_path_to_project_start, check_elem_unique
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset
 from denspp.offline.dnn.pytorch_config_model import ConfigPytorch
 from denspp.offline.structure_builder import init_dnn_folder
@@ -34,19 +35,19 @@ class PyTorchHandler:
     _metric_methods: dict
     _ptq_do_validation: bool = False
     _ptq_level: list = [12, 8]
+    _logger: Logger
 
-    def __init__(self, config_train: ConfigPytorch, config_dataset: SettingsDataset,
-                 do_train: bool=True, do_print: bool=True) -> None:
+    def __init__(self, config_train: ConfigPytorch, config_dataset: SettingsDataset, do_train: bool=True) -> None:
         """Class for Handling Training of Deep Neural Networks in PyTorch
         Args:
             config_train:   Configuration settings for the PyTorch Training
             config_dataset: Configuration settings for dataset handling
             do_train:       Mention if training should be used (default = True)
-            do_print:       Printing the state and results into Terminal
         Returns:
             None
         """
         init_dnn_folder()
+        self._logger = getLogger(__name__)
         # --- Preparing Neural Network
         self.os_type = platform.system()
         self.model = None
@@ -61,7 +62,6 @@ class PyTorchHandler:
         self.settings_train = config_train
         self.settings_data = config_dataset
         self._index_folder = 'train' if do_train else 'inference'
-        self._do_print_state = do_print
         self._model_addon = str()
         # --- Logging paths for saving
         self.__check_start_folder()
@@ -101,8 +101,7 @@ class PyTorchHandler:
             self.used_hw_num = 1 # cpuinfo.get_cpu_info()['count']
             device0 = self.used_hw_cpu
 
-        if self._do_print_state:
-            print(f"\nUsing PyTorch with {device0} on {self.os_type}")
+        self._logger.debug(f"\nUsing PyTorch with {device0} on {self.os_type}")
 
     def _init_train(self, path2save: str='', addon: str='') -> None:
         """Do init of class for training"""
@@ -144,12 +143,10 @@ class PyTorchHandler:
             backends.cudnn.deterministic = True
 
             use_deterministic_algorithms(True)
-            if self._do_print_state:
-                print(f"\n\t\t=== DL Training with Deterministic @seed: {self.settings_train.deterministic_seed} ===")
+            self._logger.info(f"=== DL Training with Deterministic @seed: {self.settings_train.deterministic_seed} ===")
         else:
             use_deterministic_algorithms(False)
-            if self._do_print_state:
-                print(f"\n\t\t=== Normal DL Training ===")
+            self._logger.info(f"=== Normal DL Training ===")
 
     def __deterministic_get_dataloader_params(self) -> dict:
         """Getting the parameters for preparing the Training and Validation DataLoader for Deterministic Training"""
@@ -178,7 +175,6 @@ class PyTorchHandler:
         # --- Preparing datasets
         out_train = list()
         out_valid = list()
-        # ToDo: SubsetRandomSampler works valid with deterministic training? - Please check!
         if self._kfold_do:
             kfold = KFold(n_splits=self.settings_train.num_kfold,
                           shuffle=self._shuffle_do and not self.settings_train.deterministic_do)
@@ -226,12 +222,11 @@ class PyTorchHandler:
         self.train_loader = out_train
         self.valid_loader = out_valid
 
-    def load_model(self, model, learn_rate: float=0.1, print_model: bool=True) -> None:
+    def load_model(self, model, learn_rate: float=0.1) -> None:
         """Loading optimizer, loss_fn into class
         Args:
             model:          PyTorch Neural Network for Training / Inference
             learn_rate:     Learning rate used for SGD optimier
-            print_model:    Print the model summary [Default: True]
         Returns:
             None
         """
@@ -244,10 +239,9 @@ class PyTorchHandler:
             self.__deterministic_training_preparation()
 
         # --- Print model
-        if print_model:
-            print("\nPrint summary of model")
-            summary(self.model, input_size=self.model.model_shape)
-            print("\n\n")
+        self._logger.info("\nPrint summary of model")
+        self._logger.info(str(summary(self.model, input_size=self.model.model_shape)))
+        self._logger.info("\n\n")
 
     def _save_train_results(self, last_metric_train: float | np.ndarray,
                             last_metric_valid: float | np.ndarray, loss_type: str='Loss') -> None:
@@ -272,10 +266,8 @@ class PyTorchHandler:
         timestamp_string = timestamp_end.strftime('%H:%M:%S')
         diff_time = timestamp_end - timestamp_start
         diff_string = diff_time
-
-        if self._do_print_state:
-            print(f'\nTraining ends on: {timestamp_string}')
-            print(f'Training runs: {diff_string}')
+        self._logger.info(f'\nTraining ends on: {timestamp_string}')
+        self._logger.info(f'Training runs: {diff_string}')
 
         # Delete init model
         init_model = glob(join(self._path2save, '*_reset.pt'))
@@ -331,8 +323,7 @@ class PyTorchHandler:
         if results is None:
             results = dict()
 
-        if self._do_print_state:
-            print(f"... preparing results for plot generation")
+        self._logger.info(f"... preparing results for plot generation")
         data_train = self.__get_data_points(only_getting_labels=True, use_train_dataloader=True)
 
         output = dict()
@@ -342,8 +333,7 @@ class PyTorchHandler:
         output.update(results)
 
         data2save = join(self.get_saving_path(), f'results_{addon}.npy')
-        if self._do_print_state:
-            print(f"... saving results: {data2save}")
+        self._logger.debug(f"... saving results: {data2save}")
         np.save(data2save, output)
         return output
 
@@ -387,7 +377,10 @@ class PyTorchHandler:
 
     @staticmethod
     def _converting_tensor_to_numpy(metric_used: dict) -> dict:
-        """Converting tensor array to numpy for later processing"""
+        """Converting tensor array to numpy for later processing
+        :param metric_used: Dictionary of used metric
+        :return:            Dictionary with calculated metrics
+        """
         # --- Metric out for saving (converting from tensor to numpy)
         metric_save = deepcopy(metric_used)
         for key0, data0 in metric_used.items():
@@ -402,9 +395,11 @@ class PyTorchHandler:
                             metric_save[key0][key1][idx2] = data2.cpu().detach().numpy()
         return metric_save
 
-    def get_metric_methods(self) -> None:
-        """Function for calling the functions to calculate metrics during training phase"""
-        print(self._metric_methods.keys())
+    def get_epoch_metric_custom_methods(self) -> list:
+        """Getting an overview of available methods for custom-written metric calculation in each epoch during training
+        :return:    List with metrics name to call
+        """
+        return [key for key in self._metric_methods.keys()]
 
     @property
     def get_number_parameters_from_model(self) -> int:
@@ -418,3 +413,29 @@ class PyTorchHandler:
         :return: None
         """
         self._ptq_level = [total_bitwidth, frac_bitwidth]
+
+
+def logic_combination(true_labels: np.ndarray, pred_labels: np.ndarray, translate_list: list) -> [np.ndarray, np.ndarray]:
+    """Combination of logic for Reducing Label Classes
+    :param true_labels:     Numpy array with true labels
+    :param pred_labels:     Numpy array with predicted labels
+    :param translate_list:  List with label ids to combine (e.g. [[1, 2], [0, 3]] -> [0, 1])
+    :returns:               Two numpy arrays with true_labels_new and pred_labels_new
+    """
+    assert true_labels.shape == pred_labels.shape, "Shape of labels are not equal"
+    assert len(translate_list), "List with new translation is empty"
+    assert check_elem_unique(translate_list), "Not all key elements in sublists are unique"
+
+    true_labels_new = np.zeros_like(true_labels, dtype=np.uint8)
+    pred_labels_new = np.zeros_like(pred_labels, dtype=np.uint8)
+
+    for idx, cluster in enumerate(translate_list):
+        for id in cluster:
+            pos = np.argwhere(true_labels == id).flatten()
+            true_labels_new[pos] = idx
+            pos = np.argwhere(pred_labels == id).flatten()
+            pred_labels_new[pos] = idx
+    return true_labels_new, pred_labels_new
+
+
+
