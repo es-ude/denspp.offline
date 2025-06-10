@@ -1,111 +1,103 @@
 import numpy as np
 from dataclasses import dataclass
-
-
-def logic_combination(true_labels: np.ndarray, pred_labels: np.ndarray, translate_dict: list) -> [np.ndarray, np.ndarray]:
-    """Combination of logic for Reducing Label Classes
-    :param true_labels:     Numpy array with true labels
-    :param pred_labels:     Numpy array with predicted labels
-    :param translate_dict:  Dictionary with label ids to combine
-    :returns:               Two numpy arrays with true_labels_new and pred_labels_new
-    """
-    true_labels_new = np.zeros(shape=true_labels.shape, dtype=np.uint8)
-    pred_labels_new = np.zeros(shape=pred_labels.shape, dtype=np.uint8)
-
-    for idx, cluster in enumerate(translate_dict):
-        for id in cluster:
-            pos = np.argwhere(true_labels == id).flatten()
-            true_labels_new[pos] = idx
-            pos = np.argwhere(pred_labels == id).flatten()
-            pred_labels_new[pos] = idx
-    return true_labels_new, pred_labels_new
+from denspp.offline import check_key_elements, check_elem_unique
 
 
 @dataclass
-class CellMergeClass:
+class SettingsCellSelector:
     """Class for Merging different labels of a dataset to a new dataset
     Attributes:
-         cell_type_to_id:       Dictionary with original label names [key] and given id [value]
-         cell_class_to_id:      Dictionary with new label class [key] and corresponding id as list [value]
-         cell_class_to_group:   Dictionary with new label sub-class [key] and corresponding id as list [value]
-         cell_class_to_type:    Dictionary with new label sub-class [key] and corresponding id as list [value]
+         original_id:           Dictionary with original label names [key] and given id [value]
+         original_to_reduced:   Dictionary with new label class [key] and corresponding id as list [value]
+         original_to_group:     Dictionary with new label subclass [key] and corresponding id as list [value]
+         original_to_type:      Dictionary with new label subclass [key] and corresponding id as list [value]
     """
-    cell_type_to_id: dict
-    cell_class_to_id: dict
-    cell_class_to_group: dict
-    cell_class_to_type: dict
+    original_id: dict
+    original_to_reduced: dict
+    original_to_group: dict
+    original_to_type: dict
 
 
 class CellSelector:
-    handler: CellMergeClass
-    cell_type_to_id: dict
-    cell_class_to_id: dict
-    cell_class_to_group: dict
-    cell_class_to_type: dict
-    cell_class_used: dict
+    _used_id_libraray: dict
+    _process_mode: bool
 
-    def __init__(self, cell_merge: CellMergeClass, mode: int) -> None:
+    def __init__(self, cell_merge: SettingsCellSelector, mode: int) -> None:
         """Class for separating the classes into new subset
-        Args:
-            cell_merge: Class with handling process
-            mode:       0=original, 1=Reduced specific, 2= ON/OFF, 3= Sustained/Transient
-        Returns:
-            None
+        :param cell_merge: Class with handling process
+        :param mode:       0=original dataset, 1=reduced dataset, 2= original to subgroup dataset, 3= original to subtype dataset
+        :return:           None
         """
         # Mode selection
+        assert mode in [0, 1, 2, 3], "Wrong mode selected - Please check!"
+        self._data_origin = mode == 0
         if mode == 0:
-            self.cell_class_used = cell_merge.cell_type_to_id
+            self._used_id_libraray = cell_merge.original_id
         elif mode == 1:
-            self.cell_class_used = cell_merge.cell_class_to_id
+            self._used_id_libraray = cell_merge.original_to_reduced
         elif mode == 2:
-            self.cell_class_used = cell_merge.cell_class_to_group
+            self._used_id_libraray = cell_merge.original_to_group
         elif mode == 3:
-            self.cell_class_used = cell_merge.cell_class_to_type
+            self._used_id_libraray = cell_merge.original_to_type
 
-    def get_id_from_celltype(self, name: str) -> int:
-        """Getting the ID from a cell type"""
-        return self.cell_type_to_id.get(name) if name in self.cell_type_to_id else -1
+    def get_id_from_key(self, name: str) -> int or list:
+        """Getting the ID from a cell type / class name / key
+        :param name:    Key name of the label from dataset
+        :return:        Corresponding ID to key label
+        """
+        keylist = [key for key in self._used_id_libraray.keys()]
+        assert check_key_elements(name, keylist), f"Key not available: {keylist}"
+        return self._used_id_libraray.get(name)
 
-    def get_class_to_id(self, cluster_id: int | np.ndarray) -> int | np.ndarray:
-        """Getting the class for a given ID"""
-        default_value = -1
-        if isinstance(cluster_id, int):
-            val = default_value
-            for idx, (_, values) in enumerate(self.cell_class_used.items()):
-                if cluster_id in values:
-                    val = idx
-                    break
-            return val
+    def get_name_from_id(self, cluster_id: int | np.ndarray) -> str:
+        """Getting the name of the cell type of a given cluster ID/class
+        :param cluster_id:  Cluster ID
+        :return:            String with label
+        """
+        if self._data_origin:
+            cell_name = [key for key, values in self._used_id_libraray.items() if cluster_id == values]
         else:
-            val = np.zeros(shape=cluster_id.shape, dtype=np.int16) + default_value
-            for idx, (_, values) in enumerate(self.cell_class_used.items()):
-                if isinstance(values, list):
-                    for id in values:
-                        pos = np.argwhere(cluster_id == id).flatten()
-                        if pos.size != 0:
-                            val[pos] = idx
-                else:
-                    val = cluster_id
-            return val
+            cell_name = [key for key, values in self._used_id_libraray.items() if cluster_id in values]
+        return cell_name[0] if len(cell_name) else ''
 
-    def get_celltype_name_from_id(self, cluster_id: int | np.ndarray) -> str:
-        """Getting the name of the cell type of a given cluster ID/class"""
-        cell_name = ''
-        for idx, (key, values) in enumerate(self.cell_class_used.items()):
-            if cluster_id == values:
-                cell_name = key
-                break
-        return cell_name
+    def get_label_list(self) -> list:
+        """Getting the label names of used dataset as list
+        :return:    List of used cell type names as label
+        """
+        keylist = [key for key in self._used_id_libraray.keys()]
+        assert check_elem_unique(keylist), f"Keys of dataset labels are not unique - Please check!"
+        return keylist
 
-    def get_celltype_names(self) -> list:
-        """Getting the classes as list"""
-        classes = list()
-        for idx, (key, _) in enumerate(self.cell_class_used.items()):
-            if idx == 0:
-                classes.append(key)
-            else:
-                for class0 in classes:
-                    if class0 not in key:
-                        classes.append(key)
-                        break
-        return classes
+    def transform_label_to_id_integer(self, old_id: int) -> int:
+        """Function for transforming the old ID to the new ID using the translation dictionary
+        :param old_id:  Integer with old ID from original dataset
+        :return:        Integer with new ID for new dataset (values with -1 are not defined and must be removed)
+        """
+        if self._data_origin:
+            cell_name = [values for values in self._used_id_libraray.values() if old_id == values]
+        else:
+            cell_name = [idx for idx, values in enumerate(self._used_id_libraray.values()) if old_id in values]
+        return cell_name[0] if len(cell_name) else -1
+
+    def transform_label_to_id_array(self, old_id: np.ndarray) -> np.ndarray:
+        """Function for transforming the old ID to the new ID using the translation dictionary
+        :param old_id:  Numpy array with old IDs from original dataset
+        :return:        Numpy array with new IDs for new dataset (values with -1 are not defined and must be removed)
+        """
+        new_label = np.zeros_like(old_id)
+        for idx, value in enumerate(old_id):
+            new_label[idx] = self.transform_label_to_id_integer(value)
+        return new_label
+
+    def transform_data_into_new(self, old_id: np.ndarray, data: np.ndarray) -> [np.ndarray, np.ndarray]:
+        """Function for transforming the old ID and data to the new format
+        :param old_id:  Numpy array with old IDs from original dataset
+        :param data:    Numpy array with dataset for training with shape (num of samples, num of features)
+        :return:        Numpy array with new (0) IDs and (1) data for new dataset
+        """
+        if self._data_origin:
+            return old_id, data
+        else:
+            new_id = self.transform_label_to_id_array(old_id)
+            xpos_sel = np.argwhere(new_id != -1).flatten()
+            return new_id[xpos_sel], data[xpos_sel, :]
