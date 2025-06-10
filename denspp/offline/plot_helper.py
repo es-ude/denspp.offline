@@ -40,9 +40,7 @@ def save_figure(fig, path: str, name: str, formats: list=('pdf', 'svg')) -> None
     Returns:
         None
     """
-    if not os.path.exists(path):
-        os.mkdir(path)
-
+    os.makedirs(path, exist_ok=True)
     path2fig = os.path.join(path, name)
     for idx, form in enumerate(formats):
         fig.savefig(f"{path2fig}.{form}", format=form)
@@ -57,7 +55,7 @@ def scale_auto_value(data: np.ndarray | float) -> [float, str]:
     """
     ref_dict = {'T': -4, 'G': -3, 'M': -2, 'k': -1, '': 0, 'm': 1, 'µ': 2, 'n': 3, 'p': 4, 'f': 5}
 
-    value = np.max(np.abs(data)) if isinstance(data, np.ndarray) else data
+    value = np.max(np.abs(np.abs(data))) if isinstance(data, np.ndarray) else data
     str_value = str(value).split('.')
     digit = 0
     if 'e' not in str_value[1]:

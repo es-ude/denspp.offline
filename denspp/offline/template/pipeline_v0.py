@@ -9,8 +9,7 @@ from denspp.offline.digital.dsp import DSP, SettingsFilter
 from denspp.offline.digital.sda import SpikeDetection, SettingsSDA
 from denspp.offline.digital.fex import FeatureExtraction, SettingsFeature
 from denspp.offline.digital.cluster import Clustering, SettingsCluster
-from src_pipe.pipeline_plot import plot_frames_feature, plot_transient_highlight_spikes, \
-    plot_transient_input_spikes
+from denspp.offline.template.pipeline_plot import plot_frames_feature, plot_transient_highlight_spikes, plot_transient_input_spikes
 
 
 class SettingsPipe:

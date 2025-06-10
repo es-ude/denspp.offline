@@ -11,7 +11,7 @@ TestConfigCloud = ConfigCloud(
 
 
 class TestOwnCloud(TestCase):
-    path2temp = get_path_to_project_start()
+    path2temp = get_path_to_project_start(new_folder='temp_test')
     handler = OwnCloudDownloader(
         path2config=path2temp,
         use_config=TestConfigCloud

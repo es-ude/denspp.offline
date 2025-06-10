@@ -42,7 +42,7 @@ class TestDataset(TestCase):
     def test_dataset_overview(self):
         set = deepcopy(TestSettingsDataset)
         set.data_file_name = 'mnist'
-        overview = DatasetLoader(settings=set).print_overview_datasets(do_print=False)
+        overview = DatasetLoader(settings=set, temp_folder='temp_test').print_overview_datasets(do_print=False)
         self.assertGreater(len(overview), 4)
 
     def test_dataset_empty(self):

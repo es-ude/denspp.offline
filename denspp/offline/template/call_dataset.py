@@ -11,16 +11,17 @@ from denspp.offline.data_process.frame_augmentation import augmentation_change_p
 
 class DatasetLoader(ControllerDataset):
     _settings: SettingsDataset
+    _path: str
 
-    def __init__(self, settings: SettingsDataset) -> None:
+    def __init__(self, settings: SettingsDataset, temp_folder: str='') -> None:
         """Class for downloading (function name with '__get_xyz')
         and preparing (function name with '__prepare_xyz') custom-defined datasets to train deep learning models
         :param settings:  Object of class SettingsDataset for handling dataset used in DeepLearning"""
-        super().__init__(settings)
+        super().__init__(settings, temp_folder)
 
     def __download_spike(self, dataset_name: str) -> None:
         if not exists(self._settings.get_path2data):
-            oc_handler = OwnCloudDownloader(self._settings.get_path2folder_project)
+            oc_handler = OwnCloudDownloader(self._path)
             oc_handler.download_file(
                 use_dataset=True,
                 file_name=dataset_name,

@@ -80,11 +80,13 @@ class ControllerDataset:
     _settings: SettingsDataset
     _methods: list
     _index_search: list=['_get_', '_prepare_']
+    _path: str
 
-    def __init__(self, settings: SettingsDataset) -> None:
+    def __init__(self, settings: SettingsDataset, temp_folder: str='') -> None:
         self._settings = settings
         self._logger = getLogger(__name__)
         self._methods = self._extract_func(self.__class__)
+        self._path = join(self._settings.get_path2folder_project, temp_folder)
 
     def _extract_func(self, class_obj: object) -> list:
         return [method for method in dir(class_obj) if self._index_search[0] in method or self._index_search[1] in method]
@@ -123,7 +125,7 @@ class ControllerDataset:
         """Giving an overview of available datasets on the cloud storage
         :return:            Return a list with dataset names
         """
-        oc_handler = OwnCloudDownloader(path2config=self._settings.get_path2folder_project)
+        oc_handler = OwnCloudDownloader(path2config=self._path)
         list_datasets = self._extract_methods(self._index_search[1])
         list_datasets.extend(oc_handler.get_overview_data(use_dataset=True))
         if do_print:

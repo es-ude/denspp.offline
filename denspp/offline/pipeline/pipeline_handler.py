@@ -45,7 +45,7 @@ def start_pipeline_processing(object_dataloader, object_pipeline) -> None:
         pipeline=object_pipeline,
         settings=settings_thr,
         data_in=dataIn.data_raw,
-        fs=dataIn.data_fs_used,
+        fs=dataIn.fs_used,
         channel_id=dataIn.electrode_id
     )
     thr_station.do_processing()
