@@ -208,11 +208,11 @@ class SpikeDetection:
         """
         filter = iirfilter(N=2, Wn=2 * np.array(f_bp) / self.settings.fs, ftype="butter", btype="bandpass", analog=False, output='ba')
         filt0 = lfilter(filter[0], filter[1], xin)
-        sbp = self.smoothing_1d(np.abs(filt0), int(1e-3 * self.settings.fs), 'Gaussian')
+        sbp = self.smoothing_1d(np.abs(filt0), int(1e-3 * self.settings.fs), 'gaussian')
         return np.floor(sbp)
 
-    def sda_smooth(self, xin: np.ndarray, method: str= 'Hamming') -> np.ndarray:
-        """Smoothing the input with defined window ['Hamming', 'Gaussian', 'Flat', 'Bartlett', 'Blackman']"""
+    def sda_smooth(self, xin: np.ndarray, method: str='') -> np.ndarray:
+        """Smoothing the input with defined window ['', 'hamming', 'gaussian', 'bartlett', 'blackman']"""
         return self.smoothing_1d(xin, 4 * self.settings.dx_sda[0] + 1, method)
 
     # --------- Frame Generation -------------
@@ -434,7 +434,7 @@ class SpikeDetection:
         return frame_out
 
     @staticmethod
-    def smoothing_1d(xin: np.ndarray, window_size: int, method: str= 'Hamming') -> np.ndarray:
+    def smoothing_1d(xin: np.ndarray, window_size: int, method: str='hamming') -> np.ndarray:
         """Smoothing the input
         :param xin:         Numpy array with transient signal of SDA output
         :param window_size: Integer value for applied smoothing method

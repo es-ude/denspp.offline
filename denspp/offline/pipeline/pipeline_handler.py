@@ -12,7 +12,16 @@ def start_pipeline_processing(object_dataloader, object_pipeline) -> None:
     logger = getLogger(__name__)
 
     # --- Calling YAML config handler
-    settings_data, settings_thr = read_yaml_pipeline_config()
+    settings_data = YamlHandler(
+        template=DefaultSettingsData,
+        path='config',
+        file_name='Config_PipelineData'
+    ).get_class(SettingsData)
+    settings_thr = YamlHandler(
+        template=RecommendedSettingsThread,
+        path='config',
+        file_name='Config_Pipeline'
+    ).get_class(SettingsThread)
 
     # ----- Preparation: Module calling -----
     logger.info("Running framework for end-to-end neural signal processing (DeNSPP)")
@@ -46,22 +55,3 @@ def start_pipeline_processing(object_dataloader, object_pipeline) -> None:
     logger.info("==================================================================")
     thr_station.do_save_results()
     thr_station.do_plot_results()
-
-
-def read_yaml_pipeline_config(
-        yaml_data_index: str = 'Config_PipelineData',
-        yaml_pipe_index: str = 'Config_Pipeline',
-    ) -> [SettingsData, SettingsThread]:
-    """
-    Function for reading/generating the yaml configuration files for getting the transient data and pipeline processing
-    :param yaml_data_index: Index with name for reading the yaml configuration file for data loading
-    :param yaml_pipe_index: Index with name for reading the yaml configuration file for pipeline processing
-    :return:                Classes for handling the data (SettingsDATA) and pipeline processor (SettingsThread)
-    """
-    yaml_data = YamlHandler(DefaultSettingsData, file_name=yaml_data_index)
-    settings_data = yaml_data.get_class(SettingsData)
-
-    yaml_threads = YamlHandler(RecommendedSettingsThread, file_name=yaml_pipe_index)
-    settings_thr = yaml_threads.get_class(SettingsThread)
-
-    return settings_data, settings_thr

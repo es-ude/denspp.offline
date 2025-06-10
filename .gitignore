@@ -1,14 +1,13 @@
 ### Project ###
 docs/apidocs
 Config_*.yaml
+**/src
 **/config
 **/data
 **/dataset
 **/runs
-**/test
-**/temp*
+**/temp_test
 .python-version
-tests/*.log
 
 
 # Just for not uploading new features/files into main folder (just for local development)

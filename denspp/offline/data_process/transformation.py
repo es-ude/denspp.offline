@@ -6,13 +6,13 @@ from denspp.offline import check_key_elements
 def transformation_window_method(window_size: int, method: str= "hamming") -> np.ndarray:
     """Generating window for smoothing input of signal transformation method.
     :param window_size:     Integer number with size of the window
-    :param method:          Selection of window method ['': Ones, 'hamming', 'hanning', 'guassian', 'bartlett', 'blackman']
+    :param method:          Selection of window method ['': Ones, 'hamming', 'hanning', 'gaussian', 'bartlett', 'blackman']
     :return:                Numpy array with window
     """
     methods_avai = {
         '': np.ones(window_size),
         "hamming": np.hamming(window_size),
-        "guassian": gaussian(window_size, int(0.16 * window_size), sym=True),
+        "gaussian": gaussian(window_size, int(0.16 * window_size), sym=True),
         "hanning": np.hanning(window_size),
         "bartlett": np.bartlett(window_size),
         "blackman": np.blackman(window_size),

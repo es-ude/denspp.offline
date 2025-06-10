@@ -114,7 +114,7 @@ class PreAmp(CommonAnalogFunctions):
             uinp:   Positive input voltage
             uinn:   Negative input voltage
         Returns:
-            Tuple with two numpy arrays [u_out = Output voltage from pre-amp, u_chp = chopped voltage signal]
+            Dictionary with results ['out' = Output voltage from pre-amp, 'chop' = chopped voltage signal]
         """
         du = uinp - uinn
         clk_chop = self.__gen_chop(du.size)
@@ -126,5 +126,4 @@ class PreAmp(CommonAnalogFunctions):
         u_filt = uchp_in * clk_chop
         u_out = lfilter(self.__coeffb, self.__coeffa, u_filt)
         u_out += self._settings.vcm
-
         return {'out': self.clamp_voltage(u_out), 'chop': self.clamp_voltage(uchp_in)}

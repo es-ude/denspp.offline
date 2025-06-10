@@ -87,7 +87,8 @@ class TestCSV(TestCase):
             chapter_line=self.chapter_line
         )
         data = hndl.read_data_from_csv(
-            include_chapter_line=True
+            include_chapter_line=True,
+            type_load=int
         )
         np.testing.assert_array_almost_equal(data, self.data0, decimal=8)
 
@@ -101,9 +102,10 @@ class TestCSV(TestCase):
             chapter_line=self.chapter_line
         )
         data = hndl.read_data_from_csv(
-            include_chapter_line=True
+            include_chapter_line=True,
+            type_load=float
         )
-        np.testing.assert_array_almost_equal(data, self.data1, decimal=8)
+        np.testing.assert_array_equal(data, self.data1)
 
     def test_read_chapter(self):
         hndl = CsvHandler(

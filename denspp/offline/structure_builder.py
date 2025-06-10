@@ -31,9 +31,8 @@ def init_project_folder(new_folder: str = '') -> None:
     """
     folder_structure = ['data', 'dataset', 'runs', 'config', 'src', 'src_pipe']
     copy_files = {'main_pipeline.py': '', 'main_data_merge.py': '', 'template_test0.py': '', '.gitignore': '',
-                  'call_data.py': 'src_pipe', 'pipeline_v0.py': 'src_pipe', 'pipeline_data.py': 'src_pipe',
-                  'run_tests.py': ''}
-
+                  'run_tests.py': '', 'call_data.py': 'src_pipe', 'pipeline_plot.py': 'src_pipe',
+                  'pipeline_v0.py': 'src_pipe', 'pipeline_data.py': 'src_pipe'}
     path2start = get_path_to_project_start(new_folder)
     makedirs(path2start, exist_ok=True)
 

@@ -1,28 +1,26 @@
 import numpy as np
 from matplotlib import pyplot as plt
-
 from denspp.offline.nsp import calc_firing_rate, calc_autocorrelogram, calc_amplitude
-from denspp.offline.pipeline.pipeline_signal import PipelineSignal
 from denspp.offline.plot_helper import cm_to_inch, get_plot_color, save_figure
 
 
-def plot_nsp_ivt(signals: PipelineSignal, no_electrode: int, path: str="", show_plot: bool=False) -> None:
+def plot_nsp_ivt(signals: dict, no_electrode: int, path: str="", show_plot: bool=False) -> None:
     """Plotting the results of interval timing spikes of each cluster
-    :param signals:         Pipeline signal object (class PipelineSignal)
+    :param signals:         Pipeline signal object
     :param no_electrode:    Number of electrodes to plot
     :param path:            Path to save figure
     :param show_plot:       If true, show plot
     :return:                None
     """
-    frames = signals.frames_align[0]
-    cluster = signals.frames_align[2]
+    frames = signals["frames_align"][0]
+    cluster = signals["frames_align"][2]
     cluster_num = np.unique(cluster)
     mean_frames = np.zeros(shape=(len(cluster), frames.shape[1]))
     for idx, id in enumerate(cluster_num):
         x0 = np.where(cluster == id)[0]
         mean_frames[idx, :] = np.mean(frames[x0], axis=0)
 
-    its = calc_firing_rate(signals.spike_ticks, signals.fs_dig)
+    its = calc_firing_rate(signals["spike_ticks"], signals["fs_dig"])
 
     scale = 1e3
     no_bins = 100
@@ -61,15 +59,15 @@ def plot_nsp_ivt(signals: PipelineSignal, no_electrode: int, path: str="", show_
         plt.show(block=True)
 
 
-def plot_nsp_correlogram(signals: PipelineSignal, no_electrode: int, path: str="", show_plot: bool=False) -> None:
+def plot_nsp_correlogram(signals: dict, no_electrode: int, path: str="", show_plot: bool=False) -> None:
     """Plotting the results of interval timing spikes of each cluster
-    :param signals:         Pipeline signal object (class PipelineSignal)
+    :param signals:         Pipeline signal object
     :param no_electrode:    Number of electrodes to plot
     :param path:            Path to save figure
     :param show_plot:       If true, show plot
     :return:                None
     """
-    val_in = calc_autocorrelogram(signals.spike_ticks, signals.fs_dig)
+    val_in = calc_autocorrelogram(signals["spike_ticks"], signals["fs_dig"])
     cluster_num = len(val_in)
 
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
@@ -95,15 +93,15 @@ def plot_nsp_correlogram(signals: PipelineSignal, no_electrode: int, path: str="
         plt.show(block=True)
 
 
-def plot_firing_rate(signals: PipelineSignal, no_electrode: int, path: str="", show_plot: bool=False) -> None:
+def plot_firing_rate(signals: dict, no_electrode: int, path: str="", show_plot: bool=False) -> None:
     """Function for plotting the firing rate of choicen electrode
-    :param signals:         Pipeline signal object (class PipelineSignal)
+    :param signals:         Pipeline signal object
     :param no_electrode:    Number of electrodes to plot
     :param path:            Path to save figure
     :param show_plot:       If true, show plot
     :return:                None
     """
-    fr_in = calc_firing_rate(signals.spike_ticks, signals.fs_dig)
+    fr_in = calc_firing_rate(signals["spike_ticks"], signals["fs_dig"])
     no_cluster = len(fr_in)
 
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
@@ -125,16 +123,16 @@ def plot_firing_rate(signals: PipelineSignal, no_electrode: int, path: str="", s
         plt.show(block=True)
 
 
-def plot_nsp_cluster_amplitude(signals: PipelineSignal, no_electrode: int, path: str="", show_plot: bool=False) -> None:
+def plot_nsp_cluster_amplitude(signals: dict, no_electrode: int, path: str="", show_plot: bool=False) -> None:
     """Function for plotting the spike frame amplitude values of each amplitude during time
-    :param signals:         Pipeline signal object (class PipelineSignal)
+    :param signals:         Pipeline signal object
     :param no_electrode:    Number of electrodes to plot
     :param path:            Path to save figure
     :param show_plot:       If true, show plot
     :return:                None
     """
-    amp = calc_amplitude(signals.frames_align)
-    cluster = signals.frames_align[2]
+    amp = calc_amplitude(signals["frames_align"])
+    cluster = signals["frames_align"][2]
     cluster_no = np.unique(cluster)
 
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(13)))
@@ -156,7 +154,7 @@ def plot_nsp_cluster_amplitude(signals: PipelineSignal, no_electrode: int, path:
             time.append(val[0])
             amp_min.append(val[1])
             amp_max.append(val[2])
-        time = np.array(time) / signals.fs_dig
+        time = np.array(time) / signals["fs_dig"]
         amp_min = np.array(amp_min)
         amp_max = np.array(amp_max)
         axs[sel+0].plot(time, amp_min, color=get_plot_color(idx), marker='.', linestyle='None')
