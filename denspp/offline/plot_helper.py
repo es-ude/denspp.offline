@@ -46,6 +46,21 @@ def save_figure(fig, path: str, name: str, formats: list=('pdf', 'svg')) -> None
         fig.savefig(f"{path2fig}.{form}", format=form)
 
 
+def extract_minmax_for_logarithmic_limits(data: np.ndarray) -> [float, float]:
+    """Function for extracting the min-max value of given data for defining the logarithmic limits
+    :param data:    Numpy array with data
+    :return:        Tuple with limitation values for applying logarithmic y-limits
+    """
+    ymax = data.max() if data.max() > 0 else np.abs(data).max()
+    yexp_max = np.floor(np.log10(np.abs(ymax)))
+    ymant_max = ymax / (10 ** yexp_max)
+
+    ymin = data.min() if data.min() > 0 else np.abs(data).min()
+    yexp_min = np.floor(np.log10(np.abs(ymin)))
+    ymant_min = ymin / (10 ** yexp_min)
+    return 10 ** (yexp_min + (0 if ymant_min > 1. else 1)), 10 ** (yexp_max + (1 if ymant_max > 1. else 0))
+
+
 def scale_auto_value(data: np.ndarray | float) -> [float, str]:
     """Getting the scaling value and corresponding string notation for unit scaling in plots
     Args:

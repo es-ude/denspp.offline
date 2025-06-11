@@ -1,6 +1,6 @@
 from unittest import TestCase, main
 import numpy as np
-from denspp.offline.plot_helper import scale_auto_value, translate_unit_to_scale_value
+from denspp.offline.plot_helper import scale_auto_value, translate_unit_to_scale_value, extract_minmax_for_logarithmic_limits
 
 
 class TestPlots(TestCase):
@@ -22,6 +22,14 @@ class TestPlots(TestCase):
         result = [translate_unit_to_scale_value(val, pos) for val, pos in input.items()]
         self.assertEqual(result, check)
 
+    def test_extract_minmax_for_logarithmic_limits(self):
+        input = np.array([[1e-3, 1e-9, -1e-2, 1.035], [-0.00154, 1e-4, 1e-9, -1e-6]])
+        rslt = list()
+        for val in input:
+            rslt.append(extract_minmax_for_logarithmic_limits(val))
+
+        chck = [[1e-8, 10.], [1e-8, 0.0001]]
+        np.testing.assert_array_equal(chck, rslt)
 
 if __name__ == '__main__':
     main()
