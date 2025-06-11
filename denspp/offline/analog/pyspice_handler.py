@@ -177,9 +177,10 @@ class PySpiceHandler:
         """Translating the temperature value from Kelvin [K] to Grad Celsius [°C]"""
         return self._used_temp - 273.15
 
-    def get_ngspice_version(self) -> None:
+    def get_ngspice_version(self) -> str:
         """Getting the version of used NGspice in PySPICE"""
-        print(f"Using PySpice v{self.__version_pyspice} with NGSpice v{self.__version_ngspice}")
+        text = f"PySpice v{self.__version_pyspice} with NGSpice v{self.__version_ngspice}"
+        return text
 
     def set_src_mode(self, do_voltage: bool) -> None:
         """Setting the Source Mode of Input Source [0: Current, 1: Voltage]"""
@@ -200,11 +201,10 @@ class PySpiceHandler:
 
     ############################################################################
 
-    def do_dc_simulation(self, value: float, do_print_results: bool=True, initial_value: float=0.0) -> dict:
+    def do_dc_simulation(self, value: float, initial_value: float=0.0) -> dict:
         """Performing the DC or Operating Point Simulation
         Args:
             value:              Specified value of the input voltage or current source
-            do_print_results:   Printing the node voltages
             initial_value: Applied initial value [Default: 0.0]
         Returns:
             Dictionary with node voltages
@@ -223,21 +223,10 @@ class PySpiceHandler:
         analysis = simulator.operating_point()
 
         results = dict()
-        if do_print_results:
-            print("\n======================================================")
-            print("\t RESULTS OF DC OPERATING POINT ANALYSIS")
-            print("======================================================")
         for node in analysis.nodes.values():
             results.update({str(node): float(node)})
-            if do_print_results:
-                string = str(node)
-                unit = 'µA' if '_plus' in string or '_minus' in string else 'V'
-                scale = 1e6 if '_plus' in string or '_minus' in string else 1e0
-                print(f'Node {str(node)}: {scale * float(node):4.3f} {unit}')
 
-        del self.__results
-        self.__results = self.__get_results(0, analysis)
-        return self.__results
+        return self.__get_results(0, analysis)
 
     ############################################################################
 
@@ -280,7 +269,7 @@ class PySpiceHandler:
         Args:
             start_freq:     Frequency value for starting point
             stop_freq:      Frequency value for end point
-            num_points:     Number of repetions
+            num_points:     Number of repetitions
             amplitude:      Amplitude of input signal [Default: 1.0]
             initial_value: Applied initial value [Default: 0.0]
         Returns:

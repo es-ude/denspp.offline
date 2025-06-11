@@ -30,13 +30,21 @@ class TestAnalogFunc(TestCase):
         chck = np.array([0.0, 0.1, 0.2, 0.0, -0.0, -0.1])
         np.testing.assert_array_equal(rslt, chck)
 
-
     def test_charge_calc_zero(self):
         qinj = calculate_signal_integration(
             signal=self.vsig,
             time=self.time
         )
         chck = qinj.size == self.vsig.size and abs(qinj[-1]) <= 1e-5
+        self.assertTrue(chck)
+
+    def test_charge_calc_offset(self):
+        qinj = calculate_signal_integration(
+            signal=self.vsig,
+            time=self.time,
+            initial=1
+        )
+        chck = qinj.size == self.vsig.size and abs(qinj[-1]) <= 1.00001
         self.assertTrue(chck)
 
     def test_charge_calc_sinus(self):

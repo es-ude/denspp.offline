@@ -62,14 +62,14 @@ def calculate_signal_integration(signal: np.ndarray, time: np.ndarray, initial: 
     """Calculating the injected charge amount of one stimulation pattern
     :param signal:      Numpy array with current input signal
     :param time:        Numpy array with timesamples [s]
-    :param initial:     Floating value as initial charge value [C]
+    :param initial:     Floating value with initial value
     :return:            Numpy array with injected charge amount during signal time
     """
     period = float(np.diff(time).mean())
-    return cumulative_trapezoid(
+    return initial + cumulative_trapezoid(
         y=signal,
         x=time,
         dx=period,
-        initial=initial,
+        initial=0.0,
         axis=-1
     )
