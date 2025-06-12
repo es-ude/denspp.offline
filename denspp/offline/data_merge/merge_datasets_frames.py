@@ -117,16 +117,18 @@ class MergeDatasets:
             datahandler = data_loader(self.__settings)
             datahandler.do_call()
             datahandler.do_resample()
+            data = datahandler.get_data()
+            del datahandler
 
             # --- Processing data (Iterating the channels)
             print(f"\nProcessing data sample {runPoint}:\n========================================================")
-            for ch in tqdm(datahandler._raw_data.electrode_id, ncols=100, desc="Progress: "):
-                spike_xpos = np.floor(datahandler._raw_data.evnt_xpos[ch] * fs_adc / fs_ana).astype("int")
+            for ch, id in tqdm(enumerate(data.electrode_id), ncols=100, desc="Progress: "):
+                spike_xpos = np.floor(data.evnt_xpos[ch] * fs_adc / fs_ana).astype("int")
                 # --- Processing the analogue input
-                self.__pipeline.run_input(datahandler._raw_data.data_raw[ch], spike_xpos)
-                length_data_in = self.__pipeline.signals.x_adc.size
+                data_rslt = self.__pipeline.run_input(data.data_raw[ch, :], spike_xpos)
+                length_data_in = data_rslt['x_adc'].size
 
-                frame_new = self.__pipeline.signals.frames_align
+                frame_new = data_rslt['frames_align']
                 frame_cl = datahandler._raw_data.evnt_id[ch]
 
                 # --- Post-Processing: Checking if same length
@@ -190,7 +192,6 @@ class MergeDatasets:
             self.__iteration_save_results()
 
             # --- Release memory
-            self.__pipeline.clean_pipeline()
             del datahandler, frames_in, frames_cl
             runPoint += 1
 

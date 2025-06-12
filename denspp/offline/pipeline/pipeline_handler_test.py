@@ -3,7 +3,8 @@ from unittest import TestCase, main
 from denspp.offline.pipeline.pipeline_handler import start_pipeline_processing
 from denspp.offline.data_call.call_handler import SettingsData
 from denspp.offline.template.call_data import DataLoader
-from denspp.offline.template.pipeline_v0 import Pipeline
+from denspp.offline.template.pipeline_v0 import Pipeline as PipelineV0
+from denspp.offline.template.pipeline_data import Pipeline as PipelineData
 
 
 test_settings_1d = SettingsData(
@@ -40,16 +41,41 @@ class TestPipeProcess(TestCase):
         dut.do_call()
         data = dut.get_data()
         try:
-            rslt = Pipeline(test_settings_1d.fs_resample).run(data.data_raw[0])
-            np.testing.assert_equal(rslt['u_in'], data.data_raw[0])
+            rslt = PipelineV0(test_settings_1d.fs_resample).run(data.data_raw[0])
         except:
             self.assertTrue(False)
+        else:
+            np.testing.assert_equal(rslt['u_in'], data.data_raw[0])
 
     def test_pipeline_process_wrapper_1d(self):
         try:
             start_pipeline_processing(
                 object_dataloader=DataLoader,
-                object_pipeline=Pipeline,
+                object_pipeline=PipelineV0,
+                en_testmode=True,
+                sets_load_data=test_settings_1d
+            )
+        except:
+            self.assertTrue(False)
+        else:
+            self.assertTrue(True)
+
+    def test_pipeline_process_data_1d(self):
+        dut = DataLoader(settings=test_settings_1d)
+        dut.do_call()
+        data = dut.get_data()
+        try:
+            rslt = PipelineData(test_settings_2d.fs_resample).run(data.data_raw[0], np.array([100, 500]))
+        except:
+            self.assertTrue(False)
+        else:
+            np.testing.assert_equal(rslt['u_in'], data.data_raw[0])
+
+    def test_pipeline_process_data_wrapper_1d(self):
+        try:
+            start_pipeline_processing(
+                object_dataloader=DataLoader,
+                object_pipeline=PipelineData,
                 en_testmode=True,
                 sets_load_data=test_settings_1d
             )
@@ -69,7 +95,7 @@ class TestPipeProcess(TestCase):
         dut.do_call()
         data = dut.get_data()
         try:
-            rslt = Pipeline(test_settings_2d.fs_resample).run(data.data_raw[0])
+            rslt = PipelineV0(test_settings_2d.fs_resample).run(data.data_raw[0])
             np.testing.assert_equal(rslt['u_in'], data.data_raw[0])
         except:
             self.assertTrue(False)
@@ -78,7 +104,7 @@ class TestPipeProcess(TestCase):
         try:
             start_pipeline_processing(
                 object_dataloader=DataLoader,
-                object_pipeline=Pipeline,
+                object_pipeline=PipelineV0,
                 en_testmode=True,
                 sets_load_data=test_settings_2d
             )
@@ -86,6 +112,31 @@ class TestPipeProcess(TestCase):
             self.assertTrue(False)
         else:
             self.assertTrue(True)
+
+    def test_pipeline_process_data_2d(self):
+        dut = DataLoader(settings=test_settings_2d)
+        dut.do_call()
+        data = dut.get_data()
+        try:
+            rslt = PipelineData(test_settings_2d.fs_resample).run(data.data_raw[0], np.array([100, 500]))
+        except:
+            self.assertTrue(False)
+        else:
+            np.testing.assert_equal(rslt['u_in'], data.data_raw[0])
+
+    def test_pipeline_process_data_wrapper_2d(self):
+        try:
+            start_pipeline_processing(
+                object_dataloader=DataLoader,
+                object_pipeline=PipelineData,
+                en_testmode=True,
+                sets_load_data=test_settings_2d
+            )
+        except:
+            self.assertTrue(False)
+        else:
+            self.assertTrue(True)
+
 
 if __name__ == '__main__':
     main()

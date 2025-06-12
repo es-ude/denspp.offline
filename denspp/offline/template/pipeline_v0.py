@@ -87,13 +87,14 @@ class SettingsPipe:
 
 
 class Pipeline(PipelineCMD):
-    def __init__(self, fs_ana: float) -> None:
-        """Processing Pipeline for analysing invasive neural activities
+    def __init__(self, fs_ana: float, addon: str='_app') -> None:
+        """Processing Pipeline for analysing transient data
         :param fs_ana:  Sampling rate of the input signal [Hz]
+        :param addon:   String text with folder addon for generating result folder in runs
         """
         super().__init__()
         self._path2pipe = abspath(__file__)
-        self.generate_run_folder('runs', '_neuro')
+        self.generate_run_folder('runs', addon)
 
         settings = SettingsPipe(fs_ana)
         self.__preamp0 = PreAmp(settings.SettingsAMP)

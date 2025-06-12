@@ -1,8 +1,6 @@
 from os.path import abspath
 import numpy as np
-
 from denspp.offline.pipeline.pipeline_cmds import PipelineCMD
-from denspp.offline.pipeline.pipeline_signal import PipelineSignal
 from denspp.offline.analog.amplifier.pre_amp import PreAmp, SettingsAMP
 from denspp.offline.analog.adc import SettingsADC
 from denspp.offline.analog.adc.adc_sar import SuccessiveApproximation as ADC0
@@ -50,9 +48,14 @@ class SettingsPipe:
 
 # --- Setting the src_neuro
 class Pipeline(PipelineCMD):
-    def __init__(self, fs_ana: float):
+    def __init__(self, fs_ana: float, addon: str='_app'):
+        """Processing Pipeline for analysing transient data
+        :param fs_ana:  Sampling rate of the input signal [Hz]
+        :param addon:   String text with folder addon for generating result folder in runs
+        """
         super().__init__()
         self._path2pipe = abspath(__file__)
+        self.generate_run_folder('runs', addon)
 
         settings = SettingsPipe(
             bit_adc=12,
@@ -63,52 +66,35 @@ class Pipeline(PipelineCMD):
         self.fs_dig = settings.SettingsADC.fs_dig
         self.fs_adc = settings.SettingsADC.fs_dig
         self.lsb = settings.SettingsADC.lsb
-        self.clean_pipeline()
-
         self.__preamp = PreAmp(settings.SettingsAMP)
         self.__adc = ADC0(settings.SettingsADC)
         self.__sda = SpikeDetection(settings.SettingsSDA)
+        self.frame_left_windowsize = self.__sda.frame_start
+        self.frame_right_windowsize = self.__sda.frame_ends
 
-        self.frame_left_windowsize = self.__sda.frame_start + int(self.__sda.offset_frame / 2)
-        self.frame_right_windowsize = self.__sda.frame_ends + int(self.__sda.offset_frame / 2)
-
-    def clean_pipeline(self) -> None:
-        """Cleaning the signals of the pipeline"""
-        self.signals = PipelineSignal()
-        self.signals.fs_ana = self.fs_ana
-        self.signals.fs_adc = self.fs_adc
-        self.signals.fs_dig = self.fs_dig
-
-    def prepare_saving(self) -> dict:
-        """Getting processing data of selected signals"""
-        mdict = {"fs_adc": self.signals.fs_adc}
-        return mdict
-
-    def do_plotting(self, data: PipelineSignal, channel: int) -> None:
-        """Function to plot results"""
+    def do_plotting(self, data: dict, channel: int) -> None:
+        """Function to plot results after processing
+        :param data:        Dictionary with data content
+        :param channel:     Integer of channel number
+        """
         pass
 
-    def run_input(self, uin: np.ndarray, spike_xpos: np.ndarray, spike_xoffset: int=0) -> None:
+    def run(self, uin: np.ndarray, spike_xpos: list=(), spike_xoffset: int=0) -> dict:
         """Processing the raw data for frame generation
-        Args:
-            uin: Array of the 1D-transient signal
-            spike_xpos: List of all spike positions from groundtruth
-            spike_xoffset: Time delay between spike_xpos and real spike
+        :param uin:             Numpy Array of the 1D-transient signal
+        :param spike_xpos:      List of all spike positions from groundtruth
+        :param spike_xoffset:   Time delay between spike_xpos and real spike
+        :return:                Dictionary with results
         """
-        self.run_minimal(uin)
-
-        self.signals.frames_align, self.signals.x_pos = self.__sda.frame_generation_pos(
-            self.signals.x_adc, spike_xpos, spike_xoffset
-        )[1:]
-
-    def run_minimal(self, uin: np.ndarray) -> None:
-        """Processing the input for getting the reshaped digital datastream
-        Args:
-            uin: Array of the 1D-transient signal
-        """
-        self.signals.u_in = uin
-        u_inn = np.array(self.__preamp.vcm)
         # --- Analogue Frontend
-        # self.signals.u_pre, _ = self.__preamp.pre_amp_chopper(self.signals.u_in, u_inn)
-        self.signals.u_pre = self.__preamp.pre_amp(self.signals.u_in, u_inn)
-        self.signals.x_adc = self.__adc.adc_ideal(self.signals.u_pre)[0]
+        u_pre = self.__preamp.pre_amp(uin, self.__preamp.vcm)
+        x_adc = self.__adc.adc_ideal(u_pre)[0]
+
+        # --- Frame Extraction
+        frames_align, frames_xpos = self.__sda.frame_generation_pos(
+            x_adc, np.array(spike_xpos), spike_xoffset
+        )[1:]
+        return {
+            "fs_ana": self.fs_ana, "fs_adc": self.fs_adc, "fs_dig": self.fs_dig,
+            "u_in": uin, "x_adc": x_adc, "frames_align": frames_align, "frames_xpos": frames_xpos
+        }
