@@ -4,24 +4,34 @@ from denspp.offline.data_call import SettingsData, DefaultSettingsData
 from denspp.offline.pipeline.pipeline_cmds import ProcessingData, SettingsThread, RecommendedSettingsThread
 
 
-def start_pipeline_processing(object_dataloader, object_pipeline) -> None:
+def start_pipeline_processing(object_dataloader, object_pipeline, en_testmode: bool=False,
+                              sets_load_data: SettingsData=DefaultSettingsData,
+                              sets_load_thread: SettingsThread=RecommendedSettingsThread) -> None:
     """Function for handling the processing pipeline
     :param object_dataloader:   object dataloader
     :param object_pipeline:     object pipeline
+    :param en_testmode:         Boolean for enabling the testing mode (skip the yaml load part)
+    :param sets_load_data:       Dataclass with settings for getting data to analyse
+    :param sets_load_thread:     Dataclass with settings for handling the processing threads
+    :return:                    None
     """
     logger = getLogger(__name__)
 
     # --- Calling YAML config handler
-    settings_data = YamlHandler(
-        template=DefaultSettingsData,
-        path='config',
-        file_name='Config_PipelineData'
-    ).get_class(SettingsData)
-    settings_thr = YamlHandler(
-        template=RecommendedSettingsThread,
-        path='config',
-        file_name='Config_Pipeline'
-    ).get_class(SettingsThread)
+    if not en_testmode:
+        settings_data = YamlHandler(
+            template=sets_load_data,
+            path='config',
+            file_name='Config_PipelineData'
+        ).get_class(SettingsData)
+        settings_thr = YamlHandler(
+            template=sets_load_thread,
+            path='config',
+            file_name='Config_Pipeline'
+        ).get_class(SettingsThread)
+    else:
+        settings_data = sets_load_data
+        settings_thr = sets_load_thread
 
     # ----- Preparation: Module calling -----
     logger.info("Running framework for end-to-end neural signal processing (DeNSPP)")

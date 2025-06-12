@@ -103,7 +103,7 @@ class TestPipeCommands(TestCase):
             data_set='test_2d_zero',
             data_case=0, data_point=0,
             t_range=[0], ch_sel=[],
-            fs_resample=100e3,
+            fs_resample=20e3,
             do_mapping=True,
             is_mapping_str=False
         )
@@ -124,7 +124,7 @@ class TestPipeCommands(TestCase):
             data_set='test_2d',
             data_case=0, data_point=0,
             t_range=[0], ch_sel=[],
-            fs_resample=100e3,
+            fs_resample=20e3,
             do_mapping=True,
             is_mapping_str=False
         )
@@ -151,7 +151,7 @@ class TestPipeCommands(TestCase):
             data_set='test_2d_zero',
             data_case=0, data_point=0,
             t_range=[0], ch_sel=[],
-            fs_resample=100e3,
+            fs_resample=20e3,
             do_mapping=True,
             is_mapping_str=False
         )
@@ -178,7 +178,7 @@ class TestPipeCommands(TestCase):
             data_set='test_2d',
             data_case=0, data_point=0,
             t_range=[0], ch_sel=[],
-            fs_resample=100e3,
+            fs_resample=20e3,
             do_mapping=True,
             is_mapping_str=False
         )

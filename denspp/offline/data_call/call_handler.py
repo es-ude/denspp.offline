@@ -107,7 +107,7 @@ class ControllerData:
 
         # --- Getting the positition of used time range
         t_range = np.array(self._settings.t_range)
-        assert len(self._settings.t_range) == 2 or len(self._settings.t_range) == 0, "t_range should be empty or have a length of 2"
+        assert len(self._settings.t_range) in [0, 2], f"t_range should be empty or have a length of 2 (not {len(self._settings.t_range)})"
         if t_range.size == 2:
             rawdata_in = self._raw_data.data_raw
 

@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from denspp.offline import get_path_to_project_start
 
 
-# TODO: Add pipeline registry really
 class PipelineCMD:
     """Class for handling the pipeline processing"""
     path2save: str=''
@@ -126,17 +125,17 @@ class SettingsThread:
     Attribute:
         use_multithreading: Boolean for enabling multithreading on data processing pipeline
         num_max_workers:    Integer with total number of workers used in multithreading
-        block_plots:        Boolean for blocking plotting
+        do_block_plots:     Boolean for generating and blocking plots
     """
     use_multithreading: bool
     num_max_workers: int
-    block_plots: bool
+    do_block_plots: bool
 
 
 RecommendedSettingsThread = SettingsThread(
     use_multithreading=False,
     num_max_workers=1,
-    block_plots=True
+    do_block_plots=False
 )
 
 
@@ -206,10 +205,14 @@ class ProcessingData:
 
     def do_plot_results(self) -> None:
         """Plotting the results of all signal processors"""
-        plt.close('all')
-        for key in self.results_save.keys():
-            self.__threads_worker[-1].pipeline.do_plotting(self.results_save[key], int(key[-3:]))
-        plt.show(block=self._settings.block_plots)
+        if self._settings.do_block_plots:
+            self._logger.info("... plotting results")
+            plt.close('all')
+            for key in self.results_save.keys():
+                self.__threads_worker[-1].pipeline.do_plotting(self.results_save[key], int(key[-3:]))
+            plt.show(block=True)
+        else:
+            self._logger.info("... no plots will be done")
 
     def do_processing(self) -> None:
         """Performing the data processing"""
