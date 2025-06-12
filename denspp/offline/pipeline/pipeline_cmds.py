@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from denspp.offline import get_path_to_project_start
 
 
-# TODO: Add pipeline registry
+# TODO: Add pipeline registry really
 class PipelineCMD:
     """Class for handling the pipeline processing"""
     path2save: str=''
@@ -48,7 +48,7 @@ class PipelineCMD:
         """
         assert len(data.shape) == 2 and data.shape[0] > 1, "Shape of input data must higher than 2"
         assert data.shape[0] == len(electrode_id), "Mismatch between electrode_id and data shape"
-        assert len(mapping), "No mapping is available"
+        assert np.count_nonzero(mapping) == len(electrode_id), "No mapping is available or mapping content does not match electrode ID"
 
         dut = np.zeros((mapping.shape[0], mapping.shape[1], data.shape[-1]), dtype=data.dtype)
         for row_idx in range(0, mapping.shape[0]):

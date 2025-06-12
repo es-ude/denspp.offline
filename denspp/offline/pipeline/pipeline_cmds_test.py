@@ -31,7 +31,8 @@ class TestPipeCommands(TestCase):
         )
         self.assertTrue(exists(self.dut.path2save))
 
-    def test_pipecmd_apply_mapping_shape(self):
+    def test_pipecmd_apply_mapping_shape_wo_zero(self):
+        mapping = np.array([[1, 2], [3, 4]])
         test_settings = SettingsData(
             path='data',
             data_set='test_2d',
@@ -47,12 +48,13 @@ class TestPipeCommands(TestCase):
         data_mapd = self.dut.apply_mapping(
             data=test_data.data_raw,
             electrode_id=test_data.electrode_id,
-            mapping=np.array([[1, 2], [3, 4]])
+            mapping=mapping
         )
         chck = data_mapd.shape == (2, 2, 10000) and np.sum(data_mapd == 0.) == 0
         self.assertTrue(chck)
 
-    def test_pipecmd_apply_mapping_content(self):
+    def test_pipecmd_apply_mapping_content_wo_zero(self):
+        mapping = np.array([[1, 3], [2, 4]])
         test_settings = SettingsData(
             path='data',
             data_set='test_2d',
@@ -68,11 +70,55 @@ class TestPipeCommands(TestCase):
         data_mapd = self.dut.apply_mapping(
             data=test_data.data_raw,
             electrode_id=test_data.electrode_id,
-            mapping=np.array([[1, 3], [2, 4]])
+            mapping=mapping
         )
         np.testing.assert_equal(data_mapd[1, 0, :], test_data.data_raw[1, :])
 
-    def test_pipecmd_return_mapping_shape(self):
+    def test_pipecmd_apply_mapping_shape_with_zero(self):
+        mapping = np.array([[1, 2], [0, 3]])
+        test_settings = SettingsData(
+            path='data',
+            data_set='test_2d_zero',
+            data_case=0, data_point=0,
+            t_range=[0], ch_sel=[],
+            fs_resample=100e3,
+            do_mapping=True,
+            is_mapping_str=False
+        )
+        dut = DataLoader(settings=test_settings)
+        dut.do_call()
+        test_data = dut.get_data()
+        data_mapd = self.dut.apply_mapping(
+            data=test_data.data_raw,
+            electrode_id=test_data.electrode_id,
+            mapping=mapping
+        )
+        chck = data_mapd.shape == (2, 2, 10000) and np.sum(data_mapd == 0.) == test_data.data_raw.shape[-1]
+        self.assertTrue(chck)
+
+    def test_pipecmd_apply_mapping_content_with_zero(self):
+        mapping = np.array([[1, 3], [0, 2]])
+        test_settings = SettingsData(
+            path='data',
+            data_set='test_2d_zero',
+            data_case=0, data_point=0,
+            t_range=[0], ch_sel=[],
+            fs_resample=100e3,
+            do_mapping=True,
+            is_mapping_str=False
+        )
+        dut = DataLoader(settings=test_settings)
+        dut.do_call()
+        test_data = dut.get_data()
+        data_mapd = self.dut.apply_mapping(
+            data=test_data.data_raw,
+            electrode_id=test_data.electrode_id,
+            mapping=mapping
+        )
+        np.testing.assert_equal(data_mapd[1, 1, :], test_data.data_raw[1, :])
+
+    def test_pipecmd_return_mapping_shape_wo_zero(self):
+        mapping = np.array([[1, 2], [3, 4]])
         test_settings = SettingsData(
             path='data',
             data_set='test_2d',
@@ -88,17 +134,45 @@ class TestPipeCommands(TestCase):
         data_mapd = self.dut.apply_mapping(
             data=test_data.data_raw,
             electrode_id=test_data.electrode_id,
-            mapping=np.array([[1, 2], [3, 4]])
+            mapping=mapping
         )
         data_ret = self.dut.deploy_mapping(
             data=data_mapd,
             electrode_id=test_data.electrode_id,
-            mapping=np.array([[1, 3], [2, 4]])
+            mapping=mapping
         )
         chck = data_ret.shape == (4, 10000) and np.sum(data_mapd == 0.) == 0
         self.assertTrue(chck)
 
-    def test_pipecmd_return_mapping_content(self):
+    def test_pipecmd_return_mapping_shape_with_zero(self):
+        mapping = np.array([[1, 2], [3, 0]])
+        test_settings = SettingsData(
+            path='data',
+            data_set='test_2d_zero',
+            data_case=0, data_point=0,
+            t_range=[0], ch_sel=[],
+            fs_resample=100e3,
+            do_mapping=True,
+            is_mapping_str=False
+        )
+        dut = DataLoader(settings=test_settings)
+        dut.do_call()
+        test_data = dut.get_data()
+        data_mapd = self.dut.apply_mapping(
+            data=test_data.data_raw,
+            electrode_id=test_data.electrode_id,
+            mapping=mapping
+        )
+        data_ret = self.dut.deploy_mapping(
+            data=data_mapd,
+            electrode_id=test_data.electrode_id,
+            mapping=mapping
+        )
+        chck = data_ret.shape == (3, 10000) and np.sum(data_mapd == 0.) == 10000
+        self.assertTrue(chck)
+
+    def test_pipecmd_return_mapping_content_wo_zero(self):
+        mapping = np.array([[1, 3], [2, 4]])
         test_settings = SettingsData(
             path='data',
             data_set='test_2d',
@@ -114,12 +188,12 @@ class TestPipeCommands(TestCase):
         data_mapd = self.dut.apply_mapping(
             data=test_data.data_raw,
             electrode_id=test_data.electrode_id,
-            mapping=np.array([[1, 3], [2, 4]])
+            mapping=mapping
         )
         data_ret = self.dut.deploy_mapping(
             data=data_mapd,
             electrode_id=test_data.electrode_id,
-            mapping=np.array([[1, 3], [2, 4]])
+            mapping=mapping
         )
         np.testing.assert_equal(data_ret, test_data.data_raw)
 

@@ -40,6 +40,18 @@ class DataLoader(ControllerData):
             scale_data=1e-6,
         )
 
+    def __load_test_2d_zero(self) -> None:
+        """Loading 2d-test data without getting files"""
+        fs_used = 10e3
+        self._load_rawdata_into_pipeline(
+            elec_type="Test_2d",
+            file_name='',
+            fs_orig=fs_used,
+            elec_orn=[1, 2, 3],
+            rawdata=np.random.randn(3, 10000),
+            scale_data=1e-6,
+        )
+
     def __load_martinez_simulation(self) -> None:
         """Loading synthethic files from Quiroga simulation (2009)"""
         folder_name = "_SimDaten_Martinez2009"
