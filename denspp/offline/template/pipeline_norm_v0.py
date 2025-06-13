@@ -13,16 +13,6 @@ from denspp.offline.template.pipeline_plot import plot_frames_feature, plot_tran
 
 
 class SettingsPipe:
-    def __init__(self, fs: float, vss: float=-0.6, vdd: float=0.6) -> None:
-        """Settings class for setting-up the pipeline
-        :param fs:      Sampling frequency [Hz]
-        :param vss:     Negative Supply Voltage [V]
-        :param vdd:     Positive Supply Voltage [V]
-        """
-        self.SettingsAMP.fs_ana = fs
-        self.SettingsADC.fs_ana = fs
-        self.__overwrite_power_supply(vss, vdd)
-
     def __overwrite_power_supply(self, vss: float, vdd: float) -> None:
         a = [method for method in dir(self) if 'Settings' in method and '__' not in method]
         for setting in a:
@@ -30,63 +20,69 @@ class SettingsPipe:
             set0.vss = vss
             set0.vdd = vdd
 
-    SettingsAMP = SettingsAMP(
-        vss=-0.6, vdd=0.6,
-        fs_ana=0.0,
-        gain=40,
-        n_filt=1, f_filt=[0.1, 8e3], f_type="band",
-        offset=1e-6, noise_en=True,
-        f_chop=10e3,
-        noise_edev=100e-9
-    )
+    def __init__(self, fs_ana: float, fs_dig: float=20e3, vss: float=-0.6, vdd: float=0.6) -> None:
+        """Settings class for setting-up the pipeline
+        :param fs_ana:  Sampling frequency of Analog Input [Hz]
+        :param fs_dig:  Sampling frequency of ADC output [Hz]
+        :param vss:     Negative Supply Voltage [V]
+        :param vdd:     Positive Supply Voltage [V]
+        """
+        self.__overwrite_power_supply(vss, vdd)
 
-    SettingsADC = SettingsADC(
-        vdd=0.6, vss=-0.6,
-        is_signed=True,
-        dvref=0.1,
-        fs_ana=0.0,
-        fs_dig=20e3, osr=1, Nadc=12
-    )
+        # --- Digital filtering for ADC output and CIC
+        self.SettingsAMP = SettingsAMP(
+            vss=-0.6, vdd=0.6,
+            fs_ana=fs_ana,
+            gain=40,
+            n_filt=1, f_filt=[0.1, 8e3], f_type="band",
+            offset=1e-6, noise_en=True,
+            f_chop=10e3,
+            noise_edev=100e-9
+        )
+        self.SettingsADC = SettingsADC(
+            vdd=0.6, vss=-0.6,
+            is_signed=True,
+            dvref=0.1,
+            fs_ana=fs_ana,
+            fs_dig=fs_dig, osr=1, Nadc=12
+        )
+        # --- Digital filtering for ADC output and CIC
+        self.SettingsDSP_LFP = SettingsFilter(
+            gain=1,
+            fs=fs_dig,
+            n_order=2, f_filt=[0.1, 100],
+            type='iir', f_type='butter', b_type='bandpass',
+            t_dly=0
+        )
+        self.SettingsDSP_SPK = SettingsFilter(
+            gain=1,
+            fs=fs_dig,
+            n_order=2, f_filt=[200, 8e3],
+            type='iir', f_type='butter', b_type='bandpass',
+            t_dly=0
+        )
+        # --- Options for Spike Detection and Frame Aligning
+        self.SettingsSDA = SettingsSDA(
+            fs=fs_dig, dx_sda=[1],
+            mode_align=1,
+            t_frame_lgth=1.6e-3, t_frame_start=0.4e-3,
+            dt_offset=[0.1e-3, 0.1e-3],
+            t_dly=0.4e-3,
+            window_size=7,
+            thr_gain=1.0,
+            thr_min_value=100.0
+        )
+        # --- Options for MachineLearning Part
+        self.SettingsFE = SettingsFeature(
+            no_features=3
+        )
+        self.SettingsCL = SettingsCluster(
+            type="kMeans",
+            no_cluster=3
+        )
 
-    # --- Digital filtering for ADC output and CIC
-    SettingsDSP_LFP = SettingsFilter(
-        gain=1,
-        fs=SettingsADC.fs_adc,
-        n_order=2, f_filt=[0.1, 100],
-        type='iir', f_type='butter', b_type='bandpass',
-        t_dly=0
-    )
-    SettingsDSP_SPK = SettingsFilter(
-        gain=1,
-        fs=SettingsADC.fs_adc,
-        n_order=2, f_filt=[200, 8e3],
-        type='iir', f_type='butter', b_type='bandpass',
-        t_dly=0
-    )
 
-    # --- Options for Spike Detection and Frame Aligning
-    SettingsSDA = SettingsSDA(
-        fs=SettingsADC.fs_adc, dx_sda=[1],
-        mode_align=1,
-        t_frame_lgth=1.6e-3, t_frame_start=0.4e-3,
-        dt_offset=[0.1e-3, 0.1e-3],
-        t_dly=0.4e-3,
-        window_size=7,
-        thr_gain=1.0,
-        thr_min_value=100.0
-    )
-
-    # --- Options for MachineLearning Part
-    SettingsFE = SettingsFeature(
-        no_features=3
-    )
-    SettingsCL = SettingsCluster(
-        type="kMeans",
-        no_cluster=3
-    )
-
-
-class Pipeline(PipelineCMD):
+class PipelineV0(PipelineCMD):
     def __init__(self, fs_ana: float, addon: str='_app') -> None:
         """Processing Pipeline for analysing transient data
         :param fs_ana:  Sampling rate of the input signal [Hz]

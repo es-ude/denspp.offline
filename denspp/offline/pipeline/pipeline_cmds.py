@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from os import makedirs
-from os.path import join
+from os.path import join, exists
 from shutil import copy
 from datetime import datetime
 from logging import getLogger, Logger
@@ -9,6 +9,25 @@ from threading import Thread, active_count
 from tqdm import tqdm
 from dataclasses import dataclass
 from denspp.offline import get_path_to_project_start
+from denspp.offline.dnn.model_library import ModuleRegistryManager
+
+
+class PipelineLibrary:
+    """Class for searching all Pipeline Processors in repository to get an overview"""
+    def get_registry(self, package: str="src_pipe") -> ModuleRegistryManager:
+        m = ModuleRegistryManager(r"\bPipeline(?:Merge)?V\d+\b")
+        chck = exists(join(get_path_to_project_start(), package))
+        m.register_package(package) if chck else m.register_package("denspp.offline.template")
+        return m
+
+
+class DataloaderLibrary:
+    """Class for searching all Pipeline Processors in repository to get an overview"""
+    def get_registry(self, package: str="src_pipe") -> ModuleRegistryManager:
+        m = ModuleRegistryManager(r"\bDataLoader(Test)?\b")
+        chck = exists(join(get_path_to_project_start(), package))
+        m.register_packages((package, "denspp.offline.pipeline")) if chck else m.register_packages(("denspp.offline.template", "denspp.offline.pipeline"))
+        return m
 
 
 class PipelineCMD:

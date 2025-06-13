@@ -1,4 +1,5 @@
 import numpy as np
+from copy import deepcopy
 from torch import sum, abs, rand
 from unittest import TestCase, main
 from denspp.offline.dnn.ptq_help import quantize_model_fxp
@@ -8,8 +9,9 @@ from denspp.offline.dnn.pytorch_config_model import DefaultSettingsTrainMSE
 
 class TestPTQ(TestCase):
     # --- Make models
-    settings_test = DefaultSettingsTrainMSE
-    settings_test.model_name = 'CompareDNN_Autoencoder_v1_Torch'
+    settings_test = deepcopy(DefaultSettingsTrainMSE)
+    settings_test.model_name = 'CompareDNN_AutoencoderTorch_v1'
+
     model_test = settings_test.get_model()
     model_test.eval()
     model_qunt = quantize_model_fxp(model_test, 12, 10)

@@ -8,46 +8,41 @@ from denspp.offline.digital.sda import SpikeDetection, SettingsSDA
 
 
 class SettingsPipe:
-    def __init__(self, bit_adc: int=12, adc_dvref: float=0.1, fs_ana: float=20e3):
+    def __init__(self, bit_adc: int=12, adc_dvref: float=0.1, fs_ana: float=20e3, fs_dig: float=20e3):
         """Settings class for setting-up the pipeline
             :param bit_adc:     Bit-resolution of used ADC
             :param adc_dvref:   Diff. voltage of ADC reference voltage [V]
-            :param fs_ana:      Sampling frequency of ADC reference voltage [Hz]
+            :param fs_ana:      Sampling frequency of Analog Input [Hz]
+            :param fs_dig:      Sampling frequency of ADC output [Hz]
         """
-        self.SettingsAMP.fs_ana = fs_ana
-        self.SettingsADC.fs_ana = fs_ana
-        self.SettingsADC.dvref = adc_dvref
-        self.SettingsADC.Nadc = bit_adc
-
-    SettingsAMP = SettingsAMP(
-        vss=-0.6, vdd=0.6,
-        fs_ana=0.0,
-        gain=100,
-        n_filt=2, f_filt=[200, 8e3], f_type="band",
-        offset=0e-6, noise_en=False,
-        f_chop=20e3,
-        noise_edev=100e-9
-    )
-    SettingsADC = SettingsADC(
-        vdd=0.6, vss=-0.6,
-        is_signed=True, dvref=0.1,
-        fs_ana=0.0,
-        fs_dig=20e3, osr=1, Nadc=12
-    )
-    SettingsSDA = SettingsSDA(
-        fs=SettingsADC.fs_adc, dx_sda=[1],
-        mode_align=2,
-        t_frame_lgth=1.6e-3, t_frame_start=0.4e-3,
-        dt_offset=[0.4e-3, 0.4e-3],
-        t_dly=0.4e-3,
-        window_size=7,
-        thr_gain=1,
-        thr_min_value=100
-    )
+        self.SettingsAMP = SettingsAMP(
+            vss=-0.6, vdd=0.6,
+            fs_ana=fs_ana,
+            gain=100,
+            n_filt=2, f_filt=[200, 8e3], f_type="band",
+            offset=0e-6, noise_en=False,
+            f_chop=20e3,
+            noise_edev=100e-9
+        )
+        self.SettingsADC = SettingsADC(
+            vdd=0.6, vss=-0.6,
+            is_signed=True, dvref=adc_dvref,
+            fs_ana=fs_ana,
+            fs_dig=fs_dig, osr=1, Nadc=bit_adc
+        )
+        self.SettingsSDA = SettingsSDA(
+            fs=fs_dig, dx_sda=[1],
+            mode_align=2,
+            t_frame_lgth=1.6e-3, t_frame_start=0.4e-3,
+            dt_offset=[0.4e-3, 0.4e-3],
+            t_dly=0.4e-3,
+            window_size=7,
+            thr_gain=1,
+            thr_min_value=100
+        )
 
 
-# --- Setting the src_neuro
-class Pipeline(PipelineCMD):
+class PipelineMergeV0(PipelineCMD):
     def __init__(self, fs_ana: float, addon: str='_app'):
         """Processing Pipeline for analysing transient data
         :param fs_ana:  Sampling rate of the input signal [Hz]
@@ -60,12 +55,13 @@ class Pipeline(PipelineCMD):
         settings = SettingsPipe(
             bit_adc=12,
             adc_dvref=0.1,
-            fs_ana=fs_ana
+            fs_ana=fs_ana,
+            fs_dig=fs_ana
         )
         self.fs_ana = fs_ana
+        self.fs_adc = settings.SettingsADC.fs_adc
         self.fs_dig = settings.SettingsADC.fs_dig
-        self.fs_adc = settings.SettingsADC.fs_dig
-        self.lsb = settings.SettingsADC.lsb
+
         self.__preamp = PreAmp(settings.SettingsAMP)
         self.__adc = ADC0(settings.SettingsADC)
         self.__sda = SpikeDetection(settings.SettingsSDA)

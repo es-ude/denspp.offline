@@ -50,7 +50,7 @@ class SettingsDataset:
     def get_path2folder(self) -> str:
         """Getting the path name to the file"""
         if not isabs(self.data_path):
-            path = join(self.get_path2folder_project, self.data_path, 'dataset')
+            path = join(self.get_path2folder_project, self.data_path)
         else:
             path = join(self.data_path)
         return abspath(path)
@@ -62,7 +62,7 @@ class SettingsDataset:
 
 
 DefaultSettingsDataset = SettingsDataset(
-    data_path='',
+    data_path='dataset',
     data_file_name='',
     use_cell_sort_mode=0,
     augmentation_do=False,

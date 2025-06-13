@@ -1,13 +1,16 @@
 from dataclasses import dataclass
 from os.path import exists, join
 from denspp.offline import get_path_to_project_start
+from denspp.offline.logger import define_logger_runtime
+from denspp.offline.yaml_handler import YamlHandler
+from denspp.offline.dnn.model_library import DatasetLoaderLibrary
 
 
 @dataclass
 class ConfigMLPipeline:
     """Configuration class for handling the training phase of deep neural networks
     Attributes:
-        mode_train_dnn:             Integer value of selected training routine regarding the training handler
+        mode_train_dnn:             Integer of selected training routine regarding the training handler
         path2yaml:                  String with path to the folder with yaml configuration files
         do_plot:                    Boolean value to generate the plots after training
         do_block:                   Boolean value to block the generated plots after training
@@ -45,3 +48,23 @@ DefaultSettings_MLPipe = ConfigMLPipeline(
     autoencoder_feat_size=0,
     autoencoder_noise_std=0.05
 )
+
+
+def preprocessing_dnn():
+    """Function for pre-preparing the DNN Training
+    :returns:   Tuple with (0) Settings class of ConfigMLPipeline and (1) the corresponding DatasetLoader
+    """
+    define_logger_runtime(save_file=False)
+    dnn_handler = YamlHandler(
+        template=DefaultSettings_MLPipe,
+        path='config',
+        file_name='Config_DNN'
+    ).get_class(ConfigMLPipeline)
+
+    datalib = DatasetLoaderLibrary().get_registry()
+    matches = [item for item in datalib.get_library_overview() if 'DatasetLoader' == item]
+    assert len(matches), "No Datasetloader available"
+    datasetloader = datalib.build_object(matches[0])
+
+    return dnn_handler, datasetloader
+

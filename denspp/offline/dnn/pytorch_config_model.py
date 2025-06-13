@@ -78,8 +78,9 @@ class ConfigPytorch:
                 used_model = deepcopy(models_bib.build(self.model_name, *args, **kwargs))
                 return used_model
             else:
-                raise NotImplementedError(f"Model is not available - Please check again! "
-                                          f"\n{models_bib.get_library_overview_string()}")
+                ovr = models_bib.get_library_overview(do_print=True)
+                raise NotImplementedError(f"Model is not available - Please check again!")
+
 
 
 DefaultSettingsTrainMSE = ConfigPytorch(

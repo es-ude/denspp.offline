@@ -1,14 +1,22 @@
 from unittest import TestCase, main
-from denspp.offline.dnn.model_library import ModelLibrary
+from denspp.offline.dnn.model_library import ModelLibrary, DatasetLoaderLibrary, CellLibrary
 
 
 class TestModelLibrary(TestCase):
-    method = ModelLibrary()
-
     def test_model_overview(self):
-        result = self.method.get_registry().get_library_overview(do_print=False)
-        check = len(result) > 3
-        self.assertEqual(check, True)
+        rslt = ModelLibrary().get_registry().get_library_overview()
+        matches = [item for item in rslt if not 'DatasetLoader' in item]
+        self.assertTrue(len(matches) > 20)
+
+    def test_datasetloader_overview(self):
+        rslt = DatasetLoaderLibrary().get_registry().get_library_overview()
+        matches = [item for item in rslt if 'DatasetLoader' in item]
+        self.assertTrue(len(matches))
+
+    def test_cellibrary_overview(self):
+        rslt = CellLibrary().get_registry().get_library_overview()
+        matches = [item for item in rslt if not 'DatasetLoader' in item]
+        self.assertTrue(True)
 
 
 if __name__ == '__main__':

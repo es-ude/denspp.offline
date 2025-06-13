@@ -136,5 +136,3 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-
-/src_ma_jo/data/A1R1a_elec_stim_50biphasic_400us0001.npy

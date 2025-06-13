@@ -1,24 +1,8 @@
-from denspp.offline.logger import define_logger_runtime
-from denspp.offline.dnn.dnn_handler import ConfigMLPipeline, DefaultSettings_MLPipe
-from denspp.offline.yaml_handler import YamlHandler
-from denspp.offline.structure_builder import init_project_folder
-from src_dnn.call_dataset import DatasetLoader
+from denspp.offline.dnn.dnn_handler import preprocessing_dnn
 
 
 if __name__ == "__main__":
-    # --- Loading YAML-Settings file
-    init_project_folder()
-    dnn_handler = YamlHandler(
-        template=DefaultSettings_MLPipe,
-        path='config',
-        file_name='Config_DNN'
-    ).get_class(ConfigMLPipeline)
-
-    define_logger_runtime(
-        save_file=False,
-    )
-
-    # --- Selecting model for train
+    dnn_handler, DatasetLoader = preprocessing_dnn()
     match dnn_handler.mode_train_dnn:
         case 0:
             # --- MNIST (Classifier)

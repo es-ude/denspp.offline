@@ -16,20 +16,22 @@ from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
 class SettingsData:
     """Class for configuring the dataloader
     Attributes:
+        pipeline:       String with name of the pipeline to use
         path:           Path to data storage
         data_set:       String with key for used data set
         data_point:     Number within the dataset
-        t_range:        List of the given time range for cutting the data [x, y]
+        t_range_sec:    List of the given time range (in sec.) for cutting the data [x, y]
         ch_sel:         List of electrodes to use [empty=all]
         fs_resample:    Resampling frequency of the datapoint (== 0.0, no resampling)
         do_mapping:     Decision if mapping (if available) is used
         is_mapping_str: Boolean if mapping input from csv file is a string (True) or integer (false)
     """
+    pipeline: str
     path: str
     data_set: str
     data_case: int
     data_point: int
-    t_range: list
+    t_range_sec: list
     ch_sel: list
     fs_resample: float
     do_mapping: bool
@@ -37,10 +39,11 @@ class SettingsData:
 
 
 DefaultSettingsData = SettingsData(
+    pipeline='PipelineV0',
     path='data',
     data_set='quiroga',
     data_case=0, data_point=0,
-    t_range=[0], ch_sel=[],
+    t_range_sec=[], ch_sel=[],
     fs_resample=100e3,
     do_mapping=True,
     is_mapping_str=False
@@ -50,17 +53,17 @@ DefaultSettingsData = SettingsData(
 class DataHandler:
     """Class with data and meta information of the used neural dataset
     Attributes:
-        data_name (str):    File name of used transient dataset
-        data_type (str):    Type / Source of the transient dataset
-        fs_orig (float):    Sampling rate of the original dataset [Hz]
-        fs_used (float):    Sampling rate used in pipeline processing [Hz]
-        time_end (float):   Float number with time duration of measurement / data [s]
-        data_raw (np.ndarray): Numpy array with data [shape=(num_elec (opt.), num_samples)]
+        data_name (str):        File name of used transient dataset
+        data_type (str):        Type / Source of the transient dataset
+        fs_orig (float):        Sampling rate of the original dataset [Hz]
+        fs_used (float):        Sampling rate used in pipeline processing [Hz]
+        time_end (float):       Float number with time duration of measurement / data [s]
+        data_raw (np.ndarray):  Numpy array with data [shape=(num_elec (opt.), num_samples)]
         electrode_id (list):    List with integer values for matching data to electrode layout
         mapping_used (np.ndarray):  Array with 2D electrode mapping (loaded from external file)
-        label_exist (bool): Boolean if label with event position and ID exists
-        evnt_xpos (list):   List with numpy arrays of event position on transient signal
-        evnt_id (list):     List with numpy arrays of event ID for each electrode
+        label_exist (bool):     Boolean if label with event position and ID exists
+        evnt_xpos (list):       List with numpy arrays of event position on transient signal
+        evnt_id (list):         List with numpy arrays of event ID for each electrode
     """
     # --- Meta Information
     data_name: str
@@ -106,8 +109,8 @@ class ControllerData:
             self._raw_data.fs_used = self._raw_data.fs_orig
 
         # --- Getting the positition of used time range
-        t_range = np.array(self._settings.t_range)
-        assert len(self._settings.t_range) in [0, 2], f"t_range should be empty or have a length of 2 (not {len(self._settings.t_range)})"
+        t_range = np.array(self._settings.t_range_sec)
+        assert len(self._settings.t_range_sec) in [0, 2], f"t_range should be empty or have a length of 2 (not {len(self._settings.t_range_sec)})"
         if t_range.size == 2:
             rawdata_in = self._raw_data.data_raw
 
@@ -245,19 +248,19 @@ class ControllerData:
             path2folder = [s for s in overview if any(folder_name in s for xs in overview)]
         except:
             return ""
-
-        if len(path2folder) == 0:
-            return ""
         else:
-            self._path2folder_remote = path2folder[0]
-            folder_structure = self.__download_handler.get_overview_folder(False, path2folder[0])
-            if len(folder_structure):
-                folder_search = join(path2folder[0], self.__config_data_selection[1]) if type(self.__config_data_selection[1]) == str else folder_structure[self.__config_data_selection[1]]
-                folder_content = self.__download_handler.get_overview_data(False, folder_search, data_type)
+            if len(path2folder) == 0:
+                return ""
             else:
-                folder_content = self.__download_handler.get_overview_data(False, path2folder[0], data_type)
-            folder_content.sort()
-            return folder_content[self.__config_data_selection[2]]
+                self._path2folder_remote = path2folder[0]
+                folder_structure = self.__download_handler.get_overview_folder(False, path2folder[0])
+                if len(folder_structure):
+                    folder_search = join(path2folder[0], self.__config_data_selection[1]) if type(self.__config_data_selection[1]) == str else folder_structure[self.__config_data_selection[1]]
+                    folder_content = self.__download_handler.get_overview_data(False, folder_search, data_type)
+                else:
+                    folder_content = self.__download_handler.get_overview_data(False, path2folder[0], data_type)
+                folder_content.sort()
+                return folder_content[self.__config_data_selection[2]]
 
     def _prepare_access_file(self, folder_name: str, data_type: str) -> str:
         """Getting the file of the corresponding trial
@@ -281,7 +284,7 @@ class ControllerData:
         else:
             raise FileNotFoundError("--- File is not available. Please check! ---")
 
-    def do_mapping(self, path2csv: str='', index_search: str='Mapping_*.csv') -> None:
+    def build_mapping(self, path2csv: str= '', index_search: str= 'Mapping_*.csv') -> None:
         """Transforming the input data to electrode array specific design
         (considering electrode format and coordination)
         :parm path2csv:     Path to csv file with information about electrode mapping (Default: "")
@@ -354,6 +357,8 @@ class ControllerData:
         :param elec_orn:    List with Electrode orientation / mapping to rawdata
         :param rawdata:     Numpy array with raw data (shape: [num_channels, num_samples])
         :param scale_data:  Scaling factor for rawdata
+        :param evnt_pos:    List with numpy arrays of the event positions (should have same length like elec_orn)
+        :param evnt_id:     List with numpy arrays of the event ID (should have same length like elec_orn)
         :return:            None
         """
         assert len(rawdata.shape) <= 2, "Variable rawdata must have one (num_samples, ) or two dimensions (num_channels, num_samples)"

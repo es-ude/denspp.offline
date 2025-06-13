@@ -3,7 +3,7 @@ from elasticai.creator.nn import Sequential as SequantialCreator
 from elasticai.creator.nn.fixed_point import Linear, BatchNormedLinear, Tanh, ReLU
 
 
-class CompareDNN_Autoencoder_v1_Torch(nn.Module):
+class CompareDNN_AutoencoderTorch_v1(nn.Module):
     def __init__(self, input_size: int = 32, output_size: int = 3):
         super().__init__()
         self.model_shape = (1, input_size)
@@ -39,7 +39,7 @@ class CompareDNN_Autoencoder_v1_Torch(nn.Module):
         return encoded, self.decoder(encoded)
 
 
-class CompareDNN_Autoencoder_v1_Creator(nn.Module):
+class CompareDNN_AutoencoderCreator_v1(nn.Module):
     def __init__(self, input_size: int=32, output_size: int=3,
                  total_bits: int=12, frac_bits: int = 8, num_steps_activation: int = 32):
         super().__init__()
@@ -79,7 +79,7 @@ class CompareDNN_Autoencoder_v1_Creator(nn.Module):
         return self.encoder.create_design(name)
 
 
-class CompareDNN_Autoencoder_woBN_v1_Torch(nn.Module):
+class CompareDNN_AutoencoderTorch_woBN_v1(nn.Module):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
     def __init__(self, input_size: int=32, output_size: int=3):
         super().__init__()
@@ -111,7 +111,7 @@ class CompareDNN_Autoencoder_woBN_v1_Torch(nn.Module):
         return encoded, self.decoder(encoded)
 
 
-class CompareDNN_Autoencoder_woBN_v1_Creator(nn.Module):
+class CompareDNN_AutoencoderCreator_woBN_v1(nn.Module):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
     def __init__(self, input_size: int = 32, output_size: int = 3, total_bits: int = 12, frac_bits: int = 8, num_steps_activation: int = 32):
         super().__init__()
@@ -159,7 +159,7 @@ class CompareDNN_Autoencoder_woBN_v1_Creator(nn.Module):
         return encoder, decoder
 
 
-class CompareDNN_Classifier_v1_Torch(nn.Module):
+class CompareDNN_ClassifierTorch_v1(nn.Module):
     def __init__(self, input_size: int=32, output_size: int=6):
         """DL model for classifying neural spike activity (MLP)"""
         super().__init__()
@@ -189,7 +189,7 @@ class CompareDNN_Classifier_v1_Torch(nn.Module):
         return prob, argmax(prob, 1)
 
 
-class CompareDNN_Classifier_v1_Creator(nn.Module):
+class CompareDNN_ClassifierCreator_v1(nn.Module):
     def __init__(self, input_size: int=32, output_size:int=6,
                  total_bits: int = 12, frac_bits: int = 8):
         """DL model for classifying neural spike activity (MLP)"""

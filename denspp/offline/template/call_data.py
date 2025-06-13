@@ -16,47 +16,9 @@ class DataLoader(ControllerData):
         self._settings = settings
         self._methods_available = self._extract_func(self.__class__)
 
-    def __load_test_1d(self) -> None:
-        """Loading 1d-test data without getting files"""
-        fs_used = 10e3
-        self._load_rawdata_into_pipeline(
-            elec_type="Test_1d",
-            file_name='',
-            fs_orig=fs_used,
-            elec_orn=[1],
-            rawdata=np.random.randn(10000),
-            scale_data=1e-6,
-        )
-
-    def __load_test_2d(self) -> None:
-        """Loading 2d-test data without getting files"""
-        fs_used = 10e3
-        self._load_rawdata_into_pipeline(
-            elec_type="Test_2d",
-            file_name='',
-            fs_orig=fs_used,
-            elec_orn=[1, 2, 3, 4],
-            rawdata=np.random.randn(4, 10000),
-            scale_data=1e-6,
-        )
-
-    def __load_test_2d_zero(self) -> None:
-        """Loading 2d-test data without getting files"""
-        fs_used = 10e3
-        self._load_rawdata_into_pipeline(
-            elec_type="Test_2d",
-            file_name='',
-            fs_orig=fs_used,
-            elec_orn=[1, 2, 3],
-            rawdata=np.random.randn(3, 10000),
-            scale_data=1e-6,
-        )
-
     def __load_martinez_simulation(self) -> None:
         """Loading synthethic files from Quiroga simulation (2009)"""
-        folder_name = "_SimDaten_Martinez2009"
-        data_type = 'simulation_*.mat'
-        path2file = self._prepare_access_file(folder_name, data_type)
+        path2file = self._prepare_access_file(folder_name="_SimDaten_Martinez2009", data_type='simulation_*.mat')
         loaded_data = loadmat(path2file)
 
         fs_used = float(1 / loaded_data["samplingInterval"][0][0] * 1000)
@@ -74,11 +36,8 @@ class DataLoader(ControllerData):
 
     def __load_pedreira_simulation(self) -> None:
         """Loading synthethic files from Quiroga simulator (2012)"""
-        folder_name = "_SimDaten_Pedreira2012"
-        data_type = 'simulation_*.mat'
-
-        path2file = self._prepare_access_file(folder_name, data_type)
-        path2label = self._prepare_access_file(folder_name, "ground_truth.mat")
+        path2file = self._prepare_access_file(folder_name="_SimDaten_Pedreira2012", data_type='simulation_*.mat')
+        path2label = self._prepare_access_file(folder_name="_SimDaten_Pedreira2012", data_type="ground_truth.mat")
         loaded_data = loadmat(path2file)
         ground_truth = loadmat(path2label)
 
@@ -98,9 +57,7 @@ class DataLoader(ControllerData):
 
     def __load_quiroga_simulation(self) -> None:
         """Loading synthetic recordings from Quiroga simulator (Common benchmark)"""
-        folder_name = "_SimDaten_Quiroga2020"
-        data_type = 'C_*.mat'
-        path2file = self._prepare_access_file(folder_name, data_type)
+        path2file = self._prepare_access_file(folder_name="_SimDaten_Quiroga2020", data_type='C_*.mat')
         loaded_data = loadmat(path2file, mat_dtype=True)
 
         fs_used = float(1000 / loaded_data["samplingInterval"][0][0])
@@ -117,9 +74,7 @@ class DataLoader(ControllerData):
 
     def __load_denspp_online(self) -> None:
         """Function for loading the *.xdf files from custom hardware readout with DeNSPP.online framework"""
-        folder_name = "_Custom_Hardware"
-        data_type = '*.xdf'
-        path2file = self._prepare_access_file(folder_name, data_type)
+        path2file = self._prepare_access_file(folder_name="_Custom_Hardware", data_type='*.xdf')
         loaded_data = load_xdf(path2file)[0][0]
 
         fs_used = float(loaded_data['info']['nominal_srate'][0])
