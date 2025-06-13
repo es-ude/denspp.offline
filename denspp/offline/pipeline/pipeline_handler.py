@@ -15,7 +15,7 @@ def start_processing_pipeline(sets_load_data: SettingsData=DefaultSettingsData,
     """
     # --- Getting the YAML files
     logger = getLogger(__name__)
-    if not sets_load_data == DefaultSettingsData:
+    if sets_load_data == DefaultSettingsData:
         settings_data = YamlHandler(
             template=sets_load_data,
             path='config',
