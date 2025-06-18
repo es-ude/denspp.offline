@@ -60,14 +60,17 @@ class YamlHandler:
         :return:
             Boolean decision if both key are equal
         """
-        template_used = self.__translate_dataclass_to_dict(template) if not isinstance(template, dict) else template
-        real_used = self.__translate_dataclass_to_dict(real_file) if not isinstance(real_file, dict) else real_file
+        keys_tmplt = self.__translate_dataclass_to_dict(template).keys() if not isinstance(template, dict) else template.keys()
+        keys_real = self.__translate_dataclass_to_dict(real_file).keys() if not isinstance(real_file, dict) else real_file.keys()
 
-        equal_chck = template_used.keys() == real_used.keys()
+        equal_chck = keys_tmplt == keys_real
         if not equal_chck:
-            raise RuntimeError("Config file not valid! - Please check and remove actual config file!")
+            list_not0 = [key for key in keys_real if key not in keys_tmplt]
+            list_not1 = [key for key in keys_tmplt if key not in [keys_real, list_not0]]
+            list_not0.extend(list_not1)
+            raise RuntimeError(f"Config file not valid (wrong keys: {list_not0})! - Please check and correct/remove actual config file!")
         else:
-            return template_used.keys() == real_used.keys()
+            return equal_chck
 
     def write_dict_to_yaml(self, config_data: dict, print_output: bool=False) -> None:
         """Writing list with configuration sets to YAML file
