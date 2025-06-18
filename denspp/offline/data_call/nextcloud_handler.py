@@ -1,7 +1,7 @@
 import fnmatch
+from logging import getLogger, Logger
 from os.path import join
 from dataclasses import dataclass
-from logging import getLogger
 from nc_py_api import Nextcloud, NextcloudException
 from denspp.offline.yaml_handler import YamlHandler
 from denspp.offline import get_path_to_project_start
@@ -21,24 +21,38 @@ class ConfigCloud:
 
 
 DefaultConfigCloud = ConfigCloud(
-    remote_link='https://owncloud.com',
+    remote_link='http://nextcloud.com',
     remote_transient='/',
     remote_dataset='/'
 )
 
 
 class NextCloudDownloader:
-    __handler: Nextcloud
-    __settings: ConfigCloud
+    _hndl: Nextcloud
+    _settings: ConfigCloud
+    _logger: Logger
 
     def __init__(self, path2config: str = get_path_to_project_start(), use_config: ConfigCloud = DefaultConfigCloud) -> None:
-        """Class for handling sciebo repository for getting datasets remotely
-        :param path2config: path to config file
+        """Class for handling cloud storage access for getting transient data and datasets using Nextcloud services
+        :param path2config: Path to config file
         :param use_config:  Class for handling the owncloud handler
         :return:            None
         """
-        self.__logger = getLogger(__name__)
-        self.__settings = YamlHandler(use_config, path2config, 'access_cloud').get_class(ConfigCloud)
+        self._logger = getLogger(__name__)
+        self._settings = YamlHandler(
+            template=use_config,
+            path=path2config,
+            file_name='access_cloud'
+        ).get_class(ConfigCloud)
+        self.__establish_access()
+
+    def __establish_access(self) -> None:
+        """Function for establishing the communication to device"""
+        self._hndl = Nextcloud(nextcloud_url=self._settings.remote_link)
+        try:
+            self._hndl.update_server_info()
+        except NextcloudException:
+            print(NextcloudException)
 
     def __get_remote_content(self, use_dataset: bool, search_folder: str = '', depth: int=1) -> list:
         """Function for getting the remote content in folder
@@ -46,18 +60,8 @@ class NextCloudDownloader:
         :param search_folder:   folder to search for remote content
         :param depth:           depth of search
         """
-        self.__handler = Nextcloud(
-            nextcloud_url=self.__settings.remote_link,
-            nc_auth_user = "admin",
-            nc_auth_pass = "admin"
-        )
-        try:
-            self.__handler.update_server_info()
-        except NextcloudException as e:
-            print(e)
-
-        path_selected = join(self.__settings.remote_transient if not use_dataset else self.__settings.remote_dataset, search_folder)
-        dict_list = self.__handler.files.listdir(depth=depth)
+        path_selected = join(self._settings.remote_transient if not use_dataset else self._settings.remote_dataset, search_folder)
+        dict_list = self._hndl.files.listdir(path=path_selected, depth=depth)
         return dict_list
 
     def get_overview_folder(self, use_dataset: bool, search_folder: str = '') -> list:
@@ -96,11 +100,12 @@ class NextCloudDownloader:
         :param  destination_download:   Folder name to save the data locally
         :return:                        None
         """
-        self.__handler = Nextcloud.Client.from_public_link(self.__settings.remote_link)
-        self.__logger.info("... downloading file from remote")
-        path_selected = self.__settings.remote_transient if not use_dataset else self.__settings.remote_dataset
-        self.__handler.get_file(join(path_selected, file_name), destination_download)
-        self.__logger.info("... download done")
+        path_selected = self._settings.remote_transient if not use_dataset else self._settings.remote_dataset
+        path2file = join(path_selected, file_name)
+        self._logger.info("... downloading file from remote")
+        self._hndl.files.download2stream(path2file, destination_download)
+        self._logger.info("... download done")
 
     def close(self) -> None:
-        self.__handler.logout()
+        """Function for closing the connection to remote cloud"""
+        pass

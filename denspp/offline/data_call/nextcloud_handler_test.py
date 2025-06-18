@@ -3,14 +3,15 @@ from os.path import splitext, join, exists
 from denspp.offline.data_call.nextcloud_handler import ConfigCloud, NextCloudDownloader
 from denspp.offline import get_path_to_project_start
 
+
 TestConfigCloud = ConfigCloud(
-    remote_link='https://uni-duisburg-essen.sciebo.de/s/JegLJuj1SADBSp0',
+    remote_link="http://uni-duisburg-essen.sciebo.de/s/Qf3WpGfBESnZYfx",
     remote_transient='/',
     remote_dataset='/00_Merged',
 )
 
 
-class TestOwnCloud(TestCase):
+class TestNextCloud(TestCase):
     path2temp = get_path_to_project_start('temp_test')
     hndl = NextCloudDownloader(
         path2config=path2temp,
@@ -24,7 +25,6 @@ class TestOwnCloud(TestCase):
         )
         self.assertTrue(False)
     """
-
 
 if __name__ == '__main__':
     main()

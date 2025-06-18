@@ -3,8 +3,9 @@ from os.path import splitext, join, exists
 from denspp.offline.data_call.owncloud_handler import ConfigCloud, OwnCloudDownloader
 from denspp.offline import get_path_to_project_start
 
+
 TestConfigCloud = ConfigCloud(
-    remote_link='https://uni-duisburg-essen.sciebo.de/s/JegLJuj1SADBSp0',
+    remote_link='http://uni-duisburg-essen.sciebo.de/s/Qf3WpGfBESnZYfx',
     remote_transient='/',
     remote_dataset='/00_Merged',
 )
