@@ -51,15 +51,13 @@ class SettingsPipe:
             gain=1,
             fs=fs_dig,
             n_order=2, f_filt=[0.1, 100],
-            type='iir', f_type='butter', b_type='bandpass',
-            t_dly=0
+            type='iir', f_type='butter', b_type='bandpass'
         )
         self.SettingsDSP_SPK = SettingsFilter(
             gain=1,
             fs=fs_dig,
             n_order=2, f_filt=[200, 8e3],
-            type='iir', f_type='butter', b_type='bandpass',
-            t_dly=0
+            type='iir', f_type='butter', b_type='bandpass'
         )
         # --- Options for Spike Detection and Frame Aligning
         self.SettingsSDA = SettingsSDA(

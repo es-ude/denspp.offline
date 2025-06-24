@@ -107,7 +107,7 @@ def _create_arbfwg(spice_instance: NgSpiceShared, waveform: np.ndarray, f_samp: 
     """Bugfixing for replacement a PySPICE function"""
     def get_vsrc_data(self, voltage, time, node, ngspice_id) -> int:
         """Internal NgSpice function for simulation"""
-        self._logger.debug('ngspice_id-{} get_vsrc_data @{} node {}'.format(ngspice_id, time, node))
+        self.__logger.debug('ngspice_id-{} get_vsrc_data @{} node {}'.format(ngspice_id, time, node))
         index = int(time * f_samp) % len(waveform)
         voltage[0] = waveform[index]
         return 0
@@ -119,7 +119,7 @@ def _clear_arbfwg(spice_instance: NgSpiceShared) -> None:
     """Function for getting the voltage source value for making transient analysis"""
     def get_vsrc_data(self, voltage, time, node, ngspice_id) -> int:
         """Internal NgSpice function for simulation"""
-        self._logger.debug('ngspice_id-{} get_vsrc_data @{} node {}'.format(ngspice_id, time, node))
+        self.__logger.debug('ngspice_id-{} get_vsrc_data @{} node {}'.format(ngspice_id, time, node))
         return 0
 
     _add_method(spice_instance, get_vsrc_data, "get_vsrc_data")
