@@ -54,32 +54,34 @@ def build_waveform_dataset(settings_data: SettingsWaveformDataset, settings_nois
     settings0.wgn_dB = settings_data.noise_pwr_db
     wfg_generator = WaveformGenerator(
         sampling_rate=settings_data.sampling_rate,
-        add_noise=settings_data.noise_add,
+        add_noise=False,
         settings_noise=settings0
     )
 
     # --- Generation of signal
     num_class_samples = settings_data.num_samples
     num_total_samples = len(settings_data.wfg_type) * num_class_samples
-    t_window = (2 * settings_data.time_idle / 100 + 1) / np.array(settings_data.wfg_freq).min()
+    num_window = int((1 + 2 * settings_data.time_idle / 100) * settings_data.sampling_rate / min(settings_data.wfg_freq))
+    time_point_min = settings_data.time_idle / 100 / min(settings_data.wfg_freq)
 
-    waveforms_signals = np.zeros((num_total_samples, int(settings_data.sampling_rate * t_window)), dtype=float)
+    waveforms_signals = np.zeros((num_total_samples, num_window), dtype=float)
     waveforms_classes = np.zeros((num_total_samples,), dtype=int)
     waveforms_rms = np.zeros(num_total_samples, )
 
     for idx, (sel_wfg, freq_wfg) in enumerate(zip(settings_data.wfg_type, settings_data.wfg_freq)):
         for num_ite in range(0, settings_data.num_samples):
             waveform = wfg_generator.generate_waveform(
-                time_points=[settings_data.time_idle / 100 / freq_wfg],
+                time_points=[time_point_min],
                 time_duration=[1 / freq_wfg],
                 waveform_select=[sel_wfg],
                 polarity_cathodic=[False]
             )
             signal = waveform['sig'] if not settings_data.do_normalize else waveform['sig'] / waveform['rms']
-            waveforms_signals[idx * num_class_samples + num_ite, :] = settings_data.scale_amp * signal
+            waveforms_signals[idx * num_class_samples + num_ite, :signal.size] = settings_data.scale_amp * signal
             waveforms_classes[idx * num_class_samples + num_ite] = idx
             waveforms_rms[idx * num_class_samples + num_ite] = waveform['rms']
 
     # --- Getting dictionary of signal type
+    noise = wfg_generator.generate_noise(waveforms_signals.shape) if settings_data.noise_add else np.zeros_like(waveforms_signals)
     waveforms_dict = [type for type in settings_data.wfg_type if type in wfg_generator.get_dictionary_classes()]
-    return {'data': waveforms_signals, 'label': waveforms_classes, 'dict': waveforms_dict}
+    return {'data': waveforms_signals + noise, 'label': waveforms_classes, 'dict': waveforms_dict}

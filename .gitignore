@@ -1,5 +1,6 @@
 ### Project ###
 docs/apidocs
+denspp/__init__.py
 Config_*.yaml
 **/src
 **/config

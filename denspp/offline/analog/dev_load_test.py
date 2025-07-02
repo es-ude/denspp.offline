@@ -42,7 +42,7 @@ class TestElectricalLoad(TestCase):
         model = ElectricalLoad(settings_dev=TestSettings0)
 
         current_model = model.get_current(self.voltage, 0.0)
-        params = model.get_params_from_fitting_data(
+        params = model.extract_params_from_fitting_data(
             voltage=self.voltage,
             current=current_model,
             param_bounds={'r': [0.5 * set0.dev_value['r'], 2 * set0.dev_value['r']]}
@@ -56,7 +56,7 @@ class TestElectricalLoad(TestCase):
         model = ElectricalLoad(settings_dev=TestSettings0)
 
         current_model = model.get_current(self.voltage, 0.0)
-        params = model.get_params_from_fitting_data(
+        params = model.extract_params_from_fitting_data(
             voltage=self.voltage,
             current=current_model,
             param_bounds={'r': [0.5* set0.dev_value['r'], 2 * set0.dev_value['r']]}
@@ -70,7 +70,7 @@ class TestElectricalLoad(TestCase):
         model = ElectricalLoad(settings_dev=TestSettings1)
 
         current_model = model.get_current(self.voltage, 0.0)
-        params = model.get_params_from_fitting_data(
+        params = model.extract_params_from_fitting_data(
             voltage=self.voltage,
             current=current_model,
             param_bounds={'i_sat': [1e-15, 1e-9], 'n_eff': [0.8, 5.0], 'r_sh': [1e3, 100e3], 'uth0': [0.3, 0.5]}

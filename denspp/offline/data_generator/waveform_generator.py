@@ -1,11 +1,12 @@
 import numpy as np
-from logging import getLogger
+from logging import getLogger, Logger
 from scipy import signal
 from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, RecommendedSettingsNoise
 
 
 class WaveformGenerator:
     __handler_noise: ProcessNoise
+    _logger: Logger
 
     def __init__(self, sampling_rate: float, add_noise: bool=False, settings_noise: SettingsNoise=RecommendedSettingsNoise):
         """Class for generating the transient stimulation signal
@@ -29,7 +30,6 @@ class WaveformGenerator:
         self.__func_dict.update({'SAW_POS': self.__generate_sawtooth_positive})
         self.__func_dict.update({'SAW_NEG': self.__generate_sawtooth_negative})
         self.__func_dict.update({'GAUSS': self.__generate_gaussian})
-        self.__func_dict.update({'NOISE_ABS_RAND': self.__generate_sawtooth_negative})
         self.__func_dict.update({'ZERO': self.__generate_zero})
 
     @staticmethod
@@ -66,13 +66,13 @@ class WaveformGenerator:
     def __generate_linear_rising(self, time_duration: float) -> np.ndarray:
         """Creating an output array with linear positive slope"""
         num_samples = int(time_duration * self._sampling_rate)
-        out = np.linspace(0.0, 1.0,  num_samples, dtype=float)
+        out = np.linspace(0.0, 1.0,  num_samples, endpoint=True, dtype=float)
         return out
 
     def __generate_linear_falling(self, time_duration: float) -> np.ndarray:
         """Creating an output array with linear negative slope"""
         num_samples = int(time_duration * self._sampling_rate)
-        out = np.linspace(1.0, 0.0,  num_samples, dtype=float)
+        out = np.linspace(1.0, 0.0,  num_samples, endpoint=True, dtype=float)
         return out
 
     def __generate_sinusoidal_half(self, time_duration: float) -> np.ndarray:
@@ -96,7 +96,7 @@ class WaveformGenerator:
     def __generate_triangle_half(self, time_duration: float) -> np.ndarray:
         """Creating an output array with half triangular waveform"""
         out0 = self.__generate_linear_rising(0.5 * time_duration)
-        out1 = self.__generate_linear_falling(0.5 * time_duration)
+        out1 = self.__generate_linear_falling(0.5 * time_duration * (1 + 2 / out0.size))[1:-1]
         return np.concatenate((out0, out1), axis=0)
 
     def __generate_triangle_full(self, time_duration: float) -> np.ndarray:
@@ -115,8 +115,8 @@ class WaveformGenerator:
 
     def __generate_gaussian(self, time_duration: float) -> np.ndarray:
         """Creating an output array with gaussian pulse"""
-        time = 2 * self.__generate_sawtooth_positive(time_duration)
-        out = signal.gausspulse(time, 1.05 * np.sqrt(2)/(np.pi* time_duration), retenv=True)[1]
+        time = self.__generate_sawtooth_positive(time_duration)
+        out = signal.gausspulse(time, fc=np.pi, retenv=True)[1]
         scale_amp = (out.max()+out.min())/(out.max())
         return out * scale_amp - out.min()
 
@@ -125,17 +125,6 @@ class WaveformGenerator:
         :return:            List with class names
         """
         return [val for val in self.__func_dict.keys()]
-
-    def print_dictionary_classes(self) -> None:
-        """Printing the available waveform types available in class
-        :return:            List with class names
-        """
-        out_list = self.get_dictionary_classes()
-        self._logger.info("\nGetting information about signal types")
-        self._logger.info("\n====================================================")
-        for idx, type_id in enumerate(out_list):
-            self._logger.info(f"Class {idx:02d} = {type_id}")
-        self._logger.info("====================================================")
 
     def __select_waveform_template(self, time_duration: float, sel_wfg: str, do_cathodic: bool=False) -> np.ndarray:
         """Selection for generating a waveform template
@@ -151,9 +140,24 @@ class WaveformGenerator:
         if sel_wfg in self.__func_dict.keys():
             signal = self.__func_dict[sel_wfg](time_duration)
             waveform = self.__switching_polarity(signal, do_cathodic)
+            self._logger.debug(f"Selected waveform type {sel_wfg} is generated with shape {waveform.shape}")
+            return waveform
         else:
             raise NotImplementedError("Waveform is not implemented!")
-        return waveform
+
+
+    def generate_noise(self, shape: tuple) -> np.ndarray:
+        """Generating a transient signal with noise
+        :param shape:   Numpy shape of the transient signal
+        :return:        Numpy array with noise signal
+        """
+        if len(shape) == 2:
+            noise = np.zeros(shape)
+            for dim0 in range(shape[0]):
+                noise[dim0,:] = self.__handler_noise.gen_noise_real_pwr(shape[1])
+        else:
+            noise = self.__handler_noise.gen_noise_real_pwr(shape[0])
+        return noise
 
     def generate_waveform(self, time_points: list, time_duration: list,
                           waveform_select: list, polarity_cathodic: list) -> dict:
@@ -171,30 +175,29 @@ class WaveformGenerator:
         else:
             # Generate dummy
             out = self.__generate_zero(2 * time_points[-1] + time_duration[-1])
-            noise = np.zeros_like(out)
             time = np.linspace(0, out.size, out.size, endpoint=False) / self._sampling_rate
             rms_value = 0.0
 
             # Create waveform
-            for idx, time_sec in enumerate(time_points):
+            for idx, (time_off, time_sec, wvf_type) in enumerate(zip(time_points, time_duration, waveform_select)):
+                time_xpos = int(time_off * self._sampling_rate)
                 do_polarity = polarity_cathodic[idx] if not len(polarity_cathodic) == 0 else False
-                time_xpos = int(time_sec * self._sampling_rate)
-
-                waveform = self.__select_waveform_template(time_duration[idx], waveform_select[idx], do_polarity)
-                out[time_xpos:time_xpos+waveform.size] = waveform
-                noise = self.__handler_noise.gen_noise_real_pwr(out.size) if self.__add_noise else np.zeros_like(out)
+                waveform = self.__select_waveform_template(time_sec, wvf_type, do_polarity)
+                out[time_xpos:time_xpos+waveform.size] += waveform
                 rms_value = np.sqrt(np.sum(np.square(waveform)) / waveform.size)
+
+            noise = self.__handler_noise.gen_noise_real_pwr(out.size) if self.__add_noise else np.zeros_like(out)
             return {'time': time, 'sig': out + noise, 'rms': rms_value}
 
-    def generate_biphasic_waveform(self, anodic_mode: int, anodic_duration: float,
-                                   cathodic_mode: int, cathodic_duration: float,
+    def generate_biphasic_waveform(self, anodic_wvf: str, anodic_duration: float,
+                                   cathodic_wvf: str, cathodic_duration: float,
                                    intermediate_duration: float=0.0, do_cathodic_first: bool=False,
                                    do_charge_balancing: bool=False) -> dict:
         """Generating the waveform for stimulation
         Args:
-            anodic_mode:            Mode of the anodic phase
+            anodic_wvf:             String with waveform type for anodic phase
             anodic_duration:        Time window of the anodic phase
-            cathodic_mode:          Mode of cathodic phase
+            cathodic_wvf:           String with waveform type for cathodic phase
             cathodic_duration:      Time window of the cathodic phase
             intermediate_duration:  Time window for the intermediate idle time during anodic and cathodic phase
             do_cathodic_first:      Starting with cathodic phase
@@ -203,15 +206,15 @@ class WaveformGenerator:
             Two numpy arrays (time, output_signal)
         """
         width = [anodic_duration, cathodic_duration] if not do_cathodic_first else [cathodic_duration, anodic_duration]
-        mode = [anodic_mode, cathodic_mode] if not do_cathodic_first else [cathodic_mode, anodic_mode]
+        mode = [anodic_wvf, cathodic_wvf] if not do_cathodic_first else [cathodic_wvf, anodic_wvf]
         poly = [False, True] if not do_cathodic_first else [True, False]
         waveforms = list()
 
         # --- Creating the waveforms
-        for idx, window in enumerate(width):
+        for idx, (window, wvf_type, inverter) in enumerate(zip(width, mode, poly)):
             if idx == 1 and not intermediate_duration == 0.0:
                 waveforms.append(self.__generate_zero(intermediate_duration))
-            waveforms.append(self.__select_waveform_template(window, mode[idx], poly[idx]))
+            waveforms.append(self.__select_waveform_template(window, wvf_type, inverter))
 
         if do_charge_balancing:
             waveform = self.__get_charge_balancing_factor(waveforms) * waveforms[-1]
@@ -219,6 +222,7 @@ class WaveformGenerator:
 
         # --- Creating the output signal
         out = np.concatenate([waveform for waveform in waveforms], axis=0)
+        out = np.concatenate((out, np.zeros((1,))), axis=0)
         noise = self.__handler_noise.gen_noise_real_pwr(out.size) if self.__add_noise else np.zeros_like(out)
         time = np.linspace(0, out.size, out.size) / self._sampling_rate
         return {'t': time, 'y': out + noise}

@@ -1,14 +1,12 @@
 import numpy as np
-from copy import deepcopy
 from unittest import TestCase, main
 from denspp.offline.data_generator import WaveformGenerator
-
-import matplotlib.pyplot as plt
 
 
 # --- Info: Function have to start with test_*
 class TestWaveformGenerator(TestCase):
     _sampling_rate: float = 20e3
+    _period: float = 0.01
 
     def test_result_value_length(self):
         dict = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).get_dictionary_classes()
@@ -19,6 +17,202 @@ class TestWaveformGenerator(TestCase):
         types_to_check = ['RECT', 'LIN_RISE', 'LIN_FALL', 'SAW_POS', 'SAW_NEG']
         types_checked = [True for type in types_to_check if type in dict]
         self.assertTrue(np.sum(types_checked) == len(types_to_check))
+
+    def test_waveform_zero_zero_length(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
+            time_points=[1/self._sampling_rate],
+            time_duration=[self._period],
+            waveform_select=['ZERO'],
+            polarity_cathodic=[False]
+        )['sig']
+        length_zero = np.argwhere(signal == 0.).flatten()
+        self.assertTrue(length_zero.size == 2+self._period*self._sampling_rate)
+
+    def test_waveform_rect_zero_length(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
+            time_points=[1/self._sampling_rate],
+            time_duration=[self._period],
+            waveform_select=['RECT'],
+            polarity_cathodic=[False]
+        )['sig']
+        length_zero = np.argwhere(signal == 0.).flatten()
+        self.assertTrue(length_zero.size == 2)
+
+    def test_waveform_rect_content_length(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
+            time_points=[1 / self._sampling_rate],
+            time_duration=[self._period],
+            waveform_select=['RECT'],
+            polarity_cathodic=[False]
+        )['sig']
+        length_content = np.argwhere(signal != 0.).flatten()
+        self.assertEqual(length_content.size, int(self._period * self._sampling_rate))
+
+    def test_waveform_lin_rise_content_length(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
+            time_points=[1 / self._sampling_rate],
+            time_duration=[self._period],
+            waveform_select=['LIN_RISE'],
+            polarity_cathodic=[False]
+        )['sig']
+        length_content = np.argwhere(signal != 0.).flatten()
+        self.assertEqual(length_content.size + 1, int(self._period * self._sampling_rate))
+
+    def test_waveform_lin_fall_content_length(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
+            time_points=[1 / self._sampling_rate],
+            time_duration=[self._period],
+            waveform_select=['LIN_FALL'],
+            polarity_cathodic=[False]
+        )['sig']
+        length_content = np.argwhere(signal != 0.).flatten()
+        self.assertEqual(length_content.size + 1, int(self._period * self._sampling_rate))
+
+    def test_waveform_lin_rise_fall_equal(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
+            time_points=[1 / self._sampling_rate, 1 / self._sampling_rate, 1 / self._sampling_rate],
+            time_duration=[self._period, self._period, self._period],
+            waveform_select=['LIN_RISE', 'LIN_FALL', 'RECT'],
+            polarity_cathodic=[False, False, True]
+        )['sig']
+        np.testing.assert_almost_equal(signal, np.zeros_like(signal), decimal=8)
+
+    def test_waveform_sine_half_content_length(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
+            time_points=[1 / self._sampling_rate],
+            time_duration=[self._period],
+            waveform_select=['SINE_HALF'],
+            polarity_cathodic=[False]
+        )['sig']
+        length_content = np.argwhere(signal != 0.).flatten()
+        self.assertEqual(length_content.size + 1, int(self._period * self._sampling_rate))
+
+    def test_waveform_sine_half_inv_content_length(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
+            time_points=[1 / self._sampling_rate],
+            time_duration=[self._period],
+            waveform_select=['SINE_HALF_INV'],
+            polarity_cathodic=[False]
+        )['sig']
+        length_content = np.argwhere(signal != 0.).flatten()
+        self.assertEqual(length_content.size + 1, int(self._period * self._sampling_rate))
+
+    def test_waveform_sine_half_equal(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
+            time_points=[1 / self._sampling_rate, 1 / self._sampling_rate, 1 / self._sampling_rate],
+            time_duration=[self._period, self._period, self._period],
+            waveform_select=['SINE_HALF', 'SINE_HALF_INV', 'RECT'],
+            polarity_cathodic=[False, False, True]
+        )['sig']
+        np.testing.assert_almost_equal(signal, np.zeros_like(signal), decimal=8)
+
+    def test_waveform_sine_full_content_length(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
+            time_points=[1 / self._sampling_rate],
+            time_duration=[self._period],
+            waveform_select=['SINE_FULL'],
+            polarity_cathodic=[False]
+        )['sig']
+        length_content = np.argwhere(signal != 0.).flatten()
+        self.assertEqual(length_content.size + 1, int(self._period * self._sampling_rate))
+
+    def test_waveform_tri_half_content_length_one(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
+            time_points=[1 / self._sampling_rate],
+            time_duration=[self._period],
+            waveform_select=['TRI_HALF'],
+            polarity_cathodic=[False]
+        )['sig']
+        length_content = np.argwhere(signal != 0.).flatten()
+        self.assertEqual(length_content.size + 1, int(self._period * self._sampling_rate))
+
+    def test_waveform_tri_half_content_length_two(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
+            time_points=[1 / self._sampling_rate],
+            time_duration=[2*self._period],
+            waveform_select=['TRI_HALF'],
+            polarity_cathodic=[False]
+        )['sig']
+        length_content = np.argwhere(signal != 0.).flatten()
+        self.assertEqual(length_content.size + 1, int(2*self._period * self._sampling_rate))
+
+    def test_waveform_saw_pos_content_length(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
+            time_points=[1 / self._sampling_rate],
+            time_duration=[self._period],
+            waveform_select=['SAW_POS'],
+            polarity_cathodic=[False]
+        )['sig']
+        length_content = np.argwhere(signal != 0.).flatten()
+        self.assertEqual(length_content.size, int(self._period * self._sampling_rate))
+
+    def test_waveform_saw_neg_content_length(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
+            time_points=[1 / self._sampling_rate],
+            time_duration=[self._period],
+            waveform_select=['SAW_NEG'],
+            polarity_cathodic=[False]
+        )['sig']
+        length_content = np.argwhere(signal != 0.).flatten()
+        self.assertEqual(length_content.size, int(self._period * self._sampling_rate))
+
+    def test_waveform_saw_pos_neg_equal(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
+            time_points=[1 / self._sampling_rate, 1 / self._sampling_rate],
+            time_duration=[self._period, self._period],
+            waveform_select=['SAW_POS', 'SAW_NEG'],
+            polarity_cathodic=[False, False]
+        )['sig']
+        np.testing.assert_almost_equal(signal, np.zeros_like(signal), decimal=8)
+
+    def test_waveform_gauss_content_length(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
+            time_points=[1 / self._sampling_rate],
+            time_duration=[self._period],
+            waveform_select=['GAUSS'],
+            polarity_cathodic=[False]
+        )['sig']
+        length_content = np.argwhere(signal != 0.).flatten()
+        self.assertEqual(length_content.size, int(self._period * self._sampling_rate))
+
+    def test_waveform_biphasic_content_length(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_biphasic_waveform(
+            anodic_wvf='SINE_HALF',
+            anodic_duration=self._period / 2,
+            cathodic_wvf='SINE_HALF',
+            cathodic_duration=self._period / 2,
+            intermediate_duration=0.0,
+            do_cathodic_first=False,
+            do_charge_balancing=False
+        )['y']
+        length_content = np.argwhere(signal != 0.).flatten()
+        self.assertEqual(length_content.size + 2, int(self._period * self._sampling_rate))
+
+    def test_waveform_biphasic_charge_density(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_biphasic_waveform(
+            anodic_wvf='SINE_HALF',
+            anodic_duration=self._period / 2,
+            cathodic_wvf='SINE_HALF',
+            cathodic_duration=self._period / 2,
+            intermediate_duration=0.0,
+            do_cathodic_first=False,
+            do_charge_balancing=False
+        )['y']
+        dq = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).check_charge_balancing(signal)
+        self.assertEqual(dq, 0.0)
+
+    def test_waveform_biphasic_asymmetric_charge_density(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_biphasic_waveform(
+            anodic_wvf='SINE_HALF',
+            anodic_duration=self._period/2,
+            cathodic_wvf='SINE_HALF',
+            cathodic_duration=self._period,
+            intermediate_duration=0.0,
+            do_cathodic_first=False,
+            do_charge_balancing=True
+        )['y']
+        dq = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).check_charge_balancing(signal)
+        np.testing.assert_almost_equal(dq, 0.0, decimal=2)
 
 
 if __name__ == '__main__':
