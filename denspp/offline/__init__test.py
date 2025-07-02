@@ -139,19 +139,16 @@ class TestHelpFunction(unittest.TestCase):
         rslt = check_elem_unique(elements)
         self.assertFalse(rslt)
 
-
-
     def test_get_repo_name(self):
         ref = ['denspp']
         chck = get_repo_name()
-        rslt = True if chck in ref else False
-        self.assertTrue(rslt)
+        self.assertTrue(chck in ref)
 
     def test_get_path_to_project_wo_ref(self):
         ref = ['denspp', 'offline', 'template']
         chck = get_path_to_project_start()
-        rslt = ref[0] in chck and ref[1] in chck
-        self.assertTrue(rslt)
+        rslt = [True for key in ref if key in chck]
+        self.assertTrue(sum(rslt) == 2)
 
     def test_get_path_to_project_with_ref(self):
         chck = get_path_to_project_start(folder_ref='denspp.offline')

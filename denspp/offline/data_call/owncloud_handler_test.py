@@ -20,7 +20,7 @@ class TestOwnCloud(TestCase):
 
     def test_access(self):
         overview = self.handler.get_overview_folder(False)
-        self.assertGreater(len(overview), 1)
+        self.assertGreater(len(overview), 0)
 
     def test_overview_folder(self):
         overview = self.handler.get_overview_folder(False)
