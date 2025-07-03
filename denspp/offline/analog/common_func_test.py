@@ -140,6 +140,26 @@ class TestDigitalFunc(TestCase):
         chck = np.max(np.abs(input - output))
         self.assertLess(chck, 2**-2)
 
+    def test_extract_rising_edge_single(self):
+        stimulus = np.array([False, False, False, True, True, True, True, True, False, False], dtype=bool)
+        points = self.method.extract_rising_edge(stimulus)
+        self.assertEqual(points, [3])
+
+    def test_extract_rising_edge_double(self):
+        stimulus = np.array([False, False, True, True, False, False, True, True, False], dtype=bool)
+        points = self.method.extract_rising_edge(stimulus)
+        self.assertEqual(points, [2, 6])
+
+    def test_extract_falling_edge_single(self):
+        stimulus = np.array([False, False, False, True, True, True, True, True, False, False], dtype=bool)
+        points = self.method.extract_falling_edge(stimulus)
+        self.assertEqual(points, [8])
+
+    def test_extract_falling_edge_double(self):
+        stimulus = np.array([False, False, True, True, False, False, True, True, False], dtype=bool)
+        points = self.method.extract_falling_edge(stimulus)
+        self.assertEqual(points, [4, 8])
+
 
 if __name__ == '__main__':
     main()

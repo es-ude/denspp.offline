@@ -66,3 +66,21 @@ class CommonDigitalFunctions:
         val = Fxp(val=xin, signed=self._bitsigned, n_word=self._bitwidth[0], n_frac=self._bitwidth[1],
                    config=config_fxp).get_val()
         return val if not type(xin) == type(float(1.2)) else float(val)
+
+    @staticmethod
+    def extract_rising_edge(trigger: np.ndarray) -> list:
+        """Extracting the rising edges of an boolean array (e.g. output signal of a comparator)
+        :param trigger:     Numpy array with trigger signal (transient)
+        :return:            List with index of rising edges
+        """
+        trgg_evnt = np.flatnonzero((trigger[:-1] == False) & (trigger[1:] == True)) + 1
+        return trgg_evnt.tolist()
+
+    @staticmethod
+    def extract_falling_edge(trigger: np.ndarray) -> list:
+        """Extracting the falling edges of an boolean array (e.g. output signal of a comparator)
+        :param trigger:     Numpy array with trigger signal (transient)
+        :return:            List with index of rising edges
+        """
+        trgg_evnt = np.flatnonzero((trigger[:-1] == True) & (trigger[1:] == False)) + 1
+        return trgg_evnt.tolist()
