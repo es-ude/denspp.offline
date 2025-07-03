@@ -23,11 +23,10 @@ if __name__ == "__main__":
     plt.close('all')
     settings.use_poly = True
     dev = ElectricalLoad(settings)
-    dev.change_options_fit(
+    dev.change_options_polyfit(
         poly_order=7,
         num_points_fit=101
     )
-    dev.print_types()
 
     # --- Plotting: Current response
     print("\nPlotting transient current response")

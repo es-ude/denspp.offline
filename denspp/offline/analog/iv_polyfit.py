@@ -1,7 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from math import isnan
 from logging import getLogger, Logger
-from denspp.offline.plot_helper import scale_auto_value, save_figure
+from denspp.offline.plot_helper import save_figure
 from denspp.offline.analog.dev_noise import SettingsNoise, RecommendedSettingsNoise, ProcessNoise
 from denspp.offline.metric.data_numpy import calculate_error_rae
 
@@ -217,7 +218,7 @@ class PolyfitIV(ProcessNoise):
         :param current:     Numpy array with applied current signal
         :return:            Numpy array with voltage response
         """
-        assert self._fit_params_i2v.any() != np.nan, "fit parameters not set - Please call 'get_params_for_polynomfit'"
+        assert not np.isnan(self._fit_params_i2v).any(), "fit parameters not set - Please call 'get_params_for_polynomfit'"
         v_noise = np.zeros_like(current) if not self._en_noise else self.gen_noise_awgn_dev(current.size, 1e-9)
         return np.poly1d(self._fit_params_i2v)(current) + v_noise
 
@@ -227,6 +228,6 @@ class PolyfitIV(ProcessNoise):
         :param voltage_bot:     Numpy array with applied current signal on bottom electrode
         :return:                Numpy array with current response
         """
-        assert self._fit_params_v2i.any() != np.nan, "fit parameters not set - Please call 'get_params_for_polynomfit'"
+        assert not np.isnan(self._fit_params_v2i).any(), "fit parameters not set - Please call 'get_params_for_polynomfit'"
         i_noise = np.zeros_like(voltage_top) if not self._en_noise else self.gen_noise_awgn_dev(voltage_top.size, 1e-9)
         return np.poly1d(self._fit_params_v2i)(voltage_top - voltage_bot) + voltage_bot + i_noise

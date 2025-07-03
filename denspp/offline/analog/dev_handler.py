@@ -8,6 +8,7 @@ from scipy.constants import Boltzmann, elementary_charge
 from scipy.optimize import least_squares, curve_fit
 
 from denspp.offline.plot_helper import scale_auto_value, save_figure
+from denspp.offline.analog.iv_polyfit import PolyfitIV
 from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, RecommendedSettingsNoise
 from denspp.offline.metric.data_numpy import calculate_error_rae, calculate_error_mse
 
@@ -46,17 +47,11 @@ class ElectricalLoadHandler(ProcessNoise):
     _settings_noise: SettingsNoise
     _type_device: dict
     # --- Fitting options
-    _fit_params_current: np.ndarray # Voltage input
-    _fit_params_voltage: np.ndarray # Current input
-    _fit_options: list
+    _polynom_fitter: PolyfitIV
     # --- Electrical Signal limitations
     _param_bounds: list
     _bounds_curr: list
     _bounds_volt: list
-
-    @staticmethod
-    def calc_error(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
-        return calculate_error_rae(y_pred, y_true)
 
     def __init__(self, settings_dev: SettingsDevice, settings_noise: SettingsNoise=RecommendedSettingsNoise) -> None:
         """Class for emulating an electrical device
@@ -64,17 +59,27 @@ class ElectricalLoadHandler(ProcessNoise):
         :param settings_noise:      Class for controlling the noise behaviour
         :return:                    None
         """
-        super().__init__(settings_noise, settings_dev.fs_ana)
+        ProcessNoise.__init__(self,
+            settings=settings_noise,
+            fs_ana=settings_dev.fs_ana
+        )
 
         self._settings_device = settings_dev
         self._logger = getLogger(__name__)
         self._type_device = dict()
+        self._polynom_fit = PolyfitIV(
+            sampling_rate=settings_dev.fs_ana,
+            en_noise=settings_dev.noise_en,
+            settings_noise=settings_noise
+        )
 
-        self._fit_options = [1, 1001]
-        self._fit_params_current = np.zeros((0, 0))
-        self._fit_params_voltage = np.zeros((0, 0))
+        self._num_points = 1001
         self._bounds_curr = [-14, -3]
         self._bounds_volt = [0.0, 5.0]
+
+    @staticmethod
+    def _calc_error(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
+        return calculate_error_rae(y_pred, y_true)
 
     def _check_right_param_format(self, new_list: list=()) -> bool:
         """Function for checking right keys of registered module and settings are equal"""
@@ -84,7 +89,7 @@ class ElectricalLoadHandler(ProcessNoise):
         check = keys_set == keys_ref if len(new_list) == 0 else keys_bnd == keys_ref
         return check
 
-    def register_device(self, short_label: str, description: str, func_equa, func_fit, func_reg) -> None:
+    def _register_device(self, short_label: str, description: str, func_equa, func_fit, func_reg) -> None:
         """Function for registering an electrical device to library
         :param short_label:     String with short label of the device (e.g. 'R')
         :param description:     Short description of device type (e.g. 'Resistor')
@@ -97,30 +102,39 @@ class ElectricalLoadHandler(ProcessNoise):
         module = {short_label: {'desp': description, 'param': param, 'equa': func_equa, 'reg': func_reg, 'fit': func_fit}}
         self._type_device.update(module)
 
-    def _extract_iv_curve_with_regression(self, params_dev: dict, mode_fit: int=0) -> dict:
+    def _extract_iv_curve_with_polyfit(self, current: np.ndarray, voltage: np.ndarray, show_plots: bool=False,
+                                       find_best_order: bool=False, order_range: list=(2, 18)) -> float:
+        """Extracting the polynom fit parameters and plotting it compared to regression task
+        :param current:             Numpy array with current values
+        :param voltage:             Numpy array with voltage values
+        :param find_best_order:     Find the best poly.-fit order
+        :param order_range:         Range with Integer value for search (best polynom order)
+        :param show_plots:          Showing plots of each run
+        :return:                    Floating value with error
+        """
+        return self._polynom_fit.extract_polyfit_params(
+            current=current,
+            voltage=voltage,
+            show_plots=show_plots,
+            find_best_order=find_best_order,
+            order_range=order_range
+        )
+
+    def _extract_iv_curve_with_regression(self, params_dev: dict) -> dict:
         """Function for getting the I-V curve using electrical device description with regression
         Args:
             params_dev:             Dictionary with parameters from device
-            mode_fit:               Fit Range Mode [0: Full positive, 1: Full negative, 2: Full +/-,]
         Returns:
             Dictionary with two numpy arrays with current ['I'] and voltage ['V'] from device
         """
         if self._settings_device.type in self._type_device[self._settings_device.type]:
             self._logger.debug(f"Apply regression function for getting device transfer function of {self._settings_device.type}")
-            match mode_fit:
-                case 1:
-                    self._logger.debug("Generate I-V regression for given current boundries (Negative range)")
-                    u_path = np.logspace(start=-self._bounds_volt[1], stop=-self._bounds_volt[0], num=self._fit_options[1], endpoint=True)
-                case 2:
-                    self._logger.debug("Generate I-V regression for given current boundries (Full range)")
-                    u_path = np.logspace(start=-self._bounds_volt[1], stop=self._bounds_volt[1], num=2*self._fit_options[1]+1, endpoint=True)
-                case _:
-                    self._logger.debug("Generate I-V regression for given current boundries (Positive range)")
-                    u_path = np.logspace(start=self._bounds_volt[0], stop=self._bounds_volt[1], num=self._fit_options[1], endpoint=True)
+            self._logger.debug("Generate I-V regression for given current boundries (Negative range)")
+            u_path = np.logspace(start=self._bounds_volt[0], stop=self._bounds_volt[1], num=self._num_points, endpoint=True)
             i_path = self._do_regression(u_inp=u_path, u_inn=0.0, params=params_dev, disable_print=True)
         else:
             self._logger.debug("Using normal device equation for getting I-V-behaviour")
-            u_path = np.linspace(self._bounds_volt[0], self._bounds_volt[1], self._fit_options[1], endpoint=True)
+            u_path = np.linspace(self._bounds_volt[0], self._bounds_volt[1], self._num_points, endpoint=True)
             i_path = self._get_current_from_equation(u_path, 0.0, params_dev)
 
         # --- Limiting with voltage boundaries
@@ -186,9 +200,9 @@ class ElectricalLoadHandler(ProcessNoise):
             if isinstance(params_used, dict):
                 i_poly = [self._get_current_from_equation(voltage_test, u_inn, params_used)]
             else:
-                i_poly = [self._get_current_from_fitting(voltage_test, u_inn), self._get_voltage_from_fitting(i_test, u_inn)]
+                i_poly = [self._polynom_fit.get_current(voltage_test, u_inn), u_inn + self._polynom_fitter.get_voltage(i_test)]
 
-            error = self.calc_error(i_poly[0], i_test)
+            error = self._calc_error(i_poly[0], i_test)
             plot_title_new = f"{plot_title}, 1e3* RAE = {error:.3f}" if plot_title else f"1e3* RAE = {error:.3f}"
             self._plot_transfer_function_comparison(
                 u_transfer=voltage_test,
@@ -204,25 +218,20 @@ class ElectricalLoadHandler(ProcessNoise):
             error = -1.0
         return error
 
-    def _get_params_from_curve_fitting(self, bounds_params: dict={},
-                                       mode_fit: int=0, do_test: bool=False, do_plot: bool=True,
-                                       path2save: str='') -> [np.ndarray, float]:
+    def _get_params_from_curve_fitting(self, bounds_params: dict, do_test: bool=False,
+                                       do_plot: bool=True, path2save: str='') -> [np.ndarray, float]:
         """Function to extract the params of electrical device behaviour with curve fitting
         Args:
             bounds_params:          Dictionary with param bounds
-            mode_fit:               Fit Range Mode [0: Full Positive, 1: Full negative, 2: Full +/-]
             do_test:                Performing a test
             do_plot:                Plotting the results of regression and polynom fitting
             path2save:              String with path to save the figure
         Returns:
             List with device parameter and floating value with Relative Squared Error
         """
-        signals = self._extract_iv_curve_with_regression(
-            params_dev=self._settings_device.dev_value,
-            mode_fit=mode_fit
-        )
+        signals = self._extract_iv_curve_with_regression(params_dev=self._settings_device.dev_value)
         self._logger.debug(f"Start curve fitting of device: {self._settings_device.type}")
-        params_ext = self.get_params_from_fitting_data(
+        params_ext = self.extract_params_curvefit(
             voltage=signals['V'],
             current=signals['I'],
             param_bounds=bounds_params
@@ -238,43 +247,6 @@ class ElectricalLoadHandler(ProcessNoise):
             path2save=path2save
         )
         return [params_ext, error]
-
-    def _extract_params_for_polynomfit(self, current: np.ndarray, voltage: np.ndarray, is_current_out: bool=True) -> np.ndarray:
-        self._fit_params_current = np.polyfit(x=voltage, y=current, deg=self._fit_options[0])
-        self._fit_params_voltage = np.polyfit(x=current, y=voltage, deg=self._fit_options[0])
-        return self._fit_params_current if is_current_out else self._fit_params_voltage
-
-    def _get_params_for_polynomfit(self, mode_fit: int=0, do_test: bool=False, do_plot: bool=False, path2save: str='') -> list:
-        """Function to extract the params of electrical device behaviour with polynom fit function
-        Args:
-            mode_fit:               Fit Range Mode [0: Full Positive, 1: Full negative, 2: Full +/-]
-            do_test:                Performing a test
-            do_plot:                Plotting the results of regression and polynom fitting
-            path2save:              String with path to save the figure
-        Returns:
-            List with polynom fit parameter for voltage output, current output and floating value with Relative Squared Error
-        """
-        signals = self._extract_iv_curve_with_regression(
-            params_dev=self._settings_device.dev_value,
-            mode_fit=mode_fit
-        )
-        self._logger.debug(f"Start polynom fitting of device: {self._settings_device.type}")
-        self._extract_params_for_polynomfit(
-            voltage=signals['V'],
-            current=signals['I'],
-            is_current_out=True
-        )
-        error = self._test_fit_option(
-            voltage_test=signals['V'],
-            params_used=[self._fit_params_current, self._fit_params_voltage],
-            methods_compare=['Poly. fitting', 'Regression'],
-            u_inn=0.0,
-            plot_title=f"n_p={self._fit_params_voltage.size}",
-            do_test=do_test,
-            do_plot=do_plot,
-            path2save=path2save
-        )
-        return [self._fit_params_voltage, self._fit_params_current, error]
 
     @staticmethod
     def _plot_transfer_function_comparison(u_transfer: np.ndarray, i_dev0: np.ndarray | list, i_dev1: np.ndarray,
@@ -323,81 +295,14 @@ class ElectricalLoadHandler(ProcessNoise):
         if show_plot:
             plt.show(block=True)
 
-    def _find_best_poly_order(self, order_start: int, order_stop: int,
-                              show_plots: bool=False, mode_fit: int=0) -> None:
-        """Finding the best polynomial order for fitting
-        Args:
-            order_start:    Integer value with starting order number
-            order_stop:     Integer value with stopping order number
-            show_plots:     Showing plots of each run
-            mode_fit:       Fit Range Mode [0: Full Pos., 1: Full +/-, 2: Take Pos., Mirror Neg., 3: Take Neg., Mirror Pos.]
-        Returns:
-            None
+    def get_type_list(self) -> dict:
+        """Extracting the types as list
+        :return:    Dictionaray with device types and corresponding description and parameter list
         """
-        print("\n=====================================================")
-        print("Searching the best polynom order with minimal error")
-        print("=====================================================")
-        order_search = [idx for idx in range(order_start, order_stop+1)]
-        error_search = []
-        for idx, order in enumerate(order_search):
-            self.change_options_fit(order, self._fit_options[1])
-            error = self._get_params_for_polynomfit(
-                mode_fit=mode_fit,
-                do_test=True,
-                do_plot=show_plots
-            )
-            error_search.append(error)
-            print(f"#{idx:02d}: order = {order:02d} --> Error = {error}")
-
-        # --- Finding best order
-        error_search = np.array(error_search)
-        xmin = np.argwhere(error_search == error_search.min()).flatten()
-        print(f"\nBest solution: Order = {np.array(order_search)[xmin]} with an error of {error_search[xmin]}!")
-
-    def plot_polyfit_transfer_function(self, find_best_order: bool=False, show_plots: bool=True,
-                                       order_start: int=2, order_stop: int=18, mode_fit: int=0) -> None:
-        """Extracting the polynom fit parameters and plotting it compared to regression task
-        Args:
-            find_best_order:    Find the best poly.-fit order
-            show_plots:         Showing plots of each run
-            order_start:        Integer value for starting search (best polynom order)
-            order_stop:         Integer value for stopping search (best polynom order)
-            mode_fit:           Fit Range Mode [0: Full Pos., 1: Full +/-, 2: Take Pos., Mirror Neg., 3: Take Neg., Mirror Pos.]
-        Returns:
-            None
-        """
-        if not find_best_order:
-            self._get_params_for_polynomfit(
-                mode_fit=mode_fit,
-                do_test=True,
-                do_plot=show_plots,
-                path2save=''
-            )
-        else:
-            self._find_best_poly_order(
-                order_start=order_start,
-                order_stop=order_stop,
-                show_plots=show_plots,
-                mode_fit=mode_fit
-            )
-
-    def plot_param_fitting(self, bounds_param: dict={}, mode_fit: int=0, show_plots: bool=True) -> None:
-        """Function for extracting
-        Args:
-            bounds_param:       Dictionary of bounds parameters
-            mode_fit:           Fit Range Mode [0: Full Pos., 1: Full +/-, 2: Take Pos., Mirror Neg., 3: Take Neg., Mirror Pos.]
-            show_plots:         Showing plots of each run
-        Returns:
-            None
-        """
-        params, error = self._get_params_from_curve_fitting(
-            mode_fit=mode_fit,
-            bounds_params=bounds_param,
-            do_test=True,
-            do_plot=show_plots,
-            path2save=''
-        )
-        print(f"Extracted params = {params}")
+        overview = dict()
+        for key in self._type_device.keys():
+            overview[key] = {'desp': self._type_device[key]['desp'], 'param': self._type_device[key]['param']}
+        return overview
 
     def change_boundary_current(self, downer_limit: float, upper_limit: float) -> None:
         """Redefining the current limits for polynom fitting of I-V behaviour of electrical devices
@@ -415,22 +320,16 @@ class ElectricalLoadHandler(ProcessNoise):
         """
         self._bounds_volt = [downer_limit, upper_limit]
 
-    def change_options_fit(self, poly_order: int, num_points_fit: int) -> None:
+    def change_options_polyfit(self, poly_order: int, num_points_fit: int) -> None:
         """Redefining the options for polynom fitting of I-V behaviour of electrical devices
         Args:
             poly_order:     Order of the polynom fit
             num_points_fit: Exponential integer for downer voltage limit
         """
-        self._fit_options = [poly_order, num_points_fit]
+        self._num_points = num_points_fit
+        self._polynom_fit.change_fit_settings(poly_order)
 
-    def print_types(self) -> None:
-        """Print electrical types in terminal"""
-        print("\n==========================================="
-              "\nAvailable types of electrical devices")
-        for idx, type in enumerate(self._type_device.keys()):
-            print(f"\t#{idx:03d}: {type} = {self._type_device[type]['desp']} and params = {self._type_device[type]['param']}")
-
-    def declare_param_bounds(self, param_bounds: dict) -> list:
+    def declare_param_bounds_curvefit(self, param_bounds: dict) -> list:
         """Function for building the param bounds used in curve fitting
         :param param_bounds:    Dictionary with {parameter name, [min, max]}
         :return:                List with bounds in right order
@@ -452,19 +351,18 @@ class ElectricalLoadHandler(ProcessNoise):
             guess_values.append(float(val_inf if np.isinf(val_min) or np.isinf(val_max) else val_end))
         return guess_values
 
-    def get_params_from_fitting_data(self, voltage: np.ndarray, current: np.ndarray, param_bounds: dict) -> dict:
-        """Function to extract the model parameters from fitting the measurement to model
+    def extract_params_curvefit(self, voltage: np.ndarray, current: np.ndarray, param_bounds: dict) -> dict:
+        """Function to extract the model parameters from fitting the measurement to model (curve fit)
         :param voltage:         Numpy array with voltage signal from IV-measurement [V]
         :param current:         Numpy array with current signal from IV-measurement [A]
         :param param_bounds:    Dictionary with parameter bounds {parameter name: [min, max], ...}
         :return:                Dictionary with model parameters
         """
-        self.declare_param_bounds(param_bounds)
+        self.declare_param_bounds_curvefit(param_bounds)
 
         if self._check_right_param_format():
             arg_names = [key for key in self._settings_device.dev_value.keys()]
             self._logger.debug(f"Getting the model parameters: {arg_names}")
-
             params, coinv = curve_fit(
                 f=self._type_device[self._settings_device.type]['fit'],
                 ydata=voltage,
@@ -484,33 +382,18 @@ class ElectricalLoadHandler(ProcessNoise):
         :param mode_voltage:    Boolean if input signal is voltage [True] or current [False]
         :return:                Boolean if warning violation is available
         """
-        range_list = self._bounds_volt if mode_voltage else self._bounds_curr
-        violation_dwn = np.count_nonzero(signal < range_list[0], axis=0)
-        violation_up = np.count_nonzero(signal > range_list[1], axis=0)
+        range_list = self._bounds_volt if mode_voltage else [0, 10**self._bounds_curr[1]]
+        signal_used = signal if mode_voltage else np.abs(signal)
+        violation_dwn = np.count_nonzero(signal_used < range_list[0], axis=0)
+        violation_up = np.count_nonzero(signal_used > range_list[1], axis=0)
 
         if violation_up or violation_dwn:
-            val = signal.min if violation_dwn else signal.max
-            limit = range_list[0] if violation_dwn else range_list[1]
             addon = f'(Upper limit)' if not violation_dwn else '(Downer limit)'
-            self._logger.warn(f"Voltage Range Violation {addon}! With {val} of {limit} ---")
-        return violation_up or violation_dwn
+            self._logger.warn(f"Voltage Range Violation {addon}!")
+        return bool(violation_up or violation_dwn)
 
     def _get_current_from_equation(self, voltage_pos: np.ndarray | float, voltage_neg: np.ndarray | float, params: dict) -> np.ndarray:
         return self._type_device[self._settings_device.type]['equa'](voltage_pos, voltage_neg, params)
-
-    def _get_current_from_fitting(self, voltage_pos: np.ndarray | float, voltage_neg: np.ndarray | float, mode_poly: int=0) -> np.ndarray:
-        if self._fit_params_current.size == 0:
-            self._get_params_for_polynomfit(
-                mode_fit=mode_poly, do_test=False, do_plot=False, path2save=''
-            )
-        return np.polyval(self._fit_params_current, voltage_pos - voltage_neg)
-
-    def _get_voltage_from_fitting(self, current: np.ndarray, u_inn: float, mode_poly: int=0) -> np.ndarray:
-        if self._fit_params_voltage.size == 0:
-            self._get_params_for_polynomfit(
-                mode_fit=mode_poly, do_test=False, do_plot=False, path2save=''
-            )
-        return np.polyval(self._fit_params_voltage, current)
 
     def _get_voltage_from_regression(self, current: np.ndarray, params: dict) -> np.ndarray:
         return -self._type_device[self._settings_device.type]['reg'](current, np.zeros_like(current), params)
@@ -590,9 +473,23 @@ class ElectricalLoadHandler(ProcessNoise):
         """
         method = [method for method in self._type_device.keys() if method == self._settings_device.type]
         if len(method) and self._check_right_param_format():
-            return self._get_voltage_with_search(current, u_inn) if not self._settings_device.use_poly else self._get_voltage_from_fitting(current, u_inn)
+            if not self._settings_device.use_poly:
+                return self._get_voltage_with_search(current, u_inn)
+            else:
+                if np.isnan(self._polynom_fit._fit_params_v2i).any():
+                    vi = self._extract_iv_curve_with_regression(self._settings_device.dev_value)
+                    error = self._extract_iv_curve_with_polyfit(
+                        current=vi['I'],
+                        voltage=vi['V']
+                    )
+                    self._logger.debug(f"Extracted IV curve for polyfitting with error of {error}")
+                return self._polynom_fit.get_voltage(current) + u_inn
         else:
-            raise Exception("Error: Model not available - Please check!")
+            if len(method):
+                raise ValueError("Parameter 'type': Model not available - Please check!")
+            else:
+                ovr = self.get_type_list()
+                raise ValueError(f"Parameter 'use_params': Wrong parameters selected - Please use {ovr[method[0]]['params']}!")
 
     def get_current(self, u_top: np.ndarray | float, u_bot: np.ndarray | float) -> np.ndarray:
         """Getting the current response from electrical device
@@ -602,9 +499,24 @@ class ElectricalLoadHandler(ProcessNoise):
         """
         method = [method for method in self._type_device.keys() if method == self._settings_device.type]
         if len(method) and self._check_right_param_format():
-            return self._get_current_from_equation(u_top, u_bot, self._settings_device.dev_value) if not self._settings_device.use_poly else self._get_current_from_fitting(u_top, u_bot)
+            if not self._settings_device.use_poly:
+                return self._get_current_from_equation(u_top, u_bot, self._settings_device.dev_value)
+            else:
+                if np.isnan(self._polynom_fit._fit_params_v2i).any():
+                    vi = self._extract_iv_curve_with_regression(self._settings_device.dev_value)
+                    error = self._extract_iv_curve_with_polyfit(
+                        current=vi['I'],
+                        voltage=vi['V']
+                    )
+                    self._logger.debug(f"Extracted IV curve for polyfitting with error of {error}")
+                return self._polynom_fit.get_current(u_top, u_bot)
         else:
-            raise Exception("Error: Model not available - Please check!")
+            if len(method):
+                raise ValueError("Parameter 'type': Model not available - Please check!")
+            else:
+                ovr = self.get_type_list()
+                raise ValueError(
+                    f"Parameter 'use_params': Wrong parameters selected - Please use {ovr[method[0]]['params']}!")
 
     def get_current_density(self, u_top: np.ndarray, u_bot: np.ndarray | float, area: float) -> np.ndarray:
         """Getting the current response from electrical device

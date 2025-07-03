@@ -47,21 +47,21 @@ class ElectricalLoad(ElectricalLoadHandler):
         ElectricalLoadHandler.__init__(self, settings_dev)
 
         # --- Registering electrical devices
-        self.register_device(
+        self._register_device(
             short_label='R',
             description='Resistor',
             func_equa=self._equation_resistor,
             func_reg=self._func2reg_resistor,
             func_fit=self._func2cur_resistor
         )
-        self.register_device(
+        self._register_device(
             short_label='RDs',
             description='Resistive diode (single)',
             func_equa=self._equation_resistive_diode_single,
             func_reg=self._func2reg_resistive_diode,
             func_fit=self._func2cur_resistive_diode
         )
-        self.register_device(
+        self._register_device(
             short_label='RDd',
             description='Resistive diode (anti-parallel)',
             func_equa=self._equation_resistive_diode_antiparallel,

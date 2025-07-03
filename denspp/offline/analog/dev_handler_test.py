@@ -74,6 +74,56 @@ class TestDeviceSettings(TestCase):
         check = np.asarray(self.volt_offset)
         np.testing.assert_almost_equal(result, check, decimal=-9)
 
+    def test_device_hndl_access(self):
+        set0 = deepcopy(TestSettings)
+        ovr_devices = ElectricalLoadHandler(settings_dev=set0).get_type_list()
+        self.assertEqual(len(ovr_devices), 0)
+
+    def test_device_get_voltage(self):
+        set0 = deepcopy(TestSettings)
+        try:
+            volt = ElectricalLoadHandler(settings_dev=set0).get_voltage(self.test_volt / 1e6, 0.0)
+        except:
+            self.assertTrue(True)
+        else:
+            self.assertTrue(False)
+
+    def test_device_get_current(self):
+        set0 = deepcopy(TestSettings)
+        try:
+            curr = ElectricalLoadHandler(settings_dev=set0).get_current(self.test_volt, 0.0)
+        except:
+            self.assertTrue(True)
+        else:
+            self.assertTrue(False)
+
+    def test_chck_violation_voltage_success(self):
+        set0 = deepcopy(TestSettings)
+        dut = ElectricalLoadHandler(settings_dev=set0)
+        dut.change_boundary_voltage(self.test_volt.min() - 1, self.test_volt.max() + 1)
+        rslt = dut.check_value_range_violation(self.test_volt, True)
+        self.assertFalse(rslt)
+
+    def test_chck_violation_voltage_failed(self):
+        set0 = deepcopy(TestSettings)
+        dut = ElectricalLoadHandler(settings_dev=set0)
+        dut.change_boundary_voltage(self.test_volt.min() + 1, self.test_volt.max() - 1)
+        rslt = dut.check_value_range_violation(self.test_volt, True)
+        self.assertTrue(rslt)
+
+    def test_chck_violation_current_success(self):
+        set0 = deepcopy(TestSettings)
+        dut = ElectricalLoadHandler(settings_dev=set0)
+        dut.change_boundary_current(-10, -1)
+        rslt = dut.check_value_range_violation(self.test_volt/1e3, False)
+        self.assertFalse(rslt)
+
+    def test_chck_violation_current_failed(self):
+        set0 = deepcopy(TestSettings)
+        dut = ElectricalLoadHandler(settings_dev=set0)
+        dut.change_boundary_current(-10, -3)
+        rslt = dut.check_value_range_violation(self.test_volt/1e3, False)
+        self.assertTrue(rslt)
 
 if __name__ == '__main__':
     main()
