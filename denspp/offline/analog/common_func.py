@@ -44,6 +44,24 @@ class CommonDigitalFunctions:
             self._digital_border = self.quantize_fxp(xin=np.array([-np.inf, np.inf]))
             return self._digital_border
 
+    @staticmethod
+    def checking_binary_limits_violation(data: np.ndarray, bitwidth: int, do_signed: bool) -> np.ndarray:
+        """Function for checking if data has some binary limit violations and correct them
+        :param data:        Numpy array with data for checking
+        :param bitwidth:    Used bitwidth for checking
+        :param do_signed:   Output is signed (True) or unsigned (False)
+        :return:            Numpy array with corrected binary data
+        """
+        data_new = deepcopy(data)
+        chck_lim = [-(2 ** (bitwidth - 1)), (2 ** (bitwidth - 1) - 1)] if do_signed else [0, ((2 ** bitwidth) - 1)]
+        if data_new.max() > chck_lim[1]:
+            xpos = np.argmax(data)
+            data_new[xpos] = chck_lim[1]
+        if data_new.min() < chck_lim[0]:
+            xpos = np.argmin(data)
+            data_new[xpos] = chck_lim[0]
+        return data_new
+
     def clamp_digital(self, xin: np.ndarray) -> np.ndarray:
         """Do digital clamping of input data values
         :param xin:     Input data stream

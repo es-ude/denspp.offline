@@ -1,5 +1,5 @@
 from unittest import TestCase, main
-
+from copy import deepcopy
 import numpy as np
 from denspp.offline.analog.common_func import CommonAnalogFunctions, CommonDigitalFunctions
 
@@ -139,6 +139,31 @@ class TestDigitalFunc(TestCase):
         output = self.method.quantize_fxp(input)
         chck = np.max(np.abs(input - output))
         self.assertLess(chck, 2**-2)
+
+    def test_chck_binary_violation_unsigned_true(self):
+        stimulus = np.array([0, 4, 8, 12, 15], dtype=int)
+        ref = deepcopy(stimulus)
+        out = self.method.checking_binary_limits_violation(stimulus, 4, False)
+        np.testing.assert_array_equal(out, ref)
+
+    def test_chck_binary_violation_unsigned_false(self):
+        stimulus = np.array([0, 4, 8, 12, 16], dtype=int)
+        ref = np.array([0, 4, 8, 12, 15], dtype=int)
+        out = self.method.checking_binary_limits_violation(stimulus, 4, False)
+        np.testing.assert_array_equal(out, ref)
+
+    def test_chck_binary_violation_signed_true(self):
+        stimulus = np.array([-8, 4, 2, 0, 4, 7], dtype=int)
+        ref = deepcopy(stimulus)
+        out = self.method.checking_binary_limits_violation(stimulus, 4, True)
+        np.testing.assert_array_equal(out, ref)
+
+    def test_chck_binary_violation_signed_false(self):
+        stimulus = np.array([-8, 4, 2, 0, 4, 8], dtype=int)
+        ref = np.array([-8, 4, 2, 0, 4, 7], dtype=int)
+        out = self.method.checking_binary_limits_violation(stimulus, 4, True)
+        np.testing.assert_array_equal(out, ref)
+
 
     def test_extract_rising_edge_single(self):
         stimulus = np.array([False, False, False, True, True, True, True, True, False, False], dtype=bool)
