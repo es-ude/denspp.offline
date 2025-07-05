@@ -129,12 +129,32 @@ class TestWaveformGenerator(TestCase):
     def test_waveform_tri_half_content_length_two(self):
         signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
             time_points=[1 / self._sampling_rate],
-            time_duration=[2*self._period],
+            time_duration=[2 * self._period],
             waveform_select=['TRI_HALF'],
             polarity_cathodic=[False]
         )['sig']
         length_content = np.argwhere(signal != 0.).flatten()
-        self.assertEqual(length_content.size + 1, int(2*self._period * self._sampling_rate))
+        self.assertEqual(length_content.size + 1, int(2 * self._period * self._sampling_rate))
+
+    def test_waveform_tri_full_content_length_one(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
+            time_points=[1 / self._sampling_rate],
+            time_duration=[self._period],
+            waveform_select=['TRI_FULL'],
+            polarity_cathodic=[False]
+        )['sig']
+        length_content = np.argwhere(signal != 0.).flatten()
+        self.assertEqual(length_content.size + 2, int(self._period * self._sampling_rate))
+
+    def test_waveform_tri_full_content(self):
+        signal = WaveformGenerator(12, add_noise=False).generate_waveform(
+            time_points=[0.],
+            time_duration=[1.],
+            waveform_select=['TRI_FULL'],
+            polarity_cathodic=[False]
+        )['sig']
+        ref = np.array([ 0.,  0.33333333,  0.66666667,  1.,  0.66666667, 0.33333333, 0., -0.33333333, -0.66666667, -1., -0.66666667, -0.33333333])
+        np.testing.assert_almost_equal(signal, ref, decimal=8)
 
     def test_waveform_saw_pos_content_length(self):
         signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
@@ -267,7 +287,7 @@ class TestWaveformGenerator(TestCase):
             signed=False,
             do_opt=False
         )['sig']
-        ref = np.array([32, 48, 63, 63, 48, 32, 32, 16,  0,  0, 16, 32], dtype=np.int32)
+        ref = np.array([32, 42, 53, 63, 53, 42, 32, 21, 10,  0, 10, 21], dtype=np.int32)
         np.testing.assert_almost_equal(out, ref, decimal=4)
 
 

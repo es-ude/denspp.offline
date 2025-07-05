@@ -97,15 +97,13 @@ class WaveformGenerator:
 
     def __generate_triangle_half(self, time_duration: float) -> np.ndarray:
         """Creating an output array with half triangular waveform"""
-        out0 = self.__generate_linear_rising(0.5 * time_duration)
-        out1 = self.__generate_linear_falling(0.5 * time_duration * (1 + 2 / out0.size))[1:-1]
-        return np.concatenate((out0, out1), axis=0)
+        time = np.linspace(start=0.0, stop=2* np.pi, num=int(time_duration * self._sampling_rate), endpoint=False, dtype=float)
+        return signal.sawtooth(0.5*time + np.pi/2, width=0.5)
 
     def __generate_triangle_full(self, time_duration: float) -> np.ndarray:
         """Creating an output array with full triangular waveform"""
-        out0 = self.__generate_linear_rising(0.25 * time_duration)
-        out1 = self.__generate_linear_falling(0.25 * time_duration)
-        return np.concatenate((out0, out1, -out0, -out1), axis=0)
+        time = np.linspace(start=0.0, stop=2 * np.pi, num=int(time_duration * self._sampling_rate), endpoint=False, dtype=float)
+        return signal.sawtooth(time + np.pi/2, width=0.5)
 
     def __generate_sawtooth_positive(self, time_duration: float) -> np.ndarray:
         """Creating an output array with linear positive sawtooth"""
