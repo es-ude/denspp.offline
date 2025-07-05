@@ -31,8 +31,8 @@ class SettingsWaveformDataset:
 
 
 DefaultSettingsWaveformDataset = SettingsWaveformDataset(
-    wfg_type=['RECT', 'LIN_RISE', 'LIN_FALL', 'SINE_HALF', 'SINE_HALF_INV', 'SINE_FULL', 'TRI_HALF', 'TRI_FULL', 'SAW_POS', 'SAW_NEG', 'GAUSS'],
-    wfg_freq=[1e2, 1e2, 1e2, 1e2, 1e2, 1e2, 1e2, 1e2, 1e2, 1e2, 1e2],
+    wfg_type=['RECT_HALF', 'RECT_FULL', 'LIN_RISE', 'LIN_FALL', 'SINE_HALF', 'SINE_HALF_INV', 'SINE_FULL', 'TRI_HALF', 'TRI_FULL', 'SAW_POS', 'SAW_NEG', 'GAUSS'],
+    wfg_freq=[1e2, 1e2, 1e2, 1e2, 1e2, 1e2, 1e2, 1e2, 1e2, 1e2, 1e2, 1e2],
     num_samples=1000,
     time_idle=20,
     scale_amp=1.0,

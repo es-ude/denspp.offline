@@ -14,7 +14,7 @@ class TestWaveformGenerator(TestCase):
 
     def test_result_value_available_waveforms(self):
         dict = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).get_dictionary_classes()
-        types_to_check = ['RECT', 'LIN_RISE', 'LIN_FALL', 'SAW_POS', 'SAW_NEG']
+        types_to_check = ['RECT_HALF', 'LIN_RISE', 'LIN_FALL', 'SAW_POS', 'SAW_NEG']
         types_checked = [True for type in types_to_check if type in dict]
         self.assertTrue(np.sum(types_checked) == len(types_to_check))
 
@@ -32,7 +32,7 @@ class TestWaveformGenerator(TestCase):
         signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
             time_points=[1/self._sampling_rate],
             time_duration=[self._period],
-            waveform_select=['RECT'],
+            waveform_select=['RECT_HALF'],
             polarity_cathodic=[False]
         )['sig']
         length_zero = np.argwhere(signal == 0.).flatten()
@@ -42,11 +42,31 @@ class TestWaveformGenerator(TestCase):
         signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
             time_points=[1 / self._sampling_rate],
             time_duration=[self._period],
-            waveform_select=['RECT'],
+            waveform_select=['RECT_HALF'],
             polarity_cathodic=[False]
         )['sig']
         length_content = np.argwhere(signal != 0.).flatten()
         self.assertEqual(length_content.size, int(self._period * self._sampling_rate))
+
+    def test_waveform_square_content_length(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
+            time_points=[1 / self._sampling_rate],
+            time_duration=[self._period],
+            waveform_select=['RECT_FULL'],
+            polarity_cathodic=[False]
+        )['sig']
+        length_content = np.argwhere(signal != 0.).flatten()
+        self.assertEqual(length_content.size, int(self._period * self._sampling_rate))
+
+    def test_waveform_square_content(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
+            time_points=[1 / self._sampling_rate],
+            time_duration=[10 / self._sampling_rate],
+            waveform_select=['RECT_FULL'],
+            polarity_cathodic=[False]
+        )['sig']
+        ref = np.array([ 0., 1., 1., 1., 1., 1., -1., -1., -1., -1., -1., 0.])
+        np.testing.assert_almost_equal(signal, ref, decimal=8)
 
     def test_waveform_lin_rise_content_length(self):
         signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
@@ -72,7 +92,7 @@ class TestWaveformGenerator(TestCase):
         signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
             time_points=[1 / self._sampling_rate, 1 / self._sampling_rate, 1 / self._sampling_rate],
             time_duration=[self._period, self._period, self._period],
-            waveform_select=['LIN_RISE', 'LIN_FALL', 'RECT'],
+            waveform_select=['LIN_RISE', 'LIN_FALL', 'RECT_HALF'],
             polarity_cathodic=[False, False, True]
         )['sig']
         np.testing.assert_almost_equal(signal, np.zeros_like(signal), decimal=8)
@@ -101,7 +121,7 @@ class TestWaveformGenerator(TestCase):
         signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
             time_points=[1 / self._sampling_rate, 1 / self._sampling_rate, 1 / self._sampling_rate],
             time_duration=[self._period, self._period, self._period],
-            waveform_select=['SINE_HALF', 'SINE_HALF_INV', 'RECT'],
+            waveform_select=['SINE_HALF', 'SINE_HALF_INV', 'RECT_HALF'],
             polarity_cathodic=[False, False, True]
         )['sig']
         np.testing.assert_almost_equal(signal, np.zeros_like(signal), decimal=8)
@@ -259,7 +279,7 @@ class TestWaveformGenerator(TestCase):
             signed=True,
             do_opt=False
         )['sig']
-        ref = np.array([0, 15, 27, 31, 27, 15, 0, -15, -27, -32, -27, -16], dtype=np.int32)
+        ref = np.array([0, 15, 27, 31, 27, 16, 0, -15, -27, -32, -27, -16], dtype=np.int32)
         np.testing.assert_almost_equal(out, ref, decimal=4)
 
     def test_waveform_quant_sine_signed_optimized(self):

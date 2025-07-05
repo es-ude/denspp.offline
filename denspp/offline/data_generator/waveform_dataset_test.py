@@ -5,7 +5,7 @@ from denspp.offline.data_generator import SettingsWaveformDataset, build_wavefor
 
 
 settings = SettingsWaveformDataset(
-    wfg_type=['RECT', 'LIN_RISE', 'LIN_FALL', 'SINE_HALF', 'SINE_HALF_INV', 'SINE_FULL', 'TRI_HALF', 'TRI_FULL', 'SAW_POS', 'SAW_NEG', 'GAUSS'],
+    wfg_type=['RECT_HALF', 'LIN_RISE', 'LIN_FALL', 'SINE_HALF', 'SINE_HALF_INV', 'SINE_FULL', 'TRI_HALF', 'TRI_FULL', 'SAW_POS', 'SAW_NEG', 'GAUSS'],
     wfg_freq=[1e2, 1e2, 1e2, 1e2, 1e2, 1e2, 1e2, 1e2, 1e2, 1e2, 1e2],
     num_samples=2,
     time_idle=20,
@@ -36,7 +36,7 @@ class TestWaveformDataset(TestCase):
 
     def test_build_different_freq(self):
         set_test = deepcopy(settings)
-        set_test.wfg_type = ['RECT', 'LIN_RISE']
+        set_test.wfg_type = ['RECT_HALF', 'LIN_RISE']
         set_test.wfg_freq = [1e2, 2e2]
 
         dataset = build_waveform_dataset(set_test)

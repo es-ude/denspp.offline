@@ -18,10 +18,12 @@ class WaveformGenerator:
         """
         self._logger = getLogger(__name__)
         self.__handler_noise = ProcessNoise(settings_noise, sampling_rate)
-        self.__add_noise = add_noise
-        self._sampling_rate = sampling_rate
+        self.__add_noise: bool = add_noise
+        self._sampling_rate: float = sampling_rate
+        self._time_duration: float = 1.0
 
-        self.__func_dict = {'RECT': self.__generate_rectangular}
+        self.__func_dict = {'RECT_HALF': self.__generate_rectangular_half}
+        self.__func_dict.update({'RECT_FULL': self.__generate_rectangular_full})
         self.__func_dict.update({'LIN_RISE': self.__generate_linear_rising})
         self.__func_dict.update({'LIN_FALL': self.__generate_linear_falling})
         self.__func_dict.update({'SINE_HALF': self.__generate_sinusoidal_half})
@@ -33,6 +35,15 @@ class WaveformGenerator:
         self.__func_dict.update({'SAW_NEG': self.__generate_sawtooth_negative})
         self.__func_dict.update({'GAUSS': self.__generate_gaussian})
         self.__func_dict.update({'ZERO': self.__generate_zero})
+
+    @property
+    def _num_samples(self) -> int:
+        """Calculating the number of samples of the transient window"""
+        return int(self._time_duration * self._sampling_rate)
+
+    @property
+    def _build_time_cycle(self) -> np.ndarray:
+        return np.linspace(start=0.0, stop=2 * np.pi, num=self._num_samples, endpoint=False, dtype=float)
 
     @staticmethod
     def __switching_polarity(signal_in: np.ndarray, do_cathodic: bool) -> np.ndarray:
@@ -55,67 +66,58 @@ class WaveformGenerator:
         self._logger.info(f"... waveform has an error of {dq:.6f}")
         return dq
 
-    def __generate_zero(self, time_duration: float) -> np.ndarray:
+    def __generate_zero(self) -> np.ndarray:
         """Creating an output array with zero value"""
-        num_samples = int(time_duration * self._sampling_rate)
-        out = np.zeros((num_samples,), dtype=float)
+        out = np.zeros((self._num_samples,), dtype=float)
         return out
 
-    def __generate_rectangular(self, time_duration: float) -> np.ndarray:
+    def __generate_rectangular_half(self) -> np.ndarray:
         """Creating an output array with constant value"""
-        return 1.0 + self.__generate_zero(time_duration)
+        return 1.0 + self.__generate_zero()
 
-    def __generate_linear_rising(self, time_duration: float) -> np.ndarray:
+    def __generate_rectangular_full(self) -> np.ndarray:
+        """Creating an output array with constant value"""
+        return signal.square(self._build_time_cycle, duty=0.5)
+
+    def __generate_linear_rising(self) -> np.ndarray:
         """Creating an output array with linear positive slope"""
-        num_samples = int(time_duration * self._sampling_rate)
-        out = np.linspace(0.0, 1.0,  num_samples, endpoint=True, dtype=float)
-        return out
+        return np.linspace(0.0, 1.0,  self._num_samples, endpoint=True, dtype=float)
 
-    def __generate_linear_falling(self, time_duration: float) -> np.ndarray:
+    def __generate_linear_falling(self) -> np.ndarray:
         """Creating an output array with linear negative slope"""
-        num_samples = int(time_duration * self._sampling_rate)
-        out = np.linspace(1.0, 0.0,  num_samples, endpoint=True, dtype=float)
-        return out
+        return np.linspace(1.0, 0.0, self._num_samples, endpoint=True, dtype=float)
 
-    def __generate_sinusoidal_half(self, time_duration: float) -> np.ndarray:
+    def __generate_sinusoidal_half(self) -> np.ndarray:
         """Creating an output array with half sinusoidal waveform"""
-        num_samples = int(time_duration * self._sampling_rate)
-        out = np.sin(np.pi * np.linspace(0.0, num_samples, num_samples, endpoint=False) / num_samples, dtype=float)
-        return out
+        return np.sin(0.5* self._build_time_cycle, dtype=float)
 
-    def __generate_sinusoidal_half_inverse(self, time_duration: float) -> np.ndarray:
+    def __generate_sinusoidal_half_inverse(self) -> np.ndarray:
         """Creating an output array with half sinusoidal waveform in inverse manner"""
-        num_samples = int(time_duration * self._sampling_rate)
-        out = 1.0 - np.sin(np.pi * np.linspace(0.0, num_samples, num_samples, endpoint=False) / num_samples, dtype=float)
-        return out
+        return 1.0 - np.sin(0.5* self._build_time_cycle, dtype=float)
 
-    def __generate_sinusoidal_full(self, time_duration: float) -> np.ndarray:
+    def __generate_sinusoidal_full(self) -> np.ndarray:
         """Creating an output array with full sinusoidal waveform"""
-        num_samples = int(time_duration * self._sampling_rate)
-        out = np.sin(2 * np.pi * np.linspace(0.0, num_samples, num_samples, endpoint=False) / num_samples, dtype=float)
-        return out
+        return np.sin(self._build_time_cycle, dtype=float)
 
-    def __generate_triangle_half(self, time_duration: float) -> np.ndarray:
+    def __generate_triangle_half(self) -> np.ndarray:
         """Creating an output array with half triangular waveform"""
-        time = np.linspace(start=0.0, stop=2* np.pi, num=int(time_duration * self._sampling_rate), endpoint=False, dtype=float)
-        return signal.sawtooth(0.5*time + np.pi/2, width=0.5)
+        return signal.sawtooth(0.5*self._build_time_cycle + np.pi/2, width=0.5)
 
-    def __generate_triangle_full(self, time_duration: float) -> np.ndarray:
+    def __generate_triangle_full(self) -> np.ndarray:
         """Creating an output array with full triangular waveform"""
-        time = np.linspace(start=0.0, stop=2 * np.pi, num=int(time_duration * self._sampling_rate), endpoint=False, dtype=float)
-        return signal.sawtooth(time + np.pi/2, width=0.5)
+        return signal.sawtooth(self._build_time_cycle + np.pi/2, width=0.5)
 
-    def __generate_sawtooth_positive(self, time_duration: float) -> np.ndarray:
+    def __generate_sawtooth_positive(self) -> np.ndarray:
         """Creating an output array with linear positive sawtooth"""
-        return 2 * self.__generate_linear_rising(time_duration) - 1.0
+        return 2 * self.__generate_linear_rising() - 1.0
 
-    def __generate_sawtooth_negative(self, time_duration: float) -> np.ndarray:
+    def __generate_sawtooth_negative(self) -> np.ndarray:
         """Creating an output array with linear negative sawtooth"""
-        return 2 * self.__generate_linear_falling(time_duration) - 1.0
+        return 2 * self.__generate_linear_falling() - 1.0
 
-    def __generate_gaussian(self, time_duration: float) -> np.ndarray:
+    def __generate_gaussian(self) -> np.ndarray:
         """Creating an output array with gaussian pulse"""
-        time = self.__generate_sawtooth_positive(time_duration)
+        time = self.__generate_sawtooth_positive()
         out = signal.gausspulse(time, fc=np.pi, retenv=True)[1]
         scale_amp = (out.max()+out.min())/(out.max())
         return out * scale_amp - out.min()
@@ -138,13 +140,13 @@ class WaveformGenerator:
             Numpy array with selected waveform
         """
         if sel_wfg in self.__func_dict.keys():
-            signal = self.__func_dict[sel_wfg](time_duration)
+            self._time_duration = time_duration
+            signal = self.__func_dict[sel_wfg]()
             waveform = self.__switching_polarity(signal, do_cathodic)
             self._logger.debug(f"Selected waveform type {sel_wfg} is generated with shape {waveform.shape}")
             return waveform
         else:
             raise NotImplementedError("Waveform is not implemented!")
-
 
     def generate_noise(self, shape: tuple) -> np.ndarray:
         """Generating a transient signal with noise
@@ -171,12 +173,9 @@ class WaveformGenerator:
         if not len(time_points) == len(waveform_select) == len(time_duration):
             raise RuntimeError("Please check input! --> Length is not equal")
         else:
-            # Generate dummy
-            out = self.__generate_zero(2 * time_points[-1] + time_duration[-1])
-            time = np.linspace(0, out.size, out.size, endpoint=False) / self._sampling_rate
+            self._time_duration = 2 * time_points[-1] + time_duration[-1]
+            out = self.__generate_zero()
             rms_value = 0.0
-
-            # Create waveform
             for idx, (time_off, time_sec, wvf_type) in enumerate(zip(time_points, time_duration, waveform_select)):
                 time_xpos = int(time_off * self._sampling_rate)
                 do_polarity = polarity_cathodic[idx] if not len(polarity_cathodic) == 0 else False
@@ -185,6 +184,7 @@ class WaveformGenerator:
                 rms_value = np.sqrt(np.sum(np.square(waveform)) / waveform.size)
 
             noise = self.__handler_noise.gen_noise_real_pwr(out.size) if self.__add_noise else np.zeros_like(out)
+            time = np.linspace(0, out.size, out.size, endpoint=False) / self._sampling_rate
             return {'time': time, 'sig': out + noise, 'rms': rms_value}
 
     def generate_waveform_quant_fxp(self, time_points: list, time_duration: list,
@@ -201,7 +201,7 @@ class WaveformGenerator:
         :param do_opt:              Boolean for taking quarter signal (optimzed version for hardware implementation)
         :returns:                   List with three numpy arrays (time, output_signal, true rms value)
         """
-        assert check_keylist_elements_any(waveform_select, ['SINE_FULL', 'RECT', 'TRI_FULL']), "Only 'waveform_select' with ['SINE_FULL', 'RECT', 'TRI_FULL'] are allowed!"
+        assert check_keylist_elements_any(waveform_select, ['SINE_FULL', 'RECT_FULL', 'TRI_FULL']), "Only 'waveform_select' with ['SINE_FULL', 'RECT_FULL', 'TRI_FULL'] are allowed!"
         wvf_norm = self.generate_waveform(
             time_points=time_points,
             time_duration=time_duration,
@@ -245,7 +245,8 @@ class WaveformGenerator:
         # --- Creating the waveforms
         for idx, (window, wvf_type, inverter) in enumerate(zip(width, mode, poly)):
             if idx == 1 and not intermediate_duration == 0.0:
-                waveforms.append(self.__generate_zero(intermediate_duration))
+                self._time_duration = intermediate_duration
+                waveforms.append(self.__generate_zero())
             waveforms.append(self.__select_waveform_template(window, wvf_type, inverter))
 
         if do_charge_balancing:
