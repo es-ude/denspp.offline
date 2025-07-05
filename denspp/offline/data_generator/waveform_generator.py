@@ -1,6 +1,8 @@
 import numpy as np
 from logging import getLogger, Logger
 from scipy import signal
+from fxpmath import Fxp, Config
+from denspp.offline import check_keylist_elements_any
 from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, RecommendedSettingsNoise
 
 
@@ -162,13 +164,11 @@ class WaveformGenerator:
     def generate_waveform(self, time_points: list, time_duration: list,
                           waveform_select: list, polarity_cathodic: list) -> dict:
         """Generating the signal with waveforms for stimulation
-        Args:
-            time_points:        List of time points for applying a stimulation waveform
-            time_duration:      List of stimulation waveform duration
-            waveform_select:    List of selected waveforms
-            polarity_cathodic:  List for performing cathodic-first generation
-        Returns:
-            List with three numpy arrays (time, output_signal, true rms value)
+        :param time_points:         List of time points for applying a stimulation waveform
+        :param time_duration:       List of stimulation waveform duration
+        :param waveform_select:     List of selected waveforms
+        :param polarity_cathodic:   List for performing cathodic-first generation
+        :returns:                   List with three numpy arrays (time, output_signal, true rms value)
         """
         if not len(time_points) == len(waveform_select) == len(time_duration):
             raise RuntimeError("Please check input! --> Length is not equal")
@@ -188,6 +188,40 @@ class WaveformGenerator:
 
             noise = self.__handler_noise.gen_noise_real_pwr(out.size) if self.__add_noise else np.zeros_like(out)
             return {'time': time, 'sig': out + noise, 'rms': rms_value}
+
+    def generate_waveform_quant_fxp(self, time_points: list, time_duration: list,
+                                    waveform_select: list, polarity_cathodic: list,
+                                    bitwidth: int, bitfrac: int, signed: bool, do_opt: bool=False) -> dict:
+        """Generating the signal with waveforms for stimulation in quantized matter
+        :param time_points:         List of time points for applying a stimulation waveform
+        :param time_duration:       List of stimulation waveform duration
+        :param waveform_select:     List of selected waveforms
+        :param polarity_cathodic:   List for performing cathodic-first generation
+        :param bitwidth:            Integer with total bitwidth
+        :param bitfrac:             Integer with fraction bitwidth
+        :param signed:              If quantized output should be signed integer
+        :param do_opt:              Boolean for taking quarter signal (optimzed version for hardware implementation)
+        :returns:                   List with three numpy arrays (time, output_signal, true rms value)
+        """
+        assert check_keylist_elements_any(waveform_select, ['SINE_FULL', 'RECT', 'TRI_FULL']), "Only 'waveform_select' with ['SINE_FULL', 'RECT', 'TRI_FULL'] are allowed!"
+        wvf_norm = self.generate_waveform(
+            time_points=time_points,
+            time_duration=time_duration,
+            waveform_select=waveform_select,
+            polarity_cathodic=polarity_cathodic
+        )
+
+        wvf_used = wvf_norm['sig'] / (wvf_norm['sig'].max() - wvf_norm['sig'].min()) + (0 if signed or do_opt else 0.5)
+        wvf_used = np.array(wvf_used * (2**(bitwidth-bitfrac)), dtype=np.int32)
+        if do_opt:
+            wvf_used = wvf_used[:wvf_norm['sig'].argmax() + 1]
+
+        config_fxp = Config()
+        config_fxp.rounding = "around"
+        config_fxp.overflow = "saturate"
+        config_fxp.underflow = "saturate"
+        wvf_quant = Fxp(val=wvf_used, signed=signed, n_word=bitwidth, n_frac=bitfrac, config=config_fxp).get_val()
+        return {'time': wvf_norm['time'], 'sig': wvf_quant, 'rms': wvf_norm['rms']}
 
     def generate_biphasic_waveform(self, anodic_wvf: str, anodic_duration: float,
                                    cathodic_wvf: str, cathodic_duration: float,

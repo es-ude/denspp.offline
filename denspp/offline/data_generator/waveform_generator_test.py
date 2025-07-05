@@ -214,6 +214,62 @@ class TestWaveformGenerator(TestCase):
         dq = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).check_charge_balancing(signal)
         np.testing.assert_almost_equal(dq, 0.0, decimal=2)
 
+    def test_waveform_quant_sine_unsigned_unoptimized(self):
+        out = WaveformGenerator(sampling_rate=12, add_noise=False).generate_waveform_quant_fxp(
+            time_points=[0],
+            time_duration=[1],
+            waveform_select=['SINE_FULL'],
+            polarity_cathodic=[False],
+            bitwidth=6,
+            bitfrac=0,
+            signed=False,
+            do_opt=False
+        )['sig']
+        ref = np.array([32, 48, 59, 63, 59, 48, 32, 16, 4, 0, 4, 15], dtype=np.int32)
+        np.testing.assert_almost_equal(out, ref, decimal=4)
+
+    def test_waveform_quant_sine_signed_unoptimized(self):
+        out = WaveformGenerator(sampling_rate=12, add_noise=False).generate_waveform_quant_fxp(
+            time_points=[0],
+            time_duration=[1],
+            waveform_select=['SINE_FULL'],
+            polarity_cathodic=[False],
+            bitwidth=6,
+            bitfrac=0,
+            signed=True,
+            do_opt=False
+        )['sig']
+        ref = np.array([0, 15, 27, 31, 27, 15, 0, -15, -27, -32, -27, -16], dtype=np.int32)
+        np.testing.assert_almost_equal(out, ref, decimal=4)
+
+    def test_waveform_quant_sine_signed_optimized(self):
+        out = WaveformGenerator(sampling_rate=12, add_noise=False).generate_waveform_quant_fxp(
+            time_points=[0],
+            time_duration=[1],
+            waveform_select=['SINE_FULL'],
+            polarity_cathodic=[False],
+            bitwidth=6,
+            bitfrac=0,
+            signed=True,
+            do_opt=True
+        )['sig']
+        ref = np.array([  0,  15,  27,  31], dtype=np.int32)
+        np.testing.assert_almost_equal(out, ref, decimal=4)
+
+    def test_waveform_quant_triangular_unsigned_unoptimized(self):
+        out = WaveformGenerator(sampling_rate=12, add_noise=False).generate_waveform_quant_fxp(
+            time_points=[0],
+            time_duration=[1],
+            waveform_select=['TRI_FULL'],
+            polarity_cathodic=[False],
+            bitwidth=6,
+            bitfrac=0,
+            signed=False,
+            do_opt=False
+        )['sig']
+        ref = np.array([32, 48, 63, 63, 48, 32, 32, 16,  0,  0, 16, 32], dtype=np.int32)
+        np.testing.assert_almost_equal(out, ref, decimal=4)
+
 
 if __name__ == '__main__':
     main()
