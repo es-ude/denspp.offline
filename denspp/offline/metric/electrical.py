@@ -12,7 +12,7 @@ def calculate_total_harmonics_distortion(freq: np.ndarray, spectral: np.ndarray,
     Return:
           THD value (in dB) and corresponding frequency positions of peaks
     """
-    fsine = float(np.argmax(spectral).flatten()[0])
+    fsine = freq[np.argmax(spectral).flatten()[0]]
     # --- Limiting the search space
     pos_x0 = np.argwhere(freq >= 0.5 * fsine).flatten()[0]
     pos_x1 = np.argwhere(freq >= (N_harmonics + 1.5) * fsine).flatten()[0]

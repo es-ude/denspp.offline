@@ -55,6 +55,16 @@ def check_elem_unique(elements: list) -> bool:
     return all(cnt == 1 for cnt in Counter(chck).values())
 
 
+def check_value_range(value: float | int, range: list[float | int]) -> bool:
+    """Function for checking if value is within range
+    :param value:     Value to check (float or integer)
+    :param range:     List with two values to indicate the range
+    :return:          Boolean if value is in range
+    """
+    assert len(range) == 2, "Array should have 2 elements [min, max]"
+    return range[0] <= value <= range[1]
+
+
 def is_close(value: float, target: float, tolerance: float=0.05) -> bool:
     """Function for checking if float value is in near of the target value
     :param value:       Float value to check

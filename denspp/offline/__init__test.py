@@ -1,6 +1,6 @@
 import unittest
 from denspp.offline import (check_key_elements, check_elem_unique, check_keylist_elements_all, check_keylist_elements_any,
-                            check_string_equal_elements_all, check_string_equal_elements_any, is_close,
+                            check_string_equal_elements_all, check_string_equal_elements_any, check_value_range, is_close,
                             get_repo_name, get_path_to_project_templates, get_path_to_project, get_path_to_project_start)
 
 
@@ -137,6 +137,20 @@ class TestHelpFunction(unittest.TestCase):
     def test_check_elem_unique_list_false(self):
         elements = [[0, 1, 2], [3, 1, 5]]
         rslt = check_elem_unique(elements)
+        self.assertFalse(rslt)
+
+    def test_check_value_range_true(self):
+        rslt = check_value_range(
+            value=1.0,
+            range=[0.9, 1.1]
+        )
+        self.assertTrue(rslt)
+
+    def test_check_value_range_false(self):
+        rslt = check_value_range(
+            value=0.8,
+            range=[0.9, 1.1]
+        )
         self.assertFalse(rslt)
 
     def test_get_repo_name(self):
