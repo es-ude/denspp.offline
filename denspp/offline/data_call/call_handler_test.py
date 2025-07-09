@@ -29,6 +29,28 @@ class TestCallHandler(TestCase):
         chck = data.data_type == 'Test_1d' and data.data_raw.shape == (1, 20000)
         self.assertTrue(chck)
 
+    def test_dataloader_1d_get_data_direct(self):
+        settings = deepcopy(test_settings)
+        settings.data_set = 'test_1d'
+
+        dut = DataLoaderTest(settings=settings)
+        data0 = dut.do_call()
+        data1 = dut.get_data()
+        chck = data0 == data1
+        self.assertTrue(chck)
+
+    def test_dataloader_1d_get_data_args(self):
+        settings = deepcopy(test_settings)
+        settings.data_set = 'test_args'
+
+        dut = DataLoaderTest(settings=settings)
+        stimulus = np.random.randn(250)
+        fs = 250.
+        data0 = dut.do_call(fs, stimulus)
+        rslt = data0.data_raw.flatten()
+        chck = fs == data0.fs_orig and np.array_equal(stimulus, rslt)
+        self.assertTrue(chck)
+
     def test_dataloader_1d_meta(self):
         settings = deepcopy(test_settings)
         settings.data_set = 'test_1d'

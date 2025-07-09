@@ -391,8 +391,10 @@ class ControllerData:
             self._raw_data.evnt_id = list()
             self._raw_data.label_exist = False
 
-    def do_call(self):
-        """Loading the dataset"""
+    def do_call(self, *args) -> DataHandler:
+        """Loading the dataset
+        :return:    Class DataHandler with data loaded
+        """
         # --- Getting the function to call
         warning_text = "\nPlease select key words in variable 'data_set' for calling methods to read transient data"
         warning_text += "\n=========================================================================================="
@@ -410,4 +412,5 @@ class ControllerData:
             self.__logger.error(warning_text)
             raise ValueError
         else:
-            getattr(self, self._methods_available[used_data_source_idx])()
+            getattr(self, self._methods_available[used_data_source_idx])(*args)
+            return self._raw_data

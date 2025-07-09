@@ -49,3 +49,13 @@ class DataLoaderTest(ControllerData):
             rawdata=np.random.randn(3, int(fs_used)),
             scale_data=1e-6,
         )
+
+    def __load_test_args(self, fs: float, data: np.ndarray) -> None:
+        self._load_rawdata_into_pipeline(
+            elec_type="Test_args",
+            file_name='',
+            fs_orig=fs,
+            elec_orn=[1],
+            rawdata=data,
+            scale_data=1.,
+        )
