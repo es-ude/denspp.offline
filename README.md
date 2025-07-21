@@ -140,6 +140,7 @@ Checking if the installation is right:
 ````
 pyspice-post-installation --check-install
 ````
+It may happens, that running a simulation occurs to an error in the CFFI package. They it will find the decl.bitwidth is not available. Just edit the file and replace bitwidth with bitsize and it works! 
 
 #### Setup on Linux
 

@@ -28,7 +28,7 @@ class JsonHandler:
         if not exists(self.__path2chck):
             data2json = template if isinstance(template, dict) else self.__translate_dataclass_to_dict(template)
             self.write_dict_to_json(data2json)
-            self._logger.info(f"Create new yaml file in folder: {self._path2folder}")
+            self._logger.info(f"Create new JSON file in folder: {self._path2folder}")
 
     @staticmethod
     def __translate_dataclass_to_dict(class_content: type) -> dict:
@@ -85,7 +85,7 @@ class JsonHandler:
         :return:    Dict. with configuration
         """
         if not exists(self.__path2chck):
-            raise FileNotFoundError("YAML does not exists - Please create one!")
+            raise FileNotFoundError("JSON does not exists - Please create one!")
         else:
             # --- Reading YAML file
             with open(self.__path2chck, 'r') as f:

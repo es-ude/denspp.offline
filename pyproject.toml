@@ -32,7 +32,6 @@ authors = [
   {name = "Andreas Erbsloeh", email = "andreas.erbsloeh@uni-due.de"},
 ]
 maintainers = [
-    {name = "Leo Buron", email = "leo.buron@uni-due.de"},
     {name = "Nick Lorenz", email = "nick.lorenz@uni-due.de"}
 ]
 dependencies = [
