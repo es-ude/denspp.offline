@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from dataclasses import dataclass
 from inspect import getfullargspec
 from logging import getLogger, Logger
+from PySpice.Logging import Logging
 from PySpice.Spice.Netlist import Circuit, Netlist
 from PySpice.Spice.NgSpice.Shared import NgSpiceShared
 from denspp.offline.plot_helper import scale_auto_value, save_figure
@@ -92,12 +93,11 @@ class PySpiceHandler:
     _logger: Logger
     _type_device: dict = dict()
     _circuit: Circuit = Circuit("Test")
-    _results: dict = {}
+    _results: dict = dict()
     _run_ite: int = 0
     _sim_time: float = 1.0
     vcm: float = 0.0
     _settings: SettingsPySpice
-    _results: dict = dict()
 
     def __init__(self, settings: SettingsPySpice) -> None:
         """Rewritten API for using PySPICE in simulation
@@ -108,7 +108,7 @@ class PySpiceHandler:
         Returns:
             None
         """
-        self._logger = getLogger(__name__)
+        self._logger = Logging.setup_logging()
         self._settings = settings
 
     def _register_device(self, short_label: str, description: str, func_circ) -> None:
