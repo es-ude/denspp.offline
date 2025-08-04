@@ -389,7 +389,7 @@ class ElectricalLoadHandler(ProcessNoise):
 
         if violation_up or violation_dwn:
             addon = f'(Upper limit)' if not violation_dwn else '(Downer limit)'
-            self._logger.warn(f"Voltage Range Violation {addon}!")
+            self._logger.warning(f"Voltage Range Violation {addon}!")
         return bool(violation_up or violation_dwn)
 
     def _get_current_from_equation(self, voltage_pos: np.ndarray | float, voltage_neg: np.ndarray | float, params: dict) -> np.ndarray:
