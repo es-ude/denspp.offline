@@ -13,11 +13,11 @@ class JsonHandler:
     _logger: Logger
     _template: Any
 
-    def __init__(self, template: Any | dict, path: str='config', file_name: str='Params'):
+    def __init__(self, template: Any | dict, path: str='config', file_name: str='Params') -> None:
         """Creating a class for handling JSON files
-        :param template:      Dummy dataclass with entries or dictionary (is only generated if JSON not exist)
-        :param path:          String with path to the folder which has the JSON file [Default: '']
-        :param file_name:          String with name of the JSON  file [Default: 'Config_Train']
+        :param template:        Dummy dataclass with entries or dictionary (is only generated if JSON not exist)
+        :param path:            String with path to the folder which has the JSON file [Default: '']
+        :param file_name:       String with name of the JSON  file [Default: 'Config_Train']
         """
         self._logger = getLogger(__name__)
         self._path2folder = join(get_path_to_project(), path) if not isabs(path) else path
@@ -26,9 +26,7 @@ class JsonHandler:
 
         makedirs(self._path2folder, exist_ok=True)
         if not exists(self.__path2chck):
-            data2json = template if isinstance(template, dict) else self.__translate_dataclass_to_dict(template)
-            self.write_dict_to_json(data2json)
-            self._logger.info(f"Create new JSON file in folder: {self._path2folder}")
+            self.write_to_json()
 
     @staticmethod
     def __translate_dataclass_to_dict(class_content: type) -> dict:
@@ -43,9 +41,8 @@ class JsonHandler:
 
     def __remove_ending_from_filename(self, file_name: str) -> str:
         """Function for removing data type ending
-        :param file_name: String with file name
-        :return:
-            String with file name without data type ending
+        :param file_name:   String with file name
+        :return:            String with file name without data type ending
         """
         used_file_name = [file_name.split(file_end)[0] for file_end in self._ending_chck if file_end in file_name]
         return used_file_name[0] if len(used_file_name) > 0 else file_name
@@ -54,8 +51,7 @@ class JsonHandler:
         """Function for validating the key entries from template json and real json file
         :param template:    Dictionary or class from the template for generating json file
         :param real_file:   Dictionary from real_file
-        :return:
-            Boolean decision if both key are equal
+        :return:            Boolean decision if both key are equal
         """
         keys_tmplt = self.__translate_dataclass_to_dict(template).keys() if not isinstance(template, dict) else template.keys()
         keys_real = self.__translate_dataclass_to_dict(real_file).keys() if not isinstance(real_file, dict) else real_file.keys()
@@ -69,12 +65,18 @@ class JsonHandler:
         else:
             return equal_chck
 
+    def write_to_json(self) -> None:
+        """Writing template configuration to JSON file
+        :return:        None
+        """
+        data2json = self._template if isinstance(self._template, dict) else self.__translate_dataclass_to_dict(self._template)
+        self.write_dict_to_json(data2json)
+        self._logger.info(f"Create new JSON file in folder: {self._path2folder}")
+
     def write_dict_to_json(self, config_data: dict) -> None:
-        """Writing list with configuration sets to JSON file
-        Args:
-            config_data:    Dict. with configuration
-        Returns:
-            None
+        """Writing dict with configuration sets to JSON file
+        :param config_data:     Dict. with configuration
+        :return:                None
         """
         makedirs(self._path2folder, exist_ok=True)
         with open(self.__path2chck, 'w') as f:

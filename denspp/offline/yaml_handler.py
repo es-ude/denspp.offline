@@ -26,9 +26,7 @@ class YamlHandler:
 
         makedirs(self._path2folder, exist_ok=True)
         if not exists(self.__path2chck):
-            data2yaml = template if isinstance(template, dict) else self.__translate_dataclass_to_dict(template)
-            self.write_dict_to_yaml(data2yaml)
-            self.__logger.info(f"Create new yaml file in folder: {self._path2folder}")
+            self.write_to_yaml()
 
     @property
     def __path2chck(self) -> str:
@@ -37,9 +35,8 @@ class YamlHandler:
 
     def __remove_ending_from_filename(self, file_name: str) -> str:
         """Function for removing data type ending
-        :param file_name: String with file name
-        :return:
-            String with file name without data type ending
+        :param file_name:   String with file name
+        :return:            String with file name without data type ending
         """
         used_file_name = [file_name.split(file_end)[0] for file_end in self._ending_chck if file_end in file_name]
         return used_file_name[0] if len(used_file_name) > 0 else file_name
@@ -57,8 +54,7 @@ class YamlHandler:
         """Function for validating the key entries from template yaml and real yaml file
         :param template:    Dictionary or class from the template for generating yaml file
         :param real_file:   Dictionary from real_file
-        :return:
-            Boolean decision if both key are equal
+        :return:            Boolean decision if both key are equal
         """
         keys_tmplt = self.__translate_dataclass_to_dict(template).keys() if not isinstance(template, dict) else template.keys()
         keys_real = self.__translate_dataclass_to_dict(real_file).keys() if not isinstance(real_file, dict) else real_file.keys()
@@ -72,13 +68,19 @@ class YamlHandler:
         else:
             return equal_chck
 
+    def write_to_yaml(self) -> None:
+        """Writing template configuration to YAML file
+        :return:        None
+        """
+        data2yaml = self._template if isinstance(self._template, dict) else self.__translate_dataclass_to_dict(self._template)
+        self.write_dict_to_yaml(data2yaml)
+        self.__logger.info(f"Create new yaml file in folder: {self._path2folder}")
+
     def write_dict_to_yaml(self, config_data: dict, print_output: bool=False) -> None:
         """Writing list with configuration sets to YAML file
-        Args:
-            config_data:    Dict. with configuration
-            print_output:   Printing the data in YAML format
-        Returns:
-            None
+        :param config_data:     Dict. with configuration
+        :param print_output:    Printing the data in YAML format
+        :return:                None
         """
         makedirs(self._path2folder, exist_ok=True)
         with open(self.__path2chck, 'w') as f:

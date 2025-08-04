@@ -351,7 +351,7 @@ class ControllerData:
                                     elec_orn: list, rawdata: np.ndarray, scale_data: float,
                                     evnt_pos: list=(), evnt_id: list=()) -> None:
         """Function for preparing the loaded rawdata for using in pipeline process
-        :param elec_type:        String with type description of the transient data
+        :param elec_type:   String with type description of the transient data
         :param file_name:   String with used file name
         :param fs_orig:     Sampling rate of transient signal [Hz]
         :param elec_orn:    List with Electrode orientation / mapping to rawdata
@@ -379,7 +379,15 @@ class ControllerData:
         self._raw_data.fs_orig = fs_orig
         # --- Including raw data
         self._raw_data.electrode_id = elec_orn
-        self._raw_data.data_raw = scale_data * rawdata if len(rawdata.shape) == 2 else np.expand_dims(scale_data * rawdata, axis=0)
+        # --- Scaling the data in place
+        rawdata = rawdata.astype(np.float32)
+        rawdata *= scale_data
+        self._raw_data.data_raw = rawdata
+        if len(rawdata.shape) == 2:
+            pass
+        else:
+            self._raw_data.data_raw = np.expand_dims(self._raw_data.data_raw, axis=0)
+
         self._raw_data.time_end = self._raw_data.data_raw.shape[1] / self._raw_data.fs_orig
         # --- Including labels
         if len(evnt_pos) and len(evnt_id):

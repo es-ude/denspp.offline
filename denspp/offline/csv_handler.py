@@ -33,9 +33,8 @@ class CsvHandler:
 
     def __remove_ending_from_filename(self, file_name: str) -> str:
         """Function for removing data type ending
-        :param file_name: String with file name
-        :return:
-            String with file name without data type ending
+        :param file_name:   String with file name
+        :return:            String with file name without data type ending
         """
         used_file_name = [file_name.split(file_end)[0] for file_end in self._ending_chck if file_end in file_name]
         return used_file_name[0] if len(used_file_name) > 0 else file_name

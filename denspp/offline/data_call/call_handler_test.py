@@ -48,8 +48,8 @@ class TestCallHandler(TestCase):
         fs = 250.
         data0 = dut.do_call(fs, stimulus)
         rslt = data0.data_raw.flatten()
-        chck = fs == data0.fs_orig and np.array_equal(stimulus, rslt)
-        self.assertTrue(chck)
+        assert fs == data0.fs_orig
+        np.testing.assert_almost_equal(rslt, stimulus, decimal=7)
 
     def test_dataloader_1d_meta(self):
         settings = deepcopy(test_settings)

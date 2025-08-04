@@ -13,6 +13,7 @@ class PolyfitIV(ProcessNoise):
     _fit_params_v2i: np.ndarray = np.nan    # Voltage input, Current Output
     _fit_params_i2v: np.ndarray = np.nan    # Current input, Voltage Output
     _fit_order: int=3
+    _dev_e: float=1e-9
 
     def __init__(self, sampling_rate: float, en_noise: bool, settings_noise: SettingsNoise=RecommendedSettingsNoise):
         """Class for extracting the polynom fit parameters of measured IV curve from electrical device
@@ -209,9 +210,17 @@ class PolyfitIV(ProcessNoise):
 
     def change_fit_settings(self, order: int) -> None:
         """Function for redefining the fit settings
-        :param order:    Integer value with starting order
+        :param order:   Integer value with starting order
+        :return:        None
         """
         self._fit_order = order
+
+    def set_noise_energy(self, dev_e: float) -> None:
+        """Setting the noise energy level for generating noise
+        :param dev_e:   Floating value with noise energy level
+        :return:        None
+        """
+        self._dev_e = abs(dev_e)
 
     def get_voltage(self, current: np.ndarray | float) -> np.ndarray:
         """Getting the voltage response from applied current into device
@@ -219,7 +228,7 @@ class PolyfitIV(ProcessNoise):
         :return:            Numpy array with voltage response
         """
         assert not np.isnan(self._fit_params_i2v).any(), "fit parameters not set - Please call 'get_params_for_polynomfit'"
-        v_noise = np.zeros_like(current) if not self._en_noise else self.gen_noise_awgn_dev(current.size, 1e-9)
+        v_noise = np.zeros_like(current) if not self._en_noise else self.gen_noise_awgn_dev(current.size, self._dev_e)
         return np.poly1d(self._fit_params_i2v)(current) + v_noise
 
     def get_current(self, voltage_top: np.ndarray | float, voltage_bot: np.ndarray | float) -> np.ndarray:
@@ -229,5 +238,7 @@ class PolyfitIV(ProcessNoise):
         :return:                Numpy array with current response
         """
         assert not np.isnan(self._fit_params_v2i).any(), "fit parameters not set - Please call 'get_params_for_polynomfit'"
-        i_noise = np.zeros_like(voltage_top) if not self._en_noise else self.gen_noise_awgn_dev(voltage_top.size, 1e-9)
-        return np.poly1d(self._fit_params_v2i)(voltage_top - voltage_bot) + voltage_bot + i_noise
+        sizes = [1 if type(voltage_top) == float else voltage_top.size, 1 if type(voltage_bot) == float else voltage_bot.size]
+
+        i_noise = np.zeros_like(voltage_top if type(voltage_top) == np.ndarray else voltage_bot) if not self._en_noise else self.gen_noise_awgn_dev(max(sizes), self._dev_e)
+        return np.poly1d(self._fit_params_v2i)(voltage_top - voltage_bot) + i_noise
