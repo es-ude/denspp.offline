@@ -2,7 +2,7 @@ import numpy as np
 from copy import deepcopy
 import matplotlib.pyplot as plt
 from denspp.offline import get_path_to_project
-from denspp.offline.yaml_handler import YamlHandler
+from denspp.offline.data_format.yaml import YamlHandler
 from denspp.offline.dnn import SettingsDataset, DefaultSettingsDataset
 from denspp.offline.template.call_dataset import DatasetLoader
 from denspp.offline.plot_helper import get_plot_color, save_figure

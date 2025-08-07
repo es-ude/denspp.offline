@@ -36,7 +36,7 @@ RecommendedSettingsFilter = SettingsFilter(
 )
 
 
-class DSP(CommonDigitalFunctions):
+class Filtering(CommonDigitalFunctions):
     __logger: Logger
     _type_supported: list = ['fir', 'iir']
     _btype_supported: list = ['lowpass', 'highpass', 'bandpass', 'bandstop', 'notch', 'allpass']

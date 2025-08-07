@@ -28,7 +28,7 @@ class SettingsDLY:
     noise_edev: float
 
 
-RecommendedSettingsDLY = SettingsDLY(
+DefaultSettingsDLY = SettingsDLY(
     vdd=0.6, vss=-0.6,
     fs_ana=50e3,
     t_dly=0.1e-3,

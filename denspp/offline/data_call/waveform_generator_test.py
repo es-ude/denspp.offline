@@ -1,6 +1,6 @@
 import numpy as np
 from unittest import TestCase, main
-from denspp.offline.data_generator import WaveformGenerator
+from denspp.offline.data_call.waveform_generator import WaveformGenerator
 
 
 # --- Info: Function have to start with test_*

@@ -1,8 +1,8 @@
 import numpy as np
 from os.path import exists, join
 from unittest import TestCase, main
-from denspp.offline import get_repo_name, get_path_to_project
-from denspp.offline.csv_handler import CsvHandler
+from denspp.offline import get_path_to_project
+from denspp.offline.data_format.csv import CsvHandler
 
 
 # --- Info: Function have to start with test_*

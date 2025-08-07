@@ -1,11 +1,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from denspp.offline.analog.amplifier.int_ana import IntegratorStage, SettingsINT, RecommendedSettingsINT
+from denspp.offline.analog.amplifier.int_ana import IntegratorStage, SettingsINT, DefaultSettingsINT
 
 
 if __name__ == "__main__":
     # --- Definition of Inputs
-    settings = RecommendedSettingsINT
+    settings = DefaultSettingsINT
     f_smp = 10e3
     t_end = 1
     u_off = 0e-3

@@ -1,7 +1,7 @@
 import numpy as np
 from unittest import TestCase, main
 from copy import deepcopy
-from denspp.offline.digital.sda import SpikeDetection, SettingsSDA
+from denspp.offline.preprocessing.sda import SettingsSDA
 
 
 TestSetting = SettingsSDA(

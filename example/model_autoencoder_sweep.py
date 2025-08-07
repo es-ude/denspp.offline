@@ -1,6 +1,6 @@
 from denspp.offline.template.call_dataset import DatasetLoader
 
-from denspp.offline.yaml_handler import YamlHandler
+from denspp.offline.data_format.yaml import YamlHandler
 from denspp.offline.dnn.handler.train_ae_cl_sweep import do_train_ae_cl_sweep
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset
 from denspp.offline.dnn.dnn_handler import ConfigMLPipeline, DefaultSettings_MLPipe

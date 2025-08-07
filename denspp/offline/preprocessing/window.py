@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 from dataclasses import dataclass
-from denspp.offline.data_process.transformation import transformation_window_method
+from denspp.offline.preprocessing.transformation import transformation_window_method
 
 
 @dataclass

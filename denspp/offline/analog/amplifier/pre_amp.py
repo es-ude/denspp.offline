@@ -40,7 +40,7 @@ class SettingsAMP:
         return (self.vdd + self.vss) / 2
 
 
-RecommendedSettingsAMP = SettingsAMP(
+DefaultSettingsAMP = SettingsAMP(
     vdd=0.6, vss=-0.6,
     fs_ana=50e3, gain=40.,
     n_filt=1, f_filt=[0.1, 8e3], f_type="bandpass",

@@ -3,8 +3,8 @@ import numpy as np
 from shutil import rmtree
 from copy import deepcopy
 from datetime import datetime
-from denspp.offline.yaml_handler import YamlHandler
-from denspp.offline.dnn.dnn_handler import ConfigMLPipeline, DefaultSettings_MLPipe
+from denspp.offline.data_format.yaml import YamlHandler
+from denspp.offline.dnn.dnn_handler import ConfigMLPipeline
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset, DefaultSettingsDataset
 from denspp.offline.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE
 from denspp.offline.dnn.pytorch_pipeline import train_autoencoder_template, train_classifier_template

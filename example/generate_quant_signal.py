@@ -1,9 +1,8 @@
-import numpy as np
 import matplotlib.pyplot as plt
 from fxpmath import Fxp
 from denspp.offline import get_path_to_project
 from denspp.offline.plot_helper import save_figure
-from denspp.offline.data_generator.waveform_generator import WaveformGenerator
+from denspp.offline.data_call.waveform_generator import WaveformGenerator
 
 
 def plot_waveform_types(dataset: dict, show_plot: bool=True) -> None:

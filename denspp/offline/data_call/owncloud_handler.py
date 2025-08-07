@@ -4,7 +4,7 @@ from logging import getLogger, Logger
 from os import makedirs
 from os.path import join, dirname
 from dataclasses import dataclass
-from denspp.offline.yaml_handler import YamlHandler
+from denspp.offline.data_format.yaml import YamlHandler
 from denspp.offline import get_path_to_project_start
 
 

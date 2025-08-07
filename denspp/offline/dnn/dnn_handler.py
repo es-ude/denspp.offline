@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from os.path import exists, join
 from denspp.offline import get_path_to_project_start
 from denspp.offline.logger import define_logger_runtime
-from denspp.offline.yaml_handler import YamlHandler
+from denspp.offline.data_format.yaml import YamlHandler
 from denspp.offline.dnn.model_library import DatasetLoaderLibrary
 
 

@@ -1,7 +1,7 @@
 from unittest import TestCase, main
 import numpy as np
 import torch
-from denspp.offline.data_process.frame_normalization import DataNormalization
+from denspp.offline.preprocessing.frame_normalization import DataNormalization
 
 
 def generate_test_data(num_samples: int=100, num_window_size: int=32, do_tensor: bool=False) -> np.ndarray | torch.Tensor:

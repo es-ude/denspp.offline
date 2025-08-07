@@ -45,7 +45,7 @@ class SettingsINT:
         return self.vdd - self.vss
 
 
-RecommendedSettingsINT = SettingsINT(
+DefaultSettingsINT = SettingsINT(
     vdd=0.6, vss=-0.6,
     tau=100e-3,
     res_in=10e3,

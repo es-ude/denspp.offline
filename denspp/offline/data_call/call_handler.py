@@ -8,7 +8,7 @@ from pathlib import Path
 from fractions import Fraction
 from scipy.signal import resample_poly
 from denspp.offline import get_path_to_project_start
-from denspp.offline.csv_handler import CsvHandler
+from denspp.offline.data_format.csv import CsvHandler
 from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
 
 

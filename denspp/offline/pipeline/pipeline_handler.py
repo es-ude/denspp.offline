@@ -1,8 +1,8 @@
 from logging import getLogger
 from denspp.offline.logger import define_logger_runtime
-from denspp.offline.yaml_handler import YamlHandler
+from denspp.offline.data_format.yaml import YamlHandler
 from denspp.offline.data_call import SettingsData, DefaultSettingsData
-from denspp.offline.data_process.merge_datasets_frames import MergeDatasets
+from denspp.offline.data_call.merge_datasets_frames import MergeDatasets
 from denspp.offline.pipeline.pipeline_cmds import ProcessingData, SettingsThread, RecommendedSettingsThread, DataloaderLibrary, PipelineLibrary
 
 

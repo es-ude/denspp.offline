@@ -4,7 +4,7 @@ from copy import deepcopy
 import numpy as np
 import matplotlib.pyplot as plt
 
-from denspp.offline.yaml_handler import YamlHandler
+from denspp.offline.data_format.yaml import YamlHandler
 from denspp.offline.dnn.dataset.autoencoder import prepare_training
 from denspp.offline.dnn.dnn_handler import ConfigMLPipeline, DefaultSettings_MLPipe
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset, DefaultSettingsDataset

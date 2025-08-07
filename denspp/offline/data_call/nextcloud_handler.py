@@ -3,7 +3,7 @@ from logging import getLogger, Logger
 from os.path import join
 from dataclasses import dataclass
 from nc_py_api import Nextcloud, NextcloudException
-from denspp.offline.yaml_handler import YamlHandler
+from denspp.offline.data_format.yaml import YamlHandler
 from denspp.offline import get_path_to_project_start
 
 

@@ -2,7 +2,7 @@ import numpy as np
 from unittest import TestCase, main
 from scipy.signal import find_peaks
 from denspp.offline import is_close
-from denspp.offline.data_process.transformation import transformation_window_method, do_fft
+from denspp.offline.preprocessing.transformation import transformation_window_method, do_fft
 
 
 # --- Info: Function have to start with test_*

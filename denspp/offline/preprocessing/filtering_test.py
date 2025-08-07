@@ -2,8 +2,8 @@ import numpy as np
 from unittest import TestCase, main
 from copy import deepcopy
 from scipy.signal import find_peaks
-from denspp.offline.data_process.transformation import do_fft
-from denspp.offline.digital.dsp import SettingsFilter, DSP
+from denspp.offline.preprocessing.transformation import do_fft
+from denspp.offline.preprocessing.filtering import SettingsFilter, Filtering
 
 
 test_settings = SettingsFilter(
@@ -36,7 +36,7 @@ class TestDigitalFilters(TestCase):
         sets.n_order = 1
         sets.b_type = 'lowpass'
         sets.f_filt = [50.0]
-        result = DSP(sets).filter(signal)
+        result = Filtering(sets).filter(signal)
 
         freq0, peak0, pos = extract_peaks(signal, sets.fs)
         freq1, peak1 = do_fft(result, sets.fs)
@@ -51,7 +51,7 @@ class TestDigitalFilters(TestCase):
         sets.n_order = 2
         sets.b_type = 'lowpass'
         sets.f_filt = [50.0]
-        result = DSP(sets).filter(signal)
+        result = Filtering(sets).filter(signal)
 
         freq0, peak0, pos = extract_peaks(signal, sets.fs)
         freq1, peak1 = do_fft(result, sets.fs)
@@ -66,7 +66,7 @@ class TestDigitalFilters(TestCase):
         sets.n_order = 1
         sets.b_type = 'highpass'
         sets.f_filt = [50.0]
-        result = DSP(sets).filter(signal)
+        result = Filtering(sets).filter(signal)
 
         freq0, peak0, pos = extract_peaks(signal, sets.fs)
         freq1, peak1 = do_fft(result, sets.fs)
@@ -81,7 +81,7 @@ class TestDigitalFilters(TestCase):
         sets.n_order = 1
         sets.b_type = 'bandpass'
         sets.f_filt = [50., 100.]
-        result = DSP(sets).filter(signal)
+        result = Filtering(sets).filter(signal)
 
         freq0, peak0, pos = extract_peaks(signal, sets.fs)
         freq1, peak1 = do_fft(result, sets.fs)
@@ -96,7 +96,7 @@ class TestDigitalFilters(TestCase):
         sets.n_order = 1
         sets.b_type = 'bandstop'
         sets.f_filt = [50., 100.]
-        result = DSP(sets).filter(signal)
+        result = Filtering(sets).filter(signal)
 
         freq0, peak0, pos = extract_peaks(signal, sets.fs)
         freq1, peak1 = do_fft(result, sets.fs)
@@ -111,7 +111,7 @@ class TestDigitalFilters(TestCase):
         sets.n_order = 1
         sets.b_type = 'notch'
         sets.f_filt = [50.]
-        result = DSP(sets).filter(signal)
+        result = Filtering(sets).filter(signal)
 
         freq0, peak0, pos = extract_peaks(signal, sets.fs)
         freq1, peak1 = do_fft(result, sets.fs)
@@ -126,7 +126,7 @@ class TestDigitalFilters(TestCase):
         sets.n_order = 1
         sets.b_type = 'allpass'
         sets.f_filt = [50.]
-        result = DSP(sets).filter(signal)
+        result = Filtering(sets).filter(signal)
 
         freq0, peak0, pos = extract_peaks(signal, sets.fs)
         freq1, peak1 = do_fft(result, sets.fs)
@@ -141,7 +141,7 @@ class TestDigitalFilters(TestCase):
         sets.n_order = 21
         sets.b_type = 'lowpass'
         sets.f_filt = [50.0]
-        result = DSP(sets).filter(signal)
+        result = Filtering(sets).filter(signal)
 
         freq0, peak0, pos = extract_peaks(signal, sets.fs)
         freq1, peak1 = do_fft(result, sets.fs)
@@ -156,7 +156,7 @@ class TestDigitalFilters(TestCase):
         sets.n_order = 51
         sets.b_type = 'lowpass'
         sets.f_filt = [50.0]
-        result = DSP(sets).filter(signal)
+        result = Filtering(sets).filter(signal)
 
         freq0, peak0, pos = extract_peaks(signal, sets.fs)
         freq1, peak1 = do_fft(result, sets.fs)
@@ -171,7 +171,7 @@ class TestDigitalFilters(TestCase):
         sets.n_order = 51
         sets.b_type = 'highpass'
         sets.f_filt = [20.0]
-        result = DSP(sets).filter(signal)
+        result = Filtering(sets).filter(signal)
 
         freq0, peak0, pos = extract_peaks(signal, sets.fs)
         freq1, peak1 = do_fft(result, sets.fs)
@@ -186,7 +186,7 @@ class TestDigitalFilters(TestCase):
         sets.n_order = 51
         sets.b_type = 'bandpass'
         sets.f_filt = [20., 100.]
-        result = DSP(sets).filter(signal)
+        result = Filtering(sets).filter(signal)
 
         freq0, peak0, pos = extract_peaks(signal, sets.fs)
         freq1, peak1 = do_fft(result, sets.fs)
@@ -201,7 +201,7 @@ class TestDigitalFilters(TestCase):
         sets.n_order = 51
         sets.b_type = 'bandstop'
         sets.f_filt = [20., 100.]
-        result = DSP(sets).filter(signal)
+        result = Filtering(sets).filter(signal)
 
         freq0, peak0, pos = extract_peaks(signal, sets.fs)
         freq1, peak1 = do_fft(result, sets.fs)
@@ -216,7 +216,7 @@ class TestDigitalFilters(TestCase):
         sets.n_order = 501
         sets.b_type = 'notch'
         sets.f_filt = [50., 1.]
-        result = DSP(sets).filter(signal)
+        result = Filtering(sets).filter(signal)
 
         freq0, peak0, pos = extract_peaks(signal, sets.fs)
         freq1, peak1 = do_fft(result, sets.fs)
@@ -231,7 +231,7 @@ class TestDigitalFilters(TestCase):
         sets.n_order = 201
         sets.b_type = 'allpass'
         sets.f_filt = [0.]
-        result = DSP(sets).filter(signal)
+        result = Filtering(sets).filter(signal)
         np.testing.assert_almost_equal(signal[:-sets.n_order],result[sets.n_order:], decimal=5)
 
 

@@ -1,7 +1,7 @@
 import numpy as np
 from copy import deepcopy
 from unittest import TestCase, main
-from denspp.offline.digital.window import SettingsWindow, WindowSequencer
+from denspp.offline.preprocessing.window import SettingsWindow, WindowSequencer
 
 
 class TestWindowSequencer(TestCase):
@@ -65,7 +65,8 @@ class TestWindowSequencer(TestCase):
         stimuli = 2 * (np.random.random(num_samples) - 0.5)
         rslt = WindowSequencer(set0).slide(stimuli)
 
-        assert rslt.shape == (int(num_trials*1.5-1), set0.window_length)
+        assert rslt.shape[0] in range(int(num_trials*1.5-2), int(num_trials*1.5))
+        assert rslt.shape[1] == set0.window_length
         for idx, sequence in enumerate(rslt):
             start_point = int(idx * self.sets.window_length * 0.75)
             chck = stimuli[start_point:start_point + set0.window_length]

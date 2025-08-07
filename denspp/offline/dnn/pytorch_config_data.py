@@ -5,11 +5,11 @@ from os import makedirs
 from os.path import join, abspath, isabs, exists
 from torch import Tensor, concat, from_numpy
 from torchvision import datasets, transforms
-from denspp.offline.yaml_handler import YamlHandler
+from denspp.offline.data_format.yaml import YamlHandler
 from denspp.offline import get_path_to_project_start
 from denspp.offline.data_call.call_cellbib import CellSelector
 from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
-from denspp.offline.data_generator import SettingsWaveformDataset, DefaultSettingsWaveformDataset, build_waveform_dataset
+from denspp.offline.data_call.waveform_dataset import SettingsWaveformDataset, DefaultSettingsWaveformDataset, build_waveform_dataset
 
 
 @dataclass

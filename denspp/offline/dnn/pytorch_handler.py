@@ -19,7 +19,7 @@ from denspp.offline import get_path_to_project_start, check_elem_unique
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset
 from denspp.offline.dnn.pytorch_config_model import ConfigPytorch
 from denspp.offline.structure_builder import init_dnn_folder
-from denspp.offline.yaml_handler import YamlHandler
+from denspp.offline.data_format.yaml import YamlHandler
 
 
 class PyTorchHandler:

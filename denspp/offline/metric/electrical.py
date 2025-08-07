@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.signal import find_peaks, correlate
-from denspp.offline.data_process.transformation import do_fft
+from denspp.offline.preprocessing.transformation import do_fft
 
 
 def calculate_total_harmonics_distortion(freq: np.ndarray, spectral: np.ndarray, N_harmonics: int=4) -> float:

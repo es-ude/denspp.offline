@@ -1,9 +1,8 @@
 from os.path import exists, join
 from dataclasses import dataclass
-from pathlib import Path
 from unittest import TestCase, main
-from denspp.offline import get_repo_name, get_path_to_project
-from denspp.offline.json_handler import JsonHandler
+from denspp.offline import get_path_to_project
+from denspp.offline.data_format.json import JsonHandler
 
 
 data_wr = {

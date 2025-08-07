@@ -1,5 +1,5 @@
 import numpy as np
-from .frame_preprocessing import generate_frames
+from denspp.offline.preprocessing.frame_preprocessing import generate_frames
 
 
 def augmentation_mean_waveform(

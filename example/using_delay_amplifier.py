@@ -1,10 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from denspp.offline.analog.amplifier.dly_amp import DlyAmp, RecommendedSettingsDLY
+from denspp.offline.analog.amplifier.dly_amp import DlyAmp, DefaultSettingsDLY
 
 
 if __name__ == "__main__":
-    settings = RecommendedSettingsDLY
+    settings = DefaultSettingsDLY
     dut = DlyAmp(settings)
 
     # --- Declaration of input

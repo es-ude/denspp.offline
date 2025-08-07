@@ -3,14 +3,16 @@ from shutil import rmtree
 from denspp.offline.logger import define_logger_testing
 
 
+def load_tests(loader, standard_tests, pattern):
+    testcase = unittest.TestLoader()
+    suite = unittest.TestSuite()
+    suite.addTests(testcase.discover(start_dir='src', pattern='*_test.py'))
+    suite.addTest(testcase.discover(start_dir='src_dnn', pattern='*_test.py'))
+    suite.addTest(testcase.discover(start_dir='src_pipe', pattern='*_test.py'))
+    return suite
+
+
 if __name__ == '__main__':
     logger = define_logger_testing()
-    test_loader = unittest.TestLoader()
-    test_suite = test_loader.discover('src', pattern='*_test.py')
-    test_suite.addTest(test_loader.discover('src_dnn', pattern='*_test.py'))
-    test_suite.addTest(test_loader.discover('src_pipe', pattern='*_test.py'))
-
-    test_runner = unittest.TextTestRunner()
-    test_runner.run(test_suite)
-
+    unittest.main()
     rmtree('temp_test', ignore_errors=True)

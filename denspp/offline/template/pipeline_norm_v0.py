@@ -1,14 +1,14 @@
 import numpy as np
 from os.path import abspath
 from denspp.offline.pipeline.pipeline_cmds import PipelineCMD
-from denspp.offline.nsp.spike_analyse import calc_spiketicks
 from denspp.offline.analog.amplifier.pre_amp import PreAmp, SettingsAMP
 from denspp.offline.analog.adc import SettingsADC
 from denspp.offline.analog.adc.adc_sar import SuccessiveApproximation as ADC0
-from denspp.offline.digital.dsp import DSP, SettingsFilter
-from denspp.offline.digital.sda import SpikeDetection, SettingsSDA
-from denspp.offline.digital.fex import FeatureExtraction, SettingsFeature
-from denspp.offline.digital.cluster import Clustering, SettingsCluster
+from denspp.offline.preprocessing.filtering import Filtering, SettingsFilter
+from denspp.offline.preprocessing.sda import SpikeDetection, SettingsSDA
+from denspp.offline.ml.fex import FeatureExtraction, SettingsFeature
+from denspp.offline.ml.cluster import Clustering, SettingsCluster
+from denspp.offline.postprocessing.spike_analyse import calc_spiketicks
 from .pipeline_plot import plot_frames_feature, plot_transient_highlight_spikes, plot_transient_input_spikes
 
 
@@ -93,8 +93,8 @@ class PipelineV0(PipelineCMD):
         settings = SettingsPipe(fs_ana)
         self.__preamp0 = PreAmp(settings.SettingsAMP)
         self.__adc = ADC0(settings.SettingsADC)
-        self.__dsp0 = DSP(settings.SettingsDSP_LFP)
-        self.__dsp1 = DSP(settings.SettingsDSP_SPK)
+        self.__dsp0 = Filtering(settings.SettingsDSP_LFP)
+        self.__dsp1 = Filtering(settings.SettingsDSP_SPK)
         self.__sda = SpikeDetection(settings.SettingsSDA)
         self.__fe = FeatureExtraction(settings.SettingsFE)
         self.__cl = Clustering(settings.SettingsCL)

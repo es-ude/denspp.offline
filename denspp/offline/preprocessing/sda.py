@@ -1,7 +1,7 @@
 import numpy as np
 from dataclasses import dataclass
 from scipy.signal import savgol_filter, find_peaks, iirfilter, lfilter
-from denspp.offline.data_process.transformation import transformation_window_method
+from denspp.offline.preprocessing.transformation import transformation_window_method
 
 
 @dataclass

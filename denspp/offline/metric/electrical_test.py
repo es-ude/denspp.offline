@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from denspp.offline.data_process.transformation import do_fft
+from denspp.offline.preprocessing.transformation import do_fft
 from denspp.offline.metric.electrical import (calculate_total_harmonics_distortion,
                                               calculate_total_harmonics_distortion_from_transient,
                                               calculate_cosine_similarity)

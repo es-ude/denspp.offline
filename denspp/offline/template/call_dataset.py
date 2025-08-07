@@ -3,10 +3,10 @@ from os.path import exists, join
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset, ControllerDataset
 from denspp.offline.dnn.model_library import CellLibrary
 from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
-from denspp.offline.data_process.frame_preprocessing import calculate_frame_snr, calculate_frame_mean
-from denspp.offline.data_process.frame_preprocessing import generate_zero_frames
-from denspp.offline.data_process.frame_normalization import DataNormalization
-from denspp.offline.data_process.frame_augmentation import augmentation_change_position, augmentation_reducing_samples
+from denspp.offline.preprocessing.frame_preprocessing import calculate_frame_snr, calculate_frame_mean
+from denspp.offline.preprocessing.frame_preprocessing import generate_zero_frames
+from denspp.offline.preprocessing.frame_normalization import DataNormalization
+from denspp.offline.dnn.augmentation_frame import augmentation_change_position, augmentation_reducing_samples
 
 
 class DatasetLoader(ControllerDataset):

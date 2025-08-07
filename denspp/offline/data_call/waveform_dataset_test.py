@@ -1,7 +1,7 @@
 import numpy as np
 from copy import deepcopy
 from unittest import TestCase, main
-from denspp.offline.data_generator import SettingsWaveformDataset, build_waveform_dataset
+from denspp.offline.data_call.waveform_dataset import SettingsWaveformDataset, build_waveform_dataset
 
 
 settings = SettingsWaveformDataset(
