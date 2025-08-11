@@ -2,11 +2,12 @@ import numpy as np
 from copy import deepcopy
 from unittest import TestCase, main
 from denspp.offline.data_call.call_handler import SettingsData
-from denspp.offline.pipeline.call_data_test import DataLoaderTest
+from denspp.offline.template.call_data_dummy import DataLoaderTest
 
 
 test_settings = SettingsData(
     pipeline='PipelineV0',
+    do_merge=False,
     path='data',
     data_set='test_1d',
     data_case=0, data_point=0,

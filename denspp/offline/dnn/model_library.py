@@ -67,7 +67,7 @@ class ModuleRegistryManager:
         overview_data = res.files(package).iterdir()
         for resource in overview_data:
             if not resource.name.endswith("__") and not resource.name.startswith(".") and resource.is_file() and resource.name.endswith(".py"):
-                module_name = f"{package}.{resource.name[:-3]}"
+                module_name = f"{package}.{resource.name.split(resource.suffix)[0]}"
                 m = import_module(module_name)
                 self._logger.debug(f"importing module from: {module_name}")
                 for name in m.__dict__:

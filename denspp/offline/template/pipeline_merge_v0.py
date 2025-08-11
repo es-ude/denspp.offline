@@ -42,7 +42,7 @@ class SettingsPipe:
         )
 
 
-class PipelineMergeV0(PipelineCMD):
+class PipelineV0_Merge(PipelineCMD):
     def __init__(self, fs_ana: float, addon: str='_app'):
         """Processing Pipeline for analysing transient data
         :param fs_ana:  Sampling rate of the input signal [Hz]

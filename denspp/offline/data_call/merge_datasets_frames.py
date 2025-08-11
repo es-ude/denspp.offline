@@ -6,25 +6,28 @@ from os.path import join, exists
 from shutil import rmtree
 from datetime import datetime
 from tqdm import tqdm
-from denspp.offline.data_call.call_handler import SettingsData
+from copy import deepcopy
+from denspp.offline.data_call.call_handler import SettingsData, DataHandler
 
 
 class MergeDatasets:
-    def __init__(self, pipeline, settings_data: SettingsData, do_list: bool=False) -> None:
+    __cluster_available: bool=False
+    __data_list = list()
+    __data_single = dict()
+    __data_merged = dict()
+
+    def __init__(self, pipeline, object_dataloader, settings_data: SettingsData, do_list: bool=False) -> None:
         """Class for handling the merging process for generating datasets from transient input signals
-        :param pipeline:        Selected pipeline for processing data
-        :param settings_data:   Dataclass for handling the transient data
-        :param do_list:         Boolean for listing the data
+        :param pipeline:            Selected pipeline for processing data
+        :param object_dataloader:   Used Dataloader for getting and handling data
+        :param settings_data:       Dataclass for handling the transient data
+        :param do_list:             Boolean for listing the data
         """
         self.__settings = settings_data
         self.__path2save = settings_data.path
-
-        self.__pipeline = pipeline(self.__settings.fs_resample)
+        self.__pipeline = pipeline
+        self.__dataloader = object_dataloader
         self.__saving_data_list = do_list
-        self.__data_list = list()
-        self.__data_single = dict()
-        self.__data_merged = dict()
-        self.__cluster_available = False
 
     def __generate_folder(self, addon: str='Merging') -> None:
         """Generating the folder temporary saving"""
@@ -75,15 +78,13 @@ class MergeDatasets:
         print(f"... available frames: {meta_infos_frames[0]} samples with each size of {meta_infos_frames[1]}"
               f'\n... available classes: {meta_infos_id[0]} with {meta_infos_id[1]} samples')
 
-    def get_frames_from_dataset(self, data_loader, cluster_class_avai: bool=False, process_points: list=()) -> None:
+    def get_frames_from_dataset(self, concatenate_id: bool=False, process_points: list=()) -> None:
         """Tool for loading datasets in order to generate one new dataset (Step 1)
-        Args:
-            data_loader:        Function with DataLoader
-            cluster_class_avai: False = Concatenate the class number with increasing id number (useful for non-biological clusters)
-            process_points:     Taking the datapoints of the choicen dataset [Start, End]
+        :param concatenate_id:      Do concatenation of the class number with increasing id number (useful for non-biological clusters)
+        :param process_points:      Taking the datapoints of the choicen dataset [Start, End]
         """
         self.__generate_folder()
-        self.__cluster_available = cluster_class_avai
+        self.__cluster_available = concatenate_id
         fs_ana = self.__pipeline.fs_ana
         fs_adc = self.__pipeline.fs_adc
 
@@ -102,6 +103,7 @@ class MergeDatasets:
 
         # --- Calling the data into RAM (Iterating the files)
         print("... processing data")
+        used_pipe = self.__pipeline()
         settings = dict()
         first_run = True
         while first_run or runPoint < endPoint:
@@ -113,8 +115,9 @@ class MergeDatasets:
             time_start = datetime.now()
 
             # --- Getting data
-            self.__settings = runPoint
-            datahandler = data_loader(self.__settings)
+            sets0 = deepcopy(self.__settings)
+            sets0.data_case = runPoint
+            datahandler = self.__dataloader(sets0)
             datahandler.do_call()
             datahandler.do_resample()
             data = datahandler.get_data()
@@ -129,7 +132,7 @@ class MergeDatasets:
                 length_data_in = data_rslt['x_adc'].size
 
                 frame_new = data_rslt['frames_align']
-                frame_cl = datahandler._raw_data.evnt_id[ch]
+                frame_cl = data.evnt_id[ch]
 
                 # --- Post-Processing: Checking if same length
                 if frame_new.shape[0] != frame_cl.size:
@@ -182,7 +185,7 @@ class MergeDatasets:
 
             # --- Bringing data into format
             create_time = datetime.now().strftime("%Y-%m-%d")
-            file_name = join(self.path2folder, f"{create_time}_Dataset-{datahandler._raw_data.data_name}_step{runPoint + 1:03d}")
+            file_name = join(self.path2folder, f"{create_time}_Dataset-{data.data_name}_step{runPoint + 1:03d}")
             self.__data_single.update({"frames_in": frames_in, "frames_cl": frames_cl, "ite_recovered": ite_recoverd})
             self.__data_single.update({"settings": settings, "num_clusters": np.unique(frames_cl).size})
             self.__data_single.update({"file_name": file_name})

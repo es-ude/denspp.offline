@@ -17,6 +17,7 @@ class SettingsData:
     """Class for configuring the dataloader
     Attributes:
         pipeline:       String with name of the pipeline to use
+        do_merge:       Boolean for run merge pipeline (True) or normal pipeline (False)
         path:           Path to data storage
         data_set:       String with key for used data set
         data_point:     Number within the dataset
@@ -27,6 +28,7 @@ class SettingsData:
         is_mapping_str: Boolean if mapping input from csv file is a string (True) or integer (false)
     """
     pipeline: str
+    do_merge: bool
     path: str
     data_set: str
     data_case: int
@@ -40,6 +42,7 @@ class SettingsData:
 
 DefaultSettingsData = SettingsData(
     pipeline='PipelineV0',
+    do_merge=False,
     path='data',
     data_set='quiroga',
     data_case=0, data_point=0,

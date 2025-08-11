@@ -1,14 +1,27 @@
 import numpy as np
 from unittest import TestCase, main
-from denspp.offline.pipeline.call_data_test import DataLoaderTest
-from denspp.offline.pipeline.pipeline_handler import select_process_pipeline, select_process_merge, start_processing_pipeline
+from denspp.offline.template.call_data_dummy import DataLoaderTest
+from denspp.offline.pipeline.pipeline_handler import select_process_pipeline, start_processing_pipeline
 from denspp.offline.data_call.call_handler import SettingsData
 from denspp.offline.template.pipeline_norm_v0 import PipelineV0
-from denspp.offline.template.pipeline_merge_v0 import PipelineMergeV0
+from denspp.offline.template.pipeline_merge_v0 import PipelineV0_Merge
 
 
 test_settings_1d = SettingsData(
     pipeline='PipelineV0',
+    do_merge=False,
+    path='data',
+    data_set='test_1d',
+    data_case=0, data_point=0,
+    t_range_sec=[], ch_sel=[],
+    fs_resample=20e3,
+    do_mapping=True,
+    is_mapping_str=False
+)
+
+test_settings_1d_merge = SettingsData(
+    pipeline='PipelineV0',
+    do_merge=True,
     path='data',
     data_set='test_1d',
     data_case=0, data_point=0,
@@ -20,6 +33,7 @@ test_settings_1d = SettingsData(
 
 test_settings_2d = SettingsData(
     pipeline='PipelineV0',
+    do_merge=False,
     path='data',
     data_set='test_2d',
     data_case=0, data_point=0,
@@ -66,7 +80,7 @@ class TestPipeProcess(TestCase):
         dut.do_call()
         data = dut.get_data()
         try:
-            rslt = PipelineMergeV0(test_settings_2d.fs_resample).run(data.data_raw[0], np.array([100, 500]))
+            rslt = PipelineV0_Merge(test_settings_2d.fs_resample).run(data.data_raw[0])
         except:
             self.assertTrue(False)
         else:
@@ -76,7 +90,7 @@ class TestPipeProcess(TestCase):
         try:
             select_process_pipeline(
                 object_dataloader=DataLoaderTest,
-                object_pipeline=PipelineMergeV0,
+                object_pipeline=PipelineV0_Merge,
                 sets_load_data=test_settings_1d
             )
         except:
@@ -117,7 +131,7 @@ class TestPipeProcess(TestCase):
         dut.do_call()
         data = dut.get_data()
         try:
-            rslt = PipelineMergeV0(test_settings_2d.fs_resample).run(data.data_raw[0], np.array([100, 500]))
+            rslt = PipelineV0_Merge(test_settings_2d.fs_resample).run(data.data_raw[0])
         except:
             self.assertTrue(False)
         else:
@@ -127,7 +141,7 @@ class TestPipeProcess(TestCase):
         try:
             select_process_pipeline(
                 object_dataloader=DataLoaderTest,
-                object_pipeline=PipelineMergeV0,
+                object_pipeline=PipelineV0_Merge,
                 sets_load_data=test_settings_2d
             )
         except:
@@ -143,7 +157,7 @@ class TestPipeProcess(TestCase):
         except:
             self.assertTrue(False)
         else:
-            self.assertTrue(len(rslt) == 5)
+            self.assertTrue(len(rslt) == 3)
 
 
 if __name__ == '__main__':

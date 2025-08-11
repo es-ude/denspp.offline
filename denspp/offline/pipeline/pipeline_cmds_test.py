@@ -3,7 +3,7 @@ from os.path import join, exists
 from unittest import TestCase, main
 from denspp.offline.pipeline.pipeline_cmds import PipelineCMD, PipelineLibrary, DataloaderLibrary
 from denspp.offline.pipeline.pipeline_handler_test import test_settings_1d
-from denspp.offline.pipeline.call_data_test import DataLoaderTest, SettingsData
+from denspp.offline.template.call_data_dummy import DataLoaderTest, SettingsData
 
 
 # --- Info: Function have to start with test_*
@@ -37,6 +37,7 @@ class TestPipeCommands(TestCase):
         test_settings = SettingsData(
             pipeline='PipelineV0',
             path='data',
+            do_merge=False,
             data_set='test_2d',
             data_case=0, data_point=0,
             t_range_sec=[0], ch_sel=[],
@@ -59,6 +60,7 @@ class TestPipeCommands(TestCase):
         mapping = np.array([[1, 3], [2, 4]])
         test_settings = SettingsData(
             pipeline='PipelineV0',
+            do_merge=False,
             path='data',
             data_set='test_2d',
             data_case=0, data_point=0,
@@ -81,6 +83,7 @@ class TestPipeCommands(TestCase):
         mapping = np.array([[1, 2], [0, 3]])
         test_settings = SettingsData(
             pipeline='PipelineV0',
+            do_merge=False,
             path='data',
             data_set='test_2d_zero',
             data_case=0, data_point=0,
@@ -104,6 +107,7 @@ class TestPipeCommands(TestCase):
         mapping = np.array([[1, 3], [0, 2]])
         test_settings = SettingsData(
             pipeline='PipelineV0',
+            do_merge=False,
             path='data',
             data_set='test_2d_zero',
             data_case=0, data_point=0,
@@ -126,6 +130,7 @@ class TestPipeCommands(TestCase):
         mapping = np.array([[1, 2], [3, 4]])
         test_settings = SettingsData(
             pipeline='PipelineV0',
+            do_merge=False,
             path='data',
             data_set='test_2d',
             data_case=0, data_point=0,
@@ -154,6 +159,7 @@ class TestPipeCommands(TestCase):
         mapping = np.array([[1, 2], [3, 0]])
         test_settings = SettingsData(
             pipeline='PipelineV0',
+            do_merge=False,
             path='data',
             data_set='test_2d_zero',
             data_case=0, data_point=0,
@@ -182,6 +188,7 @@ class TestPipeCommands(TestCase):
         mapping = np.array([[1, 3], [2, 4]])
         test_settings = SettingsData(
             pipeline='PipelineV0',
+            do_merge=False,
             path='data',
             data_set='test_2d',
             data_case=0, data_point=0,
