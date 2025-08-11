@@ -4,7 +4,7 @@ from denspp.offline.data_format.yaml import YamlHandler
 from denspp.offline.data_call import SettingsData, DefaultSettingsData
 from denspp.offline.data_call.merge_datasets_frames import MergeDatasets
 from denspp.offline.pipeline.pipeline_cmds import DataloaderLibrary, PipelineLibrary
-from denspp.offline.pipeline.multithreading import ProcessingThread
+from denspp.offline.pipeline.multithread import MultithreadHandler
 
 
 def start_processing_pipeline(sets_load_data: SettingsData=DefaultSettingsData):
@@ -69,7 +69,7 @@ def select_process_pipeline(object_dataloader, object_pipeline, sets_load_data: 
     # --- Thread Preparation: Processing data
     logger.info("Step #2: Processing data")
     logger.info("==================================================================")
-    thr_station = ProcessingThread(
+    thr_station = MultithreadHandler(
         num_workers=1
     )
     dut = object_pipeline(dataIn.fs_used)
