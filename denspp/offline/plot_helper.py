@@ -69,22 +69,24 @@ def scale_auto_value(data: np.ndarray | float) -> [float, str]:
         Tuple with [0] = scaling value and [1] = SI pre-unit
     """
     ref_dict = {'T': -4, 'G': -3, 'M': -2, 'k': -1, '': 0, 'm': 1, 'µ': 2, 'n': 3, 'p': 4, 'f': 5}
-
     value = np.max(np.abs(np.abs(data))) if isinstance(data, np.ndarray) else data
-    str_value = str(value).split('.')
-    digit = 0
-    if 'e' not in str_value[1]:
+    str_chck = str(value)
+
+    if 'e' not in str_chck:
+        str_value = str_chck.split('.')
         if not str_value[0] == '0':
             # --- Bigger Representation
             sys = -np.floor(len(str_value[0]) / 3)
         else:
             # --- Smaller Representation
+            digit = 0
             for digit, val in enumerate(str_value[1], start=1):
                 if '0' not in val:
                     break
             sys = np.ceil(digit / 3)
     else:
-        val = int(str_value[1].split('e')[-1])
+        str_value = str_chck.split('e')
+        val = int(str_value[-1])
         sys = -np.floor(abs(val) / 3) if np.sign(val) == 1 else np.ceil(abs(val) / 3)
 
     scale = 10 ** (sys * 3)
