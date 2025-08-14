@@ -80,7 +80,7 @@ class JsonHandler:
         """
         makedirs(self._path2folder, exist_ok=True)
         with open(self.__path2chck, 'w') as f:
-            json.dump(config_data, f, sort_keys=False)
+            json.dump(config_data, f, sort_keys=False, indent=0)
 
     def get_dict(self) -> dict:
         """Getting the dictionary with configuration sets from JSON file

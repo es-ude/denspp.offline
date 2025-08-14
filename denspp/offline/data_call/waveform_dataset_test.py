@@ -22,7 +22,7 @@ class TestWaveformDataset(TestCase):
     def test_build_example(self):
         set_test = deepcopy(settings)
         dataset = build_waveform_dataset(set_test)
-        self.assertTrue([True for key in dataset.keys() if key in ['data', 'label', 'dict']])
+        self.assertTrue([True for key in dataset.keys() if key in ['data', 'label', 'dict', 'fs']])
 
     def test_build_example_size(self):
         set_test = deepcopy(settings)

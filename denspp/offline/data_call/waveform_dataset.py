@@ -84,4 +84,4 @@ def build_waveform_dataset(settings_data: SettingsWaveformDataset, settings_nois
     # --- Getting dictionary of signal type
     noise = wfg_generator.generate_noise(waveforms_signals.shape) if settings_data.noise_add else np.zeros_like(waveforms_signals)
     waveforms_dict = [type for type in settings_data.wfg_type if type in wfg_generator.get_dictionary_classes()]
-    return {'data': waveforms_signals + noise, 'label': waveforms_classes, 'dict': waveforms_dict}
+    return {'data': waveforms_signals + noise, 'label': waveforms_classes, 'dict': waveforms_dict, 'fs': settings_data.sampling_rate}

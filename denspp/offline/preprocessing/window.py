@@ -33,6 +33,16 @@ class WindowSequencer:
     _settings: SettingsWindow
     _window_normalization: np.ndarray
 
+    @staticmethod
+    def get_values_non_incremented_change(data: list) -> list:
+        """Returns values that are not incremented by one from the previous value.
+        Always includes the first element.
+        """
+        if not data:
+            return []
+        else:
+            return [data[0]] + [data[i] for i in range(1, len(data)) if data[i] != data[i - 1] + 1]
+
     def __init__(self, settings: SettingsWindow) -> None:
         """Class for applying a window sequenzer on transient signals
         :param settings:    Class SettingsWindow with definitions for the window sequenzer
@@ -45,7 +55,10 @@ class WindowSequencer:
         )
 
     def sequence(self, signal: np.ndarray) -> np.ndarray:
-        """Building a sequence-to-sequence output array from signal input"""
+        """Building a sequence-to-sequence output array from signal input
+        :param signal:  Numpy array with input signal to build the sequence with shape=(N, )
+        :return:        Numpy array of sequence signals with shape=(M, window length)
+        """
         num_sequences = int(signal.shape[0] / self._settings.window_length)
         array_length = num_sequences * self._settings.window_length
         return signal[0:array_length].reshape(
@@ -54,7 +67,10 @@ class WindowSequencer:
         )
 
     def slide(self, signal: np.ndarray) -> np.ndarray:
-        """Building a sliding window sequencer on signal input"""
+        """Building a sliding window sequencer on signal input
+        :param signal:  Numpy array with input signal to build the sequence with shape=(N, )
+        :return:        Numpy array of sequence signals with shape=(M, window length)
+        """
         delta_steps = self._settings.window_length - self._settings.overlap_length
         return sliding_window_view(
             x=signal,
@@ -62,3 +78,39 @@ class WindowSequencer:
             window_shape=self._settings.window_length,
             writeable=True
         )[::delta_steps]
+
+    def window_event_detected(self, signal: np.ndarray, thr: float, pre_time: float) -> np.ndarray:
+        """Building a window sequencer based on an event-detection (absolute input)
+        :param signal:      Numpy array with input signal to build the sequence with shape=(N, )
+        :param thr:         Floating value with absolute threshold value
+        :param pre_time:    Floating value with pre-time in the window before event is detected
+        :return:            Numpy array of sequence signals with shape=(M, window length)
+        """
+        if thr < 0:
+            raise ValueError("Threshold must be positive")
+        xpos_evnt_dtctd = self.get_values_non_incremented_change(
+            np.argwhere(np.abs(signal) >= thr).flatten().tolist()
+        )
+
+        if not xpos_evnt_dtctd:
+            return np.empty((1, 1))
+        else:
+            sequence_window = np.zeros((len(xpos_evnt_dtctd), self._settings.window_length))
+            num_samples_pre = int(pre_time * self._settings.sampling_rate)
+            for ite, idx in enumerate(xpos_evnt_dtctd):
+                start_xpos = idx - num_samples_pre if idx - num_samples_pre > 0 else idx
+                num_pre_padding = 0 if idx - num_samples_pre > 0 else  abs(idx - num_samples_pre)
+                stop_xpos = start_xpos + self._settings.window_length if start_xpos + self._settings.window_length < signal.size else -1
+                num_post_padding = 0 if start_xpos + self._settings.window_length < signal.size else abs(signal.size - start_xpos)
+
+                cutted_signal = signal[start_xpos+num_pre_padding:stop_xpos]
+                if num_pre_padding:
+                    pre_padding = np.zeros((self._settings.window_length-cutted_signal.size, )) + cutted_signal[0]
+                    cutted_signal = np.concatenate((pre_padding, cutted_signal))
+
+                if num_post_padding:
+                    post_padding = np.zeros((self._settings.window_length-cutted_signal.size, )) + cutted_signal[-1]
+                    cutted_signal = np.concatenate((cutted_signal, post_padding))
+
+                sequence_window[ite, :] = cutted_signal
+            return sequence_window
