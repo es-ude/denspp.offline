@@ -1,7 +1,16 @@
 import unittest
-from denspp.offline import (check_key_elements, check_elem_unique, check_keylist_elements_all, check_keylist_elements_any,
-                            check_string_equal_elements_all, check_string_equal_elements_any, check_value_range, is_close,
-                            get_repo_name, get_path_to_project_templates, get_path_to_project, get_path_to_project_start)
+from os.path import join
+from denspp.offline import (
+    check_key_elements,
+    check_elem_unique,
+    check_keylist_elements_all,
+    check_keylist_elements_any,
+    check_string_equal_elements_all,
+    check_string_equal_elements_any,
+    check_value_range, is_close,
+    get_path_to_project,
+    get_path_to_project_templates
+)
 
 
 class TestHelpFunction(unittest.TestCase):
@@ -153,25 +162,16 @@ class TestHelpFunction(unittest.TestCase):
         )
         self.assertFalse(rslt)
 
-    def test_get_repo_name(self):
-        ref = ['denspp']
-        chck = get_repo_name()
-        self.assertTrue(chck in ref)
-
     def test_get_path_to_project_wo_ref(self):
-        ref = ['denspp', 'offline', 'template']
-        chck = get_path_to_project_start()
+        ref = ['denspp', 'offline']
+        chck = get_path_to_project()
         rslt = [True for key in ref if key in chck]
         self.assertTrue(sum(rslt) == 2)
 
     def test_get_path_to_project_with_ref(self):
-        chck = get_path_to_project_start(folder_ref='denspp.offline')
-        rslt = chck == get_path_to_project_start()
-        self.assertTrue(rslt)
-
-    def test_get_path_to_project_app(self):
-        chck = get_path_to_project()
-        rslt = chck == get_path_to_project_start()
+        ref = ['denspp', 'offline', 'test']
+        chck = get_path_to_project(new_folder='test')
+        rslt = chck == join(get_path_to_project(), "test")
         self.assertTrue(rslt)
 
     def test_get_path_to_project_templates(self):

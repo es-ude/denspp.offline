@@ -75,32 +75,27 @@ def is_close(value: float, target: float, tolerance: float=0.05) -> bool:
     return abs(value - target) <= abs(tolerance)
 
 
-def get_repo_name() -> str:
-    """Getting string with repo name"""
-    from os.path import dirname
-    from pathlib import Path
-    import denspp.offline as ref
-
-    path_to_import = dirname(ref.__file__)
-    path = Path(path_to_import).parts[-2]
-    return path
-
-
-def get_path_to_project(new_folder: str='') -> str:
+def get_path_to_project(new_folder: str='', max_levels: int=5) -> str:
     """Function for getting the path to find the project folder structure in application.
     :param new_folder:  New folder path
+    :param max_levels:  Max number of levels to get-out for finding pyproject.toml
     :return:            String of absolute path to start the project structure
     """
-    from os.path import dirname, join, abspath, exists
     from pathlib import Path
-    if exists('main_pipeline.py'):
-        import main_pipeline as ref
-        path_to_import = dirname(ref.__file__)
-    else:
-        path_to_import = get_path_to_project_start(new_folder=new_folder)
+    cwd = Path(".").absolute()
+    current = cwd
 
-    path_to_proj = dirname(join(*[path_seg for path_seg in Path(path_to_import).parts], new_folder, ''))
-    return abspath(path_to_proj)
+    def is_project_root(p):
+        return (p / "pyproject.toml").exists()
+
+    for _ in range(max_levels):
+        if is_project_root(current):
+            return str(current / new_folder)
+        current = current.parent
+
+    if is_project_root(current):
+        return str(current / new_folder)
+    return str(cwd)
 
 
 def get_path_to_project_templates() -> str:
@@ -111,23 +106,3 @@ def get_path_to_project_templates() -> str:
 
     path_to_temp = dirname(ref.__file__)
     return abspath(path_to_temp)
-
-
-def get_path_to_project_start(new_folder: str='', folder_ref: str='') -> str:
-    """Function for getting the path to find the project folder structure.
-    :param new_folder:  New folder path (optional)
-    :param folder_ref:  Folder reference for finding project path (best case: repo name, optional)
-    :return:            String of absolute path to start the project structure
-    """
-    from os import getcwd
-    from os.path import dirname, join, abspath
-    from pathlib import Path
-
-    if get_repo_name() in getcwd() and not folder_ref:
-        import denspp.offline as ref
-        path_to_import = dirname(ref.__file__)
-        path_to_proj = dirname(join(*[path_seg for path_seg in Path(path_to_import).parts[:-2]], ''))
-    else:
-        path_to_proj = join(getcwd().split(folder_ref)[0], folder_ref) if folder_ref else getcwd()
-    path_start = join(path_to_proj, new_folder)
-    return abspath(path_start)
