@@ -10,8 +10,7 @@ if __name__ == "__main__":
         temp=300,
         wgn_dB=-70,
         Fc=10,
-        slope=0.6,
-        do_print=False
+        slope=0.6
     )
     handler_noise = ProcessNoise(
         settings=settings_noise,
