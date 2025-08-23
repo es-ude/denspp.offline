@@ -50,7 +50,7 @@ class MultiprocessingHandler:
 
         self._logger.info(f"... processing data with {self._max_num_workers} threading workers on {self._num_cores} cores")
         self._results = dict()
-        for group in tqdm(split_groups, ncols=100, desc='Progress Threads: '):
+        for group in tqdm(split_groups, desc='Progress Threads: '):
             self.__threads_core = list()
             # --- Starting all threads
             rslt = Queue()
@@ -86,6 +86,7 @@ class MultiprocessingHandler:
         :param data:        Numpy array with data to process (shape=[num. channels, num. samples])
         :param chnnl_id:    List wit hInteger with number of parallel workers
         """
+        self._results = dict()
         if self._max_num_workers > 1 and len(chnnl_id) > 1:
             self.__perform_multi_threads(func, data, chnnl_id)
         else:

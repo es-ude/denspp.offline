@@ -53,7 +53,7 @@ class MultithreadHandler:
         split_groups = [chnnl_id[i:i + num_effective] for i in range(0, len(chnnl_id), num_effective)]
 
         self._logger.info(f"... processing data with {self._max_num_workers} threading workers on {self._num_cores} cores")
-        for group in tqdm(split_groups, ncols=100, desc='Progress: '):
+        for group in tqdm(split_groups, desc='Progress: '):
             self.__threads_worker = list()
             # --- Starting all threads
             for idx, group_num in enumerate(group):
@@ -84,6 +84,7 @@ class MultithreadHandler:
         :param data:        Numpy array with data to process (shape=[num. channels, num. samples])
         :param chnnl_id:    List wit hInteger with number of parallel workers
         """
+        self._results = dict()
         if self._max_num_workers > 1 and len(chnnl_id) > 1:
             self.__perform_multi_threads(func, data, chnnl_id)
         else:
