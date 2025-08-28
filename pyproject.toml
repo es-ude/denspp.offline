@@ -31,12 +31,7 @@ keywords = ["machine learning", "signal processing", "end-to-end", "offline data
 authors = [
   {name = "Andreas Erbsloeh", email = "andreas.erbsloeh@uni-due.de"},
 ]
-maintainers = [
-    {name = "Nick Lorenz", email = "nick.lorenz@uni-due.de"}
-]
 dependencies = [
-    "fxpmath>=0.4.9",
-    "mat73>=0.65",
     "matplotlib>=3.9.2",
     "numpy>=1.26.4",
     "py-cpuinfo>=9.0.0",
@@ -49,12 +44,10 @@ dependencies = [
     "torchinfo>=1.8.0",
     "torchvision>=0.20.1",
     "tqdm>=4.67.1",
-    "logging>=0.4.9.6",
-    "logdecorator==2.*",
     "pyxdf>=1.16.8",
     "elasticai-creator",
-    "notebook>=7.3.2",
     "nc-py-api>=0.19.2",
+    "fxpmath>=0.4.9",
 ]
 
 
