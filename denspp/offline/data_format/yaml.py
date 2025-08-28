@@ -3,7 +3,7 @@ from logging import getLogger, Logger
 from typing import Any
 from os import makedirs
 from os.path import join, exists, isabs
-from denspp.offline import get_path_to_project_start
+from denspp.offline import get_path_to_project
 
 
 class YamlHandler:
@@ -20,7 +20,7 @@ class YamlHandler:
         :param file_name:          String with name of the YAML file [Default: 'Config_Train']
         """
         self.__logger = getLogger(__name__)
-        self._path2folder = join(get_path_to_project_start(), path) if not isabs(path) else path
+        self._path2folder = join(get_path_to_project(), path) if not isabs(path) else path
         self._file_name = self.__remove_ending_from_filename(file_name)
         self._template = template
 

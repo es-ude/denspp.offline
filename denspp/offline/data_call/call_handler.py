@@ -7,7 +7,7 @@ from glob import glob
 from pathlib import Path
 from fractions import Fraction
 from scipy.signal import resample_poly
-from denspp.offline import get_path_to_project_start
+from denspp.offline import get_path_to_project
 from denspp.offline.data_format.csv import CsvHandler
 from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
 
@@ -98,7 +98,7 @@ class ControllerData:
         self._methods_available = dir(ControllerData)
         self.__logger = getLogger(__name__)
         self.__fill_factor = 1.
-        self.__default_data_path = join(get_path_to_project_start(), 'data')
+        self.__default_data_path = join(get_path_to_project(), 'data')
         self.__config_data_selection = [self.__default_data_path, 0, 0]
         self.__download_handler = OwnCloudDownloader()
 

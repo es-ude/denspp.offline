@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import unittest
 from os.path import join, exists
 from denspp.offline.data_format.yaml import YamlHandler
-from denspp.offline import get_path_to_project_start
+from denspp.offline import get_path_to_project
 
 
 @dataclass
@@ -33,7 +33,7 @@ data_wr = {
 
 
 class TestYamlHandler(unittest.TestCase):
-    path = join(get_path_to_project_start('temp_test'), 'config')
+    path = join(get_path_to_project('temp_test'), 'config')
     file = 'Config_Test'
 
     dummy0 = YamlHandler(

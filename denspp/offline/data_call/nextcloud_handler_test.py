@@ -1,7 +1,7 @@
 from unittest import TestCase, main
 from os.path import splitext, join, exists
 from denspp.offline.data_call.nextcloud_handler import ConfigCloud, NextCloudDownloader
-from denspp.offline import get_path_to_project_start
+from denspp.offline import get_path_to_project
 
 
 TestConfigCloud = ConfigCloud(
@@ -12,7 +12,7 @@ TestConfigCloud = ConfigCloud(
 
 
 class TestNextCloud(TestCase):
-    path2temp = get_path_to_project_start('temp_test')
+    path2temp = get_path_to_project('temp_test')
     hndl = NextCloudDownloader(
         path2config=path2temp,
         use_config=TestConfigCloud

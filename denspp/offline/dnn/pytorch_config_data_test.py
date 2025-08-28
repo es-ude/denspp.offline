@@ -1,7 +1,7 @@
 from unittest import TestCase, main
 from copy import deepcopy
 from os.path import join
-from denspp.offline import get_path_to_project_start
+from denspp.offline import get_path_to_project
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset
 from denspp.offline.template.call_dataset import DatasetLoader
 
@@ -25,19 +25,19 @@ class TestDataset(TestCase):
         set = deepcopy(TestSettingsDataset)
         set.data_path = 'dataset'
         chck = set.get_path2folder
-        self.assertEqual(chck, join(get_path_to_project_start(), 'dataset'))
+        self.assertEqual(chck, join(get_path_to_project(), 'dataset'))
 
     def test_path2folder1(self):
         set = deepcopy(TestSettingsDataset)
-        set.data_path = join(get_path_to_project_start(), 'temp_test')
+        set.data_path = join(get_path_to_project(), 'temp_test')
         chck = set.get_path2folder
-        self.assertEqual(chck, join(get_path_to_project_start(), 'temp_test'))
+        self.assertEqual(chck, join(get_path_to_project(), 'temp_test'))
 
     def test_path2data(self):
         set = deepcopy(TestSettingsDataset)
         set.data_file_name = 'mnist'
         chck = set.get_path2data
-        self.assertEqual(chck, join(get_path_to_project_start(), TestSettingsDataset.data_path, 'mnist'))
+        self.assertEqual(chck, join(get_path_to_project(), TestSettingsDataset.data_path, 'mnist'))
 
     def test_dataset_overview(self):
         set = deepcopy(TestSettingsDataset)

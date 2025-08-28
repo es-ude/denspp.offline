@@ -4,7 +4,7 @@ from inspect import getfile
 from importlib import import_module
 from importlib import resources as res
 from logging import getLogger
-from denspp.offline import get_path_to_project_start
+from denspp.offline import get_path_to_project
 
 
 class ModuleRegistryManager:
@@ -86,7 +86,7 @@ class DatasetLoaderLibrary:
     """Class for searching all DatasetLoader in repository to get an overview"""
     def get_registry(self, package: str="src_dnn") -> ModuleRegistryManager:
         m = ModuleRegistryManager(r"\bDatasetLoader(Test)?\b")
-        chck = exists(join(get_path_to_project_start(), package))
+        chck = exists(join(get_path_to_project(), package))
         m.register_package(package) if chck else m.register_package("denspp.offline.template")
         return m
 
@@ -95,7 +95,7 @@ class ModelLibrary:
     """Class for searching all ModelRegistries in repository to get an overview"""
     def get_registry(self, package: str="src_dnn.models") -> ModuleRegistryManager:
         m = ModuleRegistryManager(r".*_v\d+")
-        chck = exists(join(get_path_to_project_start(), 'src_dnn/models'))
+        chck = exists(join(get_path_to_project(), 'src_dnn/models'))
         m.register_packages(("denspp.offline.dnn.models", package)) if chck else m.register_package("denspp.offline.dnn.models")
         return m
 
@@ -104,6 +104,6 @@ class CellLibrary:
     """Class for searching all CellRegistries in repository to get an overview"""
     def get_registry(self, package: str="src_dnn.cell_bib") -> ModuleRegistryManager:
         m = ModuleRegistryManager(r"resort_\W*")
-        chck = exists(join(get_path_to_project_start(), 'src_dnn/cell_bib'))
+        chck = exists(join(get_path_to_project(), 'src_dnn/cell_bib'))
         m.register_packages(("denspp.offline.dnn.cell_bib", package)) if chck else m.register_package("denspp.offline.dnn.cell_bib")
         return m

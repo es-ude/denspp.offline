@@ -4,7 +4,7 @@ from os.path import join
 from dataclasses import dataclass
 from nc_py_api import Nextcloud, NextcloudException
 from denspp.offline.data_format.yaml import YamlHandler
-from denspp.offline import get_path_to_project_start
+from denspp.offline import get_path_to_project
 
 
 @dataclass
@@ -32,7 +32,7 @@ class NextCloudDownloader:
     _settings: ConfigCloud
     _logger: Logger
 
-    def __init__(self, path2config: str = get_path_to_project_start(), use_config: ConfigCloud = DefaultConfigCloud) -> None:
+    def __init__(self, path2config: str = get_path_to_project(), use_config: ConfigCloud = DefaultConfigCloud) -> None:
         """Class for handling cloud storage access for getting transient data and datasets using Nextcloud services
         :param path2config: Path to config file
         :param use_config:  Class for handling the owncloud handler

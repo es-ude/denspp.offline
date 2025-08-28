@@ -2,7 +2,7 @@ import logging
 from os import makedirs
 from os.path import join, exists
 from shutil import copy
-from denspp.offline import get_path_to_project_templates, get_path_to_project_start
+from denspp.offline import get_path_to_project, get_path_to_project_templates
 
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ def init_project_folder(new_folder: str = '') -> None:
     copy_files = {'main_pipeline.py': '', 'template_test0.py': '', '.gitignore': '', 'README.md': '',
                   'run_tests.py': '', 'call_data.py': 'src_pipe', 'pipeline_plot.py': 'src_pipe',
                   'pipeline_norm_v0.py': 'src_pipe', 'pipeline_merge_v0.py': 'src_pipe'}
-    path2start = get_path_to_project_start(new_folder)
+    path2start = get_path_to_project(new_folder)
     makedirs(path2start, exist_ok=True)
 
     for folder_name in folder_structure:
@@ -55,7 +55,7 @@ def init_dnn_folder(new_folder: str = '') -> None:
     copy_files = {'main_dnn_train.py': '', 'call_dataset.py': folder_start, 'example_model.py': join(folder_start, 'models')}
 
     # --- Generation process
-    path2start = get_path_to_project_start(new_folder)
+    path2start = get_path_to_project(new_folder)
     for folder_name in folder_structure:
         makedirs(join(path2start, folder_start, folder_name), exist_ok=True)
         if not exists(path2start):
