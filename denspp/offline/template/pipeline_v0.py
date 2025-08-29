@@ -167,7 +167,7 @@ class PipelineV0(PipelineCMD):
             features = np.zeros((1, ))
             data['frames'][2] = np.zeros((1, ))
         else:
-            features = self.__fe.pca(data['frames'][0])
+            features = self.__fe.pca(data['frames'][0], num_features=3)
             data['frames'][2] = self.__cl.init(features)
 
         data["features"] = features
