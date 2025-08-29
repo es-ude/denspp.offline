@@ -1,10 +1,8 @@
 from logging import getLogger
 from denspp.offline.logger import define_logger_runtime
-from denspp.offline.data_format.yaml import YamlHandler
-from denspp.offline.data_call import SettingsData, DefaultSettingsData
-from denspp.offline.data_call.merge_datasets_frames import MergeDatasets
-from denspp.offline.pipeline.pipeline_cmds import DataloaderLibrary, PipelineLibrary
-from denspp.offline.pipeline.multithread import MultithreadHandler
+from denspp.offline.data_call import SettingsData, DefaultSettingsData, MergeDataset
+from denspp.offline.data_format import YamlHandler
+from denspp.offline.pipeline import DataloaderLibrary, PipelineLibrary, MultithreadHandler
 
 
 def start_processing_pipeline(sets_load_data: SettingsData=DefaultSettingsData):
@@ -97,7 +95,7 @@ def select_process_merge(object_dataloader, object_pipeline, sets_load_data: Set
     logger.info("Building datasets from transient data")
 
     # ---- Merging spike frames from several files to one file
-    merge_handler = MergeDatasets(object_pipeline, object_dataloader, sets_load_data, True)
+    merge_handler = MergeDataset(object_pipeline, object_dataloader, sets_load_data, True)
     merge_handler.get_frames_from_dataset(
         concatenate_id=False,
         process_points=list()

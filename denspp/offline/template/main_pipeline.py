@@ -13,6 +13,5 @@ if __name__ == "__main__":
         select_process_pipeline(
             object_dataloader=data_handler,
             object_pipeline=pipe,
-            sets_load_data=settings_data,
-            sets_load_thread=settings_thr
+            sets_load_data=settings_data
         )
