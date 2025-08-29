@@ -1,11 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from denspp.offline.analog.amplifier.dly_amp import DlyAmp, DefaultSettingsDLY
+from denspp.offline.analog.amplifier.dly_amp import DelayAmplifier, DefaultSettingsDLY
 
 
 if __name__ == "__main__":
     settings = DefaultSettingsDLY
-    dut = DlyAmp(settings)
+    dut = DelayAmplifier(settings)
 
     # --- Declaration of input
     t_end = 10e-3
@@ -16,12 +16,12 @@ if __name__ == "__main__":
     uinp = np.zeros(t0.shape) + u_off
     for idx, peak_val in enumerate(u_pp):
         uinp += peak_val * np.sin(2 * np.pi * t0 * f0[idx])
-    uinn = dut.vcm
+    uinn = settings.vcm
 
     uout0 = dut.do_simple_delay(uinp)
     uout1 = dut.do_recursive_delay(uinp)
-    uout2 = dut.do_allpass_first_order(uinp, 1e3)
-    uout3 = dut.do_allpass_second_order(uinp, 1e3, 100)
+    uout2 = dut.do_allpass_first_order(uinp)
+    uout3 = dut.do_allpass_second_order(uinp, 100.)
 
     # --- Plotting
     plt.figure()
@@ -35,4 +35,4 @@ if __name__ == "__main__":
     plt.grid()
     plt.legend()
     plt.tight_layout()
-    plt.show()
+    plt.show(block=True)

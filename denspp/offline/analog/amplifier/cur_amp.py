@@ -46,7 +46,6 @@ DefaultSettingsCUR = SettingsCUR(
 class CurrentAmplifier(CommonAnalogFunctions):
     _handler_noise: ProcessNoise
     _settings: SettingsCUR
-    __print_device = "current amplifier"
 
     def __init__(self, settings_dev: SettingsCUR, settings_noise: SettingsNoise=DefaultSettingsNoise) -> None:
         """Class for emulating an analogue current amplifier

@@ -54,7 +54,6 @@ DefaultSettingsAMP = SettingsAMP(
 class PreAmp(CommonAnalogFunctions):
     _handler_noise: ProcessNoise
     _settings: SettingsAMP
-    __print_device = "pre-amplifier"
 
     def __init__(self, settings_dev: SettingsAMP, settings_noise: SettingsNoise=DefaultSettingsNoise):
         """Class for emulating an analogue pre-amplifier
