@@ -3,14 +3,14 @@ from logging import getLogger, Logger
 from scipy import signal
 from fxpmath import Fxp, Config
 from denspp.offline import check_keylist_elements_any
-from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, RecommendedSettingsNoise
+from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, DefaultSettingsNoise
 
 
 class WaveformGenerator:
     __handler_noise: ProcessNoise
     _logger: Logger
 
-    def __init__(self, sampling_rate: float, add_noise: bool=False, settings_noise: SettingsNoise=RecommendedSettingsNoise):
+    def __init__(self, sampling_rate: float, add_noise: bool=False, settings_noise: SettingsNoise=DefaultSettingsNoise):
         """Class for generating the transient stimulation signal
         :param sampling_rate:   Sampling rate of the signal
         :param add_noise:       Boolean for adding noise to output

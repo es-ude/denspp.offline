@@ -4,14 +4,14 @@ from scipy.signal import square, resample_poly
 
 from .adc_settings import SettingsADC
 from denspp.offline.analog.common_func import CommonAnalogFunctions, CommonDigitalFunctions
-from denspp.offline.analog.dev_noise import SettingsNoise, RecommendedSettingsNoise, ProcessNoise
+from denspp.offline.analog.dev_noise import SettingsNoise, DefaultSettingsNoise, ProcessNoise
 
 
 class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
     _settings: SettingsADC
     _handler_noise: ProcessNoise
 
-    def __init__(self, settings_dev: SettingsADC, settings_noise: SettingsNoise = RecommendedSettingsNoise):
+    def __init__(self, settings_dev: SettingsADC, settings_noise: SettingsNoise = DefaultSettingsNoise):
         """Basic class for applying an Analogue-Digital-Converter (ADC) on the raw data
         :param settings_dev:    Configuration class for defining properties of ADC
         :param settings_noise:  Configuration class for defining noise properties of device

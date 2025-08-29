@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import numpy as np
 from denspp.offline.analog.common_func import CommonAnalogFunctions
-from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, RecommendedSettingsNoise
+from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, DefaultSettingsNoise
 
 
 @dataclass
@@ -44,7 +44,7 @@ class CurrentAmplifier(CommonAnalogFunctions):
     _settings: SettingsCUR
     __print_device = "current amplifier"
 
-    def __init__(self, settings_dev: SettingsCUR, settings_noise: SettingsNoise=RecommendedSettingsNoise) -> None:
+    def __init__(self, settings_dev: SettingsCUR, settings_noise: SettingsNoise=DefaultSettingsNoise) -> None:
         """Class for emulating an analogue current amplifier
         :param settings_dev:        Dataclass for handling the current amplifier
         :param settings_noise:      Dataclass for handling the noise and parasitic simulation

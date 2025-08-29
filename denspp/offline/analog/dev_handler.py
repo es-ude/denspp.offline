@@ -9,7 +9,7 @@ from scipy.optimize import least_squares, curve_fit
 
 from denspp.offline.plot_helper import scale_auto_value, save_figure
 from denspp.offline.analog.iv_polyfit import PolyfitIV
-from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, RecommendedSettingsNoise
+from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, DefaultSettingsNoise
 from denspp.offline.metric.data_numpy import calculate_error_rae, calculate_error_mse
 
 
@@ -53,7 +53,7 @@ class ElectricalLoadHandler(ProcessNoise):
     _bounds_curr: list
     _bounds_volt: list
 
-    def __init__(self, settings_dev: SettingsDevice, settings_noise: SettingsNoise=RecommendedSettingsNoise) -> None:
+    def __init__(self, settings_dev: SettingsDevice, settings_noise: SettingsNoise=DefaultSettingsNoise) -> None:
         """Class for emulating an electrical device
         :param settings_dev:        Class for controlling the device simulation
         :param settings_noise:      Class for controlling the noise behaviour

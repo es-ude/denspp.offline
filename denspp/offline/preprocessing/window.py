@@ -29,6 +29,13 @@ class SettingsWindow:
         return int(abs(self.overlap_sec * self.sampling_rate))
 
 
+DefaultSettingsWindow = SettingsWindow(
+    sampling_rate=2e3,
+    window_sec=0.1,
+    overlap_sec=0.0
+)
+
+
 class WindowSequencer:
     _settings: SettingsWindow
     _window_normalization: np.ndarray

@@ -57,7 +57,7 @@ class SettingsSDA:
         return round(self.t_frame_start * self.fs)
 
 
-RecommendedSettingsSDA = SettingsSDA(
+DefaultSettingsSDA = SettingsSDA(
     fs=20e3,
     dx_sda=[1],
     mode_align=1,
@@ -68,6 +68,13 @@ RecommendedSettingsSDA = SettingsSDA(
     thr_gain=1.0,
     thr_min_value=100.0
 )
+
+
+class SpikeWaveform:
+    waveform: np.ndarray
+    xpos: np.ndarray
+    ids: np.ndarray
+    length: float
 
 
 class SpikeDetection:
@@ -154,6 +161,24 @@ class SpikeDetection:
         C = self.settings.thr_gain
         return C * savgol_filter(xin, self.frame_length, 3)
 
+    def thres_welford_online(self, xin: np.ndarray) -> np.ndarray:
+        """Applying the Welford Online Algoritm on input signal (similar behaviour like standard derivation)"""
+        n = 0
+        mean = 0.0
+        M2 = 0.0
+        std_out = np.zeros_like(xin)
+
+        for idx, x in enumerate(xin):
+            n += 1
+            delta = x - mean
+            mean += delta / n
+            delta2 = x - mean
+            M2 += delta * delta2
+            std_out[idx] = M2 / (n - 1) if n > 1 else 0
+
+        std_out[0:1] = std_out[2]
+        return self.settings.thr_gain * std_out
+
     # --------- Spike Detection Algorithm -------------
     def sda_norm(self, xin: np.ndarray) -> np.ndarray:
         """Normal spike detection algorithm"""
@@ -201,7 +226,7 @@ class SpikeDetection:
         eed = np.array(lfilter(filter[0], filter[1], xin))
         return np.square(eed)
 
-    def sda_spb(self, xin: np.ndarray, f_bp: list=(100.0, 1000.0)) -> [np.ndarray, np.ndarray]:
+    def sda_spb(self, xin: np.ndarray, f_bp: list=(100.0, 1000.0)) -> np.ndarray:
         """Performing the spike detection with spike band-power estimation [Nason et al., 2020]
         :param xin:     Numpy array with transient neural signal with spikes
         :param f_bp:    List with floating value for applied band-power filtering in this function
@@ -307,8 +332,8 @@ class SpikeDetection:
         frames_align = np.array(frames_align, dtype=np.dtype('int16'))
         frames_xpos_align = np.array(frames_xpos_align, dtype=np.dtype('uint64'))
 
-        frames_out_orig = [frames_orig, frames_xpos_orig, np.zeros(shape=frames_xpos_orig.shape, dtype=np.dtype('uint8'))]
-        frames_out_align = [frames_align, frames_xpos_align, np.zeros(shape=frames_xpos_align.size, dtype=np.dtype('uint8'))]
+        frames_out_orig = [frames_orig, frames_xpos_orig, 255+np.zeros(shape=frames_xpos_orig.shape, dtype=np.dtype('uint8'))]
+        frames_out_align = [frames_align, frames_xpos_align, 255+np.zeros(shape=frames_xpos_align.size, dtype=np.dtype('uint8'))]
 
         return frames_out_orig, frames_out_align
 

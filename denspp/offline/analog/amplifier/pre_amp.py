@@ -2,7 +2,7 @@ import numpy as np
 from dataclasses import dataclass
 from scipy.signal import butter, lfilter, square
 from denspp.offline.analog.common_func import CommonAnalogFunctions
-from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, RecommendedSettingsNoise
+from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, DefaultSettingsNoise
 
 
 @dataclass
@@ -56,7 +56,7 @@ class PreAmp(CommonAnalogFunctions):
     _settings: SettingsAMP
     __print_device = "pre-amplifier"
 
-    def __init__(self, settings_dev: SettingsAMP, settings_noise: SettingsNoise=RecommendedSettingsNoise):
+    def __init__(self, settings_dev: SettingsAMP, settings_noise: SettingsNoise=DefaultSettingsNoise):
         """Class for emulating an analogue pre-amplifier
         :param settings_dev:        Dataclass for handling the pre-amplifier
         :param settings_noise:      Dataclass for handling the noise simulation

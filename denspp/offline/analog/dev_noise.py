@@ -31,7 +31,7 @@ class SettingsNoise:
         return Boltzmann * self.temp / elementary_charge
 
 
-RecommendedSettingsNoise = SettingsNoise(
+DefaultSettingsNoise = SettingsNoise(
     temp=300,
     wgn_dB=-120,
     Fc=10,

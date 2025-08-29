@@ -1,6 +1,10 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from denspp.offline.nsp import calc_firing_rate, calc_autocorrelogram, calc_amplitude
+from denspp.offline.postprocessing import (
+    calc_firing_rate,
+    calc_autocorrelogram,
+    calc_amplitude
+)
 from denspp.offline.plot_helper import cm_to_inch, get_plot_color, save_figure
 
 

@@ -13,7 +13,7 @@ class SettingsFeature:
     no_features: int
 
 
-RecommendedSettingsFeature = SettingsFeature(
+DefaultSettingsFeature = SettingsFeature(
     no_features=3
 )
 

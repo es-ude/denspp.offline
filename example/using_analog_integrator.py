@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from denspp.offline.analog.amplifier.int_ana import IntegratorStage, SettingsINT, DefaultSettingsINT
+from denspp.offline.analog.amplifier.int_ana import IntegratorAmplifier, SettingsINT, DefaultSettingsINT
 
 
 if __name__ == "__main__":
@@ -21,7 +21,7 @@ if __name__ == "__main__":
     i_in0 = u_inp0 - settings.vcm
 
     # --- DUT (Test condition)
-    dev_test = IntegratorStage(settings, f_smp)
+    dev_test = IntegratorAmplifier(settings)
     u_out1 = dev_test.do_ideal_integration(u_inp0, u_inn0)
     u_out2 = dev_test.do_opa_volt_integration(u_inp0, u_inn0)
     u_out3 = dev_test.do_cap_curr_integration(i_in0 / 1000)

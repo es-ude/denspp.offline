@@ -29,7 +29,7 @@ class SettingsFilter:
     b_type: str
 
 
-RecommendedSettingsFilter = SettingsFilter(
+DefaultSettingsFilter = SettingsFilter(
     gain=1, fs=0.3e3,
     n_order=2, f_filt=[0.1, 100],
     type='iir', f_type='butter', b_type='bandpass'

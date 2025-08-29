@@ -2,7 +2,7 @@ import numpy as np
 from dataclasses import dataclass
 from copy import deepcopy
 from .waveform_generator import WaveformGenerator
-from denspp.offline.analog.dev_noise import SettingsNoise, RecommendedSettingsNoise
+from denspp.offline.analog.dev_noise import SettingsNoise, DefaultSettingsNoise
 
 
 @dataclass
@@ -43,7 +43,7 @@ DefaultSettingsWaveformDataset = SettingsWaveformDataset(
 )
 
 
-def build_waveform_dataset(settings_data: SettingsWaveformDataset, settings_noise: SettingsNoise=RecommendedSettingsNoise) -> dict:
+def build_waveform_dataset(settings_data: SettingsWaveformDataset, settings_noise: SettingsNoise=DefaultSettingsNoise) -> dict:
     """Building a dataset of different waveform styles
     :param settings_data:   Class for generating the dataset
     :param settings_noise:  Dataclass for handling the noise behaviour

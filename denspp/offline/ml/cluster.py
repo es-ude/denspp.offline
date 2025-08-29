@@ -27,7 +27,7 @@ class SettingsCluster:
     random_state = None # np.random.RandomState(seed=1234)
 
 
-RecommendedSettingsCluster = SettingsCluster(
+DefaultSettingsCluster = SettingsCluster(
     type="kMeans",
     no_cluster=3
 )

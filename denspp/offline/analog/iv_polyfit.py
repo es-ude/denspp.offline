@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from math import isnan
 from logging import getLogger, Logger
 from denspp.offline.plot_helper import save_figure
-from denspp.offline.analog.dev_noise import SettingsNoise, RecommendedSettingsNoise, ProcessNoise
+from denspp.offline.analog.dev_noise import SettingsNoise, DefaultSettingsNoise, ProcessNoise
 from denspp.offline.metric.data_numpy import calculate_error_rae
 
 
@@ -15,7 +15,7 @@ class PolyfitIV(ProcessNoise):
     _fit_order: int=3
     _dev_e: float=1e-9
 
-    def __init__(self, sampling_rate: float, en_noise: bool, settings_noise: SettingsNoise=RecommendedSettingsNoise):
+    def __init__(self, sampling_rate: float, en_noise: bool, settings_noise: SettingsNoise=DefaultSettingsNoise):
         """Class for extracting the polynom fit parameters of measured IV curve from electrical device
         :param sampling_rate:       Sampling rate [Hz]
         :param en_noise:            Boolean for enabling noise on output signals

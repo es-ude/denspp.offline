@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import numpy as np
 from scipy.signal import lfilter
 from denspp.offline.analog.common_func import CommonAnalogFunctions
-from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, RecommendedSettingsNoise
+from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, DefaultSettingsNoise
 
 
 @dataclass
@@ -43,7 +43,7 @@ class DlyAmp(CommonAnalogFunctions):
     _settings: SettingsDLY
     __print_device = "delay amplifier"
 
-    def __init__(self, settings_dev: SettingsDLY, settings_noise: SettingsNoise=RecommendedSettingsNoise) -> None:
+    def __init__(self, settings_dev: SettingsDLY, settings_noise: SettingsNoise=DefaultSettingsNoise) -> None:
         """Class for emulating an analogue delay amplifier
         :param settings_dev:        Dataclass for handling the delay amplifier
         :param settings_noise:      Dataclass for handling the noise simulation
