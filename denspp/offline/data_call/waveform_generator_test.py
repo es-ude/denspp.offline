@@ -1,6 +1,6 @@
 import numpy as np
 from unittest import TestCase, main
-from denspp.offline.data_call.waveform_generator import WaveformGenerator
+from denspp.offline.data_call import WaveformGenerator
 
 
 # --- Info: Function have to start with test_*
@@ -215,6 +215,26 @@ class TestWaveformGenerator(TestCase):
         length_content = np.argwhere(signal != 0.).flatten()
         self.assertEqual(length_content.size, int(self._period * self._sampling_rate))
 
+    def test_waveform_eap_content(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
+            time_points=[1 / self._sampling_rate],
+            time_duration=[2e-3],
+            waveform_select=['EAP'],
+            polarity_cathodic=[False]
+        )['sig']
+        chck = np.array([0.0, -0.0012172548264579614, -0.005311060210664175, -0.019272136018855357, -0.05834180120914487, -0.14753128425548376, -0.31173514070946545, -0.5501866513568735, -0.8099373931559386, -0.9911547362864012, -1.0, -0.8135991915652375, -0.49668364555662703, -0.15395302356345117, 0.13388328120569107, 0.33706300246139936, 0.4618628339252224, 0.5245140250682183, 0.5376569993144354, 0.5102975228307609, 0.4518869951221461, 0.3741391312238784, 0.2897709373526756, 0.20996297854908397, 0.14233312007040994, 0.09027055407061382, 0.0535628125910162, 0.02973430540680821, 0.015442918658894482, 0.0075037461317305825, 0.003411175340723643, 0.0014507985640440527, 0.000577281118637366, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        np.testing.assert_almost_equal(signal, chck, decimal=4)
+
+    def test_waveform_eap_content_length(self):
+        signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_waveform(
+            time_points=[1 / self._sampling_rate],
+            time_duration=[self._period],
+            waveform_select=['EAP'],
+            polarity_cathodic=[False]
+        )['sig']
+        length_content = np.argwhere(signal != 0.).flatten()
+        self.assertEqual(length_content.size, int(1.6e-3 * self._sampling_rate))
+
     def test_waveform_biphasic_content_length(self):
         signal = WaveformGenerator(sampling_rate=self._sampling_rate, add_noise=False).generate_biphasic_waveform(
             anodic_wvf='SINE_HALF',
@@ -307,8 +327,16 @@ class TestWaveformGenerator(TestCase):
             signed=False,
             do_opt=False
         )['sig']
-        ref = np.array([32, 42, 53, 63, 53, 42, 32, 21, 10,  0, 10, 21], dtype=np.int32)
+        ref = np.array([32, 42, 53, 63, 53, 42, 32, 21, 10, 0, 10, 21], dtype=np.int32)
         np.testing.assert_almost_equal(out, ref, decimal=4)
+
+    def test_build_random_timestamps(self):
+        rslt = WaveformGenerator(sampling_rate=20e3, add_noise=False).build_random_timestamps(
+            count=100,
+            min_gap=0.002,
+            max_gap=0.01
+        )
+        self.assertEqual(len(rslt), 100)
 
 
 if __name__ == '__main__':

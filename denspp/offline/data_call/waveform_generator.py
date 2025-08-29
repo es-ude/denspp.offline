@@ -3,7 +3,7 @@ from logging import getLogger, Logger
 from scipy import signal
 from fxpmath import Fxp, Config
 from denspp.offline import check_keylist_elements_any
-from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, DefaultSettingsNoise
+from denspp.offline.analog import ProcessNoise, SettingsNoise, DefaultSettingsNoise
 
 
 class WaveformGenerator:
@@ -35,6 +35,7 @@ class WaveformGenerator:
         self.__func_dict.update({'SAW_NEG': self.__generate_sawtooth_negative})
         self.__func_dict.update({'GAUSS': self.__generate_gaussian})
         self.__func_dict.update({'ZERO': self.__generate_zero})
+        self.__func_dict.update({'EAP': self.__generate_spike_waveform})
 
     @property
     def _num_samples(self) -> int:
@@ -67,60 +68,56 @@ class WaveformGenerator:
         return dq
 
     def __generate_zero(self) -> np.ndarray:
-        """Creating an output array with zero value"""
         out = np.zeros((self._num_samples,), dtype=float)
         return out
 
     def __generate_rectangular_half(self) -> np.ndarray:
-        """Creating an output array with constant value"""
         return 1.0 + self.__generate_zero()
 
     def __generate_rectangular_full(self) -> np.ndarray:
-        """Creating an output array with constant value"""
         return signal.square(self._build_time_cycle, duty=0.5)
 
     def __generate_linear_rising(self) -> np.ndarray:
-        """Creating an output array with linear positive slope"""
         return np.linspace(0.0, 1.0,  self._num_samples, endpoint=True, dtype=float)
 
     def __generate_linear_falling(self) -> np.ndarray:
-        """Creating an output array with linear negative slope"""
         return np.linspace(1.0, 0.0, self._num_samples, endpoint=True, dtype=float)
 
     def __generate_sinusoidal_half(self) -> np.ndarray:
-        """Creating an output array with half sinusoidal waveform"""
         return np.sin(0.5* self._build_time_cycle, dtype=float)
 
     def __generate_sinusoidal_half_inverse(self) -> np.ndarray:
-        """Creating an output array with half sinusoidal waveform in inverse manner"""
         return 1.0 - np.sin(0.5* self._build_time_cycle, dtype=float)
 
     def __generate_sinusoidal_full(self) -> np.ndarray:
-        """Creating an output array with full sinusoidal waveform"""
         return np.sin(self._build_time_cycle, dtype=float)
 
     def __generate_triangle_half(self) -> np.ndarray:
-        """Creating an output array with half triangular waveform"""
         return signal.sawtooth(0.5*self._build_time_cycle + np.pi/2, width=0.5)
 
     def __generate_triangle_full(self) -> np.ndarray:
-        """Creating an output array with full triangular waveform"""
         return signal.sawtooth(self._build_time_cycle + np.pi/2, width=0.5)
 
     def __generate_sawtooth_positive(self) -> np.ndarray:
-        """Creating an output array with linear positive sawtooth"""
         return 2 * self.__generate_linear_rising() - 1.0
 
     def __generate_sawtooth_negative(self) -> np.ndarray:
-        """Creating an output array with linear negative sawtooth"""
         return 2 * self.__generate_linear_falling() - 1.0
 
     def __generate_gaussian(self) -> np.ndarray:
-        """Creating an output array with gaussian pulse"""
         time = self.__generate_sawtooth_positive()
         out = signal.gausspulse(time, fc=np.pi, retenv=True)[1]
         scale_amp = (out.max()+out.min())/(out.max())
         return out * scale_amp - out.min()
+
+    def __generate_spike_waveform(self) -> np.ndarray:
+        t_end_ms = 1.6
+        t = np.linspace(start=0., stop=t_end_ms, num=int(t_end_ms * self._sampling_rate * 1e-3), endpoint=True)
+        eap0 = -np.exp(-((t - 0.45) ** 2) / 0.03)
+        eap1 = 0.5 * np.exp(-((t - 0.86) ** 2) / 0.08)
+        eap = eap0 + eap1
+        eap = -eap / eap.min()
+        return eap
 
     def get_dictionary_classes(self) -> list:
         """Getting a list with class names / labels of waveforms
@@ -259,3 +256,19 @@ class WaveformGenerator:
         noise = self.__handler_noise.gen_noise_real_pwr(out.size) if self.__add_noise else np.zeros_like(out)
         time = np.linspace(0, out.size, out.size) / self._sampling_rate
         return {'t': time, 'y': out + noise}
+
+    @staticmethod
+    def build_random_timestamps(count: int, min_gap: float = 0.002, max_gap: float = 0.01) -> list:
+        """Function for building random and sorted timestamps for generating waveforms
+        :param count:       Number of timestamps to generate
+        :param min_gap:     Minimum gap between timestamps [s]
+        :param max_gap:     Maximum gap between timestamps [s]
+        """
+        values = []
+        for _ in range(count):
+            gap = np.random.uniform(min_gap, max_gap)
+            if len(values):
+                values.append(values[-1] + gap)
+            else:
+                values.append(gap)
+        return values
