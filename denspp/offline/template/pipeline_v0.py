@@ -1,14 +1,21 @@
 import numpy as np
 from os.path import abspath
-from denspp.offline.pipeline.pipeline_cmds import PipelineCMD
-from denspp.offline.analog import PreAmp, SettingsAMP
-from denspp.offline.analog import SettingsADC
-from denspp.offline.analog import SuccessiveApproximation as ADC0
-from denspp.offline.preprocessing import Filtering, SettingsFilter
-from denspp.offline.preprocessing import SpikeDetection, SettingsSDA
-from denspp.offline.ml import FeatureExtraction, SettingsFeature
-from denspp.offline.ml import Clustering, SettingsCluster
-from denspp.offline.postprocessing import calc_spiketicks
+from denspp.offline.pipeline import PipelineCMD
+from denspp.offline.analog import (
+    PreAmp, SettingsAMP,
+    SettingsADC, SuccessiveApproximation as ADC0
+)
+from denspp.offline.preprocessing import (
+    Filtering, SettingsFilter,
+    SpikeDetection, SettingsSDA
+)
+from denspp.offline.ml import (
+    FeatureExtraction, SettingsFeature,
+    Clustering, SettingsCluster
+)
+from denspp.offline.postprocessing import (
+    calc_spiketicks
+)
 from .pipeline_plot import plot_frames_feature, plot_transient_highlight_spikes, plot_transient_input_spikes
 
 
@@ -76,9 +83,7 @@ class SettingsPipe:
             thr_min_value=100.0
         )
         # --- Options for MachineLearning Part
-        self.SettingsFE = SettingsFeature(
-            no_features=3
-        )
+        self.SettingsFE = SettingsFeature()
         self.SettingsCL = SettingsCluster(
             type="kMeans",
             no_cluster=3

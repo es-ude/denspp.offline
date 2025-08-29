@@ -1,4 +1,4 @@
-from .comparator import SettingsComparator, DefaultSettingsComparator, Comparator
+from .comparator import SettingsCOMP, DefaultSettingsCOMP, Comparator
 from .cur_amp import SettingsCUR, DefaultSettingsCUR, CurrentAmplifier
 from .dly_amp import SettingsDLY, DefaultSettingsDLY, DelayAmplifier
 from .int_ana import SettingsINT, DefaultSettingsINT, IntegratorAmplifier

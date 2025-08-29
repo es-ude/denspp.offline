@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from denspp.offline.analog.amplifier.comparator import Comparator, SettingsComparator
+from denspp.offline.analog.amplifier.comparator import Comparator, SettingsCOMP
 
 
-ExampleSettingsComparator = SettingsComparator(
+ExampleSettingsComparator = SettingsCOMP(
     vdd=0.6, vss=-0.6,
     gain=100,
     offset=-1e-3,

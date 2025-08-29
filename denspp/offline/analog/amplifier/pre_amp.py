@@ -78,6 +78,10 @@ class PreAmp(CommonAnalogFunctions):
         """Getting the filter coefficients"""
         return {'b': self.__coeffb, 'a': self.__coeffa}
 
+    @property
+    def vcm(self) -> float:
+        return self._settings.vcm
+
     def __gen_chop(self, size: int) -> np.ndarray:
         """Generate the chopping clock signal"""
         t = np.arange(0, size, 1) / self._settings.fs_ana

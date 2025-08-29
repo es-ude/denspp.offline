@@ -66,6 +66,10 @@ class DelayAmplifier(CommonAnalogFunctions):
         self._handler_noise = ProcessNoise(settings_noise, settings_dev.fs_ana)
         self._settings = settings_dev
 
+    @property
+    def vcm(self) -> float:
+        return self._settings.vcm
+
     def do_simple_delay(self, u_inp: np.ndarray) -> np.ndarray:
         """Performing a simple delay stage using taps
         Args:

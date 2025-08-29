@@ -5,7 +5,7 @@ from denspp.offline.analog.common_func import CommonAnalogFunctions
 
 
 @dataclass
-class SettingsComparator:
+class SettingsCOMP:
     """Individual data class to configure an analogue voltage comparator
     Attributes:
         vdd:        Positive supply voltage [V],
@@ -29,10 +29,10 @@ class SettingsComparator:
 
     @property
     def vcm(self) -> float:
-        return (self.vdd - self.vss) / 2
+        return (self.vdd + self.vss) / 2
 
 
-DefaultSettingsComparator = SettingsComparator(
+DefaultSettingsCOMP = SettingsCOMP(
     vdd=0.6, vss=-0.6,
     gain=100,
     offset=-1e-3,
@@ -44,7 +44,7 @@ DefaultSettingsComparator = SettingsComparator(
 
 
 class Comparator(CommonAnalogFunctions):
-    _settings: SettingsComparator
+    _settings: SettingsCOMP
     _unoise: np.ndarray
     _int_state: bool
 
@@ -52,7 +52,11 @@ class Comparator(CommonAnalogFunctions):
     def get_noise_signal(self) -> np.ndarray:
         return self._unoise
 
-    def __init__(self, settings_dev: SettingsComparator) -> None:
+    @property
+    def vcm(self) -> float:
+        return self._settings.vcm
+
+    def __init__(self, settings_dev: SettingsCOMP) -> None:
         """Class for emulating an analogue comparator
         :param settings_dev:    Dataclass for handling the comparator amplifier
         """

@@ -77,6 +77,10 @@ class IntegratorAmplifier(CommonAnalogFunctions):
         self._handler_noise = ProcessNoise(settings_noise, settings_dev.fs_ana)
         self._settings = settings_dev
 
+    @property
+    def vcm(self) -> float:
+        return self._settings.vcm
+
     def __noise_generation_resistance(self, size: int) -> np.ndarray:
         """Generating of noise using input resistance"""
         if self._settings.noise_en:
