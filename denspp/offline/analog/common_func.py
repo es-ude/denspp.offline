@@ -10,11 +10,6 @@ class CommonAnalogFunctions:
         """Defining the voltage range values"""
         self._range = [volt_low, volt_hgh]
         return self._range
-        
-    @property
-    def vcm(self) -> float:
-        """Returning the common mode voltage value"""
-        return (self._range[0] + self._range[1]) / 2
 
     def clamp_voltage(self, uin: np.ndarray | float) -> np.ndarray | float:
         """Do voltage clipping at voltage supply"""

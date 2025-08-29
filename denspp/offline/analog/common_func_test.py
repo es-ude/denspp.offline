@@ -16,14 +16,6 @@ class TestAnalogFunc(TestCase):
         val = self.method.define_voltage_range(volt_low=-2.0, volt_hgh=2.0)
         self.assertEqual(val, [-2.0, 2.0])
 
-    def test_vcm_bipolar(self):
-        self.method.define_voltage_range(volt_low=-2.0, volt_hgh=2.0)
-        self.assertEqual(self.method.vcm, 0.0)
-
-    def test_vcm_unipolar(self):
-        self.method.define_voltage_range(volt_low=0.0, volt_hgh=2.0)
-        self.assertEqual(self.method.vcm, 1.0)
-
     def test_clamp_numpy_value(self):
         self.method.define_voltage_range(volt_low=-2.0, volt_hgh=1.0)
         output = self.method.clamp_voltage(self.input_clip)

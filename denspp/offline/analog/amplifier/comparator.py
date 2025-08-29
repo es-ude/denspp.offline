@@ -27,6 +27,10 @@ class SettingsComparator:
     out_analog: bool
     out_invert: bool
 
+    @property
+    def vcm(self) -> float:
+        return (self.vdd - self.vss) / 2
+
 
 DefaultSettingsComparator = SettingsComparator(
     vdd=0.6, vss=-0.6,
@@ -62,10 +66,10 @@ class Comparator(CommonAnalogFunctions):
 
     def __apply_gain_comparator(self, uinp: np.ndarray | float, uinn: np.ndarray | float) -> np.ndarray:
         du = np.array(uinp - uinn)
-        return self.vcm + self._settings.gain * (du - self._settings.offset)
+        return self._settings.vcm + self._settings.gain * (du - self._settings.offset)
 
     def __generate_output(self, ucmp: np.ndarray) -> np.ndarray:
-        return np.array(ucmp >= self.vcm + self._settings.offset) if not self._settings.out_analog else ucmp
+        return np.array(ucmp >= self._settings.vcm + self._settings.offset) if not self._settings.out_analog else ucmp
 
     def __apply_inverter(self, u_cmp: np.ndarray | float) -> np.ndarray:
         return (np.invert(u_cmp) if not self._settings.out_analog else 2* self.vcm - u_cmp) if self._settings.out_invert else u_cmp
@@ -82,14 +86,14 @@ class Comparator(CommonAnalogFunctions):
             thr_run = thr[0] if not self._int_state else thr[1]
             out = np.subtract(val, thr_run)
             self._int_state = np.sign(out) == 1
-            u_out[idx] = self.vcm + self._settings.gain * out
+            u_out[idx] = self._settings.vcm + self._settings.gain * out
         return u_out
 
     def __type_hysteresis(self, mode: int) -> list:
         """Definition of type"""
         thr_zero = self._settings.offset
-        thr_pos = thr_zero + self._settings.hysteresis * (self._settings.vdd - self.vcm)
-        thr_neg = thr_zero + self._settings.hysteresis * (self._settings.vss - self.vcm)
+        thr_pos = thr_zero + self._settings.hysteresis * (self._settings.vdd - self._settings.vcm)
+        thr_neg = thr_zero + self._settings.hysteresis * (self._settings.vss - self._settings.vcm)
 
         self.__logger.debug(f"Pos. hysterese window voltage at: {thr_pos} V")
         self.__logger.debug(f"Neg. hysterese window voltage at: {thr_neg} V")

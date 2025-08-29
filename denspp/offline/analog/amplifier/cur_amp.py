@@ -28,6 +28,10 @@ class SettingsCUR:
     noise_en:       bool
     para_en:        bool
 
+    @property
+    def vcm(self) -> float:
+        return (self.vdd + self.vss) / 2
+
 
 DefaultSettingsCUR = SettingsCUR(
     vdd=0.9, vss=-0.9,
@@ -54,88 +58,94 @@ class CurrentAmplifier(CommonAnalogFunctions):
         self._handler_noise = ProcessNoise(settings_noise, settings_dev.fs_ana)
         self._settings = settings_dev
 
-    def __add_parasitic(self, size: int, resistance: float=1.0) -> np.ndarray:
-        """"""
+    def _add_parasitic(self, size: int, resistance: float=1.0) -> np.ndarray:
         u_para = np.zeros((size, ))
         u_para += self._settings.transimpedance * self._settings.offset_i
         u_para += self._settings.offset_v
-        u_para += self.vcm
-        # Adding noise
+        u_para += self._settings.vcm
         if self._settings.noise_en:
             u_para += self._handler_noise.gen_noise_real_volt(size, resistance)
 
         return u_para
 
-    def transimpedance_amplifier(self, iin: np.ndarray, uref: np.ndarray | float) -> np.ndarray:
+    def _build_ref_difference(self, u_ref: np.ndarray | float) -> np.ndarray | float:
+        return u_ref - self._settings.vcm
+
+    def transimpedance_amplifier(self, i_in: np.ndarray, u_ref: np.ndarray | float) -> np.ndarray:
         """Performing the transimpedance amplifier (single, normal) with input signal
         Args:
-            iin:    Input current [A]
-            uref:   Negative input voltage [V]
+            i_in:    Input current [A]
+            u_ref:   Negative input voltage [V]
         Returns:
             Corresponding numpy array with output voltage
         """
-        u_out = self._settings.transimpedance * iin + uref
-        u_out += self.__add_parasitic(u_out.size)
+        u_out = self._settings.transimpedance * i_in
+        u_out += self._build_ref_difference(u_ref)
+        u_out += self._add_parasitic(u_out.size)
         return self.clamp_voltage(u_out)
 
-    def instrumentation_amplifier(self, iin: np.ndarray, uoff: np.ndarray | float, v_gain: float=1.0) -> np.ndarray:
+    def instrumentation_amplifier(self, i_in: np.ndarray, u_off: np.ndarray | float, v_gain: float=1.0) -> np.ndarray:
         """Using an instrumentation amplifier for current sensing
         Args:
-            iin:    Input current [A]
-            uoff:   Offset output voltage [V]
+            i_in:    Input current [A]
+            u_off:   Offset output voltage [V]
             v_gain: Gain of Amplifier [V/V]
         Returns:
             Corresponding numpy array with output voltage
         """
-        r_sense = self._settings.transimpedance / v_gain
-        u_out = r_sense * iin + uoff
-        u_out += self.__add_parasitic(u_out.size, r_sense)
-        return u_out
+        r_sense = self._settings.transimpedance
+        u_out = r_sense * i_in
+        u_out += self._build_ref_difference(u_off)
+        u_out += self._add_parasitic(u_out.size, r_sense)
+        return self.clamp_voltage(v_gain * u_out)
 
-    def push_amplifier(self, iin: np.ndarray) -> np.ndarray:
+    def push_amplifier(self, i_in: np.ndarray, u_ref: float) -> np.ndarray:
         """Performing the CMOS push/source current amplifier
         Args:
-            iin: Input current [A]
+            i_in:   Input current [A]
+            u_ref:   Negative input voltage [V]
         Returns:
             Corresponding numpy array with output voltage
         """
-        u_out = np.zeros(iin.shape)
-        x_neg = np.argwhere(iin < 0)
-        u_out[x_neg,] = iin[x_neg,] * self._settings.transimpedance
-        u_out += self.__add_parasitic(u_out.size, self._settings.transimpedance)
+        u_out = np.zeros_like(i_in)
+        x_neg = np.argwhere(i_in < u_ref)
+        u_out[x_neg,] = i_in[x_neg,] * self._settings.transimpedance
+        u_out += self._add_parasitic(u_out.size, self._settings.transimpedance)
         return self.clamp_voltage(u_out)
 
-    def pull_amplifier(self, iin: np.ndarray) -> np.ndarray:
+    def pull_amplifier(self, i_in: np.ndarray, u_ref: float) -> np.ndarray:
         """Performing the CMOS pull/sink current amplifier
         Args:
-            iin: Input current [A]
+            i_in:   Input current [A]
+            u_ref:  Negative input voltage [V]
         Returns:
             Corresponding numpy array with output voltage
         """
-        u_out = np.zeros(iin.shape)
-        x_pos = np.argwhere(iin >= 0)
-        u_out[x_pos, ] = iin[x_pos, ] * self._settings.transimpedance
-        u_out += self.__add_parasitic(u_out.size, self._settings.transimpedance)
+        u_out = np.zeros_like(i_in)
+        x_pos = np.argwhere(i_in >= u_ref)
+        u_out[x_pos, ] = i_in[x_pos,] * self._settings.transimpedance
+        u_out += self._add_parasitic(u_out.size, self._settings.transimpedance)
         return self.clamp_voltage(u_out)
 
-    def push_pull_amplifier(self, iin: np.ndarray) -> [np.ndarray, np.ndarray]:
+    def push_pull_amplifier(self, i_in: np.ndarray, u_ref: float) -> tuple[np.ndarray, np.ndarray]:
         """Performing the CMOS push-pull current amplifier
         Args:
-            iin: Input current [A]
+            i_in: Input current [A]
         Returns:
-            Corresponding numpy array with output voltage
+            Tuple with corresponding numpy array of output voltage (positive, negative)
         """
-        u_pos = self.pull_amplifier(iin)
-        u_neg = self.push_amplifier(iin)
+        u_pos = self.pull_amplifier(i_in, u_ref)
+        u_neg = self.push_amplifier(i_in, u_ref)
         return u_pos, u_neg
 
-    def push_pull_abs_amplifier(self, iin: np.ndarray) -> np.ndarray:
+    def push_pull_abs_amplifier(self, i_in: np.ndarray, u_ref: float) -> np.ndarray:
         """Performing the CMOS push-pull current absolute amplifier
         Args:
-            iin: Input current [A]
+            i_in:   Input current [A]
+            u_ref:  Negative input voltage [V]
         Returns:
             Corresponding numpy array with output voltage
         """
-        u_out = self.pull_amplifier(iin)
-        u_out -= self.push_amplifier(iin)
+        u_out = self.pull_amplifier(i_in, u_ref)
+        u_out -= self.push_amplifier(i_in, u_ref)
         return u_out

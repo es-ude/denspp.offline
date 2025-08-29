@@ -18,15 +18,16 @@ if __name__ == "__main__":
 
     # --- Data Processing
     dev_cur = CurrentAmplifier(DefaultSettingsCUR)
+    u_ref = DefaultSettingsCUR.vcm
 
     u_out = list()
     u_out.append(i_in)
-    u_out.append(dev_cur.transimpedance_amplifier(i_in, 0.0))
-    u_out.append(dev_cur.push_amplifier(i_in))
-    u_out.append(dev_cur.pull_amplifier(i_in))
-    u_out.append(dev_cur.push_pull_amplifier(i_in)[0])
-    u_out.append(dev_cur.push_pull_amplifier(i_in)[1])
-    u_out.append(dev_cur.push_pull_abs_amplifier(i_in))
+    u_out.append(dev_cur.transimpedance_amplifier(i_in, u_ref))
+    u_out.append(dev_cur.push_amplifier(i_in, u_ref))
+    u_out.append(dev_cur.pull_amplifier(i_in, u_ref))
+    u_out.append(dev_cur.push_pull_amplifier(i_in, u_ref)[0])
+    u_out.append(dev_cur.push_pull_amplifier(i_in, u_ref)[1])
+    u_out.append(dev_cur.push_pull_abs_amplifier(i_in, u_ref))
 
     u_dict = ["I_in", "Transimpedance", "Push", "Pull", "Push-Pull (Pos.)", "Push-Pull (Neg.)", "Push-Pull (Abs.)"]
 
