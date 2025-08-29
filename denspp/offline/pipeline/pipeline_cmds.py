@@ -4,7 +4,7 @@ from os.path import join, exists
 from shutil import copy
 from datetime import datetime
 from logging import getLogger, Logger
-from denspp.offline import get_path_to_project_start
+from denspp.offline import get_path_to_project
 from denspp.offline.dnn.model_library import ModuleRegistryManager
 
 
@@ -12,7 +12,7 @@ class PipelineLibrary:
     """Class for searching all Pipeline Processors in repository to get an overview"""
     def get_registry(self, package: str="src_pipe") -> ModuleRegistryManager:
         m = ModuleRegistryManager(r"\bPipelineV\d+(?:Merge)?\b")
-        chck = exists(join(get_path_to_project_start(), package))
+        chck = exists(join(get_path_to_project(), package))
         m.register_package(package) if chck else m.register_package("denspp.offline.template")
         return m
 
@@ -21,7 +21,7 @@ class DataloaderLibrary:
     """Class for searching all Pipeline Processors in repository to get an overview"""
     def get_registry(self, package: str="src_pipe") -> ModuleRegistryManager:
         m = ModuleRegistryManager(r"\bDataLoader(Test)?\b")
-        chck = exists(join(get_path_to_project_start(), package))
+        chck = exists(join(get_path_to_project(), package))
         m.register_package(package) if chck else m.register_package("denspp.offline.template")
         return m
 
@@ -30,7 +30,7 @@ class PipelineCMD:
     """Class for handling the pipeline processing"""
     path2save: str=''
     _path2pipe: str=''
-    _path2start: str=get_path_to_project_start()
+    _path2start: str=get_path_to_project()
     _logger: Logger=getLogger(__name__)
 
     def get_pipeline_name(self) -> str:
