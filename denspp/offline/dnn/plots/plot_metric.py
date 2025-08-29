@@ -3,7 +3,6 @@ from matplotlib import pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay, precision_recall_fscore_support
 
 from denspp.offline.plot_helper import save_figure, cm_to_inch
-from denspp.offline.metric.timestamps import compare_timestamps
 
 
 def _get_median(parameter: list) -> float:
@@ -173,35 +172,6 @@ def plot_confusion(true_labels: list | np.ndarray,
         save_figure(plt, path2save, f"confusion_matrix{name_addon}")
     if show_plots:
         plt.show(block=True)
-
-
-def prep_confusion(true_labels: list, pred_labels: list, mode: str="training", plots: str="class",
-                   show_accuracy: bool=False, cl_dict=None, path2save: str="", window: int=2) -> None:
-    """This function serves as a wrapper for the _plot_confusion function, primarily focused on preparing and organizing
-     the inputs for the visualization of confusion matrices. It supports two modes: "pipeline" and other modes.
-     In "pipeline" mode, it computes true positive (TP), false positive (FP), false negative (FN), F1-score, and
-     accuracy using the compare_timestamps function. It then generates a timestamp-based result matrix and calls
-     _plot_confusion for visualization. In other modes, it directly calls _plot_confusion with classification plotting.
-
-    Args:
-        true_labels: List or numpy array containing true class labels.
-        pred_labels: List or numpy array containing predicted class labels.
-        mode: Specifies the mode ("pipeline" or other) for different processing.
-        plots: Specifies the type of plotting to perform ("class", "timestamps", or "both").
-        show_accuracy: Boolean indicating whether to display accuracy in timestamp plots.
-        cl_dict: Dictionary mapping class indices to labels.
-        path2save: Path to save the generated plots.
-        window: Window parameter for timestamp-based comparisons.
-    Returns:
-        The function calls _plot_confusion with the appropriate parameters based on the specified mode, resulting in
-        the visualization of confusion matrices. If path2save is provided, the plots are saved to the specified path."""
-
-    if mode == "pipeline":
-        TP, FP, FN, f1_score, accuracy, true_labels, pred_labels = compare_timestamps(true_labels, pred_labels, window)
-        result = np.array([[TP, FP], [0, FN]])
-        plot_confusion(true_labels, pred_labels, result, f1_score, accuracy, plots, show_accuracy, cl_dict, path2save)
-    else:
-        plot_confusion(true_labels, pred_labels, None, None, None, "class", False, cl_dict, path2save)
 
 
 def plot_statistic_data(train_cl: np.ndarray | list, valid_cl=None, path2save: str='',
