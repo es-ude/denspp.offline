@@ -8,7 +8,7 @@ from torch import Tensor, load, save, inference_mode, flatten, cuda, cat, concat
 from denspp.offline import check_keylist_elements_any
 from denspp.offline.dnn.ptq_help import quantize_model_fxp
 from denspp.offline.dnn.pytorch_handler import ConfigPytorch, SettingsDataset, PyTorchHandler
-from denspp.offline.metric.snr import calculate_snr_tensor_waveform, calculate_dsnr_tensor_waveform
+from denspp.offline.metric.snr import calculate_snr_tensor, calculate_dsnr_tensor
 
 
 class TrainAutoencoder(PyTorchHandler):
@@ -112,7 +112,7 @@ class TrainAutoencoder(PyTorchHandler):
                 self.__metric_buffer.update({key0: list()})
 
     def __determine_snr_input(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, **kwargs) -> None:
-        out = calculate_snr_tensor_waveform(input_waveform, mean_waveform)
+        out = calculate_snr_tensor(input_waveform, mean_waveform)
         if isinstance(self.__metric_buffer[kwargs['metric']], list):
             self.__metric_buffer[kwargs['metric']] = out
         else:
@@ -120,7 +120,7 @@ class TrainAutoencoder(PyTorchHandler):
 
     def __determine_snr_input_class(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, **kwargs) -> None:
         out = self._separate_classes_from_label(
-            pred=calculate_snr_tensor_waveform(input_waveform, mean_waveform),
+            pred=calculate_snr_tensor(input_waveform, mean_waveform),
             true=kwargs['id'], label=kwargs['metric']
         )
         if len(self.__metric_buffer[kwargs['metric']]) == 0:
@@ -131,7 +131,7 @@ class TrainAutoencoder(PyTorchHandler):
                 self.__metric_buffer[kwargs['metric']][idx] = concatenate((old, snr_class), dim=0)
 
     def __determine_snr_output(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, **kwargs) -> None:
-        out = calculate_snr_tensor_waveform(pred_waveform, mean_waveform)
+        out = calculate_snr_tensor(pred_waveform, mean_waveform)
         if isinstance(self.__metric_buffer[kwargs['metric']], list):
             self.__metric_buffer[kwargs['metric']] = out
         else:
@@ -139,7 +139,7 @@ class TrainAutoencoder(PyTorchHandler):
 
     def __determine_snr_output_class(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, **kwargs) -> None:
         out = self._separate_classes_from_label(
-            pred=calculate_snr_tensor_waveform(pred_waveform, mean_waveform),
+            pred=calculate_snr_tensor(pred_waveform, mean_waveform),
             true=kwargs['id'], label=kwargs['metric']
         )
         if len(self.__metric_buffer[kwargs['metric']]) == 0:
@@ -150,14 +150,14 @@ class TrainAutoencoder(PyTorchHandler):
                 self.__metric_buffer[kwargs['metric']][idx] = concatenate((old, snr_class), dim=0)
 
     def __determine_dsnr_all(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, **kwargs) -> None:
-        out = calculate_dsnr_tensor_waveform(input_waveform, pred_waveform, mean_waveform)
+        out = calculate_dsnr_tensor(input_waveform, pred_waveform, mean_waveform)
         if isinstance(self.__metric_buffer[kwargs['metric']], list):
             self.__metric_buffer[kwargs['metric']] = out
         else:
             self.__metric_buffer[kwargs['metric']] = concatenate((self.__metric_buffer[kwargs['metric']], out), dim=0)
 
     def __determine_dsnr_class(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, **kwargs) -> None:
-        out = calculate_dsnr_tensor_waveform(input_waveform, pred_waveform, mean_waveform)
+        out = calculate_dsnr_tensor(input_waveform, pred_waveform, mean_waveform)
         if isinstance(self.__metric_buffer[kwargs['metric']], list):
             self.__metric_buffer[kwargs['metric']] = out
         else:
