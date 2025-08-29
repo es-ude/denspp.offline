@@ -47,9 +47,9 @@ class SettingsPipe:
         self.SettingsADC = SettingsADC(
             vdd=0.6, vss=-0.6,
             is_signed=True,
-            dvref=0.1,
+            dvref=adc_dvref,
             fs_ana=fs_ana,
-            fs_dig=fs_dig, osr=1, Nadc=12
+            fs_dig=fs_dig, osr=1, Nadc=bit_adc
         )
         # --- Digital filtering for ADC output and CIC
         self.SettingsDSP_LFP = SettingsFilter(
