@@ -62,9 +62,7 @@ class Clustering:
 
     def methods_available(self, do_lower: bool=False) -> list:
         """Getting the list already methods"""
-        dict_keys = self.__method_bib.keys()
-        list_keys = [key if not do_lower else key.lower() for key in dict_keys]
-        return list_keys
+        return [key.lower() if do_lower else key for key in self.__method_bib.keys()]
 
     def __check_for_available_method(self) -> None:
         """Function for checking if clustering method is implemented"""
