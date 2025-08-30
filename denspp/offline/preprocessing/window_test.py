@@ -1,10 +1,34 @@
 import numpy as np
 from copy import deepcopy
 from unittest import TestCase, main
-from denspp.offline.preprocessing.window import SettingsWindow, WindowSequencer
+from denspp.offline.preprocessing import SettingsWindow, WindowSequencer, transformation_window_method
 
 
-class TestWindowSequencer(TestCase):
+class TestWindowMethod(TestCase):
+    time = np.linspace(start=0, stop=100e-3, num=2000, endpoint=False, dtype=float)
+    vsig = np.sin(2 * np.pi * 100. * time) + 0.25 * np.sin(2 * np.pi * 1000. * time)
+    fs = float(1 / np.diff(time).min())
+    
+    def test_transformation_window_method_false(self):
+        try:
+            window = transformation_window_method(
+                window_size=self.vsig.size,
+                method = 'Hammingd'
+            )
+        except:
+            self.assertTrue(True)
+        else:
+            self.assertTrue(False)
+
+    def test_transformation_window_method_ones(self):
+        window = transformation_window_method(
+            window_size=self.vsig.size,
+            method=''
+        )
+        np.testing.assert_array_equal(window, np.ones_like(self.vsig))
+
+
+class TestSettingsWindowSequencer(TestCase):
     sets = SettingsWindow(
         sampling_rate=10e3,
         window_sec=10e-3,
@@ -17,12 +41,13 @@ class TestWindowSequencer(TestCase):
     def test_settings_overlap(self):
         self.assertEqual(self.sets.overlap_length, 1)
 
-    def test_indices_event_detection(self):
-        set0 = deepcopy(self.sets)
-        stimuli = [3, 4, 5, 18, 19, 20, 33, 34, 35, 37]
-        chck = [3, 18, 33, 37]
-        rslt = WindowSequencer(settings=set0).get_values_non_incremented_change(stimuli)
-        self.assertEqual(set(rslt), set(chck))
+
+class TestWindowSequencer(TestCase):
+    sets = SettingsWindow(
+        sampling_rate=10e3,
+        window_sec=10e-3,
+        overlap_sec=0.1e-3
+    )
 
     def test_window_sequence_match_full(self):
         set0 = deepcopy(self.sets)
@@ -108,7 +133,7 @@ class TestWindowSequencer(TestCase):
             chck = stimuli[start_point:start_point + set0.window_length]
             np.testing.assert_array_equal(sequence, chck)
 
-    def test_window_event_detection_without_padding(self):
+    def test_window_event_detection_without_padding_normal(self):
         set0 = deepcopy(self.sets)
         set0.window_sec = 0.25
         num_trials = 5
@@ -116,7 +141,23 @@ class TestWindowSequencer(TestCase):
         sequence = WindowSequencer(set0).window_event_detected(
             signal=stimuli,
             thr=0.25,
-            pre_time=0.01
+            pre_time=0.01,
+            do_abs=False
+        )
+        self.assertEqual(sequence.shape, (num_trials, set0.window_length))
+        chck0 = [np.sum(frame == frame[0]) for frame in sequence]
+        self.assertTrue(all(x == chck0[0] for x in chck0))
+
+    def test_window_event_detection_without_padding_absolute(self):
+        set0 = deepcopy(self.sets)
+        set0.window_sec = 0.25
+        num_trials = 5
+        stimuli = np.sin(2 * np.pi * np.arange(start=0, stop=num_trials, step=1 / set0.sampling_rate))
+        sequence = WindowSequencer(set0).window_event_detected(
+            signal=stimuli,
+            thr=0.25,
+            pre_time=0.01,
+            do_abs=True
         )
         self.assertEqual(sequence.shape, (2 * num_trials, set0.window_length))
         chck0 = [np.sum(frame == frame[0]) for frame in sequence]

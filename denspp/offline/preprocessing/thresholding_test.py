@@ -57,6 +57,17 @@ class ThresholdingTest(TestCase):
         chck = np.array([1167, 3167, 5167, 7167, 9167, 11167, 13167, 15166, 17166, 19166])
         np.testing.assert_array_almost_equal(rslt, chck)
 
+    def test_getting_position_constant_positive_pretime(self):
+        self.set0.method = 'const'
+        self.set0.min_value = -0.5
+        rslt = Thresholding(settings=self.set0).get_threshold_position(
+            xin=self.signal_in,
+            pre_time=0.05,
+            do_abs=False
+        )
+        chck = np.array([1167, 3167, 5167, 7167, 9167, 11167, 13167, 15166, 17166, 19166]) - int(0.05 * self.set0.sampling_rate)
+        np.testing.assert_array_almost_equal(rslt, chck)
+
     def test_getting_position_constant_absolute(self):
         self.set0.method = 'const'
         self.set0.min_value = 0.5

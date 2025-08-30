@@ -75,9 +75,10 @@ class Thresholding:
         xin0 = np.abs(xin) if do_abs else xin
         return getattr(self, self._methods[self._settings.method])(xin0)
 
-    def get_threshold_position(self, xin: np.ndarray, do_abs: bool=False) -> np.ndarray:
+    def get_threshold_position(self, xin: np.ndarray, pre_time: float=0.0, do_abs: bool=False) -> np.ndarray:
         """Function for getting the crosspoints of thresholding value and transient input
         :param xin:         Numpy array with transient raw signal
+        :param pre_time:    Floating value with pre-time in the window before event is detected [s]
         :param do_abs:      Boolean for applying absolute xin for getting position and threshold
         :return:            Numpy array with thresholding value from applied method
         """
@@ -87,7 +88,9 @@ class Thresholding:
             pos = np.argwhere(xin0 < xthr).flatten()
         else:
             pos = np.argwhere(xin0 >= xthr).flatten()
-        return np.array(self._get_values_non_incremented_change(pos))
+
+        pos_pre = int(self._settings.sampling_rate * pre_time)
+        return np.array(self._get_values_non_incremented_change(pos)) - pos_pre
 
     @staticmethod
     def _get_values_non_incremented_change(data: np.ndarray) -> list:
