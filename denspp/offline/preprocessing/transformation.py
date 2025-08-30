@@ -1,25 +1,5 @@
 import numpy as np
-from scipy.signal.windows import gaussian
-from denspp.offline import check_key_elements
-
-
-def transformation_window_method(window_size: int, method: str= "hamming") -> np.ndarray:
-    """Generating window for smoothing input of signal transformation method.
-    :param window_size:     Integer number with size of the window
-    :param method:          Selection of window method ['': Ones, 'hamming', 'hanning', 'gaussian', 'bartlett', 'blackman']
-    :return:                Numpy array with window
-    """
-    methods_avai = {
-        '': np.ones(window_size),
-        "hamming": np.hamming(window_size),
-        "gaussian": gaussian(window_size, int(0.16 * window_size), sym=True),
-        "hanning": np.hanning(window_size),
-        "bartlett": np.bartlett(window_size),
-        "blackman": np.blackman(window_size),
-    }
-    methods_check = [method.lower() for method in methods_avai.keys()]
-    assert check_key_elements(method.lower(), methods_check), f"Wrong method ({methods_check})"
-    return methods_avai[[key for key in methods_check if key == method.lower()][0]]
+from .window import transformation_window_method
 
 
 def do_fft(y: np.ndarray, fs: float, method_window: str='hamming') -> [np.ndarray, np.ndarray]:
