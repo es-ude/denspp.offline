@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
 from inspect import getfullargspec
-from logging import getLogger, Logger
+from logging import Logger
 from PySpice.Logging import Logging
 from PySpice.Spice.Netlist import Circuit, Netlist
 from PySpice.Spice.NgSpice.Shared import NgSpiceShared
@@ -78,7 +78,7 @@ class SettingsPySpice:
         return self.temp_kelvin - 273.15
 
 
-RecommendedSettingsDEV = SettingsPySpice(
+DefaultSettingsSPICE = SettingsPySpice(
     type='R',
     fs_ana=50e3,
     noise_en=False,
@@ -230,13 +230,9 @@ class PySpiceHandler:
             Corresponding voltage response
         """
         self._load_circuit_model()
-        if isinstance(i_in, float) or isinstance(u_inn, int):
-            vout = np.zeros((1,), dtype=float)
-        else:
-            vout = np.zeros(i_in.shape, dtype=float)
-
         self.set_src_mode(False)
         self.set_simulation_duration(i_in.size / self._settings.fs_ana)
+
         results = self.do_transient_arbitrary_simulation(i_in, self._sim_time, self._settings.fs_ana)
         vout = results['v_in'] + u_inn
         num_dly = vout.size - i_in.size - 1
@@ -596,18 +592,20 @@ class PySpiceHandler:
             None
         """
         self.set_src_mode(True)
-        self._load_circuit_model(self._type_device[self._settings.type]())
+        self._load_circuit_model()
 
         self.do_dc_sweep_simulation(start_value, stop_value, step_size)
         self.plot_iv_curve(do_logy, path2save, show_plot)
 
 
-def create_dummy_signal(t_sim: float, f_samp: float, offset: float=0.0, freq_used: list=[100, 300, 500], freq_amp: list=[1.0, 0.25, 0.66]) -> [np.ndarray, np.ndarray]:
+def create_dummy_signal(t_sim: float, f_samp: float, offset: float=0.0, freq_used: list=[100, 300, 500], freq_amp: list=[1.0, 0.25, 0.66]) -> tuple[np.ndarray, np.ndarray]:
     """Creating a dummy function for transient simulation
     Args:
-        t_sim:  Simulation time [s]
-        f_samp: Sampling frequency [Hz]
-        offset: Offset on signal [Default: 0.0]
+        t_sim:      Simulation time [s]
+        f_samp:     Sampling frequency [Hz]
+        offset:     Offset on signal [Default: 0.0]
+        freq_used:  List with used frequencies [Hz]
+        freq_amp:   List with amplitude frequencies [Hz]
     Returns:
         Two numpy arrays with time vector and signal vector
     """

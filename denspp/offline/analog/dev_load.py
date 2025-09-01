@@ -4,7 +4,7 @@ from .dev_handler import ElectricalLoadHandler, SettingsDevice
 
 
 
-DefaultSettingsDEVResistor = SettingsDevice(
+DefaultSettingsDEV = SettingsDevice(
     type='R',
     fs_ana=50e3,
     noise_en=False,
@@ -13,33 +13,6 @@ DefaultSettingsDEVResistor = SettingsDevice(
     use_poly=False
 )
 
-
-DefaultSettingsDEVResistiveDiodeSingle = SettingsDevice(
-    type='RDs',
-    fs_ana=50e3,
-    noise_en=False,
-    params_use={'i_sat': 10e-12, 'n_eff': 2.8, 'uth0': 0.1, 'r_sh': 20e3},
-    temp=300,
-    use_poly=False
-)
-
-
-DefaultSettingsDEVResistiveDiodeDouble = SettingsDevice(
-    type='RDd',
-    fs_ana=50e3,
-    noise_en=False,
-    params_use={'i_sat': 1e-12, 'n_eff': 2.8, 'uth0': 0.1, 'r_sh': 20e3},
-    temp=300,
-    use_poly=False
-)
-
-
-RecommendedSettingsNoise = SettingsNoise(
-    temp=300,
-    wgn_dB=-120,
-    Fc=10,
-    slope=0.6
-)
 
 class ElectricalLoad(ElectricalLoadHandler):
 

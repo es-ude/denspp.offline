@@ -1,8 +1,8 @@
 import numpy as np
-from denspp.offline.preprocessing import SpikeWaveform
+from denspp.offline.preprocessing import FrameWaveform
 
 
-def calc_amplitude(frames_in: SpikeWaveform) -> list:
+def calc_amplitude(frames_in: FrameWaveform) -> list:
     """Determining the min-max amplitudes of each spike frame over time
     :param frames_in:   Class SpikeWaveform with spike waveforms, positions and label
     :return:            List with [pos, ymin, ymax] for each label
@@ -23,7 +23,7 @@ def calc_amplitude(frames_in: SpikeWaveform) -> list:
     return out
 
 
-def calc_spike_ticks(spike: SpikeWaveform) -> np.ndarray:
+def calc_spike_ticks(spike: FrameWaveform) -> np.ndarray:
     """Determining spike ticks with cluster results
     :param spike:   Class SpikeWaveform with spike waveforms, positions and label
     :return:            Numpy array with transient ticks of available spike waveforms (sorted with label)

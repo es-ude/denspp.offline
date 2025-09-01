@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 import matplotlib.pyplot as plt
 from denspp.offline.data_call import WaveformGenerator
-from denspp.offline.preprocessing import SpikeWaveform
+from denspp.offline.preprocessing import FrameWaveform
 from .spike_analyse import (
     calc_amplitude,
     calc_spike_ticks,
@@ -12,7 +12,7 @@ from .spike_analyse import (
 )
 
 
-def _build_eap_dataset(count: int, sampling_rate: float, max_gap: float=0.01, do_plot: bool=False) -> SpikeWaveform:
+def _build_eap_dataset(count: int, sampling_rate: float, max_gap: float=0.01, do_plot: bool=False) -> FrameWaveform:
     dut = WaveformGenerator(
         sampling_rate=sampling_rate,
         add_noise=False
@@ -33,7 +33,7 @@ def _build_eap_dataset(count: int, sampling_rate: float, max_gap: float=0.01, do
     label = np.zeros((2* count, ), dtype=int)
     label[count:] = label[count:] + 1
 
-    out = SpikeWaveform(
+    out = FrameWaveform(
         waveform=wvf_noise,
         xpos=np.array(pos, dtype=int),
         label=label,
