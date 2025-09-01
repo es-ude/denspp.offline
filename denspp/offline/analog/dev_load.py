@@ -1,5 +1,5 @@
 import numpy as np
-from .dev_noise import SettingsNoise
+from .dev_noise import SettingsNoise, DefaultSettingsNoise
 from .dev_handler import ElectricalLoadHandler, SettingsDevice
 
 
@@ -16,7 +16,7 @@ DefaultSettingsDEV = SettingsDevice(
 
 class ElectricalLoad(ElectricalLoadHandler):
 
-    def __init__(self, settings_dev: SettingsDevice, settings_noise=RecommendedSettingsNoise):
+    def __init__(self, settings_dev: SettingsDevice, settings_noise=DefaultSettingsDEV):
         ElectricalLoadHandler.__init__(self, settings_dev)
 
         # --- Registering electrical devices
