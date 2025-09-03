@@ -131,7 +131,7 @@ class MergeDataset:
             for ch, id in tqdm(enumerate(data.electrode_id), ncols=100, desc="Progress: "):
                 spike_xpos = np.floor(data.evnt_xpos[ch] * fs_adc / fs_ana).astype("int")
                 # --- Processing the analogue input
-                data_rslt = self._pipeline.run_input(data.data_raw[ch, :], spike_xpos)
+                data_rslt = self._pipeline.run_preprocessing(data.data_raw[ch, :], spike_xpos)
                 length_data_in = data_rslt['x_adc'].size
 
                 frame_new = data_rslt['frames_align']

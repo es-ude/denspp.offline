@@ -1,7 +1,7 @@
 import unittest
-from .merge_datasets import MergeDataset, SortDataset
 from denspp.offline.pipeline import PipelineLibrary, DataloaderLibrary
 from denspp.offline.data_call import DefaultSettingsData
+from .merge_datasets import MergeDataset, SortDataset
 
 
 class MergeDatasetTest(unittest.TestCase):

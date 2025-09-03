@@ -47,6 +47,7 @@ def calculate_snr_cluster(frames_in: np.ndarray, frames_cl: np.ndarray, frames_m
     :param frames_in:   Numpy array with spike frames
     :param frames_cl:   Numpy array with cluster label to each spike frame
     :param frames_mean: Numpy array with mean waveforms of cluster
+    :return:            Numpy array with SNR value for each sample for {min, mean, max}
     """
     id_cluster, num_cluster = np.unique(frames_cl, return_counts=True)
 
@@ -60,5 +61,4 @@ def calculate_snr_cluster(frames_in: np.ndarray, frames_cl: np.ndarray, frames_m
         cluster_snr[idx, 0] = np.min(snr0)
         cluster_snr[idx, 1] = np.mean(snr0)
         cluster_snr[idx, 2] = np.max(snr0)
-        cluster_snr[idx, 3] = i
     return cluster_snr

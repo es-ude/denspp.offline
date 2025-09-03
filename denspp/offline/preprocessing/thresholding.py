@@ -14,13 +14,11 @@ class SettingsThreshold:
                         'welford': Welford Online Algorithm for STD Calculation]
         sampling_rate:  Sampling rate of the transient signal [Hz]
         gain:           Applied gain on threshold output
-        min_value:      Minimal value for applying thresholding
         window_sec:     Window length in sec.
     """
     method: str
     sampling_rate:  float
     gain: float
-    min_value: float | int
     window_sec: float
 
     @property
@@ -33,14 +31,16 @@ DefaultSettingsThreshold = SettingsThreshold(
     method="const",
     sampling_rate=20e3,
     gain=1.0,
-    min_value=10,
     window_sec=10e-3
 )
 
 
 class Thresholding:
     def __init__(self, settings: SettingsThreshold) -> None:
-        """"""
+        """Class for calculating the thresholding values based on the transient input signal
+        :param settings:    Class SettingsThreshold for configuring the properties
+        :return:            None
+        """
         self._logger: Logger = getLogger(__name__)
         self._settings: SettingsThreshold = settings
         self._methods = {
@@ -64,18 +64,22 @@ class Thresholding:
         self._logger.info(f"Available Thresholding methods: {avai_methods}")
         return avai_methods
 
-    def get_threshold(self, xin: np.ndarray, do_abs: bool=False) -> np.ndarray:
+    def get_threshold(self, xin: np.ndarray, do_abs: bool=False, **kwargs) -> np.ndarray:
         """Function for getting the thresholding value from input
         :param xin:     Numpy array with transient raw signal
         :param do_abs:  Apply absolute xin for thresholding or not
         :return:        Numpy array with thresholding value from applied method
         """
+        if self._settings.method.lower() == 'const' and not 'thr_val' in kwargs.keys():
+            raise TypeError("Constant threshold method needs the definition of 'thr_val' (threshold value) "
+                            "as float, like thr_val=0.5 in kwargs")
+
         if self._settings.method.lower() not in self.get_overview():
             raise ValueError(f"Thresholding method {self._settings.method} not available - Please change to {self.get_overview()}")
         xin0 = np.abs(xin) if do_abs else xin
-        return getattr(self, self._methods[self._settings.method])(xin0)
+        return getattr(self, self._methods[self._settings.method])(xin0, **kwargs)
 
-    def get_threshold_position(self, xin: np.ndarray, pre_time: float=0.0, do_abs: bool=False) -> np.ndarray:
+    def get_threshold_position(self, xin: np.ndarray, pre_time: float=0.0, do_abs: bool=False, **kwargs) -> np.ndarray:
         """Function for getting the crosspoints of thresholding value and transient input
         :param xin:         Numpy array with transient raw signal
         :param pre_time:    Floating value with pre-time in the window before event is detected [s]
@@ -83,7 +87,7 @@ class Thresholding:
         :return:            Numpy array with thresholding value from applied method
         """
         xin0 = np.abs(xin) if do_abs else xin
-        xthr = self.get_threshold(xin0, do_abs)
+        xthr = self.get_threshold(xin0, do_abs, **kwargs)
         if xthr.min() < 0:
             pos = np.argwhere(xin0 < xthr).flatten()
         else:
@@ -103,8 +107,8 @@ class Thresholding:
         else:
             return [data0[0]] + [data0[i] for i in range(1, len(data0)) if data0[i] != data0[i - 1] + 1]
 
-    def _constant(self, xin: np.ndarray) -> np.ndarray:
-        return np.zeros_like(xin) + self._settings.min_value
+    def _constant(self, xin: np.ndarray, thr_val: float) -> np.ndarray:
+        return np.zeros_like(xin) + thr_val
 
     def _absolute_median(self, xin: np.ndarray) -> np.ndarray:
         return np.zeros_like(xin) + np.median(np.abs(xin), axis=0)

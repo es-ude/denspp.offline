@@ -71,7 +71,6 @@ class WindowSequencer:
             method='const',
             sampling_rate=self._settings.sampling_rate,
             gain=1.0,
-            min_value=1.0,
             window_sec=self._settings.window_length/2,
         )
         self._window_normalization = transformation_window_method(
@@ -115,11 +114,11 @@ class WindowSequencer:
         if thr < 0:
             raise ValueError("Threshold must be positive")
 
-        self._settings_thr.min_value = thr
         xpos_event = Thresholding(settings=self._settings_thr).get_threshold_position(
             xin=signal,
             pre_time=pre_time,
-            do_abs=do_abs
+            do_abs=do_abs,
+            thr_val=thr
         )
 
         if not xpos_event.tolist():

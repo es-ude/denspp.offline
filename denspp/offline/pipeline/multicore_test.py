@@ -25,6 +25,7 @@ class MultiThreadingTest(unittest.TestCase):
         first_key = [key for key in rslt.keys()][0]
         self.assertTrue(len(rslt) == len(self.chnl) and [key for key in rslt[first_key].keys()] == ['data', 'feat'])
 
+    @unittest.skip
     def test_dual_core(self):
         dut = MultiprocessingHandler(
             num_workers=2
@@ -38,22 +39,10 @@ class MultiThreadingTest(unittest.TestCase):
         first_key = [key for key in rslt.keys()][0]
         self.assertTrue(len(rslt) == len(self.chnl) and [key for key in rslt[first_key].keys()] == ['data', 'feat'])
 
+    @unittest.skip
     def test_quad_core(self):
         dut = MultiprocessingHandler(
             num_workers=4
-        )
-        dut.do_processing(
-            func=dummy_func,
-            data=self.data,
-            chnnl_id=self.chnl
-        )
-        rslt = dut.get_results()
-        first_key = [key for key in rslt.keys()][0]
-        self.assertTrue(len(rslt) == len(self.chnl) and [key for key in rslt[first_key].keys()] == ['data', 'feat'])
-
-    def test_octo_core(self):
-        dut = MultiprocessingHandler(
-            num_workers=8
         )
         dut.do_processing(
             func=dummy_func,

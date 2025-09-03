@@ -2,6 +2,7 @@ import unittest
 from math import isclose
 import numpy as np
 import torch
+from denspp.offline.data_augmentation import generate_zero_frames
 from .snr import (
     calculate_snr,
     calculate_snr_tensor,
@@ -111,7 +112,25 @@ class TestMetricSNR(unittest.TestCase):
         self.assertTrue(isclose(rslt, +20., abs_tol=0.5))
 
     def test_snr_cluster(self):
-        rslt = calculate_snr_cluster()
+        self.frames_zero = generate_zero_frames(
+            frame_size=32,
+            num_frames=10,
+            snr_range=[-20, -10],
+            fs=20e3,
+            return_int=False
+        )
+        dataset = {
+            'data': np.concatenate((self.frames_zero[0], self.frames_zero[0] + 4.5), axis=0),
+            'label': np.concatenate((self.frames_zero[1], self.frames_zero[1] + 1), axis=0),
+            'mean': np.concatenate((self.frames_zero[2].reshape(1, 32), self.frames_zero[2].reshape(1, 32) + 4.5),
+                                   axis=0)
+        }
+        rslt = calculate_snr_cluster(
+            frames_in=dataset['data'],
+            frames_cl=dataset['label'],
+            frames_mean=dataset['mean']
+        )
+        self.assertEqual(rslt.shape, (np.unique(dataset['label']).size, 4))
 
 
 if __name__ == '__main__':

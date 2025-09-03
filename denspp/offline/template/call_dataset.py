@@ -93,12 +93,6 @@ class DatasetLoader(ControllerDataset):
         # --- PART: Mean waveform calculation and data augmentation
         frames_me = calculate_frame_mean(frames_in, frames_cl)
 
-        # --- PART: Calculate SNR if desired
-        if self._settings.augmentation_do or add_noise_cluster:
-            snr_mean = calculate_snr_cluster(frames_in, frames_cl, frames_me)
-        else:
-            snr_mean = np.zeros(0, dtype=float)
-
         # --- PART: Data Augmentation
         if self._settings.augmentation_do and not self._settings.reduce_samples_per_cluster_do:
             print("... do data augmentation")
@@ -110,6 +104,7 @@ class DatasetLoader(ControllerDataset):
 
         # --- PART: Generate and add noise cluster
         if add_noise_cluster:
+            snr_mean = calculate_snr_cluster(frames_in, frames_cl, frames_me)
             snr_range_zero = [np.median(snr_mean[:, 0]), np.median(snr_mean[:, 2])]
             info = np.unique(frames_cl, return_counts=True)
             num_cluster = np.max(info[0]) + 1

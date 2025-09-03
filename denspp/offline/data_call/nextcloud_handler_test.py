@@ -1,5 +1,4 @@
-from unittest import TestCase, main
-from os.path import splitext, join, exists
+import unittest
 from denspp.offline.data_call.nextcloud_handler import ConfigCloud, NextCloudDownloader
 from denspp.offline import get_path_to_project
 
@@ -11,20 +10,22 @@ TestConfigCloud = ConfigCloud(
 )
 
 
-class TestNextCloud(TestCase):
-    path2temp = get_path_to_project('temp_test')
-    hndl = NextCloudDownloader(
-        path2config=path2temp,
-        use_config=TestConfigCloud
-    )
-    """
+class TestNextCloud(unittest.TestCase):
+    def setUp(self):
+        path2temp = get_path_to_project('temp_test')
+        self.hndl = NextCloudDownloader(
+            path2config=path2temp,
+            use_config=TestConfigCloud
+        )
+
+    @unittest.skip("Module will not be used now")
     def test_nextcloud_access(self):
         self.hndl.get_overview_folder(
             use_dataset=False,
             search_folder=''
         )
         self.assertTrue(False)
-    """
+
 
 if __name__ == '__main__':
-    main()
+    unittest.main()

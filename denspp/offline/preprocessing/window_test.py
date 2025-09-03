@@ -187,7 +187,8 @@ class TestWindowSequencer(TestCase):
         sequence = WindowSequencer(set0).window_event_detected(
             signal=stimuli,
             thr=1.2,
-            pre_time=0.05
+            pre_time=0.05,
+            do_abs=False
         )
         chck0 = np.sum(sequence[-2, :] == sequence[-2, -1])
         chck1 = np.sum(sequence[-1, :] == sequence[-1, -1])
