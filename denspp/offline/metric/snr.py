@@ -40,3 +40,25 @@ def calculate_dsnr_tensor(data: Tensor, pred: Tensor, mean: Tensor) -> Tensor:
     snr_in = calculate_snr_tensor(data, mean)
     snr_out = calculate_snr_tensor(pred, mean)
     return sub(snr_out, snr_in)
+
+
+def calculate_snr_cluster(frames_in: np.ndarray, frames_cl: np.ndarray, frames_mean: np.ndarray) -> np.ndarray:
+    """Calculating the cluster-specific Signal-to-Noise Ratio (SNR) for all frames
+    :param frames_in:   Numpy array with spike frames
+    :param frames_cl:   Numpy array with cluster label to each spike frame
+    :param frames_mean: Numpy array with mean waveforms of cluster
+    """
+    id_cluster, num_cluster = np.unique(frames_cl, return_counts=True)
+
+    cluster_snr = np.zeros(shape=(num_cluster.size, 4), dtype=float)
+    for idx, id in enumerate(id_cluster):
+        indices = np.where(frames_cl == id)[0]
+        snr0 = np.zeros(shape=(indices.size,), dtype=float)
+        for i, frame in enumerate(frames_in[indices, :]):
+            snr0[i] = calculate_snr(frame, frames_mean[id, :])
+
+        cluster_snr[idx, 0] = np.min(snr0)
+        cluster_snr[idx, 1] = np.mean(snr0)
+        cluster_snr[idx, 2] = np.max(snr0)
+        cluster_snr[idx, 3] = i
+    return cluster_snr

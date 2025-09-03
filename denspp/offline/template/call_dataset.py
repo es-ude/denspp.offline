@@ -2,11 +2,15 @@ import numpy as np
 from os.path import exists, join
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset, ControllerDataset
 from denspp.offline.dnn.model_library import CellLibrary
-from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
-from denspp.offline.preprocessing.frame_preprocessing import calculate_frame_snr, calculate_frame_mean
-from denspp.offline.preprocessing.frame_preprocessing import generate_zero_frames
+from denspp.offline.data_call import OwnCloudDownloader
+from denspp.offline.metric import calculate_snr_cluster
 from denspp.offline.preprocessing import DataNormalization
-from denspp.offline.dnn.augmentation_frame import augmentation_change_position, augmentation_reducing_samples
+from denspp.offline.data_augmentation import (
+    augmentation_changing_position,
+    augmentation_reducing_samples,
+    generate_zero_frames,
+    calculate_frame_mean
+)
 
 
 class DatasetLoader(ControllerDataset):
@@ -91,20 +95,18 @@ class DatasetLoader(ControllerDataset):
 
         # --- PART: Calculate SNR if desired
         if self._settings.augmentation_do or add_noise_cluster:
-            snr_mean = calculate_frame_snr(frames_in, frames_cl, frames_me)
+            snr_mean = calculate_snr_cluster(frames_in, frames_cl, frames_me)
         else:
             snr_mean = np.zeros(0, dtype=float)
 
         # --- PART: Data Augmentation
         if self._settings.augmentation_do and not self._settings.reduce_samples_per_cluster_do:
             print("... do data augmentation")
-            new_frames, new_clusters = augmentation_change_position(
+            frames_in, frames_cl = augmentation_changing_position(
                 frames_in=frames_in,
                 frames_cl=frames_cl,
                 num_min_frames=self._settings.augmentation_num
             )
-            frames_in = np.append(frames_in, new_frames, axis=0)
-            frames_cl = np.append(frames_cl, new_clusters, axis=0)
 
         # --- PART: Generate and add noise cluster
         if add_noise_cluster:
@@ -114,7 +116,7 @@ class DatasetLoader(ControllerDataset):
             num_frames = np.max(info[1])
             print(f"... adding a zero-noise cluster: cluster = {num_cluster} - number of frames = {num_frames}")
 
-            new_mean, new_clusters, new_frames = generate_zero_frames(frames_in.shape[1], num_frames, snr_range_zero)
+            new_frames, new_clusters, new_mean = generate_zero_frames(frames_in.shape[1], num_frames, snr_range_zero)
             frames_in = np.append(frames_in, new_frames, axis=0)
             frames_cl = np.append(frames_cl, num_cluster + new_clusters, axis=0)
             frames_me = np.vstack([frames_me, new_mean])

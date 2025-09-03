@@ -1,7 +1,7 @@
 import numpy as np
 from torch import is_tensor
 from torch.utils.data import Dataset
-from denspp.offline.preprocessing.frame_preprocessing import calculate_frame_mean
+from denspp.offline.data_augmentation import calculate_frame_mean
 
 
 class DatasetAE(Dataset):

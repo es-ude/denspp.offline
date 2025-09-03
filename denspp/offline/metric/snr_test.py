@@ -5,7 +5,8 @@ import torch
 from .snr import (
     calculate_snr,
     calculate_snr_tensor,
-    calculate_dsnr_tensor
+    calculate_dsnr_tensor,
+    calculate_snr_cluster
 )
 
 
@@ -108,6 +109,9 @@ class TestMetricSNR(unittest.TestCase):
         )
         rslt = np.mean(np.array(rslt))
         self.assertTrue(isclose(rslt, +20., abs_tol=0.5))
+
+    def test_snr_cluster(self):
+        rslt = calculate_snr_cluster()
 
 
 if __name__ == '__main__':

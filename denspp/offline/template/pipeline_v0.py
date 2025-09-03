@@ -14,7 +14,7 @@ from denspp.offline.ml import (
     Clustering, SettingsCluster
 )
 from denspp.offline.postprocessing import (
-    calc_spiketicks
+    calc_spike_ticks
 )
 from .pipeline_plot import plot_frames_feature, plot_transient_highlight_spikes, plot_transient_input_spikes
 
@@ -73,9 +73,9 @@ class SettingsPipe:
         )
         # --- Options for Spike Detection and Frame Aligning
         self.SettingsSDA = SettingsSDA(
-            fs=fs_dig, dx_sda=[1],
+            sampling_rate=fs_dig, dx_sda=[1],
             mode_align=1,
-            t_frame_lgth=1.6e-3, t_frame_start=0.4e-3,
+            t_frame_length=1.6e-3, t_frame_start=0.4e-3,
             dt_offset=[0.1e-3, 0.1e-3],
             t_dly=0.4e-3,
             window_size=7,
@@ -181,7 +181,7 @@ class PipelineV0(PipelineCMD):
         if data['frames'][1].size == 0:
             spike_ticks = np.zeros((1,))
         else:
-            spike_ticks = calc_spiketicks(data['frames'][1])
+            spike_ticks = calc_spike_ticks(data['frames'][1])
 
         data["spike_ticks"] = spike_ticks
         return data
