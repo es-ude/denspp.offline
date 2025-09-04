@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 from denspp.offline.data_format.yaml import YamlHandler
 from denspp.offline.dnn.dataset.autoencoder import prepare_training
-from denspp.offline.dnn.dnn_handler import ConfigMLPipeline, DefaultSettings_MLPipe
+from denspp.offline.dnn.dnn_handler import SettingsMLPipeline, DefaultSettingsMLPipeline
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset, DefaultSettingsDataset
 from denspp.offline.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainCE
 from denspp.offline.dnn.pytorch_pipeline import train_classifier_template
@@ -69,11 +69,11 @@ if __name__ == "__main__":
     ptq_level = [12, 11]
 
     # --- Load Configs
-    default_hndl = deepcopy(DefaultSettings_MLPipe)
+    default_hndl = deepcopy(DefaultSettingsMLPipeline)
     default_hndl.mode_train_dnn = 2
     default_hndl.do_plot = False
     yaml_handler = YamlHandler(default_hndl, 'config', 'Config_DNN')
-    dnn_handler = yaml_handler.get_class(ConfigMLPipeline)
+    dnn_handler = yaml_handler.get_class(SettingsMLPipeline)
 
     default_train = DefaultSettingsTrainCE
     default_train.model_name = used_models[0]

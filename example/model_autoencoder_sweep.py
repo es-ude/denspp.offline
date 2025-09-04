@@ -3,7 +3,7 @@ from denspp.offline.template.call_dataset import DatasetLoader
 from denspp.offline.data_format.yaml import YamlHandler
 from denspp.offline.dnn.handler.train_ae_cl_sweep import do_train_ae_cl_sweep
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset
-from denspp.offline.dnn.dnn_handler import ConfigMLPipeline, DefaultSettings_MLPipe
+from denspp.offline.dnn.dnn_handler import SettingsMLPipeline, DefaultSettingsMLPipeline
 from denspp.offline.dnn.plots.plot_ae_cl_sweep import extract_data_from_files, plot_common_loss, plot_common_params, \
     plot_architecture_metrics_isolated
 
@@ -23,8 +23,8 @@ settings = SettingsDataset(
 
 
 if __name__ == "__main__":
-    yaml_handler = YamlHandler(DefaultSettings_MLPipe, 'config', 'Config_DNN')
-    dnn_handler = yaml_handler.get_class(ConfigMLPipeline)
+    yaml_handler = YamlHandler(DefaultSettingsMLPipeline, 'config', 'Config_DNN')
+    dnn_handler = yaml_handler.get_class(SettingsMLPipeline)
     dnn_handler.do_plot = True
     dnn_handler.do_block = False
 

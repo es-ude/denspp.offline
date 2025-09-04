@@ -1,4 +1,6 @@
-from .dnn_handler import ConfigMLPipeline, DefaultSettings_MLPipe
+from .dnn_handler import SettingsMLPipeline, DefaultSettingsMLPipeline
 from .pytorch_config_data import SettingsDataset, DefaultSettingsDataset
 from .pytorch_config_model import ConfigPytorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE
 from .pytorch_pipeline import train_classifier_template, train_autoencoder_template
+from .pytorch.classifier import TrainClassifier
+from .pytorch.autoencoder import TrainAutoencoder

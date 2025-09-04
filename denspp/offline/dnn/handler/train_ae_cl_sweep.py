@@ -4,7 +4,7 @@ from shutil import rmtree
 from copy import deepcopy
 from datetime import datetime
 from denspp.offline.data_format.yaml import YamlHandler
-from denspp.offline.dnn.dnn_handler import ConfigMLPipeline
+from denspp.offline.dnn.dnn_handler import SettingsMLPipeline
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset, DefaultSettingsDataset
 from denspp.offline.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE
 from denspp.offline.dnn.pytorch_pipeline import train_autoencoder_template, train_classifier_template
@@ -12,9 +12,9 @@ from denspp.offline.dnn.dataset.autoencoder import prepare_training as get_datas
 from denspp.offline.dnn.dataset.autoencoder_class import prepare_training as get_dataset_cl
 
 
-def do_train_ae_cl_sweep(class_dataset, settings: ConfigMLPipeline,
+def do_train_ae_cl_sweep(class_dataset, settings: SettingsMLPipeline,
                          feat_layer_start: int, feat_layer_inc: int, feat_layer_stop: int,
-                         num_epochs_trial: int=50,  yaml_name_index: str= 'Config_AECL_Sweep',
+                         num_epochs_trial: int=50, yaml_name_index: str= 'Config_AECL_Sweep',
                          model_ae_default_name: str='', model_cl_default_name: str='',
                          used_dataset_name:str='quiroga') -> str:
     """Training routine for Autoencoders and Classification after Encoder (Sweep)

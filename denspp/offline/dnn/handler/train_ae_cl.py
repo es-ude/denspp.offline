@@ -1,6 +1,6 @@
 from copy import deepcopy
 from denspp.offline.data_format.yaml import YamlHandler
-from denspp.offline.dnn.dnn_handler import ConfigMLPipeline
+from denspp.offline.dnn.dnn_handler import SettingsMLPipeline
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset, DefaultSettingsDataset
 from denspp.offline.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE
 from denspp.offline.dnn.pytorch_pipeline import train_autoencoder_template, train_classifier_template
@@ -9,7 +9,7 @@ from denspp.offline.dnn.dataset.autoencoder import prepare_training as get_datas
 from denspp.offline.dnn.dataset.autoencoder_class import prepare_training as get_dataset_cl
 
 
-def do_train_ae_classifier(class_dataset, settings: ConfigMLPipeline,
+def do_train_ae_classifier(class_dataset, settings: SettingsMLPipeline,
                            yaml_name_index: str= 'Config_ACL',
                            model_ae_default_name: str='', model_cl_default_name: str='',
                            used_dataset_name:str='quiroga') -> dict:

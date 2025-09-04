@@ -7,7 +7,7 @@ from denspp.offline.dnn.model_library import DatasetLoaderLibrary
 
 
 @dataclass
-class ConfigMLPipeline:
+class SettingsMLPipeline:
     """Configuration class for handling the training phase of deep neural networks
     Attributes:
         mode_train_dnn:             Integer of selected training routine regarding the training handler
@@ -39,7 +39,7 @@ class ConfigMLPipeline:
             return path2start
 
 
-DefaultSettings_MLPipe = ConfigMLPipeline(
+DefaultSettingsMLPipeline = SettingsMLPipeline(
     mode_train_dnn=0,
     path2yaml='config',
     do_plot=True,
@@ -55,11 +55,11 @@ def preprocessing_dnn():
     :returns:   Tuple with (0) Settings class of ConfigMLPipeline and (1) the corresponding DatasetLoader
     """
     define_logger_runtime(save_file=False)
-    dnn_handler = YamlHandler(
-        template=DefaultSettings_MLPipe,
+    dnn_handler: SettingsMLPipeline = YamlHandler(
+        template=DefaultSettingsMLPipeline,
         path='config',
         file_name='Config_DNN'
-    ).get_class(ConfigMLPipeline)
+    ).get_class(SettingsMLPipeline)
 
     datalib = DatasetLoaderLibrary().get_registry()
     matches = [item for item in datalib.get_library_overview() if 'DatasetLoader' == item]

@@ -1,6 +1,6 @@
 from copy import deepcopy
 from denspp.offline.data_format.yaml import YamlHandler
-from denspp.offline.dnn.dnn_handler import ConfigMLPipeline
+from denspp.offline.dnn.dnn_handler import SettingsMLPipeline
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset, DefaultSettingsDataset
 from denspp.offline.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainMSE
 from denspp.offline.dnn.pytorch_pipeline import train_autoencoder_template
@@ -8,7 +8,7 @@ from denspp.offline.dnn.plots.plot_dnn import results_training
 from denspp.offline.dnn.dataset.autoencoder import prepare_training
 
 
-def do_train_autoencoder(class_dataset, settings: ConfigMLPipeline, yaml_name_index: str= 'Config_AE',
+def do_train_autoencoder(class_dataset, settings: SettingsMLPipeline, yaml_name_index: str= 'Config_AE',
                          used_dataset_name: str='quiroga', model_default_name: str='') -> [dict, dict]:
     """Training routine for Autoencoders (e.g. in neural Applications for Spike Frames)
     Args:

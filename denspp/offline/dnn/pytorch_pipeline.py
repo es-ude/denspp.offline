@@ -1,13 +1,15 @@
 import matplotlib.pyplot as plt
 from denspp.offline.dnn.plots.plot_metric import plot_confusion, plot_loss, plot_statistic_data
-from denspp.offline.dnn.dnn_handler import ConfigMLPipeline
-from denspp.offline.dnn.pytorch_config_data import SettingsDataset
-from denspp.offline.dnn.pytorch_config_model import ConfigPytorch
-from denspp.offline.dnn.pytorch.classifier import TrainClassifier
-from denspp.offline.dnn.pytorch.autoencoder import TrainAutoencoder
+from denspp.offline.dnn import (
+    SettingsMLPipeline,
+    SettingsDataset,
+    ConfigPytorch,
+    TrainClassifier,
+    TrainAutoencoder
+)
 
 
-def train_classifier_template(config_ml: ConfigMLPipeline, config_data: SettingsDataset,
+def train_classifier_template(config_ml: SettingsMLPipeline, config_data: SettingsDataset,
                               config_train: ConfigPytorch, used_dataset, used_model,
                               path2save: str='', ptq_quant_lvl: list = (12, 11)) -> tuple[dict, dict, str]:
     """Template for training DL classifiers using PyTorch (incl. plotting)
@@ -51,7 +53,7 @@ def train_classifier_template(config_ml: ConfigMLPipeline, config_data: Settings
     return metrics, data_result, path2folder
 
 
-def train_autoencoder_template(config_ml: ConfigMLPipeline, config_data: SettingsDataset,
+def train_autoencoder_template(config_ml: SettingsMLPipeline, config_data: SettingsDataset,
                                config_train: ConfigPytorch, used_dataset, used_model,
                                path2save: str='', ptq_quant_lvl: list = (12, 8)) -> tuple[dict, dict, str]:
     """Template for training DL classifiers using PyTorch (incl. plotting)

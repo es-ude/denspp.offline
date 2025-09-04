@@ -1,7 +1,7 @@
 from copy import deepcopy
 
 from denspp.offline.data_format.yaml import YamlHandler
-from denspp.offline.dnn.dnn_handler import ConfigMLPipeline
+from denspp.offline.dnn.dnn_handler import SettingsMLPipeline
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset, DefaultSettingsDataset
 from denspp.offline.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE
 from denspp.offline.dnn.pytorch_pipeline import train_classifier_template, train_autoencoder_template
@@ -9,7 +9,7 @@ from denspp.offline.dnn.dataset.torch_datasets import prepare_training
 from denspp.offline.dnn.plots.plot_dnn import plot_mnist_graphs
 
 
-def do_train_torchvision_cl(class_dataset, settings: ConfigMLPipeline, dataset_type: str) -> None:
+def do_train_torchvision_cl(class_dataset, settings: SettingsMLPipeline, dataset_type: str) -> None:
     """Training routine for classifying MNIST
     Args:
         class_dataset:      Class of custom-made SettingsDataset from src_dnn/call_dataset.py
@@ -47,7 +47,7 @@ def do_train_torchvision_cl(class_dataset, settings: ConfigMLPipeline, dataset_t
     )
 
 
-def do_train_torchvision_ae(class_dataset, settings: ConfigMLPipeline, dataset_type: str) -> None:
+def do_train_torchvision_ae(class_dataset, settings: SettingsMLPipeline, dataset_type: str) -> None:
     """Training routine for training an autoencoder
     Args:
         class_dataset:      Class of custom-made SettingsDataset from src_dnn/call_dataset.py
