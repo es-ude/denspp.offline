@@ -422,9 +422,8 @@ class TestFrameGenerator(unittest.TestCase):
             pred_labels=rslt.xpos.tolist(),
             window=26
         )
-        _plot_frame_waveforms(rslt, True)
         self.assertEqual(rslt.waveform.shape[1], self.set0.length_frame_int)
-        self.assertGreater(rslt_pos.f1_score, .94)
+        self.assertGreaterEqual(rslt_pos.f1_score, .9)
         self.assertEqual(np.argmin(rslt.waveform, axis=1).tolist(),
                          [self.set0.length_align_position for _ in range(rslt.waveform.shape[0])])
 

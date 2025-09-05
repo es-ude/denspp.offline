@@ -7,7 +7,7 @@ from denspp.offline.analog import (
 )
 from denspp.offline.preprocessing import (
     Filtering, SettingsFilter,
-    SpikeDetection, SettingsSDA
+    SpikeDetection, SettingsSDA, FrameWaveform
 )
 from denspp.offline.ml import (
     FeatureExtraction, SettingsFeature,
@@ -74,13 +74,13 @@ class SettingsPipe:
         # --- Options for Spike Detection and Frame Aligning
         self.SettingsSDA = SettingsSDA(
             sampling_rate=fs_dig, dx_sda=[1],
-            mode_align=1,
-            t_frame_length=1.6e-3, t_frame_start=0.4e-3,
-            dt_offset=[0.1e-3, 0.1e-3],
-            t_dly=0.4e-3,
-            window_size=7,
-            thr_gain=1.0,
-            thr_min_value=100.0
+            mode_align='min',
+            mode_thr='const',
+            mode_sda='neo',
+            t_frame_length=1.6e-3,
+            t_frame_start=0.4e-3,
+            dt_offset=0.1e-3,
+            thr_gain=1.0
         )
         # --- Options for MachineLearning Part
         self.SettingsFE = SettingsFeature()
@@ -140,15 +140,16 @@ class PipelineV0(PipelineCMD):
         x_spk = self.__dsp1.filter(x_adc)
         # ---- Spike detection incl. thresholding ----
         if len(spike_xpos):
-            frames_align, frames_xpos = self.__sda.frame_generation_pos(
-                x_adc, np.array(spike_xpos), spike_xoffset
-            )[1:]
+            frames_align = self.__sda.get_spike_waveforms_from_positions(
+                xraw=x_spk,
+                xpos=np.array(spike_xpos),
+                xoffset=spike_xoffset
+            )
         else:
-            x_dly = self.__sda.time_delay(x_spk)
-            x_sda = self.__sda.sda_spb(x_spk, [200, 2e3])
-            x_thr = self.__sda.thres_blackrock(x_sda)
-            frames_orig, frames_align = self.__sda.frame_generation(
-                x_dly, x_sda, x_thr
+            frames_align = self.__sda.get_spike_waveforms(
+                xraw=x_spk,
+                do_abs=True,
+                thr_val=1.
             )
         return {
             "fs_adc": self.__adc._settings.fs_adc,
@@ -163,12 +164,12 @@ class PipelineV0(PipelineCMD):
         :param data:    Dictionary with pre-processed data / results
         :return:        Dictionary with pre-processing and classification results
         """
-        if data['frames'][1].size == 0:
+        frames: FrameWaveform = data['frames']
+        if frames.num_samples == 0:
             features = np.zeros((1, ))
-            data['frames'][2] = np.zeros((1, ))
         else:
-            features = self.__fe.pca(data['frames'][0], num_features=3)
-            data['frames'][2] = self.__cl.init(features)
+            features = self.__fe.pca(frames.waveform, num_features=3)
+            frames.label = self.__cl.init(features)
 
         data["features"] = features
         return data
@@ -178,10 +179,11 @@ class PipelineV0(PipelineCMD):
         :param data:    Dictionary with pre-processed data / results
         :return:        Dictionary with pre-processing, classification and post-processed results
         """
-        if data['frames'][1].size == 0:
+        frames: FrameWaveform = data['frames']
+        if frames.waveform.size == 0:
             spike_ticks = np.zeros((1,))
         else:
-            spike_ticks = calc_spike_ticks(data['frames'][1])
+            spike_ticks = calc_spike_ticks(frames)
 
         data["spike_ticks"] = spike_ticks
         return data

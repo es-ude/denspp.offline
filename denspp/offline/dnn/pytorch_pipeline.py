@@ -4,9 +4,9 @@ from denspp.offline.dnn import (
     SettingsMLPipeline,
     SettingsDataset,
     ConfigPytorch,
-    TrainClassifier,
-    TrainAutoencoder
 )
+from .pytorch.classifier import TrainClassifier
+from .pytorch.autoencoder import TrainAutoencoder
 
 
 def train_classifier_template(config_ml: SettingsMLPipeline, config_data: SettingsDataset,

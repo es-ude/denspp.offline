@@ -194,11 +194,6 @@ class FrameGenerator:
         :param do_abs:  Boolean for applying absolute input for thresholding
         :return:        Class FrameWaveform with waveforms, positions and labels
         """
-        xthr = self._threshold.get_threshold(
-            xin=xsda,
-            do_abs=do_abs,
-            **kwargs
-        )
         xpos = self._threshold.get_threshold_position(
             xin=xsda,
             pre_time=self._settings.offset_sec,
