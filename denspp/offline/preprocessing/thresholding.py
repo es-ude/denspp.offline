@@ -50,8 +50,7 @@ class Thresholding:
             'mavg':     '_moving_average',
             'mavg_abs': '_moving_absolute_average',
             'rms_norm': '_root_mean_squared_normal',
-            'rms_move': '_root_mean_squared_moving',
-            'rms_black': '_root_mean_squared_blackrock',
+            'rms_black':'_root_mean_squared_blackrock',
             'welford':  '_welford_online',
             'wins':     '_winsorization',
         }
@@ -111,7 +110,7 @@ class Thresholding:
         return np.zeros_like(xin) + thr_val
 
     def _absolute_median(self, xin: np.ndarray) -> np.ndarray:
-        return np.zeros_like(xin) + np.median(np.abs(xin), axis=0)
+        return np.zeros_like(xin) + self._settings.gain * np.median(np.abs(xin), axis=0)
 
     def _median_absolute_derivation(self, xin: np.ndarray) -> np.ndarray:
             return np.zeros_like(xin) + self._settings.gain * np.median(np.abs(xin - np.mean(xin)) / 0.6745, axis=0)
@@ -132,24 +131,18 @@ class Thresholding:
     def _root_mean_squared_blackrock(self, xin: np.ndarray) -> np.ndarray:
         return 4.5 * self._root_mean_squared_normal(xin)
 
-    def _root_mean_squared_moving(self, xin: np.ndarray) -> np.ndarray:
-        M = self._settings.window_steps
-        conv = np.convolve(xin ** 2, np.ones(M) / M, mode='same')
-        return self._settings.gain * np.sqrt(conv)
-
     def _welford_online(self, xin: np.ndarray) -> np.ndarray:
         n = 0
         mean = 0.0
-        M2 = 0.0
+        sigma = 0.0
         std_out = np.zeros_like(xin)
 
         for idx, x in enumerate(xin):
             n += 1
-            delta = x - mean
-            mean += delta / n
-            delta2 = x - mean
-            M2 += delta * delta2
-            std_out[idx] = M2 / (n - 1) if n > 1 else 0
+            mean_old = mean
+            mean += (x - mean) / n
+            sigma += ((x - mean)* (x - mean_old) - sigma) / n
+            std_out[idx] = sigma
 
         std_out[0:1] = std_out[2]
-        return self._settings.gain * std_out
+        return self._settings.gain * np.sqrt(std_out)

@@ -34,7 +34,7 @@ class ThresholdingTest(TestCase):
     def test_getting_overview(self):
         dut = Thresholding(settings=self.set0)
         rslt = dut.get_overview()
-        assert len(rslt) == 10
+        assert len(rslt) == 9
         self.assertTrue('const' in rslt)
 
     def test_getting_position_constant_positive_normal(self):
@@ -134,15 +134,6 @@ class ThresholdingTest(TestCase):
         chck = np.zeros_like(rslt) + 0.70709
         np.testing.assert_almost_equal(rslt, chck, decimal=5)
 
-    def test_root_mean_squared_moving(self):
-        self.set0.method = 'rms_move'
-        dut = Thresholding(settings=self.set0)
-        rslt = dut.get_threshold(self.signal_in)
-
-        assert rslt.size == self.signal_in.size
-        chck = 0.6509
-        self.assertLess(np.abs(np.mean(rslt)-chck), 1e-2)
-
     def test_root_mean_squared_blackrock(self):
         self.set0.method = 'rms_black'
         dut = Thresholding(settings=self.set0)
@@ -158,7 +149,7 @@ class ThresholdingTest(TestCase):
         rslt = dut.get_threshold(self.signal_in)
 
         assert rslt.size == self.signal_in.size
-        chck = np.zeros_like(rslt) + 0.5
+        chck = np.zeros_like(rslt) + 0.707
         np.testing.assert_almost_equal(rslt[5000:], chck[5000:], decimal=1)
 
 
