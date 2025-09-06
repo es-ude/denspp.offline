@@ -9,7 +9,7 @@ from denspp.offline.dnn.dataset.autoencoder import prepare_training
 from denspp.offline.dnn.dnn_handler import SettingsMLPipeline, DefaultSettingsMLPipeline
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset, DefaultSettingsDataset
 from denspp.offline.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainCE
-from denspp.offline.dnn.pytorch_pipeline import train_classifier_template
+from denspp.offline.dnn import train_classifier_routine
 
 
 def train_model_normal(used_model_name: str, config_train, config_data, dnn_handler,
@@ -17,7 +17,7 @@ def train_model_normal(used_model_name: str, config_train, config_data, dnn_hand
     model_stats = dict()
     config_train.model_name = used_model_name
 
-    model_stats['metrics'], model_stats['data_result'], _ = train_classifier_template(
+    model_stats['metrics'], model_stats['data_result'], _ = train_classifier_routine(
         config_ml=dnn_handler, config_data=config_data, config_train=config_train,
         used_dataset=dataset, used_model=config_train.get_model(),
         print_results=False, ptq_quant_lvl=ptq_level
@@ -29,7 +29,7 @@ def train_model_quantized(used_model_name: str, config_train, config_data, dnn_h
                           dataset, ptq_level: list=(12, 8)) -> dict:
     model_stats = dict()
     config_train.model_name = used_model_name
-    model_stats['metrics'], model_stats['data_result'], _ = train_classifier_template(
+    model_stats['metrics'], model_stats['data_result'], _ = train_classifier_routine(
         config_ml=dnn_handler, config_data=config_data, config_train=config_train,
         used_dataset=dataset, used_model=config_train.get_model(), print_results=False, ptq_quant_lvl=ptq_level
     )

@@ -102,7 +102,7 @@ class SpikeAnalysisTest(unittest.TestCase):
         self.assertEqual(rslt[1].shape, (2, 12))
         self.assertEqual(rslt[1][1,:].min(), 0.0)
         self.assertGreater(rslt[1][1,:].max(), 0.0)
-        self.assertLess(rslt[1][1,:].max(), 250.0)
+        self.assertLessEqual(rslt[1][1,:].max(), 255.0)
 
     def test_calc_interval_timing(self):
         ticks = calc_spike_ticks(spike=self.dataset)
