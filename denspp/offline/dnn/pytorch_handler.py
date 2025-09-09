@@ -1,8 +1,10 @@
+import os
 from os import remove, makedirs
 from os.path import join
 import platform
+import subprocess
+import re
 from copy import deepcopy
-import cpuinfo
 import numpy as np
 from logging import getLogger, Logger
 from random import seed
@@ -25,8 +27,6 @@ from denspp.offline.data_format.yaml import YamlHandler
 class PyTorchHandler:
     deterministic_generator: Generator
     used_hw_dev: device
-    used_hw_cpu: str
-    used_hw_gpu: str
     used_hw_num: int
     train_loader: list
     valid_loader: list
@@ -49,7 +49,6 @@ class PyTorchHandler:
         init_dnn_folder()
         self._logger = getLogger(__name__)
         # --- Preparing Neural Network
-        self.os_type = platform.system()
         self.model = None
         self.loss_fn = None
         self.optimizer = None
@@ -70,38 +69,57 @@ class PyTorchHandler:
         self._path2temp = str()
         self._path2config = str()
 
+    @staticmethod
+    def _get_cpu_name_windows() -> str:
+        return platform.processor()
+
+    @staticmethod
+    def _get_cpu_name_mac() -> str:
+        result = subprocess.run(['sysctl', '-n', 'machdep.cpu.brand_string'], capture_output=True, text=True)
+        return result.stdout.strip()
+
+    @staticmethod
+    def _get_cpu_name_linux():
+        result = subprocess.run(['cat', '/proc/cpuinfo'], capture_output=True, text=True)
+        for line in result.stdout.split('\n'):
+            if "model name" in line:
+                return re.sub(".*model name.*:", "", line, 1).strip()
+
+    def _get_cpu_name(self) -> str:
+        match platform.system().lower():
+            case 'windows':
+                return self._get_cpu_name_windows()
+            case 'linux':
+                return self._get_cpu_name_linux()
+            case 'darwin':
+                return self._get_cpu_name_mac()
+            case _:
+                return ''
+
     def __check_start_folder(self, new_folder: str='runs'):
         """Checking for starting folder to generate"""
         self._path2run = get_path_to_project(new_folder)
         makedirs(self._path2run, exist_ok=True)
 
-
     def __setup_device(self) -> None:
-        """Setup PyTorch for Training"""
-        self.used_hw_cpu = (f"{cpuinfo.get_cpu_info()['brand_raw']} "
-                            f"(@ {1e-9 * cpuinfo.get_cpu_info()['hz_actual'][0]:.3f} GHz)")
-
         if cuda.is_available():
             # Using GPU
-            self.used_hw_gpu = cuda.get_device_name()
+            used_hw_gpu = cuda.get_device_name()
             self.used_hw_dev = device("cuda")
             self.used_hw_num = cuda.device_count()
-            device0 = self.used_hw_gpu
+            device0 = used_hw_gpu
             cuda.empty_cache()
-        elif backends.mps.is_available() and backends.mps.is_built() and self.os_type == "Darwin":
+        elif backends.mps.is_available() and backends.mps.is_built() and platform.system().lower() == "darwin":
             # Using Apple M1 Chip
-            self.used_hw_gpu = 'None'
-            self.used_hw_num = cuda.device_count()
             self.used_hw_dev = device("mps")
-            device0 = self.used_hw_cpu
+            self.used_hw_num = cuda.device_count()
+            device0 = self._get_cpu_name()
         else:
             # Using normal CPU
-            self.used_hw_gpu = 'None'
             self.used_hw_dev = device("cpu")
-            self.used_hw_num = 1 # cpuinfo.get_cpu_info()['count']
-            device0 = self.used_hw_cpu
-
-        self._logger.debug(f"\nUsing PyTorch with {device0} on {self.os_type}")
+            self.used_hw_num = os.cpu_count()
+            device0 = self._get_cpu_name()
+        self._logger.debug(f"\nUsing PyTorch with {device0} on {platform.system()}")
 
     def _init_train(self, path2save: str='', addon: str='') -> None:
         """Do init of class for training"""

@@ -34,7 +34,6 @@ authors = [
 dependencies = [
     "matplotlib>=3.9.2",
     "numpy>=1.26.4",
-    "py-cpuinfo>=9.0.0",
     "pyocclient>=0.6",
     "pyspice>=1.5",
     "pyyaml>=6.0.2",
