@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from logging import getLogger
 from denspp.offline.logger import define_logger_runtime
 from denspp.offline.data_call import SettingsData, DefaultSettingsData, MergeDataset
@@ -5,15 +6,15 @@ from denspp.offline.data_format import YamlHandler
 from denspp.offline.pipeline import DataloaderLibrary, PipelineLibrary, MultithreadHandler
 
 
-def start_processing_pipeline(sets_load_data: SettingsData=DefaultSettingsData):
+def _start_processing_pipeline(sets_load_data: SettingsData=DefaultSettingsData):
     """Function for preparing the pipeline preprocessing
     :param sets_load_data:      Dataclass with settings for getting data to analyse
-    :return:                    Tuple with (0) Settings class for data, (1) Settings class for thread handling, (2) DataLoader, (3) Pipeline
+    :return:                    Tuple with (0) Settings class for data, (1) DataLoader, (2) Pipeline
     """
     # --- Getting the YAML files
     logger = getLogger(__name__)
     if sets_load_data == DefaultSettingsData:
-        settings_data = YamlHandler(
+        settings_data: SettingsData = YamlHandler(
             template=sets_load_data,
             path='config',
             file_name='Config_PipelineData'
@@ -46,9 +47,7 @@ def select_process_pipeline(object_dataloader, object_pipeline, sets_load_data: 
     :param sets_load_data:      Dataclass with settings for getting data to analyse
     :return:                    None
     """
-    define_logger_runtime(False)
     logger = getLogger(__name__)
-
     # ----- Preparation: Module calling -----
     logger.info("Running framework for end-to-end neural signal processing (DeNSPP)")
     logger.info("Step #1: Loading data")
@@ -83,27 +82,85 @@ def select_process_pipeline(object_dataloader, object_pipeline, sets_load_data: 
     thr_station.do_save_results(path2save=dut.path2save)
 
 
-def select_process_merge(object_dataloader, object_pipeline, sets_load_data: SettingsData) -> None:
+def select_process_merge(object_dataloader, object_pipeline, sets_load_data: SettingsData,
+                         frames_xoffset: int=0, list_merging_files: list=(), do_label_concatenation: bool=False) -> None:
     """Function for preparing and starting the merge process for generating datasets
-    :param object_dataloader:   DataLoader object
-    :param object_pipeline:     Pipeline object
-    :param sets_load_data:      SettingsData object
-    :return:                    None
+    :param object_dataloader:       DataLoader object
+    :param object_pipeline:         Pipeline object
+    :param sets_load_data:          SettingsData object
+    :param frames_xoffset:          Integer with offset
+    :param list_merging_files:      Taking the datapoints of the selected data set to process
+    :param do_label_concatenation:  Do concatenation of the class number with increasing id number (useful for non-biological clusters)
+    :return:                        None
     """
     logger = getLogger(__name__)
     logger.info("Running framework for end-to-end neural signal processing (DeNSPP)")
     logger.info("Building datasets from transient data")
 
     # ---- Merging spike frames from several files to one file
-    merge_handler = MergeDataset(object_pipeline, object_dataloader, sets_load_data, True)
-    merge_handler.get_frames_from_dataset(
-        concatenate_id=False,
-        process_points=list()
+    merge_handler = MergeDataset(
+        pipeline=object_pipeline,
+        dataloader=object_dataloader,
+        settings_data=sets_load_data,
+        concatenate_id=do_label_concatenation,
     )
-    merge_handler.merge_data_from_diff_files()
-    merge_handler.save_merged_data_in_npyfile()
+    merge_handler.merge_data_from_all_iteration()
+    merge_handler.get_frames_from_dataset(
+        process_points=list_merging_files,
+        xpos_offset=frames_xoffset
+    )
+    merge_handler.merge_data_from_all_iteration()
 
     # --- Merging the frames to new cluster device
     logger.info("=========================================================")
-    logger.info("Final Step with merging cluster have to be done in MATLAB")
+    logger.info("Final Step with merging cluster have to be done separately using SortDataset")
 
+
+@dataclass
+class SettingsMerging:
+    """Class for defining the properties for merging datasets
+    Attributes:
+        taking_datapoints:  List with data_points to process [Default: [] -> taking all]
+        do_label_concat:    Boolean for concatenating the
+        xoffset:            Integer with delayed positions applied on frame/window extraction
+    """
+    taking_datapoints: list[int]
+    do_label_concat: bool
+    xoffset: int
+
+
+DefaultSettingsMerging = SettingsMerging(
+    taking_datapoints=[],
+    do_label_concat=False,
+    xoffset=0,
+)
+
+
+def run_transient_data_processing() -> None:
+    """Function for running the offline data analysis of transient use-specific data
+    :return:    None
+    """
+    define_logger_runtime(False)
+    settings_data, data_handler, pipe = _start_processing_pipeline()
+
+    if settings_data.do_merge:
+        sets_merge: SettingsMerging = YamlHandler(
+            template=DefaultSettingsMerging,
+            path='config',
+            file_name='Config_Merging'
+        ).get_class(SettingsMerging)
+
+        select_process_merge(
+            object_dataloader=data_handler,
+            object_pipeline=pipe,
+            sets_load_data=settings_data,
+            list_merging_files=sets_merge.taking_datapoints,
+            do_label_concatenation=sets_merge.do_label_concat,
+            frames_xoffset=sets_merge.xoffset,
+        )
+    else:
+        select_process_pipeline(
+            object_dataloader=data_handler,
+            object_pipeline=pipe,
+            sets_load_data=settings_data
+        )

@@ -28,8 +28,8 @@ class DataloaderLibrary:
 
 class PipelineCMD:
     """Class for handling the pipeline processing"""
-    path2save: str=''
-    _path2pipe: str=''
+    path2save: str=get_path_to_project()
+    _path2pipe: str=get_path_to_project()
     _path2start: str=get_path_to_project()
     _logger: Logger=getLogger(__name__)
 
@@ -37,7 +37,7 @@ class PipelineCMD:
         """Getting the name of the pipeline"""
         return self.__class__.__name__
 
-    def generate_run_folder(self, path2runs: str, addon: str) -> None:
+    def generate_run_folder(self, path2runs: str='runs', addon: str='') -> None:
         """Generating the default folder for saving figures and data
         :param path2runs:   Main folder in which the figures and data is stored
         :param addon:       Name of new folder for saving results

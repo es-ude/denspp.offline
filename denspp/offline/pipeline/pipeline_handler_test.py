@@ -1,7 +1,7 @@
 import numpy as np
 from unittest import TestCase, main
 from denspp.offline.template.call_data_dummy import DataLoaderTest
-from denspp.offline.pipeline.pipeline_handler import select_process_pipeline, start_processing_pipeline
+from denspp.offline.pipeline.pipeline_handler import select_process_pipeline, _start_processing_pipeline
 from denspp.offline.data_call.call_handler import SettingsData
 from denspp.offline.template.pipeline_v0 import PipelineV0
 
@@ -150,7 +150,7 @@ class TestPipeProcess(TestCase):
 
     def test_entry_point(self):
         try:
-            rslt = start_processing_pipeline(
+            rslt = _start_processing_pipeline(
                 sets_load_data=test_settings_2d
             )
         except:
