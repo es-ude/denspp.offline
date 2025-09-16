@@ -91,7 +91,6 @@ class Thresholding:
             pos = np.argwhere(xin0 < xthr).flatten()
         else:
             pos = np.argwhere(xin0 >= xthr).flatten()
-        print(pre_time)
         pos_pre = int(self._settings.sampling_rate * pre_time)
         return np.array(self._get_values_non_incremented_change(pos)) - pos_pre
 

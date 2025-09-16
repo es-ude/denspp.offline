@@ -1,6 +1,6 @@
 import numpy as np
 import numpy.lib.scimath as sm
-import platform
+from pathlib import Path
 from logging import getLogger, Logger
 from collections import defaultdict
 from glob import glob
@@ -11,246 +11,160 @@ from datetime import datetime
 from tqdm import tqdm
 from copy import deepcopy
 
-from denspp.offline import get_path_to_project
-from denspp.offline.data_call import SettingsData
+from denspp.offline import get_path_to_project, check_keylist_elements_any
+from denspp.offline.data_call import SettingsData, DataHandler
+from denspp.offline.preprocessing import FrameWaveform
 from denspp.offline.metric.data_numpy import calculate_error_mse
-from denspp.offline.metric.snr import calculate_snr
 
 
 class MergeDataset:
-    _cluster_available: bool=False
-    _data_list = list()
-    _data_single = dict()
-    _data_merged = dict()
-
-    def __init__(self, pipeline, dataloader, settings_data: SettingsData, do_list: bool=False) -> None:
+    def __init__(self, pipeline, dataloader, settings_data: SettingsData, concatenate_id: bool=False) -> None:
         """Class for handling the merging process for generating datasets from transient input signals
-        :param pipeline:            Selected pipeline for processing data
-        :param dataloader:   Used Dataloader for getting and handling data
-        :param settings_data:       Dataclass for handling the transient data
-        :param do_list:             Boolean for listing the data
+        :param pipeline:                Construct of selected pipeline for processing data
+        :param dataloader:              Construct of used Dataloader for getting and handling data
+        :param settings_data:           Class SettingsData for configuring the data loader
+        :param concatenate_id:          Do concatenation of the class number with increasing id number (useful for non-biological clusters)
+        :return:                        None
         """
         self._logger: Logger = getLogger(__name__)
-        self._settings = settings_data
-        self._path2save = get_path_to_project()
-        self._pipeline = pipeline
+
         self._dataloader = dataloader
-        self._saving_data_list = do_list
+        self._settings: SettingsData = settings_data
+        self._pipeline = pipeline
+        self._check_right_pipeline()
 
-    def __generate_folder(self, addon: str='Merging') -> None:
-        """Generating the folder temporary saving"""
-        self.__name_temp_folder = addon
-        self.path2folder = join(self._path2save, addon)
+        self._path2save = get_path_to_project('temp_merge')
+        self._do_label_concatenation = concatenate_id
 
-        if not self._saving_data_list:
-            makedirs(self._path2save, exist_ok=True)
-            if exists(self.path2folder):
-                rmtree(self.path2folder)
-            makedirs(self.path2folder, exist_ok=True)
-        else:
-            if exists(self.path2folder):
-                rmtree(self.path2folder)
+    def _check_right_pipeline(self) -> None:
+        if not check_keylist_elements_any(
+            keylist=dir(self._pipeline),
+            elements=['run_preprocessing', 'run_classifier', 'settings']
+        ):
+            raise ImportError("Wrong pipeline is implemented. It should include 'run_preprocessing' and 'run_classifier'.")
 
-    def __iteration_determine_duration(self, time_start: datetime) -> None:
-        """"""
-        time_dt = datetime.now() - time_start
-        iteration = self._data_single['ite_recovered']
-        print(f"... done after {time_dt.seconds + 1e-6 * time_dt.microseconds: .2f} s"
-              f"\n... recovered {iteration} samples")
-        self.__output_meta(False)
+    def _generate_folder(self) -> None:
+        if exists(self._path2save):
+            rmtree(self._path2save)
+        makedirs(self._path2save, exist_ok=True)
 
-    def __iteration_save_results(self) -> None:
-        """"""
-        if self._saving_data_list:
-            self._data_list.append(self._data_single)
-        else:
-            file_name = f"{self._data_single['file_name']}.npy"
-            np.save(file_name, self._data_single)
-            print(f'Saving file in: {file_name}')
-
-    def __output_meta(self, take_merged: bool=True) -> None:
-        """Generating print output with meta information"""
-        data0 = self._data_single if not take_merged else self._data_merged
-
-        meta_infos_frames = data0["frames_in"].shape
-        meta_infos_id = np.unique(data0["frames_cl"], return_counts=True)
-        if take_merged:
-            print(f"\n========================================================"
-                  f"\nSummary of merging data"
-                  f"\n========================================================")
-        print(f"... available frames: {meta_infos_frames[0]} samples with each size of {meta_infos_frames[1]}"
-              f'\n... available classes: {meta_infos_id[0]} with {meta_infos_id[1]} samples')
-
-    def get_frames_from_dataset(self, concatenate_id: bool=False, process_points: list=()) -> None:
-        """Tool for loading datasets in order to generate one new dataset (Step 1)
-        :param concatenate_id:      Do concatenation of the class number with increasing id number (useful for non-biological clusters)
-        :param process_points:      Taking the datapoints of the choicen dataset [Start, End]
-        """
-        self.__generate_folder()
-        self._cluster_available = concatenate_id
-        fs_ana = self._pipeline.fs_ana
-        fs_adc = self._pipeline.fs_adc
-
-        # --- Setting the points
-        do_reduced_sample = len(process_points) > 0
-        if do_reduced_sample and len(process_points) > 0:
-            runPoint = process_points[0]
-            if len(process_points) == 2:
-                use_end_point = process_points[1] if process_points[1] else 0
-            else:
-                use_end_point = 0
-        else:
-            runPoint = 0
-            use_end_point = 0
-        endPoint = 0
-
-        # --- Calling the data into RAM (Iterating the files)
-        print("... processing data")
-        used_pipe = self._pipeline()
-        settings = dict()
-        first_run = True
-        while first_run or runPoint < endPoint:
-            self._data_single = dict()
-            first_run = True
-            ite_recoverd = 0
-            frames_in = np.empty(shape=(0, 0), dtype=np.dtype('int16'))
-            frames_cl = np.empty(shape=(0, 0), dtype=np.dtype('uint16'))
-            time_start = datetime.now()
-
-            # --- Getting data
-            sets0 = deepcopy(self._settings)
-            sets0.data_case = runPoint
-            datahandler = self._dataloader(sets0)
-            datahandler.do_call()
-            datahandler.do_resample()
-            data = datahandler.get_data()
-            del datahandler
-
-            # --- Processing data (Iterating the channels)
-            print(f"\nProcessing data sample {runPoint}:\n========================================================")
-            for ch, id in tqdm(enumerate(data.electrode_id), ncols=100, desc="Progress: "):
-                spike_xpos = np.floor(data.evnt_xpos[ch] * fs_adc / fs_ana).astype("int")
-                # --- Processing the analogue input
-                data_rslt = self._pipeline.run_preprocessing(data.data_raw[ch, :], spike_xpos)
-                length_data_in = data_rslt['x_adc'].size
-
-                frame_new = data_rslt['frames_align']
-                frame_cl = data.evnt_id[ch]
-
-                # --- Post-Processing: Checking if same length
-                if frame_new.shape[0] != frame_cl.size:
-                    ite_recoverd += 1
-                    # Check where errors are available
-                    sample_first_delete_pos = np.argwhere((spike_xpos - self._pipeline.frame_left_windowsize) <= 0).flatten()
-                    sample_first_do_delete = sample_first_delete_pos.size > 0
-                    sample_last_delete_pos = np.argwhere(
-                        ((spike_xpos + self._pipeline.frame_right_windowsize) >= length_data_in) < 0).flatten()
-                    sample_last_do_delete = sample_last_delete_pos.size > 0
-
-                    if sample_first_do_delete and not sample_last_do_delete:
-                        frame_cl = np.delete(frame_cl, sample_first_delete_pos)
-                    elif not sample_first_do_delete and sample_last_do_delete:
-                        frame_cl = np.delete(frame_cl, sample_last_delete_pos)
-                    elif sample_first_do_delete and sample_last_do_delete:
-                        frame_cl = np.delete(frame_cl, (sample_first_delete_pos, sample_last_delete_pos))
-
-                    # Only suitable for RGC TDB data (unknown error)
-                    elif not sample_first_do_delete and not sample_last_do_delete:
-                        if np.unique(frame_cl).size == 1:
-                            num_min = np.min((frame_cl.size, frame_new.shape[0]))
-                            frame_cl = frame_cl[0:num_min - 1]
-                            frame_new = frame_new[0:num_min - 1, ]
-                        else:
-                            continue
-
-                    # --- Second check
-                    if frame_cl.size != frame_new.shape[0]:
-                        num_min = np.min((frame_cl.size, frame_new.shape[0]))
-                        frame_cl = frame_cl[0:num_min - 1]
-                        frame_new = frame_new[0:num_min - 1, ]
-
-                # --- Processing (Frames and cluster)
-                if first_run:
-                    endPoint = process_points[1] if use_end_point != 0 else datahandler._no_files
-                    settings = self._pipeline.prepare_saving()
-                    frames_in = frame_new
-                    frames_cl = frame_cl
-                else:
-                    frames_in = np.concatenate((frames_in, frame_new), axis=0)
-                    frames_cl = np.concatenate((frames_cl, frame_cl), axis=0)
-                first_run = False
-
-                if frames_in.shape[0] != frames_cl.size:
-                    print(f'Data merging has an error after channel #{ch}')
-
-                # --- Release memory
-                del spike_xpos, frame_new, frame_cl
-
-            # --- Bringing data into format
-            create_time = datetime.now().strftime("%Y-%m-%d")
-            file_name = join(self.path2folder, f"{create_time}_Dataset-{data.data_name}_step{runPoint + 1:03d}")
-            self._data_single.update({"frames_in": frames_in, "frames_cl": frames_cl, "ite_recovered": ite_recoverd})
-            self._data_single.update({"settings": settings, "num_clusters": np.unique(frames_cl).size})
-            self._data_single.update({"file_name": file_name})
-
-            # --- Last steps in each iteration
-            self.__iteration_determine_duration(time_start)
-            self.__iteration_save_results()
-
-            # --- Release memory
-            del datahandler, frames_in, frames_cl
-            runPoint += 1
-
-    def merge_data_from_diff_files(self) -> None:
-        """Merging data files from specific folder into one file"""
-        split_format = '\\' if platform.system() == "Windows" else '/'
-
-        # --- Linking data
-        if self._saving_data_list:
-            # --- Processing internal list from storage
-            settings = self._data_list[-1]['settings']
-            data_used = self._data_list
-            file_name = data_used[-1]['file_name'].split(split_format)[-1].split('_step')[0]
-        else:
-            # --- Processing external *.npy files
-            folder_content = glob(join(self._path2save, self.__name_temp_folder, '*.npy'))
-            folder_content.sort()
-
-            settings = dict()
-            data_used = folder_content
-            file_name = data_used[-1].split(split_format)[-1].split('_step')[0]
-
-        # --- Getting data
-        self._data_merged = dict()
-        frame_in = np.zeros((0, 0), dtype='int16')
-        frame_cl = np.zeros((0, 0), dtype='uint16')
-
-        max_num_clusters = 0
-        for idx, file in enumerate(data_used):
-            if not self._saving_data_list:
-                data = np.load(file, allow_pickle=True).item()
-                settings = data['settings']
-            else:
-                data = file
-
-            cl_in = data['frames_cl'] + max_num_clusters
-            frame_in = data['frames_in'] if idx == 0 else np.append(frame_in, data['frames_in'], axis=0)
-            frame_cl = cl_in if idx == 0 else np.append(frame_cl, cl_in, axis=0)
-            max_num_clusters = 0 if self._cluster_available else 1 + np.unique(frame_cl).max()
-
-        # --- Transfer in common structure
-        create_time = datetime.now().strftime("%Y-%m-%d")
-        self._data_merged.update({"data": frame_in, "class": frame_cl})
-        self._data_merged.update({"create_time": create_time, "settings": settings})
-        self._data_merged.update({"file_name": file_name})
-
-    def save_merged_data_in_npyfile(self) -> str:
-        """Saving the results in *.npy-file"""
-        self.__output_meta(True)
-        path2file = join(self._path2save, self._data_merged["file_name"]) + "_Merged.npy"
-        np.save(path2file, self._data_merged)
-        print(f'Saving file in: {path2file}')
+    def _save_results(self, data: dict, path2folder: str, file_name: str) -> str:
+        file_name = f"{file_name}.npy"
+        path2file = join(path2folder, file_name)
+        np.save(path2file, data, allow_pickle=True)
+        self._logger.info(f'Saving file in: {file_name}')
         return path2file
+
+    def _iteration_save_results(self, data: list, data_name: str) -> None:
+        create_time = datetime.now().strftime("%Y-%m-%d")
+        data_save = {
+            "frames": data
+        }
+        self._save_results(
+            data=data_save,
+            path2folder=self._path2save,
+            file_name=f"{create_time}_Dataset-{data_name}"
+        )
+
+    def _get_frames_from_labeled_dataset(self, data: DataHandler, xpos_offset: int=0) -> list:
+        self._logger.info(f"\nProcessing file: {data.data_name}")
+        pipeline = self._pipeline(data.fs_used, False)
+
+        frames_extracted = list()
+        for rawdata, xposition, label in tqdm(zip(data.data_raw, data.evnt_xpos, data.evnt_id), ncols=100, desc="Progress: "):
+            xpos_scaler = pipeline.fs_ana / pipeline.fs_ana
+            xpos_updated = np.floor(xpos_scaler * xposition).astype("int")
+            result = pipeline.run_preprocessor(rawdata, xpos_updated, xpos_offset)
+
+            frame_new: FrameWaveform = result['frames']
+            frame_new.label = label
+            frames_extracted.append(frame_new)
+            del frame_new
+        return frames_extracted
+
+    def _get_frames_from_unlabeled_dataset(self, data: DataHandler, **kwargs) -> list:
+        self._logger.info(f"\nProcessing file: {data.data_name}")
+        pipeline = self._pipeline(data.fs_used, False)
+
+        frames_extracted = list()
+        for rawdata in tqdm(data.data_raw, ncols=100, desc="Progress: "):
+            result = pipeline.run_preprocessor(rawdata)
+
+            frame_new: FrameWaveform = result['frames']
+            frames_extracted.append(frame_new)
+            del frame_new
+        return frames_extracted
+
+    def get_frames_from_dataset(self, process_points: list=(), xpos_offset: int=0) -> None:
+        """Tool for loading datasets in order to generate one new dataset (Step 1)
+        :param process_points:      Taking the datapoints of the selected data set to process
+        :param xpos_offset:         Integer as position offset for shifting label position of an event (only apply if label exists)
+        :return:                    None
+        """
+        self._generate_folder()
+        current_index = 0
+        while True:
+            try:
+                sets0 = deepcopy(self._settings)
+                sets0.data_point = current_index if not len(process_points) else process_points[current_index]
+                datahandler = self._dataloader(sets0)
+                datahandler.do_call()
+            except:
+                break
+            else:
+                datahandler.do_resample()
+                datahandler.do_cut()
+                data: DataHandler = datahandler.get_data()
+                del datahandler
+
+                if data.label_exist:
+                    result = self._get_frames_from_labeled_dataset(data, xpos_offset=xpos_offset)
+                else:
+                    result = self._get_frames_from_unlabeled_dataset(data)
+                self._iteration_save_results(
+                    data=result,
+                    data_name=data.data_name
+                )
+                current_index += 1
+
+    def merge_data_from_all_iteration(self) -> str:
+        """Merging extracted information from all runs into one file
+        :return:    String with path to final file
+        """
+        folder_content = glob(join(self._path2save, '*.npy'))
+        folder_content.sort()
+
+        file_name = folder_content[-1]
+        dataset_loaded = list()
+        for file in folder_content:
+            val = np.load(file, allow_pickle=True).item()['frames']
+            dataset_loaded.append(val)
+
+        # --- Merging data from different sources
+        frames_waveform = list()
+        frames_position = list()
+        frames_label = list()
+        max_num_clusters = 0
+        for data_case in dataset_loaded:
+            for data_elec in data_case:
+                frames_waveform.extend(data_elec.waveform.tolist())
+                frames_position.extend(data_elec.xpos)
+                frames_label.extend(data_elec.label + max_num_clusters)
+                max_num_clusters += 0 if self._do_label_concatenation or len(frames_label) == 0 else 1 + max(frames_label)
+
+        # --- Save output
+        data_merged = {
+            "data": np.array(frames_waveform),
+            "class": np.array(frames_label),
+            "position": np.array(frames_position),
+            "create_time": datetime.now().strftime("%Y-%m-%d")
+        }
+        self._save_results(
+            data=data_merged,
+            path2folder=get_path_to_project('dataset'),
+            file_name=Path(file_name).stem + "_Merged"
+        )
+        return self._path2save
 
 
 def _crossval(wave1, wave2):
@@ -258,24 +172,25 @@ def _crossval(wave1, wave2):
     return result
 
 
-def calc_metric(wave_in, wave_ref):
+def _calc_metric(wave_in, wave_ref):
     maxIn = max(wave_in)
     maxInIndex = wave_in.argmax()
     maxRef = max(wave_ref)
     maxRefIndex = wave_ref.argmax()
 
-    result = []
+    result = list()
     result.append(maxInIndex - maxRefIndex)
     result.append(calculate_error_mse(wave_in, wave_ref))
-    result.append(np.abs(np.trapz(wave_in[:maxInIndex + 1]) - np.trapz(wave_in[maxInIndex:])))
+    result.append(np.abs(np.trapezoid(wave_in[:maxInIndex + 1]) - np.trapezoid(wave_in[maxInIndex:])))
     result.append(maxInIndex)
     result.append(maxIn)
     return np.array(result)
 
 
 class SortDataset:
-    def __init__(self, path_2_file: str):
+    def __init__(self, path_2_file: str) -> None:
         """Tool for loading and processing dataset to generate a sorted dataset"""
+        self._logger: Logger = getLogger(__name__)
         self.setOptions = dict()
         self.setOptions['do_2nd_run'] = False
         self.setOptions['do_resort'] = True
@@ -285,12 +200,10 @@ class SortDataset:
         self.setOptions['path2fig'] = path_2_file[:len(path_2_file) - 4]
 
         if "Martinez" in path_2_file:
-            # Settings Martinez
             self.criterion_CheckDismiss = [3, 0.7]
             self.criterion_Run0 = 0.98
             self.criterion_Resort = 0.98
         elif "Quiroga" in path_2_file:
-            # Settings für Quiroga
             self.criterion_CheckDismiss = [2, 0.96]
             self.criterion_Run0 = 0.98
             self.criterion_Resort = 0.95
@@ -310,7 +223,7 @@ class SortDataset:
         frames_cluster = mat_file['frames_cl']
         frames_in = mat_file['frames_in']
         frames_in_number = frames_in.shape[0]
-        print("Start of sorting the dataset")
+        self._logger.info("Start of sorting the dataset")
 
         if frames_cluster.shape[0] == 1:
             frames_cluster = np.transpose(frames_cluster)
@@ -321,12 +234,12 @@ class SortDataset:
         data_raw_pos, data_raw_frames, data_raw_means, data_raw_metric, input_cluster, data_raw_number = (
             self.prepare_data(frames_cluster, frames_in))
 
-        print('\n... data loaded and pre-selected')
+        self._logger.info('... data loaded and pre-selected')
         del frames_in, frames_cluster, mat_file
         # endregion
 
         # region Pre-Processing: Consistency Check
-        print('Consistency check of the frames')
+        self._logger.info('Consistency check of the frames')
         data_process_XCheck = defaultdict()  # data_1process[2]
         data_process_YCheck = defaultdict()  # data_1process[3]
         data_process_mean = defaultdict()  # data_1process[4]
@@ -347,11 +260,11 @@ class SortDataset:
                 self.get_frames(idx, XCheckIn, XCheckIn, XCheck_False))
 
         del idx, YCheckIn, XCheckIn, XCheck, XCheck_False
-        print(" ... end of step")
+        self._logger.info(" ... end of step")
         # endregion
 
         # region Processing: Merging Cluster
-        print("Merging clusters")
+        self._logger.info("Merging clusters")
         data_2merge_XCheck = defaultdict()
         data_2merge_YCheck = defaultdict()
         data_2merge_mean = defaultdict()
@@ -374,8 +287,8 @@ class SortDataset:
             Ymean_New = data_process_mean[idx]
             Xraw_New = data_process_XCheck[idx]
 
-            # Erste Prüfung: Mean-Waveform vergleichen mit bereits gemergten Clustern
-            metric_Run0 = [calc_metric(_crossval(Ymean_New, Ycheck_Mean), _crossval(Ycheck_Mean, Ycheck_Mean)) for
+            # Erste Prüfung: Mean-Waveform vergleichen mit bereits vorliegenden Clustern
+            metric_Run0 = [_calc_metric(_crossval(Ymean_New, Ycheck_Mean), _crossval(Ycheck_Mean, Ycheck_Mean)) for
                            Ycheck_Mean in data_2merge_mean.values()]
 
             # Entscheidung treffen
@@ -393,7 +306,7 @@ class SortDataset:
                 XCheck = np.vstack([data_2merge_XCheck[candX], Xraw_New])
                 YMean = data_2merge_mean[candX]
                 WaveRef = _crossval(YMean, YMean)
-                metric_Run1 = np.array([calc_metric(_crossval(Y, YMean), WaveRef) for Y in YCheck])
+                metric_Run1 = np.array([_calc_metric(_crossval(Y, YMean), WaveRef) for Y in YCheck])
                 selOut = np.where(metric_Run1[:, 4] <= 0.92)[0]
                 if selOut.size != 0:
                     data_missed_new_XCheck[len(data_dismiss_XCheck) + 1] = np.vstack(
@@ -414,7 +327,7 @@ class SortDataset:
                 data_2merge_XCheck[data_2merge_number] = Xraw_New
                 data_2merge_YCheck[data_2merge_number] = Yraw_New
                 data_2merge_mean[data_2merge_number] = Ymean_New
-        print(" ... end of step")
+        self._logger.info(" ... end of step")
 
         data_dismiss_XCheck[len(data_dismiss_XCheck)] = data_missed_new_XCheck.get(len(data_dismiss_XCheck) + 1,
                                                                                    np.array([]))
@@ -425,7 +338,7 @@ class SortDataset:
 
         for idy, Yraw in data_2merge_YCheck.items():
             WaveRef = _crossval(data_2merge_mean[idy], data_2merge_mean[idy])
-            data_2merge_metric[idy] = [calc_metric(_crossval(Y, data_2merge_mean[idy]), WaveRef) for Y in Yraw]
+            data_2merge_metric[idy] = [_calc_metric(_crossval(Y, data_2merge_mean[idy]), WaveRef) for Y in Yraw]
 
         del idx, idy, candX, candY, Yraw_New, Ymean_New, Xraw_New, WaveRef, Yraw, \
             data_missed_new_YCheck, data_missed_new_XCheck
@@ -434,14 +347,14 @@ class SortDataset:
         # region Post-Processing: Resorting dismissed frames
         data_restored = 0
         if self.setOptions['do_resort']:
-            print("Resorting dismissed frames")
+            self._logger.info("Resorting dismissed frames")
             for idz, value in tqdm(enumerate(data_dismiss_XCheck), ncols=100, desc="Resorted Frames: ", unit="frames"):
                 pos_sel = data_dismiss_XCheck[value]
                 frames_sel = data_dismiss_YCheck[value]
 
                 for idx in range(frames_sel.shape[0]):
-                    metric_Run2 = np.array([calc_metric(_crossval(frames_sel[idx, :], data_2merge_mean[idx2]),
-                                                        _crossval(data_2merge_mean[idx2], data_2merge_mean[idx2]))
+                    metric_Run2 = np.array([_calc_metric(_crossval(frames_sel[idx, :], data_2merge_mean[idx2]),
+                                                         _crossval(data_2merge_mean[idx2], data_2merge_mean[idx2]))
                                             for idx2 in range(data_2merge_number)])
                     # Decision
                     selY, selX = np.max(metric_Run2[:, 4]), np.argmax(metric_Run2[:, 4])
@@ -449,14 +362,14 @@ class SortDataset:
                         data_2merge_XCheck[selX] = np.vstack([data_2merge_XCheck[selX], pos_sel[idx, :]])
                         data_2merge_YCheck[selX] = np.vstack([data_2merge_YCheck[selX], frames_sel[idx, :]])
                         data_restored += 1
-            print(" ... end of step")
+            self._logger.info(" ... end of step")
         del idz, value, pos_sel, frames_sel, idx, metric_Run2, selY, selX
         # endregion
 
         # region Preparing: Transfer to new file
         output, data_process_num = self.prepare_data_for_saving(data_2merge_XCheck, data_2merge_YCheck)
         self.save_output_as_npyfile(output, data_process_num, frames_in_number)
-        print(" ... merged output generated")
+        self._logger.info(" ... merged output generated")
 
     def prepare_data(self, cluster: list, frames: list):
         """Prepare the frames and clusters from matlab file for further processing"""
@@ -475,7 +388,7 @@ class SortDataset:
             YCheck = data_frames[value]
             WaveRef = _crossval(np.mean(YCheck, axis=0, dtype=np.float64), np.mean(YCheck, axis=0, dtype=np.float64))
             metric_Check = [
-                calc_metric(_crossval(YCheck[idy, :], np.mean(YCheck, axis=0, dtype=np.float64)), WaveRef)
+                _calc_metric(_crossval(YCheck[idy, :], np.mean(YCheck, axis=0, dtype=np.float64)), WaveRef)
                 for
                 idy in range(len(pos_in))]
             data_metric[value] = metric_Check
@@ -498,7 +411,7 @@ class SortDataset:
             WaveRef = _crossval(mean_wfg, mean_wfg)
             for idy, Y in enumerate(YCheck):
                 WaveIn = _crossval(Y, mean_wfg)
-                calc_temp = np.append(calc_metric(WaveIn, WaveRef), XCheck[idy])
+                calc_temp = np.append(_calc_metric(WaveIn, WaveRef), XCheck[idy])
                 metric_Check.append(calc_temp)
 
             metric_Check = np.array(metric_Check)
@@ -525,7 +438,7 @@ class SortDataset:
         WaveRef = _crossval(mean_wfg, mean_wfg)
         for idy, value in enumerate(XCheck):
             WaveIn = _crossval(YCheck[idy, :], mean_wfg)
-            metric_Check1.append(calc_metric(WaveIn, WaveRef))
+            metric_Check1.append(_calc_metric(WaveIn, WaveRef))
         return (np.column_stack((XCheckIn[XCheck], idx + np.ones(len(XCheckIn[XCheck])))), YCheckIn[XCheck, :],
                 mean_wfg, metric_Check1)
 
@@ -551,6 +464,6 @@ class SortDataset:
         data_ratio_merged = processed_num / frames_in_num
         data_ratio_dismiss = 1 - data_ratio_merged
         out['data_ratio_merged'] = data_ratio_merged
-        print(f"Percentage of overall kept frames: {data_ratio_merged * 100:.2f}")
-        print(f"Percentage of overall dismissed frames: {data_ratio_dismiss * 100:.2f}")
+        self._logger.info(f"Percentage of overall kept frames: {data_ratio_merged * 100:.2f}")
+        self._logger.info(f"Percentage of overall dismissed frames: {data_ratio_dismiss * 100:.2f}")
         np.save(self.setOptions['path2save'], out, allow_pickle=True)

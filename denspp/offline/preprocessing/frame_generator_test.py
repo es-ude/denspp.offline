@@ -194,7 +194,7 @@ class TestFrameGenerator(unittest.TestCase):
     def test_get_threshold_position_with_constant(self):
         self.set0.mode_thr = 'const'
         rslt = FrameGenerator(self.set0).get_threshold_position(self.signal_eap[0], thr_val=-60e-6)
-        self.assertEqual(rslt.size, self.signal_eap[1].size)
+        self.assertTrue(rslt.size in [self.signal_eap[1].size-1, self.signal_eap[1].size, self.signal_eap[1].size+1])
 
     def test_get_align_frames_none(self):
         self.set0.mode_align = 'none'

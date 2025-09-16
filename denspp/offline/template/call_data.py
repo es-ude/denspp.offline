@@ -25,6 +25,7 @@ class DataLoader(ControllerData):
         spike_xoffset = int(-0.1e-3 * fs_used)
         self._load_rawdata_into_pipeline(
             elec_type="Synthetic",
+            dataset_name='martinez',
             file_name=path2file,
             fs_orig=fs_used,
             elec_orn=[int(loaded_data["chan"][0]) - 1],
@@ -46,6 +47,7 @@ class DataLoader(ControllerData):
         num_index = int(path2file.split("_")[-1].split(".")[0])
         self._load_rawdata_into_pipeline(
             elec_type="Synthetic",
+            dataset_name='pedreira',
             file_name=path2file,
             fs_orig=fs_used,
             elec_orn=[int(loaded_data["data"].shape[0]) - 1],
@@ -63,6 +65,7 @@ class DataLoader(ControllerData):
         fs_used = float(1000 / loaded_data["samplingInterval"][0][0])
         self._load_rawdata_into_pipeline(
             elec_type="Synthetic",
+            dataset_name='quiroga',
             file_name=path2file,
             fs_orig=fs_used,
             elec_orn=[int(loaded_data["chan"][0][0]) - 1],
@@ -80,6 +83,7 @@ class DataLoader(ControllerData):
         fs_used = float(loaded_data['info']['nominal_srate'][0])
         self._load_rawdata_into_pipeline(
             elec_type=loaded_data['info']['name'],
+            dataset_name='denspp_custom',
             file_name=path2file,
             fs_orig=fs_used,
             elec_orn=np.arange(0, loaded_data['time_series'].shape[1]).tolist(),

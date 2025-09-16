@@ -33,8 +33,8 @@ class SettingsData:
     data_set: str
     data_case: int
     data_point: int
-    t_range_sec: list
-    ch_sel: list
+    t_range_sec: list[float]
+    ch_sel: list[int]
     fs_resample: float
     do_mapping: bool
     is_mapping_str: bool
@@ -44,10 +44,10 @@ DefaultSettingsData = SettingsData(
     pipeline='PipelineV0',
     do_merge=False,
     path='data',
-    data_set='quiroga',
+    data_set='',
     data_case=0, data_point=0,
     t_range_sec=[], ch_sel=[],
-    fs_resample=100e3,
+    fs_resample=50e3,
     do_mapping=True,
     is_mapping_str=False
 )
@@ -197,7 +197,9 @@ class ControllerData:
             self.__logger.info(f"... has no labels / groundtruth")
 
     def get_data(self) -> DataHandler:
-        """Calling the raw data with ground truth of the called data"""
+        """Calling the raw data with optional ground truth
+        :return:    Class DataHandler with raw data and meta information
+        """
         return self._raw_data
 
     def __get_data_available_local(self, path_ref: str, folder_name: str, data_type: str) -> str:
@@ -350,7 +352,7 @@ class ControllerData:
                         electrode_mapping[row_idx, col_idx] = elec_id
         return electrode_mapping
 
-    def _load_rawdata_into_pipeline(self, elec_type: str, file_name: str, fs_orig: float,
+    def _load_rawdata_into_pipeline(self, elec_type: str, dataset_name: str, file_name: str, fs_orig: float,
                                     elec_orn: list, rawdata: np.ndarray, scale_data: float,
                                     evnt_pos: list=(), evnt_id: list=()) -> None:
         """Function for preparing the loaded rawdata for using in pipeline process
@@ -364,21 +366,20 @@ class ControllerData:
         :param evnt_id:     List with numpy arrays of the event ID (should have same length like elec_orn)
         :return:            None
         """
-        assert len(rawdata.shape) <= 2, "Variable rawdata must have one (num_samples, ) or two dimensions (num_channels, num_samples)"
         if len(rawdata.shape) == 2:
             assert rawdata.shape[0] == len(elec_orn), "Variable rawdata must have two dimensions (num_channels, num_samples)"
         else:
             assert len(elec_orn) == 1, "Variable rawdata has one dimension with (num_samples, ), also elec_orn should have a length of 1"
         if len(evnt_pos):
             assert type(evnt_pos) == list, "Variable evnt_pos must have type list"
-            assert len(evnt_pos) == rawdata.shape[0] or len(evnt_pos) == 0, "Length of event_pos should have same length like num_electrodes"
+            assert len(evnt_pos) == len(elec_orn), "Length of event_pos should have same length like num_electrodes"
             assert type(evnt_id) == list, "Variable evnt_id must have type list"
-            assert len(evnt_id) == rawdata.shape[0] or len(evnt_id) == 0, "Length of event_pos should have same length like num_electrodes"
+            assert len(evnt_id) == len(elec_orn), "Length of event_pos should have same length like num_electrodes"
 
         self._raw_data = DataHandler()
         # --- Including meta data
         self._raw_data.data_type = elec_type
-        self._raw_data.data_name = basename(file_name)
+        self._raw_data.data_name = dataset_name + Path(file_name).stem
         self._raw_data.fs_orig = fs_orig
         # --- Including raw data
         self._raw_data.electrode_id = elec_orn
@@ -402,26 +403,24 @@ class ControllerData:
             self._raw_data.evnt_id = list()
             self._raw_data.label_exist = False
 
-    def do_call(self, *args) -> DataHandler:
+    def do_call(self, *args) -> None:
         """Loading the dataset
-        :return:    Class DataHandler with data loaded
+        :return:    None
         """
-        # --- Getting the function to call
-        warning_text = "\nPlease select key words in variable 'data_set' for calling methods to read transient data"
-        warning_text += "\n=========================================================================================="
+        method_to_call = None
         for method in self._methods_available:
-            warning_text += f"\n\t{method}"
-
-        # --- Call the function
-        used_data_source_idx = -1
-        for idx, method in enumerate(self._methods_available):
             if self._settings.data_set in method:
-                used_data_source_idx = idx
+                method_to_call = method
                 break
 
-        if not self._settings.data_set or used_data_source_idx == -1:
+        if not self._settings.data_set or not method_to_call:
+            # --- Getting the function to call
+            warning_text = "\nPlease select key words in variable 'data_set' for calling methods to read transient data"
+            warning_text += "\n=========================================================================================="
+            for method in self._methods_available:
+                warning_text += f"\n\t{method}"
+
             self.__logger.error(warning_text)
             raise ValueError
         else:
-            getattr(self, self._methods_available[used_data_source_idx])(*args)
-            return self._raw_data
+            getattr(self, method_to_call)(*args)
