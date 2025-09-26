@@ -1,7 +1,7 @@
 import numpy as np
 from dataclasses import dataclass
 from logging import getLogger
-from denspp.offline.analog.common_func import CommonAnalogFunctions
+from denspp.offline.analog.common_func import CommonAnalogFunctions, CommonDigitalFunctions
 
 
 @dataclass
@@ -55,6 +55,14 @@ class Comparator(CommonAnalogFunctions):
     @property
     def vcm(self) -> float:
         return self._settings.vcm
+
+    @staticmethod
+    def extract_rising_edge(trigger: np.ndarray) -> list:
+        return CommonDigitalFunctions().extract_rising_edge(trigger)
+
+    @staticmethod
+    def extract_falling_edge(trigger: np.ndarray) -> list:
+        return CommonDigitalFunctions().extract_falling_edge(trigger)
 
     def __init__(self, settings_dev: SettingsCOMP) -> None:
         """Class for emulating an analogue comparator
