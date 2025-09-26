@@ -104,7 +104,6 @@ def select_process_merge(object_dataloader, object_pipeline, sets_load_data: Set
         settings_data=sets_load_data,
         concatenate_id=do_label_concatenation,
     )
-    merge_handler.merge_data_from_all_iteration()
     merge_handler.get_frames_from_dataset(
         process_points=list_merging_files,
         xpos_offset=frames_xoffset

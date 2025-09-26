@@ -29,7 +29,7 @@ class DataloaderLibrary:
 class PipelineCMD:
     """Class for handling the pipeline processing"""
     path2save: str=get_path_to_project()
-    _path2pipe: str=get_path_to_project()
+    _path2pipe: str=''
     _path2start: str=get_path_to_project()
     _logger: Logger=getLogger(__name__)
 
