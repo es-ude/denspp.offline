@@ -37,7 +37,7 @@ if __name__ == "__main__":
             case 1:
                 act0 = nn_torch.Tanh()
                 out0 = act0(Tensor(stimulus))
-                act1 = nn_creator.Tanh(total_bits, frac_bits, 21, range)
+                act1 = nn_creator.Tanh(total_bits, frac_bits, 21)
                 out1 = act1(Tensor(stimulus))
                 act2 = nn_creator.HardTanh(total_bits, frac_bits)
                 out2 = act2(Tensor(stimulus))
@@ -47,7 +47,7 @@ if __name__ == "__main__":
             case _:
                 act0 = nn_torch.Sigmoid()
                 out0 = act0(Tensor(stimulus))
-                act1 = nn_creator.Sigmoid(total_bits, frac_bits, 21, range)
+                act1 = nn_creator.Sigmoid(total_bits, frac_bits, 21)
                 out1 = act1(Tensor(stimulus))
                 act2 = nn_creator.HardSigmoid(total_bits, frac_bits)
                 out2 = act2(Tensor(stimulus))
