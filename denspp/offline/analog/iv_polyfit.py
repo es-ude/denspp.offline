@@ -73,9 +73,15 @@ class PolyfitIV(ProcessNoise):
         return error
 
     @staticmethod
-    def _plot_transfer_function_comparison(u_transfer: np.ndarray, i_dev0: np.ndarray, i_dev1: np.ndarray,
-                                           method_types: list, plot_title: str = '',
-                                           path2save: str = '', show_plot: bool = False) -> None:
+    def _plot_transfer_function_comparison(
+            u_transfer: np.ndarray,
+            i_dev0: np.ndarray,
+            i_dev1: np.ndarray,
+            method_types: list,
+            plot_title: str = '',
+            path2save: str = '',
+            show_plot: bool = False
+    ) -> None:
         """Plotting the transfer function of electrical device for comparison
         :param u_transfer:      Numpy array with voltage from polynom fit (input)
         :param i_dev0:          Numpy array of current response from first method
@@ -87,31 +93,38 @@ class PolyfitIV(ProcessNoise):
         :return:                None
         """
         scaley, unity = scale_auto_value(i_dev1)
-        plt.figure()
-        plt.tight_layout()
 
+        plt.figure()
         axs = list()
         axs.append(plt.subplot(2, 1, 1))
         axs.append(plt.subplot(2, 1, 2, sharex=axs[0]))
-        axs[0].semilogy(u_transfer, scaley * np.abs(i_dev0), 'r', marker='.', markersize=2,
-                        label=f"{method_types[0]} (Current)")
+        axs[0].semilogy(u_transfer, scaley * np.abs(i_dev0), 'r', marker='.', markersize=4, label=f"{method_types[0]}")
+        axs[0].semilogy(u_transfer, scaley * np.abs(i_dev1), 'k', marker='.', markersize=4, label=f"{method_types[1]}")
         axs[0].grid()
         axs[0].set_ylabel(fr'Current $I_F$ / {unity}A')
 
-        axs[1].plot(u_transfer, scaley * i_dev0, 'r', marker='.', markersize=2, label=f"{method_types[0]} (Current)")
+        axs[1].plot(u_transfer, scaley * i_dev0, 'r', marker='.', markersize=4, label=f"{method_types[0]}")
+        axs[1].plot(u_transfer, scaley * i_dev1, 'k', marker='.', markersize=4, label=f"{method_types[1]}")
         axs[1].grid()
         axs[1].set_ylabel(fr'Current $I_F$ / {unity}A')
         axs[1].set_xlabel(r'Voltage $\Delta U$ / V')
 
-        axs[1].legend()
         axs[0].set_title(plot_title)
+        axs[1].legend()
+        plt.tight_layout()
         if path2save:
-            save_figure(plt, path2save, 'device_iv_charac', ['svg'])
+            save_figure(plt, path2save, 'device_iv_charac')
         if show_plot:
             plt.show(block=True)
 
-    def _get_params_for_polynomfit(self, current: np.ndarray, voltage: np.ndarray, do_test: bool=False,
-                                   do_plot: bool=False, path2save: str='') -> float:
+    def _get_params_for_polynomfit(
+            self,
+            current: np.ndarray,
+            voltage: np.ndarray,
+            do_test: bool=False,
+            do_plot: bool=False,
+            path2save: str=''
+    ) -> float:
         """Function to extract the params of electrical device behaviour with polynom fit function
         :param current:     Numpy array with current signal from measurement
         :param voltage:     Numpy array with voltage signal from measurement
@@ -138,7 +151,14 @@ class PolyfitIV(ProcessNoise):
             error = -1.0
         return error
 
-    def _find_best_poly_order(self, current: np.ndarray, voltage: np.ndarray, order_start: int, order_stop: int, show_plots: bool=False) -> float:
+    def _find_best_poly_order(
+            self,
+            current: np.ndarray,
+            voltage: np.ndarray,
+            order_start: int,
+            order_stop: int,
+            show_plots: bool=False
+    ) -> float:
         """Finding the best polynomial order for fitting
         :param current:         Numpy array with current values
         :param voltage:         Numpy array with voltage values
@@ -158,14 +178,15 @@ class PolyfitIV(ProcessNoise):
                 current=current,
                 voltage=voltage,
                 do_test=True,
-                do_plot=show_plots,
+                do_plot=False,
                 path2save=''
             )
             error_search[idx] = error
             self._logger.info(f"#{idx:02d}: order = {order:02d} --> Error = {error}")
 
         # --- Finding best order
-        xmin = error_search.argmin()
+        diff_ratio = np.diff(error_search) / error_search[:-1]
+        xmin = diff_ratio.argmin() + 1
         self._logger.info(f"\nBest solution: Order = {np.array(order_search)[xmin]} with an error of {error_search[xmin]}!")
 
         # --- Extract params
@@ -174,7 +195,7 @@ class PolyfitIV(ProcessNoise):
             current=current,
             voltage=voltage,
             do_test=True,
-            do_plot=False,
+            do_plot=show_plots,
             path2save=''
         )
 
