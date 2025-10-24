@@ -1,18 +1,17 @@
 [build-system]
-requires = ["hatchling", "hatch-vcs", "setuptools<81"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
-
-
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["denspp"]  
-exclude = ["example", 'snn']
-namespaces = false
 
 
 [tool.hatch.version]
 source = "vcs"
 
+
+[tool.hatch.build.targets.sdist]
+where = ["."]
+include = ["denspp"]  
+exclude = ["example", 'snn']
+namespaces = false
 
 [tool.hatch.build.targets.wheel]
 packages = ["denspp"]
