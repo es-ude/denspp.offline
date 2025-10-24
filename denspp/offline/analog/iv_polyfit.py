@@ -1,8 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from math import isnan
 from logging import getLogger, Logger
-from denspp.offline.plot_helper import save_figure
+from denspp.offline.plot_helper import save_figure, scale_auto_value
 from denspp.offline.analog.dev_noise import SettingsNoise, DefaultSettingsNoise, ProcessNoise
 from denspp.offline.metric.data_numpy import calculate_error_rae
 
@@ -87,7 +86,7 @@ class PolyfitIV(ProcessNoise):
         :param show_plot:       Showing and blocking the plots [Default: False]
         :return:                None
         """
-        scaley, unity = 1.0, '' # scale_auto_value(i_dev1)
+        scaley, unity = scale_auto_value(i_dev1)
         plt.figure()
         plt.tight_layout()
 
@@ -97,7 +96,7 @@ class PolyfitIV(ProcessNoise):
         axs[0].semilogy(u_transfer, scaley * np.abs(i_dev0), 'r', marker='.', markersize=2,
                         label=f"{method_types[0]} (Current)")
         axs[0].grid()
-        axs[0].set_ylabel(r'Current $\log_{10}(I_F)$ / µA')
+        axs[0].set_ylabel(fr'Current $I_F$ / {unity}A')
 
         axs[1].plot(u_transfer, scaley * i_dev0, 'r', marker='.', markersize=2, label=f"{method_types[0]} (Current)")
         axs[1].grid()

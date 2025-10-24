@@ -97,7 +97,10 @@ testing = [
     "pytest-cov>=6.0.0",
     "coverage>=7.6.9"
 ]
-lint = ["mypy>=1.13.0", "ruff>=0.9.0"]
+lint = [
+    "mypy>=1.13.0",
+    "ruff>=0.9.0"
+]
 lsp = [
     "esbonio>=0.16.5",
     "pylsp-mypy>=0.6.9",
