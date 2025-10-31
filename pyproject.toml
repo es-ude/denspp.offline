@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
+requires = ["hatchling", "hatch-vcs",  "wheel"]
 build-backend = "hatchling.build"
 
 
@@ -10,12 +10,12 @@ source = "vcs"
 [tool.hatch.build.targets.sdist]
 where = ["."]
 include = ["denspp"]  
-exclude = ["example", 'snn']
+exclude = ['example', 'docs', '*_test.py']
 namespaces = false
 
 [tool.hatch.build.targets.wheel]
 packages = ["denspp"]
-exclude = ['.github', 'docs', '*_test.py', '**/snn']
+exclude = ['example', 'docs', '*_test.py']
 only-packages = true
 
 
