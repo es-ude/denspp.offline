@@ -145,9 +145,11 @@ class ControllerData:
             self._raw_data.time_end = float(self._raw_data.data_raw.shape[-1] / self._raw_data.fs_used)
             self.__fill_factor = self._raw_data.data_raw.shape[-1] / rawdata_in.shape[-1]
 
-    def do_resample(self, u_safe: float = 5e-6) -> None:
+    def do_resample(self, u_safe: float = 5e-6, num_points_mean: int=10) -> None:
         """Do resampling of all transient signals incl. label information
-        :param u_safe:  Voltage range as safety window  for resampling
+        :param u_safe:          Voltage range as safety window  for resampling
+        :param num_points_mean: Integer number of points to average over
+        :return:                None
         """
         desired_fs = self._settings.fs_resample
         do_resampling = bool(desired_fs != self._raw_data.fs_orig) and desired_fs != 0.0
@@ -160,8 +162,8 @@ class ControllerData:
             # --- Resampling the input
             data_out = list()
             for data_in in self._raw_data.data_raw:
-                u_chck = np.mean(data_in[0:10])
-                du = u_chck if np.abs((u_chck < u_safe) - 1) == 1 else 0.0
+                u_chck = np.mean(data_in[0:num_points_mean+1])
+                du = u_chck if np.abs(u_chck) > u_safe else 0.0
                 data_out.append(du + resample_poly(data_in - du, p, q))
 
             # --- Resampling the labeled information
