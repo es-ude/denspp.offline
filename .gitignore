@@ -7,7 +7,7 @@ Config_*.yaml
 **/data
 **/dataset
 **/runs
-**/temp_test
+**/temp_*
 .python-version
 
 

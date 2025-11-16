@@ -3,7 +3,7 @@ from denspp.offline.data_format.yaml import YamlHandler
 from denspp.offline.dnn.dnn_handler import SettingsMLPipeline
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset, DefaultSettingsDataset
 from denspp.offline.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE
-from denspp.offline.dnn.pytorch_pipeline import train_autoencoder_template, train_classifier_template
+from denspp.offline.dnn import train_classifier_routine, train_autoencoder_routine
 from denspp.offline.dnn.plots.plot_dnn import results_training
 from denspp.offline.dnn.dataset.autoencoder import prepare_training as get_dataset_ae
 from denspp.offline.dnn.dataset.autoencoder_class import prepare_training as get_dataset_cl
@@ -68,7 +68,7 @@ def do_train_ae_classifier(class_dataset, settings: SettingsMLPipeline,
 
     print("\n# ----------- Step #1: TRAINING AUTOENCODER")
     # --- Processing Step #1.2: Train Autoencoder and Plot Results
-    metrics_ae, valid_data_ae, path2folder = train_autoencoder_template(
+    metrics_ae, valid_data_ae, path2folder = train_autoencoder_routine(
         config_ml=settings, config_data=config_data, config_train=config_train_ae,
         used_dataset=dataset_ae, used_model=used_model_ae, path2save=''
     )
@@ -92,7 +92,7 @@ def do_train_ae_classifier(class_dataset, settings: SettingsMLPipeline,
     used_model_cl = config_train_cl.get_model(input_size=num_feat, output_size=dataset_cl.get_cluster_num)
 
     # --- Processing Step #1.2: Train Classifier
-    metrics_cl, valid_data_cl, _ = train_classifier_template(
+    metrics_cl, valid_data_cl, _ = train_classifier_routine(
         config_ml=settings, config_data=config_data, config_train=config_train_cl,
         used_dataset=dataset_cl, used_model=used_model_cl, path2save=path2folder
     )

@@ -13,6 +13,7 @@ class SettingsAMP:
         vss:        Negative supply voltage [V]
         fs_ana:     Sampling frequency of input [Hz]
         gain:       Amplification [V/V]
+        f_type:     Filter type {'lowpass', 'highpass', 'bandpass', 'bandstop'}
         n_filt:     Order of filter stage []
         f_filt:     Frequency range of filtering [Hz]
         offset:     Offset voltage of the amplifier [V]
@@ -43,7 +44,8 @@ class SettingsAMP:
 DefaultSettingsAMP = SettingsAMP(
     vdd=0.6, vss=-0.6,
     fs_ana=50e3, gain=40.,
-    n_filt=1, f_filt=[0.1, 8e3], f_type="bandpass",
+    n_filt=1, f_filt=[0.1, 8e3],
+    f_type="bandpass",
     offset=0e-6,
     f_chop=10e3,
     noise_en=False,

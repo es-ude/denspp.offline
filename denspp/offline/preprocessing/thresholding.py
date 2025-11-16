@@ -60,8 +60,10 @@ class Thresholding:
         :return: List with names of available methods
         """
         avai_methods = [key.lower() for key in self._methods.keys()]
-        self._logger.info(f"Available Thresholding methods: {avai_methods}")
         return avai_methods
+
+    def print_overview(self) -> None:
+        self._logger.info(f"Available Thresholding methods: {self.get_overview()}")
 
     def get_threshold(self, xin: np.ndarray, do_abs: bool=False, **kwargs) -> np.ndarray:
         """Function for getting the thresholding value from input
@@ -91,7 +93,6 @@ class Thresholding:
             pos = np.argwhere(xin0 < xthr).flatten()
         else:
             pos = np.argwhere(xin0 >= xthr).flatten()
-        print(pre_time)
         pos_pre = int(self._settings.sampling_rate * pre_time)
         return np.array(self._get_values_non_incremented_change(pos)) - pos_pre
 

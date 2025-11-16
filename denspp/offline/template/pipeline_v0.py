@@ -16,7 +16,6 @@ from denspp.offline.ml import (
 from denspp.offline.postprocessing import (
     calc_spike_ticks
 )
-from .pipeline_plot import plot_frames_feature, plot_transient_highlight_spikes, plot_transient_input_spikes
 
 
 class SettingsPipe:
@@ -59,12 +58,6 @@ class SettingsPipe:
             fs_dig=fs_dig, osr=1, Nadc=bit_adc
         )
         # --- Digital filtering for ADC output and CIC
-        self.SettingsDSP_LFP = SettingsFilter(
-            gain=1,
-            fs=fs_dig,
-            n_order=2, f_filt=[0.1, 100],
-            type='iir', f_type='butter', b_type='bandpass'
-        )
         self.SettingsDSP_SPK = SettingsFilter(
             gain=1,
             fs=fs_dig,
@@ -73,14 +66,14 @@ class SettingsPipe:
         )
         # --- Options for Spike Detection and Frame Aligning
         self.SettingsSDA = SettingsSDA(
-            sampling_rate=fs_dig, dx_sda=[1],
+            sampling_rate=fs_dig, dx_sda=[2],
             mode_align='min',
-            mode_thr='const',
+            mode_thr='rms_black',
             mode_sda='neo',
             t_frame_length=1.6e-3,
             t_frame_start=0.4e-3,
             dt_offset=0.1e-3,
-            thr_gain=1.0
+            thr_gain=1.25
         )
         # --- Options for MachineLearning Part
         self.SettingsFE = SettingsFeature()
@@ -91,72 +84,78 @@ class SettingsPipe:
 
 
 class PipelineV0(PipelineCMD):
-    def __init__(self, fs_ana: float, addon: str='_app') -> None:
+    def __init__(self, fs_ana: float, build_folder: bool=True) -> None:
         """Processing Pipeline for analysing transient data
-        :param fs_ana:  Sampling rate of the input signal [Hz]
-        :param addon:   String text with folder addon for generating result folder in runs
+        :param fs_ana:          Sampling rate of the input signal [Hz]
+        :param build_folder:    Boolean for building the report folder and build report
         """
         super().__init__()
+        self.fs_ana = fs_ana
+        self.fs_dig = fs_ana
+
         self._path2pipe = abspath(__file__)
-        self.generate_run_folder('runs', addon)
+        if build_folder:
+            self.generate_run_folder()
 
         settings = SettingsPipe(
             bit_adc=12,
             adc_dvref=0.1,
-            fs_ana=fs_ana,
-            fs_dig=fs_ana,
+            fs_ana=self.fs_ana,
+            fs_dig=self.fs_dig,
             vss=-0.6,
             vdd=0.6,
         )
-        self.__preamp0 = PreAmp(settings.SettingsAMP)
+        self.__amp = PreAmp(settings.SettingsAMP)
         self.__adc = ADC0(settings.SettingsADC)
-        self.__dsp0 = Filtering(settings.SettingsDSP_LFP)
-        self.__dsp1 = Filtering(settings.SettingsDSP_SPK)
+        self.__dsp = Filtering(settings.SettingsDSP_SPK)
         self.__sda = SpikeDetection(settings.SettingsSDA)
         self.__fe = FeatureExtraction(settings.SettingsFE)
         self.__cl = Clustering(settings.SettingsCL)
+
+    def update_sampling_rate(self, fs_analog: float, fs_digital: float) -> None:
+        self.fs_ana = fs_analog
+        self.fs_dig = fs_digital
 
     def do_plotting(self, data: dict, channel: int) -> None:
         """Function to plot results after processing
         :param data:        Dictionary with data content
         :param channel:     Integer of channel number
         """
+        from .pipeline_plot import plot_frames_feature, plot_transient_highlight_spikes, plot_transient_input_spikes
         plot_transient_input_spikes(data, channel, path=self.path2save)
         plot_frames_feature(data, channel, path=self.path2save, take_feat_dim=[0, 1])
         plot_transient_highlight_spikes(data, channel, path=self.path2save, show_plot=True)
 
-    def run_preprocessor(self, u_in: np.ndarray, spike_xpos: list=(), spike_xoffset: int=0) -> dict:
+    def run_preprocessor(self, u_in: np.ndarray, frames_xpos: list=(), frames_xoff: float=0.) -> dict:
         """Function with methods for emulating pre-processor of the use-case-specific signal processor
-        :param u_in:            Input signal
-        :param spike_xpos:      List of all spike positions from groundtruth
-        :param spike_xoffset:   Time delay between spike_xpos and real spike
-        :return:                Dictionary with pre-processing results
+        :param u_in:        Input signal
+        :param frames_xpos: List of all spike positions from ground-truth
+        :param frames_xoff: Time delay between spike_xpos and real spike
+        :return:            Dictionary with pre-processing results
         """
         # ---- Analogue Front End Module ----
-        u_pre = self.__preamp0.pre_amp_chopper(u_in, np.array(self.__preamp0.vcm))['out']
-        x_adc, _, u_quant = self.__adc.adc_ideal(u_pre)
+        u_pre = self.__amp.pre_amp_chopper(u_in, np.array(self.__amp.vcm))['out']
+        x_adc = self.__adc.adc_ideal(u_pre)[0]
         # ---- Digital Pre-processing ----
-        x_lfp = self.__dsp0.filter(x_adc)
-        x_spk = self.__dsp1.filter(x_adc)
+        x_spk = self.__dsp.filter(x_adc)
         # ---- Spike detection incl. thresholding ----
-        if len(spike_xpos):
-            frames_align = self.__sda.get_spike_waveforms_from_positions(
+        if len(frames_xpos):
+            frames = self.__sda.get_spike_waveforms_from_positions(
                 xraw=x_spk,
-                xpos=np.array(spike_xpos),
-                xoffset=spike_xoffset
+                xpos=np.array(frames_xpos),
+                xoffset=int(frames_xoff* self.fs_dig)
             )
         else:
-            frames_align = self.__sda.get_spike_waveforms(
+            frames = self.__sda.get_spike_waveforms(
                 xraw=x_spk,
-                do_abs=True,
-                thr_val=1.
+                do_abs=False
             )
         return {
-            "fs_adc": self.__adc._settings.fs_adc,
-            "fs_dig": self.__adc._settings.fs_dig,
+            "fs_ana": self.fs_ana,
+            "fs_dig": self.fs_dig,
             "u_in": u_in,
             "x_spk": np.array(x_spk, dtype=np.int16),
-            "frames": frames_align
+            "frames": frames
         }
 
     def run_classifier(self, data: dict) -> dict:
@@ -174,7 +173,8 @@ class PipelineV0(PipelineCMD):
         data["features"] = features
         return data
 
-    def run_postprocessing(self, data: dict) -> dict:
+    @staticmethod
+    def run_postprocessor(data: dict) -> dict:
         """Function with methods for post-processing the classified spike frames
         :param data:    Dictionary with pre-processed data / results
         :return:        Dictionary with pre-processing, classification and post-processed results
@@ -188,11 +188,11 @@ class PipelineV0(PipelineCMD):
         data["spike_ticks"] = spike_ticks
         return data
 
-    def run(self, uin: np.ndarray) -> dict:
-        """Function with methods for emulating the end-to-end signal processing for choicen use-case
-        :param uin:     Input signal
+    def run(self, u_in: np.ndarray) -> dict:
+        """Function with methods for emulating the end-to-end signal processing for selected use-case
+        :param u_in:    Input signal
         :return:        Dictionary with results
         """
-        data = self.run_preprocessor(u_in=uin)
+        data = self.run_preprocessor(u_in)
         data = self.run_classifier(data)
-        return self.run_postprocessing(data)
+        return self.run_postprocessor(data)

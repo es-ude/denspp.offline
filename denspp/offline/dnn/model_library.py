@@ -33,6 +33,7 @@ class ModuleRegistryManager:
         :param name:    String with name of the object to call
         :return:        Object instance (is already initialized)
         """
+        assert name in self.__models_avai, f"Object {name} not registered"
         return self.__models_avai[name](*args, **kwargs)
 
     def get_library_overview(self, index: str= '', do_print: bool=False) -> list:

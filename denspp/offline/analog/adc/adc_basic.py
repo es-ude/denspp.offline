@@ -95,58 +95,6 @@ class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
         uerr = uin0 - uout
         return xout, uout, uerr
 
-    def _do_downsample(self, uin: np.ndarray) -> np.ndarray:
-        """Performing a simple downsampling of the adc data stream"""
-        (p_ratio, q_ratio) = (
-            Fraction(self._settings.fs_dig / self._settings.fs_adc)
-            .limit_denominator(100)
-            .as_integer_ratio()
-        )
-        uout = uin[0] + resample_poly(uin - uin[0], p_ratio, q_ratio)
-        return uout
-
-    def do_cic(self, uin: np.ndarray, num_stages: int=5) -> np.ndarray:
-        """Performing the CIC filter at the output of oversampled ADC"""
-        output_transient = list()
-        gain = (self._settings.osr * 1) ** num_stages
-
-        class integrator:
-            def __init__(self):
-                self.yn = 0
-                self.ynm = 0
-
-            def update(self, inp):
-                self.ynm = self.yn
-                self.yn = (self.ynm + inp)
-                return (self.yn)
-
-        class comb:
-            def __init__(self):
-                self.xn = 0
-                self.xnm = 0
-
-            def update(self, inp):
-                self.xnm = self.xn
-                self.xn = inp
-                return (self.xn - self.xnm)
-
-        ## Generate Integrator and Comb lists (Python list of objects)
-        intes = [integrator() for a in range(num_stages)]
-        combs = [comb() for a in range(num_stages)]
-
-        ## Performing Decimation CIC Filter
-        for (s, v) in enumerate(uin):
-            z = v
-            for i in range(num_stages):
-                z = intes[i].update(z)
-
-            if (s % self._settings.osr) == 0:  # decimate is done here
-                for c in range(num_stages):
-                    z = combs[c].update(z)
-                    j = z
-                output_transient.append(j / gain)  # normalise the gain
-        return np.array(output_transient)
-
     @staticmethod
     def _generate_sar_empty_data(shape) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         uout = np.zeros(shape=shape, dtype=np.float32)
@@ -159,31 +107,3 @@ class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
         xout_hs = np.zeros(shape=shape, dtype=np.int32)
         xbit = np.zeros(shape=shape, dtype=np.int32)
         return xout_hs, xbit
-
-    @staticmethod
-    def do_decimation_polyphase_order_one(uin: np.ndarray) -> np.ndarray:
-        """Performing first order Non-Recursive Polyphase Decimation on input"""
-        last_sample_hs = 0
-        uout = []
-        for idx, val in enumerate(uin):
-            if idx % 2 == 1:
-                uout.append(val + last_sample_hs)
-            last_sample_hs = val
-
-        uout = np.array(uout)
-        return uout
-
-    @staticmethod
-    def do_decimation_polyphase_order_two(uin: np.ndarray) -> np.ndarray:
-        """Performing second order Non-Recursive Polyphase Decimation on input"""
-        last_sample_hs = 0
-        last_sample_ls = 0
-        uout = []
-        for idx, val in enumerate(uin):
-            if idx % 2 == 1:
-                uout.append(val + last_sample_ls + 2 * last_sample_hs)
-                last_sample_ls = val
-            last_sample_hs = val
-
-        uout = np.array(uout)
-        return uout

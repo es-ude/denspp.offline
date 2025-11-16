@@ -4,7 +4,7 @@ from denspp.offline.data_format.yaml import YamlHandler
 from denspp.offline.dnn.dnn_handler import SettingsMLPipeline
 from denspp.offline.dnn.pytorch_config_data import SettingsDataset, DefaultSettingsDataset
 from denspp.offline.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainMSE, DefaultSettingsTrainCE
-from denspp.offline.dnn.pytorch_pipeline import train_classifier_template, train_autoencoder_template
+from denspp.offline.dnn import train_classifier_routine, train_autoencoder_routine
 from denspp.offline.dnn.dataset.torch_datasets import prepare_training
 from denspp.offline.dnn.plots.plot_dnn import plot_mnist_graphs
 
@@ -41,7 +41,7 @@ def do_train_torchvision_cl(class_dataset, settings: SettingsMLPipeline, dataset
         do_classification=True
     )
     used_model = config_train.get_model()
-    train_classifier_template(
+    train_classifier_routine(
         config_ml=settings, config_data=config_data, config_train=config_train,
         used_dataset=dataset, used_model=used_model
     )
@@ -83,7 +83,7 @@ def do_train_torchvision_ae(class_dataset, settings: SettingsMLPipeline, dataset
         do_classification=False
     )
     used_model = config_train.get_model()
-    metrics, data_result, path2save = train_autoencoder_template(
+    metrics, data_result, path2save = train_autoencoder_routine(
         config_ml=settings, config_data=config_data, config_train=config_train,
         used_dataset=dataset, used_model=used_model
     )
