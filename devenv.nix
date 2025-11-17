@@ -67,8 +67,5 @@ in {
              coverage report -m
         '';
     };
-
-    "check:coverage" = {
-    };
   };
 }
