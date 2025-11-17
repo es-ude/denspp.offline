@@ -8,20 +8,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check-code-lint:
-    name: Lint Source Code
-    runs-on: ubuntu-latest
-    if: false
-    steps:
-      - name: checkout repo shallowly
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 1
-      - name: prepare devenv
-        uses: ./.github/actions/prepare-devenv
-      - name: run python linting
-        run: devenv shell devenv tasks run check:code-lint
-
   check-package-build:
     name: Check that package builds
     runs-on: ubuntu-latest
