@@ -13,14 +13,13 @@ jobs:
     runs-on: ubuntu-latest
     if: true
     steps:
-      - name: checkout repo shallowly
+      - name: Checkout repo shallowly
         uses: actions/checkout@v3
         with:
           fetch-depth: 1
-      - name: prepare devenv
+      - name: Preparing devenv
         uses: ./.github/actions/prepare-devenv
-
-      - name: run build check
+      - name: Build package
         run: devenv shell devenv tasks run package:build
 
   check-docs-build:
@@ -65,13 +64,15 @@ jobs:
     runs-on: ubuntu-latest
     if: true
     steps:
-      - name: checkout repo shallowly
+      - name: Checkout repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 1
-      - name: prepare devenv
+      - name: Preparing devenv
         uses: ./.github/actions/prepare-devenv
-      - name: run tests
+      - name: Installing coverage
+        run: pip install coverage
+      - name: Run all unittests
         run: devenv shell devenv tasks run check:tests
       - name: Publish coverage report
         uses: orgoro/coverage@v3.1
