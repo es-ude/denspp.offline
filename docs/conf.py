@@ -12,7 +12,7 @@ from pathlib import Path
 from tomllib import load as _load_toml
 
 project = "denspp.offline"
-copyright = "2025, ies-ude (Intelligent Embedded System - University Duisburg-Essen)"
+copyright = "2025, ies-ude (Intelligent Embedded System - University of Duisburg-Essen)"
 author = "es-ude"
 release = _version("denspp.offline")
 version = ".".join(_version("denspp.offline").split(".")[0:2])
@@ -25,7 +25,6 @@ extensions = [
     "myst_parser",
     "sphinx_copybutton",
     "sphinx_togglebutton",
-    "sphinx_book_theme",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx.ext.todo",
@@ -33,9 +32,7 @@ extensions = [
     "sphinx_design",
     "autodoc2",
     "sphinxext.opengraph",
-    "sphinxcontrib.plantuml",
-    "sphinxcontrib.mermaid",
-    "sphinxcontrib.wavedrom"
+    "sphinxcontrib.mermaid"
 ]
 
 templates_path = ["_templates"]
@@ -79,7 +76,6 @@ myst_enable_extensions = [
     "fieldlist",
     "html_admonition",
     "html_image",
-    "linkify",
     "replacements",
     "smartquotes",
     "strikethrough",
