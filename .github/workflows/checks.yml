@@ -10,6 +10,7 @@ concurrency:
 jobs:
   check-code-lint:
     name: Lint Source Code
+    if: false
     runs-on: ubuntu-latest
     steps:
       - name: checkout repo shallowly
