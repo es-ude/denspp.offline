@@ -8,8 +8,8 @@
 import os
 from importlib.metadata import version as _version
 from pathlib import Path
-
 from tomllib import load as _load_toml
+
 
 project = "denspp.offline"
 copyright = "2025, ies-ude (Intelligent Embedded System - University of Duisburg-Essen)"
@@ -84,7 +84,7 @@ myst_enable_extensions = [
 ]
 
 # allow mermaid usage like on github in markdown
-myst_fence_as_directive = ["mermaid", "wavedrom"]
+myst_fence_as_directive = ["mermaid"]
 
 running_in_autobuild = os.getenv("SPHINX_AUTOBUILD", "NO") == "YES"
 
