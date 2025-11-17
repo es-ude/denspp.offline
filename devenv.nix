@@ -62,6 +62,13 @@ in {
     };
 
     "check:tests" = {
+        exec = ''
+             coverage run -m unittest discover -s denspp -p "*_test.py"
+             coverage report -m
+        '';
+    };
+
+    "check:coverage" = {
     };
   };
 }
