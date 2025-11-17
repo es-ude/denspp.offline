@@ -10,8 +10,8 @@ concurrency:
 jobs:
   check-code-lint:
     name: Lint Source Code
-    if: false
     runs-on: ubuntu-latest
+    if: false
     steps:
       - name: checkout repo shallowly
         uses: actions/checkout@v3
