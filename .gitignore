@@ -2,6 +2,7 @@
 docs/apidocs
 denspp/__init__.py
 Config_*.yaml
+**/.devenv
 **/src
 **/config
 **/data
