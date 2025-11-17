@@ -36,29 +36,6 @@ in {
   tasks = let
     uv_run = "${unstablePkgs.uv}/bin/uv run";
   in {
-    "check:fast-tests" = {
-      exec = ''
-        ${uv_run} coverage run
-        ${uv_run} coverage xml
-      '';
-      before = ["check:tests"];
-    };
-
-    "check:types" = {
-      exec = "${uv_run} mypy -p denspp.offline";
-      before = ["check:code-lint"];
-    };
-
-    "check:python-lint" = {
-      exec = "${uv_run} ruff check";
-      before = ["check:code-lint"];
-    };
-
-    "check:formatting" = {
-      exec = "${uv_run} ruff format --check";
-      before = ["check:code-lint"];
-    };
-
     "package:build" = {
       exec = "${unstablePkgs.uv}/bin/uv build";
     };
@@ -91,20 +68,3 @@ in {
     };
   };
 }
-## Commented out while we're configuring pre-commit manually
-# pre-commit.hooks = {
-#   shellcheck.enable = true;
-#   ripsecrets.enable = true; # don't commit secrets
-#   ruff.enable = true; # lint and automatically fix simple problems/reformat
-#   taplo.enable = true; # reformat toml
-#   nixfmt-rfc-style.enable = true; # reformat nix
-#   ruff-format.enable = true;
-#   mypy = {
-#     enable = false;
-#   }; # check type annotations
-#   end-of-file-fixer.enable = true;
-#   commitizen.enable = true; # help adhering to commit style guidelines
-#   check-toml.enable = true; # check toml syntax
-#   check-case-conflicts.enable = true;
-#   check-added-large-files.enable = true;
-# };
