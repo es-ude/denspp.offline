@@ -17,10 +17,7 @@ def calculate_euclidean_distance(point1: np.ndarray, point2: np.ndarray) -> floa
     Returns:
         float: Euclidean distance between point1 and point2
     """
-    temp_sum = 0
-    for f1, f2 in zip(point1, point2, strict=True):
-        temp_sum += (f1 - f2) ** 2
-    return sqrt(temp_sum)
+    return np.linalg.norm(point1 - point2)
 
 
 def calculate_dunn_index(data: np.ndarray, labels: np.ndarray) -> float:
@@ -35,6 +32,9 @@ def calculate_dunn_index(data: np.ndarray, labels: np.ndarray) -> float:
         float: Floating with metric value
     """
     unique_labels = np.unique(labels)
+    if len(unique_labels) == 1:
+        return 0
+
     clusters = [data[labels == label] for label in unique_labels]
 
     intra_dists = [np.max(cdist(cluster, cluster)) for cluster in clusters if len(cluster) > 1]

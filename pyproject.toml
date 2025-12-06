@@ -45,7 +45,8 @@ dependencies = [
     "pyxdf>=1.16.8",
     "elasticai-creator",
     "nc-py-api>=0.19.2",
-    "fxpmath>=0.4.9"
+    "fxpmath>=0.4.9",
+    "scipy-stubs==1.16.3.0",
 ]
 
 
