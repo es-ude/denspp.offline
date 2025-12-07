@@ -1,0 +1,27 @@
+General_Configuration:
+  Logging_Lvl: "DEBUG" # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+
+# You can give a path to a data file here for preprocessing or use the syntheticSineWave option
+Data_Input:
+  #input: "/Users/nickskill/Documents/Masterarbeit_Git/biosignal_player_v2/2_gui/data/01_SimDaten_Martinez2009/simulation_1.mat"
+  input: "syntheticSineWave"
+  
+Hardware:
+  # You can choose from different types of hardware, which will provide different data outputs for each type of hardware.
+  OscilloscopeMOX4:
+    used: True # True/False whether this hardware should be used
+    output_open: False # True/False; if True, the output is mapped to +/-10V; if False, the output is mapped to +/-5V (Into 50 Ohm)
+
+  Oscilloscope3000:
+    used: False # True/False whether this hardware should be used
+    
+Data_Configuration:
+  Time:
+    # If all data should be used, let these values be None
+    start_time: 1
+    end_time: 2
+  Data_Preprocessing:
+    channel_selection: [] # List of selected channels; if empty, all channels are used otherwise specify the channel indices, e.g., [0,1,2,3]
+    do_cut: True # True/False whether to cut the data to a specific time range
+    do_resampling: True # True/False whether to resample the data to a different sampling rate
+    sampling_rate_resample: 20000 # in Hz
