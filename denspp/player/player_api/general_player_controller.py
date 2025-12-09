@@ -7,7 +7,6 @@ import output_devices
 from data_call_common import DataController
 import debug_help_functions as dhf
 from denspp.offline.data_call.call_handler import ControllerData, DataHandler, SettingsData
-from denspp.offline.data_call.waveform_generator import WaveformGenerator
 from call_handler_player import PlayerControllerData
 
 default_config_path_to_yaml = "/Users/nickskill/Documents/Masterarbeit_Git/denspp.offline/denspp/player/hardware_config.yaml"
@@ -41,6 +40,14 @@ class GeneralPlayerController:
         self._config_hardware_controller()
         self._deployed_settingsData = self._config_call_handler_SettingsData()
         self._deployed_playerControllerData = self._config_call_handler_ControllerData()
+        
+        self.cut_data()
+        self.resample_data()
+
+        self._deployed_board_dataset = self._config_board_dataset()
+        self._load_board_dataset_into_hardware_settings()
+        self.transfer_data_to_vertical_resolution()
+        self.output_data_for_hardware()
     
 
     def _init_logging(self) -> None:
@@ -106,6 +113,8 @@ class GeneralPlayerController:
         self.data_config_values = self.general_config["Data_Configuration"]
         self.data_config_do_cut = self.general_config["Data_Configuration"]["Data_Preprocessing"]["do_cut"]
         self.data_config_do_resample = self.general_config["Data_Configuration"]["Data_Preprocessing"]["do_resampling"]
+        self.translation_value_voltage = self.general_config["Data_Configuration"]["Voltage_Scaling"]["translation_value_voltage"]
+        self._hardware_data_channel_mapping = self.general_config["Data_Configuration"]["Hardware_Data_Mapping"]["channel_mapping"]
 
 
     def _config_hardware_controller(self) -> None:
@@ -138,7 +147,7 @@ class GeneralPlayerController:
         if hasattr(specific_device_settings, 'output_open'): # Set output_open if it exists in the device settings, needed for Oscilloscope
             specific_device_settings.output_open = used_device[1]["output_open"]
 
-        self.hardware_controller = Hardware_settings(specific_device_settings, self.logger) # Create hardware controller with specific device settings
+        self.hardware_controller = Hardware_settings(specific_device_settings, self.logger, self._hardware_data_channel_mapping) # Create hardware controller with specific device settings
         self.logger.info(f"Hardware controller configured for device: {used_device[0]}")
 
 
@@ -179,8 +188,8 @@ class GeneralPlayerController:
         if self.data_config_do_cut:
             self._deployed_playerControllerData.do_cut()
             
-            self.logger.debug(f"Plotted data with sampling rate {self._deployed_playerControllerData._raw_data.fs_used}, and time range {self._deployed_playerControllerData._settings.t_range_sec}")
-            self.logger.info(f"Data cutting completed, selected time range: {self._deployed_playerControllerData._settings.t_range_sec}")
+            data = self._deployed_playerControllerData.get_data()
+            self.logger.info(f"Plotted data with sampling rate {data.fs_used} with {len(data.data_raw)}")
         else:
             self.logger.info("Data cutting is disabled in the configuration.")
 
@@ -201,47 +210,48 @@ class GeneralPlayerController:
             if self.logging_lvl.upper() == "DEBUG":
                 self.logger.debug(f"Plotted data with sampling rate {self._deployed_playerControllerData._raw_data.fs_used}")
                 dhf.plot_data(self._deployed_playerControllerData._raw_data.data_raw[0], self._deployed_playerControllerData._raw_data.fs_used, self._deployed_playerControllerData._raw_data.time_end, "resampling")
-                
-            self.logger.info(f"Data resampling completed, new sampling rate: {self.deployed_data_controller.fs_resample} Hz")
+            else:
+                self.logger.info(f"Data resampling completed, new sampling rate: {self._deployed_playerControllerData._raw_data.fs_used} Hz")
         else:
             self.logger.info("Data resampling is disabled in the configuration.")
 
-    #TODO: Nach Resample weiter implementieren
+    def _config_board_dataset(self) -> Board_dataset:
+        """Data that gone be output to the hardware device
+
+        Returns:
+            Board_dataset: Configured Board_dataset object
+        """        
+        data = self._deployed_playerControllerData.get_data()
+        deployed_board_dataset = Board_dataset(_data= data.data_raw,
+                                                    _samplingrate= data.fs_used,
+                                                    _groundtruth= [] if data.label_exist else None,
+                                                    _translation_value_voltage= self.translation_value_voltage)
+        return deployed_board_dataset
     
-
-    def _config_board_dataset(self) -> None:
-        """Output data to the configured hardware device."""
-        self.deployed_board_dataset = Board_dataset()
-        self.deployed_board_dataset.samplingrate = self.deployed_data_controller.data_fs_current
-        if self.deployed_data_controller.label_exist:
-            self.deployed_board_dataset.groundtruth = self.deployed_data_controller.spike_xpos
-
-
+    def _load_board_dataset_into_hardware_settings(self) -> None:
+        """Load the board dataset into the hardware settings controller."""
+        self.hardware_controller._data = self._deployed_board_dataset
+    
     def transfer_data_to_vertical_resolution(self) -> None:
-        self._config_board_dataset()
         """Transfer data to match the vertical resolution of the hardware."""
 
         if hasattr(self.hardware_controller, "_output_open"):
-           transfer_data = self.hardware_controller.translate_data_for_oscilloscope(self.deployed_data_controller.data_raw)
+           transfer_data = self.hardware_controller.translate_data_for_oscilloscope()
         else:
             transfer_data = self.hardware_controller.translate_data_float2int(self.deployed_data_controller.data_raw)
 
-        self.deployed_board_dataset.data = transfer_data
-
         if self.logging_lvl.upper() == "DEBUG":
-            self.logger.debug(f"Plotted data with sampling rate {self.deployed_board_dataset.samplingrate}, and time range {self.deployed_data_controller.t_range}")
-            dhf.plot_data(self.deployed_board_dataset.data, self.deployed_board_dataset.samplingrate, self.deployed_data_controller.t_range, "transferring")
+            data = self.hardware_controller.get_data
+            dhf.plot_data(data._data[0],data._samplingrate, 1, "transferring")
 
 
     def output_data_for_hardware(self) -> None:
         """Output data to the configured hardware device."""
         if hasattr(self.hardware_controller, "_output_open"):
             self.logger.info("Outputting data for the Oscilloscope")
-            self.deployed_board_dataset.create_csv_for_MXO4()
+            self.hardware_controller.create_csv_for_MXO4()
         
         self.logger.info("Data output to hardware completed.")
 
 if __name__ == "__main__":
     deployed_general_controller = GeneralPlayerController()
-    deployed_general_controller.cut_data()
-    deployed_general_controller.resample_data()

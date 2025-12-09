@@ -31,7 +31,3 @@ class PlayerControllerData(ControllerData):
                                          scale_data= 1.0,
                                          evnt_pos= [],
                                          evnt_id= [])
-
-if __name__ == "__main__":
-    player_data = PlayerControllerData()
-    print(player_data._methods_available)

@@ -25,3 +25,8 @@ Data_Configuration:
     do_cut: True # True/False whether to cut the data to a specific time range
     do_resampling: True # True/False whether to resample the data to a different sampling rate
     sampling_rate_resample: 20000 # in Hz
+  Voltage_Scaling:
+    translation_value_voltage: 0.8 # Translation value from the the Data points to Voltage output
+  Hardware_Data_Mapping:  # Mapping of data channels to hardware output channels
+    channel_mapping: [0]  # channel that are at the end of the list and not used can be ignored, e.g. 3 Hardware channels, 2 Data channels -> [0,1]
+                          # The position in the list indicates the hardware channel, the value indicates the data channel, e.g., [2,0,1] -> Hardware channel 0 gets Data channel 2, Hardware channel 1 gets Data channel 0, Hardware channel 2 gets Data channel 1
