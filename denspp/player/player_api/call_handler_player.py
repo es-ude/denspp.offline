@@ -12,7 +12,7 @@ class PlayerControllerData(ControllerData):
     def syntheticSineWave(self):
         """Loading synthethic sinus wave data for testing purposes"""
         sine_amplitude = 1
-        sine_frequency = 50
+        sine_frequency = 15
         sine_phaseshift = 0 # Offset from zero
         sine_fs_sim = 1000  # Sampling frequency in Hz
         sine_t_sim = 2  # Total time in seconds
