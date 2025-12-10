@@ -16,32 +16,33 @@ class GeneralPlayerController:
     _config_path : Path # Path to configuration file
 
 
-    logging_lvl: str # user defined logging level
-    data_path: Path # data input path
-    hardware_config_values: dict # hardware configuration values
-    data_config_values: dict # data configuration values
-    data_config_do_cut: bool # whether to perform data cutting
-    data_config_do_resample: bool # whether to perform data resampling
+    _logging_lvl: str # user defined logging level
+    _data_path: Path # data input path
+    _hardware_config_values: dict # hardware configuration values
+    _data_config_values: dict # data configuration values
+    _data_config_do_cut: bool # whether to perform data cutting
+    _data_config_do_resample: bool # whether to perform data resampling
+    _translation_value_voltage: float # translation value for voltage scaling
+    _hardware_data_channel_mapping: list # mapping of data channels to hardware channels
 
     _deployed_settingsData: SettingsData # deployed SettingsData object, holding data loading settings
     _deployed_playerControllerData: PlayerControllerData # deployed PlayerControllerData object, holding the _deployed_settingsData object
 
 
-    hardware_controller: Hardware_settings # hardware controller settings (own class)
-    deployed_board_dataset: Board_dataset # board dataset for outputting data to hardware
+    _deployed_hardware_controller: HardwareController # hardware controller settings (own class)
+    _deployed_board_dataset: Board_dataset # board dataset for outputting data to hardware
+    
 
     def __init__(self):
         self._logger =self._init_logging()
         self._config_path = self._read_sys_args_and_set_path()
         
-        #TODO: Refactor, at this point
-        
         self.general_config = self._open_config_file()
         self._read_config()
         self._user_set_logging_level()
 
-        self._config_hardware_controller()
         self._deployed_settingsData = self._config_call_handler_SettingsData()
+        self._deployed_hardware_controller = self._config_hardware_controller()
         self._deployed_playerControllerData = self._config_call_handler_ControllerData()
         
         self.cut_data()
@@ -69,7 +70,7 @@ class GeneralPlayerController:
 
     def _user_set_logging_level(self) -> None:
         """Set logging level based on user configuration"""
-        level = self.logging_lvl.upper()
+        level = self._logging_lvl.upper()
         if level == "DEBUG":
             self._logger.setLevel(logging.DEBUG)
         elif level == "INFO":
@@ -102,16 +103,24 @@ class GeneralPlayerController:
 
 
     def _open_config_file(self) -> dict:
-        """Open a YAML configuration file and load its contents."""
+        """Open the YAML configuration file, this file holds all settings for the configuration of the Dataset and Hardware
+
+        Raises:
+            FileExistsError: File/Path not found
+            yaml.YAMLError: File could not be parsed
+
+        Returns:
+            dict: Loaded configuration as dictionary
+        """
         try:
             with open(self._config_path , 'r') as stream:
                 configLoaded = yaml.safe_load(stream)
         except FileNotFoundError:
             self._logger.critical(f"The File/Path '{self._config_path}' are not found")
-            sys.exit()
+            raise FileExistsError(f"The File/Path '{self._config_path}' are not found")
         except yaml.YAMLError as e:
             self._logger.critical(f"Error parsing the YAML file: {e}")
-            sys.exit()
+            raise yaml.YAMLError(f"Error parsing the YAML file: {e}")
         else:
             self._logger.info("Configuration file loaded successfully")
             return configLoaded
@@ -119,29 +128,38 @@ class GeneralPlayerController:
 
     def _read_config(self) -> None:
         """Read and process the general configuration settings."""
-        self.logging_lvl = self.general_config["General_Configuration"]["Logging_Lvl"]
-        self.data_path = self.general_config["Data_Input"]["input"]
-        self.hardware_config_values = self.general_config["Hardware"]
-        self.data_config_values = self.general_config["Data_Configuration"]
-        self.data_config_do_cut = self.general_config["Data_Configuration"]["Data_Preprocessing"]["do_cut"]
-        self.data_config_do_resample = self.general_config["Data_Configuration"]["Data_Preprocessing"]["do_resampling"]
-        self.translation_value_voltage = self.general_config["Data_Configuration"]["Voltage_Scaling"]["translation_value_voltage"]
+        self._logging_lvl = self.general_config["General_Configuration"]["Logging_Lvl"]
+        self._data_path = self.general_config["Data_Input"]["input"]
+        self._hardware_config_values = self.general_config["Hardware"]
+        self._data_config_values = self.general_config["Data_Configuration"]
+        self._data_config_do_cut = self.general_config["Data_Configuration"]["Data_Preprocessing"]["do_cut"]
+        self._data_config_do_resample = self.general_config["Data_Configuration"]["Data_Preprocessing"]["do_resampling"]
+        self._translation_value_voltage = self.general_config["Data_Configuration"]["Voltage_Scaling"]["translation_value_voltage"]
         self._hardware_data_channel_mapping = self.general_config["Data_Configuration"]["Hardware_Data_Mapping"]["channel_mapping"]
 
 
-    def _config_hardware_controller(self) -> None:
-        """Configure the hardware controller based on the selected device."""
+    def _config_hardware_controller(self) -> HardwareController:
+        """Configure the HardwareController based on the current configuration
+
+        Raises:
+            Exception: Multiple hardware devices selected
+            Exception: No hardware device selected 
+            Exception: Specified hardware device not defined in output_devices.py
+
+        Returns:
+            HardwareController: Configured hardware controller instance
+        """
         used_device = None
         
-        for key, data in self.hardware_config_values.items(): # Check for multiple used devices, this is not allowed, and get the used device
+        for key, data in self._hardware_config_values.items(): # Check for multiple used devices, this is not allowed, and get the used device
             if data["used"]: 
                 if used_device is not None:
                     self._logger.CRITICAL("Multiple hardware devices are set to be used. Please select only one device.")
-                    sys.exit()
+                    raise Exception("Multiple hardware devices are set to be used. Please select only one device.")
                 used_device = (key, data)
         if used_device is None: # Check if a device is selected
             self._logger.CRITICAL("No hardware device is set to be used. Please select one device.")
-            sys.exit()
+            raise Exception("No hardware device is set to be used. Please select one device.")
 
         # Load the specific device settings
         used_device_class =None 
@@ -151,7 +169,7 @@ class GeneralPlayerController:
                 break
         if used_device_class is None: # Device not found in output_devices.py
             self._logger.CRITICAL(f"The specified hardware device '{used_device}' is not defined in output_devices.py.")
-            sys.exit()
+            raise Exception(f"The specified hardware device '{used_device}' is not defined in output_devices.py.")
 
         specific_class = getattr(output_devices, used_device[0]) # Get the class of the specific device
         specific_device_settings = specific_class() # Create an instance of the specific device class
@@ -159,8 +177,9 @@ class GeneralPlayerController:
         if hasattr(specific_device_settings, 'output_open'): # Set output_open if it exists in the device settings, needed for Oscilloscope
             specific_device_settings.output_open = used_device[1]["output_open"]
 
-        self.hardware_controller = Hardware_settings(specific_device_settings, self._logger, self._hardware_data_channel_mapping) # Create hardware controller with specific device settings
+        hardware_controller = HardwareController(specific_device_settings, self._logger, self._hardware_data_channel_mapping) # Create hardware controller with specific device settings
         self._logger.info(f"Hardware controller configured for device: {used_device[0]}")
+        return hardware_controller
 
 
     def _config_call_handler_SettingsData(self) -> SettingsData:
@@ -171,13 +190,13 @@ class GeneralPlayerController:
         """        
         deployed_settingsData = SettingsData(pipeline ="PipelineV0",
                                                 do_merge = False,
-                                                path = "",
-                                                data_set = self.data_path,
+                                                path = self._data_path,
+                                                data_set = self._data_path,
                                                 data_case = 0,
                                                 data_point = 0,
-                                                ch_sel = self.data_config_values["Data_Preprocessing"]["channel_selection"],
-                                                fs_resample = self.data_config_values["Data_Preprocessing"]["sampling_rate_resample"],
-                                                t_range_sec = [self.data_config_values["Time"]["start_time"], self.data_config_values["Time"]["end_time"]] if self.data_config_values["Time"]["start_time"] is not None and self.data_config_values["Time"]["end_time"] is not None else [],
+                                                ch_sel = self._data_config_values["Data_Preprocessing"]["channel_selection"],
+                                                fs_resample = self._data_config_values["Data_Preprocessing"]["sampling_rate_resample"],
+                                                t_range_sec = [self._data_config_values["Time"]["start_time"], self._data_config_values["Time"]["end_time"]] if self._data_config_values["Time"]["start_time"] is not None and self._data_config_values["Time"]["end_time"] is not None else [],
                                                 do_mapping = False,
                                                 is_mapping_str = False)
         return deployed_settingsData
@@ -197,7 +216,7 @@ class GeneralPlayerController:
 
     def cut_data(self) -> None:
         """Cut data using the playerControllerData"""
-        if self.data_config_do_cut:
+        if self._data_config_do_cut:
             self._deployed_playerControllerData.do_cut()
             
             data = self._deployed_playerControllerData.get_data()
@@ -207,23 +226,21 @@ class GeneralPlayerController:
 
 
     def resample_data(self) -> None:
-        """Resample data using the playerControllerData"""
-        print(self._deployed_playerControllerData._settings.fs_resample)
-        print(self.hardware_controller._dac_max_sampling_rate)
+        """Resample data to the desired sampling rate, defined in the yaml configuration file
 
-        if self._deployed_playerControllerData._settings.fs_resample > self.hardware_controller._dac_max_sampling_rate:# Check if the desired sampling rate is supported by the hardware
-            self._logger.CRITICAL(f"The desired resampling rate of {self._deployed_playerControllerData._settings.fs_resample} Hz exceeds the maximum supported rate of {self.hardware_controller._dac_max_sampling_rate} Hz for the selected hardware.")
-            sys.exit()
+        Raises:
+            Exception: Desired resampling rate exceeds hardware capabilities
+        """        
+        if self._deployed_playerControllerData._settings.fs_resample > self._deployed_hardware_controller._dac_max_sampling_rate:# Check if the desired sampling rate is supported by the hardware
+            self._logger.CRITICAL(f"The desired resampling rate of {self._deployed_playerControllerData._settings.fs_resample} Hz exceeds the maximum supported rate of {self._deployed_hardware_controller._dac_max_sampling_rate} Hz for the selected hardware.")
+            raise Exception(f"The desired resampling rate of {self._deployed_playerControllerData._settings.fs_resample} Hz exceeds the maximum supported rate of {self._deployed_hardware_controller._dac_max_sampling_rate} Hz for the selected hardware.")
 
-        if self.data_config_do_resample:
+        if self._data_config_do_resample:
             self._deployed_playerControllerData.do_resample()
             
-            # Plot data after resampling, if the logging level is set to DEBUG
-            if self.logging_lvl.upper() == "DEBUG":
-                self._logger.debug(f"Plotted data with sampling rate {self._deployed_playerControllerData._raw_data.fs_used}")
+            if self._logging_lvl.upper() == "DEBUG": # Plot data after resampling, if the logging level is set to DEBUG
                 dhf.plot_data(self._deployed_playerControllerData._raw_data.data_raw[0], self._deployed_playerControllerData._raw_data.fs_used, self._deployed_playerControllerData._raw_data.time_end, "resampling")
-            else:
-                self._logger.info(f"Data resampling completed, new sampling rate: {self._deployed_playerControllerData._raw_data.fs_used} Hz")
+            self._logger.info(f"Data resampling completed, new sampling rate: {self._deployed_playerControllerData._raw_data.fs_used} Hz")
         else:
             self._logger.info("Data resampling is disabled in the configuration.")
 
@@ -237,31 +254,31 @@ class GeneralPlayerController:
         deployed_board_dataset = Board_dataset(_data= data.data_raw,
                                                     _samplingrate= data.fs_used,
                                                     _groundtruth= [] if data.label_exist else None,
-                                                    _translation_value_voltage= self.translation_value_voltage)
+                                                    _translation_value_voltage= self._translation_value_voltage)
         return deployed_board_dataset
     
     def _load_board_dataset_into_hardware_settings(self) -> None:
         """Load the board dataset into the hardware settings controller."""
-        self.hardware_controller._data = self._deployed_board_dataset
+        self._deployed_hardware_controller._data = self._deployed_board_dataset
     
     def transfer_data_to_vertical_resolution(self) -> None:
         """Transfer data to match the vertical resolution of the hardware."""
 
-        if hasattr(self.hardware_controller, "_output_open"):
-           transfer_data = self.hardware_controller.translate_data_for_oscilloscope()
+        if hasattr(self._deployed_hardware_controller, "_output_open"):
+           self._deployed_hardware_controller.translate_data_for_oscilloscope()
         else:
-            transfer_data = self.hardware_controller.translate_data_float2int(self.deployed_data_controller.data_raw)
+            self._deployed_hardware_controller.translate_data_float2int()
 
-        if self.logging_lvl.upper() == "DEBUG":
-            data = self.hardware_controller.get_data
+        if self._logging_lvl.upper() == "DEBUG":
+            data = self._deployed_hardware_controller.get_data
             dhf.plot_data(data._data[0],data._samplingrate, 1, "transferring")
 
 
     def output_data_for_hardware(self) -> None:
         """Output data to the configured hardware device."""
-        if hasattr(self.hardware_controller, "_output_open"):
+        if hasattr(self._deployed_hardware_controller, "_output_open"):
             self._logger.info("Outputting data for the Oscilloscope")
-            self.hardware_controller.create_csv_for_MXO4()
+            self._deployed_hardware_controller.create_csv_for_MXO4()
         
         self._logger.info("Data output to hardware completed.")
 

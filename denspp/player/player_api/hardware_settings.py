@@ -2,7 +2,7 @@ import numpy as np
 import csv
 from dataclasses import dataclass
 
-class Hardware_settings:
+class HardwareController:
     # --- Settings of used DAC
     _dac_bit: int # Bits that the DAC can handle
     _dac_number_of_channels: int # Total number of channels the DAC channels 
@@ -20,23 +20,21 @@ class Hardware_settings:
     groundtruth_activate: list #Hat auch die Anzahl von Kanälen des DAC. Speichert Ture/False werte 
     # Ein True am Index 3 bedeutet: "Wenn auf dem vierten Hardware-Kanal ein Signal mit Ground-Truth-Daten abgespielt wird, dann aktiviere auch den dazugehörigen digitalen Trigger-Ausgang 
 
-    logger: object
+    #logger: object
     def __init__(self, specific_device_settings: object, logger: object, data_channel_mapping: list) -> None:
-        self.logger = logger
+        self._logger = logger
         self._dac_bit = specific_device_settings.verticalBit
         self._dac_number_of_channels = specific_device_settings.numChannels
         self._dac_use_signed = specific_device_settings.usedSigned
         self._dac_max_sampling_rate = specific_device_settings.max_sampling_rate
         if hasattr(specific_device_settings, 'output_open'):
             self._output_open = specific_device_settings.output_open
-        
-        self.data_channel_mapping = data_channel_mapping
 
         self.link_data2channel_num = [False for idx in range(self._dac_number_of_channels)]
         self.groundtruth_available = False
         self.groundtruth_activate = [False for _ in range(self._dac_number_of_channels)]
 
-        self._set_channel_mapping()
+        self._set_channel_mapping(data_channel_mapping)
         self._data = None
 
     @property
@@ -63,9 +61,9 @@ class Hardware_settings:
         """        
         return True if self._data is not None else False
     
-    def _set_channel_mapping(self) -> None:
+    def _set_channel_mapping(self, data_channel_mapping: list) -> None:
         """Set the mapping from data channels to hardware channels"""        
-        for data_channel, i in enumerate(self.data_channel_mapping):
+        for data_channel, i in enumerate(data_channel_mapping):
             self.link_data2channel_num[i] = data_channel
 
     def translate_data_float2int(self, data_in: list) -> list:
@@ -91,10 +89,10 @@ class Hardware_settings:
             data_out.append(np.array(clipped_data, dtype=np.int16)) # Convert to int16
 
         if np.any(data_out[0] > 32767) or np.any(data_out[0] < -32768):
-            self.logger.warning("Overflow detected!")
-            self.logger.warning(f"Max: {np.max(data_out[0])}, Min: {np.min(data_out[0])}")
+            self._logger.warning("Overflow detected!")
+            self._logger.warning(f"Max: {np.max(data_out[0])}, Min: {np.min(data_out[0])}")
         else:
-            self.logger.info("No overflow detected in data conversion.")
+            self._logger.info("No overflow detected in data conversion.")
         return data_out
     
     def translate_data_for_oscilloscope(self, resolution: float = 0.001) -> None:
@@ -102,10 +100,10 @@ class Hardware_settings:
         max_voltage_output = 10 if self._output_open else 5 # Max voltage depending on output mode (+/-10V open, +/-5V 50 Ohm)
         
         if self._data._translation_value_voltage is None:
-            self.logger.info("No translation value is set, using the complete voltage range for scaling")
+            self._logger.info("No translation value is set, using the complete voltage range for scaling")
             max_range_use = True
         else:
-            self.logger.info(f"Using translation value for voltage output: {self._data._translation_value_voltage}")
+            self._logger.info(f"Using translation value for voltage output: {self._data._translation_value_voltage}")
             max_range_use = False
 
         data_out = list()
@@ -131,7 +129,7 @@ class Hardware_settings:
             data_out.append(np.array(quantized_signal, dtype=np.float16))
 
         self._data._data = np.array(data_out, dtype=np.float16)
-        self.logger.debug(f"Minimal Value: {np.min(quantized_signal)}, maximal Value: {np.max(quantized_signal)}")
+        self._logger.debug(f"Minimal Value: {np.min(quantized_signal)}, maximal Value: {np.max(quantized_signal)}")
 
 
     def create_csv_for_MXO4(self):
