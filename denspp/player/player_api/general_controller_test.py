@@ -3,7 +3,7 @@ from unittest.mock import patch, Mock, mock_open, MagicMock
 import inspect
 import yaml
 
-import denspp.player.src.general_player_controller as general_player_controller
+import denspp.player.player_api.general_player_controller as general_player_controller
 import hardware_settings
 
 class GeneralControllerTest(unittest.TestCase):
