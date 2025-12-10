@@ -30,8 +30,8 @@ class GeneralPlayerController:
 
 
     _deployed_hardware_controller: HardwareController # hardware controller settings (own class)
-    _deployed_board_dataset: Board_dataset # board dataset for outputting data to hardware
-    
+    _deployed_board_dataset: BoardDataset # board dataset for outputting data to hardware
+
 
     def __init__(self):
         self._logger =self._init_logging()
@@ -239,28 +239,32 @@ class GeneralPlayerController:
             self._deployed_playerControllerData.do_resample()
             
             if self._logging_lvl.upper() == "DEBUG": # Plot data after resampling, if the logging level is set to DEBUG
-                dhf.plot_data(self._deployed_playerControllerData._raw_data.data_raw[0], self._deployed_playerControllerData._raw_data.fs_used, self._deployed_playerControllerData._raw_data.time_end, "resampling")
+                data = self._deployed_playerControllerData.get_data()
+                dhf.plot_data(data.data_raw[0], data.fs_used, data.time_end, "resampling")
             self._logger.info(f"Data resampling completed, new sampling rate: {self._deployed_playerControllerData._raw_data.fs_used} Hz")
         else:
             self._logger.info("Data resampling is disabled in the configuration.")
 
-    def _config_board_dataset(self) -> Board_dataset:
+
+    def _config_board_dataset(self) -> BoardDataset:
         """Data that gone be output to the hardware device
 
         Returns:
-            Board_dataset: Configured Board_dataset object
+            BoardDataset: Configured BoardDataset object
         """        
         data = self._deployed_playerControllerData.get_data()
-        deployed_board_dataset = Board_dataset(_data= data.data_raw,
-                                                    _samplingrate= data.fs_used,
-                                                    _groundtruth= [] if data.label_exist else None,
-                                                    _translation_value_voltage= self._translation_value_voltage)
+        deployed_board_dataset = BoardDataset(data= data.data_raw,
+                                                    samplingrate= data.fs_used,
+                                                    groundtruth= [] if data.label_exist else None,
+                                                    translation_value_voltage= self._translation_value_voltage)
         return deployed_board_dataset
     
+
     def _load_board_dataset_into_hardware_settings(self) -> None:
         """Load the board dataset into the hardware settings controller."""
         self._deployed_hardware_controller._data = self._deployed_board_dataset
     
+
     def transfer_data_to_vertical_resolution(self) -> None:
         """Transfer data to match the vertical resolution of the hardware."""
 
@@ -271,7 +275,7 @@ class GeneralPlayerController:
 
         if self._logging_lvl.upper() == "DEBUG":
             data = self._deployed_hardware_controller.get_data
-            dhf.plot_data(data._data[0],data._samplingrate, 1, "transferring")
+            dhf.plot_data(data.data[0],data.samplingrate, 1, "transferring")
 
 
     def output_data_for_hardware(self) -> None:
