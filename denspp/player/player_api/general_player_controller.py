@@ -2,12 +2,14 @@ import sys
 import yaml
 import logging
 import inspect
+import copy
 from pathlib import Path
 from hardware_settings import *
 import output_devices
 import debug_help_functions as dhf
 from denspp.offline.data_call.call_handler import SettingsData
 from call_handler_player import PlayerControllerData
+import denspp.player.player_api.signal_validation as sv
 
 default_config_path_to_yaml = Path.cwd() /"denspp" /"player" /"hardware_config.yaml"
 
@@ -27,7 +29,7 @@ class GeneralPlayerController:
 
     _deployed_settingsData: SettingsData # deployed SettingsData object, holding data loading settings
     _deployed_playerControllerData: PlayerControllerData # deployed PlayerControllerData object, holding the _deployed_settingsData object
-
+    _untreated_raw_data: BoardDataset # untreated raw data loaded from the PlayerControllerData object
 
     _deployed_hardware_controller: HardwareController # hardware controller settings (own class)
     _deployed_board_dataset: BoardDataset # board dataset for outputting data to hardware
@@ -44,8 +46,10 @@ class GeneralPlayerController:
         self._deployed_settingsData = self._config_call_handler_SettingsData()
         self._deployed_hardware_controller = self._config_hardware_controller()
         self._deployed_playerControllerData = self._config_call_handler_ControllerData()
-        
+        self._untreated_raw_data = copy.deepcopy(self._deployed_playerControllerData.get_data())
+
         self.cut_data()
+        self._untreated_raw_data_with_cut = copy.deepcopy(self._deployed_playerControllerData.get_data())
         self.resample_data()
 
         self._deployed_board_dataset = self._config_board_dataset()
@@ -53,6 +57,23 @@ class GeneralPlayerController:
         self.transfer_data_to_vertical_resolution()
         self.output_data_for_hardware()
     
+    @property
+    def get_untreated_data(self) -> BoardDataset:
+        """Output untreated raw data in BoardDataset format
+
+        Returns:
+            BoardDataset: Holdes untreated raw data, data name, data type, electrode id, fs original and fs used
+        """        
+        return self._untreated_raw_data
+    
+    @property
+    def get_untreated_data_with_cut(self) -> BoardDataset:
+        """Output untreated raw data with cut in BoardDataset format
+
+        Returns:
+            BoardDataset: Holdes untreated raw data with cut, data name, data type, electrode id, fs original and fs used
+        """        
+        return self._untreated_raw_data_with_cut
 
     def _init_logging(self) -> logging.Logger:
         """Initialize logger, this object is used for logging messages throughout the application
@@ -288,3 +309,15 @@ class GeneralPlayerController:
 
 if __name__ == "__main__":
     controller = GeneralPlayerController()
+
+    processed_data = controller._deployed_hardware_controller.get_data
+    original_data = controller._untreated_raw_data
+    original_data_with_cut = controller._untreated_raw_data_with_cut
+    compartor = sv.SignalCompartor(original_data_with_cut =original_data_with_cut.data_raw, 
+                       signal_processed= processed_data.data, 
+                       fs_original =original_data.fs_orig, 
+                       fs_processed= processed_data.samplingrate, 
+                       scaling_factor= processed_data.translation_value_voltage)
+    compartor.analyze_signals()
+    results = compartor.get_results
+    print(results)
