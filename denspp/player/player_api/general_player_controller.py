@@ -257,7 +257,7 @@ class GeneralPlayerController:
             raise Exception(f"The desired resampling rate of {self._deployed_playerControllerData._settings.fs_resample} Hz exceeds the maximum supported rate of {self._deployed_hardware_controller._dac_max_sampling_rate} Hz for the selected hardware.")
 
         if self._data_config_do_resample:
-            self._deployed_playerControllerData.do_resample()
+            self._deployed_playerControllerData.do_resample(num_points_mean=200)
             
             if self._logging_lvl.upper() == "DEBUG": # Plot data after resampling, if the logging level is set to DEBUG
                 data = self._deployed_playerControllerData.get_data()
@@ -307,17 +307,22 @@ class GeneralPlayerController:
         
         self._logger.info("Data output to hardware completed.")
 
+    
+    def analyze_signals(self) -> None:
+        """Analyze the original and processed signals"""
+        processed_data = controller._deployed_hardware_controller.get_data
+        original_data_with_cut = controller._untreated_raw_data_with_cut
+        compartor = sv.SignalCompartor(original_data_with_cut =original_data_with_cut.data_raw, 
+                        signal_processed= processed_data.data, 
+                        fs_original =original_data_with_cut.fs_orig, 
+                        fs_processed= processed_data.samplingrate, 
+                        scaling_factor= processed_data.translation_value_voltage)
+        compartor.analyze_signals()
+        results = compartor.get_results
+        print(results)
+
+
+
 if __name__ == "__main__":
     controller = GeneralPlayerController()
-
-    processed_data = controller._deployed_hardware_controller.get_data
-    original_data = controller._untreated_raw_data
-    original_data_with_cut = controller._untreated_raw_data_with_cut
-    compartor = sv.SignalCompartor(original_data_with_cut =original_data_with_cut.data_raw, 
-                       signal_processed= processed_data.data, 
-                       fs_original =original_data.fs_orig, 
-                       fs_processed= processed_data.samplingrate, 
-                       scaling_factor= processed_data.translation_value_voltage)
-    compartor.analyze_signals()
-    results = compartor.get_results
-    print(results)
+    controller.analyze_signals()
