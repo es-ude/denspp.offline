@@ -1,10 +1,13 @@
 import numpy as np
+from scipy import signal
 from dataclasses import dataclass
+import matplotlib.pyplot as plt
 
 @dataclass
 class SignalValidationResult:
     pearson_correlation: list[float] = None # Pearson correlation coefficient between original and processed signals
     mean_squared_error: list[float] = None  # Mean Squared Error between original and processed signals
+    spectral_coherence: list[float] = None  # Spectral coherence between original and processed signals
 
 class SignalCompartor:
     _signal_original_with_cut: np.ndarray # original signal, cuted to the processed signal length
@@ -29,8 +32,9 @@ class SignalCompartor:
     
     def analyze_signals(self) -> None:
         """Analyze the original and processed signals"""
-        self._results.pearson_correlation = self._calculate_similarity()
+        self._results.pearson_correlation = self._calculate_pearson_korrelation()
         self._results.mean_squared_error = self._calculate_mse()
+        self._results.spectral_coherence = self._calculate_spectral_coherence()
 
     @property
     def get_results(self) -> SignalValidationResult:
@@ -60,7 +64,7 @@ class SignalCompartor:
         return self._signal_processed * self._scaling_factor
     
 
-    def _calculate_similarity(self) -> list:
+    def _calculate_pearson_korrelation(self) -> list:
         """Calculate Pearson correlation coefficient between original and processed signals
 
         Raises:
@@ -74,10 +78,10 @@ class SignalCompartor:
             raise ValueError("Original and processed signals must have the same length for similarity calculation.")
         for i, _ in enumerate(self._signal_original_with_cut):
             if len(self._signal_original_with_cut[i]) != len(self._signal_processed[i]):
-                x_orig = np.linspace(0, 1, len(self._signal_original_with_cut[i]))
-                x_proc = np.linspace(0, 1, len(self._signal_processed[i]))
+                x_orig = np.linspace(0, 1, len(self._signal_original_with_cut[i])) #x Values for original signal
+                x_proc = np.linspace(0, 1, len(self._signal_processed[i])) # x Values for processed signal
 
-                processed_aligned = np.interp(x_orig, x_proc, self._signal_processed[i])
+                processed_aligned = np.interp(x_orig, x_proc, self._signal_processed[i]) # Align processed signal to original signal length, e.g. Samplingrate
             else:
                 processed_aligned = self._signal_processed[i]
             
@@ -86,7 +90,15 @@ class SignalCompartor:
             results.append(pearson_r)
         return results
     
-    def _calculate_mse(self):
+    def _calculate_mse(self) -> list:
+        """Calculate Mean Squared Error (MSE) between original and processed signals
+
+        Raises:
+            ValueError: If the original and processed signals do not have the same amount of channels
+
+        Returns:
+            list: List of Mean Squared Errors for each Channel comparison
+        """        
         results =[]
         if not self._equal_number_of_signals:
             raise ValueError("Original and processed signals must have the same length for similarity calculation.")
@@ -95,7 +107,7 @@ class SignalCompartor:
                 x_orig = np.linspace(0, 1, len(self._signal_original_with_cut[i]))
                 x_proc = np.linspace(0, 1, len(self._signal_processed[i]))
 
-                processed_aligned = np.interp(x_orig, x_proc, self._signal_processed[i])
+                processed_aligned = np.interp(x_orig, x_proc, self._signal_processed[i]) ## Align processed signal to original signal length, e.g. Samplingrate
             else:
                 processed_aligned = self._signal_processed[i]
 
@@ -105,3 +117,54 @@ class SignalCompartor:
             mse = np.mean((orig_norm - proc_norm) ** 2)
             results.append(mse)
         return results
+    
+    def _calculate_spectral_coherence(self, self_defined_nperseg =None) -> list:
+        results =[]
+        if not self._equal_number_of_signals:
+            raise ValueError("Original and processed signals must have the same length for similarity calculation.")
+        for i, _ in enumerate(self._signal_original_with_cut):
+            if len(self._signal_original_with_cut[i]) != len(self._signal_processed[i]):
+                x_orig = np.linspace(0, 1, len(self._signal_original_with_cut[i]))
+                x_proc = np.linspace(0, 1, len(self._signal_processed[i]))
+                processed_aligned = np.interp(x_orig, x_proc, self._signal_processed[i]) ## Align processed signal to original signal length, e.g. Samplingrate
+            else:
+                processed_aligned = self._signal_processed[i]
+            
+            if self_defined_nperseg is None: # define nperseg; default is 1/4 of the signal length 
+                nperseg = len(processed_aligned) // 4
+            else:
+                nperseg = self_defined_nperseg
+            
+            f, Cxy = signal.coherence(self._signal_original_with_cut[i], processed_aligned, fs=self._fs_original, nperseg=nperseg)
+            self._plot_spectral_coherence(f, Cxy)
+            self._show_signal_plots(self._signal_original_with_cut[i], processed_aligned)
+            
+            results.append({
+                "frequencies": f,
+                "coherence_values": Cxy,
+                "max_coherence": np.max(Cxy),
+            })
+        return results
+
+
+    def _plot_spectral_coherence(self, f, Cxy) -> None:
+        """Plot the spectral coherence between original and processed signals"""
+        plt.semilogy(f, Cxy)
+        plt.xlabel('frequency [Hz]')
+        plt.ylabel('Coherence')
+        plt.title('Spectral Coherence between Original and Processed Signals')
+        plt.grid()
+        plt.show()
+
+
+    def _show_signal_plots(self, data1, data2) -> None:
+        """Show plots of the original and processed signals for visual inspection"""
+        plt.plot(data1, color='k', marker='.', markersize=4)
+        plt.plot(data2, color='b', marker='.', markersize=4)
+
+        #plt.xlim([data.timestamps[0], data.timestamps[-1]])
+        plt.xlabel("Timestamp")
+        plt.ylabel(f"ADC output V]")
+
+        plt.tight_layout()
+        plt.show()
