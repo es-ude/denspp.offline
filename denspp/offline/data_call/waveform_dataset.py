@@ -1,8 +1,23 @@
 import numpy as np
 from dataclasses import dataclass
 from copy import deepcopy
-from .waveform_generator import WaveformGenerator
+from .waveform_generator import WaveformGenerator, WaveformSignal
 from denspp.offline.analog.dev_noise import SettingsNoise, DefaultSettingsNoise
+
+
+@dataclass(frozen=True)
+class WaveformDataset:
+    """Dataclass with signals for training machine learning technique using the WaveformGenerator
+    Attributes:
+        data:   Numpy array with different signals, shape = [num. samples, samples of signal window]
+        label:  Numpy array with labels/class for each sample
+        dict:   List with corresponding label name for each class
+        fs:     Float with sampling rate
+    """
+    data: np.ndarray
+    label: np.ndarray
+    dict: list[str]
+    fs: float
 
 
 @dataclass
@@ -43,11 +58,11 @@ DefaultSettingsWaveformDataset = SettingsWaveformDataset(
 )
 
 
-def build_waveform_dataset(settings_data: SettingsWaveformDataset, settings_noise: SettingsNoise=DefaultSettingsNoise) -> dict:
+def build_waveform_dataset(settings_data: SettingsWaveformDataset, settings_noise: SettingsNoise=DefaultSettingsNoise) -> WaveformDataset:
     """Building a dataset of different waveform styles
     :param settings_data:   Class for generating the dataset
     :param settings_noise:  Dataclass for handling the noise behaviour
-    :returns:               Returning a Dictionary with ['data', 'label', and 'dict']
+    :returns:               Returning the dataclass WaveformDataset with keys: ['data', 'label', 'dict', 'fs']
     """
     assert len(settings_data.wfg_type) == len(settings_data.wfg_freq), "List have not the same length"
     settings0 = deepcopy(settings_noise)
@@ -70,18 +85,23 @@ def build_waveform_dataset(settings_data: SettingsWaveformDataset, settings_nois
 
     for idx, (sel_wfg, freq_wfg) in enumerate(zip(settings_data.wfg_type, settings_data.wfg_freq)):
         for num_ite in range(0, settings_data.num_samples):
-            waveform = wfg_generator.generate_waveform(
+            waveform: WaveformSignal = wfg_generator.generate_waveform(
                 time_points=[time_point_min],
                 time_duration=[1 / freq_wfg],
                 waveform_select=[sel_wfg],
                 polarity_cathodic=[False]
             )
-            signal = waveform['sig'] if not settings_data.do_normalize else waveform['sig'] / waveform['rms']
+            signal = waveform.signal if not settings_data.do_normalize else waveform.signal / waveform.rms
             waveforms_signals[idx * num_class_samples + num_ite, :signal.size] = settings_data.scale_amp * signal
             waveforms_classes[idx * num_class_samples + num_ite] = idx
-            waveforms_rms[idx * num_class_samples + num_ite] = waveform['rms']
+            waveforms_rms[idx * num_class_samples + num_ite] = waveform.rms
 
     # --- Getting dictionary of signal type
     noise = wfg_generator.generate_noise(waveforms_signals.shape) if settings_data.noise_add else np.zeros_like(waveforms_signals)
     waveforms_dict = [type for type in settings_data.wfg_type if type in wfg_generator.get_dictionary_classes()]
-    return {'data': waveforms_signals + noise, 'label': waveforms_classes, 'dict': waveforms_dict, 'fs': settings_data.sampling_rate}
+    return WaveformDataset(
+        data=waveforms_signals + noise,
+        label=waveforms_classes,
+        dict=waveforms_dict,
+        fs=settings_data.sampling_rate,
+    )

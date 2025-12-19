@@ -1,10 +1,25 @@
 import numpy as np
+from dataclasses import dataclass
 from logging import getLogger, Logger
 from scipy import signal
 from fxpmath import Fxp, Config
 from denspp.offline import check_keylist_elements_any
 from denspp.offline.analog import ProcessNoise, SettingsNoise, DefaultSettingsNoise
 
+
+@dataclass(frozen=True)
+class WaveformSignal:
+    """Dataclass with waveform signal
+    Attributes:
+        time:   Numpy array with timestamps
+        signal: Numpy array with signal
+        fs:     Float with sampling rate
+        rms:    Float with root mean square value
+    """
+    time: np.ndarray
+    signal: np.ndarray
+    fs: float
+    rms: float
 
 class WaveformGenerator:
     __handler_noise: ProcessNoise
@@ -159,13 +174,13 @@ class WaveformGenerator:
         return noise
 
     def generate_waveform(self, time_points: list, time_duration: list,
-                          waveform_select: list, polarity_cathodic: list) -> dict:
+                          waveform_select: list, polarity_cathodic: list) -> WaveformSignal:
         """Generating the signal with waveforms for stimulation
         :param time_points:         List of time points for applying a stimulation waveform
         :param time_duration:       List of stimulation waveform duration
         :param waveform_select:     List of selected waveforms
         :param polarity_cathodic:   List for performing cathodic-first generation
-        :returns:                   List with three numpy arrays (time, output_signal, true rms value)
+        :returns:                   Dataclass WaveformSignal with numpy arrays ['time', output_signal, true rms value)
         """
         if not len(time_points) == len(waveform_select) == len(time_duration):
             raise RuntimeError("Please check input! --> Length is not equal")
@@ -182,11 +197,16 @@ class WaveformGenerator:
 
             noise = self.__handler_noise.gen_noise_real_pwr(out.size) if self.__add_noise else np.zeros_like(out)
             time = np.linspace(0, out.size, out.size, endpoint=False) / self._sampling_rate
-            return {'time': time, 'sig': out + noise, 'rms': rms_value}
+            return WaveformSignal(
+                time=time,
+                signal=out+noise,
+                fs=self._sampling_rate,
+                rms=rms_value,
+            )
 
     def generate_waveform_quant_fxp(self, time_points: list, time_duration: list,
                                     waveform_select: list, polarity_cathodic: list,
-                                    bitwidth: int, bitfrac: int, signed: bool, do_opt: bool=False) -> dict:
+                                    bitwidth: int, bitfrac: int, signed: bool, do_opt: bool=False) -> WaveformSignal:
         """Generating the signal with waveforms for stimulation in quantized matter
         :param time_points:         List of time points for applying a stimulation waveform
         :param time_duration:       List of stimulation waveform duration
@@ -196,7 +216,7 @@ class WaveformGenerator:
         :param bitfrac:             Integer with fraction bitwidth
         :param signed:              If quantized output should be signed integer
         :param do_opt:              Boolean for taking quarter signal (optimzed version for hardware implementation)
-        :returns:                   List with three numpy arrays (time, output_signal, true rms value)
+        :returns:                   Dataclass WaveformSignal with quantized signals ['time', 'signal', 'fs', 'rms']
         """
         assert check_keylist_elements_any(waveform_select, ['SINE_FULL', 'RECT_FULL', 'TRI_FULL']), "Only 'waveform_select' with ['SINE_FULL', 'RECT_FULL', 'TRI_FULL'] are allowed!"
         wvf_norm = self.generate_waveform(
@@ -206,17 +226,22 @@ class WaveformGenerator:
             polarity_cathodic=polarity_cathodic
         )
 
-        wvf_used = wvf_norm['sig'] / (wvf_norm['sig'].max() - wvf_norm['sig'].min()) + (0 if signed or do_opt else 0.5)
+        wvf_used = wvf_norm.signal / (wvf_norm.signal.max() - wvf_norm.signal.min()) + (0 if signed or do_opt else 0.5)
         wvf_used = np.array(wvf_used * (2**(bitwidth-bitfrac)), dtype=np.int32)
         if do_opt:
-            wvf_used = wvf_used[:wvf_norm['sig'].argmax() + 1]
+            wvf_used = wvf_used[:wvf_norm.signal.argmax() + 1]
 
         config_fxp = Config()
         config_fxp.rounding = "around"
         config_fxp.overflow = "saturate"
         config_fxp.underflow = "saturate"
         wvf_quant = Fxp(val=wvf_used, signed=signed, n_word=bitwidth, n_frac=bitfrac, config=config_fxp).get_val()
-        return {'time': wvf_norm['time'], 'sig': wvf_quant, 'rms': wvf_norm['rms']}
+        return WaveformSignal(
+            time=wvf_norm.time,
+            signal=wvf_quant,
+            fs=wvf_norm.fs,
+            rms=wvf_norm.rms,
+        )
 
     def generate_biphasic_waveform(self, anodic_wvf: str, anodic_duration: float,
                                    cathodic_wvf: str, cathodic_duration: float,
