@@ -53,7 +53,7 @@ DefaultSettingsData = SettingsData(
 )
 
 
-class DataHandler:
+class DataFromFile:
     """Class with data and meta information of the used neural dataset
     Attributes:
         data_name (str):        File name of used transient dataset
@@ -87,7 +87,7 @@ class DataHandler:
 class ControllerData:
     __logger: Logger
     __download_handler: OwnCloudDownloader
-    _raw_data: DataHandler
+    _raw_data: DataFromFile
     _settings: SettingsData
     _path2folder_remote: str=''
     _path2folder_local: str=''
@@ -198,7 +198,7 @@ class ControllerData:
         else:
             self.__logger.info(f"... has no labels / groundtruth")
 
-    def get_data(self) -> DataHandler:
+    def get_data(self) -> DataFromFile:
         """Calling the raw data with optional ground truth
         :return:    Class DataHandler with raw data and meta information
         """
@@ -378,7 +378,7 @@ class ControllerData:
             assert type(evnt_id) == list, "Variable evnt_id must have type list"
             assert len(evnt_id) == len(elec_orn), "Length of event_pos should have same length like num_electrodes"
 
-        self._raw_data = DataHandler()
+        self._raw_data = DataFromFile()
         # --- Including meta data
         self._raw_data.data_type = elec_type
         self._raw_data.data_name = dataset_name + Path(file_name).stem
