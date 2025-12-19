@@ -40,14 +40,12 @@ dependencies = [
     "scikit-learn>=1.5.2",
     "scipy>=1.14.1",
     "torchinfo>=1.8.0",
-    "torchvision>=0.20.1",
     "tqdm>=4.67.1",
-    "pyxdf>=1.16.8",
     "elasticai-creator",
     "nc-py-api>=0.19.2",
-    "fxpmath>=0.4.9"
+    "fxpmath>=0.4.9",
+    "pytest>=9.0.2",
 ]
-
 
 [tool.uv]
 default-groups = ["dev", "docs"]
