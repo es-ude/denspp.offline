@@ -12,7 +12,7 @@ from tqdm import tqdm
 from copy import deepcopy
 
 from denspp.offline import get_path_to_project, check_keylist_elements_any
-from denspp.offline.data_call import SettingsData, DataHandler
+from denspp.offline.data_call import SettingsData, DataFromFile
 from denspp.offline.preprocessing import FrameWaveform
 from denspp.offline.metric.data_numpy import calculate_error_mse
 
@@ -66,7 +66,7 @@ class MergeDataset:
             file_name=f"{create_time}_Dataset-{data_name}"
         )
 
-    def _get_frames_from_labeled_dataset(self, data: DataHandler, xpos_offset: int=0) -> list:
+    def _get_frames_from_labeled_dataset(self, data: DataFromFile, xpos_offset: int=0) -> list:
         self._logger.info(f"\nProcessing file: {data.data_name}")
         pipeline = self._pipeline(data.fs_used, False)
 
@@ -82,7 +82,7 @@ class MergeDataset:
             del frame_new
         return frames_extracted
 
-    def _get_frames_from_unlabeled_dataset(self, data: DataHandler, **kwargs) -> list:
+    def _get_frames_from_unlabeled_dataset(self, data: DataFromFile, **kwargs) -> list:
         self._logger.info(f"\nProcessing file: {data.data_name}")
         pipeline = self._pipeline(data.fs_used, False)
 
@@ -114,7 +114,7 @@ class MergeDataset:
             else:
                 datahandler.do_resample()
                 datahandler.do_cut()
-                data: DataHandler = datahandler.get_data()
+                data: DataFromFile = datahandler.get_data()
                 del datahandler
 
                 if data.label_exist:

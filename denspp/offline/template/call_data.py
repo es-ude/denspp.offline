@@ -1,7 +1,6 @@
 import numpy as np
 from denspp.offline.data_call.call_handler import ControllerData, SettingsData
 from scipy.io import loadmat
-from pyxdf import load_xdf
 
 
 class DataLoader(ControllerData):
@@ -73,20 +72,4 @@ class DataLoader(ControllerData):
             rawdata=loaded_data["data"][0],
             evnt_pos=[loaded_data["spike_times"][0][0][0] - int(-0.5e-6 * fs_used)],
             evnt_id=[loaded_data["spike_class"][0][0][0] - 1]
-        )
-
-    def __load_denspp_online(self) -> None:
-        """Function for loading the *.xdf files from custom hardware readout with DeNSPP.online framework"""
-        path2file = self._prepare_access_file(folder_name="_Custom_Hardware", data_type='*.xdf')
-        loaded_data = load_xdf(path2file)[0][0]
-
-        fs_used = float(loaded_data['info']['nominal_srate'][0])
-        self._load_rawdata_into_pipeline(
-            elec_type=loaded_data['info']['name'],
-            dataset_name='denspp_custom',
-            file_name=path2file,
-            fs_orig=fs_used,
-            elec_orn=np.arange(0, loaded_data['time_series'].shape[1]).tolist(),
-            scale_data=1.0,
-            rawdata=np.transpose(np.float32(loaded_data["data"][0], (1, 0)))
         )
