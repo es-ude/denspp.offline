@@ -22,17 +22,17 @@ class TestWaveformDataset(TestCase):
     def test_build_example(self):
         set_test = deepcopy(settings)
         dataset = build_waveform_dataset(set_test)
-        self.assertTrue([True for key in dataset.keys() if key in ['data', 'label', 'dict', 'fs']])
+        self.assertTrue([True for key in dir(dataset) if key in ['data', 'label', 'dict', 'fs']])
 
     def test_build_example_size(self):
         set_test = deepcopy(settings)
         dataset = build_waveform_dataset(set_test)
-        self.assertTrue(dataset['data'].shape[0] == dataset['label'].size)
+        self.assertTrue(dataset.data.shape[0] == dataset.label.size)
 
     def test_build_example_label(self):
         set_test = deepcopy(settings)
         dataset = build_waveform_dataset(set_test)
-        self.assertEqual(dataset['dict'], set_test.wfg_type)
+        self.assertEqual(dataset.dict, set_test.wfg_type)
 
     def test_build_different_freq(self):
         set_test = deepcopy(settings)
@@ -40,7 +40,7 @@ class TestWaveformDataset(TestCase):
         set_test.wfg_freq = [1e2, 2e2]
 
         dataset = build_waveform_dataset(set_test)
-        self.assertEqual(dataset['dict'], set_test.wfg_type)
+        self.assertEqual(dataset.dict, set_test.wfg_type)
 
 
 if __name__ == '__main__':

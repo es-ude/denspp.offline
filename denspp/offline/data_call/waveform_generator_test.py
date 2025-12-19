@@ -24,7 +24,7 @@ class TestWaveformGenerator(TestCase):
             time_duration=[self._period],
             waveform_select=['ZERO'],
             polarity_cathodic=[False]
-        )['sig']
+        ).signal
         length_zero = np.argwhere(signal == 0.).flatten()
         self.assertTrue(length_zero.size == 2+self._period*self._sampling_rate)
 
@@ -34,7 +34,7 @@ class TestWaveformGenerator(TestCase):
             time_duration=[self._period],
             waveform_select=['RECT_HALF'],
             polarity_cathodic=[False]
-        )['sig']
+        ).signal
         length_zero = np.argwhere(signal == 0.).flatten()
         self.assertTrue(length_zero.size == 2)
 
@@ -44,7 +44,7 @@ class TestWaveformGenerator(TestCase):
             time_duration=[self._period],
             waveform_select=['RECT_HALF'],
             polarity_cathodic=[False]
-        )['sig']
+        ).signal
         length_content = np.argwhere(signal != 0.).flatten()
         self.assertEqual(length_content.size, int(self._period * self._sampling_rate))
 
@@ -54,7 +54,7 @@ class TestWaveformGenerator(TestCase):
             time_duration=[self._period],
             waveform_select=['RECT_FULL'],
             polarity_cathodic=[False]
-        )['sig']
+        ).signal
         length_content = np.argwhere(signal != 0.).flatten()
         self.assertEqual(length_content.size, int(self._period * self._sampling_rate))
 
@@ -64,7 +64,7 @@ class TestWaveformGenerator(TestCase):
             time_duration=[10 / self._sampling_rate],
             waveform_select=['RECT_FULL'],
             polarity_cathodic=[False]
-        )['sig']
+        ).signal
         ref = np.array([ 0., 1., 1., 1., 1., 1., -1., -1., -1., -1., -1., 0.])
         np.testing.assert_almost_equal(signal, ref, decimal=8)
 
@@ -74,7 +74,7 @@ class TestWaveformGenerator(TestCase):
             time_duration=[self._period],
             waveform_select=['LIN_RISE'],
             polarity_cathodic=[False]
-        )['sig']
+        ).signal
         length_content = np.argwhere(signal != 0.).flatten()
         self.assertEqual(length_content.size + 1, int(self._period * self._sampling_rate))
 
@@ -84,7 +84,7 @@ class TestWaveformGenerator(TestCase):
             time_duration=[self._period],
             waveform_select=['LIN_FALL'],
             polarity_cathodic=[False]
-        )['sig']
+        ).signal
         length_content = np.argwhere(signal != 0.).flatten()
         self.assertEqual(length_content.size + 1, int(self._period * self._sampling_rate))
 
@@ -94,7 +94,7 @@ class TestWaveformGenerator(TestCase):
             time_duration=[self._period, self._period, self._period],
             waveform_select=['LIN_RISE', 'LIN_FALL', 'RECT_HALF'],
             polarity_cathodic=[False, False, True]
-        )['sig']
+        ).signal
         np.testing.assert_almost_equal(signal, np.zeros_like(signal), decimal=8)
 
     def test_waveform_sine_half_content_length(self):
@@ -103,7 +103,7 @@ class TestWaveformGenerator(TestCase):
             time_duration=[self._period],
             waveform_select=['SINE_HALF'],
             polarity_cathodic=[False]
-        )['sig']
+        ).signal
         length_content = np.argwhere(signal != 0.).flatten()
         self.assertEqual(length_content.size + 1, int(self._period * self._sampling_rate))
 
@@ -113,7 +113,7 @@ class TestWaveformGenerator(TestCase):
             time_duration=[self._period],
             waveform_select=['SINE_HALF_INV'],
             polarity_cathodic=[False]
-        )['sig']
+        ).signal
         length_content = np.argwhere(signal != 0.).flatten()
         self.assertEqual(length_content.size + 1, int(self._period * self._sampling_rate))
 
@@ -123,7 +123,7 @@ class TestWaveformGenerator(TestCase):
             time_duration=[self._period, self._period, self._period],
             waveform_select=['SINE_HALF', 'SINE_HALF_INV', 'RECT_HALF'],
             polarity_cathodic=[False, False, True]
-        )['sig']
+        ).signal
         np.testing.assert_almost_equal(signal, np.zeros_like(signal), decimal=8)
 
     def test_waveform_sine_full_content_length(self):
@@ -132,7 +132,7 @@ class TestWaveformGenerator(TestCase):
             time_duration=[self._period],
             waveform_select=['SINE_FULL'],
             polarity_cathodic=[False]
-        )['sig']
+        ).signal
         length_content = np.argwhere(signal != 0.).flatten()
         self.assertEqual(length_content.size + 1, int(self._period * self._sampling_rate))
 
@@ -142,7 +142,7 @@ class TestWaveformGenerator(TestCase):
             time_duration=[self._period],
             waveform_select=['TRI_HALF'],
             polarity_cathodic=[False]
-        )['sig']
+        ).signal
         length_content = np.argwhere(signal != 0.).flatten()
         self.assertEqual(length_content.size + 1, int(self._period * self._sampling_rate))
 
@@ -152,7 +152,7 @@ class TestWaveformGenerator(TestCase):
             time_duration=[2 * self._period],
             waveform_select=['TRI_HALF'],
             polarity_cathodic=[False]
-        )['sig']
+        ).signal
         length_content = np.argwhere(signal != 0.).flatten()
         self.assertEqual(length_content.size + 1, int(2 * self._period * self._sampling_rate))
 
@@ -162,7 +162,7 @@ class TestWaveformGenerator(TestCase):
             time_duration=[self._period],
             waveform_select=['TRI_FULL'],
             polarity_cathodic=[False]
-        )['sig']
+        ).signal
         length_content = np.argwhere(signal != 0.).flatten()
         self.assertEqual(length_content.size + 2, int(self._period * self._sampling_rate))
 
@@ -172,7 +172,7 @@ class TestWaveformGenerator(TestCase):
             time_duration=[1.],
             waveform_select=['TRI_FULL'],
             polarity_cathodic=[False]
-        )['sig']
+        ).signal
         ref = np.array([ 0.,  0.33333333,  0.66666667,  1.,  0.66666667, 0.33333333, 0., -0.33333333, -0.66666667, -1., -0.66666667, -0.33333333])
         np.testing.assert_almost_equal(signal, ref, decimal=8)
 
@@ -182,7 +182,7 @@ class TestWaveformGenerator(TestCase):
             time_duration=[self._period],
             waveform_select=['SAW_POS'],
             polarity_cathodic=[False]
-        )['sig']
+        ).signal
         length_content = np.argwhere(signal != 0.).flatten()
         self.assertEqual(length_content.size, int(self._period * self._sampling_rate))
 
@@ -192,7 +192,7 @@ class TestWaveformGenerator(TestCase):
             time_duration=[self._period],
             waveform_select=['SAW_NEG'],
             polarity_cathodic=[False]
-        )['sig']
+        ).signal
         length_content = np.argwhere(signal != 0.).flatten()
         self.assertEqual(length_content.size, int(self._period * self._sampling_rate))
 
@@ -202,7 +202,7 @@ class TestWaveformGenerator(TestCase):
             time_duration=[self._period, self._period],
             waveform_select=['SAW_POS', 'SAW_NEG'],
             polarity_cathodic=[False, False]
-        )['sig']
+        ).signal
         np.testing.assert_almost_equal(signal, np.zeros_like(signal), decimal=8)
 
     def test_waveform_gauss_content_length(self):
@@ -211,7 +211,7 @@ class TestWaveformGenerator(TestCase):
             time_duration=[self._period],
             waveform_select=['GAUSS'],
             polarity_cathodic=[False]
-        )['sig']
+        ).signal
         length_content = np.argwhere(signal != 0.).flatten()
         self.assertEqual(length_content.size, int(self._period * self._sampling_rate))
 
@@ -221,7 +221,7 @@ class TestWaveformGenerator(TestCase):
             time_duration=[2e-3],
             waveform_select=['EAP'],
             polarity_cathodic=[False]
-        )['sig']
+        ).signal
         chck = np.array([0.0, -0.0012172548264579614, -0.005311060210664175, -0.019272136018855357, -0.05834180120914487, -0.14753128425548376, -0.31173514070946545, -0.5501866513568735, -0.8099373931559386, -0.9911547362864012, -1.0, -0.8135991915652375, -0.49668364555662703, -0.15395302356345117, 0.13388328120569107, 0.33706300246139936, 0.4618628339252224, 0.5245140250682183, 0.5376569993144354, 0.5102975228307609, 0.4518869951221461, 0.3741391312238784, 0.2897709373526756, 0.20996297854908397, 0.14233312007040994, 0.09027055407061382, 0.0535628125910162, 0.02973430540680821, 0.015442918658894482, 0.0075037461317305825, 0.003411175340723643, 0.0014507985640440527, 0.000577281118637366, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         np.testing.assert_almost_equal(signal, chck, decimal=4)
 
@@ -231,7 +231,7 @@ class TestWaveformGenerator(TestCase):
             time_duration=[self._period],
             waveform_select=['EAP'],
             polarity_cathodic=[False]
-        )['sig']
+        ).signal
         length_content = np.argwhere(signal != 0.).flatten()
         self.assertEqual(length_content.size, int(1.6e-3 * self._sampling_rate))
 
@@ -284,7 +284,7 @@ class TestWaveformGenerator(TestCase):
             bitfrac=0,
             signed=False,
             do_opt=False
-        )['sig']
+        ).signal
         ref = np.array([32, 48, 59, 63, 59, 48, 32, 16, 4, 0, 4, 15], dtype=np.int32)
         np.testing.assert_almost_equal(out, ref, decimal=4)
 
@@ -298,7 +298,7 @@ class TestWaveformGenerator(TestCase):
             bitfrac=0,
             signed=True,
             do_opt=False
-        )['sig']
+        ).signal
         ref = np.array([0, 15, 27, 31, 27, 16, 0, -15, -27, -32, -27, -16], dtype=np.int32)
         np.testing.assert_almost_equal(out, ref, decimal=4)
 
@@ -312,7 +312,7 @@ class TestWaveformGenerator(TestCase):
             bitfrac=0,
             signed=True,
             do_opt=True
-        )['sig']
+        ).signal
         ref = np.array([  0,  15,  27,  31], dtype=np.int32)
         np.testing.assert_almost_equal(out, ref, decimal=4)
 
@@ -326,7 +326,7 @@ class TestWaveformGenerator(TestCase):
             bitfrac=0,
             signed=False,
             do_opt=False
-        )['sig']
+        ).signal
         ref = np.array([32, 42, 53, 63, 53, 42, 32, 21, 10, 0, 10, 21], dtype=np.int32)
         np.testing.assert_almost_equal(out, ref, decimal=4)
 
