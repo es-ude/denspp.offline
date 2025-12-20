@@ -1,4 +1,3 @@
-from elasticai.creator.file_generation.on_disk_path import OnDiskPath
 from torch import nn, Tensor
 from elasticai.creator.nn import Sequential
 from elasticai.creator.nn.fixed_point import Linear, Tanh, BatchNormedLinear
@@ -36,7 +35,7 @@ class synthetic_dnn_ae_v1(nn.Module):
             nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0], bias=do_train_bias)
         )
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         encoded = self.encoder(x)
         return encoded, self.decoder(encoded)
 
@@ -70,7 +69,7 @@ class synthetic_dnn_ae_v2(nn.Module):
             nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0], bias=do_train_bias)
         )
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         encoded = self.encoder(x)
         return encoded, self.decoder(encoded)
 
@@ -110,7 +109,7 @@ class synthetic_dnn_ae_v1_quantized(nn.Module):
                               total_bits=bitwidth_total, frac_bits=bitwidth_frac, bn_affine=do_train_batch),
         )
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         encoded = self.encoder(x)
         return encoded, self.decoder(encoded)
 
@@ -149,6 +148,6 @@ class synthethic_dnn_ae_v2(nn.Module):
                       out_features=iohiddenlayer[0])
         )
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         encoded = self.encoder(x)
         return encoded, self.decoder(encoded)

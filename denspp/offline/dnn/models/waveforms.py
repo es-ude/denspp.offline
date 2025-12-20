@@ -1,8 +1,8 @@
 from torch import nn, Tensor, argmax, flatten
 
 
-class waveforms_mlp_cl_v1(nn.Module):
-    def __init__(self, input_size: int=240, output_size: int=4):
+class waveforms_mlp_cl_v0(nn.Module):
+    def __init__(self, input_size: int=280, output_size: int=4):
         super().__init__()
         self.model_shape = (1, input_size)
         # --- Settings of model
@@ -21,14 +21,14 @@ class waveforms_mlp_cl_v1(nn.Module):
                 # self.model.add_module(f"soft", nn.Softmax(dim=1))
                 pass
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x = flatten(x, start_dim=1)
         prob = self.model(x)
         return prob, argmax(prob, dim=1)
 
 
-class waveforms_mlp_ae_v1(nn.Module):
-    def __init__(self, input_size: int=240, output_size: int=4):
+class waveforms_mlp_ae_v0(nn.Module):
+    def __init__(self, input_size: int=280, output_size: int=4):
         super().__init__()
         self.model_shape = (1, input_size)
         # --- Settings of model
@@ -54,7 +54,7 @@ class waveforms_mlp_ae_v1(nn.Module):
                 self.decoder.add_module(f"batch1d_{idx:02d}", nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch))
                 self.decoder.add_module(f"act_{idx:02d}", nn.ReLU())
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         encoded = self.encoder(x)
         decoded = self.decoder(encoded)
         return encoded, decoded

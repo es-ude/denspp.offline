@@ -1,8 +1,8 @@
 from denspp.offline.template.call_dataset import DatasetLoader
 
 from denspp.offline.data_format.yaml import YamlHandler
-from denspp.offline.dnn.handler.train_ae_cl_sweep import do_train_ae_cl_sweep
-from denspp.offline.dnn.pytorch_config_data import SettingsDataset
+from denspp.offline.dnn.training.train_ae_cl_sweep import do_train_ae_cl_sweep
+from denspp.offline.dnn.data_config import SettingsDataset
 from denspp.offline.dnn.dnn_handler import SettingsMLPipeline, DefaultSettingsMLPipeline
 from denspp.offline.dnn.plots.plot_ae_cl_sweep import extract_data_from_files, plot_common_loss, plot_common_params, \
     plot_architecture_metrics_isolated
@@ -10,7 +10,7 @@ from denspp.offline.dnn.plots.plot_ae_cl_sweep import extract_data_from_files, p
 
 settings = SettingsDataset(
     data_path='',
-    data_file_name='quiroga',
+    data_type='quiroga',
     use_cell_sort_mode=0,
     augmentation_do=False,
     augmentation_num=0,

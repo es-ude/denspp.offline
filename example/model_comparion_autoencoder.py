@@ -7,10 +7,9 @@ import matplotlib.pyplot as plt
 from denspp.offline.data_format.yaml import YamlHandler
 from denspp.offline.dnn.dataset.autoencoder import prepare_training
 from denspp.offline.dnn.dnn_handler import SettingsMLPipeline, DefaultSettingsMLPipeline
-from denspp.offline.dnn.pytorch_config_data import SettingsDataset, DefaultSettingsDataset
-from denspp.offline.dnn.pytorch_config_model import ConfigPytorch, DefaultSettingsTrainMSE
+from denspp.offline.dnn.data_config import SettingsDataset, DefaultSettingsDataset
 from denspp.offline.dnn.plots.plot_dnn import results_training
-from denspp.offline.dnn import train_autoencoder_routine
+from denspp.offline.dnn import train_autoencoder_routine, SettingsPytorch, DefaultSettingsTrainMSE
 
 
 def train_model_normal(used_model_name: str, config_train, config_data, dnn_handler,
@@ -97,11 +96,11 @@ if __name__ == "__main__":
     default_train = DefaultSettingsTrainMSE
     default_train.model_name = used_models[0]
     yaml_nn = YamlHandler(default_train, 'config', f'ConfigAE_Training')
-    config_train = yaml_nn.get_class(ConfigPytorch)
+    config_train = yaml_nn.get_class(SettingsPytorch)
 
     # --- Get Dataset
     default_data = DefaultSettingsDataset
-    default_data.data_file_name = 'quiroga'
+    default_data.data_type = 'quiroga'
     default_data.normalization_do = True
     yaml_data = YamlHandler(default_data, 'config', f'ConfigAE_Dataset')
     config_data = yaml_data.get_class(SettingsDataset)

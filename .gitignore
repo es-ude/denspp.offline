@@ -16,6 +16,7 @@ Config_*.yaml
 **/src_*
 **/main_*.py
 **/access_cloud.yaml
+**/access_cloud.json
 
 
 ### venv template
