@@ -10,7 +10,7 @@ class mnist_test_cl_v0(nn.Module):
             nn.Linear(784, 10)
         )
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x = flatten(x, start_dim=1)
         prob = self.model(x)
         return prob, argmax(prob, 1)
@@ -26,7 +26,7 @@ class mnist_test_cl_v1(nn.Module):
             nn.ReLU()
         )
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x = flatten(x, start_dim=1)
         prob = self.model(x)
         return prob, argmax(prob, 1)
@@ -42,7 +42,7 @@ class mnist_test_cl_v2(nn.Module):
             nn.Softmax(dim=1)
         )
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x = flatten(x, start_dim=1)
         prob = self.model(x)
         return prob, argmax(prob, 1)
@@ -59,7 +59,7 @@ class mnist_test_cl_v3(nn.Module):
             nn.ReLU()
         )
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x = flatten(x, start_dim=1)
         prob = self.model(x)
         return prob, argmax(prob, 1)
@@ -76,7 +76,7 @@ class mnist_test_cl_v4(nn.Module):
             nn.Softmax(dim=1)
         )
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x = flatten(x, start_dim=1)
         prob = self.model(x)
         return prob, argmax(prob, 1)
@@ -96,7 +96,7 @@ class mnist_test_cl_v5(nn.Module):
             nn.Softmax(dim=1)
         )
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x = flatten(x, start_dim=1)
         prob = self.model(x)
         return prob, argmax(prob, 1)
@@ -122,7 +122,7 @@ class mnist_test_cl_v6(nn.Module):
             nn.Softmax(dim=1)
         )
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x = flatten(x, start_dim=1)
         prob = self.model(x)
         return prob, argmax(prob, 1)
@@ -160,44 +160,10 @@ class mnist_test_cl_v7(nn.Module):
             nn.Softmax(dim=1)
         )
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x0 = x.unsqueeze(dim=1)
         x0 = self.model_cnn(x0)
         x1 = flatten(x0, start_dim=2)
         x1 = flatten(x1, start_dim=1)
         prob = self.model_cl(x1)
         return prob, argmax(prob, 1)
-
-
-class mnist_test_cl_v8(nn.Module):
-    """Class of an autoencoder with Dense-Layer for feature extraction"""
-    def __init__(self):
-        super().__init__()
-        self.model_shape = (1, 28, 28)
-        # --- Settings of model
-        do_train_bias = True
-        do_train_batch = True
-        config_network = [784, 400, 150, 10]
-
-        # --- Model Deployment: Encoder
-        self.encoder = nn.Sequential()
-        for idx, layer_size in enumerate(config_network[1:], start=1):
-            self.encoder.add_module(f"linear_{idx:02d}", nn.Linear(in_features=config_network[idx - 1], out_features=layer_size, bias=do_train_bias))
-            if not idx == len(config_network) - 1:
-                self.encoder.add_module(f"batch1d_{idx:02d}", nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch))
-                self.encoder.add_module(f"act_{idx:02d}", nn.SiLU())
-
-        # --- Model Deployment: Decoder
-        self.decoder = nn.Sequential()
-        for idx, layer_size in enumerate(reversed(config_network[:-1]), start=1):
-            if idx == 1:
-                self.decoder.add_module(f"act_dec_{idx:02d}", nn.SiLU())
-            self.decoder.add_module(f"linear_{idx:02d}", nn.Linear(in_features=config_network[-idx], out_features=layer_size, bias=do_train_bias))
-            if not idx == len(config_network) - 1:
-                self.decoder.add_module(f"batch1d_{idx:02d}", nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch))
-                self.decoder.add_module(f"act_{idx:02d}", nn.SiLU())
-
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
-        x = flatten(x, start_dim=1)
-        encoded = self.encoder(x)
-        return encoded, reshape(self.decoder(encoded), (x.shape[0], 28, 28))

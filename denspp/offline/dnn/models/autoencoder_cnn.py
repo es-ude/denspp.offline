@@ -42,7 +42,7 @@ class synthetic_cnn_ae_v1(nn.Module):
                                padding=kernel_padding[0], output_padding=kernel_out[0])
         )
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x0 = unsqueeze(x, dim=1)
         encoded = self.encoder(x0)
         decoded = self.decoder(encoded)
@@ -98,7 +98,7 @@ class synthetic_cnn_ae_v2(nn.Module):
             nn.Linear(24, self.model_shape[1], bias=True)
         )
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x0 = unsqueeze(x, dim=1)
         encoded0 = self.encoder(x0)
         encoded, indices = self.pool(encoded0)
@@ -171,7 +171,7 @@ class synthetic_cnn_ae_v3(nn.Module):
             nn.Linear(fcnn_out, self.model_shape[1], bias=do_bias_train)
         )
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x0 = unsqueeze(x, dim=1)
         x0 = self.encoder(x0)
         encoded = self.encoder_linear(x0)
@@ -232,7 +232,7 @@ class synthetic_cnn_ae_v4(nn.Module):
             nn.Linear(fcnn_layer[4], fcnn_layer[5], bias=do_bias_train)
         )
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x0 = unsqueeze(x, dim=1)
         encoded = self.encoder(x0)
         decoded = self.decoder(encoded)

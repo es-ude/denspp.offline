@@ -13,7 +13,7 @@ def get_dataset() -> dict:
     :return:        Dict with rawdata ['data'], label ['label'] and label names ['dict']
     """
     set0 = deepcopy(DefaultSettingsDataset)
-    set0.data_file_name = 'Waveforms'
+    set0.data_type = 'Waveforms'
 
     settings = YamlHandler(
         template=set0,

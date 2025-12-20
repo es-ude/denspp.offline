@@ -34,7 +34,7 @@ class CompareDNN_AutoencoderTorch_v1(nn.Module):
             nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0], bias=do_train_bias),
         )
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         encoded = self.encoder(x)
         return encoded, self.decoder(encoded)
 
@@ -68,15 +68,12 @@ class CompareDNN_AutoencoderCreator_v1(nn.Module):
             BatchNormedLinear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0], bias=do_train_bias, total_bits=total_bits, frac_bits=frac_bits, bn_affine=do_train_batch),
         )
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         encoded = self.encoder(x)
         return encoded, self.decoder(encoded)
 
     def forward_first_layer(self, x: Tensor) -> Tensor:
         return self.encoder[0](x)
-
-    def create_encoder_design(self, name):
-        return self.encoder.create_design(name)
 
 
 class CompareDNN_AutoencoderTorch_woBN_v1(nn.Module):
@@ -106,7 +103,7 @@ class CompareDNN_AutoencoderTorch_woBN_v1(nn.Module):
             nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0], bias=do_train_bias),
         )
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         encoded = self.encoder(x)
         return encoded, self.decoder(encoded)
 
@@ -146,17 +143,12 @@ class CompareDNN_AutoencoderCreator_woBN_v1(nn.Module):
                    total_bits=total_bits, frac_bits=frac_bits),
         )
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         encoded = self.encoder(x)
         return encoded, self.decoder(encoded)
 
     def forward_first_layer(self, x: Tensor) -> Tensor:
         return self.encoder[0](x)
-
-    def create_design(self, name):
-        encoder = self.encoder.create_design(f"{name}_encoder")
-        decoder = self.decoder.create_design(f"{name}_decoder")
-        return encoder, decoder
 
 
 class CompareDNN_ClassifierTorch_v1(nn.Module):
@@ -183,7 +175,7 @@ class CompareDNN_ClassifierTorch_v1(nn.Module):
                 # self.model.add_module(f"soft", nn.Softmax(dim=1))
                 pass
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x = flatten(x, start_dim=1)
         prob = self.model(x)
         return prob, argmax(prob, 1)
@@ -215,7 +207,7 @@ class CompareDNN_ClassifierCreator_v1(nn.Module):
             else:
                 pass
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x = flatten(x, start_dim=1)
         prob = self.model(x)
         return prob, argmax(prob, 1)

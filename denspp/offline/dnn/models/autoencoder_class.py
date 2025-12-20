@@ -25,6 +25,6 @@ class synthetic_ae_cl_v1(nn.Module):
             # nn.Softmax(dim=1)
         )
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         val = self.classifier(x)
         return val, argmax(val, dim=1)
