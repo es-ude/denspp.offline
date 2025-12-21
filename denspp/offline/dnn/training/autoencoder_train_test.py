@@ -1,23 +1,85 @@
-import unittest
+from unittest import TestCase, main
 from copy import deepcopy
+from torch.nn import MSELoss
+from torch.optim import Adam
+
 from denspp.offline.dnn import (
-    SettingsPytorch,
-    DefaultSettingsTrainMSE,
+    DefaultSettingsTrainingMSE,
     SettingsDataset,
     DefaultSettingsDataset,
     SettingsMLPipeline,
     DefaultSettingsMLPipeline,
     DatasetFromFile
 )
-from .autoencoder_train import TrainAutoencoder
+from .autoencoder_train import TrainAutoencoder, SettingsAutoencoder
 from .dataset_dummy import generate_dummy_dataset, dummy_mlp_ae_v0
 
 
-class TestAutoencoderTraining(unittest.TestCase):
+
+class TestPyTorchModelConfigAutoencoder(TestCase):
+    def setUp(self):
+        self.sets: SettingsAutoencoder = deepcopy(DefaultSettingsTrainingMSE)
+
+    def test_get_model_overview(self):
+        rslt = self.sets.get_model_overview(print_overview=True)
+        assert len(rslt) > 0
+        assert 'mnist_mlp_ae_v0' in rslt
+        assert 'waveforms_mlp_ae_v0' in rslt
+
+    def test_no_model_defined(self):
+        try:
+            self.sets.get_model()
+        except AttributeError:
+            self.assertTrue(True)
+        else:
+            self.assertTrue(False)
+
+    def test_wrong_model_mnist(self):
+        self.sets.model_name = 'mnist_mlp_ae_v0'
+        try:
+            self.sets.get_model()
+        except AttributeError:
+            self.assertTrue(False)
+        else:
+            self.assertTrue(True)
+
+    def test_model_mnist(self):
+        self.sets.model_name = 'mnist_mlp_ae_v0'
+        try:
+            self.sets.get_model()
+        except AttributeError:
+            self.assertTrue(False)
+        else:
+            self.assertTrue(True)
+
+    def test_model_waveforms(self):
+        self.sets.model_name = 'waveforms_mlp_ae_v0'
+        try:
+            self.sets.get_model()
+        except AttributeError:
+            self.assertTrue(False)
+        else:
+            self.assertTrue(True)
+
+    def test_get_loss_func(self):
+        rslt = self.sets.get_loss_func()
+        assert type(rslt) == MSELoss
+
+    def test_load_optimizer(self):
+        self.sets.model_name = 'waveforms_mlp_ae_v0'
+        model = self.sets.get_model()
+        rslt = self.sets.load_optimizer(
+            model=model,
+            learn_rate=0.2
+        )
+        assert type(rslt) == Adam
+
+
+class TestAutoencoderTraining(TestCase):
     def setUp(self):
         self.set_routine: SettingsMLPipeline = deepcopy(DefaultSettingsMLPipeline)
         self.set_routine.do_plot = False
-        self.set_train: SettingsPytorch = deepcopy(DefaultSettingsTrainMSE)
+        self.set_train: SettingsAutoencoder = deepcopy(DefaultSettingsTrainingMSE)
         self.set_train.num_epochs = 10
         self.set_train.model_name = str(dummy_mlp_ae_v0)
         self.set_dataset: SettingsDataset = deepcopy(DefaultSettingsDataset)
@@ -52,8 +114,6 @@ class TestAutoencoderTraining(unittest.TestCase):
     def test_training_phase(self):
         self.dut.load_dataset(
             dataset=self.dataset,
-            noise_std=0.01,
-            mode_train=0
         )
         self.dut.load_model(
             model=dummy_mlp_ae_v0(input_size=self.dataset.data.shape[1]),
@@ -79,8 +139,6 @@ class TestAutoencoderTraining(unittest.TestCase):
     def test_post_validation_without_ptq(self):
         self.dut.load_dataset(
             dataset=self.dataset,
-            noise_std=0.01,
-            mode_train=0
         )
         self.dut.load_model(
             model=dummy_mlp_ae_v0(input_size=self.dataset.data.shape[1]),
@@ -94,8 +152,6 @@ class TestAutoencoderTraining(unittest.TestCase):
     def test_post_validation_with_ptq(self):
         self.dut.load_dataset(
             dataset=self.dataset,
-            noise_std=0.01,
-            mode_train=0
         )
         self.dut.load_model(
             model=dummy_mlp_ae_v0(input_size=self.dataset.data.shape[1]),
@@ -108,4 +164,4 @@ class TestAutoencoderTraining(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    main()

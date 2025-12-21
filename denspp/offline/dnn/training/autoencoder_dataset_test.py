@@ -1,6 +1,6 @@
 from unittest import TestCase, main
 from .dataset_dummy import generate_dummy_dataset
-from .autoencoder_dataset import DatasetAutoencoder, DatasetFromFile
+from .autoencoder_dataset import DatasetAutoencoder
 
 
 class TestAutoencoderDataset(TestCase):

@@ -3,8 +3,8 @@ from logging import getLogger, Logger
 from denspp.offline.data_format import YamlHandler
 from denspp.offline.data_call import build_waveform_dataset, SettingsWaveformDataset, DefaultSettingsWaveformDataset
 from denspp.offline.dnn import DatasetFromFile
-from denspp.offline.dnn.pytorch_config_data import SettingsDataset, ControllerDataset
-from denspp.offline.dnn.processor import DataProcessor
+from denspp.offline.dnn.data_config import SettingsDataset, ControllerDataset
+from denspp.offline.dnn.data_processor import DataProcessor
 
 
 class DatasetLoader(ControllerDataset):

@@ -19,11 +19,11 @@ from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
 from sklearn.model_selection import KFold
 
-from denspp.offline import get_path_to_project, check_elem_unique
+from denspp.offline import get_path_to_project
+from denspp.offline.data_format import YamlHandler
+from denspp.offline.dnn import SettingsDataset
 from denspp.offline.dnn.model_library import ModelLibrary
-from denspp.offline.dnn.data_config import SettingsDataset
 from denspp.offline.structure_builder import init_dnn_folder
-from denspp.offline.data_format.yaml import YamlHandler
 
 
 @dataclass
@@ -105,36 +105,6 @@ class SettingsPytorch:
             else:
                 models_bib.get_library_overview(do_print=True)
                 raise AttributeError(f"Model is not available - Please check again!")
-
-
-DefaultSettingsTrainMSE = SettingsPytorch(
-    model_name='',
-    patience=20,
-    optimizer='Adam',
-    loss='MSE',
-    deterministic_do=False,
-    deterministic_seed=42,
-    num_kfold=1,
-    num_epochs=10,
-    batch_size=256,
-    data_do_shuffle=True,
-    data_split_ratio=0.2,
-    custom_metrics=[]
-)
-DefaultSettingsTrainCE = SettingsPytorch(
-    model_name='',
-    patience=20,
-    optimizer='Adam',
-    loss='Cross Entropy',
-    num_kfold=1,
-    num_epochs=10,
-    batch_size=256,
-    data_do_shuffle=True,
-    data_split_ratio=0.2,
-    deterministic_do=False,
-    deterministic_seed=42,
-    custom_metrics=[]
-)
 
 
 class PyTorchHandler:
