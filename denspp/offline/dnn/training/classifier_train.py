@@ -1,4 +1,5 @@
 import numpy as np
+from dataclasses import dataclass
 from os.path import join
 from logging import getLogger, Logger
 from shutil import copy
@@ -6,9 +7,8 @@ from datetime import datetime
 from torch import Tensor, zeros, load, save, concatenate, inference_mode, cuda, cat, randn, add, div
 
 from denspp.offline import check_keylist_elements_any
-from denspp.offline.dnn import SettingsPytorch, DatasetFromFile
+from denspp.offline.dnn.data_config import DatasetFromFile, SettingsDataset
 from denspp.offline.dnn.ptq_help import quantize_model_fxp
-from denspp.offline.dnn.training.common_train import SettingsDataset, PyTorchHandler
 from denspp.offline.dnn.training.classifier_dataset import DatasetClassifier, DatasetAutoencoderClassifier
 from denspp.offline.metric.data_torch import (
     calculate_number_true_predictions,
@@ -16,15 +16,52 @@ from denspp.offline.metric.data_torch import (
     calculate_recall,
     calculate_fbeta
 )
+from .common_train import SettingsPytorch, PyTorchHandler
+
+
+@dataclass
+class SettingsClassifier(SettingsPytorch):
+    """Class for handling the PyTorch training/inference pipeline
+    Attributes:
+        model_name:         String with the model name
+        patience:           Integer value with number of epochs before early stopping
+        optimizer:          String with PyTorch optimizer name
+        loss:               String with method name for the loss function
+        deterministic_do:   Boolean if deterministic training should be done
+        deterministic_seed: Integer with the seed for deterministic training
+        num_kfold:          Integer value with applying k-fold cross validation
+        num_epochs:         Integer value with number of epochs
+        batch_size:         Integer value with batch size
+        data_split_ratio:   Float value for splitting the input dataset between training and validation
+        data_do_shuffle:    Boolean if data should be shuffled before training
+        custom_metrics:     List with string of custom metrics to calculate during training
+    """
+    pass
+
+
+DefaultSettingsTrainingCE = SettingsClassifier(
+    model_name='',
+    patience=20,
+    optimizer='Adam',
+    loss='Cross Entropy',
+    num_kfold=1,
+    num_epochs=10,
+    batch_size=256,
+    data_do_shuffle=True,
+    data_split_ratio=0.2,
+    deterministic_do=False,
+    deterministic_seed=42,
+    custom_metrics=[]
+)
 
 
 class TrainClassifier(PyTorchHandler):
     _logger: Logger
 
-    def __init__(self, config_train: SettingsPytorch, config_data: SettingsDataset, do_train: bool=True) -> None:
+    def __init__(self, config_train: SettingsClassifier, config_data: SettingsDataset, do_train: bool=True) -> None:
         """Class for Handling Training of Classifiers
         :param config_data:     Settings for handling and loading the dataset (just for saving)
-        :param config_train:    Settings for handling the PyTorch Trainings Routine
+        :param config_train:    Settings for handling the PyTorch Trainings Routine of a Classifier
         :param do_train:        Do training of model otherwise only inference
         :return:                None
         """
@@ -43,7 +80,6 @@ class TrainClassifier(PyTorchHandler):
         :param dataset:     Dataclass with dataset loaded from extern
         :return:            None
         """
-        #TODO: Wie enable ich die Autoencoder-Classifier Geschichte?
         dataset0 = DatasetClassifier(
             dataset=dataset,
         )

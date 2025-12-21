@@ -1,24 +1,83 @@
-import unittest
+from unittest import TestCase, main
 from copy import deepcopy
+from torch.nn import CrossEntropyLoss
+from torch.optim import Adam
 
 from denspp.offline.dnn import (
-    SettingsPytorch,
-    DefaultSettingsTrainCE,
     SettingsDataset,
     DefaultSettingsDataset,
     SettingsMLPipeline,
     DefaultSettingsMLPipeline,
     DatasetFromFile
 )
-from .classifier_train import TrainClassifier
+from .classifier_train import TrainClassifier, SettingsClassifier, DefaultSettingsTrainingCE
 from .dataset_dummy import generate_dummy_dataset, dummy_mlp_cl_v0
 
 
-class TestClassifierTraining(unittest.TestCase):
+class TestPyTorchModelConfigClassifier(TestCase):
+    def setUp(self):
+        self.sets: SettingsClassifier = deepcopy(DefaultSettingsTrainingCE)
+
+    def test_get_model_overview(self):
+        rslt = self.sets.get_model_overview(print_overview=True)
+        assert len(rslt) > 0
+        assert 'mnist_mlp_cl_v0' in rslt
+        assert 'waveforms_mlp_cl_v0' in rslt
+
+    def test_no_model_defined(self):
+        try:
+            self.sets.get_model()
+        except AttributeError:
+            self.assertTrue(True)
+        else:
+            self.assertTrue(False)
+
+    def test_wrong_model_mnist(self):
+        self.sets.model_name = 'mnist_test_cl_v0'
+        try:
+            self.sets.get_model()
+        except AttributeError:
+            self.assertTrue(False)
+        else:
+            self.assertTrue(True)
+
+    def test_model_mnist(self):
+        self.sets.model_name = 'mnist_test_cl_v0'
+        try:
+            self.sets.get_model()
+        except AttributeError:
+            self.assertTrue(False)
+        else:
+            self.assertTrue(True)
+
+    def test_model_waveforms(self):
+        self.sets.model_name = 'waveforms_mlp_cl_v0'
+        try:
+            self.sets.get_model()
+        except AttributeError:
+            self.assertTrue(False)
+        else:
+            self.assertTrue(True)
+
+    def test_get_loss_func(self):
+        rslt = self.sets.get_loss_func()
+        assert type(rslt) == CrossEntropyLoss
+
+    def test_load_optimizer(self):
+        self.sets.model_name = 'waveforms_mlp_cl_v0'
+        model = self.sets.get_model()
+        rslt = self.sets.load_optimizer(
+            model=model,
+            learn_rate=0.2
+        )
+        assert type(rslt) == Adam
+
+
+class TestClassifierTraining(TestCase):
     def setUp(self):
         self.set_routine: SettingsMLPipeline = deepcopy(DefaultSettingsMLPipeline)
         self.set_routine.do_plot = False
-        self.set_train: SettingsPytorch = deepcopy(DefaultSettingsTrainCE)
+        self.set_train: SettingsClassifier = deepcopy(DefaultSettingsTrainingCE)
         self.set_train.num_epochs = 10
         self.set_train.model_name = str(dummy_mlp_cl_v0)
         self.set_dataset: SettingsDataset = deepcopy(DefaultSettingsDataset)
@@ -105,4 +164,4 @@ class TestClassifierTraining(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    main()

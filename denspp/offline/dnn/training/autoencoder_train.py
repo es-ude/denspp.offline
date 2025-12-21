@@ -1,4 +1,5 @@
 import numpy as np
+from dataclasses import dataclass
 from logging import getLogger, Logger
 from os.path import join
 from shutil import copy
@@ -6,24 +7,74 @@ from datetime import datetime
 from torch import Tensor, load, save, inference_mode, flatten, cuda, cat, concatenate, randn
 
 from denspp.offline import check_keylist_elements_any
-from denspp.offline.dnn import SettingsPytorch, DatasetFromFile
+from denspp.offline.dnn.data_config import DatasetFromFile, SettingsDataset
 from denspp.offline.dnn.ptq_help import quantize_model_fxp
-from denspp.offline.dnn.training.common_train import SettingsDataset, PyTorchHandler
 from denspp.offline.dnn.training.autoencoder_dataset import DatasetAutoencoder
 from denspp.offline.metric.snr import calculate_snr_tensor, calculate_dsnr_tensor
+from .common_train import PyTorchHandler, SettingsPytorch
+
+
+@dataclass
+class SettingsAutoencoder(SettingsPytorch):
+    """Class for handling the PyTorch training/inference pipeline
+    Attributes:
+        model_name:         String with the model name
+        patience:           Integer value with number of epochs before early stopping
+        optimizer:          String with PyTorch optimizer name
+        loss:               String with method name for the loss function
+        deterministic_do:   Boolean if deterministic training should be done
+        deterministic_seed: Integer with the seed for deterministic training
+        num_kfold:          Integer value with applying k-fold cross validation
+        num_epochs:         Integer value with number of epochs
+        batch_size:         Integer value with batch size
+        data_split_ratio:   Float value for splitting the input dataset between training and validation
+        data_do_shuffle:    Boolean if data should be shuffled before training
+        custom_metrics:     List with string of custom metrics to calculate during training
+        trainings_mode:     Integer to define trainings mode of the autoencoder
+                            [0: Autoencoder,
+                            1: Denoising Autoencoder (mean),
+                            2: Denoising Autoencoder (add random noise),
+                            3: Denoising Autoencoder (add gaussian noise)]
+        feat_size:          Integer with defining the feature size of the encoder output / decoder input
+        noise_std:          Float value for adding noise standard deviation on input data
+    """
+    trainings_mode: int
+    feat_size: int
+    noise_std: float
+
+
+DefaultSettingsTrainingMSE = SettingsAutoencoder(
+    model_name='',
+    patience=20,
+    optimizer='Adam',
+    loss='MSE',
+    deterministic_do=False,
+    deterministic_seed=42,
+    num_kfold=1,
+    num_epochs=10,
+    batch_size=256,
+    data_do_shuffle=True,
+    data_split_ratio=0.2,
+    custom_metrics=[],
+    trainings_mode=0,
+    feat_size=4,
+    noise_std=0.1
+)
 
 
 class TrainAutoencoder(PyTorchHandler):
     _logger: Logger
+    _settings_train: SettingsAutoencoder
 
-    def __init__(self, config_train: SettingsPytorch, config_data: SettingsDataset, do_train: bool=True) -> None:
+    def __init__(self, config_train: SettingsAutoencoder, config_data: SettingsDataset, do_train: bool=True) -> None:
         """Class for Handling Training of Autoencoders
         :param config_data:     Settings for handling and loading the dataset (just for saving)
-        :param config_train:    Settings for handling the PyTorch Trainings Routine
+        :param config_train:    Settings for handling the PyTorch Trainings Routine of an Autoencoder
         :param do_train:        Do training of model otherwise only inference
         :return:                None
         """
         PyTorchHandler.__init__(self, config_train, config_data, do_train)
+        self._settings_train = config_train
         self._logger = getLogger(__name__)
         self.__metric_buffer = dict()
         self.__metric_result = dict()
@@ -32,21 +83,15 @@ class TrainAutoencoder(PyTorchHandler):
                                 'dsnr_all': self.__determine_dsnr_all, 'dsnr_cl': self.__determine_dsnr_class,
                                 'ptq_loss': self.__determine_ptq_loss}
 
-    def load_dataset(self, dataset: DatasetFromFile, noise_std: float=0.1, mode_train: int=0) -> None:
+    def load_dataset(self, dataset: DatasetFromFile) -> None:
         """Loading the loaded dataset and transform it into right dataloader
         :param dataset:     Dataclass with dataset loaded from extern
-        :param noise_std:   Adding noise standard deviation on input data
-        :param mode_train:  Autoencoder Training Mode
-                            [0: Autoencoder,
-                            1: Denoising Autoencoder (mean),
-                            2: Denoising Autoencoder (add random noise),
-                            3: Denoising Autoencoder (add gaussian noise)]
         :return:            None
         """
         dataset0 = DatasetAutoencoder(
             dataset=dataset,
-            noise_std=noise_std,
-            mode_train=mode_train
+            noise_std=self._settings_train.noise_std,
+            mode_train=self._settings_train.trainings_mode
         )
         self._prepare_dataset_for_training(
             data_set=dataset0,
