@@ -23,7 +23,7 @@ class mnist_mlp_cl_example_v1(nn.Module):
                 # self.model.add_module(f"soft", nn.Softmax(dim=1))
                 pass
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x = flatten(x, start_dim=1)
         prob = self.model(x)
         return prob, argmax(prob, 1)
@@ -57,7 +57,7 @@ class mnist_mlp_ae_example_v1(nn.Module):
                 self.decoder.add_module(f"batch1d_{idx:02d}", nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch))
                 self.decoder.add_module(f"act_{idx:02d}", nn.ReLU())
 
-    def forward(self, x: Tensor) -> [Tensor, Tensor]:
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x = flatten(x, start_dim=1)
         encoded = self.encoder(x)
         return encoded, reshape(self.decoder(encoded), (x.shape[0], 28, 28))
