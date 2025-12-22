@@ -1,5 +1,5 @@
-from os import remove, makedirs, cpu_count
-from os.path import join
+from os import remove, cpu_count
+from pathlib import Path
 import platform
 import subprocess
 import re
@@ -11,7 +11,6 @@ import numpy as np
 from logging import getLogger, Logger
 from random import seed
 from shutil import rmtree
-from glob import glob
 from datetime import datetime
 from torch import (device, cuda, backends, randn, cat, Tensor, is_tensor, zeros, unique, argwhere, float32,
                    Generator, manual_seed, use_deterministic_algorithms, nn, optim)
@@ -100,8 +99,20 @@ class SettingsPytorch:
             raise AttributeError("Please select one model above and type-in the name into yaml file")
         else:
             if models_bib.check_module_available(self.model_name):
-                used_model = deepcopy(models_bib.build(self.model_name, *args, **kwargs))
-                return used_model
+                return deepcopy(models_bib.build(self.model_name, *args, **kwargs))
+            else:
+                models_bib.get_library_overview(do_print=True)
+                raise AttributeError(f"Model is not available - Please check again!")
+
+    def get_signature(self) -> list:
+        """Returning the signature or list with input names of model object"""
+        models_bib = ModelLibrary().get_registry()
+        if not self.model_name:
+            models_bib.get_library_overview(do_print=True)
+            raise AttributeError("Please select one model above and type-in the name into yaml file")
+        else:
+            if models_bib.check_module_available(self.model_name):
+                return models_bib.get_signature(self.model_name)
             else:
                 models_bib.get_library_overview(do_print=True)
                 raise AttributeError(f"Model is not available - Please check again!")
@@ -119,6 +130,10 @@ class PyTorchHandler:
     _ptq_do_validation: bool = False
     _ptq_level: list = [12, 8]
     _logger: Logger
+    _path2save: Path = Path(".")
+    _path2log: Path
+    _path2temp: Path
+    _path2config: Path
 
     def __init__(self, config_train: SettingsPytorch, config_dataset: SettingsDataset, do_train: bool=True) -> None:
         """Class for Handling Training of Deep Neural Networks in PyTorch
@@ -147,10 +162,6 @@ class PyTorchHandler:
         self._model_addon = str()
         # --- Logging paths for saving
         self.__check_start_folder()
-        self._path2save = str()
-        self._path2log = str()
-        self._path2temp = str()
-        self._path2config = str()
 
     @staticmethod
     def _get_cpu_name_windows() -> str:
@@ -181,8 +192,8 @@ class PyTorchHandler:
 
     def __check_start_folder(self, new_folder: str='runs'):
         """Checking for starting folder to generate"""
-        self._path2run = get_path_to_project(new_folder)
-        makedirs(self._path2run, exist_ok=True)
+        self._path2run = Path(get_path_to_project(new_folder))
+        self._path2run.mkdir(parents=True, exist_ok=True)
 
     def __setup_device(self) -> None:
         if cuda.is_available():
@@ -204,19 +215,24 @@ class PyTorchHandler:
             device0 = self._get_cpu_name()
         self._logger.debug(f"\nUsing PyTorch with {device0} on {platform.system()}")
 
-    def _init_train(self, path2save: str='', addon: str='') -> None:
-        """Do init of class for training"""
-        if not path2save:
+    def _init_train(self, path2save: Path, addon: str) -> None:
+        """Do initialization of training routine
+        :param path2save:   Path to the saved folder
+        :param addon:       Addon name for model type ('ae' = Autoencoder or 'cl' = Classifier)
+        :return:            None
+        """
+        print(path2save)
+        if path2save == Path("."):
             folder_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{self._index_folder}_{self._model.__class__.__name__}'
-            self._path2save = join(self._path2run, folder_name)
+            self._path2save = self._path2run / folder_name
         else:
             self._path2save = path2save
-        self._path2temp = join(self._path2save, f'temp')
+        self._path2temp = self._path2save / f'temp'
 
         # --- Generate folders
-        makedirs(self._path2run, exist_ok=True)
-        makedirs(self._path2save, exist_ok=True)
-        makedirs(self._path2temp, exist_ok=True)
+        self._path2run.mkdir(parents=True, exist_ok=True)
+        self._path2save.mkdir(parents=True, exist_ok=True)
+        self._path2temp.mkdir(parents=True, exist_ok=True)
 
         # --- Transfer model to hardware
         self._model.to(device=self._used_hw_dev)
@@ -224,12 +240,12 @@ class PyTorchHandler:
         # --- Copy settings to YAML file
         YamlHandler(
             template=self._settings_data,
-            path=self._path2save,
+            path=str(self._path2save),
             file_name='Config_Dataset'
         )
         YamlHandler(
             template=self._settings_train,
-            path=self._path2save,
+            path=str(self._path2save),
             file_name=f'Config_Training{addon}'
         )
 
@@ -323,13 +339,13 @@ class PyTorchHandler:
         self._train_loader = out_train
         self._valid_loader = out_valid
 
-    def get_saving_path(self) -> str:
-        """Getting the path for saving files in aim folder"""
-        return self._path2save
+    def get_saving_path(self) -> Path:
+        """Getting the absolute path for saving files in aim folder"""
+        return self._path2save.absolute()
 
     def get_best_model(self, type_model: str) -> list:
         """Getting the path to the best trained model"""
-        return glob(join(self._path2save, f'*{type_model}*.pt'))
+        return [file for file in self._path2save.glob(f'*{type_model}*.pt')]
 
     def load_model(self, model, learn_rate: float=0.1) -> None:
         """Loading optimizer, loss_fn into class
@@ -348,9 +364,13 @@ class PyTorchHandler:
             self.__deterministic_training_preparation()
 
         # --- Print model
-        self._logger.info("\nPrint summary of model")
-        self._logger.info(str(summary(self._model, input_size=self._model.model_shape)))
-        self._logger.info("\n\n")
+        try:
+            self._logger.info("\nPrint summary of model")
+            self._logger.info(str(summary(self._model, input_size=self._model.model_shape)))
+            self._logger.info("\n\n")
+        except:
+            self._logger.info("Model summary is not possible due to internal errors (no shape, ...)")
+
 
     def _save_train_results(self, last_metric_train: float | np.ndarray,
                             last_metric_valid: float | np.ndarray, loss_type: str='Loss') -> None:
@@ -371,14 +391,12 @@ class PyTorchHandler:
         self._logger.info(f'Training runs: {diff_string}')
 
         # Delete init model
-        init_model = glob(join(self._path2save, '*_reset.pt'))
-        for file in init_model:
+        for file in self._path2save.glob('*_reset.pt'):
             remove(file)
 
         # Delete log folders
         if do_delete_temps:
-            folder_logs = glob(join(self._path2save, 'temp*'))
-            for folder in folder_logs:
+            for folder in self._path2save.glob('temp*'):
                 rmtree(folder, ignore_errors=True)
 
     def __get_data_points(self, only_getting_labels: bool=False, use_train_dataloader: bool=False) -> dict:
@@ -441,10 +459,6 @@ class PyTorchHandler:
             'valid_clus': valid_label
         }
         output.update(results)
-
-        data2save = join(self.get_saving_path(), f'results_{addon}.npy')
-        self._logger.debug(f"... saving results: {data2save}")
-        np.save(data2save, output)
         return output
 
     def _determine_epoch_metrics(self, do_metrics: str):

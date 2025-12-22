@@ -76,9 +76,10 @@ def results_training(path: str,
     )
 
     # --- Plotting: Feature Space and Metrics
-    plot_autoencoder_snr(snr, path)
-    plot_3d_featspace(yclus0, mark_feat, [0, 1, 2], data_classname=cl_dict, path2save=path,
-                      show_plot=show_plot)
+    if snr is not None:
+        plot_autoencoder_snr(snr, path)
+        plot_3d_featspace(yclus0, mark_feat, [0, 1, 2], data_classname=cl_dict, path2save=path,
+                          show_plot=show_plot)
 
 
 def plot_autoencoder_snr(snr: list, path2save: str='', do_boxplot: bool=False, show_plot: bool=False) -> None:
@@ -224,7 +225,7 @@ def plot_mnist_graphs(data: np.ndarray, label: np.ndarray, title="", path2save="
     axs = [plt.subplot(3, 3, idx + 1) for idx in range(9)]
 
     for idx, ax in enumerate(axs):
-        pos_num = int(np.argwhere(label == idx)[0])
+        pos_num = int(np.argwhere(label == idx).flatten()[0])
         ax.imshow(data[pos_num], cmap=plt.get_cmap('gray'))
 
         ax.set_title(f"Label = {idx}")

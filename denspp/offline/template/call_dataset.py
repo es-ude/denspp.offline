@@ -33,7 +33,7 @@ class DatasetLoader(ControllerDataset):
         )
         return DatasetFromFile(
             data=data_process.data,
-            label=data_process.label,
+            label=np.array(data_process.label, dtype=np.uint8),
             dict=['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'],
             mean=data_process.mean,
         )
@@ -53,5 +53,5 @@ class DatasetLoader(ControllerDataset):
             data=data.data,
             label=data.label,
             dict=data.dict,
-            mean=np.zeros(shape=(data.label.size, data.data.shape[1]))
+            mean=np.zeros(shape=(len(data.dict), data.data.shape[1]))
         )

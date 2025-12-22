@@ -1,15 +1,16 @@
 import re
-from os.path import join, exists
+from pathlib import Path
 from inspect import getfile
 from importlib import import_module
 from importlib import resources as res
-from inspect import signature, Signature
-from logging import getLogger
+from inspect import signature
+from logging import getLogger, Logger
 from denspp.offline import get_path_to_project
 
 
 class ModuleRegistryManager:
     __models_avai: dict = dict()
+    _logger: Logger
 
     def __init__(self, regex: str):
         """Class for building a registry of desired type"""
@@ -86,6 +87,7 @@ class ModuleRegistryManager:
                         self._logger.debug(f"registering module: {name}")
                         item = getattr(m, name)
                         self.register(item)
+        self._logger.debug(f"Registered modules: {list(self.__models_avai.keys())}")
 
     def register_packages(self, packages: tuple[str, ...]) -> None:
         for p in packages:
@@ -96,7 +98,7 @@ class DatasetLoaderLibrary:
     """Class for searching all DatasetLoader in repository to get an overview"""
     def get_registry(self, package: str="src_dnn") -> ModuleRegistryManager:
         m = ModuleRegistryManager(r"\bDatasetLoader(Test)?\b")
-        chck = exists(join(get_path_to_project(), package))
+        chck = Path(get_path_to_project(package)).exists()
         m.register_package(package) if chck else m.register_package("denspp.offline.template")
         return m
 
@@ -105,7 +107,8 @@ class ModelLibrary:
     """Class for searching all ModelRegistries in repository to get an overview"""
     def get_registry(self, package: str="src_dnn.models") -> ModuleRegistryManager:
         m = ModuleRegistryManager(r".*_v\d+")
-        chck = exists(join(get_path_to_project(), 'src_dnn/models'))
+        package_splitted = package.split(".")
+        chck = (Path(get_path_to_project(package_splitted[0])) / package_splitted[1]).exists()
         m.register_packages(("denspp.offline.dnn.models", package)) if chck else m.register_package("denspp.offline.dnn.models")
         return m
 
@@ -113,7 +116,8 @@ class ModelLibrary:
 class CellLibrary:
     """Class for searching all CellRegistries in repository to get an overview"""
     def get_registry(self, package: str="src_dnn.cell_bib") -> ModuleRegistryManager:
-        m = ModuleRegistryManager(r"resort_\W*")
-        chck = exists(join(get_path_to_project(), 'src_dnn/cell_bib'))
+        m = ModuleRegistryManager(r"^resort_.+")
+        package_splitted = package.split(".")
+        chck = (Path(get_path_to_project(package_splitted[0])) / package_splitted[1]).exists()
         m.register_packages(("denspp.offline.dnn.cell_bib", package)) if chck else m.register_package("denspp.offline.dnn.cell_bib")
         return m
