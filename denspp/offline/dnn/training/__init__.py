@@ -10,4 +10,8 @@ from .classifier_train import (
     TrainClassifier,
     DatasetClassifier,
 )
+from .ptq_help import (
+    quantize_data_fxp,
+    quantize_model_fxp
+)
 

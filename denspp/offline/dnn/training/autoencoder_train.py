@@ -1,14 +1,14 @@
 import numpy as np
 from dataclasses import dataclass
 from logging import getLogger, Logger
-from os.path import join
+from pathlib import Path
 from shutil import copy
 from datetime import datetime
 from torch import Tensor, load, save, inference_mode, flatten, cuda, cat, concatenate, randn
 
 from denspp.offline import check_keylist_elements_any
 from denspp.offline.dnn.data_config import DatasetFromFile, SettingsDataset
-from denspp.offline.dnn.ptq_help import quantize_model_fxp
+from denspp.offline.dnn.training.ptq_help import quantize_model_fxp
 from denspp.offline.dnn.training.autoencoder_dataset import DatasetAutoencoder
 from denspp.offline.metric.snr import calculate_snr_tensor, calculate_dsnr_tensor
 from .common_train import PyTorchHandler, SettingsPytorch
@@ -253,21 +253,21 @@ class TrainAutoencoder(PyTorchHandler):
         else:
             self.__metric_buffer[kwargs['metric']].append(loss)
 
-    def do_training(self, path2save='', metrics=()) -> dict:
+    def do_training(self, path2save=Path(".")) -> dict:
         """Start model training incl. validation and custom-own metric calculation
         Args:
             path2save:      Path for saving the results [Default: '' --> generate new folder]
-            metrics:        List with strings of used metric [Default: empty]
         Returns:
             Dictionary with metrics from training (loss_train, loss_valid, own_metrics)
         """
-        self._init_train(path2save=path2save, addon='_AE')
+        metrics = self._settings_train.custom_metrics
+        self._init_train(path2save=path2save, addon='_ae')
         if self._kfold_do:
             self._logger.info(f"Starting Kfold cross validation training in {self._settings_train.num_kfold} steps")
 
         metric_out = dict()
         path2model = str()
-        path2model_init = join(self._path2save, f'model_ae_reset.pt')
+        path2model_init = self._path2save / f'model_ae_reset.pt'
         save(self._model.state_dict(), path2model_init)
         timestamp_start = datetime.now()
         timestamp_string = timestamp_start.strftime('%H:%M:%S')
@@ -307,7 +307,7 @@ class TrainAutoencoder(PyTorchHandler):
                 # Tracking the best performance and saving the model
                 if loss_valid < best_loss[1]:
                     best_loss = [loss_train, loss_valid]
-                    path2model = join(self._path2temp, f'model_ae_fold{fold:03d}_epoch{epoch:04d}.pt')
+                    path2model = self._path2temp / f'model_ae_fold{fold:03d}_epoch{epoch:04d}.pt'
                     save(self._model, path2model)
                     patience_counter = self._settings_train.patience
                 else:
@@ -331,9 +331,7 @@ class TrainAutoencoder(PyTorchHandler):
 
         # --- Ending of all trainings phases
         self._end_training_routine(timestamp_start)
-        metric_save = self._converting_tensor_to_numpy(metric_out)
-        np.save(f"{self._path2save}/metric_ae", metric_save, allow_pickle=True)
-        return metric_out
+        return self._converting_tensor_to_numpy(metric_out)
 
     def do_post_training_validation(self, do_ptq: bool=False) -> dict:
         """Performing the post-training validation with the best model
@@ -345,8 +343,9 @@ class TrainAutoencoder(PyTorchHandler):
 
         # --- Do the Inference with Best Model
         overview_models = self.get_best_model('ae')
+        print(overview_models)
         if len(overview_models) == 0:
-            raise RuntimeError(f"No models found on {self._path2save} - Please start training!")
+            raise RuntimeError(f"No models found on {str(self._path2save)} - Please start training!")
 
         path2model = overview_models[0]
         if do_ptq:
@@ -386,8 +385,8 @@ class TrainAutoencoder(PyTorchHandler):
         result_feat = feat_model.numpy()
         result_pred = pred_model.numpy()
         return self._getting_data_for_plotting(
-            data_orig_list.numpy(),
-            clus_orig_list.numpy(),
-            {'feat': result_feat, 'pred': result_pred},
+            valid_input=data_orig_list.numpy(),
+            valid_label=clus_orig_list.numpy(),
+            results={'feat': result_feat, 'pred': result_pred},
             addon='ae'
         )

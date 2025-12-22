@@ -3,11 +3,10 @@ from copy import deepcopy
 from torch.nn import CrossEntropyLoss
 from torch.optim import Adam
 
+from denspp.offline import get_path_to_project
 from denspp.offline.dnn import (
     SettingsDataset,
     DefaultSettingsDataset,
-    SettingsMLPipeline,
-    DefaultSettingsMLPipeline,
     DatasetFromFile
 )
 from .classifier_train import TrainClassifier, SettingsClassifier, DefaultSettingsTrainingCE
@@ -75,11 +74,9 @@ class TestPyTorchModelConfigClassifier(TestCase):
 
 class TestClassifierTraining(TestCase):
     def setUp(self):
-        self.set_routine: SettingsMLPipeline = deepcopy(DefaultSettingsMLPipeline)
-        self.set_routine.do_plot = False
         self.set_train: SettingsClassifier = deepcopy(DefaultSettingsTrainingCE)
         self.set_train.num_epochs = 10
-        self.set_train.model_name = str(dummy_mlp_cl_v0)
+        self.set_train.model_name = dummy_mlp_cl_v0.__name__
         self.set_dataset: SettingsDataset = deepcopy(DefaultSettingsDataset)
         self.set_dataset.data_type = 'dummy'
         self.dataset: DatasetFromFile = generate_dummy_dataset(2048, 100)
@@ -92,7 +89,7 @@ class TestClassifierTraining(TestCase):
 
     def test_saving_path(self):
         rslt = self.dut.get_saving_path()
-        self.assertEqual(rslt, "")
+        self.assertEqual(str(rslt), get_path_to_project())
 
     def test_number_parameters(self):
         self.dut.load_model(

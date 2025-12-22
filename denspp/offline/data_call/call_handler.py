@@ -9,7 +9,7 @@ from fractions import Fraction
 from scipy.signal import resample_poly
 from denspp.offline import get_path_to_project
 from denspp.offline.data_format.csv import CsvHandler
-from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
+from denspp.offline.data_call.remote_handler import RemoteDownloader
 
 
 @dataclass
@@ -86,7 +86,7 @@ class DataFromFile:
 
 class ControllerData:
     __logger: Logger
-    __download_handler: OwnCloudDownloader
+    __download_handler: RemoteDownloader
     _raw_data: DataFromFile
     _settings: SettingsData
     _path2folder_remote: str=''
@@ -100,7 +100,7 @@ class ControllerData:
         self.__fill_factor = 1.
         self.__default_data_path = join(get_path_to_project(), 'data')
         self.__config_data_selection = [self.__default_data_path, 0, 0]
-        self.__download_handler = OwnCloudDownloader()
+        self.__download_handler = RemoteDownloader()
 
     @staticmethod
     def _extract_func(class_obj: object) -> list:

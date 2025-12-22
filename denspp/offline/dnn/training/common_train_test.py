@@ -1,6 +1,7 @@
 from copy import deepcopy
 from unittest import TestCase, main
 
+from denspp.offline import get_path_to_project
 from denspp.offline.dnn.data_config import (
     SettingsDataset,
     DefaultSettingsDataset
@@ -39,7 +40,17 @@ class TestCommonPyTorchTrain(TestCase):
 
     def test_saving_path(self):
         rslt = self.dut.get_saving_path()
-        self.assertEqual(rslt, "")
+        self.assertEqual(str(rslt), get_path_to_project())
+
+    def test_get_model(self):
+        self.dut._settings_train.model_name = mnist_mlp_cl_v0.__name__
+        rslt = self.dut._settings_train.get_model()
+        self.assertEqual(type(rslt), mnist_mlp_cl_v0)
+
+    def test_get_signature(self):
+        self.dut._settings_train.model_name = mnist_mlp_cl_v0.__name__
+        rslt = self.dut._settings_train.get_signature()
+        self.assertEqual(rslt, ['input_size', 'output_size'])
 
     def test_model_number_parameters_non_defined(self):
         try:

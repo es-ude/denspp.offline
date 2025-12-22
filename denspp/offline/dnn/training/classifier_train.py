@@ -1,15 +1,15 @@
 import numpy as np
 from dataclasses import dataclass
-from os.path import join
 from logging import getLogger, Logger
+from pathlib import Path
 from shutil import copy
 from datetime import datetime
 from torch import Tensor, zeros, load, save, concatenate, inference_mode, cuda, cat, randn, add, div
 
 from denspp.offline import check_keylist_elements_any
 from denspp.offline.dnn.data_config import DatasetFromFile, SettingsDataset
-from denspp.offline.dnn.ptq_help import quantize_model_fxp
-from denspp.offline.dnn.training.classifier_dataset import DatasetClassifier, DatasetAutoencoderClassifier
+from denspp.offline.dnn.training.ptq_help import quantize_model_fxp
+from denspp.offline.dnn.training.classifier_dataset import DatasetClassifier
 from denspp.offline.metric.data_torch import (
     calculate_number_true_predictions,
     calculate_precision,
@@ -236,20 +236,20 @@ class TrainClassifier(PyTorchHandler):
         self.__metric_buffer[kwargs['metric']][0] = add(self.__metric_buffer[kwargs['metric']][0], num_true)
         self.__metric_buffer[kwargs['metric']][1] = add(self.__metric_buffer[kwargs['metric']][1], kwargs['frame'].shape[0])
 
-    def do_training(self, path2save: str='', metrics: list=()) -> dict:
+    def do_training(self, path2save=Path(".")) -> dict:
         """Start model training incl. validation and custom-own metric calculation
         Args:
             path2save:      Path for saving the results [Default: '' --> generate new folder]
-            metrics:        List with strings of used metric ['acc'] [Default: empty]
         Returns:
             Dictionary with metrics from training (loss_train, loss_valid, own_metrics)
         """
-        self._init_train(path2save=path2save, addon='_CL')
+        metrics = self._settings_train.custom_metrics
+        self._init_train(path2save=path2save, addon='_cl')
         if self._kfold_do:
             self._logger.info(f"Starting Kfold cross validation training in {self._settings_train.num_kfold} steps")
 
         path2model = str()
-        path2model_init = join(self._path2save, f'model_class_reset.pt')
+        path2model_init = self._path2save / f'model_class_reset.pt'
         save(self._model.state_dict(), path2model_init)
         timestamp_start = datetime.now()
         timestamp_string = timestamp_start.strftime('%H:%M:%S')
@@ -297,7 +297,7 @@ class TrainClassifier(PyTorchHandler):
                 if valid_loss < best_loss[1]:
                     best_loss = [train_loss, valid_loss]
                     best_acc = [train_acc, valid_acc]
-                    path2model = join(self._path2temp, f'model_class_fold{fold:03d}_epoch{epoch:04d}.pt')
+                    path2model = self._path2temp / f'model_class_fold{fold:03d}_epoch{epoch:04d}.pt'
                     save(self._model, path2model)
                     patience_counter = self._settings_train.patience
                 else:
@@ -324,9 +324,7 @@ class TrainClassifier(PyTorchHandler):
 
         # --- Ending of all trainings phases
         self._end_training_routine(timestamp_start)
-        metric_save = self._converting_tensor_to_numpy(metric_out)
-        np.save(f"{self._path2save}/metric_cl", metric_save, allow_pickle=True)
-        return metric_save
+        return self._converting_tensor_to_numpy(metric_out)
 
     def do_post_training_validation(self, do_ptq: bool=False) -> dict:
         """Performing the post-training validation with the best model
