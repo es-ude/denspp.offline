@@ -4,7 +4,7 @@ from torch import sum, abs, rand
 from unittest import TestCase, main
 
 from denspp.offline.dnn.training import DefaultSettingsTrainingMSE
-from denspp.offline.dnn.ptq_help import quantize_model_fxp
+from denspp.offline.dnn.training.ptq_help import quantize_model_fxp
 
 
 

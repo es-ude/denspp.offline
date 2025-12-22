@@ -3,6 +3,7 @@ from os.path import join, exists
 from inspect import getfile
 from importlib import import_module
 from importlib import resources as res
+from inspect import signature, Signature
 from logging import getLogger
 from denspp.offline import get_path_to_project
 
@@ -25,7 +26,8 @@ class ModuleRegistryManager:
         :param name:    String with name of the object to call
         :return:        Object instance (must be initialized)
         """
-        assert name in self.__models_avai, f"Object {name} not registered"
+        if name not in self.__models_avai:
+            raise AttributeError(f"Object {name} not registered")
         return self.__models_avai[name]
 
     def build(self, name: str, *args, **kwargs):
@@ -33,8 +35,15 @@ class ModuleRegistryManager:
         :param name:    String with name of the object to call
         :return:        Object instance (is already initialized)
         """
-        assert name in self.__models_avai, f"Object {name} not registered"
+        if name not in self.__models_avai:
+            raise AttributeError(f"Object {name} not registered")
         return self.__models_avai[name](*args, **kwargs)
+
+    def get_signature(self, name: str) -> list:
+        """Getting the signature of the object
+        :return:    List of input names of object
+        """
+        return list(signature(self.build_object(name)).parameters.keys())
 
     def get_library_overview(self, index: str= '', do_print: bool=False) -> list:
         """Getting an overview of existing and registered modules in library
