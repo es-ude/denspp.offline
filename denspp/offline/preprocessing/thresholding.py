@@ -114,7 +114,12 @@ class Thresholding:
         return np.zeros_like(xin) + self._settings.gain * np.median(np.abs(xin), axis=0)
 
     def _median_absolute_derivation(self, xin: np.ndarray) -> np.ndarray:
-            return np.zeros_like(xin) + self._settings.gain * np.median(np.abs(xin - np.mean(xin)) / 0.6745, axis=0)
+        median = np.median(xin, axis=0, keepdims=True)
+        mad = np.median(np.abs(xin - median), axis=0, keepdims=True)
+        std_estimate = mad / 0.6745
+        threshold = self._settings.gain * std_estimate
+        return np.zeros_like(xin) + threshold
+
 
     def _moving_average(self, xin: np.ndarray) -> np.ndarray:
         M = self._settings.window_steps
