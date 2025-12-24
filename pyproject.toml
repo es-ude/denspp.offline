@@ -10,13 +10,13 @@ source = "vcs"
 [tool.hatch.build.targets.sdist]
 where = ["."]
 include = ["denspp"]  
-exclude = ['example', 'docs', '**/*_test.py']
+exclude = ['.venv', 'build', 'config', 'data', 'dataset', 'docs', 'example', 'runs', 'test', 'temp_test', '**/*_test.py']
 namespaces = false
 
 
 [tool.hatch.build.targets.wheel]
 packages = ["denspp"]
-exclude = ['example', 'docs', '**/*_test.py']
+exclude = ['.venv', 'build', 'config', 'data', 'dataset', 'docs', 'example', 'runs', 'test', 'temp_test', '**/*_test.py']
 only-packages = true
 
 
