@@ -5,9 +5,15 @@ import matplotlib.pyplot as plt
 
 @dataclass
 class SignalValidationResult:
-    pearson_correlation: list[float] = None # Pearson correlation coefficient between original and processed signals
-    mean_squared_error: list[float] = None  # Mean Squared Error between original and processed signals
-    spectral_coherence: list[float] = None  # Spectral coherence between original and processed signals
+    """Dataclass to store results of signal validation
+    Attributes:
+        pearson_correlation (list[float]): Pearson correlation coefficient between original and processed signals
+        mean_squared_error (list[float]): Mean Squared Error between original and processed signals
+        spectral_coherence (list[float]): Spectral coherence between original and processed signals
+    """
+    pearson_correlation: list[float] = None 
+    mean_squared_error: list[float] = None
+    spectral_coherence: list[float] = None  
 
 class SignalCompartor:
     _signal_original_with_cut: np.ndarray # original signal, cuted to the processed signal length
