@@ -2,11 +2,13 @@ import numpy as np
 from .adc_basic import BasicADC
 from .adc_settings import SettingsADC, RecommendedSettingsADC, SettingsNon, RecommendedSettingsNon
 from denspp.offline.analog.dev_noise import ProcessNoise
+from denspp.offline.preprocessing.downsampling import SettingsDownSampling, DownSampling
 
 
 class DeltaSigmaADC(BasicADC):
     _settings: SettingsADC
     _handler_noise: ProcessNoise
+    _down_sampler: DownSampling
 
     def __init__(self, settings_dev: SettingsADC, settings_non=RecommendedSettingsNon, dac_order: int=2) -> None:
         """Class for using Continuous Time Delta Sigma ADC
@@ -15,6 +17,11 @@ class DeltaSigmaADC(BasicADC):
         :param dac_order:       Number of bits of used DAC in feedback
         """
         super().__init__(settings_dev)
+        sets_down = SettingsDownSampling(
+            sampling_rate=settings_dev.fs_adc,
+            dsr=settings_dev.osr
+        )
+        self._down_sampler = DownSampling(sets_down)
         # --- Internal variables
         self.use_noise = False
         self.__dac_order = dac_order
@@ -46,13 +53,13 @@ class DeltaSigmaADC(BasicADC):
         xout = (1 + np.sum((-1) ** (1 - xin))) / 2
         return xout
 
-    def __comp_1bit(self, uin: float) -> [np.ndarray, np.ndarray]:
+    def __comp_1bit(self, uin: float) -> tuple[np.ndarray, np.ndarray]:
         """1-bit DAC for DS modulation"""
         xout = np.heaviside(uin - self._settings.vcm, 1)
         ufb = self._settings.vref[0] if xout == 1 else self._settings.vref[1]
         return xout, ufb
 
-    def __comp_Nbit(self, uin: float) -> [np.ndarray, np.ndarray]:
+    def __comp_Nbit(self, uin: float) -> tuple[np.ndarray, np.ndarray]:
         """N-bit DAC for DS modulation"""
         input = uin * np.ones(shape=self.__partition_voltage.shape)
         result = np.heaviside(input - self.__partition_voltage, 1)
@@ -84,15 +91,15 @@ class DeltaSigmaADC(BasicADC):
             xout_hs[idx] = self.__stream_converter(xbit[idx])
 
         # --- Downsampling
-        xout0 = self.do_decimation_polyphase_order_two(xout_hs)
-        xout1 = self.do_decimation_polyphase_order_two(xout0)
-        xout2 = self.do_decimation_polyphase_order_two(xout1)
-        xout3 = self.do_decimation_polyphase_order_two(xout2)
-        xout4 = self.do_decimation_polyphase_order_two(xout3)
+        xout0 = self._down_sampler.do_decimation_polyphase_order_two(xout_hs)
+        xout1 = self._down_sampler.do_decimation_polyphase_order_two(xout0)
+        xout2 = self._down_sampler.do_decimation_polyphase_order_two(xout1)
+        xout3 = self._down_sampler.do_decimation_polyphase_order_two(xout2)
+        xout4 = self._down_sampler.do_decimation_polyphase_order_two(xout3)
 
         # --- Correction and output
         xout = xout4
-        xout -= 2 ** (self._settings.Nadc - 1) if self._settings.type_out == "signed" else 0
+        xout -= 2 ** (self._settings.Nadc - 1) if self._settings.is_signed else 0
         xout = self.clamp_digital(xout)
         return xout
 
@@ -121,14 +128,14 @@ class DeltaSigmaADC(BasicADC):
             xout_hs[idx] = self.__stream_converter(xbit[idx])
 
         # --- Downsampling
-        xout0 = self.do_decimation_polyphase_order_two(xout_hs)
-        xout1 = self.do_decimation_polyphase_order_two(xout0)
-        xout2 = self.do_decimation_polyphase_order_two(xout1)
-        xout3 = self.do_decimation_polyphase_order_two(xout2)
-        xout4 = self.do_decimation_polyphase_order_two(xout3)
+        xout0 = self._down_sampler.do_decimation_polyphase_order_two(xout_hs)
+        xout1 = self._down_sampler.do_decimation_polyphase_order_two(xout0)
+        xout2 = self._down_sampler.do_decimation_polyphase_order_two(xout1)
+        xout3 = self._down_sampler.do_decimation_polyphase_order_two(xout2)
+        xout4 = self._down_sampler.do_decimation_polyphase_order_two(xout3)
 
         # --- Correction and output
         xout = xout4
-        xout -= 2 ** (self._settings.Nadc - 1) if self._settings.type_out == "signed" else 0
+        xout -= 2 ** (self._settings.Nadc - 1) if self._settings.is_signed else 0
         xout = self.clamp_digital(xout)
         return xout

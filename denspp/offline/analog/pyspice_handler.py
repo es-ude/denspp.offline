@@ -194,11 +194,11 @@ class PySpiceHandler:
 
         results = dict()
         for node in analysis.nodes.values():
-            results.update({str(node): float(node)})
+            results.update({str(node): node})
 
         return self.__get_results(0, analysis)
 
-    def get_current(self, u_top: np.ndarray | float, u_bot: np.ndarray | float) -> np.ndarray:
+    def get_current(self, u_top: float | np.ndarray, u_bot: float | np.ndarray) -> np.ndarray:
         """Getting the current response from electrical device
         Args:
             u_top:      Applied voltage on top electrode [V]
@@ -221,7 +221,7 @@ class PySpiceHandler:
             i_out0 = i_out0[num_dly:-1]
         return np.array(i_out0)
 
-    def get_voltage(self, i_in: np.ndarray, u_inn: np.ndarray | float) -> np.ndarray:
+    def get_voltage(self, i_in: np.ndarray, u_inn: float | np.ndarray) -> np.ndarray:
         """Getting the voltage response from electrical device
         Args:
             i_in:               Applied current input [A]

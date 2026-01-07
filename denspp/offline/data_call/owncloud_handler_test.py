@@ -1,4 +1,4 @@
-from unittest import TestCase, main
+from unittest import TestCase, main, skip
 from os.path import splitext, join, exists
 from denspp.offline.data_call.owncloud_handler import ConfigCloud, OwnCloudDownloader
 from denspp.offline import get_path_to_project
@@ -11,6 +11,7 @@ TestConfigCloud = ConfigCloud(
 )
 
 
+@skip("API is broken due to stopped service")
 class TestOwnCloud(TestCase):
     path2temp = get_path_to_project(new_folder='temp_test')
     handler = OwnCloudDownloader(

@@ -88,7 +88,7 @@ class DataNormalization:
         if isinstance(raw_dataset, torch.Tensor):
             scale = torch.max(torch.abs(raw_dataset)) if self._do_global else self._get_data_peak_value_tensor(raw_dataset)
         else:
-            scale = np.max(np.abs(raw_dataset)) if self._do_global else self._get_data_peak_value_numpy(raw_dataset)
+            scale = np.max(np.abs(raw_dataset), axis=-1) if self._do_global else self._get_data_peak_value_numpy(raw_dataset)
         self.__params = {'scale_used': scale}
 
     ################################ IMPLEMENTED METHODS ################################

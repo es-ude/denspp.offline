@@ -24,7 +24,7 @@ class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
 
         # --- Internal characteristic
         self.noise_eff_out = 0.0
-        self.__dvrange = self._settings.vref[0] - self._settings.vref[1]
+        self.__dv_range = self._settings.vref[0] - self._settings.vref[1]
 
         # --- Resampling stuff
         (self.__p_ratio, self.__q_ratio) = (
@@ -42,11 +42,11 @@ class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
 
     def __do_snh_sample(self, uin: np.ndarray, do: bool | np.ndarray) -> np.ndarray:
         """Performing sample-and-hold (S&H) stage for buffering input value"""
-        uout = uin
+        u_out = uin
         if do:
-            uout = self.__input_snh
+            u_out = self.__input_snh
             self.__input_snh = uin
-        return uout
+        return u_out
 
     def do_snh_stream(self, uin: np.ndarray, f_snh: float) -> np.ndarray:
         """Performing sample-and-hold (S&H) stage for buffering input value"""
@@ -55,55 +55,55 @@ class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
         do_snh = np.where(np.diff(clk_fsh) >= 0.5)
         do_snh += 1
 
-        uout = np.zeros(shape=uin.shape)
+        u_out = np.zeros(shape=uin.shape)
         for idx, do_snh in enumerate(do_snh):
-            uout[idx] = self.__do_snh_sample(uin[idx], do_snh)
-        return uout
+            u_out[idx] = self.__do_snh_sample(uin[idx], do_snh)
+        return u_out
 
     def _do_resample(self, uin: np.ndarray) -> np.ndarray:
         """Do resampling of input values"""
         if uin.size == 1:
-            uout = uin
+            u_out = uin
         else:
-            uout = uin[0] + resample_poly(uin - uin[0], self.__p_ratio, self.__q_ratio)
-        return uout
+            u_out = uin[0] + resample_poly(uin - uin[0], self.__p_ratio, self.__q_ratio)
+        return u_out
 
     def _gen_noise(self, size: int) -> np.ndarray:
         """Generate the transient input noise of the amplifier"""
-        unoise = self._handler_noise.gen_noise_awgn_pwr(
+        u_noise = self._handler_noise.gen_noise_awgn_pwr(
             size = size,
             e_n=-self.snr_ideal
         )
-        return unoise
+        return u_noise
 
-    def adc_ideal(self, uin: np.ndarray) -> [np.ndarray, np.ndarray, np.ndarray]:
+    def adc_ideal(self, uin: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Using the ideal ADC
         Args:
             uin:    Input voltage
         Returns:
-            Tuple with three numpy arrays [x_out = Output digital value, u_out = Output digitized voltage, uerr = Quantization error]
+            Tuple with three numpy arrays [x_out = Output digital value, u_out = Output digitized voltage, u_err = Quantization error]
         """
         # Pre-Processing
         uin_adc = self.clamp_voltage(uin)
         uin0 = self._do_resample(uin_adc)
         uin0 += self._gen_noise(uin0.size)
         # ADC conversion
-        xout = np.floor((uin0 - self._settings.vcm) / self._settings.lsb)
-        xout = self.clamp_digital(xout)
-        uout = self._settings.vref[1] + xout * self._settings.lsb
+        x_out = np.floor((uin0 - self._settings.vcm) / self._settings.lsb)
+        x_out = self.clamp_digital(x_out)
+        u_out = self._settings.vref[1] + x_out * self._settings.lsb
         # Calculating quantization error
-        uerr = uin0 - uout
-        return xout, uout, uerr
+        u_err = uin0 - u_out
+        return x_out, u_out, u_err
 
     @staticmethod
     def _generate_sar_empty_data(shape) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        uout = np.zeros(shape=shape, dtype=np.float32)
-        xout = np.zeros(shape=shape, dtype=np.int16)
-        uerr = np.zeros(shape=shape, dtype=np.float32)
-        return xout, uout, uerr
+        u_out = np.zeros(shape=shape, dtype=np.float32)
+        x_out = np.zeros(shape=shape, dtype=np.int16)
+        u_err = np.zeros(shape=shape, dtype=np.float32)
+        return x_out, u_out, u_err
 
     @staticmethod
     def _generate_dsigma_empty_data(shape) -> tuple[np.ndarray, np.ndarray]:
-        xout_hs = np.zeros(shape=shape, dtype=np.int32)
-        xbit = np.zeros(shape=shape, dtype=np.int32)
-        return xout_hs, xbit
+        x_out_hs = np.zeros(shape=shape, dtype=np.int32)
+        x_bit = np.zeros(shape=shape, dtype=np.int32)
+        return x_out_hs, x_bit

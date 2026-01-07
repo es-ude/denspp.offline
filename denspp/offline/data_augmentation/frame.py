@@ -42,12 +42,12 @@ def augmentation_changing_position(
         frames_in: np.ndarray,
         frames_cl: np.ndarray,
         num_min_frames: int
-) -> dict:
+) -> tuple[np.ndarray, np.ndarray]:
     """Tool for data augmentation of input spike frames using switching positions (change position)
     :param frames_in:           Numpy array with mean waveform
     :param frames_cl:           Numpy array with corresponding cluster id to each waveform
     :param num_min_frames:      Minimum number of frames to augment
-    :return:                    Dict with (1) numpy array of augmented frames and (2) corresponding IDs
+    :return:                    Tuple with (0) numpy array of augmented frames and (1) corresponding IDs
     """
     out_frames = np.array([], dtype=frames_in.dtype)
     out_cluster = np.array([], dtype=frames_cl.dtype)
@@ -71,10 +71,10 @@ def augmentation_changing_position(
 
         out_frames = new_frame if idx == 0 else np.append(out_frames, new_frame, axis=0)
         out_cluster = new_cluster if idx == 0 else np.append(out_cluster, new_cluster, axis=0)
-    return {
-        'frames': np.append(frames_in, out_frames, axis=0),
-        'id': np.append(frames_cl, out_cluster, axis=0)
-    }
+    return (
+        np.append(frames_in, out_frames, axis=0),
+        np.append(frames_cl, out_cluster, axis=0)
+    )
 
 
 def augmentation_reducing_samples(
@@ -82,7 +82,7 @@ def augmentation_reducing_samples(
         frames_cl: np.ndarray,
         num_frames: int,
         do_shuffle: bool=True
-) -> dict:
+) -> tuple[np.ndarray, np.ndarray]:
     """Tool for data augmentation of input spike frames (change position)
     :param frames_in:           Numpy array with mean waveform
     :param frames_cl:           Numpy array with corresponding cluster id to each waveform
@@ -102,7 +102,7 @@ def augmentation_reducing_samples(
         pos = pos[:num_frames]
         frames_out = frames_in[pos, :] if ite == 0 else np.append(frames_out, frames_in[pos, :], axis=0)
         frames_clo = frames_cl[pos] if ite == 0 else np.append(frames_clo, frames_cl[pos], axis=0)
-    return {'frames': frames_out, 'id': frames_clo}
+    return frames_out, frames_clo
 
 
 def _frame_noise(num_frames: int, frame_in: np.ndarray, snr_out: list, fs: float, return_integer: bool=False) -> tuple[np.ndarray, np.ndarray]:

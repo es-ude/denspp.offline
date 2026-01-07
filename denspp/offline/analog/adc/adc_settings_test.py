@@ -31,14 +31,14 @@ class TestADCSettings(TestCase):
         set0.dvref = 0.1
         set0.vdd = +1.8
         set0.vss = 0.0
-        self.assertAlmostEqual(set0.vref, [1.0, 0.8], delta=1e-4)
+        self.assertAlmostEqual(set0.vref, (1.0, 0.8), delta=1e-4)
 
     def test_vref_bipolar(self):
         set0 = deepcopy(TestSettingsADC)
         set0.dvref = 0.1
         set0.vdd = +1.8
         set0.vss = -1.8
-        self.assertAlmostEqual(set0.vref, [0.1, -0.1], delta=1e-4)
+        self.assertAlmostEqual(set0.vref, (0.1, -0.1), delta=1e-4)
 
     def test_vref_range(self):
         set0 = deepcopy(TestSettingsADC)

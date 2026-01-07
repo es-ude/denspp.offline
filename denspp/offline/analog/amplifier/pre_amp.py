@@ -27,7 +27,7 @@ class SettingsAMP:
     # Amplifier characteristics
     gain:   float
     n_filt: int
-    f_filt: list
+    f_filt: list[float]
     f_type: str
     offset: float
     # Chopper properties
@@ -57,7 +57,7 @@ class PreAmp(CommonAnalogFunctions):
     _handler_noise: ProcessNoise
     _settings: SettingsAMP
 
-    def __init__(self, settings_dev: SettingsAMP, settings_noise: SettingsNoise=DefaultSettingsNoise):
+    def __init__(self, settings_dev: SettingsAMP, settings_noise: SettingsNoise=DefaultSettingsNoise) -> None:
         """Class for emulating an analogue pre-amplifier
         :param settings_dev:        Dataclass for handling the pre-amplifier
         :param settings_noise:      Dataclass for handling the noise simulation
@@ -68,12 +68,16 @@ class PreAmp(CommonAnalogFunctions):
         self._settings = settings_dev
 
         # --- Filter properties
-        self.__coeffb, self.__coeffa = butter(
+        coeffs = butter(
             N=self._settings.n_filt,
-            Wn=2 * np.array(self._settings.f_filt) / self._settings.fs_ana,
+            Wn=self._settings.f_filt if len(self._settings.f_filt) > 1 else self._settings.f_filt[0],
             btype=self._settings.f_type,
-            analog=False
+            analog=False,
+            output='ba',
+            fs=self._settings.fs_ana
         )
+        self.__coeffb = coeffs[0]
+        self.__coeffa = coeffs[1]
 
     @property
     def get_filter_coeffs(self) -> dict:
@@ -98,7 +102,7 @@ class PreAmp(CommonAnalogFunctions):
             u_out = np.zeros((size,))
         return u_out
 
-    def pre_amp(self, uinp: np.ndarray, uinn: np.ndarray | float) -> np.ndarray:
+    def pre_amp(self, uinp: np.ndarray, uinn: float | np.ndarray) -> np.ndarray:
         """Performs the pre-amplification (single, normal) with input signal
         Args:
             uinp:   Positive input voltage [V]
@@ -113,7 +117,7 @@ class PreAmp(CommonAnalogFunctions):
         u_out += self._settings.gain * self.__noise_generation_circuit(du.size)
         return self.clamp_voltage(u_out)
 
-    def pre_amp_chopper(self, uinp: np.ndarray, uinn: np.ndarray | float) -> dict:
+    def pre_amp_chopper(self, uinp: np.ndarray, uinn: float | np.ndarray) -> dict:
         """Performs the pre-amplification (single, chopper) with input signal
         Args:
             uinp:   Positive input voltage

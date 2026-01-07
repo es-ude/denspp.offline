@@ -22,23 +22,27 @@ RecommendedSettingsNon = SettingsNon(
 )
 
 
-class TestSAR0(TestCase):
-    method = SuccessiveApproximation(settings_adc)
-    time = np.linspace(0, 1, int(settings_adc.fs_ana), endpoint=True, dtype=float)
-    input = settings_adc.vcm + 0.2 * np.sin(2* np.pi* time* 100)
-    result = method.adc_sar(input)
+class TestSAR(TestCase):
+    def setUp(self):
+        self.method = SuccessiveApproximation(settings_adc)
+        time = np.linspace(0, 1, int(settings_adc.fs_ana), endpoint=True, dtype=float)
+        self.input = settings_adc.vcm + 0.2 * np.sin(2* np.pi* time* 100)
+
 
     def test_result_error(self):
+        result = self.method.adc_sar(self.input)
         check = 1.2 * 2 * settings_adc.dvref / 2** settings_adc.Nadc
-        self.assertEqual(self.result[2].max() <= check and np.abs(self.result[2].min()) <= check, True)
+        self.assertEqual(result[2].max() <= check and np.abs(result[2].min()) <= check, True)
 
     def test_sar_sampling_rate(self):
-        data_size = self.input.size / self.result[0].size
+        result = self.method.adc_sar(self.input)
+        data_size = self.input.size / result[0].size
         samp_ratio = settings_adc.fs_ana / settings_adc.fs_dig
         self.assertEqual(data_size, samp_ratio)
 
     def test_result_type_digital(self):
-        self.assertEqual(type(self.result[0]), np.ndarray)
+        result = self.method.adc_sar(self.input)
+        self.assertEqual(type(result[0]), np.ndarray)
 
 
 if __name__ == '__main__':

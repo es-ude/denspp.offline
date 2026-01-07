@@ -4,7 +4,7 @@ from logging import getLogger, Logger
 from os import makedirs
 from os.path import join, dirname
 from dataclasses import dataclass
-from denspp.offline.data_format.yaml import YamlHandler
+from denspp.offline.data_format import JsonHandler
 from denspp.offline import get_path_to_project
 
 
@@ -40,7 +40,7 @@ class OwnCloudDownloader:
         :return:            None
         """
         self._logger = getLogger(__name__)
-        self._settings = YamlHandler(
+        self._settings = JsonHandler(
             template=use_config,
             path=path2config,
             file_name='access_cloud'

@@ -19,7 +19,7 @@ class SettingsCellSelector:
 
 
 class CellSelector:
-    _used_id_libraray: dict
+    _used_id_library: dict
     _process_mode: bool
 
     def __init__(self, cell_merge: SettingsCellSelector, mode: int) -> None:
@@ -32,22 +32,22 @@ class CellSelector:
         assert mode in [0, 1, 2, 3], "Wrong mode selected - Please check!"
         self._data_origin = mode == 0
         if mode == 0:
-            self._used_id_libraray = cell_merge.original_id
+            self._used_id_library = cell_merge.original_id
         elif mode == 1:
-            self._used_id_libraray = cell_merge.original_to_reduced
+            self._used_id_library = cell_merge.original_to_reduced
         elif mode == 2:
-            self._used_id_libraray = cell_merge.original_to_group
+            self._used_id_library = cell_merge.original_to_group
         elif mode == 3:
-            self._used_id_libraray = cell_merge.original_to_type
+            self._used_id_library = cell_merge.original_to_type
 
-    def get_id_from_key(self, name: str) -> int or list:
+    def get_id_from_key(self, name: str) -> int | list:
         """Getting the ID from a cell type / class name / key
         :param name:    Key name of the label from dataset
         :return:        Corresponding ID to key label
         """
-        keylist = [key for key in self._used_id_libraray.keys()]
+        keylist = [key for key in self._used_id_library.keys()]
         assert check_key_elements(name, keylist), f"Key not available: {keylist}"
-        return self._used_id_libraray.get(name)
+        return self._used_id_library.get(name)
 
     def get_name_from_id(self, cluster_id: int | np.ndarray) -> str:
         """Getting the name of the cell type of a given cluster ID/class
@@ -55,16 +55,16 @@ class CellSelector:
         :return:            String with label
         """
         if self._data_origin:
-            cell_name = [key for key, values in self._used_id_libraray.items() if cluster_id == values]
+            cell_name = [key for key, values in self._used_id_library.items() if cluster_id == values]
         else:
-            cell_name = [key for key, values in self._used_id_libraray.items() if cluster_id in values]
+            cell_name = [key for key, values in self._used_id_library.items() if cluster_id in values]
         return cell_name[0] if len(cell_name) else ''
 
     def get_label_list(self) -> list:
         """Getting the label names of used dataset as list
         :return:    List of used cell type names as label
         """
-        keylist = [key for key in self._used_id_libraray.keys()]
+        keylist = [key for key in self._used_id_library.keys()]
         assert check_elem_unique(keylist), f"Keys of dataset labels are not unique - Please check!"
         return keylist
 
@@ -74,9 +74,9 @@ class CellSelector:
         :return:        Integer with new ID for new dataset (values with -1 are not defined and must be removed)
         """
         if self._data_origin:
-            cell_name = [values for values in self._used_id_libraray.values() if old_id == values]
+            cell_name = [values for values in self._used_id_library.values() if old_id == values]
         else:
-            cell_name = [idx for idx, values in enumerate(self._used_id_libraray.values()) if old_id in values]
+            cell_name = [idx for idx, values in enumerate(self._used_id_library.values()) if old_id in values]
         return cell_name[0] if len(cell_name) else -1
 
     def transform_label_to_id_array(self, old_id: np.ndarray) -> np.ndarray:
@@ -89,7 +89,7 @@ class CellSelector:
             new_label[idx] = self.transform_label_to_id_integer(value)
         return new_label
 
-    def transform_data_into_new(self, old_id: np.ndarray, data: np.ndarray) -> [np.ndarray, np.ndarray]:
+    def transform_data_into_new(self, old_id: np.ndarray, data: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """Function for transforming the old ID and data to the new format
         :param old_id:  Numpy array with old IDs from original dataset
         :param data:    Numpy array with dataset for training with shape (num of samples, num of features)
