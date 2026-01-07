@@ -7,8 +7,8 @@ from .data_config import (
 )
 from .dnn_handler import (
     PyTorchTrainer,
-    SettingsMLPipeline,
-    DefaultSettingsMLPipeline
+    SettingsTraining,
+    DefaultSettingsTraining,
 )
 from .model_library import (
     CellLibrary,

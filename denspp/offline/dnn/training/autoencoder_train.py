@@ -11,7 +11,7 @@ from denspp.offline.dnn.data_config import DatasetFromFile, SettingsDataset
 from denspp.offline.dnn.training.ptq_help import quantize_model_fxp
 from denspp.offline.dnn.training.autoencoder_dataset import DatasetAutoencoder
 from denspp.offline.metric.snr import calculate_snr_tensor, calculate_dsnr_tensor
-from .common_train import PyTorchHandler, SettingsPytorch
+from .common_train import PyTorchHandler, SettingsPytorch, DataValidation
 
 
 @dataclass
@@ -65,6 +65,9 @@ DefaultSettingsTrainingMSE = SettingsAutoencoder(
 class TrainAutoencoder(PyTorchHandler):
     _logger: Logger
     _settings_train: SettingsAutoencoder
+    _train_loader: list
+    _valid_loader: list
+    _mean_data: np.ndarray
 
     def __init__(self, config_train: SettingsAutoencoder, config_data: SettingsDataset, do_train: bool=True) -> None:
         """Class for Handling Training of Autoencoders
@@ -78,10 +81,12 @@ class TrainAutoencoder(PyTorchHandler):
         self._logger = getLogger(__name__)
         self.__metric_buffer = dict()
         self.__metric_result = dict()
-        self._metric_methods = {'snr_in': self.__determine_snr_input, 'snr_in_cl': self.__determine_snr_input_class,
-                                'snr_out': self.__determine_snr_output, 'snr_out_cl': self.__determine_snr_output_class,
-                                'dsnr_all': self.__determine_dsnr_all, 'dsnr_cl': self.__determine_dsnr_class,
-                                'ptq_loss': self.__determine_ptq_loss}
+        self._metric_methods = {
+            'snr_in': self.__determine_snr_input,
+            'snr_out': self.__determine_snr_output,
+            'dsnr_all': self.__determine_dsnr_all,
+            'ptq_loss': self.__determine_ptq_loss
+        }
 
     def load_dataset(self, dataset: DatasetFromFile) -> None:
         """Loading the loaded dataset and transform it into right dataloader
@@ -93,6 +98,7 @@ class TrainAutoencoder(PyTorchHandler):
             noise_std=self._settings_train.noise_std,
             mode_train=self._settings_train.trainings_mode
         )
+        self._mean_data = dataset0.get_mean_waveforms
         self._prepare_dataset_for_training(
             data_set=dataset0,
             num_workers=0
@@ -172,7 +178,6 @@ class TrainAutoencoder(PyTorchHandler):
             for key0 in custom_made_metrics:
                 self.__metric_result.update({key0: list()})
                 self.__metric_buffer.update({key0: list()})
-
         # --- Processing results
         else:
             for key0 in self.__metric_buffer.keys():
@@ -186,18 +191,6 @@ class TrainAutoencoder(PyTorchHandler):
         else:
             self.__metric_buffer[kwargs['metric']] = concatenate((self.__metric_buffer[kwargs['metric']], out), dim=0)
 
-    def __determine_snr_input_class(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, **kwargs) -> None:
-        out = self._separate_classes_from_label(
-            pred=calculate_snr_tensor(input_waveform, mean_waveform),
-            true=kwargs['id'], label=kwargs['metric']
-        )
-        if len(self.__metric_buffer[kwargs['metric']]) == 0:
-            self.__metric_buffer[kwargs['metric']] = out[0]
-        else:
-            for idx, snr_class in enumerate(out[0]):
-                old = self.__metric_buffer[kwargs['metric']][idx]
-                self.__metric_buffer[kwargs['metric']][idx] = concatenate((old, snr_class), dim=0)
-
     def __determine_snr_output(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, **kwargs) -> None:
         out = calculate_snr_tensor(pred_waveform, mean_waveform)
         if isinstance(self.__metric_buffer[kwargs['metric']], list):
@@ -205,26 +198,7 @@ class TrainAutoencoder(PyTorchHandler):
         else:
             self.__metric_buffer[kwargs['metric']] = concatenate((self.__metric_buffer[kwargs['metric']], out), dim=0)
 
-    def __determine_snr_output_class(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, **kwargs) -> None:
-        out = self._separate_classes_from_label(
-            pred=calculate_snr_tensor(pred_waveform, mean_waveform),
-            true=kwargs['id'], label=kwargs['metric']
-        )
-        if len(self.__metric_buffer[kwargs['metric']]) == 0:
-            self.__metric_buffer[kwargs['metric']] = out[0]
-        else:
-            for idx, snr_class in enumerate(out[0]):
-                old = self.__metric_buffer[kwargs['metric']][idx][0]
-                self.__metric_buffer[kwargs['metric']][idx] = concatenate((old, snr_class), dim=0)
-
     def __determine_dsnr_all(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, **kwargs) -> None:
-        out = calculate_dsnr_tensor(input_waveform, pred_waveform, mean_waveform)
-        if isinstance(self.__metric_buffer[kwargs['metric']], list):
-            self.__metric_buffer[kwargs['metric']] = out
-        else:
-            self.__metric_buffer[kwargs['metric']] = concatenate((self.__metric_buffer[kwargs['metric']], out), dim=0)
-
-    def __determine_dsnr_class(self, input_waveform: Tensor, pred_waveform: Tensor, mean_waveform: Tensor, **kwargs) -> None:
         out = calculate_dsnr_tensor(input_waveform, pred_waveform, mean_waveform)
         if isinstance(self.__metric_buffer[kwargs['metric']], list):
             self.__metric_buffer[kwargs['metric']] = out
@@ -240,7 +214,6 @@ class TrainAutoencoder(PyTorchHandler):
         model_ptq = quantize_model_fxp(self._model, self._ptq_level[0], self._ptq_level[1])
         model_ptq.eval()
         pred_waveform_ptq = model_ptq(input_waveform)[1]
-
         # --- Calculate loss
         if len(input_waveform) > 2:
             loss = self._loss_fn(flatten(pred_waveform_ptq, 1), flatten(input_waveform, 1)).item() / self._total_batches_valid
@@ -333,17 +306,16 @@ class TrainAutoencoder(PyTorchHandler):
         self._end_training_routine(timestamp_start)
         return self._converting_tensor_to_numpy(metric_out)
 
-    def do_post_training_validation(self, do_ptq: bool=False) -> dict:
+    def do_post_training_validation(self, do_ptq: bool=False) -> DataValidation:
         """Performing the post-training validation with the best model
         :param do_ptq:  Boolean for activating post training quantization during post-training validation
-        :return:        Dictionary with model results
+        :return:        Dataclass with results from validation phase
         """
         if cuda.is_available():
             cuda.empty_cache()
 
         # --- Do the Inference with Best Model
         overview_models = self.get_best_model('ae')
-        print(overview_models)
         if len(overview_models) == 0:
             raise RuntimeError(f"No models found on {str(self._path2save)} - Please start training!")
 
@@ -382,11 +354,12 @@ class TrainAutoencoder(PyTorchHandler):
             first_cycle = False
 
         # --- Preparing output
-        result_feat = feat_model.numpy()
-        result_pred = pred_model.numpy()
-        return self._getting_data_for_plotting(
+        data_out = self._getting_data_for_plotting(
             valid_input=data_orig_list.numpy(),
             valid_label=clus_orig_list.numpy(),
-            results={'feat': result_feat, 'pred': result_pred},
             addon='ae'
         )
+        data_out.output = pred_model.numpy()
+        data_out.feat = feat_model.numpy()
+        data_out.mean = self._mean_data
+        return data_out

@@ -4,8 +4,8 @@ from unittest import TestCase, main, skip
 from os.path import join
 from denspp.offline import get_path_to_project
 from denspp.offline.template.call_dataset import DatasetLoader
+from denspp.offline.dnn import DatasetFromFile
 from .data_config import (
-    DatasetFromFile,
     SettingsDataset,
     TransformLabels,
     logic_combination
@@ -55,7 +55,7 @@ class TestDatasetConfig(TestCase):
     def setUp(self):
         self.sets: SettingsDataset = deepcopy(TestSettingsDataset)
 
-    @skip
+    @skip("Overview function due to missing remote access")
     def test_dataset_overview(self):
         self.sets.data_type = 'mnist'
         overview = DatasetLoader(

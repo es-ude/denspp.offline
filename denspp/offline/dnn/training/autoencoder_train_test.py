@@ -105,7 +105,7 @@ class TestAutoencoderTraining(TestCase):
 
     def test_custom_metric_methods(self):
         rslt = self.dut.get_epoch_metric_custom_methods
-        self.assertEqual(rslt, ['snr_in', 'snr_in_cl', 'snr_out', 'snr_out_cl', 'dsnr_all', 'dsnr_cl', 'ptq_loss'])
+        self.assertEqual(rslt, ['snr_in', 'snr_out', 'dsnr_all', 'ptq_loss'])
 
     def test_training_phase(self):
         self.dut.load_dataset(
@@ -142,8 +142,7 @@ class TestAutoencoderTraining(TestCase):
         )
         self.dut.do_training()
         rslt = self.dut.do_post_training_validation(do_ptq=False)
-        self.assertEqual(rslt['settings'], self.set_train)
-        self.assertEqual(rslt['cl_dict'], self.dataset.dict)
+        self.assertEqual(rslt.label_names, self.dataset.dict)
 
     def test_post_validation_with_ptq(self):
         self.dut.load_dataset(
@@ -155,8 +154,7 @@ class TestAutoencoderTraining(TestCase):
         )
         self.dut.do_training()
         rslt = self.dut.do_post_training_validation(do_ptq=True)
-        self.assertEqual(rslt['settings'], self.set_train)
-        self.assertEqual(rslt['cl_dict'], self.dataset.dict)
+        self.assertEqual(rslt.label_names, self.dataset.dict)
 
 
 if __name__ == '__main__':

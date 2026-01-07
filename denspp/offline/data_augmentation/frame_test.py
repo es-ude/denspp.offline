@@ -109,7 +109,7 @@ class TestAugmentationWaveform(TestCase):
         )
         self.assertEqual(rslt[0].shape, (80, dataset['mean'].shape[1]))
         self.assertEqual(rslt[1].shape, (80,))
-        np.testing.assert_array_equal(np.unique(rslt[0], return_counts=True), (np.array([0, 1]), np.array([40, 40])))
+        np.testing.assert_array_equal(np.unique(rslt[1], return_counts=True), (np.array([0, 1]), np.array([40, 40])))
 
     def test_augmentation_reduce_samples(self):
         dataset = {

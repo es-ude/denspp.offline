@@ -4,19 +4,21 @@ from matplotlib import pyplot as plt
 from denspp.offline.plot_helper import (
     save_figure,
     cm_to_inch,
-    get_plot_color
+    get_plot_color,
+    get_textsize_paper
 )
 
 
-def plot_loss(loss_train: list, loss_valid: list, type: str, path2save: str='',
-              epoch_zoom=None, show_plot: bool=False) -> None:
+def plot_loss(loss_train: list, loss_valid: list, loss_type: str, path2save: str= '',
+              epoch_zoom=None, do_logy: bool=False, show_plot: bool=False) -> None:
     """Plotting the loss of any DNN-based learning method
     Args:
         loss_train:     List with loss values from training
         loss_valid:     List with loss values from validation
-        type:           Name of the metric type
+        loss_type:      Name of the metric type
         path2save:      Path to save the figure
         epoch_zoom:     Do zoom on defined range [list]
+        do_logy:        Boolean for logarithmic y-axis scale
         show_plot:      Showing and blocking the plots
     Return:
         None
@@ -36,14 +38,15 @@ def plot_loss(loss_train: list, loss_valid: list, type: str, path2save: str='',
     axs[0].plot(epochs_ite, plot_metrics[:, 1], color='r', marker='.', label='Valid.')
 
     pos = np.linspace(epochs_ite[0], epochs_ite[-1], num=11, endpoint=True, dtype=int)
+    plt.yscale('log' if do_logy else 'linear')
     plt.xticks(pos)
     plt.xlim([pos[0], pos[-1]])
 
     plt.grid()
     plt.legend()
-    plt.title(f"{type} = {plot_metrics.max() if 'Acc' in type else plot_metrics.min():.3f}")
+    plt.title(f"{loss_type} = {plot_metrics.max() if 'Acc' in loss_type else plot_metrics.min():.3f}")
     plt.xlabel('Epoch')
-    plt.ylabel(f'{type}')
+    plt.ylabel(f'{loss_type}')
 
     # --- Plot zooming component
     if isinstance(epoch_zoom, list) and len(epoch_zoom) > 0:
@@ -66,58 +69,127 @@ def plot_loss(loss_train: list, loss_valid: list, type: str, path2save: str='',
 
     plt.tight_layout()
     if path2save:
-        save_figure(plt, path2save, f"loss_metric_{type}" + addon)
+        save_figure(plt, path2save, f"report_metric_{loss_type}" + addon)
     if show_plot:
         plt.show(block=True)
 
 
-def plot_custom_loss(data: list, loss_name: str, do_boxplot: bool=False, epoch_zoom=None, path2save: str='', show_plot: bool=False) -> None:
+def plot_custom_loss_classifier(data: list, loss_name: str, fold_num: int, do_logy: bool=False, epoch_zoom=None, path2save: str= '', show_plot: bool=False) -> None:
     """Plotting the custom loss of each epoch from training (e.g. Signal-to-Noise Ratio (SNR)
     :param data:        List with values from each epoch
     :param loss_name:   String with name of loss function
-    :param do_boxplot:  If true, plot boxplot
+    :param fold_num:    Integer with fold number
+    :param do_logy:     Boolean for plotting the y-axis logarithmic scale
     :param epoch_zoom:  Do zoom on defined range [list]
     :param path2save:   Path to save the figure
     :param show_plot:   If true, show plot
     :return:            None
     """
-    snr_processed = list()
-    if not do_boxplot:
-        snr0 = np.zeros(shape=(len(data), 3), dtype=float)
-        for idx, snr_epoch in enumerate(data):
-            snr0[idx, :] = snr_epoch.min(), np.median(snr_epoch), snr_epoch.max()
-        snr_processed.append(snr0)
+    epochs_ite = np.array([idx + 1 for idx in range(len(data))])
+    metric0 = np.array(data) if not 'ptq_loss' in loss_name else np.array(data).flatten()
+    pos = np.linspace(epochs_ite[0], epochs_ite[-1], num=11, endpoint=True, dtype=int)
+
+    plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
+    plt.rcParams.update({'font.size': get_textsize_paper()})
+    axs = list()
+    axs.append(plt.subplot(1, 1, 1))
+    axs[0].plot(epochs_ite, metric0, marker='.', markersize=5)
+    axs[0].set_xlabel('Epoch')
+    axs[0].set_ylabel(f'{loss_name}')
+    axs[0].set_yscale('log' if do_logy else 'linear')
+    # --- Plot zooming component
+    if isinstance(epoch_zoom, list) and len(epoch_zoom) > 0:
+        x0 = int(epoch_zoom[0])
+        x1 = int(epoch_zoom[1]) if len(epoch_zoom) == 2 else int(metric0.shape[0] - 1)
+        pos = np.arange(x0, x1)
+        min_value = np.min(metric0[pos, :])
+        max_value = np.max(metric0[pos, :])
+
+        axins0 = axs[0].inset_axes([0.45, 0.02, 0.5, 0.43], xticklabels=[],
+                                   xlim=(x0 - 0.5, x1 + 0.5), ylim=(0.99 * min_value, 1.01 * max_value))
+        axins0.plot(epochs_ite, metric0, color='k', marker='.', markersize=6)
+        axins0.grid()
+        axs[0].tick_params(direction='in')
+        axs[0].indicate_inset_zoom(axins0, edgecolor="black")
+        addon = '_zoomed'
     else:
-        snr_processed.append(data)
+        addon = ''
+
+    plt.xticks(pos)
+    plt.xlim([pos[0], pos[-1]])
+    plt.grid()
+    plt.tight_layout(pad=0.5)
+    if path2save:
+        save_figure(plt, path2save, f"report_metric_{loss_name}_fold{fold_num:03d}" + addon)
+    if show_plot:
+        plt.show(block=True)
+
+
+def plot_custom_loss_autoencoder(data: list, loss_name: str, do_boxplot: bool=False, do_logy: bool=False, epoch_zoom=None, path2save: str= '', show_plot: bool=False) -> None:
+    """Plotting the custom loss of each epoch from training (e.g. Signal-to-Noise Ratio (SNR)
+    :param data:        List with values from each epoch
+    :param loss_name:   String with name of loss function
+    :param do_boxplot:  If true, plot boxplot
+    :param do_logy:     Boolean for plotting the y-axis logarithmic scale
+    :param epoch_zoom:  Do zoom on defined range [list]
+    :param path2save:   Path to save the figure
+    :param show_plot:   If true, show plot
+    :return:            None
+    """
+    metric_processed = list()
+    if not do_boxplot:
+        metric0 = np.zeros(shape=(len(data), 3), dtype=float)
+        for idx, metric_epoch in enumerate(data):
+            metric0[idx, :] = metric_epoch.min(), np.median(metric_epoch), metric_epoch.max()
+        metric_processed.append(metric0)
+    else:
+        metric_processed.append(data)
 
     # --- Plotting
-    for idx, snr0 in enumerate(snr_processed):
-        plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
-        plt.rcParams.update({'font.size': 12})
-        plt.subplots_adjust(hspace=0, wspace=0.5)
-        plt.grid()
+    for idx, metric0 in enumerate(metric_processed):
+        epochs_ite = np.array([idx + 1 for idx in range(metric0[:, 0].size)])
+        pos = np.linspace(epochs_ite[0], epochs_ite[-1], num=11, endpoint=True, dtype=int)
 
-        epochs_ite = np.array([idx+1 for idx in range(snr0[:, 0].size)])
+        plt.figure(figsize=(cm_to_inch(16), cm_to_inch(8)))
+        plt.rcParams.update({'font.size': get_textsize_paper()})
+        axs = list()
+        axs.append(plt.subplot(1, 1, 1))
+        axs[0].plot(epochs_ite, metric0, marker='.', markersize=5)
+        axs[0].set_xlabel('Epoch')
+        axs[0].set_ylabel(f'{loss_name} (dB)')
+        axs[0].set_yscale('log' if do_logy else 'linear')
+
         if not do_boxplot:
-            plt.plot(epochs_ite,snr0[:, 0], color=get_plot_color(0), marker='.', label='min')
-            plt.plot(epochs_ite, snr0[:, 1], color=get_plot_color(1), marker='.', label='mean')
-            plt.plot(epochs_ite, snr0[:, 2], color=get_plot_color(2), marker='.', label='max')
+            plt.plot(epochs_ite,metric0[:, 0], color=get_plot_color(0), marker='.', label='min')
+            plt.plot(epochs_ite, metric0[:, 1], color=get_plot_color(1), marker='.', label='mean')
+            plt.plot(epochs_ite, metric0[:, 2], color=get_plot_color(2), marker='.', label='max')
             plt.legend()
         else:
             plt.boxplot(data, patch_artist=True, showfliers=False)
 
-        pos = np.linspace(epochs_ite[0], epochs_ite[-1], num=11, endpoint=True, dtype=int)
-        plt.xticks(pos)
-        plt.xlim([pos[0], pos[-1]])
-        plt.xlabel("Epoch")
-        if 'snr' in loss_name.lower():
-            plt.ylabel("Improved SNR (dB)")
-        else:
-            plt.ylabel(f"{loss_name}")
+        # --- Plot zooming component
+        if isinstance(epoch_zoom, list) and len(epoch_zoom) > 0:
+            x0 = int(epoch_zoom[0])
+            x1 = int(epoch_zoom[1]) if len(epoch_zoom) == 2 else int(metric0.shape[0] - 1)
+            pos = np.arange(x0, x1)
+            min_value = np.min(metric0[pos, :])
+            max_value = np.max(metric0[pos, :])
 
+            axins0 = axs[0].inset_axes([0.45, 0.02, 0.5, 0.43], xticklabels=[],
+                                       xlim=(x0 - 0.5, x1 + 0.5), ylim=(0.99 * min_value, 1.01 * max_value))
+            axins0.plot(epochs_ite, metric0, color='k', marker='.', markersize=6)
+            axins0.grid()
+            axs[0].tick_params(direction='in')
+            axs[0].indicate_inset_zoom(axins0, edgecolor="black")
+            addon = '_zoomed'
+        else:
+            addon = ''
+
+        plt.xlim([pos[0], pos[-1]])
+        plt.grid()
         plt.tight_layout(pad=0.5)
         if path2save:
-            save_figure(plt, path2save, f"ai_training_{loss_name}_fold{idx:03d}")
+            save_figure(plt, path2save, f"report_metric_{loss_name}_fold{idx:03d}" + addon)
         if show_plot:
             plt.show(block=True)
 
@@ -192,6 +264,6 @@ def plot_statistic(train_cl: np.ndarray, valid_cl=None, path2save: str= '',
     plt.tight_layout(pad=0.5)
     # --- saving plots
     if path2save:
-        save_figure(plt, path2save, "ai_training_histdata")
+        save_figure(plt, path2save, "report_statistic_data")
     if show_plot:
         plt.show(block=True)

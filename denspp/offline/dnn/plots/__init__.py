@@ -10,7 +10,8 @@ from .plot_autoencoder import (
 )
 from .plot_metric import (
     plot_loss,
-    plot_custom_loss,
+    plot_custom_loss_autoencoder,
+    plot_custom_loss_classifier,
     plot_statistic,
 )
 from .plot_classifier import (

@@ -22,7 +22,6 @@ def results_autoencoder_training(
         ymean:      Mean waveform of all spike classes
         feat:       Numpy array with features for plotting feature space
         yclus:      Numpy array with cluster results
-        snr:        List with SNR values
         cl_dict:    Dict with class labels
         xframes:    Size of spike frames
         num_feat:   Number of features

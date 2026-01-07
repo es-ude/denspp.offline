@@ -48,9 +48,10 @@ class DatasetLoader(ControllerDataset):
         data = build_waveform_dataset(
             settings_data=self.__get_waveforms()
         )
-        return DatasetFromFile(
+        dataset = DatasetFromFile(
             data=data.data,
             label=data.label,
             dict=data.dict,
             mean=np.zeros(shape=(len(data.dict), *data.data.shape[1:]))
         )
+        return self._processor.process_timeseries_datasets(data=dataset)

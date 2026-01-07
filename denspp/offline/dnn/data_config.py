@@ -3,7 +3,7 @@ from pathlib import Path
 from logging import getLogger, Logger
 from dataclasses import dataclass
 from denspp.offline import get_path_to_project, check_elem_unique
-from denspp.offline.data_call.remote_handler import RemoteDownloader
+from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
 
 
 @dataclass(frozen=True)
@@ -135,7 +135,7 @@ class ControllerDataset:
         """Giving an overview of available datasets on the cloud storage
         :return:            Return a list with dataset names
         """
-        oc_handler = RemoteDownloader(path2config=str(self._path))
+        oc_handler = OwnCloudDownloader(path2config=str(self._path))
         list_datasets = self._extract_methods(self._index_search[1])
         list_datasets.extend(oc_handler.get_overview_data(use_dataset=True))
         if do_print:
@@ -157,9 +157,9 @@ class ControllerDataset:
                           f"({data.data.shape[1]}, {data.data.shape[2]}) points available")
         self._logger.info(f"... used data points for training: "
                           f"in total {check[0].size} classes with {np.sum(check[1])} samples")
-        for idx, id in enumerate(check[0]):
+        for idx, id0 in enumerate(check[0]):
             addon = f'' if len(data.dict) == 0 else f' ({data.dict[idx]})'
-            self._logger.info(f"\tclass {id}{addon} --> {check[1][idx]} samples")
+            self._logger.info(f"\tclass {id0}{addon} --> {check[1][idx]} samples")
 
     def load_dataset(self, do_print: bool=True) -> DatasetFromFile:
         """Loading the dataset from defined data file
@@ -177,7 +177,7 @@ class ControllerDataset:
         # TODO: Error - Files will always be downloaded
         # TODO: Definition of get_path2data is wrong
         if not self._settings.get_path2folder.exists():
-            oc_handler = RemoteDownloader(str(self._path))
+            oc_handler = OwnCloudDownloader(str(self._path))
             oc_handler.download_file(
                 use_dataset=True,
                 file_name=dataset_name,
@@ -212,10 +212,10 @@ def logic_combination(labels_in: TransformLabels, translate_list: list) -> Trans
     pred_labels_new = np.zeros_like(labels_in.pred, dtype=np.uint8)
 
     for idx, cluster in enumerate(translate_list):
-        for id in cluster:
-            pos = np.argwhere(labels_in.true == id).flatten()
+        for id0 in cluster:
+            pos = np.argwhere(labels_in.true == id0).flatten()
             true_labels_new[pos] = idx
-            pos = np.argwhere(labels_in.pred == id).flatten()
+            pos = np.argwhere(labels_in.pred == id0).flatten()
             pred_labels_new[pos] = idx
     return TransformLabels(
         true=true_labels_new,
