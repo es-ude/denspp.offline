@@ -24,7 +24,7 @@ class SuccessiveApproximation(BasicADC):
         self.__stage_one_dly = self._settings.vcm
         self.__stage_two_dly = self._settings.vcm
 
-    def __adc_sar_sample(self, uin: np.ndarray) -> [np.ndarray, np.ndarray]:
+    def __adc_sar_sample(self, uin: int | np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """Running the SAR on input data"""
         # --- Bitmask generation
         BitMask = np.zeros(shape=(self._settings.Nadc,), dtype=int)
@@ -37,10 +37,10 @@ class SuccessiveApproximation(BasicADC):
                 BitMask[self._settings.Nadc - 2 - idx] = 1
 
         uout = self._settings.vref[1] + np.sum(BitMask * self.__partition_voltage)
-        xout = (np.sum(BitMask * self.__partition_digital) - self.__type_offset).astype(int)
+        xout = (np.sum(BitMask * self.__partition_digital) - self.__type_offset).astype(int)[0]
         return uout, xout
 
-    def adc_sar(self, uin: np.ndarray) -> [np.ndarray, np.ndarray, np.ndarray]:
+    def adc_sar(self, uin: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Running the SAR Topology as an ADC
         Args:
             uin:    Input voltage
@@ -61,7 +61,7 @@ class SuccessiveApproximation(BasicADC):
             uerr[idx] = umod - uout[idx]
         return xout, uout, uerr
 
-    def adc_sar_ns_delay(self, uin: np.ndarray) -> [np.ndarray, np.ndarray, np.ndarray]:
+    def adc_sar_ns_delay(self, uin: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Running the Noise Shaping SAR Topology (Delay of last sample)
         Args:
             uin:    Input voltage
@@ -84,7 +84,7 @@ class SuccessiveApproximation(BasicADC):
             self.__stage_one_dly = uerr[idx]
         return xout, uout, uerr
 
-    def adc_sar_ns_order_one(self, uin: np.ndarray) -> [np.ndarray, np.ndarray, np.ndarray]:
+    def adc_sar_ns_order_one(self, uin: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Running the Noise Shaping SAR Topology (First order with integration)
         Args:
             uin:    Input voltage
@@ -108,7 +108,7 @@ class SuccessiveApproximation(BasicADC):
             self.__stage_one_dly += self.alpha_int[0] * uerr[idx]
         return xout, uout, uerr
 
-    def adc_sar_ns_order_two(self, uin: np.ndarray) -> [np.ndarray, np.ndarray, np.ndarray]:
+    def adc_sar_ns_order_two(self, uin: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Running the Noise Shaping SAR Topology (Second order with integration)
         Args:
             uin:    Input voltage

@@ -1,6 +1,6 @@
 import numpy as np
 from .adc_basic import BasicADC
-from .adc_settings import SettingsADC, SettingsNon, RecommendedSettingsNon
+from .adc_settings import SettingsADC, RecommendedSettingsADC, SettingsNon, RecommendedSettingsNon
 from denspp.offline.analog.dev_noise import ProcessNoise
 
 
@@ -33,7 +33,7 @@ class NyquistADC(BasicADC):
             x_out[idx] = self.__adc_conv_sample(vol)
         return self.clamp_digital(x_out)
 
-    def adc_nyquist(self, uin: np.ndarray) -> [np.ndarray, np.ndarray]:
+    def adc_nyquist(self, uin: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """Using the Nyquist Topology as an ADC
         Args:
             uin:    Input voltage

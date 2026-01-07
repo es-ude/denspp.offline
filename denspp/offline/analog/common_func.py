@@ -11,7 +11,7 @@ class CommonAnalogFunctions:
         self._range = [volt_low, volt_hgh]
         return self._range
 
-    def clamp_voltage(self, uin: np.ndarray | float) -> np.ndarray | float:
+    def clamp_voltage(self, uin: float | np.ndarray ) -> float | np.ndarray:
         """Do voltage clipping at voltage supply"""
         uout = np.array(deepcopy(uin))
         np.clip(uout, a_max=self._range[1], a_min=self._range[0], out=uout)

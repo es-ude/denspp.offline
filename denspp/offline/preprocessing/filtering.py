@@ -103,9 +103,12 @@ class Filtering(CommonDigitalFunctions):
                     raise NotImplementedError
             case _:
                 filter = scft.iirfilter(
-                    N=self.settings.n_order, Wn=frange,
-                    ftype=self.settings.f_type.lower(), btype=self.settings.b_type.lower(),
-                    analog=False, output='ba'
+                    N=self.settings.n_order,
+                    Wn=frange[0] if len(frange) == 1 else frange,
+                    ftype=self.settings.f_type.lower(),
+                    btype=self.settings.b_type.lower(),
+                    analog=False,
+                    output='ba'
                 )
                 self._coeff_b = filter[0]
                 self._coeff_a = filter[1]

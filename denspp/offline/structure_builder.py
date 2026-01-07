@@ -3,7 +3,7 @@ from os import makedirs
 from os.path import join, exists
 from shutil import copy
 from denspp.offline import get_path_to_project, get_path_to_project_templates
-from denspp.offline.data_call.remote_handler import RemoteDownloader
+from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
 
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ def init_project_folder(new_folder: str = '') -> None:
     :param new_folder:      Name of the new folder to create (test case)
     :return:                None
     """
-    RemoteDownloader()
+    OwnCloudDownloader()
     folder_structure = ['data', 'dataset', 'runs', 'config', 'src', 'src_pipe']
     copy_files = {'main_pipeline.py': '', '.gitignore': '', 'README.md': '',
                   'run_tests.py': '', 'call_data.py': 'src_pipe', 'pipeline_plot.py': 'src_pipe',

@@ -107,9 +107,9 @@ class TestAugmentationWaveform(TestCase):
             frames_cl=dataset['label'],
             num_min_frames=30,
         )
-        self.assertEqual(rslt['frames'].shape, (80, dataset['mean'].shape[1]))
-        self.assertEqual(rslt['id'].shape, (80,))
-        np.testing.assert_array_equal(np.unique(rslt['id'], return_counts=True), (np.array([0, 1]), np.array([40, 40])))
+        self.assertEqual(rslt[0].shape, (80, dataset['mean'].shape[1]))
+        self.assertEqual(rslt[1].shape, (80,))
+        np.testing.assert_array_equal(np.unique(rslt[0], return_counts=True), (np.array([0, 1]), np.array([40, 40])))
 
     def test_augmentation_reduce_samples(self):
         dataset = {
@@ -123,9 +123,9 @@ class TestAugmentationWaveform(TestCase):
             num_frames=4,
             do_shuffle=False
         )
-        self.assertEqual(rslt['frames'].shape, (8, dataset['mean'].shape[1]))
-        self.assertEqual(rslt['id'].shape, (8,))
-        np.testing.assert_array_equal(np.unique(rslt['id'], return_counts=True), (np.array([0, 1]), np.array([4, 4])))
+        self.assertEqual(rslt[0].shape, (8, dataset['mean'].shape[1]))
+        self.assertEqual(rslt[1].shape, (8,))
+        np.testing.assert_array_equal(np.unique(rslt[1], return_counts=True), (np.array([0, 1]), np.array([4, 4])))
 
 
 if __name__ == '__main__':

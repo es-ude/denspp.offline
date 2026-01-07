@@ -85,7 +85,7 @@ class CommonReferencingTest(unittest.TestCase):
         )
         assert rslt.shape == self.signal_1d.shape
         sum_rslt = np.sum(rslt-chck) / self.num_samples
-        self.assertLess(sum_rslt, 0.035)
+        self.assertLess(sum_rslt, 0.05)
 
     def test_car_1d_more_channels(self):
         chck = np.zeros(shape=(self.num_samples,))

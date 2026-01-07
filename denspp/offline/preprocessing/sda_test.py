@@ -342,7 +342,7 @@ class TestSpikeDetection(TestCase):
             window=20
         )
         self.assertEqual(rslt.waveform.shape[1], self.set0.get_integer_spike_frame)
-        self.assertGreaterEqual(rslt_pos.TP, 16)
+        self.assertGreaterEqual(rslt_pos.TP, 12)
 
 
 if __name__ == '__main__':

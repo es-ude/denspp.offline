@@ -22,7 +22,7 @@ def _build_eap_dataset(count: int, sampling_rate: float, max_gap: float=0.01, do
         time_duration=[1.6e-3],
         waveform_select=['EAP'],
         polarity_cathodic=[False]
-    )['sig']
+    ).signal
     pos = np.array(dut.build_random_timestamps(
         count=2* count,
         min_gap=1.8e-3,

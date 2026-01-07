@@ -12,7 +12,7 @@ class SettingsADC:
         fs_dig:     Output sampling rate after decimation [Hz]
         Nadc:       Quantization level of ADC [/]
         osr:        Oversampling ratio of ADC [/]
-        type_out:   Output type of digital value {"signed": True | "unsigned": False}
+        is_signed:  Output type of digital value {"signed": True | "unsigned": False}
     """
     vdd:        float
     vss:        float
@@ -32,12 +32,12 @@ class SettingsADC:
         return self.osr * self.fs_dig
 
     @property
-    def vref(self) -> [float, float]:
+    def vref(self) -> tuple[float, float]:
         vrefp = self.vcm + self.dvref
         vrefp = vrefp if vrefp < self.vdd else self.vdd
         vrefn = self.vcm - self.dvref
         vrefn = vrefn if vrefn > self.vss else self.vss
-        return [vrefp, vrefn]
+        return vrefp, vrefn
 
     @property
     def vref_range(self) -> float:
@@ -55,7 +55,7 @@ class SettingsNon:
         use_noise:  Boolean for using noise in output
         wgndB:      Float with effective power spectral noise [dB/sqrt(Hz)]
         offset:     Corner frequency of the flicker (1/f) noise [Hz]
-        slope:      Alpha coefficient of the flicker noise []
+        gain_error: Additional error on the gain of the ADC SAR [V/V]
     """
     use_noise: bool
     wgndB: float

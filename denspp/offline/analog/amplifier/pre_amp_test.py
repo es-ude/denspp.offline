@@ -88,13 +88,23 @@ class TestAmplifier(TestCase):
 
         num_rpt = 2
         f_sig = 100 / set0.fs_ana
-        input_time = np.linspace(start=-num_rpt/f_sig, stop=1/f_sig, num=int((num_rpt+1) * f_sig * set0.fs_ana), endpoint=True)
+        input_time = np.linspace(start=-num_rpt / f_sig, stop=1 / f_sig, num=int((num_rpt + 1) * f_sig * set0.fs_ana),
+                                 endpoint=True)
         input_stimuli = 0.5 * np.sin(np.pi * f_sig * input_time)
         output = PreAmp(settings_dev=set0).pre_amp_chopper(uinp=input_stimuli, uinn=0.0)['out']
-        check = True
         start_pos = np.argwhere(input_time >= 0.0).flatten()[0]
         diff_value = np.sum(np.abs(input_stimuli[start_pos:] - output[start_pos:])) / set0.gain
         self.assertTrue(diff_value <= 0.6)
+
+    def test_amplifier_chopper_bandpass(self):
+        set0 = deepcopy(settings)
+        set0.n_filt = 1
+        set0.gain = 1
+        set0.fs_ana = 100
+        set0.f_chop = set0.fs_ana / 10
+        set0.f_type = 'bandpass'
+        set0.f_filt = [25., 40.]
+        set0.noise_en = False
 
     def test_amplifier_chopper_noise(self):
         set0 = deepcopy(settings)

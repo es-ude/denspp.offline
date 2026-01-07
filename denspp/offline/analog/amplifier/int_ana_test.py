@@ -49,7 +49,7 @@ class IntegratorAmplifierTest(TestCase):
             u_inp=self.sig_ones,
             u_inn=TestSettingsINT.vcm
         )
-        self.assertLess(abs(float(rslt)-chck), 1e-6)
+        self.assertLess(abs(rslt-chck), 1e-6)
 
     def test_ideal_integrator_sample_sym(self):
         chck = TestSettingsINT.vcm
@@ -57,7 +57,7 @@ class IntegratorAmplifierTest(TestCase):
             u_inp=self.sig_sym,
             u_inn=TestSettingsINT.vcm
         )
-        self.assertLess(abs(float(rslt) - chck), 1e-4)
+        self.assertLess(abs(rslt-chck), 1e-4)
 
     def test_ideal_integrator_sample_clamp_vdd(self):
         chck = TestSettingsINT.vdd
@@ -65,7 +65,7 @@ class IntegratorAmplifierTest(TestCase):
             u_inp=self.sig_ones * 10,
             u_inn=TestSettingsINT.vcm
         )
-        self.assertLess(abs(float(rslt) - chck), 1e-4)
+        self.assertLess(abs(rslt-chck), 1e-4)
 
     def test_ideal_integrator_sample_clamp_vss(self):
         chck = TestSettingsINT.vss
@@ -73,7 +73,7 @@ class IntegratorAmplifierTest(TestCase):
             u_inp=-self.sig_ones * 10,
             u_inn=TestSettingsINT.vcm
         )
-        self.assertLess(abs(float(rslt)-chck), 1e-4)
+        self.assertLess(abs(rslt-chck), 1e-4)
 
     def test_ideal_integrator_signal_zeros(self):
         chck = self.sig_zero

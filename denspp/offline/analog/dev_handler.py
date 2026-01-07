@@ -78,7 +78,7 @@ class ElectricalLoadHandler(ProcessNoise):
         self._bounds_volt = [0.0, 5.0]
 
     @staticmethod
-    def _calc_error(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
+    def _calc_error(y_pred: float | np.ndarray, y_true: float | np.ndarray) -> float:
         return calculate_error_rae(y_pred, y_true)
 
     def _check_right_param_format(self, new_list: list=()) -> bool:
@@ -139,11 +139,11 @@ class ElectricalLoadHandler(ProcessNoise):
 
         # --- Limiting with voltage boundaries
         self._logger.debug("Truncating the electrical signals to desired bounds")
-        x_start = int(np.argwhere(u_path >= self._bounds_volt[0])[0])
-        x_stop = int(np.argwhere(u_path >= self._bounds_volt[1])[0])
+        x_start = int(np.argwhere(u_path >= self._bounds_volt[0]).flatten()[0])
+        x_stop = int(np.argwhere(u_path >= self._bounds_volt[1]).flatten()[0])
         return {'I': i_path[x_start:x_stop], 'V': u_path[x_start:x_stop]}
 
-    def _do_regression(self, u_inp: np.ndarray | float, u_inn: np.ndarray | float,
+    def _do_regression(self, u_inp: float | np.ndarray, u_inn: float | np.ndarray,
                        params: dict=(), disable_print: bool=False) -> np.ndarray:
         """Performing the behaviour of the device with regression
         :param u_inp:           Positive input voltage [V]
@@ -167,7 +167,7 @@ class ElectricalLoadHandler(ProcessNoise):
             iout = list()
             self._logger.debug(f"Start regression of device: {self._settings_device.type}")
             for idx, u_sample in enumerate(tqdm(du, desc="Regression Progress:", disable=disable_print)):
-                sign_pos = u_sample >= 0.0
+                sign_pos = u_sample >= 0.
                 y_start = y_initial if idx == 0 else abs(iout[-1])
                 result = least_squares(
                     self._type_device[self._settings_device.type]['reg'],
@@ -219,7 +219,7 @@ class ElectricalLoadHandler(ProcessNoise):
         return error
 
     def _get_params_from_curve_fitting(self, bounds_params: dict, do_test: bool=False,
-                                       do_plot: bool=True, path2save: str='') -> [np.ndarray, float]:
+                                       do_plot: bool=True, path2save: str='') -> tuple[dict, float]:
         """Function to extract the params of electrical device behaviour with curve fitting
         Args:
             bounds_params:          Dictionary with param bounds
@@ -246,10 +246,10 @@ class ElectricalLoadHandler(ProcessNoise):
             do_plot=do_plot,
             path2save=path2save
         )
-        return [params_ext, error]
+        return params_ext, error
 
     @staticmethod
-    def _plot_transfer_function_comparison(u_transfer: np.ndarray, i_dev0: np.ndarray | list, i_dev1: np.ndarray,
+    def _plot_transfer_function_comparison(u_transfer: np.ndarray, i_dev0: list | np.ndarray, i_dev1: np.ndarray,
                                            method_types: list, plot_title: str='',
                                            path2save: str='', show_plot: bool=False) -> None:
         """Plotting the transfer function of electrical device for comparison
@@ -348,7 +348,7 @@ class ElectricalLoadHandler(ProcessNoise):
         for val_min, val_max in zip(self._param_bounds[0], self._param_bounds[1]):
             val_end = val_min + np.random.ranf(1) * (val_max-val_min)
             val_inf = 0.0
-            guess_values.append(float(val_inf if np.isinf(val_min) or np.isinf(val_max) else val_end))
+            guess_values.append(val_inf if np.isinf(val_min) or np.isinf(val_max) else val_end[0])
         return guess_values
 
     def extract_params_curvefit(self, voltage: np.ndarray, current: np.ndarray, param_bounds: dict) -> dict:
@@ -376,7 +376,7 @@ class ElectricalLoadHandler(ProcessNoise):
         else:
             raise KeyError("Wrong Key List with Parameters")
 
-    def check_value_range_violation(self, signal: np.ndarray | float, mode_voltage: bool=True) -> bool:
+    def check_value_range_violation(self, signal: float | np.ndarray, mode_voltage: bool=True) -> bool:
         """Checking differential input stream has a violation against given range
         :param signal:          Numpy array with applied voltage difference [V]
         :param mode_voltage:    Boolean if input signal is voltage [True] or current [False]
@@ -392,13 +392,13 @@ class ElectricalLoadHandler(ProcessNoise):
             self._logger.warning(f"Voltage Range Violation {addon}!")
         return bool(violation_up or violation_dwn)
 
-    def _get_current_from_equation(self, voltage_pos: np.ndarray | float, voltage_neg: np.ndarray | float, params: dict) -> np.ndarray:
+    def _get_current_from_equation(self, voltage_pos: float | np.ndarray, voltage_neg: float | np.ndarray, params: dict) -> np.ndarray:
         return self._type_device[self._settings_device.type]['equa'](voltage_pos, voltage_neg, params)
 
     def _get_voltage_from_regression(self, current: np.ndarray, params: dict) -> np.ndarray:
         return -self._type_device[self._settings_device.type]['reg'](current, np.zeros_like(current), params)
 
-    def _get_voltage_with_search(self, i_in: np.ndarray, u_inn: np.ndarray | float, start_value: float=0.0, start_step: float=1e-3, take_last_value: bool=True) -> np.ndarray:
+    def _get_voltage_with_search(self, i_in: np.ndarray, u_inn: float | np.ndarray, start_value: float=0.0, start_step: float=1e-3, take_last_value: bool=True) -> np.ndarray:
         """Getting the voltage response from electrical device
         Args:
             i_in:               Applied current input [A]
@@ -420,10 +420,10 @@ class ElectricalLoadHandler(ProcessNoise):
             # First Step Test (Direction)
             initial_value = start_value if idx == 0 and not take_last_value else u_response[idx-1]
             test_value = list()
-            test_value.append(initial_value - start_step * (float(np.random.random(1) + 0.5)))
-            test_value.append(initial_value - 0.5 * start_step * (float(np.random.random(1) - 0.5)))
-            test_value.append(initial_value + 0.5 * start_step * (float(np.random.random(1) - 0.5)))
-            test_value.append(initial_value + start_step * (float(np.random.random(1) + 0.5)))
+            test_value.append(initial_value - start_step * (np.random.random(1)[0] + 0.5))
+            test_value.append(initial_value - 0.5 * start_step * (np.random.random(1)[0] - 0.5))
+            test_value.append(initial_value + 0.5 * start_step * (np.random.random(1)[0] - 0.5))
+            test_value.append(initial_value + start_step * (np.random.random(1)[0] + 0.5))
 
             error0 = list()
             for u_top in test_value:
@@ -491,7 +491,7 @@ class ElectricalLoadHandler(ProcessNoise):
                 ovr = self.get_type_list()
                 raise ValueError(f"Parameter 'use_params': Wrong parameters selected - Please use {ovr[method[0]]['params']}!")
 
-    def get_current(self, u_top: np.ndarray | float, u_bot: np.ndarray | float) -> np.ndarray:
+    def get_current(self, u_top: float | np.ndarray, u_bot: float | np.ndarray) -> np.ndarray:
         """Getting the current response from electrical device
         :param u_top:   Applied voltage on top electrode [V]
         :param u_bot:   Applied voltage on bottom electrode  [V]
@@ -518,7 +518,7 @@ class ElectricalLoadHandler(ProcessNoise):
                 raise ValueError(
                     f"Parameter 'use_params': Wrong parameters selected - Please use {ovr[method[0]]['params']}!")
 
-    def get_current_density(self, u_top: np.ndarray, u_bot: np.ndarray | float, area: float) -> np.ndarray:
+    def get_current_density(self, u_top: np.ndarray, u_bot: float | np.ndarray, area: float) -> np.ndarray:
         """Getting the current response from electrical device
         Args:
             u_top:      Applied voltage on top electrode [V]
@@ -530,7 +530,7 @@ class ElectricalLoadHandler(ProcessNoise):
         return self.get_current(u_top, u_bot) / area
 
 
-def generate_test_signal(t_end: float, fs: float, upp: list, fsig: list, uoff: float=0.0) -> [np.ndarray, np.ndarray]:
+def generate_test_signal(t_end: float, fs: float, upp: list, fsig: list, uoff: float=0.0) -> tuple[np.ndarray, np.ndarray]:
     """Generating a signal for testing
     Args:
         t_end:      End of simulation

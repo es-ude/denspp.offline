@@ -64,7 +64,7 @@ class TestWindowSequencer(TestCase):
 
     def test_window_sequence_match_not_full(self):
         set0 = deepcopy(self.sets)
-        num_trials = np.random.randint(1, 10) + np.random.random(1) - 0.5
+        num_trials = np.random.randint(1, 10) + np.random.random(1)[0] - 0.5
         num_samples = int(num_trials * set0.window_length)
         stimuli = 2 * (np.random.random(num_samples) - 0.5)
         rslt = WindowSequencer(set0).sequence(stimuli)

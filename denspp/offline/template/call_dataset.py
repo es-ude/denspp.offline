@@ -27,15 +27,14 @@ class DatasetLoader(ControllerDataset):
     def __prepare_mnist(self) -> DatasetFromFile:
         from sklearn.datasets import fetch_openml
         data, label = fetch_openml("mnist_784", return_X_y=True, as_frame=False, parser="liac-arff")
-        data_process = self._processor.process_vision_datasets(
-            picture=data.reshape(-1, 28, 28),
-            label=label
+        dataset = DatasetFromFile(
+            data=data.reshape(-1, 28, 28),
+            label=np.array(label, dtype=np.uint8),
+            dict=['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'],
+            mean=np.zeros(shape=(10, 28, 28)),
         )
-        return DatasetFromFile(
-            data=data_process.data,
-            label=np.array(data_process.label, dtype=np.uint8),
-            dict=['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'],
-            mean=data_process.mean,
+        return self._processor.process_vision_datasets(
+            data=dataset
         )
 
     def __get_waveforms(self) -> SettingsWaveformDataset:
@@ -53,5 +52,5 @@ class DatasetLoader(ControllerDataset):
             data=data.data,
             label=data.label,
             dict=data.dict,
-            mean=np.zeros(shape=(len(data.dict), data.data.shape[1]))
+            mean=np.zeros(shape=(len(data.dict), *data.data.shape[1:]))
         )
