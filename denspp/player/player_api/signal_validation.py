@@ -42,6 +42,7 @@ class SignalCompartor:
         self._results.mean_squared_error = self._calculate_mse()
         self._results.spectral_coherence = self._calculate_spectral_coherence()
 
+
     @property
     def get_results(self) -> SignalValidationResult:
         """Get the results of the signal validation
@@ -51,14 +52,17 @@ class SignalCompartor:
         """        
         return self._results
 
+
     @property
     def check_equal_number_of_signals(self) -> bool:
         """Check if the total length of the original and processed signals are equal
 
         Returns:
             bool: True if equal, False otherwise
-        """        
-        return len(self._signal_original_with_cut) == len(self._signal_processed)
+        """
+        if self._signal_original_with_cut.shape[0] != self._signal_processed.shape[0]:
+            return False
+        return True
         
 
     def _reverse_vertical_scaling(self) -> np.ndarray:
@@ -96,6 +100,7 @@ class SignalCompartor:
             results.append(pearson_r)
         return results
     
+
     def _calculate_mse(self) -> list:
         """Calculate Mean Squared Error (MSE) between original and processed signals
 
@@ -124,6 +129,7 @@ class SignalCompartor:
             results.append(mse)
         return results
     
+
     def _calculate_spectral_coherence(self, self_defined_nperseg =None) -> list:
         results =[]
         if not self._equal_number_of_signals:
@@ -143,7 +149,7 @@ class SignalCompartor:
             
             f, Cxy = signal.coherence(self._signal_original_with_cut[i], processed_aligned, fs=self._fs_original, nperseg=nperseg)
             self._plot_spectral_coherence(f, Cxy)
-            self._show_signal_plots(self._signal_original_with_cut[i], processed_aligned)
+            self._show_signal_plots(self._signal_original_with_cut[i], processed_aligned /self._scaling_factor)
             
             results.append({
                 "frequencies": f,

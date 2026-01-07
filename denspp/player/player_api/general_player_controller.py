@@ -150,7 +150,7 @@ class GeneralPlayerController:
     def _read_config(self) -> None:
         """Read and process the general configuration settings."""
         self._logging_lvl = self.general_config["General_Configuration"]["Logging_Lvl"]
-        self._data_path = self.general_config["Data_Input"]["input"]
+        self._data_path = Path(self.general_config["Data_Input"]["input"])
         self._hardware_config_values = self.general_config["Hardware"]
         self._data_config_values = self.general_config["Data_Configuration"]
         self._data_config_do_cut = self.general_config["Data_Configuration"]["Data_Preprocessing"]["do_cut"]
@@ -212,7 +212,7 @@ class GeneralPlayerController:
         deployed_settingsData = SettingsData(pipeline ="PipelineV0",
                                                 do_merge = False,
                                                 path = self._data_path,
-                                                data_set = self._data_path,
+                                                data_set = self._data_path.parts[-1],
                                                 data_case = 0,
                                                 data_point = 0,
                                                 ch_sel = self._data_config_values["Data_Preprocessing"]["channel_selection"],
@@ -241,7 +241,7 @@ class GeneralPlayerController:
             self._deployed_playerControllerData.do_cut()
             
             data = self._deployed_playerControllerData.get_data()
-            self._logger.info(f"Plotted data with sampling rate {data.fs_used} with {len(data.data_raw)}")
+            self._logger.info(f"Cut data with sampling rate {data.fs_used} with {len(data.data_raw)}")
         else:
             self._logger.info("Data cutting is disabled in the configuration.")
 
@@ -261,7 +261,8 @@ class GeneralPlayerController:
             
             if self._logging_lvl.upper() == "DEBUG": # Plot data after resampling, if the logging level is set to DEBUG
                 data = self._deployed_playerControllerData.get_data()
-                dhf.plot_data(data.data_raw[0], data.fs_used, data.time_end, "resampling")
+                
+                dhf.plot_data(data.data_raw[0,:], data.fs_used, data.time_end, "resampling")
             self._logger.info(f"Data resampling completed, new sampling rate: {self._deployed_playerControllerData._raw_data.fs_used} Hz")
         else:
             self._logger.info("Data resampling is disabled in the configuration.")
@@ -296,7 +297,8 @@ class GeneralPlayerController:
 
         if self._logging_lvl.upper() == "DEBUG":
             data = self._deployed_hardware_controller.get_data
-            dhf.plot_data(data.data[0],data.samplingrate, 1, "transferring")
+            dhf.plot_data(data.data[0,:],data.samplingrate, 1, "transferring")
+        self._logger.info(f"Data max: {self._deployed_hardware_controller.get_data.data.max()}\n Data min: {self._deployed_hardware_controller.get_data.data.min()}")
 
 
     def output_data_for_hardware(self) -> None:
@@ -320,8 +322,6 @@ class GeneralPlayerController:
         compartor.analyze_signals()
         results = compartor.get_results
         print(results)
-
-
 
 if __name__ == "__main__":
     controller = GeneralPlayerController()
