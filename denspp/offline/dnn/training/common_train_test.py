@@ -7,6 +7,7 @@ from denspp.offline.dnn.data_config import (
     DefaultSettingsDataset
 )
 from denspp.offline.dnn.models.mnist import mnist_mlp_cl_v0, mnist_mlp_ae_v0
+from denspp.offline.dnn.models.waveforms import waveforms_mlp_cl_v0
 from .common_train import (
     SettingsPytorch,
     PyTorchHandler
@@ -47,8 +48,13 @@ class TestCommonPyTorchTrain(TestCase):
         rslt = self.dut._settings_train.get_model()
         self.assertEqual(type(rslt), mnist_mlp_cl_v0)
 
-    def test_get_signature(self):
+    def test_get_signature_mnist(self):
         self.dut._settings_train.model_name = mnist_mlp_cl_v0.__name__
+        rslt = self.dut._settings_train.get_signature()
+        self.assertEqual(rslt, [])
+
+    def test_get_signature_waveform(self):
+        self.dut._settings_train.model_name = waveforms_mlp_cl_v0.__name__
         rslt = self.dut._settings_train.get_signature()
         self.assertEqual(rslt, ['input_size', 'output_size'])
 

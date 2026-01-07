@@ -2,7 +2,8 @@ from .autoencoder_train import (
     SettingsAutoencoder,
     DefaultSettingsTrainingMSE,
     TrainAutoencoder,
-    DatasetAutoencoder
+    DatasetAutoencoder,
+    DataValidation
 )
 from .classifier_train import (
     SettingsClassifier,

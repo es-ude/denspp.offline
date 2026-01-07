@@ -5,13 +5,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from denspp.offline.data_format.yaml import YamlHandler
-from denspp.offline.dnn.dataset.autoencoder import prepare_training
-from denspp.offline.dnn.dnn_handler import SettingsMLPipeline, DefaultSettingsMLPipeline
-from denspp.offline.dnn.data_config import SettingsDataset, DefaultSettingsDataset
-from denspp.offline.dnn.plots.plot_dnn import results_training
-from denspp.offline.dnn import train_autoencoder_routine, SettingsPytorch, DefaultSettingsTrainMSE
+from denspp.offline.dnn import PyTorchTrainer, DefaultSettingsTraining, DefaultSettingsDataset, SettingsDataset, SettingsTraining
+from denspp.offline.dnn import train_autoencoder_routine, SettingsPytorch, DefaultSettingsTrainingMSE
 
-
+#TODO: Fix errors
 def train_model_normal(used_model_name: str, config_train, config_data, dnn_handler,
                        dataset, ptq_level: list=(12, 8)) -> dict:
     model_stats = dict()
@@ -23,7 +20,7 @@ def train_model_normal(used_model_name: str, config_train, config_data, dnn_hand
         print_results=False, ptq_quant_lvl=ptq_level
     )
     used_first_fold = [key for key in model_stats["metrics"].keys()][0]
-    results_training(
+    results_autoencoder_training(
         path=model_stats["path2folder"], cl_dict=model_stats["data_result"]['cl_dict'],
         feat=model_stats["data_result"]['feat'],
         yin=model_stats["data_result"]['input'], ypred=model_stats["data_result"]['pred'],
@@ -45,7 +42,7 @@ def train_model_quantized(used_model_name: str, config_train, config_data, dnn_h
         print_results=False, ptq_quant_lvl=ptq_level
     )
     used_first_fold = [key for key in model_stats["metrics"].keys()][0]
-    results_training(
+    results_autoencoder_training(
         path=model_stats["path2folder"], cl_dict=model_stats["data_result"]['cl_dict'], feat=model_stats["data_result"]['feat'],
         yin=model_stats["data_result"]['input'], ypred=model_stats["data_result"]['pred'], ymean=dataset.get_mean_waveforms,
         yclus=model_stats["data_result"]['valid_clus'], snr=model_stats["metrics"][used_first_fold]['dsnr_all'],
@@ -87,13 +84,13 @@ if __name__ == "__main__":
     ptq_level = [12, 10]
 
     # --- Load Configs
-    default_hndl = deepcopy(DefaultSettingsMLPipeline)
+    default_hndl = deepcopy(DefaultSettingsTraining)
     default_hndl.mode_train_dnn = 3
-    default_hndl.do_plot = False
+    default_hndl.do_plot_results = False
     yaml_handler = YamlHandler(default_hndl, 'config', 'Config_DNN')
-    dnn_handler = yaml_handler.get_class(SettingsMLPipeline)
+    dnn_handler = yaml_handler.get_class(SettingsTraining)
 
-    default_train = DefaultSettingsTrainMSE
+    default_train = DefaultSettingsTrainingMSE
     default_train.model_name = used_models[0]
     yaml_nn = YamlHandler(default_train, 'config', f'ConfigAE_Training')
     config_train = yaml_nn.get_class(SettingsPytorch)

@@ -26,6 +26,27 @@ from denspp.offline.structure_builder import init_dnn_folder
 
 
 @dataclass
+class DataValidation:
+    """Dataclass with results from post-training validation phase
+    Attributes:
+        input:          Numpy array with model input
+        valid_label:    Numpy array with valid label during validation phase
+        train_label:    Numpy array with training labels during training phase
+        feat:           Numpy array with extracted features
+        mean:           Numpy array with mean input signals for each class
+        output:         Numpy array with model output
+        label_names:    List with string names of each label class
+    """
+    input: np.ndarray
+    valid_label: np.ndarray
+    train_label: np.ndarray
+    feat: np.ndarray
+    mean: np.ndarray
+    output: np.ndarray
+    label_names: list[str]
+
+
+@dataclass
 class SettingsPytorch:
     """Class for handling the PyTorch training/inference pipeline
     Attributes:
@@ -351,7 +372,7 @@ class PyTorchHandler:
         """Loading optimizer, loss_fn into class
         Args:
             model:          PyTorch Neural Network for Training / Inference
-            learn_rate:     Learning rate used for SGD optimier
+            learn_rate:     Learning rate used for SGD optimizer
         Returns:
             None
         """
@@ -435,31 +456,26 @@ class PyTorchHandler:
             mdict.update({keys[idx]: data.numpy()})
         return mdict
 
-    def _getting_data_for_plotting(self, valid_input: np.ndarray, valid_label: np.ndarray, results=None, addon: str='') -> dict:
+    def _getting_data_for_plotting(self, valid_input: np.ndarray, valid_label: np.ndarray, addon: str='') -> DataValidation:
         """Getting the raw data for plotting results
         :param valid_input: Numpy array with input data for training validation
         :param valid_label: Numpy array with labels for training validation
-        :param results:     Option for plotting results
+        :return:            Dictionary with
         """
-        if results is None:
-            results = dict()
-
         self._logger.info(f"... preparing results for plot generation")
         data_train = self.__get_data_points(
             only_getting_labels=True,
             use_train_dataloader=True
         )
-
-        output = {
-            'settings': self._settings_train,
-            'date': datetime.now().strftime('%d/%m/%Y, %H:%M:%S'),
-            'train_clus': data_train['class'] if addon == 'ae' else data_train['out'],
-            'cl_dict': self._cell_classes,
-            'input': valid_input,
-            'valid_clus': valid_label
-        }
-        output.update(results)
-        return output
+        return DataValidation(
+            input=valid_input,
+            train_label=data_train['class'] if addon == 'ae' else data_train['out'],
+            valid_label=valid_label,
+            feat=None,      # Autoencoder specific value
+            mean=None,      # Autoencoder specific value
+            output=data_train['out'],
+            label_names=self._cell_classes
+        )
 
     def _determine_epoch_metrics(self, do_metrics: str):
         """Determination of additional metrics during training
@@ -469,8 +485,8 @@ class PyTorchHandler:
             Function for metric calculation
         """
         func = Tensor
-        for metric_avai, func in self._metric_methods.items():
-            if metric_avai == do_metrics:
+        for metric_available, func in self._metric_methods.items():
+            if metric_available == do_metrics:
                 break
         return func
 
@@ -490,8 +506,8 @@ class PyTorchHandler:
             metric_out = [zeros((1,)) for _ in self._cell_classes]
 
         length_out = zeros((len(self._cell_classes),), dtype=float32)
-        for idx, id in enumerate(unique(true)):
-            xpos = argwhere(true == id).flatten()
+        for idx, id0 in enumerate(unique(true)):
+            xpos = argwhere(true == id0).flatten()
             length_out[idx] = len(xpos)
             if args:
                 metric_out[idx] += args[0](pred[xpos], true[xpos])

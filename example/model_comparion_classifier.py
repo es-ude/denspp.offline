@@ -6,11 +6,12 @@ import matplotlib.pyplot as plt
 
 from denspp.offline.data_format.yaml import YamlHandler
 from denspp.offline.dnn.dataset.autoencoder import prepare_training
-from denspp.offline.dnn.dnn_handler import SettingsMLPipeline, DefaultSettingsMLPipeline
+from denspp.offline.dnn.dnn_handler import SettingsTraining, DefaultSettingsTraining
 from denspp.offline.dnn.data_config import SettingsDataset, DefaultSettingsDataset
-from denspp.offline.dnn import train_classifier_routine, SettingsPytorch, DefaultSettingsTrainCE
+from denspp.offline.dnn import train_classifier_routine, SettingsPytorch, DefaultSettingsTrainingCE
 
 
+#TODO: Fix errors
 def train_model_normal(used_model_name: str, config_train, config_data, dnn_handler,
                        dataset, ptq_level: list=(12, 8)) -> dict:
     model_stats = dict()
@@ -68,13 +69,13 @@ if __name__ == "__main__":
     ptq_level = [12, 11]
 
     # --- Load Configs
-    default_hndl = deepcopy(DefaultSettingsMLPipeline)
+    default_hndl = deepcopy(DefaultSettingsTraining)
     default_hndl.mode_train_dnn = 2
-    default_hndl.do_plot = False
+    default_hndl.do_plot_results = False
     yaml_handler = YamlHandler(default_hndl, 'config', 'Config_DNN')
-    dnn_handler = yaml_handler.get_class(SettingsMLPipeline)
+    dnn_handler = yaml_handler.get_class(SettingsTraining)
 
-    default_train = DefaultSettingsTrainCE
+    default_train = DefaultSettingsTrainingCE
     default_train.model_name = used_models[0]
     yaml_nn = YamlHandler(default_train, 'config', f'ConfigCL_Training')
     config_train = yaml_nn.get_class(SettingsPytorch)

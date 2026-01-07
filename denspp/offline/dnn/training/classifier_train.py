@@ -4,7 +4,7 @@ from logging import getLogger, Logger
 from pathlib import Path
 from shutil import copy
 from datetime import datetime
-from torch import Tensor, zeros, load, save, concatenate, inference_mode, cuda, cat, randn, add, div
+from torch import Tensor, zeros, load, save, concatenate, inference_mode, cuda, cat, randn, add, div, tensor
 
 from denspp.offline import check_keylist_elements_any
 from denspp.offline.dnn.data_config import DatasetFromFile, SettingsDataset
@@ -16,7 +16,11 @@ from denspp.offline.metric.data_torch import (
     calculate_recall,
     calculate_fbeta
 )
-from .common_train import SettingsPytorch, PyTorchHandler
+from .common_train import (
+    SettingsPytorch,
+    PyTorchHandler,
+    DataValidation
+)
 
 
 @dataclass
@@ -57,6 +61,9 @@ DefaultSettingsTrainingCE = SettingsClassifier(
 
 class TrainClassifier(PyTorchHandler):
     _logger: Logger
+    _settings_train: SettingsClassifier
+    _train_loader: list
+    _valid_loader: list
 
     def __init__(self, config_train: SettingsClassifier, config_data: SettingsDataset, do_train: bool=True) -> None:
         """Class for Handling Training of Classifiers
@@ -69,11 +76,13 @@ class TrainClassifier(PyTorchHandler):
         self._logger = getLogger(__name__)
         self.__metric_buffer = dict()
         self.__metric_result = dict()
-        self._metric_methods = {'accuracy': self.__determine_accuracy_per_class,
-                                'precision': self.__determine_buffering_metric_calculation,
-                                'recall': self.__determine_buffering_metric_calculation,
-                                'fbeta': self.__determine_buffering_metric_calculation,
-                                'ptq_loss': self.__determine_ptq_loss}
+        self._metric_methods = {
+            'accuracy': self.__determine_accuracy_per_class,
+            'precision': self.__determine_buffering_metric_calculation,
+            'recall': self.__determine_buffering_metric_calculation,
+            'fbeta': self.__determine_buffering_metric_calculation,
+            'ptq_acc': self.__determine_ptq_acc
+        }
 
     def load_dataset(self, dataset: DatasetFromFile) -> None:
         """Loading the loaded dataset and transform it into right dataloader
@@ -176,8 +185,8 @@ class TrainClassifier(PyTorchHandler):
                         self.__metric_buffer.update({key0: [[], []]})
                     case 'fbeta':
                         self.__metric_buffer.update({key0: [[], []]})
-                    case 'ptq_loss':
-                        self.__metric_buffer.update({key0: [zeros((1,)), zeros((1,))]})
+                    case 'ptq_acc':
+                        self.__metric_buffer.update({key0: [zeros(1, ), zeros(1, )]})
         # --- Processing results
         else:
             for key0 in self.__metric_buffer.keys():
@@ -206,9 +215,9 @@ class TrainClassifier(PyTorchHandler):
                         )
                         self.__metric_result[key0].append(out[0])
                         self.__metric_buffer.update({key0: [[], []]})
-                    case 'ptq_loss':
+                    case 'ptq_acc':
                         self.__metric_result[key0].append(div(self.__metric_buffer[key0][0], self.__metric_buffer[key0][1]))
-                        self.__metric_buffer.update({key0: [zeros((1,)), zeros((1,))]})
+                        self.__metric_buffer.update({key0: [zeros(1, ), zeros(1, )]})
 
     def __determine_accuracy_per_class(self, pred: Tensor, true: Tensor, **kwargs) -> None:
         out = self._separate_classes_from_label(pred, true, kwargs['metric'], calculate_number_true_predictions)
@@ -223,7 +232,7 @@ class TrainClassifier(PyTorchHandler):
             self.__metric_buffer[kwargs['metric']][0] = concatenate((self.__metric_buffer[kwargs['metric']][0], true), dim=0)
             self.__metric_buffer[kwargs['metric']][1] = concatenate((self.__metric_buffer[kwargs['metric']][1], pred), dim=0)
 
-    def __determine_ptq_loss(self, pred: Tensor, true: Tensor, **kwargs) -> None:
+    def __determine_ptq_acc(self, pred: Tensor, true: Tensor, **kwargs) -> None:
         model_ptq = quantize_model_fxp(
             model=self._model,
             total_bits=self._ptq_level[0],
@@ -232,9 +241,14 @@ class TrainClassifier(PyTorchHandler):
         model_ptq.eval()
         pred_cl, dec_cl = model_ptq(kwargs['frame'])
         num_true = calculate_number_true_predictions(dec_cl, true)
-
-        self.__metric_buffer[kwargs['metric']][0] = add(self.__metric_buffer[kwargs['metric']][0], num_true)
-        self.__metric_buffer[kwargs['metric']][1] = add(self.__metric_buffer[kwargs['metric']][1], kwargs['frame'].shape[0])
+        a = tensor([num_true])
+        b = tensor([kwargs['frame'].shape[0]])
+        if self.__metric_buffer[kwargs['metric']][0].size == 1:
+            self.__metric_buffer[kwargs['metric']][0] = a
+            self.__metric_buffer[kwargs['metric']][1] = b
+        else:
+            self.__metric_buffer[kwargs['metric']][0] = concatenate((self.__metric_buffer[kwargs['metric']][0], a), dim=0)
+            self.__metric_buffer[kwargs['metric']][1] = concatenate((self.__metric_buffer[kwargs['metric']][1], b), dim=0)
 
     def do_training(self, path2save=Path(".")) -> dict:
         """Start model training incl. validation and custom-own metric calculation
@@ -326,10 +340,10 @@ class TrainClassifier(PyTorchHandler):
         self._end_training_routine(timestamp_start)
         return self._converting_tensor_to_numpy(metric_out)
 
-    def do_post_training_validation(self, do_ptq: bool=False) -> dict:
+    def do_post_training_validation(self, do_ptq: bool=False) -> DataValidation:
         """Performing the post-training validation with the best model
         :param do_ptq:  Boolean for activating post training quantization during post-training validation
-        :return:        Dictionary with model results
+        :return:        Dataclass with results from validation phase
         """
         if cuda.is_available():
             cuda.empty_cache()
@@ -371,10 +385,10 @@ class TrainClassifier(PyTorchHandler):
             first_cycle = False
 
         # --- Preparing output
-        result_pred = clus_pred_list.numpy()
-        return self._getting_data_for_plotting(
+        data_out = self._getting_data_for_plotting(
             valid_input=data_orig_list.numpy(),
             valid_label=clus_orig_list.numpy(),
-            results={'yclus': result_pred},
             addon='cl'
         )
+        data_out.output = clus_pred_list.numpy()
+        return data_out

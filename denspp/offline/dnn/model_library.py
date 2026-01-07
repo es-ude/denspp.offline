@@ -98,7 +98,7 @@ class DatasetLoaderLibrary:
     """Class for searching all DatasetLoader in repository to get an overview"""
     def get_registry(self, package: str="src_dnn") -> ModuleRegistryManager:
         m = ModuleRegistryManager(r"\bDatasetLoader(Test)?\b")
-        chck = Path(get_path_to_project(package)).exists()
+        chck = (Path(get_path_to_project(package)) / "call_dataset.py").exists()
         m.register_package(package) if chck else m.register_package("denspp.offline.template")
         return m
 

@@ -143,8 +143,7 @@ class TestClassifierTraining(TestCase):
         )
         self.dut.do_training()
         rslt = self.dut.do_post_training_validation(do_ptq=False)
-        self.assertEqual(rslt['settings'], self.set_train)
-        self.assertEqual(rslt['cl_dict'], self.dataset.dict)
+        self.assertEqual(rslt.label_names, self.dataset.dict)
 
     def test_post_validation_with_ptq(self):
         self.dut.load_dataset(
@@ -156,8 +155,7 @@ class TestClassifierTraining(TestCase):
         )
         self.dut.do_training()
         rslt = self.dut.do_post_training_validation(do_ptq=True)
-        self.assertEqual(rslt['settings'], self.set_train)
-        self.assertEqual(rslt['cl_dict'], self.dataset.dict)
+        self.assertEqual(rslt.label_names, self.dataset.dict)
 
 
 if __name__ == '__main__':
