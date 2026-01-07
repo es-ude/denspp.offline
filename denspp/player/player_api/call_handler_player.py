@@ -1,4 +1,5 @@
 from denspp.offline.data_call.call_handler import ControllerData, DataHandler, SettingsData
+from denspp.offline.data_format.csv import CsvHandler
 import numpy as np
 
 class PlayerControllerData(ControllerData):
@@ -31,3 +32,19 @@ class PlayerControllerData(ControllerData):
                                          scale_data= 1.0,
                                          evnt_pos= [],
                                          evnt_id= [])
+        
+    
+    def eeg_mental_arithemtic_task(self):
+        path_to_file =self._prepare_access_file(folder_name="eeg_mental_arithemtic_task", data_type="s*.csv")
+        data =np.loadtxt(path_to_file, delimiter=",")
+
+        self._load_rawdata_into_pipeline(elec_type= "EEG",
+                                         dataset_name= "eeg_mental_arithemtic_task",
+                                         file_name=path_to_file,
+                                         fs_orig= len(data[:,0])/60,  # 1 minute recording
+                                         elec_orn = list(range(data.shape[1])),
+                                         rawdata= data.T,
+                                         scale_data= 1.0,
+                                         evnt_pos= [],
+                                         evnt_id= [])
+        #deployed_csv_handler = CsvHandler(path =path_to_file, file_name="")

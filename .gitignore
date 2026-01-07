@@ -37,6 +37,7 @@ pip-selfcheck.json
 ### PyCharm+all template
 **/.idea
 **/.idea_modules
+*.DS_Store
 # Byte-compiled / optimized / DLL files
 **/__pycache__
 *.py[cod]
@@ -139,3 +140,6 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Player stuff:
+*.csv
