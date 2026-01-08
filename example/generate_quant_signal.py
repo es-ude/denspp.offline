@@ -2,26 +2,26 @@ import matplotlib.pyplot as plt
 from fxpmath import Fxp
 from denspp.offline import get_path_to_project
 from denspp.offline.plot_helper import save_figure
-from denspp.offline.data_call.waveform_generator import WaveformGenerator
+from denspp.offline.data_call.waveform_generator import WaveformGenerator, WaveformSignal
 
 
-def plot_waveform_types(dataset: dict, show_plot: bool=True) -> None:
+def plot_waveform_types(dataset: WaveformSignal, show_plot: bool=True) -> None:
     bitwidth = 4
     bitfrac = 3
 
-    sig_used = dataset['sig'] / (dataset['sig'].max() - dataset['sig'].min())
+    sig_used = dataset.signal / (dataset.signal.max() - dataset.signal.min())
     sig_quant = Fxp(sig_used, signed=True, n_word=bitwidth, n_frac=bitfrac).get_val()
 
     for idx in range(4):
         fig = plt.figure(figsize=(4, 3))
         if idx == 0:
-            plt.plot(dataset['time'], sig_used, color='k', linewidth=2)
+            plt.plot(dataset.time, sig_used, color='k', linewidth=2)
         elif idx == 1:
-            plt.step(dataset['time'], sig_quant, where='mid', color='k', linewidth=2)
+            plt.step(dataset.time, sig_quant, where='mid', color='k', linewidth=2)
         elif idx == 2:
-            plt.stem(dataset['time'], sig_used, linefmt='k', markerfmt='k', basefmt='None')
+            plt.stem(dataset.time, sig_used, linefmt='k', markerfmt='k', basefmt='None')
         else:
-            plt.stem(dataset['time'], sig_quant, linefmt='k', markerfmt='k', basefmt='None')
+            plt.stem(dataset.time, sig_quant, linefmt='k', markerfmt='k', basefmt='None')
 
         plt.axis('off')
         plt.tight_layout()

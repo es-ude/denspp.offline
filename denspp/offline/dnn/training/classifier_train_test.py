@@ -104,7 +104,7 @@ class TestClassifierTraining(TestCase):
 
     def test_custom_metric_methods(self):
         rslt = self.dut.get_epoch_metric_custom_methods
-        self.assertEqual(rslt, ['accuracy', 'precision', 'recall', 'fbeta', 'ptq_loss'])
+        self.assertEqual(rslt, ['accuracy', 'precision', 'recall', 'fbeta', 'ptq_acc'])
 
     def test_training_phase(self):
         self.dut.load_dataset(

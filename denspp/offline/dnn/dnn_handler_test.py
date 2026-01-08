@@ -45,7 +45,7 @@ class TestPytorchTrainer(TestCase):
             default_trainer=0,
             generate_configs=False
         ).get_custom_metric_calculation
-        self.assertEqual(rslt, ['accuracy', 'precision', 'recall', 'fbeta', 'ptq_loss'])
+        self.assertEqual(rslt, ['accuracy', 'precision', 'recall', 'fbeta', 'ptq_acc'])
 
     def test_get_custom_metrics_autoencoder(self):
         rslt = PyTorchTrainer(

@@ -5,10 +5,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from denspp.offline.data_format.yaml import YamlHandler
-from denspp.offline.dnn.dataset.autoencoder import prepare_training
+from denspp.offline.dnn import PyTorchTrainer, SettingsTraining, DefaultSettingsTraining
 from denspp.offline.dnn.dnn_handler import SettingsTraining, DefaultSettingsTraining
 from denspp.offline.dnn.data_config import SettingsDataset, DefaultSettingsDataset
-from denspp.offline.dnn import train_classifier_routine, SettingsPytorch, DefaultSettingsTrainingCE
 
 
 #TODO: Fix errors

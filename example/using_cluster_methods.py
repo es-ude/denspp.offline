@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from os import remove
 from sklearn import metrics
-from denspp.offline.digital.cluster import SettingsCluster, Clustering
+from denspp.offline.ml import SettingsCluster, Clustering
 
 
 if __name__ == "__main__":

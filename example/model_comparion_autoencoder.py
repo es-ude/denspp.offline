@@ -5,8 +5,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from denspp.offline.data_format.yaml import YamlHandler
-from denspp.offline.dnn import PyTorchTrainer, DefaultSettingsTraining, DefaultSettingsDataset, SettingsDataset, SettingsTraining
-from denspp.offline.dnn import train_autoencoder_routine, SettingsPytorch, DefaultSettingsTrainingMSE
+from denspp.offline.dnn import (
+    PyTorchTrainer,
+    SettingsTraining,
+    DefaultSettingsTraining,
+    SettingsDataset,
+    DefaultSettingsDataset
+)
+
 
 #TODO: Fix errors
 def train_model_normal(used_model_name: str, config_train, config_data, dnn_handler,
