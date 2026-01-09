@@ -244,13 +244,12 @@ class PyTorchTrainer:
     _settings_model: SettingsClassifier | SettingsAutoencoder
     _path2config: Path
     _dataloader: Any
-    _conf_available: bool
 
-    def __init__(self, use_case: str, default_trainer: int,
+    def __init__(self, use_case: str, settings: SettingsTraining=DefaultSettingsTraining,
                  default_model: str= '', path2config: str= 'config', generate_configs: bool=True) -> None:
         """Class for handling and wrapping all PyTorch Training Routines incl. Report Generation and Plotting
-        :param use_case:        String with name of use-case
-        :param default_trainer:     Integer with default training routine [0: Classifier, 1: Autoencoder]
+        :param use_case:            String with name of use-case
+        :param settings:            Dataclass for defining trainer properties
         :param default_model:       String with name of default model
         :param path2config:         Path to folder with configuration files
         :param generate_configs:    Boolean for generating configuration files if not there
@@ -260,10 +259,15 @@ class PyTorchTrainer:
         self._logger: Logger = getLogger(__name__)
         self._plotter = PyTorchPlot()
         self._path2config = Path(get_path_to_project(path2config))
-        self._settings_ml = self._get_config_ml(
-            use_case=use_case,
-            default_training_mode=default_trainer
-        )
+        self._path2config.mkdir(parents=True, exist_ok=True)
+        self._do_init = self.config_available
+        if settings == DefaultSettingsTraining:
+            self._settings_ml = self._get_config_ml(
+                use_case=use_case,
+                default_training_mode=settings.mode_train
+            )
+        else:
+            self._settings_ml = settings
         if generate_configs:
             self.__prepare_training(
                 use_case=use_case,
@@ -271,9 +275,6 @@ class PyTorchTrainer:
             )
 
     def __prepare_training(self, use_case: str, default_model: str) -> None:
-        self._path2config.mkdir(parents=True, exist_ok=True)
-        self._conf_available = self.config_available
-
         self._dataloader = self._get_dataset_loader()
         self._settings_data = self._get_config_dataset(
             default_dataset_name=use_case,
@@ -488,7 +489,7 @@ class PyTorchTrainer:
         :param path2save:   Path to save the results and models after training [default runs/<YYYYMMDD>_<model>]
         :return:            Dataclass TrainingResults with internal metrics, data and path to run folder
         """
-        if not self._conf_available:
+        if not self._do_init:
             raise AttributeError("Configs are generated - Please adapt and restart!")
         results = self._run_training(path2save=path2save)
         return results

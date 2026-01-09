@@ -151,6 +151,34 @@ class CompareDNN_AutoencoderCreator_woBN_v1(nn.Module):
         return self.encoder[0](x)
 
 
+class CompareDNN_ClassifierTorch_woBN_v1(nn.Module):
+    def __init__(self, input_size: int=32, output_size: int=6):
+        """DL model for classifying neural spike activity (MLP)"""
+        super().__init__()
+        self.model_shape = (1, input_size)
+        # --- Settings of model
+        do_train_bias = True
+        do_train_batch = True
+        config_network = [input_size, 12, output_size]
+
+        # --- Model Deployment
+        self.model = nn.Sequential()
+        for idx, layer_size in enumerate(config_network[1:], start=1):
+            self.model.add_module(f"linear_{idx:02d}",
+                                  nn.Linear(in_features=config_network[idx - 1], out_features=layer_size,
+                                            bias=do_train_bias))
+            if not idx == len(config_network) - 1:
+                self.model.add_module(f"act_{idx:02d}", nn.ReLU())
+            else:
+                # self.model.add_module(f"soft", nn.Softmax(dim=1))
+                pass
+
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
+        x = flatten(x, start_dim=1)
+        prob = self.model(x)
+        return prob, argmax(prob, 1)
+
+
 class CompareDNN_ClassifierTorch_v1(nn.Module):
     def __init__(self, input_size: int=32, output_size: int=6):
         """DL model for classifying neural spike activity (MLP)"""
@@ -173,6 +201,38 @@ class CompareDNN_ClassifierTorch_v1(nn.Module):
                 self.model.add_module(f"act_{idx:02d}", nn.ReLU())
             else:
                 # self.model.add_module(f"soft", nn.Softmax(dim=1))
+                pass
+
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
+        x = flatten(x, start_dim=1)
+        prob = self.model(x)
+        return prob, argmax(prob, 1)
+
+
+class CompareDNN_ClassifierCreator_woBN_v1(nn.Module):
+    def __init__(self, input_size: int=32, output_size:int=6,
+                 total_bits: int = 12, frac_bits: int = 8):
+        """DL model for classifying neural spike activity (MLP)"""
+        super().__init__()
+        self.model_shape = (1, input_size)
+        # --- Settings of model
+        do_train_bias = True
+        do_train_batch = True
+        config_network = [input_size, 12, output_size]
+
+        # --- Model Deployment
+        self.model = SequantialCreator()
+        for idx, layer_size in enumerate(config_network[1:], start=1):
+            self.model.add_module(f"linear_{idx:02d}",
+                                  Linear(
+                                      in_features=config_network[idx - 1],
+                                      out_features=layer_size,
+                                      bias=do_train_bias,
+                                      total_bits=total_bits, frac_bits=frac_bits
+                                  ))
+            if not idx == len(config_network) - 1:
+                self.model.add_module(f"act_{idx:02d}", ReLU(total_bits=total_bits))
+            else:
                 pass
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
