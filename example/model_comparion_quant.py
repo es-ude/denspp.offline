@@ -30,7 +30,10 @@ def plot_model_comparison(results_nrm: TrainingResults, results_qnt: TrainingRes
     ax.plot(epochs_ite, used_metrics_nrm[f'{loss_name}_valid'], label='FP32, Validation', linestyle='dotted', marker='.', color='blue')
     ax.plot(epochs_ite, used_metrics_qnt[f'{loss_name}_train'], label='QAT, Training', linestyle='solid', marker='v', color='red')
     ax.plot(epochs_ite, used_metrics_qnt[f'{loss_name}_valid'], label='QAT, Validation', linestyle='dotted', marker='v', color='red')
-    ax.plot(epochs_ite, used_metrics_qnt[f'ptq_{loss_name}'], label='PTQ, Validation', linestyle='dotted', marker='s', color='green')
+    if not use_autoencoder_model:
+        ax.plot(epochs_ite, np.mean(np.array(used_metrics_qnt[f'ptq_{loss_name}'])[:, 1:], axis=1), label='PTQ, Validation', linestyle='dotted', marker='s', color='green')
+    else:
+        ax.plot(epochs_ite, used_metrics_qnt[f'ptq_{loss_name}'], label='PTQ, Validation', linestyle='dotted', marker='s', color='green')
 
     font = {'size': get_textsize_paper()}
     ax.grid()
@@ -57,7 +60,7 @@ if __name__ == "__main__":
     dataset = 'Waveforms'
     folder_name = f'../runs'
     do_normalization = True
-    train_autoencoder = False
+    train_autoencoder = True
     train_with_batchnorm = True
     num_epochs = 20
     ptq_level = [8, 6]
