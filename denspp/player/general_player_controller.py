@@ -4,14 +4,15 @@ import logging
 import inspect
 import copy
 from pathlib import Path
-from hardware_settings import *
-import output_devices
-import debug_help_functions as dhf
+from .data_translation import DataTranslator, BoardDataset
+from .output_devices import HardwareSpecifications, hardware_specification_oscilloscope_mox4
+from .debug_help_functions import plot_data
 from denspp.offline.data_call.call_handler import SettingsData
-from call_handler_player import PlayerControllerData
-import denspp.player.player_api.signal_validation as sv
+from .call_handler_player import PlayerControllerData
+from denspp.offline import get_path_to_project
+from .signal_validation import SignalCompartor
 
-default_config_path_to_yaml = Path.cwd() /"denspp" /"player" /"hardware_config.yaml"
+default_config_path_to_yaml = Path(get_path_to_project("config")) / "hardware_config.yaml"
 
 class GeneralPlayerController:
     _logger: logging.Logger # Logger object for logging messages
@@ -31,7 +32,7 @@ class GeneralPlayerController:
     _deployed_playerControllerData: PlayerControllerData # deployed PlayerControllerData object, holding the _deployed_settingsData object
     _untreated_raw_data: BoardDataset # untreated raw data loaded from the PlayerControllerData object
 
-    _deployed_hardware_controller: HardwareController # hardware controller settings (own class)
+    _deployed_hardware_controller: DataTranslator # hardware controller settings (own class)
     _deployed_board_dataset: BoardDataset # board dataset for outputting data to hardware
 
 
@@ -54,8 +55,7 @@ class GeneralPlayerController:
 
         self._deployed_board_dataset = self._config_board_dataset()
         self._load_board_dataset_into_hardware_settings()
-        self.transfer_data_to_vertical_resolution()
-        self.output_data_for_hardware()
+        self.produce_data_for_hardware()
     
     @property
     def get_untreated_data(self) -> BoardDataset:
@@ -134,7 +134,7 @@ class GeneralPlayerController:
             dict: Loaded configuration as dictionary
         """
         try:
-            with open(self._config_path , 'r') as stream:
+            with open(self._config_path.as_posix()  , 'r') as stream:
                 configLoaded = yaml.safe_load(stream)
         except FileNotFoundError:
             self._logger.critical(f"The File/Path '{self._config_path}' are not found")
@@ -159,8 +159,8 @@ class GeneralPlayerController:
         self._hardware_data_channel_mapping = self.general_config["Data_Configuration"]["Hardware_Data_Mapping"]["channel_mapping"]
 
 
-    def _config_hardware_controller(self) -> HardwareController:
-        """Configure the HardwareController based on the current configuration
+    def _config_hardware_controller(self) -> DataTranslator:
+        """Configure the DataTranslator based on the current configuration
 
         Raises:
             Exception: Multiple hardware devices selected
@@ -168,7 +168,7 @@ class GeneralPlayerController:
             Exception: Specified hardware device not defined in output_devices.py
 
         Returns:
-            HardwareController: Configured hardware controller instance
+            DataTranslator: Configured hardware controller instance
         """
         used_device = None
         
@@ -183,22 +183,15 @@ class GeneralPlayerController:
             raise Exception("No hardware device is set to be used. Please select one device.")
 
         # Load the specific device settings
-        used_device_class =None 
-        for name, obj in inspect.getmembers(output_devices, inspect.isclass): #check if the specified device exists in output_devices.py
-            if obj.__module__ == output_devices.__name__ and name == used_device[0]:
-                used_device_class = obj
-                break
-        if used_device_class is None: # Device not found in output_devices.py
-            self._logger.CRITICAL(f"The specified hardware device '{used_device}' is not defined in output_devices.py.")
-            raise Exception(f"The specified hardware device '{used_device}' is not defined in output_devices.py.")
+        if used_device[0] == "OscilloscopeMOX4":
+            specific_device_settings = hardware_specification_oscilloscope_mox4()
+        else:
+            self._logger.CRITICAL(f"The specified hardware device '{used_device[0]}' is not defined in output_devices.py.")
+            raise Exception(f"The specified hardware device '{used_device[0]}' is not defined in output_devices.py.")
 
-        specific_class = getattr(output_devices, used_device[0]) # Get the class of the specific device
-        specific_device_settings = specific_class() # Create an instance of the specific device class
-        
-        if hasattr(specific_device_settings, 'output_open'): # Set output_open if it exists in the device settings, needed for Oscilloscope
-            specific_device_settings.output_open = used_device[1]["output_open"]
-
-        hardware_controller = HardwareController(specific_device_settings, self._logger, self._hardware_data_channel_mapping) # Create hardware controller with specific device settings
+        hardware_controller = DataTranslator(specific_device_settings=specific_device_settings, # Create hardware controller with specific device settings
+                                             logger=self._logger, 
+                                             data_channel_mapping=self._hardware_data_channel_mapping)
         self._logger.info(f"Hardware controller configured for device: {used_device[0]}")
         return hardware_controller
 
@@ -262,7 +255,7 @@ class GeneralPlayerController:
             if self._logging_lvl.upper() == "DEBUG": # Plot data after resampling, if the logging level is set to DEBUG
                 data = self._deployed_playerControllerData.get_data()
                 
-                dhf.plot_data(data.data_raw[0,:], data.fs_used, data.time_end, "resampling")
+                plot_data(data.data_raw[0,:], data.fs_used, data.time_end, "resampling")
             self._logger.info(f"Data resampling completed, new sampling rate: {self._deployed_playerControllerData._raw_data.fs_used} Hz")
         else:
             self._logger.info("Data resampling is disabled in the configuration.")
@@ -287,34 +280,17 @@ class GeneralPlayerController:
         self._deployed_hardware_controller._data = self._deployed_board_dataset
     
 
-    def transfer_data_to_vertical_resolution(self) -> None:
-        """Transfer data to match the vertical resolution of the hardware."""
-
-        if hasattr(self._deployed_hardware_controller, "_output_open"):
-           self._deployed_hardware_controller.translate_data_for_oscilloscope()
-        else:
-            self._deployed_hardware_controller.translate_data_float2int()
-
-        if self._logging_lvl.upper() == "DEBUG":
-            data = self._deployed_hardware_controller.get_data
-            dhf.plot_data(data.data[0,:],data.samplingrate, 1, "transferring")
-        self._logger.info(f"Data max: {self._deployed_hardware_controller.get_data.data.max()}\n Data min: {self._deployed_hardware_controller.get_data.data.min()}")
-
-
-    def output_data_for_hardware(self) -> None:
-        """Output data to the configured hardware device."""
-        if hasattr(self._deployed_hardware_controller, "_output_open"):
-            self._logger.info("Outputting data for the Oscilloscope")
-            self._deployed_hardware_controller.create_csv_for_MXO4()
-        
-        self._logger.info("Data output to hardware completed.")
+    def produce_data_for_hardware(self) -> None:
+        """Produce data for the hardware device by translating it according to the device specifications."""
+        self._deployed_hardware_controller.translation_for_device()
+        self._logger.info("Data translation for hardware completed.")
 
     
     def analyze_signals(self) -> None:
         """Analyze the original and processed signals"""
         processed_data = controller._deployed_hardware_controller.get_data
         original_data_with_cut = controller._untreated_raw_data_with_cut
-        compartor = sv.SignalCompartor(original_data_with_cut =original_data_with_cut.data_raw, 
+        compartor = SignalCompartor(original_data_with_cut =original_data_with_cut.data_raw, 
                         signal_processed= processed_data.data, 
                         fs_original =original_data_with_cut.fs_orig, 
                         fs_processed= processed_data.samplingrate, 

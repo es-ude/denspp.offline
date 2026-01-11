@@ -1,6 +1,7 @@
 import numpy as np
 import csv
 from dataclasses import dataclass
+from .output_devices import HardwareSpecifications
 
 @dataclass
 class BoardDataset:
@@ -9,7 +10,7 @@ class BoardDataset:
     groundtruth: list #Saved the trigger data associated with the main data
     translation_value_voltage: float # Translation value from the data points to voltage output
 
-class HardwareController:
+class DataTranslator:
     _logger: object # Logger from the main application
     
     #Settings for the Output Device class
@@ -22,19 +23,21 @@ class HardwareController:
     _link_data2channel_num: list # Mapping from data channels to hardware channels, e.g., [2,0,1] means data channel datachannel 2 goes to hardware channel 0, data channel 0 to hardware channel 1
     _data: BoardDataset # Data to be output to the hardware
 
-    def __init__(self, specific_device_settings: object, logger: object, data_channel_mapping: list) -> None:
+    def __init__(self, specific_device_settings: HardwareSpecifications, logger: object, data_channel_mapping: list) -> None:
         self._logger = logger
+        self._device_name = specific_device_settings.device_name
         self._dac_bit = specific_device_settings.verticalBit
         self._dac_number_of_channels = specific_device_settings.numChannels
         self._dac_use_signed = specific_device_settings.usedSigned
         self._dac_max_sampling_rate = specific_device_settings.max_sampling_rate
-        if hasattr(specific_device_settings, 'output_open'):
-            self._output_open = specific_device_settings.output_open
+        self._output_open = specific_device_settings.output_open
 
         self._link_data2channel_num = [False for idx in range(self._dac_number_of_channels)]
         self._set_channel_mapping(data_channel_mapping)
         self._data = None
 
+
+    # ========== API METHODS ==========
     @property
     def dac_number_of_channels(self) -> int:
         """Get the total number of DAC channels
@@ -43,6 +46,7 @@ class HardwareController:
             int: Number of DAC channels
         """        
         return self._dac_number_of_channels
+
 
     @property
     def dac_bit(self) -> int:
@@ -53,6 +57,7 @@ class HardwareController:
         """        
         return self._dac_bit
 
+
     @property
     def dac_use_signed(self) -> bool:
         """Get whether the DAC uses signed values
@@ -62,6 +67,7 @@ class HardwareController:
         """
         return self._dac_use_signed
     
+
     @property
     def data_loaded(self) -> bool:
         """Check if data is loaded
@@ -71,6 +77,7 @@ class HardwareController:
         """        
         return True if self._data is not None else False
     
+
     @property
     def get_data(self) -> BoardDataset:
         """Get the loaded data as BoardDataset
@@ -79,17 +86,28 @@ class HardwareController:
             BoardDataset: The loaded data
         """
         if self._data is None:
-            self._logger.error("No data loaded in HardwareController")
+            self._logger.error("No data loaded in DataTranslator")
             return None
         else:        
             return self._data
+        
     
+    def translation_for_device(self) -> None:
+        if self._device_name == "OscilloscopeMOX4":
+            self._translate_data_for_oscilloscope()
+            self._create_csv_for_MXO4()
+        else:
+            raise ValueError(f"data_translation: {self._device_name} not implemnented yet")
+
+
+    #  ========== INTERNAL METHODS ==========
     def _set_channel_mapping(self, data_channel_mapping: list) -> None:
         """Set the mapping from data channels to hardware channels"""        
         for data_channel, i in enumerate(data_channel_mapping):
             self._link_data2channel_num[i] = data_channel
 
-    def translate_data_float2int(self, data_in: list) -> list:
+
+    def _translate_data_float2int(self, data_in: list) -> list:
         # max_dac_output define the Bit depth of the DAC 12bit -> 2^12 = 4096; signed -> 2048 
         """"""
         data_out = list()
@@ -118,9 +136,13 @@ class HardwareController:
             self._logger.info("No overflow detected in data conversion.")
         return data_out
     
-    def translate_data_for_oscilloscope(self, resolution: float = 0.001) -> None:
-        """Translate data to the Voltage range of the Oscillioscope"""        
-        max_voltage_output = 10 if self._output_open else 5 # Max voltage depending on output mode (+/-10V open, +/-5V 50 Ohm)
+
+    def _translate_data_for_oscilloscope(self, resolution: float = 0.001) -> None:
+        """Translate data to the Voltage range of the Oscillioscope"""
+        if self._device_name == "OscilloscopeMOX4":
+                max_voltage_output = 10 if self._output_open else 5 # Max voltage depending on output mode (+/-10V open, +/-5V 50 Ohm)
+        else:
+            max_voltage_output = 5 # Default value
         
         if self._data.translation_value_voltage is None:
             self._logger.info("No translation value is set, using the complete voltage range for scaling")
@@ -154,7 +176,8 @@ class HardwareController:
         self._data.data = np.array(data_out, dtype=np.float16)
         self._logger.debug(f"Minimal Value: {np.min(quantized_signal)}, maximal Value: {np.max(quantized_signal)}")
 
-    def create_csv_for_MXO4(self) -> None:
+
+    def _create_csv_for_MXO4(self) -> None:
         """Output data in Oscilloscope MOX4 format"""
         with open('output_mox4.csv', mode='w', newline='') as file:
             writer = csv.writer(file)
