@@ -11,6 +11,11 @@ Config_*.yaml
 **/temp_*
 .python-version
 
+#macos
+.DS_Store
+
+#VsCode
+.vscode
 
 # Just for not uploading new features/files into main folder (just for local development)
 **/src_*
