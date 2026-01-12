@@ -2,8 +2,6 @@ import unittest, inspect, yaml, sys
 from unittest.mock import patch, Mock, mock_open, MagicMock
 from pathlib import Path
 from denspp.player.general_player_controller import GeneralPlayerController, default_config_path_to_yaml
-import denspp.player.data_translation as data_translation
-
 
 class GeneralControllerTest(unittest.TestCase):
     def setUp(self):
