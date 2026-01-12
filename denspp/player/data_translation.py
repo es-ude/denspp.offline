@@ -76,7 +76,16 @@ class DataTranslator:
             bool: True if data is loaded, False otherwise
         """        
         return True if self._data is not None else False
-    
+
+
+    def load_data(self, board_dataset: BoardDataset) -> None:
+        """Load data into the DataTranslator
+
+        Args:
+            board_dataset (BoardDataset): Data to be loaded
+        """        
+        self._data = board_dataset
+
 
     @property
     def get_data(self) -> BoardDataset:

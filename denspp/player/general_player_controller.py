@@ -53,8 +53,7 @@ class GeneralPlayerController:
         self._untreated_raw_data_with_cut = copy.deepcopy(self._deployed_playerControllerData.get_data())
         self.resample_data()
 
-        self._deployed_board_dataset = self._config_board_dataset()
-        self._load_board_dataset_into_hardware_settings()
+        self.create_and_load_board_dataset_into_translator()
         self.produce_data_for_hardware()
     
     @property
@@ -259,25 +258,18 @@ class GeneralPlayerController:
             self._logger.info(f"Data resampling completed, new sampling rate: {self._deployed_playerControllerData._raw_data.fs_used} Hz")
         else:
             self._logger.info("Data resampling is disabled in the configuration.")
+      
 
-
-    def _config_board_dataset(self) -> BoardDataset:
-        """Data that gone be output to the hardware device
-
-        Returns:
-            BoardDataset: Configured BoardDataset object
-        """        
+    def create_and_load_board_dataset_into_translator(self) -> None:       
+        """Create and load the board dataset into the hardware settings controller"""
         data = self._deployed_playerControllerData.get_data()
         deployed_board_dataset = BoardDataset(data= data.data_raw,
                                                     samplingrate= data.fs_used,
                                                     groundtruth= [] if data.label_exist else None,
                                                     translation_value_voltage= self._translation_value_voltage)
-        return deployed_board_dataset
-    
-
-    def _load_board_dataset_into_hardware_settings(self) -> None:
-        """Load the board dataset into the hardware settings controller."""
-        self._deployed_hardware_controller._data = self._deployed_board_dataset
+        
+        self._deployed_hardware_controller.load_data(deployed_board_dataset)
+        self._logger.info("Board dataset loaded into hardware settings.")
     
 
     def produce_data_for_hardware(self) -> None:
