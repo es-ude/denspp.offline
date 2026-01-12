@@ -5,15 +5,23 @@ from .output_devices import HardwareSpecifications
 
 @dataclass
 class BoardDataset:
+    """Dataset structure for actual data to be output to hardware
+    
+    Attributes:
+        data (np.ndarray): Data to be output to hardware
+        samplingrate (float): Sampling rate of the data
+        groundtruth (list): Ground truth events associated with the data
+        translation_value_voltage (float): Translation value from data points to voltage output
+    """
     data: np.ndarray #Saved the data to output to the hardware
     samplingrate: float #Saved the sampling rate associated with the main data
     groundtruth: list #Saved the trigger data associated with the main data
     translation_value_voltage: float # Translation value from the data points to voltage output
 
+
 class DataTranslator:
     _logger: object # Logger from the main application
-    
-    #Settings for the Output Device class
+    _device_name: str # Name of the hardware device
     _dac_bit: int # Bits that the DAC can handle
     _dac_number_of_channels: int # Total number of channels the DAC channels 
     _dac_use_signed: bool # Whether the DAC uses signed values (e.g. +/- 5V or 0-10V)
@@ -24,6 +32,13 @@ class DataTranslator:
     _data: BoardDataset # Data to be output to the hardware
 
     def __init__(self, specific_device_settings: HardwareSpecifications, logger: object, data_channel_mapping: list) -> None:
+        """Initialize the DataTranslator with specific device settings, logger, and data channel mapping.
+
+        Args:
+            specific_device_settings (HardwareSpecifications): Hardware specifications for the device
+            logger (object): Logger object for logging
+            data_channel_mapping (list): Mapping from data channels to hardware channels
+        """        
         self._logger = logger
         self._device_name = specific_device_settings.device_name
         self._dac_bit = specific_device_settings.verticalBit
