@@ -1,371 +1,136 @@
-import unittest
+import unittest, inspect, yaml, sys
 from unittest.mock import patch, Mock, mock_open, MagicMock
-import inspect
-import yaml
+from pathlib import Path
+from denspp.player.general_player_controller import GeneralPlayerController, default_config_path_to_yaml
+import denspp.player.data_translation as data_translation
 
-import denspp.player.player_api.general_player_controller as general_player_controller
-import hardware_settings
 
 class GeneralControllerTest(unittest.TestCase):
     def setUp(self):
-        # Setup code before each test
-        self.controller = general_player_controller.General_controller()
-        self.controller.logger = Mock()
-        self.controller.config_path = "test/path"
-
+        self.controller = GeneralPlayerController.__new__(GeneralPlayerController)
+        self.controller._logger = MagicMock()
 
     def tearDown(self):
-        # Cleanup code after each test
         del self.controller
 
 
-    
-# - - - -  Test for the "_read_sys_args" methode - - - - 
-    @patch("general_controller.sys.argv", ["general_controller.py", "test/path"])
-    def test_read_sys_args_with_argument(self):
-        """Test reading sys.argv with an argument provided."""
-        expected_path = "test/path"
-        result_path = self.controller._read_sys_args()
-        self.assertEqual(result_path, expected_path)
-    
-    @patch("general_controller.sys.argv", ["general_controller.py"])
-    def test_read_sys_args_without_argument(self):
-        """Test reading sys.argv without any argument provided."""
-        expected_path = "2_gui/hardware_config.yaml"
-        result_path = self.controller._read_sys_args()
-        self.assertEqual(result_path, expected_path)
-    
+    def test_read_sys_args_and_set_path_with_argument(self):
+        """Test that the method picks up the path from sys.argv when provided"""
+        custom_path_str = "/custom/config/path.yaml"
+        expected_path = Path(custom_path_str)
 
-# - - - -  Test for the "_open_config_file" methode - - - -
-    def test_open_config_file_success(self):
-        """Test opening and reading a valid config file."""
-        mock_yaml_content = mock_data_for_yaml()
-        except_dict = mock_data_for_general_config()
-        with patch('builtins.open', mock_open(read_data=mock_yaml_content)) as mock_file, \
-            patch('general_controller.sys.exit') as mock_exit:
-            result = self.controller._open_config_file()
+        with patch.object(sys, 'argv', ["script_name.py", custom_path_str]):
+            result = self.controller._read_sys_args_and_set_path()
+        self.assertEqual(result, expected_path)
+        self.controller._logger.info.assert_called_once()
+        self.assertIn(str(expected_path), self.controller._logger.info.call_args[0][0])
 
-            mock_file.assert_called_once_with(f'{self.controller.config_path}', 'r')
-            self.assertEqual(result, except_dict)
-            self.controller.logger.info.assert_called_with("Configuration file loaded successfully")
-            mock_exit.assert_not_called()
 
-    @patch('general_controller.sys.exit', side_effect=SystemExit)
-    @patch('builtins.open', side_effect=FileNotFoundError) 
-    def test_open_config_file_not_found(self, mock_open, mock_exit):
-        """Test opening a config file that does not exist."""
-        with self.assertRaises(SystemExit):
-            result = self.controller._open_config_file()
-        self.controller.logger.critical.assert_called_with(
-            f"The File/Path '{self.controller.config_path}' are not found"
-        )
-        mock_exit.assert_called_once()
+    def test_read_sys_args_and_set_path_default(self):
+        """Test that the method falls back to default_config_path_to_yaml when no arg provided"""
+        with patch.object(sys, 'argv', ["script_name.py"]):
+            result = self.controller._read_sys_args_and_set_path()
 
-    @patch('general_controller.sys.exit', side_effect=SystemExit)
-    @patch('general_controller.yaml.safe_load', side_effect=yaml.YAMLError("Bad YAML"))
-    @patch('builtins.open', new_callable=lambda: mock_open(read_data="bad: data:")) 
-    def test_open_config_yaml_error(self, mock_open, mock_safe_load, mock_exit):
-        """Test opening a config file with invalid YAML content."""
-        with self.assertRaises(SystemExit):
+        self.assertEqual(result, default_config_path_to_yaml)
+        self.controller._logger.info.assert_called_once()
+        self.assertIn(str(default_config_path_to_yaml), self.controller._logger.info.call_args[0][0])
+
+
+    @patch('builtins.open')
+    @patch('yaml.safe_load')
+    def test_open_config_file_success(self, mock_yaml_load, mock_open):
+        """Test successful loading of valid YAML config file"""
+        expected_config = {"key": "value"}
+        mock_yaml_load.return_value = expected_config
+        self.controller._config_path = Path("/fake/path.yaml")
+        
+        result = self.controller._open_config_file()
+        self.assertEqual(result, expected_config)
+        mock_open.assert_called_once_with(self.controller._config_path.as_posix(), 'r')
+        self.controller._logger.info.assert_called_with("Configuration file loaded successfully")
+
+
+    @patch('builtins.open')
+    def test_open_config_file_not_found(self, mock_open):
+        """Test FileExistsError is raised when file is not found"""
+        mock_open.side_effect = FileNotFoundError
+        self.controller._config_path = Path("/nonexistent/path.yaml")
+        
+        with self.assertRaises(FileExistsError):
             self.controller._open_config_file()
-        self.controller.logger.critical.assert_called_with(
-            "Error parsing the YAML file: Bad YAML"
-        )
-        mock_exit.assert_called_once()
+        self.controller._logger.critical.assert_called()
 
 
-# - - - -  Test for the "_read_config" methode - - - -
-    def test_read_config(self):
-        """Test reading and processing the configuration settings."""
-        self.controller.general_config = mock_data_for_general_config()
-        self.controller._read_config()
-        control_values = mock_data_for_general_config()
-    
-        self.assertEqual(self.controller.logging_lvl, control_values['General_Configuration']['Logging_Lvl'])
-        self.assertEqual(self.controller.data_path, control_values['Data_Input']['input'])
-        self.assertEqual(self.controller.hardware_config_values , control_values['Hardware'])
-        self.assertEqual(self.controller.data_config_values, control_values['Data_Configuration'])
-        self.assertEqual(self.controller.data_config_do_cut, control_values['Data_Configuration']['Data_Preprocessing']['do_cut'])
-        self.assertEqual(self.controller.data_config_do_resample, control_values['Data_Configuration']['Data_Preprocessing']['do_resampling'])
-    
-
-# - - - -  Test for the "_config_hardware_controller" methode - - - -
-    @patch('general_controller.Hardware_settings', spec=hardware_settings.Hardware_settings)
-    @patch('general_controller.output_devices')
-    @patch('general_controller.inspect.getmembers')
-    @patch('general_controller.sys.exit', side_effect=SystemExit)
-    def test_config_hardware_controller_finds_device(self, mock_exit, mock_getmembers, mock_output_devices, MockHardwareSettings):
-        """Testing _config_hardware_controller when a valid device is selected"""
-        DEVICE_NAME = 'MockDevice'
-
-        self.controller.hardware_config_values = {
-            DEVICE_NAME: {'used': True, 'output_open': True},
-            'AnotherDevice': {'used': False}
-        }
-
-        mock_output_devices.__name__ = 'mocked_output_devices_module'
-
-        fake_validation_class = MagicMock(name="ValidationClass")
-        fake_validation_class.__module__ = 'mocked_output_devices_module'
-        mock_getmembers.return_value = [(DEVICE_NAME, fake_validation_class)]
-
-        fake_specific_class = MagicMock(name="SpecificClass")
-        fake_specific_class_instance = Mock(name="Instance")
-        fake_specific_class.return_value = fake_specific_class_instance
-        setattr(mock_output_devices, DEVICE_NAME, fake_specific_class)
-
-        self.controller._config_hardware_controller()
+    @patch('builtins.open')
+    @patch('yaml.safe_load')
+    def test_open_config_file_yaml_error(self, mock_yaml_load, mock_open):
+        """Test yaml.YAMLError is raised when file parsing fails"""
+        mock_yaml_load.side_effect = yaml.YAMLError("parsing error")
+        self.controller._config_path = Path("/invalid/syntax.yaml")
         
-        mock_getmembers.assert_called_once_with(mock_output_devices, inspect.isclass)
-        MockHardwareSettings.assert_called_once_with(
-            fake_specific_class_instance, self.controller.logger
+        with self.assertRaises(yaml.YAMLError):
+            self.controller._open_config_file()
+        self.controller._logger.critical.assert_called()
+
+
+    @patch("denspp.player.general_player_controller.DataTranslator")
+    @patch("denspp.player.general_player_controller.hardware_specification_oscilloscope_mox4")
+    def test_config_hardware_controller_success(self, mock_spec_mox4, mock_data_translator):
+        """Test successful configuration with OscilloscopeMOX4"""
+        self.controller._hardware_data_channel_mapping = ["CH1", "CH2"]
+        self.controller._hardware_config_values = {
+            "OscilloscopeMOX4": {"used": True},
+            "OtherDevice": {"used": False}
+        } 
+        mock_spec_instance = MagicMock()
+        mock_spec_mox4.return_value = mock_spec_instance
+        mock_translator_instance = MagicMock()
+        mock_data_translator.return_value = mock_translator_instance
+
+        result = self.controller._config_hardware_controller()
+        self.assertEqual(result, mock_translator_instance)
+        mock_spec_mox4.assert_called_once()
+        mock_data_translator.assert_called_once_with(
+            specific_device_settings=mock_spec_instance,
+            logger=self.controller._logger,
+            data_channel_mapping=self.controller._hardware_data_channel_mapping
         )
+        self.controller._logger.info.assert_called_with("Hardware controller configured for device: OscilloscopeMOX4")
 
-        self.assertEqual(fake_specific_class_instance.output_open, True)
-        mock_exit.assert_not_called()
 
-    @patch('general_controller.sys.exit', side_effect=SystemExit)
-    def test__config_hardware_controller_no_device_selected(self, mock_exit):
-        """Tests whether sys.exit() is called when no device has "used: True"""
-        self.controller.hardware_config_values = {
-            'DeviceA': {'used': False},
-            'DeviceB': {'used': False}
+    def test_config_hardware_controller_multiple_devices_error(self):
+        """Test error when multiple devices are set to used"""
+        self.controller._hardware_config_values = {
+            "Device1": {"used": True},
+            "Device2": {"used": True}
         }
-        with self.assertRaises(SystemExit):
+        with self.assertRaisesRegex(Exception, "Multiple hardware devices are set to be used"):
             self.controller._config_hardware_controller()
-        self.controller.logger.CRITICAL.assert_called_with(
-            "No hardware device is set to be used. Please select one device."
-        )
-        mock_exit.assert_called_once()
+        
+        self.assertTrue(self.controller._logger.CRITICAL.called or self.controller._logger.critical.called)
 
-    @patch('general_controller.sys.exit', side_effect=SystemExit)
-    def test__config_hardware_controller_multiple_devices_selected(self, mock_exit):
-        """Tests whether sys.exit() is called when multiple devices have 'used: True'"""
-        self.controller.hardware_config_values = {
-            'DeviceA': {'used': True},
-            'DeviceB': {'used': True}
+
+    def test_config_hardware_controller_no_device_error(self):
+        """Test error when no device is set to used"""
+        self.controller._hardware_config_values = {
+            "Device1": {"used": False},
+            "Device2": {"used": False}
         }
-        with self.assertRaises(SystemExit):
+
+        with self.assertRaisesRegex(Exception, "No hardware device is set to be used"):
             self.controller._config_hardware_controller()
-        self.controller.logger.CRITICAL.assert_called_with(
-            "Multiple hardware devices are set to be used. Please select only one device."
-        )
-        mock_exit.assert_called_once()
 
-    @patch('general_controller.output_devices')
-    @patch('general_controller.inspect.getmembers')
-    @patch('general_controller.sys.exit', side_effect=SystemExit)
-    def test__config_hardware_controller_device_not_found(self, mock_exit, mock_getmembers, mock_output_devices):
-        """Tests whether sys.exit() is called when the 'used' device is not found in output_devices.py."""
-        DEVICE_NAME = 'MissingDevice'
-        self.controller.hardware_config_values = {
-            DEVICE_NAME: {'used': True}
+
+    def test_config_hardware_controller_unknown_device_error(self):
+        """Test error when an undefined device name is used"""
+        unknown_device_name = "UnknownDeviceXYZ"
+        self.controller._hardware_config_values = {
+            unknown_device_name: {"used": True}
         }
-        mock_output_devices.__name__ = 'mocked_output_devices_module'
-        fake_other_class = MagicMock(name="OtherClass")
-        fake_other_class.__module__ = 'mocked_output_devices_module'
-        
-        mock_getmembers.return_value = [
-            ('SomeOtherDevice', fake_other_class) 
-        ]
-        with self.assertRaises(SystemExit):
+
+        with self.assertRaisesRegex(Exception, f"The specified hardware device '{unknown_device_name}' is not defined"):
             self.controller._config_hardware_controller()
-        mock_getmembers.assert_called_once_with(mock_output_devices, inspect.isclass)
-        expected_log_tuple = (DEVICE_NAME, {'used': True})
-        self.controller.logger.CRITICAL.assert_called_with(
-            f"The specified hardware device '{expected_log_tuple}' is not defined in output_devices.py."
-        )
-        mock_exit.assert_called_once()
 
-
-# - - - -  Test for the "_config_DataController" methode - - - -
-    @patch('general_controller.DataController')
-    def test_config_DataController_with_time_range(self, MockDataController):
-        """Test _config_DataController when start_time and end_time are both not None"""
-        mock_dc_instance = Mock()
-        MockDataController.return_value = mock_dc_instance
-        
-        self.controller.data_path = "test/data/path"
-        self.controller.data_config_values = {
-            'Time': {
-                'start_time': 1.0,
-                'end_time': 5.0
-            },
-            'Data_Preprocessing': {
-                'channel_selection': [0, 1, 2],
-                'sampling_rate_resample': 1000
-            }
-        }
-        
-        self.controller._config_DataController()
-        
-        MockDataController.assert_called_once()
-        self.assertEqual(self.controller.deployed_data_controller, mock_dc_instance)
-        self.assertEqual(mock_dc_instance.logger, self.controller.logger)
-        self.assertEqual(mock_dc_instance.path, "test/data/path")
-        self.assertEqual(mock_dc_instance.t_range, [1.0, 5.0])
-        self.assertEqual(mock_dc_instance.ch_sel, [0, 1, 2])
-        self.assertEqual(mock_dc_instance.fs_resample, 1000)
-
-    @patch('general_controller.DataController')
-    def test_config_DataController_without_time_range(self, MockDataController):
-        """Test _config_DataController when start_time or end_time is None"""
-        mock_dc_instance = Mock()
-        MockDataController.return_value = mock_dc_instance
-        
-        self.controller.data_path = "test/data/path2"
-        self.controller.data_config_values = {
-            'Time': {
-                'start_time': None,
-                'end_time': 5.0
-            },
-            'Data_Preprocessing': {
-                'channel_selection': [],
-                'sampling_rate_resample': 500
-            }
-        }
-        
-        self.controller._config_DataController()
-        
-        MockDataController.assert_called_once()
-        self.assertEqual(self.controller.deployed_data_controller, mock_dc_instance)
-        self.assertEqual(mock_dc_instance.logger, self.controller.logger)
-        self.assertEqual(mock_dc_instance.path, "test/data/path2")
-        self.assertEqual(mock_dc_instance.t_range, [])
-        self.assertEqual(mock_dc_instance.ch_sel, [])
-        self.assertEqual(mock_dc_instance.fs_resample, 500)
-
-    @patch('general_controller.DataController')
-    def test_config_DataController_both_times_none(self, MockDataController):
-        """Test _config_DataController when both start_time and end_time are None"""
-        mock_dc_instance = Mock()
-        MockDataController.return_value = mock_dc_instance
-        
-        self.controller.data_path = "test/data/path3"
-        self.controller.data_config_values = {
-            'Time': {
-                'start_time': None,
-                'end_time': None
-            },
-            'Data_Preprocessing': {
-                'channel_selection': [1],
-                'sampling_rate_resample': 2000
-            }
-        }
-        
-        self.controller._config_DataController()
-        
-        MockDataController.assert_called_once()
-        self.assertEqual(mock_dc_instance.t_range, [])
-        self.assertEqual(mock_dc_instance.ch_sel, [1])
-        self.assertEqual(mock_dc_instance.fs_resample, 2000)
-
-
-# - - - -  Test for the "_config_board_dataset" methode - - - -
-    @patch('general_controller.Board_dataset')
-    def test_config_board_dataset_with_labels(self, MockBoardDataset):
-        """Test _config_board_dataset when labels exist in the data controller"""
-        mock_board_instance = Mock(spec=hardware_settings.Board_dataset)
-        mock_board_instance.samplingrate = None
-        mock_board_instance.groundtruth = []
-
-        MockBoardDataset.return_value = mock_board_instance
-        
-        mock_data_controller = Mock()
-        mock_data_controller.data_fs_current = 1000
-        mock_data_controller.label_exist = True
-        mock_data_controller.spike_xpos = [10, 20, 30]
-        
-        self.controller.deployed_data_controller = mock_data_controller
-        
-        self.controller._config_board_dataset()
-        
-        MockBoardDataset.assert_called_once()
-        self.assertEqual(self.controller.deployed_board_dataset, mock_board_instance)
-        self.assertEqual(mock_board_instance.samplingrate, 1000)
-        self.assertEqual(mock_board_instance.groundtruth, [10, 20, 30])
-
-    @patch('general_controller.Board_dataset', spec=hardware_settings.Board_dataset)
-    def test_config_board_dataset_without_labels(self, MockBoardDataset):
-        """Test _config_board_dataset when labels do not exist in the data controller"""
-
-        mock_board_instance = Mock(spec=hardware_settings.Board_dataset)
-        mock_board_instance.samplingrate = None
-        mock_board_instance.groundtruth = []
-        
-        MockBoardDataset.return_value = mock_board_instance
-        
-        mock_data_controller = Mock()
-        mock_data_controller.data_fs_current = 2000
-        mock_data_controller.label_exist = False
-        
-        self.controller.deployed_data_controller = mock_data_controller
-        
-        self.controller._config_board_dataset()
-        
-        MockBoardDataset.assert_called_once()
-        self.assertEqual(self.controller.deployed_board_dataset, mock_board_instance)
-        self.assertEqual(mock_board_instance.samplingrate, 2000)
-        self.assertEqual(mock_board_instance.groundtruth, [])
-
-
-
-
-# - - - - Helper Functions - - - -
-
-def mock_data_for_yaml():
-    mock_yaml ="""
-        General_Configuration:
-            Logging_Lvl: "DEBUG"
-        Data_Input:
-            input: "Test_Waveform"
-        Hardware:
-            OscilloscopeMOX4:
-                used: True
-                output_open: False
-            Oscilloscope3000:
-                used: False
-        Data_Configuration:
-            Time:
-                start_time: 1
-                end_time: 2
-            Data_Preprocessing:
-                channel_selection: []
-                do_cut: True
-                do_resampling: True
-                sampling_rate_resample: 999
-        """
-    return mock_yaml
-
-def mock_data_for_general_config():
-    return{
-            'General_Configuration': {
-                'Logging_Lvl': "DEBUG"
-            },
-            'Data_Input': {
-                'input': "Test_Waveform"
-            },
-            'Hardware': {
-                'OscilloscopeMOX4': {
-                    'used': True,
-                    'output_open': False
-                },
-                'Oscilloscope3000': {
-                    'used': False
-                }
-            },
-            'Data_Configuration': {
-                'Time': {
-                    'start_time': 1,
-                    'end_time': 2
-                },
-                'Data_Preprocessing': {
-                    'channel_selection': [],
-                    'do_cut': True,
-                    'do_resampling': True,
-                    'sampling_rate_resample': 999
-                }
-            }}
 
 if __name__ == '__main__':
     unittest.main()

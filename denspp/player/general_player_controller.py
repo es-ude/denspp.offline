@@ -5,7 +5,7 @@ import inspect
 import copy
 from pathlib import Path
 from .data_translation import DataTranslator, BoardDataset
-from .output_devices import HardwareSpecifications, hardware_specification_oscilloscope_mox4
+from .output_devices import hardware_specification_oscilloscope_mox4
 from .debug_help_functions import plot_data
 from denspp.offline.data_call.call_handler import SettingsData
 from .call_handler_player import PlayerControllerData
@@ -49,12 +49,12 @@ class GeneralPlayerController:
         self._deployed_playerControllerData = self._config_call_handler_ControllerData()
         self._untreated_raw_data = copy.deepcopy(self._deployed_playerControllerData.get_data())
 
-        self.cut_data()
+        self._cut_data()
         self._untreated_raw_data_with_cut = copy.deepcopy(self._deployed_playerControllerData.get_data())
-        self.resample_data()
+        self._resample_data()
 
-        self.create_and_load_board_dataset_into_translator()
-        self.produce_data_for_hardware()
+        self._create_and_load_board_dataset_into_translator()
+        self._produce_data_for_hardware()
     
     @property
     def get_untreated_data(self) -> BoardDataset:
@@ -73,6 +73,7 @@ class GeneralPlayerController:
             BoardDataset: Holdes untreated raw data with cut, data name, data type, electrode id, fs original and fs used
         """        
         return self._untreated_raw_data_with_cut
+
 
     def _init_logging(self) -> logging.Logger:
         """Initialize logger, this object is used for logging messages throughout the application
@@ -227,18 +228,19 @@ class GeneralPlayerController:
         return deployed_playerControllerData
     
 
-    def cut_data(self) -> None:
+    def _cut_data(self) -> None:
         """Cut data using the playerControllerData"""
         if self._data_config_do_cut:
             self._deployed_playerControllerData.do_cut()
             
             data = self._deployed_playerControllerData.get_data()
+            plot_data(data.data_raw[0,:], data.fs_used, data.time_end, "cutting")
             self._logger.info(f"Cut data with sampling rate {data.fs_used} with {len(data.data_raw)}")
         else:
             self._logger.info("Data cutting is disabled in the configuration.")
 
 
-    def resample_data(self) -> None:
+    def _resample_data(self) -> None:
         """Resample data to the desired sampling rate, defined in the yaml configuration file
 
         Raises:
@@ -260,7 +262,7 @@ class GeneralPlayerController:
             self._logger.info("Data resampling is disabled in the configuration.")
       
 
-    def create_and_load_board_dataset_into_translator(self) -> None:       
+    def _create_and_load_board_dataset_into_translator(self) -> None:       
         """Create and load the board dataset into the hardware settings controller"""
         data = self._deployed_playerControllerData.get_data()
         deployed_board_dataset = BoardDataset(data= data.data_raw,
@@ -272,13 +274,13 @@ class GeneralPlayerController:
         self._logger.info("Board dataset loaded into hardware settings.")
     
 
-    def produce_data_for_hardware(self) -> None:
+    def _produce_data_for_hardware(self) -> None:
         """Produce data for the hardware device by translating it according to the device specifications."""
         self._deployed_hardware_controller.translation_for_device()
         self._logger.info("Data translation for hardware completed.")
 
     
-    def analyze_signals(self) -> None:
+    def _analyze_signals(self) -> None:
         """Analyze the original and processed signals"""
         processed_data = controller._deployed_hardware_controller.get_data
         original_data_with_cut = controller._untreated_raw_data_with_cut

@@ -10,7 +10,7 @@ class PlayerControllerData(ControllerData):
         self._methods_available = dir(PlayerControllerData)
 
 
-    def syntheticSineWave(self):
+    def syntheticSineWave(self) -> None:
         """Loading synthethic sinus wave data for testing purposes"""
         sine_amplitude = 1
         sine_frequency = 15
@@ -34,7 +34,8 @@ class PlayerControllerData(ControllerData):
                                          evnt_id= [])
         
     
-    def eeg_mental_arithemtic_task(self):
+    def eeg_mental_arithemtic_task(self) -> None:
+        """Loading EEG data from mental arithmetic task dataset"""        
         path_to_file =self._prepare_access_file(folder_name="eeg_mental_arithemtic_task", data_type="s*.csv")
         data =np.loadtxt(path_to_file, delimiter=",")
 
@@ -47,4 +48,3 @@ class PlayerControllerData(ControllerData):
                                          scale_data= 1.0,
                                          evnt_pos= [],
                                          evnt_id= [])
-        #deployed_csv_handler = CsvHandler(path =path_to_file, file_name="")
