@@ -1,8 +1,4 @@
-import sys
-import yaml
-import logging
-import inspect
-import copy
+import sys, yaml, logging, copy
 from pathlib import Path
 from .data_translation import DataTranslator, BoardDataset
 from .output_devices import hardware_specification_oscilloscope_mox4
