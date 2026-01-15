@@ -1,7 +1,7 @@
 import sys, yaml, logging, copy
 from pathlib import Path
 from .data_translation import DataTranslator, BoardDataset
-from .output_devices import hardware_specification_oscilloscope_mox4
+from .output_devices import hardware_specification_oscilloscope_mox4, hardware_specification_denspp_player
 from .debug_help_functions import plot_data
 from denspp.offline.data_call.call_handler import SettingsData
 from .call_handler_player import PlayerControllerData
@@ -181,6 +181,8 @@ class GeneralPlayerController:
         # Load the specific device settings
         if used_device[0] == "OscilloscopeMOX4":
             specific_device_settings = hardware_specification_oscilloscope_mox4()
+        if used_device[0] == "DensPPPlayer":
+            specific_device_settings = hardware_specification_denspp_player()
         else:
             self._logger.CRITICAL(f"The specified hardware device '{used_device[0]}' is not defined in output_devices.py.")
             raise Exception(f"The specified hardware device '{used_device[0]}' is not defined in output_devices.py.")

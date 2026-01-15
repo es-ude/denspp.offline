@@ -120,6 +120,9 @@ class DataTranslator:
         if self._device_name == "OscilloscopeMOX4":
             self._translate_data_for_oscilloscope()
             self._create_csv_for_MXO4()
+        elif self._device_name == "DensPPPlayer":
+            self._translate_data_for_oscilloscope(0.0001)
+            self._create_csv_for_denspp_player()
         else:
             raise ValueError(f"data_translation: {self._device_name} not implemnented yet")
 
@@ -208,3 +211,12 @@ class DataTranslator:
             writer.writerow([f"Rate {self._data.samplingrate}"])
             for data in self._data.data[self._link_data2channel_num[0]]:
                     writer.writerow([data])
+
+    
+    def _create_csv_for_denspp_player(self) -> None:
+        with open('output_denspp_player.csv', mode='w', newline='') as file:
+            writer = csv.writer(file)
+            num_samples = self._data.data.shape[1]
+            for i in range(num_samples):
+                row = [self._data.data[channel][i] if channel is not False else 0 for channel in self._link_data2channel_num]
+                writer.writerow(row)

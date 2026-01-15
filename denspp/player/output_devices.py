@@ -34,3 +34,14 @@ def hardware_specification_oscilloscope_mox4() -> HardwareSpecifications:
         output_open=False
     )
 
+
+def hardware_specification_denspp_player() -> HardwareSpecifications:
+
+    return HardwareSpecifications(
+        device_name="DensPPPlayer",
+        verticalBit=16,
+        numChannels=3,
+        max_sampling_rate=1e6,
+        usedSigned=True,
+        output_open=None
+    )
