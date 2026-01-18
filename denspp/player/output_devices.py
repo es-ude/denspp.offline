@@ -40,7 +40,7 @@ def hardware_specification_denspp_player() -> HardwareSpecifications:
     return HardwareSpecifications(
         device_name="DensPPPlayer",
         verticalBit=16,
-        numChannels=3,
+        numChannels=4,
         max_sampling_rate=1e6,
         usedSigned=True,
         output_open=None

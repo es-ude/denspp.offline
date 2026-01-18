@@ -130,8 +130,13 @@ class DataTranslator:
     #  ========== INTERNAL METHODS ==========
     def _set_channel_mapping(self, data_channel_mapping: list) -> None:
         """Set the mapping from data channels to hardware channels"""        
-        for data_channel, i in enumerate(data_channel_mapping):
-            self._link_data2channel_num[i] = data_channel
+        if len(data_channel_mapping) > self._dac_number_of_channels:
+            self._logger.error("Data channel mapping length exceeds number of DAC channels")
+            raise ValueError("Data channel mapping length exceeds number of DAC channels")
+        for i in range(len(data_channel_mapping)):
+            if data_channel_mapping[i] is not False:
+                self._link_data2channel_num[i] = data_channel_mapping[i]
+
 
 
     def _translate_data_float2int(self, data_in: list) -> list:
@@ -216,6 +221,9 @@ class DataTranslator:
     def _create_csv_for_denspp_player(self) -> None:
         with open('output_denspp_player.csv', mode='w', newline='') as file:
             writer = csv.writer(file)
+            if self._data.data.shape[0] < self._dac_number_of_channels:
+                for _ in range(self._dac_number_of_channels - self._data.data.shape[0]):
+                    self._data.data = np.vstack([self._data.data, np.zeros(self._data.data.shape[1])])
             num_samples = self._data.data.shape[1]
             for i in range(num_samples):
                 row = [self._data.data[channel][i] if channel is not False else 0 for channel in self._link_data2channel_num]
