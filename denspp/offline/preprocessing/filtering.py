@@ -5,7 +5,14 @@ from logging import getLogger, Logger
 from dataclasses import dataclass
 from fxpmath import Fxp
 from denspp.offline.analog.common_func import CommonDigitalFunctions
-from denspp.offline.plot_helper import save_figure, get_plot_color
+from denspp.offline.plot_helper import save_figure, get_plot_color, get_textsize_paper
+
+
+@dataclass
+class FilterCoeffs:
+    """Dataclass with filter coefficients"""
+    a: list
+    b: list
 
 
 @dataclass
@@ -43,6 +50,7 @@ class Filtering(CommonDigitalFunctions):
     _ftype_supported: list = ['butter', 'bessel', 'cheby1', 'cheby2', 'ellip']
     _coeff_a: np.ndarray
     _coeff_b: np.ndarray
+    _settings: SettingsFilter
 
     def __init__(self, setting: SettingsFilter, use_filtfilt: bool=False):
         """Class for Emulating Digital Signal Processing on FPGA
@@ -52,15 +60,18 @@ class Filtering(CommonDigitalFunctions):
         """
         super().__init__()
         self.__logger = getLogger(__name__)
-        self.settings = setting
+        self._settings = setting
         self.__use_filtfilt = use_filtfilt
         self.__process_filter()
 
-    def get_coeffs(self) -> dict:
+    def get_coeffs(self) -> FilterCoeffs:
         """Getting the filter coefficients"""
-        return {'b': self._coeff_b.tolist(), 'a': self._coeff_a.tolist()}
+        return FilterCoeffs(
+            b=self._coeff_b.tolist(),
+            a=self._coeff_a.tolist(),
+        )
 
-    def get_coeffs_quantized(self, bit_size: int, bit_frac: int, signed: bool=True) -> dict:
+    def get_coeffs_quantized(self, bit_size: int, bit_frac: int, signed: bool=True) -> tuple[FilterCoeffs, dict]:
         """Quantize the coefficients with given bit fraction for adding into hardware designs
         :param bit_size:    Integer with total bitwidth
         :param bit_frac:    Integer with fraction width
@@ -72,41 +83,45 @@ class Filtering(CommonDigitalFunctions):
         error_a = self._coeff_a - quant_a.all()
         quant_b = Fxp(self._coeff_b, signed=signed, n_word=bit_size, n_frac=bit_frac)
         error_b = self._coeff_b - quant_b.all()
-        return {'b': quant_b, 'a': quant_a, 'error_b': error_b, 'error_a': error_a}
+        return FilterCoeffs(
+            b=quant_b.tolist(),
+            a=quant_a.tolist(),
+        ), {'b': error_b, 'a': error_a}
 
     def __extract_filter_coeffs_iir(self) -> None:
-        frange = 2 * np.array(self.settings.f_filt) / self.settings.fs
-        match self.settings.b_type.lower():
+        frange = np.array(self._settings.f_filt)
+        match self._settings.b_type.lower():
             case 'notch':
                 filter = scft.iirnotch(
-                    w0=float(self.settings.f_filt[0]),
-                    Q=self.settings.n_order,
-                    fs=self.settings.fs
+                    w0=float(self._settings.f_filt[0]),
+                    Q=self._settings.n_order,
+                    fs=self._settings.fs
                 )
                 self._coeff_b = filter[0]
                 self._coeff_a = filter[1]
             case 'allpass':
-                if self.settings.n_order == 1:
-                    assert len(self.settings.f_filt) == 1, "f_filt should have length of 1 with [f_b] value"
-                    val = np.tan(np.pi * frange[0] / self.settings.fs)
+                if self._settings.n_order == 1:
+                    assert len(self._settings.f_filt) == 1, "f_filt should have length of 1 with [f_b] value"
+                    val = np.tan(np.pi * frange[0] / self._settings.fs)
                     iir_c0 = (val - 1) / (val + 1)
                     self._coeff_b = np.array([iir_c0, 1.0])
                     self._coeff_a = np.array([1.0, iir_c0])
-                elif self.settings.n_order == 2:
-                    assert len(self.settings.f_filt) == 2, "f_filt should have length of 2 with [f_b, bandwidth] value"
-                    val = np.tan(np.pi * frange[1] / self.settings.fs)
+                elif self._settings.n_order == 2:
+                    assert len(self._settings.f_filt) == 2, "f_filt should have length of 2 with [f_b, bandwidth] value"
+                    val = np.tan(np.pi * frange[1] / self._settings.fs)
                     iir_c0 = (val - 1) / (val + 1)
-                    iir_c1 = -np.cos(2 * np.pi * frange[0] / self.settings.fs)
+                    iir_c1 = -np.cos(2 * np.pi * frange[0] / self._settings.fs)
                     self._coeff_b = np.array([-iir_c0, iir_c1 * (1 - iir_c0), 1.0])
                     self._coeff_a = np.array([1.0, iir_c1 * (1 - iir_c0), -iir_c0])
                 else:
                     raise NotImplementedError
             case _:
                 filter = scft.iirfilter(
-                    N=self.settings.n_order,
+                    N=self._settings.n_order,
                     Wn=frange[0] if len(frange) == 1 else frange,
-                    ftype=self.settings.f_type.lower(),
-                    btype=self.settings.b_type.lower(),
+                    fs=self._settings.fs,
+                    ftype=self._settings.f_type.lower(),
+                    btype=self._settings.b_type.lower(),
                     analog=False,
                     output='ba'
                 )
@@ -114,39 +129,40 @@ class Filtering(CommonDigitalFunctions):
                 self._coeff_a = filter[1]
 
     def __extract_filter_coeffs_fir(self) -> None:
-        frange = np.array(self.settings.f_filt)
+        frange = np.array(self._settings.f_filt)
         self._coeff_a = np.array(1.0)
-        match self.settings.b_type.lower():
+        match self._settings.b_type.lower():
             case 'notch':
-                assert len(self.settings.f_filt) == 2, "Size of f_filt should be 2 with [f_notch, bandwidth]"
-                freq = [0, frange[0] - frange[1], frange[0], frange[0] + frange[1], self.settings.fs / 2]
+                assert len(self._settings.f_filt) == 2, "Size of f_filt should be 2 with [f_notch, bandwidth]"
+                freq = [0, frange[0] - frange[1], frange[0], frange[0] + frange[1], self._settings.fs / 2]
                 gain = [1, 1, 0, 1, 1]
 
                 self._coeff_b = scft.firwin2(
-                    numtaps=self.settings.n_order,
+                    numtaps=self._settings.n_order,
                     freq=freq,
                     gain=gain,
-                    fs=self.settings.fs
+                    fs=self._settings.fs
                 )
             case 'allpass':
                 self._coeff_b = self._coeff_a
             case _:
+                self._coeff_a = np.array(1.0)
                 self._coeff_b = scft.firwin(
-                    numtaps=self.settings.n_order,
+                    numtaps=self._settings.n_order,
                     cutoff=frange,
-                    fs=self.settings.fs,
-                    pass_zero=self.settings.b_type.lower()
+                    fs=self._settings.fs,
+                    pass_zero=self._settings.b_type.lower()
                 )
 
     def __process_filter(self) -> None:
-        assert self.settings.type.lower() in self._type_supported, f"Type {self.settings.type} is not supported from {self._type_supported}"
-        assert self.settings.f_type.lower() in self._ftype_supported, f"Filter type {self.settings.f_type} is not supported from {self._ftype_supported}"
-        assert self.settings.b_type.lower() in self._btype_supported, f"Structure type {self.settings.b_type} is not supported from {self._btype_supported}"
-        self.__logger.debug(f'Build {self.settings.type.upper()} filter: {self.settings.b_type}, {self.settings.f_type}')
+        assert self._settings.type.lower() in self._type_supported, f"Type {self._settings.type} is not supported from {self._type_supported}"
+        assert self._settings.f_type.lower() in self._ftype_supported, f"Filter type {self._settings.f_type} is not supported from {self._ftype_supported}"
+        assert self._settings.b_type.lower() in self._btype_supported, f"Structure type {self._settings.b_type} is not supported from {self._btype_supported}"
+        self.__logger.debug(f'Build {self._settings.type.upper()} filter: {self._settings.b_type}, {self._settings.f_type}')
 
-        if self.settings.type.lower() == 'iir':
+        if self._settings.type.lower() == 'iir':
             self.__extract_filter_coeffs_iir()
-        elif self.settings.type.lower() == 'fir':
+        elif self._settings.type.lower() == 'fir':
             self.__extract_filter_coeffs_fir()
 
     def filter(self, xin: np.ndarray) -> np.ndarray:
@@ -154,17 +170,17 @@ class Filtering(CommonDigitalFunctions):
         :param xin:     Numpy array with transient data
         :return:        Numpy array with filtered data
         """
-        if self.settings.type.lower() == 'fir' and self.settings.b_type.lower() == 'allpass':
-            mat = np.zeros(shape=(self.settings.n_order,), dtype=float)
-            xout = np.concatenate((mat, xin[0:xin.size - self.settings.n_order]), axis=None)
+        if self._settings.type.lower() == 'fir' and self._settings.b_type.lower() == 'allpass':
+            mat = np.zeros(shape=(self._settings.n_order,), dtype=float)
+            xout = np.concatenate((mat, xin[0:xin.size - self._settings.n_order]), axis=None)
         elif not self.__use_filtfilt:
-            xout = self.settings.gain * scft.lfilter(
+            xout = self._settings.gain * scft.lfilter(
                 b=self._coeff_b,
                 a=self._coeff_a,
                 x=xin
             )
         else:
-            xout = self.settings.gain * scft.filtfilt(
+            xout = self._settings.gain * scft.filtfilt(
                 b=self._coeff_b,
                 a=self._coeff_a,
                 x=xin
@@ -172,13 +188,20 @@ class Filtering(CommonDigitalFunctions):
         return xout
 
     def __get_frequency_behaviour(self, num_points: int=1001) -> tuple[np.ndarray, np.ndarray]:
-        if not self._coeff_a.size > 1:
-            return scft.freqz(
-                b=self._coeff_b,
-                a=self._coeff_a,
-                worN=num_points,
-                fs=2 * np.pi * self.settings.fs,
-                include_nyquist=True
+        if self._settings.type == 'iir':
+            frange = np.array(self._settings.f_filt)
+            filter = scft.iirfilter(
+                N=self._settings.n_order,
+                Wn=frange[0] if len(frange) == 1 else frange,
+                ftype=self._settings.f_type.lower(),
+                btype=self._settings.b_type.lower(),
+                analog=True,
+                output='ba'
+            )
+            return scft.freqs(
+                b=filter[0],
+                a=filter[1],
+                worN=num_points
             )
         else:
             return scft.freqs(
@@ -195,25 +218,22 @@ class Filtering(CommonDigitalFunctions):
         :param path2save:   Path to save figure
         """
         w, h = self.__get_frequency_behaviour(num_points=num_points)
-        f = w / (2 * np.pi)
+        f = w / (2 * np.pi) if self._settings.f_filt == 'fir' else w
 
         fig1, ax11 = plt.subplots()
         plt.title('Frequency response')
         amplit_log = 20 * np.log10(np.abs(h))
-        amplit_ref = np.zeros_like(amplit_log) + amplit_log.max() - 3 * self.settings.n_order
         plt.semilogx(f, amplit_log, color=get_plot_color(0), label='Gain')
-        plt.semilogx(f, amplit_ref, linestyle='--', color=get_plot_color(0), label='Ref.')
-        plt.ylabel(r'Amplitude |$H(\omega)$| (dB)', color=get_plot_color(0))
-        plt.xlabel(r'Frequency $f_\mathrm{sig}$ (Hz)')
-        plt.ylim([amplit_log.max()-20, amplit_log.max()+3])
+        plt.ylabel(r'Amplitude |$H(\omega)$| (dB)', size=get_textsize_paper(), color=get_plot_color(0))
+        plt.xlabel(r'Frequency $f_\mathrm{sig}$ (Hz)', size=get_textsize_paper())
         plt.xlim([f[0], f[-1]])
 
         ax11.grid(True, which="both", ls="--")
         ax21 = ax11.twinx()
 
         phase = np.angle(h, deg=True)
-        plt.semilogx(f, phase, color=get_plot_color(1), label='Phase')
-        plt.ylabel(r'Phase $\alpha$ (°)', color=get_plot_color(1))
+        plt.semilogx(f, phase, color=get_plot_color(1), label='Phase', alpha=.6)
+        plt.ylabel(r'Phase $\alpha$ (°)', size=get_textsize_paper(), color=get_plot_color(1))
         plt.tight_layout()
         if path2save:
             save_figure(plt, path2save, 'freq_response')

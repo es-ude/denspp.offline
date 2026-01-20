@@ -1,6 +1,6 @@
 from .common_referencing import SettingsReferencing, DefaultSettingsReferencing, CommonReferencing
 from .downsampling import SettingsDownSampling, DefaultSettingsDownSampling, DownSampling
-from .filtering import SettingsFilter, DefaultSettingsFilter, Filtering
+from .filtering import FilterCoeffs, SettingsFilter, DefaultSettingsFilter, Filtering
 from .frame_generator import SettingsFrame, DefaultSettingsFrame, FrameGenerator, FrameWaveform
 from .normalization import DataNormalization
 from .sda import SettingsSDA, DefaultSettingsSDA, SpikeDetection
