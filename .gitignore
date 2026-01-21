@@ -1,7 +1,8 @@
 ### Project ###
 docs/apidocs
 denspp/__init__.py
-Config_*.yaml
+**/Config_*.yaml
+**/Config_*.json
 **/.devenv
 **/src
 **/config
@@ -10,9 +11,10 @@ Config_*.yaml
 **/runs
 **/temp_*
 .python-version
+**/uv.lock
 
 #macos
-.DS_Store
+**/.DS_Store
 
 #VsCode
 .vscode
@@ -20,7 +22,6 @@ Config_*.yaml
 # Just for not uploading new features/files into main folder (just for local development)
 **/src_*
 **/main_*.py
-**/access_cloud.yaml
 **/access_cloud.json
 
 
