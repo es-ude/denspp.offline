@@ -32,21 +32,18 @@ authors = [
   {name = "Andreas Erbsloeh", email = "andreas.erbsloeh@uni-due.de"},
 ]
 dependencies = [
+    "elasticai-creator",
+    "fxpmath>=0.4.9",
     "matplotlib>=3.9.2",
     "numpy>=1.26.4",
     "pyspice>=1.5",
+    "pytest>=9.0.2",        # It is inside due to missing declaration in creator
+    "pyocclient>=0.6",
     "pyyaml>=6.0.1",
     "scikit-learn>=1.5.2",
     "scipy>=1.14.1",
     "torchinfo>=1.8.0",
-    "tqdm>=4.67.1",
-    "elasticai-creator",
-    "fxpmath>=0.4.9",
-    "pytest>=9.0.2",            # Just to fix error coming from cocotb in elasticai.creator
-    "webdavclient3>=3.14.6",
-    "urllib3>=2.6.2",
-    "requests>=2.32.5",
-    "pyocclient>=0.6",
+    "tqdm>=4.67.1"
 ]
 
 [tool.uv]
