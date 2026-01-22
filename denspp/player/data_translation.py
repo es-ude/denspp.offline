@@ -123,6 +123,10 @@ class DataTranslator:
         elif self._device_name == "DensPPPlayer":
             self._translate_data_for_oscilloscope(0.0001)
             self._create_csv_for_denspp_player()
+        elif self._device_name == "DensPPPlayer_SDCard":
+            self._translate_data_for_oscilloscope(0.0001)
+            self._translate_data_float2int()
+            self._create_csv_for_sd_card_denspp_player()
         else:
             raise ValueError(f"data_translation: {self._device_name} not implemnented yet")
 
@@ -138,36 +142,21 @@ class DataTranslator:
                 self._link_data2channel_num[i] = data_channel_mapping[i]
 
 
-
-    def _translate_data_float2int(self, data_in: list) -> list:
-        # max_dac_output define the Bit depth of the DAC 12bit -> 2^12 = 4096; signed -> 2048 
-        """"""
+    def _translate_data_float2int(self, min_voltage: float = -5.0, max_voltage: float= 5.) -> None:
         data_out = list()
+        for data in self._data.data:
+            transformed_data_channel = []
+            for data_point in data:   
+                if data_point >= max_voltage:
+                    val0 = max_voltage * (1 - 2**-15)
+                elif data_point < min_voltage:
+                    val0 = min_voltage
+                else:
+                    val0 = data_point
+                transformed_data_channel.append(int(2**15 * (1 + val0 / max_voltage)))
+            data_out.append(np.array(transformed_data_channel, dtype=np.uint16))
+        self._data.data = np.array(data_out, dtype=np.uint16)
         
-        max_dac_output =(2** self._dac_bit) / 2 if self.dac_use_signed else (2** self._dac_bit)
-        
-        for data in data_in:
-            # Find the absolute maximum value in the signal (regardless of positive or negative) 
-            # With this call The loudest point in the signal (whether positive or negative) corresponds exactly to the target value max_dac_output.
-            val_abs_max = data.max() if data.max() > abs(data.min()) else data.min()
-            if val_abs_max < 0: # Necessary otherwise the Value get inverted
-                val_abs_max = abs(val_abs_max)
-
-            scaled_data = max_dac_output / val_abs_max * data
-            if self._dac_use_signed:
-                clipped_data = np.clip(scaled_data, -32768, 32767) # Prevent overflow for signed 16-bit integer
-            else:
-                clipped_data = np.clip(scaled_data, 0, 65535) # Prevent overflow for unsigned 16-bit integer
-
-            data_out.append(np.array(clipped_data, dtype=np.int16)) # Convert to int16
-
-        if np.any(data_out[0] > 32767) or np.any(data_out[0] < -32768):
-            self._logger.warning("Overflow detected!")
-            self._logger.warning(f"Max: {np.max(data_out[0])}, Min: {np.min(data_out[0])}")
-        else:
-            self._logger.info("No overflow detected in data conversion.")
-        return data_out
-    
 
     def _translate_data_for_oscilloscope(self, resolution: float = 0.001) -> None:
         """Translate data to the Voltage range of the Oscillioscope"""
@@ -219,7 +208,20 @@ class DataTranslator:
 
     
     def _create_csv_for_denspp_player(self) -> None:
+        """Output data in DensPP Player format"""        
         with open('output_denspp_player.csv', mode='w', newline='') as file:
+            writer = csv.writer(file)
+            if self._data.data.shape[0] < self._dac_number_of_channels:
+                for _ in range(self._dac_number_of_channels - self._data.data.shape[0]):
+                    self._data.data = np.vstack([self._data.data, np.zeros(self._data.data.shape[1])])
+            num_samples = self._data.data.shape[1]
+            for i in range(num_samples):
+                row = [self._data.data[channel][i] if channel is not False else 0 for channel in self._link_data2channel_num]
+                writer.writerow(row)
+
+
+    def _create_csv_for_sd_card_denspp_player(self) -> None:
+        with open("data_to_generate_denspp_player.csv", mode='w', newline='') as file:
             writer = csv.writer(file)
             if self._data.data.shape[0] < self._dac_number_of_channels:
                 for _ in range(self._dac_number_of_channels - self._data.data.shape[0]):
