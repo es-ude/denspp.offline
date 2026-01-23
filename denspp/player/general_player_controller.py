@@ -57,6 +57,7 @@ class GeneralPlayerController:
     def __init__(self, class_config: DensppGenerationPlayerConfig = None):
         if class_config:
             """Init process for the configuration class"""
+            self._player_config = class_config
             self._logger =self._init_logging()
             self._user_set_logging_level()
 
