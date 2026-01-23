@@ -110,6 +110,16 @@ class GeneralPlayerController:
         """        
         return self._untreated_raw_data_with_cut
 
+
+    @property
+    def get_processed_data(self) -> BoardDataset:
+        """Output processed data in BoardDataset format
+
+        Returns:
+            BoardDataset: Holdes processed data and some metadata
+        """        
+        return self._deployed_data_translator.get_data
+
     
     def _init_logging(self) -> logging.Logger:
         """Initialize logger, this object is used for logging messages throughout the application
