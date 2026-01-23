@@ -69,6 +69,7 @@ class GeneralPlayerController:
             self._cut_data()
             self._untreated_raw_data_with_cut = copy.deepcopy(self._deployed_playerControllerData.get_data())
             self._resample_data()
+            self._create_and_load_board_dataset_into_translator()
 
         else:
             """Init porcess for the yaml configuration file"""
