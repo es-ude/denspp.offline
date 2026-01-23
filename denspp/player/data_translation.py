@@ -123,6 +123,9 @@ class DataTranslator:
         elif self._device_name == "DensPPPlayer":
             self._translate_data_for_oscilloscope(0.0001)
             self._create_csv_for_denspp_player()
+        elif self._device_name == "DensPPPlayer_import":
+            self._translate_data_for_oscilloscope(0.0001)
+            self._translate_data_float2int()
         elif self._device_name == "DensPPPlayer_SDCard":
             self._translate_data_for_oscilloscope(0.0001)
             self._translate_data_float2int()
