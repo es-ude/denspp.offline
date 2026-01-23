@@ -130,6 +130,10 @@ class DataTranslator:
         elif self._device_name == "DensPPPlayer":
             self._translate_data_for_oscilloscope(0.0001)
             self._create_csv_for_denspp_player()
+        elif self._device_name == "DensPPPlayer_SDCard":
+            self._translate_data_for_oscilloscope(0.0001)
+            self._translate_data_float2int()
+            self._create_csv_for_sd_card_denspp_player()
         else:
             raise ValueError(f"data_translation: {self._device_name} not implemnented yet")
 
@@ -149,7 +153,7 @@ class DataTranslator:
         data_out = list()
         for data in self._data.data:
             transformed_data_channel = []
-            for data_point in data:
+            for data_point in data:   
                 if data_point >= max_voltage:
                     val0 = max_voltage * (1 - 2**-15)
                 elif data_point < min_voltage:
@@ -159,7 +163,7 @@ class DataTranslator:
                 transformed_data_channel.append(int(2**15 * (1 + val0 / max_voltage)))
             data_out.append(np.array(transformed_data_channel, dtype=np.uint16))
         self._data.data = np.array(data_out, dtype=np.uint16)
-
+        
 
     def _translate_data_for_oscilloscope(self, resolution: float = 0.001) -> None:
         """Translate data to the Voltage range of the Oscillioscope"""
@@ -211,7 +215,7 @@ class DataTranslator:
 
     
     def _create_csv_for_denspp_player(self) -> None:
-        """Output data in DensPP Player format"""
+        """Output data in DensPP Player format"""        
         with open('output_denspp_player.csv', mode='w', newline='') as file:
             writer = csv.writer(file)
             if self._data.data.shape[0] < self._dac_number_of_channels:
