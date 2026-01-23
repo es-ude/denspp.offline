@@ -125,7 +125,7 @@ class DataTranslator:
             self._create_csv_for_denspp_player()
         elif self._device_name == "DensPPPlayer_import":
             self._translate_data_for_oscilloscope(0.0001)
-            self._translate_data_float2int()
+            self._create_dataset_for_denspp_player_import()
         elif self._device_name == "DensPPPlayer_SDCard":
             self._translate_data_for_oscilloscope(0.0001)
             self._translate_data_float2int()
@@ -221,6 +221,18 @@ class DataTranslator:
             for i in range(num_samples):
                 row = [self._data.data[channel][i] if channel is not False else 0 for channel in self._link_data2channel_num]
                 writer.writerow(row)
+
+
+    def _create_dataset_for_denspp_player_import(self) -> None:
+        """Output data in DensPP Player Import format"""
+        if self._data.data.shape[0] < self._dac_number_of_channels:
+                for _ in range(self._dac_number_of_channels - self._data.data.shape[0]):
+                    self._data.data = np.vstack([self._data.data, np.zeros(self._data.data.shape[1])])
+        num_samples = self._data.data.shape[1]
+        transformed_data = np.zeros([num_samples, self._dac_number_of_channels], dtype=np.float64)     
+        for i in range(num_samples):
+                transformed_data[i,:] = [self._data.data[channel][i] if channel is not False else 0 for channel in self._link_data2channel_num]
+        self._data.data = transformed_data
 
 
     def _create_csv_for_sd_card_denspp_player(self) -> None:
