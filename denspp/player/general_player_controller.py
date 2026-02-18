@@ -261,7 +261,7 @@ class GeneralPlayerController:
         """        
         deployed_settingsData = SettingsData(pipeline ="PipelineV0",
                                                 do_merge = False,
-                                                path = self._player_config.input,
+                                                path = "",
                                                 data_set = self._player_config.input.parts[-1],
                                                 data_case = 0,
                                                 data_point = 0,

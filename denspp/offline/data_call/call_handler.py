@@ -227,17 +227,17 @@ class ControllerData:
                 if len(folder_content) == 0:
                     # --- Go into next folder structure and look there
                     folder_structure = glob(join(folder2search[0], '*'))
-                    folder2search = join(folder2search[0], self.__config_data_selection[1]) if type(
+                    sub_folder = join(folder2search[0], self.__config_data_selection[1]) if type(
                         self.__config_data_selection[1]) == str else join(
                         folder_structure[self.__config_data_selection[1]])
-                    folder_content = glob(join(folder2search[0], data_type))
+                    folder_content = glob(join(sub_folder, data_type))
                     folder_content.sort()
                 else:
                     # --- Look in folder_content for file
                     pass
 
                 # --- Getting the
-                file_name = join(folder2search, self.__config_data_selection[2]) if type(self.__config_data_selection[2]) == str else join(folder_content[self.__config_data_selection[2]])
+                file_name = join(sub_folder, self.__config_data_selection[2]) if type(self.__config_data_selection[2]) == str else join(folder_content[self.__config_data_selection[2]])
                 if file_name:
                     return file_name
                 else:
