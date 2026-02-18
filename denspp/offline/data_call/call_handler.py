@@ -236,9 +236,7 @@ class ControllerData:
         if path_ref:
             # --- If data is online available - Checking if is is also local available
             path2chck = join(
-                self.__config_data_selection[0],
-                dirname(path_ref).lstrip("/"),
-                basename(path_ref),
+                self.__config_data_selection[0], dirname(path_ref).lstrip("/"), basename(path_ref)
             )
             self._path2folder_local = (
                 ""
@@ -263,12 +261,12 @@ class ControllerData:
                 if len(folder_content) == 0:
                     # --- Go into next folder structure and look there
                     folder_structure = glob(join(folder2search[0], "*"))
-                    folder2search = (
+                    sub_folder = (
                         join(folder2search[0], self.__config_data_selection[1])
                         if type(self.__config_data_selection[1]) == str
                         else join(folder_structure[self.__config_data_selection[1]])
                     )
-                    folder_content = glob(join(folder2search[0], data_type))
+                    folder_content = glob(join(sub_folder, data_type))
                     folder_content.sort()
                 else:
                     # --- Look in folder_content for file
@@ -276,7 +274,7 @@ class ControllerData:
 
                 # --- Getting the
                 file_name = (
-                    join(folder2search, self.__config_data_selection[2])
+                    join(sub_folder, self.__config_data_selection[2])
                     if type(self.__config_data_selection[2]) == str
                     else join(folder_content[self.__config_data_selection[2]])
                 )
@@ -362,9 +360,7 @@ class ControllerData:
             )
             mapping_remote = (
                 self.__download_handler.get_overview_data(
-                    use_dataset=False,
-                    search_folder=self._path2folder_remote,
-                    format=index_search,
+                    use_dataset=False, search_folder=self._path2folder_remote, format=index_search
                 )
                 if self._path2folder_remote
                 else []
@@ -394,9 +390,7 @@ class ControllerData:
         """Function for reading the CSV file for electrode mapping of used (non-electrodes = 0)"""
         mapping_from_csv = (
             CsvHandler(
-                path=dirname(self._path2mapping),
-                file_name=basename(self._path2mapping),
-                delimiter=";",
+                path=dirname(self._path2mapping), file_name=basename(self._path2mapping), delimiter=";"
             )
             .read_data_from_csv(
                 include_chapter_line=False,
