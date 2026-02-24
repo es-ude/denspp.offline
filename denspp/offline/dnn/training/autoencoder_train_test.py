@@ -156,6 +156,25 @@ class TestAutoencoderTraining(TestCase):
         rslt = self.dut.do_post_training_validation(do_ptq=True)
         self.assertEqual(rslt.label_names, self.dataset.dict)
 
+    def test_extract_feature_space(self):
+        self.dut.load_dataset(
+            dataset=self.dataset,
+        )
+        self.dut.load_model(
+            model=dummy_mlp_ae_v0(input_size=self.dataset.data.shape[1], output_size=4),
+            learn_rate=0.1
+        )
+        self.dut.do_training()
+        path2save = self.dut.get_saving_path()
+
+        feat_space = self.dut.extract_feature_space(
+            path2model=path2save,
+            rawdata=self.dataset
+        )
+        assert type(feat_space) == DatasetFromFile
+        assert feat_space.data.shape == (self.dataset.data.shape[0], 4)
+        assert feat_space.label.shape == (self.dataset.data.shape[0], )
+
 
 if __name__ == '__main__':
     main()

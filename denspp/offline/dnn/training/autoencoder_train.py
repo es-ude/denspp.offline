@@ -4,7 +4,7 @@ from logging import getLogger, Logger
 from pathlib import Path
 from shutil import copy
 from datetime import datetime
-from torch import Tensor, load, save, inference_mode, flatten, cuda, cat, concatenate, randn
+from torch import Tensor, load, save, inference_mode, flatten, cuda, cat, concatenate, randn, from_numpy
 
 from denspp.offline import check_keylist_elements_any
 from denspp.offline.dnn.data_config import DatasetFromFile, SettingsDataset
@@ -87,6 +87,26 @@ class TrainAutoencoder(PyTorchHandler):
             'dsnr_all': self.__determine_dsnr_all,
             'ptq_loss': self.__determine_ptq_loss
         }
+
+    def extract_feature_space(self, path2model: Path, rawdata: DatasetFromFile) -> DatasetFromFile:
+        """Function for extracting the feature space from the autoencoder to use it for classification.
+        :param path2model:  Path to the autoencoder model
+        :param rawdata:     Dataset autoencoder rawdata
+        :return:            Dataset with autoencoder feature space as input
+        """
+        overview_model = [path for path in path2model.glob('*.pt')]
+        if len(overview_model) == 0:
+            raise FileNotFoundError('No .pt files found in {}'.format(path2model))
+        self._logger.debug(f'Use pt-file {overview_model[0]} for extracting feature space')
+        model_ae = load(overview_model[0], weights_only=False).to("cpu")
+        feat = model_ae(from_numpy(np.array(rawdata.data, dtype=np.float32)))[0]
+
+        return DatasetFromFile(
+            data=feat.detach().numpy(),
+            label=rawdata.label,
+            dict=rawdata.dict,
+            mean=rawdata.mean
+        )
 
     def load_dataset(self, dataset: DatasetFromFile) -> None:
         """Loading the loaded dataset and transform it into right dataloader

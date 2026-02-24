@@ -28,14 +28,14 @@ def plot_filter_fir_coeffs(coeffs: FilterCoeffs, path2save: Path=Path("."), bloc
 
 if __name__ == "__main__":
     path = get_path_to_project("runs")
-    bitwidth_total = 8
-    bitwidth_frac = 6
+    bitwidth_total = 6
+    bitwidth_frac = 5
     sets_filt = SettingsFilter(
         gain=1,
         fs=2e3,
-        n_order=1,
-        f_filt=[80.],
-        type='iir',
+        n_order=11,
+        f_filt=[100.],
+        type='fir',
         f_type='butter',
         b_type='lowpass'
     )
@@ -43,13 +43,8 @@ if __name__ == "__main__":
 
     coeff_qnt = dut.get_coeffs_quantized(bit_size=bitwidth_total, bit_frac=bitwidth_frac)[0]
 
-    dut.plot_freq_response(
-        num_points=201,
-        show_plot=False,
-        path2save=path
-    )
     plot_filter_fir_coeffs(
-        coeffs=coeff_qnt, #dut.get_coeffs(),
+        coeffs=coeff_qnt,
         path2save=Path(path),
         block_plot=True
     )
