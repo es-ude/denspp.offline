@@ -43,7 +43,8 @@ dependencies = [
     "scikit-learn>=1.5.2",
     "scipy>=1.14.1",
     "torchinfo>=1.8.0",
-    "tqdm>=4.67.1"
+    "tqdm>=4.67.1",
+    "soundcard",
 ]
 
 [tool.uv]
@@ -52,6 +53,7 @@ default-groups = ["dev", "docs"]
 
 [tool.uv.sources]
 elasticai-creator = { git = "https://github.com/es-ude/elastic-ai.creator.git"}
+soundcard = { git = "https://github.com/bastibe/SoundCard.git" }
 
 
 [dependency-groups]
