@@ -50,7 +50,7 @@ class TrainingResults:
 class SettingsTraining:
     """Configuration class for handling the training phase of deep neural networks
     Attributes:
-        mode_train:         Integer of selected training routine regarding the training handler [0: Classifier, 1: Autoencoder]
+        mode_train:         Integer of selected training routine regarding the training handler [0: Classifier (CL), 1: Autoencoder (AE), 2: Autoencoder-based Classifier (AE+CL), 3: Long-Short Term-Memory (LSTM)]
         do_block:           Boolean value to block the generated plots after training
         do_ptq:             Apply Post Training Quantization Scheme during Training
         ptq_total_bitwidth: Integer for total bitwidth in PTQ
@@ -244,15 +244,16 @@ class PyTorchTrainer:
     _settings_model: SettingsClassifier | SettingsAutoencoder
     _path2config: Path
     _dataloader: Any
+    __default_model: str
+    __use_case: str
 
     def __init__(self, use_case: str, settings: SettingsTraining=DefaultSettingsTraining,
-                 default_model: str= '', path2config: str= 'config', generate_configs: bool=True) -> None:
+                 default_model: str= '', path2config: str= 'config') -> None:
         """Class for handling and wrapping all PyTorch Training Routines incl. Report Generation and Plotting
         :param use_case:            String with name of use-case
         :param settings:            Dataclass for defining trainer properties
         :param default_model:       String with name of default model
         :param path2config:         Path to folder with configuration files
-        :param generate_configs:    Boolean for generating configuration files if not there
         :return:                    None
         """
         define_logger_runtime(save_file=False)
@@ -261,6 +262,10 @@ class PyTorchTrainer:
         self._path2config = Path(get_path_to_project(path2config))
         self._path2config.mkdir(parents=True, exist_ok=True)
         self._do_init = self.config_available
+        self.__default_model = default_model
+        self.__use_case = use_case
+
+        self.__prepare_training()
         if settings == DefaultSettingsTraining:
             self._settings_ml = self._get_config_ml(
                 use_case=use_case,
@@ -268,48 +273,24 @@ class PyTorchTrainer:
             )
         else:
             self._settings_ml = settings
-        if generate_configs:
-            self.__prepare_training(
-                use_case=use_case,
-                default_model=default_model
-            )
 
-    def __prepare_training(self, use_case: str, default_model: str) -> None:
-        self._dataloader = self._get_dataset_loader()
-        self._settings_data = self._get_config_dataset(
-            default_dataset_name=use_case,
-            use_case=use_case
-        )
-        match self._settings_ml.mode_train:
-            case 0:
-                self._logger.debug("... read/build configuration to train classifier")
-                self._settings_model = self._get_config_classifier(
-                    default_model_name=default_model,
-                    use_case=use_case
-                )
-            case 1:
-                self._logger.debug("... read/build configuration to train autoencoder")
-                self._settings_model = self._get_config_autoencoder(
-                    default_model_name=default_model,
-                    use_case=use_case
-                )
-            case _:
-                raise NotImplementedError("Training routine not implemented")
 
     @property
     def config_available(self) -> bool:
         """Checking if configs are in the folder available or must be initialized"""
-        return self.path2config.exists() and len(list(self.path2config.glob("Config*_*.json"))) > 1
+        return self.path2config.exists() and len(list(self.path2config.glob("Config*_*.json"))) > 0
 
     @property
     def path2config(self) -> Path:
         """Returning the absolute path to config folder"""
         return self._path2config.absolute()
 
-    @property
-    def get_custom_metric_calculation(self) -> list[str]:
-        """Returning an overview of custom metric calculation methods during PyTorch Training"""
-        match self._settings_ml.mode_train:
+    def get_type_metric_calculation(self, use_case: int) -> list[str]:
+        """Returning an overview of custom metric calculation methods during PyTorch Training
+        :param use_case:    Number with use case of the model type (0=Classifier, 1=Autoencoder, 2=Autoencoder-based Classifier)
+        :return:            List of custom metric calculation methods
+        """
+        match use_case:
             case 0:
                 method = TrainClassifier
                 default = DefaultSettingsTrainingCE
@@ -324,6 +305,24 @@ class PyTorchTrainer:
             do_train=False
         ).get_epoch_metric_custom_methods
 
+    @property
+    def get_custom_metric_calculation(self) -> list[str]:
+        """Returning an overview of custom metric calculation methods during PyTorch Training
+        :return:            List of custom metric calculation methods
+        """
+        return self.get_type_metric_calculation(self._settings_ml.mode_train)
+
+    @property
+    def get_model_overview(self) -> list[str]:
+        """Returning an overview of model training methods during PyTorch Training"""
+        if not self._settings_model:
+            raise ValueError("Available ")
+        return self._settings_model.get_model_overview()
+
+    def get_model(self, *args, **kwargs):
+        """Returning the deep learning model for training loaded from ModelLibrary"""
+        return self._settings_model.get_model(*args, **kwargs)
+
     def _get_config_ml(self, use_case: str, default_training_mode: int=0) -> SettingsTraining:
         default_set = deepcopy(DefaultSettingsTraining)
         default_set.mode_train = default_training_mode
@@ -336,11 +335,12 @@ class PyTorchTrainer:
     def _get_config_dataset(self, default_dataset_name: str, use_case: str) -> SettingsDataset:
         default_set: SettingsTraining = deepcopy(DefaultSettingsDataset)
         default_set.data_type = default_dataset_name
-        return JsonHandler(
+        self._settings_model =  JsonHandler(
             template=default_set,
             path=str(self.path2config),
             file_name=f'ConfigDataset_{use_case}'
         ).get_class(SettingsDataset)
+        return self._settings_model
 
     @staticmethod
     def _get_dataset_loader() -> Any:
@@ -359,19 +359,23 @@ class PyTorchTrainer:
     def _get_config_classifier(self, default_model_name: str, use_case: str) -> SettingsClassifier:
         default_set: SettingsClassifier = deepcopy(DefaultSettingsTrainingCE)
         default_set.model_name = default_model_name
-        default_set.custom_metrics = self.get_custom_metric_calculation
-        return JsonHandler(
+        default_set.custom_metrics = self.get_type_metric_calculation(0)
+        self._settings_model = JsonHandler(
             template=default_set,
             path=str(self.path2config),
             file_name=f'ConfigClassifier_{use_case}'
         ).get_class(SettingsClassifier)
+        return self._settings_model
 
-    def _prepare_training_classifier(self) -> TrainClassifier:
+    def _prepare_training_classifier(self, used_dataset: DatasetFromFile) -> TrainClassifier:
         """PyTorch Training Routing for Classifiers
         :return:            Training Handler
         """
+        self._get_config_classifier(
+            default_model_name=self.__default_model,
+            use_case=self.__use_case
+        )
         # --- Processing Step #0: Get dataset and build model
-        used_dataset = self.get_dataset()
         model_signature = self._settings_model.get_signature()
         if len(model_signature) and check_keylist_elements_all(
                 keylist=model_signature,
@@ -398,19 +402,22 @@ class PyTorchTrainer:
     def _get_config_autoencoder(self, default_model_name: str, use_case: str) -> SettingsAutoencoder:
         default_set: SettingsAutoencoder = deepcopy(DefaultSettingsTrainingMSE)
         default_set.model_name = default_model_name
-        default_set.custom_metrics = self.get_custom_metric_calculation
+        default_set.custom_metrics = self.get_type_metric_calculation(1)
         return JsonHandler(
             template=default_set,
             path=str(self.path2config),
             file_name=f'ConfigAutoencoder_{use_case}'
         ).get_class(SettingsAutoencoder)
 
-    def _prepare_training_autoencoder(self) -> TrainAutoencoder:
+    def _prepare_training_autoencoder(self, used_dataset: DatasetFromFile) -> TrainAutoencoder:
         """PyTorch Training Routing for Autoencoders
         :return:            Training handler
         """
+        self._settings_model = self._get_config_autoencoder(
+            default_model_name=self.__default_model,
+            use_case=self.__use_case
+        )
         # --- Processing Step #0: Get dataset and build model
-        used_dataset = self.get_dataset()
         model_signature = self._settings_model.get_signature()
         if len(model_signature) and check_keylist_elements_all(
                 keylist=model_signature,
@@ -440,21 +447,33 @@ class PyTorchTrainer:
         train_handler.load_dataset(dataset=used_dataset)
         return train_handler
 
-    def get_model(self, *args, **kwargs):
-        """Returning the deep learning model for training loaded from ModelLibrary"""
-        return self._settings_model.get_model(*args, **kwargs)
+    def _save_training_results(self, addon: str, metrics: dict, data_result: DataValidation, custom_metrics: list, path2save: Path) -> TrainingResults:
+        results = TrainingResults(
+            settings={'train': self._settings_ml, 'model': self._settings_model, 'data': self._settings_data},
+            metrics=metrics,
+            data=data_result,
+            path=path2save,
+            metrics_custom=custom_metrics
+        )
+        data2save = path2save / f'results_{addon}.npy'
+        self._logger.debug(f"... saving results: {data2save}")
+        np.save(data2save, results, allow_pickle=True)
 
-    def _run_training(self, path2save=Path(".")) -> TrainingResults:
+        return results
+
+    def _run_training_single(self, mode: int, used_dataset: DatasetFromFile, path2save=Path(".")) -> list[TrainingResults]:
         # --- Processing Step #1: Prepare Trainings handler with dataset and model
-        match self._settings_ml.mode_train:
+        match mode:
             case 0:
-                dut: TrainClassifier = self._prepare_training_classifier()
+                dut: TrainClassifier = self._prepare_training_classifier(used_dataset=used_dataset)
                 addon = 'cl'
             case 1:
-                dut: TrainAutoencoder = self._prepare_training_autoencoder()
+                dut: TrainAutoencoder = self._prepare_training_autoencoder(used_dataset=used_dataset)
                 addon = 'ae'
+            case 2:
+                raise ValueError("It enables the Autoencoder-based Classifier, but you should select either 'cl' or 'ae'")
             case _:
-                raise NotImplementedError
+                raise NotImplementedError("Training Routine is not implemented")
 
         # --- Processing Step #2: Do Training and Validation
         dut.define_ptq_level(
@@ -465,34 +484,71 @@ class PyTorchTrainer:
         data_result = dut.do_post_training_validation(do_ptq=self._settings_ml.do_ptq)
 
         # --- Processing Step #3: Saving results
-        results = TrainingResults(
-            settings={'train': self._settings_ml, 'model': self._settings_model, 'data': self._settings_data},
+        return [self._save_training_results(
+            addon=addon,
             metrics=metrics,
-            data=data_result,
-            path=dut.get_saving_path(),
-            metrics_custom=dut.get_epoch_metric_custom_methods
-        )
-        self._save_results(
-            data=results,
-            path2save=dut.get_saving_path(),
-            addon=addon
-        )
-        return results
+            data_result=data_result,
+            custom_metrics=dut.get_epoch_metric_custom_methods,
+            path2save=dut.get_saving_path()
+        )]
 
-    def _save_results(self, data: TrainingResults, path2save: Path, addon: str) -> None:
-        data2save = path2save / f'results_{addon}.npy'
-        self._logger.debug(f"... saving results: {data2save}")
-        np.save(data2save, data, allow_pickle=True)
+    def _run_training_sequence(self, used_dataset: DatasetFromFile, path2save=Path(".")) -> list[TrainingResults]:
+        # --- Processing Step #1: Do Training and Validation of Autoencoder
+        self.__default_model = self.__default_model if 'ae' in self.__default_model else self.__default_model.replace('cl', 'ae')
+        results_ae = self._run_training_single(
+            mode=1,
+            used_dataset=used_dataset,
+            path2save=path2save
+        )[0]
 
-    def do_training(self, path2save=Path(".")) -> TrainingResults:
+        # --- Processing Step #3: Extract Feature Space and build new dataset for Classifier
+        dut0: TrainAutoencoder = self._prepare_training_autoencoder(used_dataset=used_dataset)
+        dut0.define_ptq_level(
+            total_bitwidth=self._settings_ml.ptq_total_bitwidth,
+            frac_bitwidth=self._settings_ml.ptq_frac_bitwidth
+        )
+        feat_dataset = dut0.extract_feature_space(
+            path2model=results_ae.path,
+            rawdata=self.get_dataset()
+        )
+        # --- Processing Step #3: Do Training and Validation of Classifier
+        self.__default_model = self.__default_model if 'cl' in self.__default_model else self.__default_model.replace('ae', 'cl')
+        results_cl = self._run_training_single(
+            mode=0,
+            used_dataset=feat_dataset,
+            path2save=results_ae.path
+        )[0]
+
+        # --- Processing Step #4: Returning Results
+        return [results_ae, results_cl]
+
+    def __prepare_training(self) -> None:
+        self._dataloader = self._get_dataset_loader()
+        self._settings_data = self._get_config_dataset(
+            default_dataset_name=self.__use_case,
+            use_case=self.__use_case
+        )
+
+    def do_training(self, path2save=Path(".")) -> list[TrainingResults]:
         """Running PyTorch Training for specified configuration
         :param path2save:   Path to save the results and models after training [default runs/<YYYYMMDD>_<model>]
         :return:            Dataclass TrainingResults with internal metrics, data and path to run folder
         """
         if not self._do_init:
             raise AttributeError("Configs are generated - Please adapt and restart!")
-        results = self._run_training(path2save=path2save)
-        return results
+
+        used_dataset = self.get_dataset()
+        if self._settings_ml.mode_train == 2:
+            return self._run_training_sequence(
+                used_dataset=used_dataset,
+                path2save=path2save
+            )
+        else:
+            return self._run_training_single(
+                mode=self._settings_ml.mode_train,
+                used_dataset=used_dataset,
+                path2save=path2save
+            )
 
     def do_plot_dataset(self, path2save: Path=Path(".")) -> None:
         """Function for plotting the dataset content
@@ -583,7 +639,8 @@ class PyTorchTrainer:
         """Loading results file from training and plot the results
         :param path2file:   Path to file with results from PyTorch Training
         :param epoch_zoom:  Optional list or tuple with zoom on specific epoch range
-        :return:            None
+        :param do_plot:     Boolean for plotting results
+        :return:            Dataclass with metrics and results from training and validation phase
         """
         data = self._load_results(path2file)
         self.do_plot_results(

@@ -94,7 +94,7 @@ class TrainAutoencoder(PyTorchHandler):
         :param rawdata:     Dataset autoencoder rawdata
         :return:            Dataset with autoencoder feature space as input
         """
-        overview_model = [path for path in path2model.glob('*.pt')]
+        overview_model = [path for path in path2model.glob('*ae*.pt')]
         if len(overview_model) == 0:
             raise FileNotFoundError('No .pt files found in {}'.format(path2model))
         self._logger.debug(f'Use pt-file {overview_model[0]} for extracting feature space')

@@ -263,7 +263,7 @@ class TrainClassifier(PyTorchHandler):
             self._logger.info(f"Starting Kfold cross validation training in {self._settings_train.num_kfold} steps")
 
         path2model = str()
-        path2model_init = self._path2save / f'model_class_reset.pt'
+        path2model_init = self._path2save / f'model_cl_reset.pt'
         save(self._model.state_dict(), path2model_init)
         timestamp_start = datetime.now()
         timestamp_string = timestamp_start.strftime('%H:%M:%S')
@@ -311,7 +311,7 @@ class TrainClassifier(PyTorchHandler):
                 if valid_loss < best_loss[1]:
                     best_loss = [train_loss, valid_loss]
                     best_acc = [train_acc, valid_acc]
-                    path2model = self._path2temp / f'model_class_fold{fold:03d}_epoch{epoch:04d}.pt'
+                    path2model = self._path2temp / f'model_cl_fold{fold:03d}_epoch{epoch:04d}.pt'
                     save(self._model, path2model)
                     patience_counter = self._settings_train.patience
                 else:
@@ -349,7 +349,6 @@ class TrainClassifier(PyTorchHandler):
             cuda.empty_cache()
 
         # --- Do the Inference with Best Model
-
         overview_models = self.get_best_model('cl')
         if len(overview_models) == 0:
             raise RuntimeError(f"No models found on {self._path2save} - Please start training!")

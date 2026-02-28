@@ -19,7 +19,7 @@ from torchinfo import summary
 from sklearn.model_selection import KFold
 
 from denspp.offline import get_path_to_project
-from denspp.offline.data_format import YamlHandler
+from denspp.offline.data_format import JsonHandler
 from denspp.offline.dnn import SettingsDataset
 from denspp.offline.dnn.model_library import ModelLibrary
 from denspp.offline.structure_builder import init_dnn_folder
@@ -242,29 +242,30 @@ class PyTorchHandler:
         :param addon:       Addon name for model type ('ae' = Autoencoder or 'cl' = Classifier)
         :return:            None
         """
-        print(path2save)
+        folder_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{self._index_folder}_{self._model.__class__.__name__}'
         if path2save == Path("."):
-            folder_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{self._index_folder}_{self._model.__class__.__name__}'
             self._path2save = self._path2run / folder_name
+        elif path2save.absolute().name == "runs" or path2save.absolute().parent == "runs":
+            self._path2save = path2save / folder_name
         else:
             self._path2save = path2save
-        self._path2temp = self._path2save / f'temp'
 
+        self._path2temp = self._path2save / f'temp'
         # --- Generate folders
         self._path2run.mkdir(parents=True, exist_ok=True)
         self._path2save.mkdir(parents=True, exist_ok=True)
         self._path2temp.mkdir(parents=True, exist_ok=True)
 
-        # --- Transfer model to hardware
+        # --- Transfer model to computing hardware
         self._model.to(device=self._used_hw_dev)
 
         # --- Copy settings to YAML file
-        YamlHandler(
+        JsonHandler(
             template=self._settings_data,
             path=str(self._path2save),
             file_name='Config_Dataset'
         )
-        YamlHandler(
+        JsonHandler(
             template=self._settings_train,
             path=str(self._path2save),
             file_name=f'Config_Training{addon}'
