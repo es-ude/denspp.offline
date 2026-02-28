@@ -37,6 +37,36 @@ class DatasetLoader(ControllerDataset):
             data=dataset
         )
 
+    def __get_sinusoidal(self) -> None:
+        pass
+
+    def __prepare_sinusoidal(self) -> DatasetFromFile:
+        seq_len = 100
+        n_samples = 2000
+        noise_amp = 0.5
+
+        data = []
+        labels = []
+        window = np.linspace(start=0, stop=2 * np.pi, num=seq_len)
+        for _ in range(n_samples):
+            if np.random.rand() > 0.5:
+                x = np.sin(window)
+                label = 0
+            else:
+                x = np.cos(window)
+                label = 1
+            x += noise_amp * np.random.randn(seq_len)  # kleines Rauschen
+            data.append(x)  # shape: (seq_len, 1)
+            labels.append(label)
+
+        dataset = DatasetFromFile(
+            data=np.array(data, dtype=float),
+            label=np.array(labels, dtype=int),
+            dict=['sin', 'cos'],
+            mean=np.zeros_like(np.array(data))
+        )
+        return self._processor.process_timeseries_datasets(data=dataset, add_noise_cluster=False)
+
     def __get_waveforms(self) -> SettingsWaveformDataset:
         return YamlHandler(
             template=DefaultSettingsWaveformDataset,

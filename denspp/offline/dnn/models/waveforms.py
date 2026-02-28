@@ -1,4 +1,4 @@
-from torch import nn, Tensor, argmax, flatten
+from torch import nn, Tensor, argmax, cat, flatten
 
 
 class waveforms_mlp_cl_v0(nn.Module):
@@ -58,3 +58,55 @@ class waveforms_mlp_ae_v0(nn.Module):
         encoded = self.encoder(x)
         decoded = self.decoder(encoded)
         return encoded, decoded
+
+
+class waveforms_lstm_cl_v0(nn.Module):
+    def __init__(self, input_size: int=40, output_size: int=4):
+        super().__init__()
+        hidden_size = input_size
+
+        self.lstm = nn.Sequential(
+            nn.LSTM(input_size=1, hidden_size=hidden_size, batch_first=True)
+        )
+        self.classifier = nn.Sequential(
+            nn.Dropout(0.2),
+            nn.Linear(in_features=hidden_size, out_features=output_size)
+        )
+
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
+        # Build a sequence - # (batch, seq_len, 1)
+        if x.dim() == 2 and x.shape[1] != 1:
+            x = x.unsqueeze(-1)
+
+        lstm_out, (h_n, c_n) = self.lstm(x)
+        if self.lstm[0].bidirectional:
+            last_hidden = cat((h_n[-2], h_n[-1]), dim=1)
+        else:
+            last_hidden = h_n[-1]
+
+        logits = self.classifier(last_hidden)
+        return logits, argmax(logits, dim=1)
+
+
+class sinusoidal_lstm_cl_v0(nn.Module):
+    def __init__(self, input_size: int=32, output_size: int=2):
+        super().__init__()
+        self.lstm = nn.Sequential(
+            nn.LSTM(input_size=1, hidden_size=input_size, batch_first=True)
+        )
+        self.fc = nn.Sequential(
+            nn.Linear(input_size, output_size)
+        )
+
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
+        # x: Build shape of (batch, seq_len, input_size)
+        if x.dim() == 2 and x.shape[1] != 1:
+            x = x.unsqueeze(-1)
+
+        lstm_out, (h_n, c_n) = self.lstm(x)
+        if self.lstm[0].bidirectional:
+            last_hidden = cat((h_n[-2], h_n[-1]), dim=1)
+        else:
+            last_hidden = h_n[-1]
+        logits = self.fc(last_hidden)
+        return logits, argmax(logits, dim=1)

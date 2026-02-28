@@ -34,6 +34,11 @@ class TranslatorSoundCard:
         return (self.get_voltage_range[1] - self.get_voltage_range[0]) / 2 ** self.get_bitwidth
 
     @property
+    def get_sampling_rate(self) -> float:
+        """Returning the sampling rate applied to the sound card"""
+        return self.__samp_rate
+
+    @property
     def get_list_available_speaker(self) -> list:
         """Getting a list with all available speaker devices"""
         return sc.all_speakers()
@@ -80,8 +85,7 @@ class TranslatorSoundCard:
         self.__snd.play(
             data=signal_in,
             samplerate=self.__samp_rate,
-            channels=[0],
-            blocksize=signal_in.size,
+            channels=[0]
         )
 
     def get_data(self, duration_sec: float) -> np.ndarray:
@@ -124,6 +128,13 @@ if __name__ == "__main__":
     dut = TranslatorSoundCard()
     dut.get_speaker()
     dut.get_microphone()
+    do_play = True
+    window = 10.
 
-    a = dut.get_data(duration_sec=2.0)
-    dut.plot_data(a)
+    if not do_play:
+        a = dut.get_data(duration_sec=window)
+        dut.plot_data(a)
+    else:
+        time = np.linspace(start=0, stop=window, num=int(window * dut.get_sampling_rate))
+        signal = np.sin(2*np.pi*time*200.) + np.random.randn(*time.shape) * 0.01
+        dut.play_data(signal)

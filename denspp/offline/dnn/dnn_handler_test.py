@@ -7,7 +7,7 @@ from shutil import rmtree
 from denspp.offline import get_path_to_project, check_keylist_elements_all
 from denspp.offline.dnn import DatasetFromFile
 from denspp.offline.dnn.models.mnist import mnist_mlp_cl_v0, mnist_mlp_ae_v0
-from denspp.offline.dnn.models.waveforms import waveforms_mlp_cl_v0, waveforms_mlp_ae_v0
+from denspp.offline.dnn.models.waveforms import waveforms_mlp_cl_v0, waveforms_mlp_ae_v0, waveforms_lstm_cl_v0, sinusoidal_lstm_cl_v0
 from denspp.offline.dnn.dnn_handler import (
     TrainingResults,
     PyTorchTrainer,
@@ -23,8 +23,8 @@ class TestPytorchTrainer(TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        #rmtree(get_path_to_project('temp_test'), ignore_errors=True)
-        rmtree(get_path_to_project('runs'), ignore_errors=True)
+        rmtree(get_path_to_project('temp_test'), ignore_errors=True)
+        #rmtree(get_path_to_project('runs'), ignore_errors=True)
         Path(get_path_to_project('runs')).mkdir(parents=True, exist_ok=True)
 
     def setUp(self):
@@ -163,6 +163,45 @@ class TestPytorchTrainer(TestCase):
             settings=self.sets_cl,
             path2config='temp_test/wave_cl',
             default_model=waveforms_mlp_cl_v0.__name__,
+        )
+        PyTorchTrainer(**sets)
+        dut = PyTorchTrainer(**sets)
+        try:
+            rslt = dut.do_training()[0]
+        except AttributeError:
+            self.assertTrue(False)
+        else:
+            self.assertTrue(check_keylist_elements_all(list(rslt.metrics['fold_000'].keys()), ['loss_train', 'loss_valid']))
+            self.assertTrue(type(rslt.data), DataValidation)
+            self.assertTrue(get_path_to_project() in str(rslt.path))
+            dut.do_plot_results(rslt)
+
+    def test_train_classifier_waveforms_lstm(self):
+        sets = dict(
+            use_case='WAVEFORMS',
+            settings=self.sets_cl,
+            path2config='temp_test/wave_cl',
+            default_model=waveforms_lstm_cl_v0.__name__,
+        )
+        PyTorchTrainer(**sets)
+        dut = PyTorchTrainer(**sets)
+        try:
+            rslt = dut.do_training()[0]
+        except AttributeError:
+            self.assertTrue(False)
+        else:
+            self.assertTrue(
+                check_keylist_elements_all(list(rslt.metrics['fold_000'].keys()), ['loss_train', 'loss_valid']))
+            self.assertTrue(type(rslt.data), DataValidation)
+            self.assertTrue(get_path_to_project() in str(rslt.path))
+            dut.do_plot_results(rslt)
+
+    def test_train_classifier_sinusoidal_lstm(self):
+        sets = dict(
+            use_case='sinusoidal',
+            settings=self.sets_cl,
+            path2config='temp_test',
+            default_model=sinusoidal_lstm_cl_v0.__name__,
         )
         PyTorchTrainer(**sets)
         dut = PyTorchTrainer(**sets)

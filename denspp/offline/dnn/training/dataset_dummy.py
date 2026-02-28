@@ -74,3 +74,37 @@ class dummy_mlp_ae_v0(nn.Module):
         encoded = self.encoder(x)
         decoded = self.decoder(encoded)
         return encoded, decoded
+
+
+class dummy_lstm_cl_v0(nn.Module):
+    def __init__(self, input_size: int = 10, output_size: int = 2):
+        super().__init__()
+
+        self.model_shape = (1, input_size)
+        hidden_size = 40
+        num_layers = 1
+
+        self.lstm = nn.Sequential(
+                nn.LSTM(
+                input_size=1,
+                hidden_size=hidden_size,
+                num_layers=num_layers,
+                batch_first=True
+            )
+        )
+        self.classifier = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size),
+            nn.BatchNorm1d(hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, output_size)
+        )
+
+    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
+        # Adapting the shape from (batch, input_size) to (batch, input_size, sequence)
+        if x.dim() == 2:
+            x = x.unsqueeze(-1)   # -> (batch, seq_len=input_size, 1)
+
+        lstm_out, (h_n, c_n) = self.lstm(x)
+        last_hidden = h_n[-1]    # (batch, hidden_size)
+        logits = self.classifier(last_hidden)
+        return logits, argmax(logits, dim=1)

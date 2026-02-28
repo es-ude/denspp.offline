@@ -10,7 +10,7 @@ from denspp.offline.dnn import (
     DatasetFromFile
 )
 from .classifier_train import TrainClassifier, SettingsClassifier, DefaultSettingsTrainingCE
-from .dataset_dummy import generate_dummy_dataset, dummy_mlp_cl_v0
+from .dataset_dummy import generate_dummy_dataset, dummy_mlp_cl_v0, dummy_lstm_cl_v0
 
 
 class TestPyTorchModelConfigClassifier(TestCase):
@@ -151,6 +151,57 @@ class TestClassifierTraining(TestCase):
         )
         self.dut.load_model(
             model=dummy_mlp_cl_v0(input_size=self.dataset.data.shape[1]),
+            learn_rate=0.1
+        )
+        self.dut.do_training()
+        rslt = self.dut.do_post_training_validation(do_ptq=True)
+        self.assertEqual(rslt.label_names, self.dataset.dict)
+
+    def test_training_phase_lstm(self):
+        self.dut.load_dataset(
+            dataset=self.dataset,
+        )
+        self.dut.load_model(
+            model=dummy_lstm_cl_v0(input_size=self.dataset.data.shape[1]),
+            learn_rate=0.1
+        )
+        metric = self.dut.do_training()
+        self.assertEqual(len(metric), 1)
+        self.assertEqual(list(metric['fold_000'].keys()), ['acc_train', 'acc_valid', 'loss_train', 'loss_valid'])
+        self.assertEqual(len(metric['fold_000']['loss_train']), 10)
+        self.assertEqual(len(metric['fold_000']['loss_valid']), 10)
+        self.assertEqual(len(metric['fold_000']['acc_train']), 10)
+        self.assertEqual(len(metric['fold_000']['acc_train']), 10)
+
+        overview = self.dut.get_best_model('cl')
+        self.assertGreater(len(overview), 0)
+
+    def test_post_validation_without_training_lstm(self):
+        try:
+            self.dut.do_post_training_validation()
+        except RuntimeError:
+            self.assertTrue(True)
+        else:
+            self.assertTrue(False)
+
+    def test_post_validation_without_ptq_lstm(self):
+        self.dut.load_dataset(
+            dataset=self.dataset
+        )
+        self.dut.load_model(
+            model=dummy_lstm_cl_v0(input_size=self.dataset.data.shape[1]),
+            learn_rate=0.1
+        )
+        self.dut.do_training()
+        rslt = self.dut.do_post_training_validation(do_ptq=False)
+        self.assertEqual(rslt.label_names, self.dataset.dict)
+
+    def test_post_validation_with_ptq_lstm(self):
+        self.dut.load_dataset(
+            dataset=self.dataset,
+        )
+        self.dut.load_model(
+            model=dummy_lstm_cl_v0(input_size=self.dataset.data.shape[1]),
             learn_rate=0.1
         )
         self.dut.do_training()
