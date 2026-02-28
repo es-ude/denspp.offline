@@ -1,6 +1,6 @@
 import numpy as np
 from logging import getLogger, Logger
-from denspp.offline.data_format import YamlHandler
+from denspp.offline.data_format import JsonHandler
 from denspp.offline.data_call import build_waveform_dataset, SettingsWaveformDataset, DefaultSettingsWaveformDataset
 from denspp.offline.dnn import DatasetFromFile
 from denspp.offline.dnn.data_config import SettingsDataset, ControllerDataset
@@ -68,7 +68,7 @@ class DatasetLoader(ControllerDataset):
         return self._processor.process_timeseries_datasets(data=dataset, add_noise_cluster=False)
 
     def __get_waveforms(self) -> SettingsWaveformDataset:
-        return YamlHandler(
+        return JsonHandler(
             template=DefaultSettingsWaveformDataset,
             path='config',
             file_name='Config_WaveformDataset'

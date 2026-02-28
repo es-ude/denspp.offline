@@ -24,7 +24,7 @@ class TestPytorchTrainer(TestCase):
     @classmethod
     def tearDownClass(cls):
         rmtree(get_path_to_project('temp_test'), ignore_errors=True)
-        #rmtree(get_path_to_project('runs'), ignore_errors=True)
+        rmtree(get_path_to_project('runs'), ignore_errors=True)
         Path(get_path_to_project('runs')).mkdir(parents=True, exist_ok=True)
 
     def setUp(self):

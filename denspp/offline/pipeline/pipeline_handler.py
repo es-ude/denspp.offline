@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from logging import getLogger
 from denspp.offline.logger import define_logger_runtime
 from denspp.offline.data_call import SettingsData, DefaultSettingsData, MergeDataset
-from denspp.offline.data_format import YamlHandler
+from denspp.offline.data_format import JsonHandler
 from denspp.offline.pipeline import DataloaderLibrary, PipelineLibrary, MultithreadHandler
 
 
@@ -14,7 +14,7 @@ def _start_processing_pipeline(sets_load_data: SettingsData=DefaultSettingsData)
     # --- Getting the YAML files
     logger = getLogger(__name__)
     if sets_load_data == DefaultSettingsData:
-        settings_data: SettingsData = YamlHandler(
+        settings_data: SettingsData = JsonHandler(
             template=sets_load_data,
             path='config',
             file_name='Config_PipelineData'
@@ -143,7 +143,7 @@ def run_transient_data_processing() -> None:
     settings_data, data_handler, pipe = _start_processing_pipeline()
 
     if settings_data.do_merge:
-        sets_merge: SettingsMerging = YamlHandler(
+        sets_merge: SettingsMerging = JsonHandler(
             template=DefaultSettingsMerging,
             path='config',
             file_name='Config_Merging'
