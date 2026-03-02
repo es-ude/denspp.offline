@@ -6,8 +6,8 @@ from denspp.offline.plot_helper import get_plot_color
 class TranslatorSoundCard:
     __audio_name: str
     __samp_rate: int
-    __mic: None
-    __snd: None
+    __mic = None
+    __snd = None
 
     def __init__(self, name: str="", samp_rate: float=44.1e3) -> None:
         """Class for Getting and Pushing audio signals into a sound card
@@ -71,21 +71,28 @@ class TranslatorSoundCard:
         """
         self.__samp_rate = int(samp_rate)
 
-    def play_data(self, signal_in: np.ndarray) -> None:
+    def play_data(self, signal_in: np.ndarray, channels: list=[0]) -> None:
         """Function for playing the signal into the speaker connectors of the sound card device
         :param signal_in:   Numpy array with signal input
+        :param channels:    List of channels to play the data
         :return:            None
         """
-        if not len(signal_in.shape) == 1:
-            raise NotImplementedError
+        if len(signal_in.shape) == 1:
+            signal_used = signal_in.reshape(-1, 1)
+        else:
+            signal_used = signal_in
+
+        if not len(signal_used.shape) == 2:
+            raise ValueError("The shape of signal input array must have two values: (num_samples, channels)")
+        if not len(channels) == signal_used.shape[1]:
+            raise ValueError("The shape of channels list must have the same length as signal_in.shape[1]")
 
         if self.__snd is None:
             self.get_speaker()
-
         self.__snd.play(
-            data=signal_in,
+            data=signal_used,
             samplerate=self.__samp_rate,
-            channels=[0]
+            channels=channels,
         )
 
     def get_data(self, duration_sec: float) -> np.ndarray:
@@ -95,7 +102,6 @@ class TranslatorSoundCard:
         """
         if self.__mic is None:
             self.get_microphone()
-
         return self.__mic.record(
             numframes=int(self.__samp_rate * duration_sec)+1,
             samplerate=self.__samp_rate,
@@ -122,19 +128,3 @@ class TranslatorSoundCard:
         plt.legend()
         plt.tight_layout()
         plt.show()
-
-
-if __name__ == "__main__":
-    dut = TranslatorSoundCard()
-    dut.get_speaker()
-    dut.get_microphone()
-    do_play = True
-    window = 10.
-
-    if not do_play:
-        a = dut.get_data(duration_sec=window)
-        dut.plot_data(a)
-    else:
-        time = np.linspace(start=0, stop=window, num=int(window * dut.get_sampling_rate))
-        signal = np.sin(2*np.pi*time*200.) + np.random.randn(*time.shape) * 0.01
-        dut.play_data(signal)
