@@ -103,11 +103,15 @@ class SettingsPytorch:
         :param learn_rate:  Learning rate of the optimizer
         :return:            PyTorch Optimizer
         """
+        if len(list(model.parameters())) == 0:
+            params = model.model.parameters()
+        else:
+            params = model.parameters()
         match self.optimizer:
             case 'Adam':
-                optim_func = optim.Adam(model.parameters())
+                optim_func = optim.Adam(params)
             case 'SGD':
-                optim_func = optim.SGD(model.parameters(), lr=learn_rate)
+                optim_func = optim.SGD(params, lr=learn_rate)
             case _:
                 raise NotImplementedError("Optimizer function unknown! - Please implement or check!")
         return optim_func
