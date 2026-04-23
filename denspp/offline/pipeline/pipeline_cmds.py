@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 from os import makedirs
 from os.path import join, exists
 from shutil import copy
@@ -12,8 +13,10 @@ class PipelineLibrary:
     """Class for searching all Pipeline Processors in repository to get an overview"""
     def get_registry(self, package: str="src_pipe") -> ModuleRegistryManager:
         m = ModuleRegistryManager(r"\bPipelineV\d+(?:Merge)?\b")
-        chck = exists(join(get_path_to_project(), package))
-        m.register_package(package) if chck else m.register_package("denspp.offline.template")
+        project_root = get_path_to_project()
+        if project_root not in sys.path: sys.path.insert(0, project_root)
+        m.register_package(package) if exists(join(project_root, package)) else m.register_package("denspp.offline.template")
+        print(f"Found pipelines: {m.get_library_overview()}")
         return m
 
 
