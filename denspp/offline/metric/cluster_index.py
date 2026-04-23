@@ -17,10 +17,7 @@ def calculate_euclidean_distance(point1: np.ndarray, point2: np.ndarray) -> floa
     Returns:
         float: Euclidean distance between point1 and point2
     """
-    temp_sum = 0
-    for f1, f2 in zip(point1, point2, strict=True):
-        temp_sum += (f1 - f2) ** 2
-    return sqrt(temp_sum)
+    return np.linalg.norm(point1 - point2)
 
 
 def calculate_dunn_index(data: np.ndarray, labels: np.ndarray) -> float:
@@ -35,18 +32,34 @@ def calculate_dunn_index(data: np.ndarray, labels: np.ndarray) -> float:
         float: Floating with metric value
     """
     unique_labels = np.unique(labels)
+    if len(unique_labels) < 2:
+        return 0.0
+
     clusters = [data[labels == label] for label in unique_labels]
+    intra_dists = []
+    for cluster in clusters:
+        if len(cluster) > 1:
+            diameter = np.max(cdist(cluster, cluster, metric='euclidean'))
+            intra_dists.append(diameter)
 
-    intra_dists = [np.max(cdist(cluster, cluster)) for cluster in clusters if len(cluster) > 1]
+    if not intra_dists:
+        return 0.0
 
+    # --- Inter-cluster distances ---
+    # Min. distance between any two clusters
     inter_dists = []
     for i in range(len(clusters)):
         for j in range(i + 1, len(clusters)):
-            dist = np.min(cdist(clusters[i], clusters[j]))
-            inter_dists.append(dist)
+            min_dist = np.min(cdist(clusters[i], clusters[j], metric='euclidean'))
+            inter_dists.append(min_dist)
 
-    max_intra = max(intra_dists) if intra_dists else 1e-10
-    min_inter = min(inter_dists) if inter_dists else 1e-10
+    # Calculate Dunn Index
+    max_intra = max(intra_dists)
+    min_inter = min(inter_dists) if inter_dists else 0.0
+
+    # Avoid division by zero
+    if max_intra == 0:
+        return 0.0
     return float(min_inter / max_intra)
 
 
