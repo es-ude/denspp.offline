@@ -32,11 +32,11 @@ def _start_processing_pipeline(sets_load_data: SettingsData=DefaultSettingsData)
 
     pipelib = PipelineLibrary().get_registry()
     search_name = sets_load_data.pipeline + ('_Merge' if sets_load_data.do_merge else '')
-    matches1 = [item for item in pipelib.get_library_overview() if search_name in item]
+    matches1 = [item for item in pipelib.get_library_overview() if item == search_name]
     assert len(matches1), "No Pipeline found"
     logger.debug("Found Pipeline")
     pipe = pipelib.build_object(matches1[0])
-
+    logger.debug(f"Available pipelines: {pipelib.get_library_overview()}")
     return settings_data, data_handler, pipe
 
 
@@ -69,7 +69,7 @@ def select_process_pipeline(object_dataloader, object_pipeline, sets_load_data: 
     thr_station = MultithreadHandler(
         num_workers=1
     )
-    dut = object_pipeline(dataIn.fs_used)
+    dut = object_pipeline(dataIn.fs_used, dataIn.electrode_id)
     thr_station.do_processing(
         data=dataIn.data_raw,
         chnnl_id=dataIn.electrode_id,
