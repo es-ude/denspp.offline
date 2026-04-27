@@ -26,9 +26,7 @@ For using this framework, the following software tools are necessary / recommend
 - Git ([Link](https://git-scm.com/downloads))
 - PyCharm Community Version ([Link](https://www.jetbrains.com/de-de/pycharm/download/#section=windows))
 
-It is recommended that each working group will create a new branch for editing their input. At the end of each project,
-their input will be merged with the main branch. Further information about this software framework are described in the
-paper at the end of the readme file.
+It is recommended that each new feature will be edited in a new branch. If the integration is done and all tests are runned successful, please create a pull request for merging it back into the main branch. Further information about using this software framework are described in the paper at the end of the readme file.
 
 If you create a new repo and you want to use the functionalities of this Python tool. Then please initialise the project.toml using `uv` and write the following code into the terminal.
 ```
