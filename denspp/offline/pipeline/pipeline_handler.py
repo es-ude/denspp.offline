@@ -1,12 +1,17 @@
 from dataclasses import dataclass
 from logging import getLogger
-from denspp.offline.logger import define_logger_runtime
-from denspp.offline.data_call import SettingsData, DefaultSettingsData, MergeDataset
+
+from denspp.offline.data_call import DefaultSettingsData, MergeDataset, SettingsData
 from denspp.offline.data_format import JsonHandler
-from denspp.offline.pipeline import DataloaderLibrary, PipelineLibrary, MultithreadHandler
+from denspp.offline.logger import define_logger_runtime
+from denspp.offline.pipeline import (
+    DataloaderLibrary,
+    MultithreadHandler,
+    PipelineLibrary,
+)
 
 
-def _start_processing_pipeline(sets_load_data: SettingsData=DefaultSettingsData):
+def _start_processing_pipeline(sets_load_data: SettingsData = DefaultSettingsData):
     """Function for preparing the pipeline preprocessing
     :param sets_load_data:      Dataclass with settings for getting data to analyse
     :return:                    Tuple with (0) Settings class for data, (1) DataLoader, (2) Pipeline
@@ -15,9 +20,7 @@ def _start_processing_pipeline(sets_load_data: SettingsData=DefaultSettingsData)
     logger = getLogger(__name__)
     if sets_load_data == DefaultSettingsData:
         settings_data: SettingsData = JsonHandler(
-            template=sets_load_data,
-            path='config',
-            file_name='Config_PipelineData'
+            template=sets_load_data, path="config", file_name="Config_PipelineData"
         ).get_class(SettingsData)
     else:
         settings_data = sets_load_data
@@ -25,13 +28,13 @@ def _start_processing_pipeline(sets_load_data: SettingsData=DefaultSettingsData)
 
     # --- Getting the Pipeline and DataLoader
     datalib = DataloaderLibrary().get_registry()
-    matches0 = [item for item in datalib.get_library_overview() if 'DataLoader' in item]
+    matches0 = [item for item in datalib.get_library_overview() if "DataLoader" in item]
     assert len(matches0), "No DataLoader found"
     logger.debug("Found DataLoader")
-    data_handler = datalib.build_object('DataLoader')
+    data_handler = datalib.build_object("DataLoader")
 
     pipelib = PipelineLibrary().get_registry()
-    search_name = sets_load_data.pipeline + ('_Merge' if sets_load_data.do_merge else '')
+    search_name = sets_load_data.pipeline + ("_Merge" if sets_load_data.do_merge else "")
     matches1 = [item for item in pipelib.get_library_overview() if item == search_name]
     assert len(matches1), "No Pipeline found"
     logger.debug("Found Pipeline")
@@ -66,15 +69,9 @@ def select_process_pipeline(object_dataloader, object_pipeline, sets_load_data: 
     # --- Thread Preparation: Processing data
     logger.info("Step #2: Processing data")
     logger.info("==================================================================")
-    thr_station = MultithreadHandler(
-        num_workers=1
-    )
+    thr_station = MultithreadHandler(num_workers=1)
     dut = object_pipeline(dataIn.fs_used, dataIn.electrode_id)
-    thr_station.do_processing(
-        data=dataIn.data_raw,
-        chnnl_id=dataIn.electrode_id,
-        func=dut.run
-    )
+    thr_station.do_processing(data=dataIn.data_raw, chnnl_id=dataIn.electrode_id, func=dut.run)
 
     # --- Plot all plots and save results
     logger.info("Step #3: Saving results and plotting")
@@ -82,8 +79,14 @@ def select_process_pipeline(object_dataloader, object_pipeline, sets_load_data: 
     thr_station.do_save_results(path2save=dut.path2save)
 
 
-def select_process_merge(object_dataloader, object_pipeline, sets_load_data: SettingsData,
-                         frames_xoffset: int=0, list_merging_files: list=(), do_label_concatenation: bool=False) -> None:
+def select_process_merge(
+    object_dataloader,
+    object_pipeline,
+    sets_load_data: SettingsData,
+    frames_xoffset: int = 0,
+    list_merging_files: list = (),
+    do_label_concatenation: bool = False,
+) -> None:
     """Function for preparing and starting the merge process for generating datasets
     :param object_dataloader:       DataLoader object
     :param object_pipeline:         Pipeline object
@@ -104,10 +107,7 @@ def select_process_merge(object_dataloader, object_pipeline, sets_load_data: Set
         settings_data=sets_load_data,
         concatenate_id=do_label_concatenation,
     )
-    merge_handler.get_frames_from_dataset(
-        process_points=list_merging_files,
-        xpos_offset=frames_xoffset
-    )
+    merge_handler.get_frames_from_dataset(process_points=list_merging_files, xpos_offset=frames_xoffset)
     merge_handler.merge_data_from_all_iteration()
 
     # --- Merging the frames to new cluster device
@@ -123,6 +123,7 @@ class SettingsMerging:
         do_label_concat:    Boolean for concatenating the
         xoffset:            Integer with delayed positions applied on frame/window extraction
     """
+
     taking_datapoints: list[int]
     do_label_concat: bool
     xoffset: int
@@ -144,9 +145,7 @@ def run_transient_data_processing() -> None:
 
     if settings_data.do_merge:
         sets_merge: SettingsMerging = JsonHandler(
-            template=DefaultSettingsMerging,
-            path='config',
-            file_name='Config_Merging'
+            template=DefaultSettingsMerging, path="config", file_name="Config_Merging"
         ).get_class(SettingsMerging)
 
         select_process_merge(
@@ -161,5 +160,5 @@ def run_transient_data_processing() -> None:
         select_process_pipeline(
             object_dataloader=data_handler,
             object_pipeline=pipe,
-            sets_load_data=settings_data
+            sets_load_data=settings_data,
         )

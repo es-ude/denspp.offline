@@ -1,14 +1,15 @@
 import numpy as np
-from denspp.offline.analog import SettingsNoise, ProcessNoise
+
+from denspp.offline.analog import ProcessNoise, SettingsNoise
 from denspp.offline.metric import calculate_snr
 
 
 def augmentation_mean_waveform(
-        frames_mean: np.ndarray,
-        frames_cl: np.ndarray,
-        snr_in: np.ndarray,
-        num_min_frames: int,
-        fs: float=20e3
+    frames_mean: np.ndarray,
+    frames_cl: np.ndarray,
+    snr_in: np.ndarray,
+    num_min_frames: int,
+    fs: float = 20e3,
 ) -> dict:
     """Tool for data augmentation of input spike frames (with mean waveform)
     :param frames_mean:         Numpy array with mean waveform
@@ -30,18 +31,16 @@ def augmentation_mean_waveform(
             num_frames=num_frames,
             frame_in=frames_mean[idx0, :],
             snr_out=snr_range,
-            fs=fs
+            fs=fs,
         )[1]
         new_cluster = np.zeros(shape=(num_frames,)) + id
         frames_out = new_frame if idx0 == 0 else np.append(frames_out, new_frame, axis=0)
         cluster_out = new_cluster if idx0 == 0 else np.append(cluster_out, new_cluster, axis=0)
-    return {'frames': frames_out, 'id': cluster_out}
+    return {"frames": frames_out, "id": cluster_out}
 
 
 def augmentation_changing_position(
-        frames_in: np.ndarray,
-        frames_cl: np.ndarray,
-        num_min_frames: int
+    frames_in: np.ndarray, frames_cl: np.ndarray, num_min_frames: int
 ) -> tuple[np.ndarray, np.ndarray]:
     """Tool for data augmentation of input spike frames using switching positions (change position)
     :param frames_in:           Numpy array with mean waveform
@@ -62,7 +61,7 @@ def augmentation_changing_position(
 
         no_frames = num_min_frames + max_y - val
         new_frame = np.zeros(shape=(no_frames, frames_in.shape[1]), dtype=frames_in.dtype)
-        new_cluster = np.zeros(shape=(no_frames, ), dtype=frames_cl.dtype) + id_cluster[idx]
+        new_cluster = np.zeros(shape=(no_frames,), dtype=frames_cl.dtype) + id_cluster[idx]
         sel_position = np.random.randint(low=0, high=sel_frames.shape[0], size=(no_frames, max_x))
         # --- Generating frames
         for idx0, pos0 in enumerate(sel_position):
@@ -73,15 +72,15 @@ def augmentation_changing_position(
         out_cluster = new_cluster if idx == 0 else np.append(out_cluster, new_cluster, axis=0)
     return (
         np.append(frames_in, out_frames, axis=0),
-        np.append(frames_cl, out_cluster, axis=0)
+        np.append(frames_cl, out_cluster, axis=0),
     )
 
 
 def augmentation_reducing_samples(
-        frames_in: np.ndarray,
-        frames_cl: np.ndarray,
-        num_frames: int,
-        do_shuffle: bool=True
+    frames_in: np.ndarray,
+    frames_cl: np.ndarray,
+    num_frames: int,
+    do_shuffle: bool = True,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Tool for data augmentation of input spike frames (change position)
     :param frames_in:           Numpy array with mean waveform
@@ -105,13 +104,14 @@ def augmentation_reducing_samples(
     return frames_out, frames_clo
 
 
-def _frame_noise(num_frames: int, frame_in: np.ndarray, snr_out: list, fs: float, return_integer: bool=False) -> tuple[np.ndarray, np.ndarray]:
-    settings_noise = SettingsNoise(
-        temp=300,
-        wgn_dB=-120,
-        Fc=10,
-        slope=0.6
-    )
+def _frame_noise(
+    num_frames: int,
+    frame_in: np.ndarray,
+    snr_out: list,
+    fs: float,
+    return_integer: bool = False,
+) -> tuple[np.ndarray, np.ndarray]:
+    settings_noise = SettingsNoise(temp=300, wgn_dB=-120, Fc=10, slope=0.6)
     handler_noise = ProcessNoise(settings_noise, fs)
 
     width = frame_in.size
@@ -122,9 +122,13 @@ def _frame_noise(num_frames: int, frame_in: np.ndarray, snr_out: list, fs: float
         SNR_diff = 100
         noise_lvl = -80
 
-        spk_random = np.array(4 * (np.random.rand(frame_in.size) -0.5), dtype=int) if return_integer else 1e-9 * (np.random.rand(frame_in.size) -0.5)
+        spk_random = (
+            np.array(4 * (np.random.rand(frame_in.size) - 0.5), dtype=int)
+            if return_integer
+            else 1e-9 * (np.random.rand(frame_in.size) - 0.5)
+        )
         spk = frame_in + spk_random
-        noise = np.zeros(shape=(width, ))
+        noise = np.zeros(shape=(width,))
         while np.abs(SNR_diff) > 0.02:
             noise = handler_noise.gen_noise_real_pwr(width, noise_lvl)
             SNR_ist = calculate_snr(spk + noise, spk)
@@ -136,9 +140,13 @@ def _frame_noise(num_frames: int, frame_in: np.ndarray, snr_out: list, fs: float
     return frames_noise, frames_out
 
 
-def generate_zero_frames(frame_size: int, num_frames: int,
-                         snr_range: list, fs: float=20e3, return_int: bool=False
-                         ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def generate_zero_frames(
+    frame_size: int,
+    num_frames: int,
+    snr_range: list,
+    fs: float = 20e3,
+    return_int: bool = False,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Generating zero frames with noise for data augmentation
     :param frame_size:  Integer with frame size (number of samples for each frame)
     :param num_frames:  Integer with number of frames to generate
@@ -149,19 +157,18 @@ def generate_zero_frames(frame_size: int, num_frames: int,
     """
     frames = _frame_noise(
         num_frames=num_frames,
-        frame_in=np.zeros(shape=(frame_size, )),
+        frame_in=np.zeros(shape=(frame_size,)),
         snr_out=snr_range,
         fs=fs,
-        return_integer=return_int
+        return_integer=return_int,
     )[1]
-    cluster = np.zeros(shape=(frames.shape[0], ), dtype=int)
+    cluster = np.zeros(shape=(frames.shape[0],), dtype=int)
     return frames, cluster, np.mean(frames, axis=0)
 
 
-def calculate_frame_mean(frames_in: np.ndarray,
-                         frames_cl: np.ndarray,
-                         return_int: bool=False
-                         ) -> np.ndarray:
+def calculate_frame_mean(
+    frames_in: np.ndarray, frames_cl: np.ndarray, return_int: bool = False
+) -> np.ndarray:
     """Calculating mean waveforms of spike waveforms
     :param frames_in:   Numpy array with raw waveforms
     :param frames_cl:   Numpy array with cluster IDs

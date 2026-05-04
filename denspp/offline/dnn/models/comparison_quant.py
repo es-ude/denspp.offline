@@ -1,6 +1,6 @@
-from torch import nn, Tensor, argmax, flatten
 from elasticai.creator.nn import Sequential as SequantialCreator
-from elasticai.creator.nn.fixed_point import Linear, BatchNormedLinear, Tanh, ReLU
+from elasticai.creator.nn.fixed_point import BatchNormedLinear, Linear, ReLU, Tanh
+from torch import Tensor, argmax, flatten, nn
 
 
 class CompareDNN_AutoencoderTorch_v1(nn.Module):
@@ -10,28 +10,51 @@ class CompareDNN_AutoencoderTorch_v1(nn.Module):
         self.model_embedded = False
         iohiddenlayer = [input_size, 20, 14, output_size]
         do_train_bias = True
-        do_train_batch = True
 
         # --- Encoder Path
         self.encoder = nn.Sequential(
-            nn.Linear(in_features=iohiddenlayer[0], out_features=iohiddenlayer[1], bias=do_train_bias),
+            nn.Linear(
+                in_features=iohiddenlayer[0],
+                out_features=iohiddenlayer[1],
+                bias=do_train_bias,
+            ),
             nn.BatchNorm1d(iohiddenlayer[1], affine=True),
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[2], bias=do_train_bias),
+            nn.Linear(
+                in_features=iohiddenlayer[1],
+                out_features=iohiddenlayer[2],
+                bias=do_train_bias,
+            ),
             nn.BatchNorm1d(iohiddenlayer[2], affine=True),
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[3], bias=do_train_bias),
+            nn.Linear(
+                in_features=iohiddenlayer[2],
+                out_features=iohiddenlayer[3],
+                bias=do_train_bias,
+            ),
         )
         # --- Decoder Path
         self.decoder = nn.Sequential(
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[3], out_features=iohiddenlayer[2], bias=do_train_bias),
+            nn.Linear(
+                in_features=iohiddenlayer[3],
+                out_features=iohiddenlayer[2],
+                bias=do_train_bias,
+            ),
             nn.BatchNorm1d(iohiddenlayer[2], affine=True),
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[1], bias=do_train_bias),
+            nn.Linear(
+                in_features=iohiddenlayer[2],
+                out_features=iohiddenlayer[1],
+                bias=do_train_bias,
+            ),
             nn.BatchNorm1d(iohiddenlayer[1], affine=True),
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0], bias=do_train_bias),
+            nn.Linear(
+                in_features=iohiddenlayer[1],
+                out_features=iohiddenlayer[0],
+                bias=do_train_bias,
+            ),
         )
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
@@ -40,8 +63,14 @@ class CompareDNN_AutoencoderTorch_v1(nn.Module):
 
 
 class CompareDNN_AutoencoderCreator_v1(nn.Module):
-    def __init__(self, input_size: int=32, output_size: int=3,
-                 total_bits: int=12, frac_bits: int = 8, num_steps_activation: int = 32):
+    def __init__(
+        self,
+        input_size: int = 32,
+        output_size: int = 3,
+        total_bits: int = 12,
+        frac_bits: int = 8,
+        num_steps_activation: int = 32,
+    ):
         super().__init__()
         self.bit_config = [total_bits, frac_bits]
         self.model_shape = (1, input_size)
@@ -52,20 +81,82 @@ class CompareDNN_AutoencoderCreator_v1(nn.Module):
 
         # --- Encoder Path
         self.encoder = SequantialCreator(
-            BatchNormedLinear(in_features=iohiddenlayer[0], out_features=iohiddenlayer[1], bias=do_train_bias, total_bits=total_bits, frac_bits=frac_bits, bn_affine=do_train_batch),
-            Tanh(total_bits=total_bits, frac_bits=frac_bits, num_steps=num_steps_activation),
-            BatchNormedLinear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[2], bias=do_train_bias, total_bits=total_bits, frac_bits=frac_bits, bn_affine=do_train_batch),
-            Tanh(total_bits=total_bits, frac_bits=frac_bits, num_steps=num_steps_activation),
-            BatchNormedLinear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[3], bias=do_train_bias, total_bits=total_bits, frac_bits=frac_bits, bn_affine=do_train_batch),
+            BatchNormedLinear(
+                in_features=iohiddenlayer[0],
+                out_features=iohiddenlayer[1],
+                bias=do_train_bias,
+                total_bits=total_bits,
+                frac_bits=frac_bits,
+                bn_affine=do_train_batch,
+            ),
+            Tanh(
+                total_bits=total_bits,
+                frac_bits=frac_bits,
+                num_steps=num_steps_activation,
+            ),
+            BatchNormedLinear(
+                in_features=iohiddenlayer[1],
+                out_features=iohiddenlayer[2],
+                bias=do_train_bias,
+                total_bits=total_bits,
+                frac_bits=frac_bits,
+                bn_affine=do_train_batch,
+            ),
+            Tanh(
+                total_bits=total_bits,
+                frac_bits=frac_bits,
+                num_steps=num_steps_activation,
+            ),
+            BatchNormedLinear(
+                in_features=iohiddenlayer[2],
+                out_features=iohiddenlayer[3],
+                bias=do_train_bias,
+                total_bits=total_bits,
+                frac_bits=frac_bits,
+                bn_affine=do_train_batch,
+            ),
         )
         # --- Decoder Path
         self.decoder = SequantialCreator(
-            Tanh(total_bits=total_bits, frac_bits=frac_bits, num_steps=num_steps_activation),
-            BatchNormedLinear(in_features=iohiddenlayer[3], out_features=iohiddenlayer[2], bias=do_train_bias, total_bits=total_bits, frac_bits=frac_bits, bn_affine=do_train_batch),
-            Tanh(total_bits=total_bits, frac_bits=frac_bits, num_steps=num_steps_activation),
-            BatchNormedLinear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[1], bias=do_train_bias, total_bits=total_bits, frac_bits=frac_bits, bn_affine=do_train_batch),
-            Tanh(total_bits=total_bits, frac_bits=frac_bits, num_steps=num_steps_activation),
-            BatchNormedLinear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0], bias=do_train_bias, total_bits=total_bits, frac_bits=frac_bits, bn_affine=do_train_batch),
+            Tanh(
+                total_bits=total_bits,
+                frac_bits=frac_bits,
+                num_steps=num_steps_activation,
+            ),
+            BatchNormedLinear(
+                in_features=iohiddenlayer[3],
+                out_features=iohiddenlayer[2],
+                bias=do_train_bias,
+                total_bits=total_bits,
+                frac_bits=frac_bits,
+                bn_affine=do_train_batch,
+            ),
+            Tanh(
+                total_bits=total_bits,
+                frac_bits=frac_bits,
+                num_steps=num_steps_activation,
+            ),
+            BatchNormedLinear(
+                in_features=iohiddenlayer[2],
+                out_features=iohiddenlayer[1],
+                bias=do_train_bias,
+                total_bits=total_bits,
+                frac_bits=frac_bits,
+                bn_affine=do_train_batch,
+            ),
+            Tanh(
+                total_bits=total_bits,
+                frac_bits=frac_bits,
+                num_steps=num_steps_activation,
+            ),
+            BatchNormedLinear(
+                in_features=iohiddenlayer[1],
+                out_features=iohiddenlayer[0],
+                bias=do_train_bias,
+                total_bits=total_bits,
+                frac_bits=frac_bits,
+                bn_affine=do_train_batch,
+            ),
         )
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
@@ -78,7 +169,8 @@ class CompareDNN_AutoencoderCreator_v1(nn.Module):
 
 class CompareDNN_AutoencoderTorch_woBN_v1(nn.Module):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
-    def __init__(self, input_size: int=32, output_size: int=3):
+
+    def __init__(self, input_size: int = 32, output_size: int = 3):
         super().__init__()
         self.model_shape = (1, input_size)
         self.model_embedded = False
@@ -87,20 +179,44 @@ class CompareDNN_AutoencoderTorch_woBN_v1(nn.Module):
 
         # --- Encoder Path
         self.encoder = nn.Sequential(
-            nn.Linear(in_features=iohiddenlayer[0], out_features=iohiddenlayer[1], bias=do_train_bias),
+            nn.Linear(
+                in_features=iohiddenlayer[0],
+                out_features=iohiddenlayer[1],
+                bias=do_train_bias,
+            ),
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[2], bias=do_train_bias),
+            nn.Linear(
+                in_features=iohiddenlayer[1],
+                out_features=iohiddenlayer[2],
+                bias=do_train_bias,
+            ),
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[3], bias=do_train_bias),
+            nn.Linear(
+                in_features=iohiddenlayer[2],
+                out_features=iohiddenlayer[3],
+                bias=do_train_bias,
+            ),
         )
         # --- Decoder Path
         self.decoder = nn.Sequential(
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[3], out_features=iohiddenlayer[2], bias=do_train_bias),
+            nn.Linear(
+                in_features=iohiddenlayer[3],
+                out_features=iohiddenlayer[2],
+                bias=do_train_bias,
+            ),
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[1], bias=do_train_bias),
+            nn.Linear(
+                in_features=iohiddenlayer[2],
+                out_features=iohiddenlayer[1],
+                bias=do_train_bias,
+            ),
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0], bias=do_train_bias),
+            nn.Linear(
+                in_features=iohiddenlayer[1],
+                out_features=iohiddenlayer[0],
+                bias=do_train_bias,
+            ),
         )
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
@@ -110,7 +226,15 @@ class CompareDNN_AutoencoderTorch_woBN_v1(nn.Module):
 
 class CompareDNN_AutoencoderCreator_woBN_v1(nn.Module):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
-    def __init__(self, input_size: int = 32, output_size: int = 3, total_bits: int = 12, frac_bits: int = 8, num_steps_activation: int = 32):
+
+    def __init__(
+        self,
+        input_size: int = 32,
+        output_size: int = 3,
+        total_bits: int = 12,
+        frac_bits: int = 8,
+        num_steps_activation: int = 32,
+    ):
         super().__init__()
         self.bit_config = [total_bits, frac_bits]
         self.model_shape = (1, input_size)
@@ -118,29 +242,78 @@ class CompareDNN_AutoencoderCreator_woBN_v1(nn.Module):
         iohiddenlayer = [input_size, 20, 14, output_size]
         do_train_bias = True
 
-
         # --- Encoder Path
         self.encoder = SequantialCreator(
-            Linear(in_features=iohiddenlayer[0], out_features=iohiddenlayer[1], bias=do_train_bias,
-                   total_bits=total_bits, frac_bits=frac_bits),
-            Tanh(total_bits=total_bits, frac_bits=frac_bits, num_steps=num_steps_activation),
-            Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[2], bias=do_train_bias,
-                   total_bits=total_bits, frac_bits=frac_bits),
-            Tanh(total_bits=total_bits, frac_bits=frac_bits, num_steps=num_steps_activation),
-            Linear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[3], bias=do_train_bias,
-                   total_bits=total_bits, frac_bits=frac_bits),
+            Linear(
+                in_features=iohiddenlayer[0],
+                out_features=iohiddenlayer[1],
+                bias=do_train_bias,
+                total_bits=total_bits,
+                frac_bits=frac_bits,
+            ),
+            Tanh(
+                total_bits=total_bits,
+                frac_bits=frac_bits,
+                num_steps=num_steps_activation,
+            ),
+            Linear(
+                in_features=iohiddenlayer[1],
+                out_features=iohiddenlayer[2],
+                bias=do_train_bias,
+                total_bits=total_bits,
+                frac_bits=frac_bits,
+            ),
+            Tanh(
+                total_bits=total_bits,
+                frac_bits=frac_bits,
+                num_steps=num_steps_activation,
+            ),
+            Linear(
+                in_features=iohiddenlayer[2],
+                out_features=iohiddenlayer[3],
+                bias=do_train_bias,
+                total_bits=total_bits,
+                frac_bits=frac_bits,
+            ),
         )
         # --- Decoder Path
         self.decoder = SequantialCreator(
-            Tanh(total_bits=total_bits, frac_bits=frac_bits, num_steps=num_steps_activation),
-            Linear(in_features=iohiddenlayer[3], out_features=iohiddenlayer[2], bias=do_train_bias,
-                   total_bits=total_bits, frac_bits=frac_bits),
-            Tanh(total_bits=total_bits, frac_bits=frac_bits, num_steps=num_steps_activation),
-            Linear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[1], bias=do_train_bias,
-                   total_bits=total_bits, frac_bits=frac_bits),
-            Tanh(total_bits=total_bits, frac_bits=frac_bits, num_steps=num_steps_activation),
-            Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0], bias=do_train_bias,
-                   total_bits=total_bits, frac_bits=frac_bits),
+            Tanh(
+                total_bits=total_bits,
+                frac_bits=frac_bits,
+                num_steps=num_steps_activation,
+            ),
+            Linear(
+                in_features=iohiddenlayer[3],
+                out_features=iohiddenlayer[2],
+                bias=do_train_bias,
+                total_bits=total_bits,
+                frac_bits=frac_bits,
+            ),
+            Tanh(
+                total_bits=total_bits,
+                frac_bits=frac_bits,
+                num_steps=num_steps_activation,
+            ),
+            Linear(
+                in_features=iohiddenlayer[2],
+                out_features=iohiddenlayer[1],
+                bias=do_train_bias,
+                total_bits=total_bits,
+                frac_bits=frac_bits,
+            ),
+            Tanh(
+                total_bits=total_bits,
+                frac_bits=frac_bits,
+                num_steps=num_steps_activation,
+            ),
+            Linear(
+                in_features=iohiddenlayer[1],
+                out_features=iohiddenlayer[0],
+                bias=do_train_bias,
+                total_bits=total_bits,
+                frac_bits=frac_bits,
+            ),
         )
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
@@ -152,21 +325,25 @@ class CompareDNN_AutoencoderCreator_woBN_v1(nn.Module):
 
 
 class CompareDNN_ClassifierTorch_woBN_v1(nn.Module):
-    def __init__(self, input_size: int=32, output_size: int=6):
+    def __init__(self, input_size: int = 32, output_size: int = 6):
         """DL model for classifying neural spike activity (MLP)"""
         super().__init__()
         self.model_shape = (1, input_size)
         # --- Settings of model
         do_train_bias = True
-        do_train_batch = True
         config_network = [input_size, 12, output_size]
 
         # --- Model Deployment
         self.model = nn.Sequential()
         for idx, layer_size in enumerate(config_network[1:], start=1):
-            self.model.add_module(f"linear_{idx:02d}",
-                                  nn.Linear(in_features=config_network[idx - 1], out_features=layer_size,
-                                            bias=do_train_bias))
+            self.model.add_module(
+                f"linear_{idx:02d}",
+                nn.Linear(
+                    in_features=config_network[idx - 1],
+                    out_features=layer_size,
+                    bias=do_train_bias,
+                ),
+            )
             if not idx == len(config_network) - 1:
                 self.model.add_module(f"act_{idx:02d}", nn.ReLU())
             else:
@@ -180,7 +357,7 @@ class CompareDNN_ClassifierTorch_woBN_v1(nn.Module):
 
 
 class CompareDNN_ClassifierTorch_v1(nn.Module):
-    def __init__(self, input_size: int=32, output_size: int=6):
+    def __init__(self, input_size: int = 32, output_size: int = 6):
         """DL model for classifying neural spike activity (MLP)"""
         super().__init__()
         self.model_shape = (1, input_size)
@@ -192,11 +369,18 @@ class CompareDNN_ClassifierTorch_v1(nn.Module):
         # --- Model Deployment
         self.model = nn.Sequential()
         for idx, layer_size in enumerate(config_network[1:], start=1):
-            self.model.add_module(f"linear_{idx:02d}",
-                                  nn.Linear(in_features=config_network[idx - 1], out_features=layer_size,
-                                            bias=do_train_bias))
-            self.model.add_module(f"batch1d_{idx:02d}",
-                                  nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch))
+            self.model.add_module(
+                f"linear_{idx:02d}",
+                nn.Linear(
+                    in_features=config_network[idx - 1],
+                    out_features=layer_size,
+                    bias=do_train_bias,
+                ),
+            )
+            self.model.add_module(
+                f"batch1d_{idx:02d}",
+                nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch),
+            )
             if not idx == len(config_network) - 1:
                 self.model.add_module(f"act_{idx:02d}", nn.ReLU())
             else:
@@ -210,26 +394,33 @@ class CompareDNN_ClassifierTorch_v1(nn.Module):
 
 
 class CompareDNN_ClassifierCreator_woBN_v1(nn.Module):
-    def __init__(self, input_size: int=32, output_size:int=6,
-                 total_bits: int = 12, frac_bits: int = 8):
+    def __init__(
+        self,
+        input_size: int = 32,
+        output_size: int = 6,
+        total_bits: int = 12,
+        frac_bits: int = 8,
+    ):
         """DL model for classifying neural spike activity (MLP)"""
         super().__init__()
         self.model_shape = (1, input_size)
         # --- Settings of model
         do_train_bias = True
-        do_train_batch = True
         config_network = [input_size, 12, output_size]
 
         # --- Model Deployment
         self.model = SequantialCreator()
         for idx, layer_size in enumerate(config_network[1:], start=1):
-            self.model.add_module(f"linear_{idx:02d}",
-                                  Linear(
-                                      in_features=config_network[idx - 1],
-                                      out_features=layer_size,
-                                      bias=do_train_bias,
-                                      total_bits=total_bits, frac_bits=frac_bits
-                                  ))
+            self.model.add_module(
+                f"linear_{idx:02d}",
+                Linear(
+                    in_features=config_network[idx - 1],
+                    out_features=layer_size,
+                    bias=do_train_bias,
+                    total_bits=total_bits,
+                    frac_bits=frac_bits,
+                ),
+            )
             if not idx == len(config_network) - 1:
                 self.model.add_module(f"act_{idx:02d}", ReLU(total_bits=total_bits))
             else:
@@ -242,26 +433,33 @@ class CompareDNN_ClassifierCreator_woBN_v1(nn.Module):
 
 
 class CompareDNN_ClassifierCreator_v1(nn.Module):
-    def __init__(self, input_size: int=32, output_size:int=6,
-                 total_bits: int = 12, frac_bits: int = 8):
+    def __init__(
+        self,
+        input_size: int = 32,
+        output_size: int = 6,
+        total_bits: int = 12,
+        frac_bits: int = 8,
+    ):
         """DL model for classifying neural spike activity (MLP)"""
         super().__init__()
         self.model_shape = (1, input_size)
         # --- Settings of model
         do_train_bias = True
-        do_train_batch = True
         config_network = [input_size, 12, output_size]
 
         # --- Model Deployment
         self.model = SequantialCreator()
         for idx, layer_size in enumerate(config_network[1:], start=1):
-            self.model.add_module(f"linear_{idx:02d}",
-                                  BatchNormedLinear(
-                                      in_features=config_network[idx - 1],
-                                      out_features=layer_size,
-                                      bias=do_train_bias,
-                                      total_bits=total_bits, frac_bits=frac_bits
-                                  ))
+            self.model.add_module(
+                f"linear_{idx:02d}",
+                BatchNormedLinear(
+                    in_features=config_network[idx - 1],
+                    out_features=layer_size,
+                    bias=do_train_bias,
+                    total_bits=total_bits,
+                    frac_bits=frac_bits,
+                ),
+            )
             if not idx == len(config_network) - 1:
                 self.model.add_module(f"act_{idx:02d}", ReLU(total_bits=total_bits))
             else:

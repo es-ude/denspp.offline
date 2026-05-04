@@ -1,6 +1,7 @@
-import numpy as np
 from copy import deepcopy
-from fxpmath import Fxp, Config
+
+import numpy as np
+from fxpmath import Config, Fxp
 
 
 class CommonAnalogFunctions:
@@ -11,7 +12,7 @@ class CommonAnalogFunctions:
         self._range = [volt_low, volt_hgh]
         return self._range
 
-    def clamp_voltage(self, uin: float | np.ndarray ) -> float | np.ndarray:
+    def clamp_voltage(self, uin: float | np.ndarray) -> float | np.ndarray:
         """Do voltage clipping at voltage supply"""
         uout = np.array(deepcopy(uin))
         np.clip(uout, a_max=self._range[1], a_min=self._range[0], out=uout)
@@ -48,7 +49,7 @@ class CommonDigitalFunctions:
         np.clip(xout, a_min=self._digital_border[0], a_max=self._digital_border[1], out=xout)
         return xout
 
-    def quantize_fxp(self, xin: np.ndarray | float) -> np.ndarray:
+    def quantize_fxp(self, xin: float | np.ndarray) -> np.ndarray:
         """Do signed quantization of input with full precision
         :param xin:     Input data stream
         :return:        Quantized output data stream
@@ -58,24 +59,29 @@ class CommonDigitalFunctions:
         config_fxp.overflow = "saturate"
         config_fxp.underflow = "saturate"
 
-        val = Fxp(val=xin, signed=self._bitsigned, n_word=self._bitwidth[0], n_frac=self._bitwidth[1],
-                   config=config_fxp).get_val()
+        val = Fxp(
+            val=xin,
+            signed=self._bitsigned,
+            n_word=self._bitwidth[0],
+            n_frac=self._bitwidth[1],
+            config=config_fxp,
+        ).get_val()
         return val if not type(xin) == float else float(val)
 
     @staticmethod
     def extract_rising_edge(trigger: np.ndarray) -> list:
-        """Extracting the rising edges of an boolean array (e.g. output signal of a comparator)
+        """Extracting the rising edges of a boolean array (e.g. output signal of a comparator)
         :param trigger:     Numpy array with trigger signal (transient)
         :return:            List with index of rising edges
         """
-        trgg_evnt = np.flatnonzero((trigger[:-1] == False) & (trigger[1:] == True)) + 1
+        trgg_evnt = np.flatnonzero((~trigger[:-1]) & (trigger[1:])) + 1
         return trgg_evnt.tolist()
 
     @staticmethod
     def extract_falling_edge(trigger: np.ndarray) -> list:
-        """Extracting the falling edges of an boolean array (e.g. output signal of a comparator)
+        """Extracting the falling edges of a boolean array (e.g. output signal of a comparator)
         :param trigger:     Numpy array with trigger signal (transient)
         :return:            List with index of rising edges
         """
-        trgg_evnt = np.flatnonzero((trigger[:-1] == True) & (trigger[1:] == False)) + 1
+        trgg_evnt = np.flatnonzero((trigger[:-1]) & (~trigger[1:])) + 1
         return trgg_evnt.tolist()

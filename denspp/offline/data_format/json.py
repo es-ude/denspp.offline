@@ -1,19 +1,20 @@
 import json
-from typing import Any
-from logging import getLogger, Logger
+from logging import Logger, getLogger
 from os import makedirs
-from os.path import join, exists, isabs
+from os.path import exists, isabs, join
+from typing import Any
+
 from denspp.offline import get_path_to_project
 
 
 class JsonHandler:
     _path2folder: str
     _file_name: str
-    _ending_chck: list = ['.json']
+    _ending_chck: list = [".json"]
     _logger: Logger
     _template: Any
 
-    def __init__(self, template: Any | dict, path: str='config', file_name: str='Params') -> None:
+    def __init__(self, template: Any | dict, path: str = "config", file_name: str = "Params") -> None:
         """Creating a class for handling JSON files
         :param template:        Dummy dataclass with entries or dictionary (is only generated if JSON not exist)
         :param path:            String with path to the folder which has the JSON file [Default: '']
@@ -31,8 +32,11 @@ class JsonHandler:
     @staticmethod
     def __translate_dataclass_to_dict(class_content: type) -> dict:
         """Translating all class variables with default values into dict"""
-        return {key: value for key, value in class_content.__dict__.items()
-                if not key.startswith('__') and not callable(key)}
+        return {
+            key: value
+            for key, value in class_content.__dict__.items()
+            if not key.startswith("__") and not callable(key)
+        }
 
     @property
     def __path2chck(self) -> str:
@@ -44,7 +48,9 @@ class JsonHandler:
         :param file_name:   String with file name
         :return:            String with file name without data type ending
         """
-        used_file_name = [file_name.split(file_end)[0] for file_end in self._ending_chck if file_end in file_name]
+        used_file_name = [
+            file_name.split(file_end)[0] for file_end in self._ending_chck if file_end in file_name
+        ]
         return used_file_name[0] if len(used_file_name) > 0 else file_name
 
     def __check_scheme_validation(self, template: type | dict, real_file: type | dict) -> bool:
@@ -53,15 +59,25 @@ class JsonHandler:
         :param real_file:   Dictionary from real_file
         :return:            Boolean decision if both key are equal
         """
-        keys_tmplt = self.__translate_dataclass_to_dict(template).keys() if not isinstance(template, dict) else template.keys()
-        keys_real = self.__translate_dataclass_to_dict(real_file).keys() if not isinstance(real_file, dict) else real_file.keys()
+        keys_tmplt = (
+            self.__translate_dataclass_to_dict(template).keys()
+            if not isinstance(template, dict)
+            else template.keys()
+        )
+        keys_real = (
+            self.__translate_dataclass_to_dict(real_file).keys()
+            if not isinstance(real_file, dict)
+            else real_file.keys()
+        )
 
         equal_chck = keys_tmplt == keys_real
         if not equal_chck:
             list_not0 = [key for key in keys_real if key not in keys_tmplt]
             list_not1 = [key for key in keys_tmplt if key not in [keys_real, list_not0]]
             list_not0.extend(list_not1)
-            raise RuntimeError(f"Config file not valid (wrong keys: {list_not0})! - Please check and correct/remove actual config file!")
+            raise RuntimeError(
+                f"Config file not valid (wrong keys: {list_not0})! - Please check and correct/remove actual config file!"
+            )
         else:
             return equal_chck
 
@@ -69,7 +85,11 @@ class JsonHandler:
         """Writing template configuration to JSON file
         :return:        None
         """
-        data2json = self._template if isinstance(self._template, dict) else self.__translate_dataclass_to_dict(self._template)
+        data2json = (
+            self._template
+            if isinstance(self._template, dict)
+            else self.__translate_dataclass_to_dict(self._template)
+        )
         self.write_dict_to_json(data2json)
         self._logger.info(f"Create new JSON file in folder: {self._path2folder}")
 
@@ -79,7 +99,7 @@ class JsonHandler:
         :return:                None
         """
         makedirs(self._path2folder, exist_ok=True)
-        with open(self.__path2chck, 'w') as f:
+        with open(self.__path2chck, "w") as f:
             json.dump(config_data, f, sort_keys=False, indent=0)
 
     def get_dict(self) -> dict:
@@ -90,7 +110,7 @@ class JsonHandler:
             raise FileNotFoundError("JSON does not exists - Please create one!")
         else:
             # --- Reading YAML file
-            with open(self.__path2chck, 'r') as f:
+            with open(self.__path2chck, "r") as f:
                 data = json.load(f)
             self._logger.debug(f"... read JSON file: {self.__path2chck}")
             self.__check_scheme_validation(self._template, data)

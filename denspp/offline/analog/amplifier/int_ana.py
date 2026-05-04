@@ -1,7 +1,13 @@
-import numpy as np
 from dataclasses import dataclass
+
+import numpy as np
+
 from denspp.offline.analog.common_func import CommonAnalogFunctions
-from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, DefaultSettingsNoise
+from denspp.offline.analog.dev_noise import (
+    DefaultSettingsNoise,
+    ProcessNoise,
+    SettingsNoise,
+)
 
 
 @dataclass
@@ -19,18 +25,19 @@ class SettingsINT:
         noise_en:   Enable noise on output [True / False]
         noise_edev: Spectal noise voltage density of circuit [V/sqrt(Hz)]
     """
-    vdd:        float
-    vss:        float
+
+    vdd: float
+    vss: float
     # Amplifier characteristics
-    fs_ana:     float
-    tau:        float
-    res_in:     float
-    offset_v:   float
-    offset_i:   float
-    do_invert:  bool
+    fs_ana: float
+    tau: float
+    res_in: float
+    offset_v: float
+    offset_i: float
+    do_invert: bool
     # Modes for activating non-idealities
-    noise_en:   bool
-    noise_edev:  float
+    noise_en: bool
+    noise_edev: float
 
     @property
     def vcm(self) -> float:
@@ -51,7 +58,8 @@ class SettingsINT:
 
 
 DefaultSettingsINT = SettingsINT(
-    vdd=0.6, vss=-0.6,
+    vdd=0.6,
+    vss=-0.6,
     fs_ana=100e3,
     tau=100e-3,
     res_in=10e3,
@@ -59,7 +67,7 @@ DefaultSettingsINT = SettingsINT(
     offset_i=1e-9,
     do_invert=False,
     noise_en=True,
-    noise_edev=10e-9
+    noise_edev=10e-9,
 )
 
 
@@ -67,7 +75,11 @@ class IntegratorAmplifier(CommonAnalogFunctions):
     _handler_noise: ProcessNoise
     _settings: SettingsINT
 
-    def __init__(self, settings_dev: SettingsINT, settings_noise: SettingsNoise=DefaultSettingsNoise):
+    def __init__(
+        self,
+        settings_dev: SettingsINT,
+        settings_noise: SettingsNoise = DefaultSettingsNoise,
+    ):
         """Class for emulating an analogue integrator for voltage and current transient signals
         :param settings_dev:        Dataclass for handling the delay amplifier
         :param settings_noise:      Dataclass for handling the noise simulation
@@ -94,7 +106,7 @@ class IntegratorAmplifier(CommonAnalogFunctions):
         if self._settings.noise_en:
             u_out = self._handler_noise.gen_noise_awgn_dev(size, self._settings.noise_edev)
         else:
-            u_out = np.zeros((size, ))
+            u_out = np.zeros((size,))
         return u_out
 
     def __do_inversion(self, u_int: float | np.ndarray) -> np.ndarray:
@@ -103,7 +115,9 @@ class IntegratorAmplifier(CommonAnalogFunctions):
         return u_out
 
     @staticmethod
-    def __do_accumulation_sample(x_inp: float | np.ndarray, x_inn: float | np.ndarray, scale: float=1.0) -> np.ndarray:
+    def __do_accumulation_sample(
+        x_inp: float | np.ndarray, x_inn: float | np.ndarray, scale: float = 1.0
+    ) -> np.ndarray:
         """Performs an accumulation of input signals
         Args:
             x_inp:      Positive input signal
@@ -115,7 +129,13 @@ class IntegratorAmplifier(CommonAnalogFunctions):
         u_out = np.sum(x_inp - x_inn, axis=0) * scale
         return u_out
 
-    def __do_accumulation_passive(self, x_inp: float | np.ndarray, x_inn: float | np.ndarray, scale: float=1.0, do_push: bool=False) -> np.ndarray:
+    def __do_accumulation_passive(
+        self,
+        x_inp: float | np.ndarray,
+        x_inn: float | np.ndarray,
+        scale: float = 1.0,
+        do_push: bool = False,
+    ) -> np.ndarray:
         """Performs a passive-accumulation of input signals
         Args:
             x_inp:      Positive input signal
@@ -132,7 +152,9 @@ class IntegratorAmplifier(CommonAnalogFunctions):
             u_out[idx] = self.clamp_voltage(u_out[idx - 1] + du)
         return u_out
 
-    def __do_accumulation_active(self, x_inp: float | np.ndarray, x_inn: float | np.ndarray, scale: float=1.0) -> np.ndarray:
+    def __do_accumulation_active(
+        self, x_inp: float | np.ndarray, x_inn: float | np.ndarray, scale: float = 1.0
+    ) -> np.ndarray:
         """Performs an active-accumulation of input signals
         Args:
             x_inp:   Positive input signal
@@ -144,11 +166,13 @@ class IntegratorAmplifier(CommonAnalogFunctions):
         u_out = np.zeros(x_inp.shape) + self._settings.vcm
         for idx, u_top in enumerate(x_inp[1:], start=1):
             u_bot = (x_inn[idx] if x_inn.size > 1 else x_inn) if isinstance(x_inn, np.ndarray) else x_inn
-            u_int = u_out[idx-1] + scale * self.__do_inversion(u_top - u_bot)
+            u_int = u_out[idx - 1] + scale * self.__do_inversion(u_top - u_bot)
             u_out[idx] = self.clamp_voltage(u_int)
         return u_out
 
-    def __do_accumulation_resistance(self, u_inp: np.ndarray, u_inn: np.ndarray, scale: float=1.0) -> np.ndarray:
+    def __do_accumulation_resistance(
+        self, u_inp: np.ndarray, u_inn: np.ndarray, scale: float = 1.0
+    ) -> np.ndarray:
         """Performs an active-accumulation of input signals with additional input resistance
         Args:
             u_inp:   Positive input voltage [V]
@@ -193,7 +217,10 @@ class IntegratorAmplifier(CommonAnalogFunctions):
             Numpy array with voltage signal
         """
         u_top = u_inp + self._settings.u_error
-        u_out = self.__do_accumulation_resistance(u_top, u_inn, self._settings.tau_active_scale) + self._settings.offset_v
+        u_out = (
+            self.__do_accumulation_resistance(u_top, u_inn, self._settings.tau_active_scale)
+            + self._settings.offset_v
+        )
         u_out += self.__noise_generation_circuit(u_out.size)
         return self.clamp_voltage(u_out)
 

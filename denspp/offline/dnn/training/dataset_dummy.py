@@ -1,11 +1,12 @@
 import numpy as np
-from torch import nn, Tensor, argmax, flatten
+from torch import Tensor, argmax, flatten, nn
+
 from denspp.offline.dnn import DatasetFromFile
 
 
 def generate_dummy_dataset(num_samples: int, num_window: int) -> DatasetFromFile:
     sample = np.random.randn(num_samples, num_window)
-    label = np.zeros(shape=(num_samples, ))
+    label = np.zeros(shape=(num_samples,))
     xpos = np.argwhere(np.mean(sample, axis=1) > 0).flatten()
     xneg = np.argwhere(np.mean(sample, axis=1) <= 0).flatten()
     label[xpos] = 1
@@ -13,13 +14,13 @@ def generate_dummy_dataset(num_samples: int, num_window: int) -> DatasetFromFile
     return DatasetFromFile(
         data=sample,
         label=label,
-        dict=['zero', 'one'],
-        mean=np.zeros(shape=(2, num_window))
+        dict=["zero", "one"],
+        mean=np.zeros(shape=(2, num_window)),
     )
 
 
 class dummy_mlp_cl_v0(nn.Module):
-    def __init__(self, input_size: int=10, output_size: int=2):
+    def __init__(self, input_size: int = 10, output_size: int = 2):
         super().__init__()
         self.model_shape = (1, input_size)
         # --- Settings of model
@@ -30,9 +31,19 @@ class dummy_mlp_cl_v0(nn.Module):
         # --- Model Deployment
         self.model = nn.Sequential()
         for idx, layer_size in enumerate(config_network[1:], start=1):
-            self.model.add_module(f"linear_{idx:02d}", nn.Linear(in_features=config_network[idx-1], out_features=layer_size, bias=do_train_bias))
-            self.model.add_module(f"batch1d_{idx:02d}", nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch))
-            if not idx == len(config_network)-1:
+            self.model.add_module(
+                f"linear_{idx:02d}",
+                nn.Linear(
+                    in_features=config_network[idx - 1],
+                    out_features=layer_size,
+                    bias=do_train_bias,
+                ),
+            )
+            self.model.add_module(
+                f"batch1d_{idx:02d}",
+                nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch),
+            )
+            if not idx == len(config_network) - 1:
                 self.model.add_module(f"act_{idx:02d}", nn.ReLU())
             else:
                 pass
@@ -44,7 +55,7 @@ class dummy_mlp_cl_v0(nn.Module):
 
 
 class dummy_mlp_ae_v0(nn.Module):
-    def __init__(self, input_size: int=280, output_size: int=4):
+    def __init__(self, input_size: int = 280, output_size: int = 4):
         super().__init__()
         self.model_shape = (1, input_size)
         # --- Settings of model
@@ -55,8 +66,18 @@ class dummy_mlp_ae_v0(nn.Module):
         # --- Model Deployment: Encoder
         self.encoder = nn.Sequential()
         for idx, layer_size in enumerate(config_network[1:], start=1):
-            self.encoder.add_module(f"linear_{idx:02d}", nn.Linear(in_features=config_network[idx - 1], out_features=layer_size, bias=do_train_bias))
-            self.encoder.add_module(f"batch1d_{idx:02d}", nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch))
+            self.encoder.add_module(
+                f"linear_{idx:02d}",
+                nn.Linear(
+                    in_features=config_network[idx - 1],
+                    out_features=layer_size,
+                    bias=do_train_bias,
+                ),
+            )
+            self.encoder.add_module(
+                f"batch1d_{idx:02d}",
+                nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch),
+            )
             if not idx == len(config_network) - 1:
                 self.encoder.add_module(f"act_{idx:02d}", nn.ReLU())
 
@@ -65,9 +86,19 @@ class dummy_mlp_ae_v0(nn.Module):
         for idx, layer_size in enumerate(reversed(config_network[:-1]), start=1):
             if idx == 1:
                 self.decoder.add_module(f"act_dec_{idx:02d}", nn.ReLU())
-            self.decoder.add_module(f"linear_{idx:02d}", nn.Linear(in_features=config_network[-idx], out_features=layer_size, bias=do_train_bias))
+            self.decoder.add_module(
+                f"linear_{idx:02d}",
+                nn.Linear(
+                    in_features=config_network[-idx],
+                    out_features=layer_size,
+                    bias=do_train_bias,
+                ),
+            )
             if not idx == len(config_network) - 1:
-                self.decoder.add_module(f"batch1d_{idx:02d}", nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch))
+                self.decoder.add_module(
+                    f"batch1d_{idx:02d}",
+                    nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch),
+                )
                 self.decoder.add_module(f"act_{idx:02d}", nn.ReLU())
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
@@ -85,26 +116,26 @@ class dummy_lstm_cl_v0(nn.Module):
         num_layers = 1
 
         self.lstm = nn.Sequential(
-                nn.LSTM(
+            nn.LSTM(
                 input_size=1,
                 hidden_size=hidden_size,
                 num_layers=num_layers,
-                batch_first=True
+                batch_first=True,
             )
         )
         self.classifier = nn.Sequential(
             nn.Linear(hidden_size, hidden_size),
             nn.BatchNorm1d(hidden_size),
             nn.ReLU(),
-            nn.Linear(hidden_size, output_size)
+            nn.Linear(hidden_size, output_size),
         )
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         # Adapting the shape from (batch, input_size) to (batch, input_size, sequence)
         if x.dim() == 2:
-            x = x.unsqueeze(-1)   # -> (batch, seq_len=input_size, 1)
+            x = x.unsqueeze(-1)  # -> (batch, seq_len=input_size, 1)
 
         lstm_out, (h_n, c_n) = self.lstm(x)
-        last_hidden = h_n[-1]    # (batch, hidden_size)
+        last_hidden = h_n[-1]  # (batch, hidden_size)
         logits = self.classifier(last_hidden)
         return logits, argmax(logits, dim=1)

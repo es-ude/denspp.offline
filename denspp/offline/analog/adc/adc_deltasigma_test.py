@@ -1,18 +1,17 @@
 import unittest
 from copy import deepcopy
-from .adc_deltasigma import SettingsADC, RecommendedSettingsADC, DeltaSigmaADC
+
+from denspp.offline.analog.adc import DefaultSettingsADC
+from denspp.offline.analog.adc.adc_deltasigma import DeltaSigmaADC, SettingsADC
 
 
 class TestDeltaSigmaADC(unittest.TestCase):
     def setUp(self):
-        self.sets: SettingsADC = deepcopy(RecommendedSettingsADC)
+        self.sets: SettingsADC = deepcopy(DefaultSettingsADC)
 
     def test_init(self):
-        dut = DeltaSigmaADC(
-            settings_dev=self.sets,
-            dac_order=1
-        )
+        DeltaSigmaADC(settings_dev=self.sets, dac_order=1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

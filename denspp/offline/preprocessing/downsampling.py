@@ -1,5 +1,6 @@
-import numpy as np
 from dataclasses import dataclass
+
+import numpy as np
 
 
 @dataclass
@@ -15,7 +16,7 @@ class SettingsDownSampling:
 
 
 DefaultSettingsDownSampling = SettingsDownSampling(
-    sampling_rate=1000.,
+    sampling_rate=1000.0,
     dsr=10,
 )
 
@@ -37,7 +38,7 @@ class DownSampling:
         data = uin[:n]
         return data.reshape(-1, self._settings.dsr).mean(axis=1)
 
-    def do_cic(self, uin: np.ndarray, num_stages: int=5) -> np.ndarray:
+    def do_cic(self, uin: np.ndarray, num_stages: int = 5) -> np.ndarray:
         """Performing the CIC filter at the output of oversampled ADC
         param uin:          Numpy array with transient signal input (high sampling rate)
         param num_stages:   Number of stages to perform the CIC downsampling
@@ -53,8 +54,8 @@ class DownSampling:
 
             def update(self, inp):
                 self.ynm = self.yn
-                self.yn = (self.ynm + inp)
-                return (self.yn)
+                self.yn = self.ynm + inp
+                return self.yn
 
         class comb:
             def __init__(self):
@@ -64,11 +65,11 @@ class DownSampling:
             def update(self, inp):
                 self.xnm = self.xn
                 self.xn = inp
-                return (self.xn - self.xnm)
+                return self.xn - self.xnm
 
         intes = [integrator() for a in range(num_stages)]
         combs = [comb() for a in range(num_stages)]
-        for (s, v) in enumerate(uin):
+        for s, v in enumerate(uin):
             z = v
             for i in range(num_stages):
                 z = intes[i].update(z)
@@ -114,7 +115,7 @@ class DownSampling:
         uout = np.array(uout)
         return uout
 
-    def do_decimation_polyphase(self, uin: np.ndarray, take_first_order: bool=False) -> np.ndarray:
+    def do_decimation_polyphase(self, uin: np.ndarray, take_first_order: bool = False) -> np.ndarray:
         """Performing Non-Recursive Polyphase Decimation on input (depends on DSR)
         param uin:          Numpy array with transient signal input (high sampling rate)
         return:             Numpy array with transient signal output (low sampling rate)

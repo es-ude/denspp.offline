@@ -1,6 +1,8 @@
-import numpy as np
 import unittest
-from .sound_card import TranslatorSoundCard
+
+import numpy as np
+
+from denspp.player.devices.sound_card import TranslatorSoundCard
 
 
 class TestTranslatorSoundcard(unittest.TestCase):
@@ -30,18 +32,18 @@ class TestTranslatorSoundcard(unittest.TestCase):
 
     def test_playing_data(self):
         fs = self.dut.get_sampling_rate
-        time = np.linspace(start=0., stop=0.5, num=int(0.5* fs), endpoint=False)
+        time = np.linspace(start=0.0, stop=0.5, num=int(0.5 * fs), endpoint=False)
         time.repeat(1, axis=-1)
 
-        data = 0.5 * np.sin(2* np.pi* 20* time)
+        data = 0.5 * np.sin(2 * np.pi * 20 * time)
         self.dut.play_data(data)
 
     def test_getting_data(self):
         duration = 0.5
-        num_samples = int(duration * self.dut.get_sampling_rate)+1
+        num_samples = int(duration * self.dut.get_sampling_rate) + 1
         data = self.dut.get_data(duration)
-        self.assertEqual(data.shape, (num_samples, ))
+        self.assertEqual(data.shape, (num_samples,))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

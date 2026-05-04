@@ -1,7 +1,7 @@
 import unittest
-import numpy as np
 from copy import deepcopy
-from .cluster import SettingsCluster, DefaultSettingsCluster, Clustering
+
+from .cluster import Clustering, DefaultSettingsCluster, SettingsCluster
 
 
 class MyTestCase(unittest.TestCase):
@@ -12,10 +12,7 @@ class MyTestCase(unittest.TestCase):
         set0: SettingsCluster = deepcopy(self.set0)
         set0.type = "kmeans"
         dut = Clustering(set0)
-        data = dut.create_dummy_data(
-            num_samples=100,
-            noise_std=0.1
-        )
+        data = dut.create_dummy_data(num_samples=100, noise_std=0.1)
 
         dut.init(
             features=data[0],
@@ -30,10 +27,7 @@ class MyTestCase(unittest.TestCase):
         set0: SettingsCluster = deepcopy(self.set0)
         set0.type = "gmm"
         dut = Clustering(set0)
-        data = dut.create_dummy_data(
-            num_samples=100,
-            noise_std=0.1
-        )
+        data = dut.create_dummy_data(num_samples=100, noise_std=0.1)
 
         dut.init(
             features=data[0],
@@ -48,10 +42,7 @@ class MyTestCase(unittest.TestCase):
         set0: SettingsCluster = deepcopy(self.set0)
         set0.type = "dbscan"
         dut = Clustering(set0)
-        data = dut.create_dummy_data(
-            num_samples=100,
-            noise_std=0.1
-        )
+        data = dut.create_dummy_data(num_samples=100, noise_std=0.1)
 
         dut.init(
             features=data[0],
@@ -66,10 +57,7 @@ class MyTestCase(unittest.TestCase):
         set0: SettingsCluster = deepcopy(self.set0)
         set0.type = "knn"
         dut = Clustering(set0)
-        data = dut.create_dummy_data(
-            num_samples=100,
-            noise_std=0.1
-        )
+        data = dut.create_dummy_data(num_samples=100, noise_std=0.1)
 
         dut.init(
             features=data[0],
@@ -81,5 +69,5 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(data[1].size, pred.size)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

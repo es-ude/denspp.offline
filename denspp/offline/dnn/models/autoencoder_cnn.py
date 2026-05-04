@@ -1,4 +1,4 @@
-from torch import nn, Tensor, unsqueeze, argmax
+from torch import Tensor, nn, unsqueeze
 
 
 class synthetic_cnn_ae_v1(nn.Module):
@@ -14,32 +14,65 @@ class synthetic_cnn_ae_v1(nn.Module):
         kernel_out = [0, 0, 0]
 
         self.encoder = nn.Sequential(
-            nn.Conv1d(kernel_layer[0], kernel_layer[1], kernel_size[0],
-                      stride=kernel_stride[0], padding=kernel_padding[0]),
+            nn.Conv1d(
+                kernel_layer[0],
+                kernel_layer[1],
+                kernel_size[0],
+                stride=kernel_stride[0],
+                padding=kernel_padding[0],
+            ),
             nn.BatchNorm1d(kernel_layer[1], affine=do_bias_train),
             nn.Tanh(),
-            nn.Conv1d(kernel_layer[1], kernel_layer[2], kernel_size[1],
-                      stride=kernel_stride[1], padding=kernel_padding[1]),
+            nn.Conv1d(
+                kernel_layer[1],
+                kernel_layer[2],
+                kernel_size[1],
+                stride=kernel_stride[1],
+                padding=kernel_padding[1],
+            ),
             nn.BatchNorm1d(kernel_layer[2], affine=do_bias_train),
             nn.Tanh(),
-            nn.Conv1d(kernel_layer[2], kernel_layer[3], kernel_size[2],
-                      stride=kernel_stride[2], padding=kernel_padding[2]),
-            nn.BatchNorm1d(kernel_layer[3], affine=do_bias_train)
+            nn.Conv1d(
+                kernel_layer[2],
+                kernel_layer[3],
+                kernel_size[2],
+                stride=kernel_stride[2],
+                padding=kernel_padding[2],
+            ),
+            nn.BatchNorm1d(kernel_layer[3], affine=do_bias_train),
         )
         self.flatten = nn.Flatten(start_dim=1)
 
         self.decoder = nn.Sequential(
             nn.Tanh(),
-            nn.ConvTranspose1d(kernel_layer[3], kernel_layer[2], kernel_size[2], stride=kernel_stride[2],
-                               padding=kernel_padding[2], output_padding=kernel_out[2]),
+            nn.ConvTranspose1d(
+                kernel_layer[3],
+                kernel_layer[2],
+                kernel_size[2],
+                stride=kernel_stride[2],
+                padding=kernel_padding[2],
+                output_padding=kernel_out[2],
+            ),
             nn.BatchNorm1d(kernel_layer[2], affine=do_bias_train),
             nn.Tanh(),
-            nn.ConvTranspose1d(kernel_layer[2], kernel_layer[1], kernel_size[1], stride=kernel_stride[1],
-                               padding=kernel_padding[1], output_padding=kernel_out[1]),
+            nn.ConvTranspose1d(
+                kernel_layer[2],
+                kernel_layer[1],
+                kernel_size[1],
+                stride=kernel_stride[1],
+                padding=kernel_padding[1],
+                output_padding=kernel_out[1],
+            ),
             nn.BatchNorm1d(kernel_layer[1], affine=do_bias_train),
             nn.Tanh(),
-            nn.ConvTranspose1d(kernel_layer[1], kernel_layer[0], kernel_size[0], stride=kernel_stride[0],
-                               padding=kernel_padding[0], output_padding=kernel_out[0])
+            nn.ConvTranspose1d(
+                kernel_layer[1],
+                kernel_layer[0],
+                kernel_size[0],
+                stride=kernel_stride[0],
+                padding=kernel_padding[0],
+                output_padding=kernel_out[0],
+            ),
         )
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
@@ -65,17 +98,32 @@ class synthetic_cnn_ae_v2(nn.Module):
 
         # Encoder setup
         self.encoder = nn.Sequential(
-            nn.Conv1d(kernel_layer[0], kernel_layer[1], kernel_size[0],
-                      stride=kernel_stride[0], padding=kernel_padding[0]),
+            nn.Conv1d(
+                kernel_layer[0],
+                kernel_layer[1],
+                kernel_size[0],
+                stride=kernel_stride[0],
+                padding=kernel_padding[0],
+            ),
             nn.BatchNorm1d(kernel_layer[1], affine=do_bias_train),
             nn.Tanh(),
-            nn.Conv1d(kernel_layer[1], kernel_layer[2], kernel_size[1],
-                      stride=kernel_stride[1], padding=kernel_padding[1]),
+            nn.Conv1d(
+                kernel_layer[1],
+                kernel_layer[2],
+                kernel_size[1],
+                stride=kernel_stride[1],
+                padding=kernel_padding[1],
+            ),
             nn.BatchNorm1d(kernel_layer[2], affine=do_bias_train),
             nn.Tanh(),
-            nn.Conv1d(kernel_layer[2], kernel_layer[3], kernel_size[2],
-                      stride=kernel_stride[2], padding=kernel_padding[2]),
-            nn.BatchNorm1d(kernel_layer[3], affine=do_bias_train)
+            nn.Conv1d(
+                kernel_layer[2],
+                kernel_layer[3],
+                kernel_size[2],
+                stride=kernel_stride[2],
+                padding=kernel_padding[2],
+            ),
+            nn.BatchNorm1d(kernel_layer[3], affine=do_bias_train),
         )
         self.pool = nn.MaxPool1d(pool_size[0], stride=pool_stride[0], return_indices=True)
         self.flatten = nn.Flatten(start_dim=1)
@@ -83,19 +131,37 @@ class synthetic_cnn_ae_v2(nn.Module):
         # Decoder setup
         self.decoder = nn.Sequential(
             nn.Tanh(),
-            nn.ConvTranspose1d(kernel_layer[3], kernel_layer[2], kernel_size[2], stride=kernel_stride[2],
-                               padding=kernel_padding[2], output_padding=kernel_out[2]),
+            nn.ConvTranspose1d(
+                kernel_layer[3],
+                kernel_layer[2],
+                kernel_size[2],
+                stride=kernel_stride[2],
+                padding=kernel_padding[2],
+                output_padding=kernel_out[2],
+            ),
             nn.BatchNorm1d(kernel_layer[2], affine=do_bias_train),
             nn.Tanh(),
-            nn.ConvTranspose1d(kernel_layer[2], kernel_layer[1], kernel_size[1], stride=kernel_stride[1],
-                               padding=kernel_padding[1], output_padding=kernel_out[1]),
+            nn.ConvTranspose1d(
+                kernel_layer[2],
+                kernel_layer[1],
+                kernel_size[1],
+                stride=kernel_stride[1],
+                padding=kernel_padding[1],
+                output_padding=kernel_out[1],
+            ),
             nn.BatchNorm1d(kernel_layer[1], affine=do_bias_train),
             nn.Tanh(),
-            nn.ConvTranspose1d(kernel_layer[1], kernel_layer[0], kernel_size[0], stride=kernel_stride[0],
-                               padding=kernel_padding[0], output_padding=kernel_out[0]),
+            nn.ConvTranspose1d(
+                kernel_layer[1],
+                kernel_layer[0],
+                kernel_size[0],
+                stride=kernel_stride[0],
+                padding=kernel_padding[0],
+                output_padding=kernel_out[0],
+            ),
             nn.BatchNorm1d(kernel_layer[0], affine=do_bias_train),
             nn.Tanh(),
-            nn.Linear(24, self.model_shape[1], bias=True)
+            nn.Linear(24, self.model_shape[1], bias=True),
         )
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
@@ -123,25 +189,40 @@ class synthetic_cnn_ae_v3(nn.Module):
 
         # Encoder setup
         self.encoder = nn.Sequential(
-            nn.Conv1d(kernel_layer[0], kernel_layer[1], kernel_size[0],
-                      stride=kernel_stride[0], padding=kernel_padding[0]),
+            nn.Conv1d(
+                kernel_layer[0],
+                kernel_layer[1],
+                kernel_size[0],
+                stride=kernel_stride[0],
+                padding=kernel_padding[0],
+            ),
             nn.BatchNorm1d(kernel_layer[1], affine=do_bias_train),
             nn.Tanh(),
-            nn.Conv1d(kernel_layer[1], kernel_layer[2], kernel_size[1],
-                      stride=kernel_stride[1], padding=kernel_padding[1]),
+            nn.Conv1d(
+                kernel_layer[1],
+                kernel_layer[2],
+                kernel_size[1],
+                stride=kernel_stride[1],
+                padding=kernel_padding[1],
+            ),
             nn.BatchNorm1d(kernel_layer[2], affine=do_bias_train),
             nn.Tanh(),
-            nn.Conv1d(kernel_layer[2], kernel_layer[3], kernel_size[2],
-                      stride=kernel_stride[2], padding=kernel_padding[2]),
+            nn.Conv1d(
+                kernel_layer[2],
+                kernel_layer[3],
+                kernel_size[2],
+                stride=kernel_stride[2],
+                padding=kernel_padding[2],
+            ),
             nn.BatchNorm1d(kernel_layer[3], affine=do_bias_train),
             nn.Tanh(),
-            nn.Flatten()
+            nn.Flatten(),
         )
         self.encoder_linear = nn.Sequential(
             nn.Linear(fcnn_layer[0], fcnn_layer[1], bias=do_bias_train),
             nn.BatchNorm1d(fcnn_layer[1], affine=do_bias_train),
             nn.Tanh(),
-            nn.Linear(fcnn_layer[1], fcnn_layer[2], bias=do_bias_train)
+            nn.Linear(fcnn_layer[1], fcnn_layer[2], bias=do_bias_train),
         )
         self.flatten = nn.Flatten(start_dim=1)
         # Decoder setup
@@ -153,22 +234,40 @@ class synthetic_cnn_ae_v3(nn.Module):
             nn.Tanh(),
             nn.Linear(fcnn_layer[1], fcnn_layer[0], bias=do_bias_train),
             nn.BatchNorm1d(fcnn_layer[0], affine=do_bias_train),
-            nn.Tanh()
+            nn.Tanh(),
         )
         self.decoder = nn.Sequential(
-            nn.ConvTranspose1d(1, kernel_layer[2], kernel_size[2], stride=kernel_stride[2],
-                               padding=kernel_padding[2], output_padding=kernel_out[2]),
+            nn.ConvTranspose1d(
+                1,
+                kernel_layer[2],
+                kernel_size[2],
+                stride=kernel_stride[2],
+                padding=kernel_padding[2],
+                output_padding=kernel_out[2],
+            ),
             nn.BatchNorm1d(kernel_layer[2], affine=do_bias_train),
             nn.Tanh(),
-            nn.ConvTranspose1d(kernel_layer[2], kernel_layer[1], kernel_size[1], stride=kernel_stride[1],
-                               padding=kernel_padding[1], output_padding=kernel_out[1]),
+            nn.ConvTranspose1d(
+                kernel_layer[2],
+                kernel_layer[1],
+                kernel_size[1],
+                stride=kernel_stride[1],
+                padding=kernel_padding[1],
+                output_padding=kernel_out[1],
+            ),
             nn.BatchNorm1d(kernel_layer[1], affine=do_bias_train),
             nn.Tanh(),
-            nn.ConvTranspose1d(kernel_layer[1], kernel_layer[0], kernel_size[0], stride=kernel_stride[0],
-                               padding=kernel_padding[0], output_padding=kernel_out[0]),
+            nn.ConvTranspose1d(
+                kernel_layer[1],
+                kernel_layer[0],
+                kernel_size[0],
+                stride=kernel_stride[0],
+                padding=kernel_padding[0],
+                output_padding=kernel_out[0],
+            ),
             nn.BatchNorm1d(kernel_layer[0], affine=do_bias_train),
             nn.Tanh(),
-            nn.Linear(fcnn_out, self.model_shape[1], bias=do_bias_train)
+            nn.Linear(fcnn_out, self.model_shape[1], bias=do_bias_train),
         )
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
@@ -198,22 +297,37 @@ class synthetic_cnn_ae_v4(nn.Module):
 
         # Encoder setup
         self.encoder = nn.Sequential(
-            nn.Conv1d(kernel_layer[0], kernel_layer[1], kernel_size[0],
-                      stride=kernel_stride[0], padding=kernel_padding[0]),
+            nn.Conv1d(
+                kernel_layer[0],
+                kernel_layer[1],
+                kernel_size[0],
+                stride=kernel_stride[0],
+                padding=kernel_padding[0],
+            ),
             nn.BatchNorm1d(kernel_layer[1], affine=do_bias_train),
             nn.Tanh(),
             nn.AvgPool1d(kernel_pool_size[0], kernel_pool_stride[0]),
-            nn.Conv1d(kernel_layer[1], kernel_layer[2], kernel_size[1],
-                      stride=kernel_stride[1], padding=kernel_padding[1]),
+            nn.Conv1d(
+                kernel_layer[1],
+                kernel_layer[2],
+                kernel_size[1],
+                stride=kernel_stride[1],
+                padding=kernel_padding[1],
+            ),
             nn.BatchNorm1d(kernel_layer[2], affine=do_bias_train),
             nn.ReLU(),
             nn.AvgPool1d(kernel_pool_size[1], kernel_pool_stride[1]),
-            nn.Conv1d(kernel_layer[2], kernel_layer[3], kernel_size[2],
-                      stride=kernel_stride[2], padding=kernel_padding[2]),
+            nn.Conv1d(
+                kernel_layer[2],
+                kernel_layer[3],
+                kernel_size[2],
+                stride=kernel_stride[2],
+                padding=kernel_padding[2],
+            ),
             nn.BatchNorm1d(kernel_layer[3], affine=do_bias_train),
             nn.ReLU(),
             nn.AvgPool1d(kernel_pool_size[2], kernel_pool_stride[2]),
-            nn.Flatten()
+            nn.Flatten(),
         )
         # Decoder setup
         self.decoder = nn.Sequential(
@@ -229,7 +343,7 @@ class synthetic_cnn_ae_v4(nn.Module):
             nn.Linear(fcnn_layer[3], fcnn_layer[4], bias=do_bias_train),
             nn.BatchNorm1d(fcnn_layer[4], affine=do_bias_train),
             nn.Tanh(),
-            nn.Linear(fcnn_layer[4], fcnn_layer[5], bias=do_bias_train)
+            nn.Linear(fcnn_layer[4], fcnn_layer[5], bias=do_bias_train),
         )
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:

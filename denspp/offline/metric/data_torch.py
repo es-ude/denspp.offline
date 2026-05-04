@@ -1,5 +1,5 @@
 from sklearn.metrics import precision_recall_fscore_support
-from torch import Tensor, tensor, sum, eq, ne
+from torch import Tensor, eq, ne, sum, tensor
 
 
 def calculate_number_true_predictions(pred: Tensor, true: Tensor) -> Tensor:
@@ -50,7 +50,7 @@ def calculate_recall(pred: Tensor, true: Tensor) -> Tensor:
     return tensor(precision_recall_fscore_support(true, pred, average="micro", warn_for=tuple())[1])
 
 
-def calculate_fbeta(pred: Tensor, true: Tensor, beta: float=1.0) -> Tensor:
+def calculate_fbeta(pred: Tensor, true: Tensor, beta: float = 1.0) -> Tensor:
     """Function for determining the precision metric
     Args:
         pred:   Tensor with predicted values from model
@@ -60,4 +60,6 @@ def calculate_fbeta(pred: Tensor, true: Tensor, beta: float=1.0) -> Tensor:
         Tensor with metrics [precision]
     """
     assert pred.shape == true.shape, "Dimension / shape mismatch"
-    return tensor(precision_recall_fscore_support(true, pred, beta=beta, average="micro", warn_for=tuple())[2])
+    return tensor(
+        precision_recall_fscore_support(true, pred, beta=beta, average="micro", warn_for=tuple())[2]
+    )

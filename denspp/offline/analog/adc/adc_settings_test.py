@@ -1,5 +1,6 @@
-from unittest import TestCase, main
 from copy import deepcopy
+from unittest import TestCase, main
+
 from denspp.offline.analog.adc.adc_settings import SettingsADC
 
 TestSettingsADC = SettingsADC(
@@ -10,8 +11,9 @@ TestSettingsADC = SettingsADC(
     Nadc=12,
     fs_dig=20e3,
     osr=1,
-    is_signed=False
+    is_signed=False,
 )
+
 
 class TestADCSettings(TestCase):
     def test_vcm_unipolar(self):
@@ -54,5 +56,5 @@ class TestADCSettings(TestCase):
         self.assertAlmostEqual(set0.lsb, 0.05, delta=1e-4)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

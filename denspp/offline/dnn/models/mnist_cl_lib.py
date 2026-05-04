@@ -1,4 +1,4 @@
-from torch import nn, Tensor, argmax, flatten, reshape
+from torch import Tensor, argmax, flatten, nn
 
 
 class mnist_test_cl_v0(nn.Module):
@@ -6,9 +6,7 @@ class mnist_test_cl_v0(nn.Module):
         super().__init__()
         self.model_shape = (1, 28, 28)
 
-        self.model = nn.Sequential(
-            nn.Linear(784, 10)
-        )
+        self.model = nn.Sequential(nn.Linear(784, 10))
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x = flatten(x, start_dim=1)
@@ -21,10 +19,7 @@ class mnist_test_cl_v1(nn.Module):
         super().__init__()
         self.model_shape = (1, 28, 28)
 
-        self.model = nn.Sequential(
-            nn.Linear(784, 10),
-            nn.ReLU()
-        )
+        self.model = nn.Sequential(nn.Linear(784, 10), nn.ReLU())
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x = flatten(x, start_dim=1)
@@ -37,10 +32,7 @@ class mnist_test_cl_v2(nn.Module):
         super().__init__()
         self.model_shape = (1, 28, 28)
 
-        self.model = nn.Sequential(
-            nn.Linear(784, 10),
-            nn.Softmax(dim=1)
-        )
+        self.model = nn.Sequential(nn.Linear(784, 10), nn.Softmax(dim=1))
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x = flatten(x, start_dim=1)
@@ -53,11 +45,7 @@ class mnist_test_cl_v3(nn.Module):
         super().__init__()
         self.model_shape = (1, 28, 28)
 
-        self.model = nn.Sequential(
-            nn.Linear(784, 10),
-            nn.BatchNorm1d(10),
-            nn.ReLU()
-        )
+        self.model = nn.Sequential(nn.Linear(784, 10), nn.BatchNorm1d(10), nn.ReLU())
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x = flatten(x, start_dim=1)
@@ -70,11 +58,7 @@ class mnist_test_cl_v4(nn.Module):
         super().__init__()
         self.model_shape = (1, 28, 28)
 
-        self.model = nn.Sequential(
-            nn.Linear(784, 10),
-            nn.BatchNorm1d(10),
-            nn.Softmax(dim=1)
-        )
+        self.model = nn.Sequential(nn.Linear(784, 10), nn.BatchNorm1d(10), nn.Softmax(dim=1))
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x = flatten(x, start_dim=1)
@@ -93,7 +77,7 @@ class mnist_test_cl_v5(nn.Module):
             nn.ReLU(),
             nn.Linear(250, 10),
             nn.BatchNorm1d(10),
-            nn.Softmax(dim=1)
+            nn.Softmax(dim=1),
         )
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
@@ -119,7 +103,7 @@ class mnist_test_cl_v6(nn.Module):
             nn.ReLU(),
             nn.Linear(90, 10),
             nn.BatchNorm1d(10),
-            nn.Softmax(dim=1)
+            nn.Softmax(dim=1),
         )
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
@@ -146,7 +130,7 @@ class mnist_test_cl_v7(nn.Module):
             nn.Conv2d(feature_size[1], feature_size[2], 4, 1, 1),
             nn.BatchNorm2d(num_features=feature_size[2]),
             nn.ReLU(),
-            nn.MaxPool2d(3)
+            nn.MaxPool2d(3),
         )
         self.model_cl = nn.Sequential(
             nn.Linear(32, 64),
@@ -157,7 +141,7 @@ class mnist_test_cl_v7(nn.Module):
             nn.ReLU(),
             nn.Linear(24, 10),
             nn.BatchNorm1d(10),
-            nn.Softmax(dim=1)
+            nn.Softmax(dim=1),
         )
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:

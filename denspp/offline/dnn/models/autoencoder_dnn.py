@@ -1,10 +1,11 @@
-from torch import nn, Tensor
 from elasticai.creator.nn import Sequential
-from elasticai.creator.nn.fixed_point import Linear, Tanh, BatchNormedLinear
+from elasticai.creator.nn.fixed_point import BatchNormedLinear, Tanh
+from torch import Tensor, nn
 
 
 class synthetic_dnn_ae_v1(nn.Module):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
+
     def __init__(self, input_size=32, output_size=3):
         super().__init__()
         self.model_shape = (1, input_size)
@@ -14,25 +15,49 @@ class synthetic_dnn_ae_v1(nn.Module):
 
         # --- Encoder Path
         self.encoder = nn.Sequential(
-            nn.Linear(in_features=iohiddenlayer[0], out_features=iohiddenlayer[1], bias=do_train_bias),
+            nn.Linear(
+                in_features=iohiddenlayer[0],
+                out_features=iohiddenlayer[1],
+                bias=do_train_bias,
+            ),
             nn.BatchNorm1d(num_features=iohiddenlayer[1], affine=do_train_batch),
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[2], bias=do_train_bias),
+            nn.Linear(
+                in_features=iohiddenlayer[1],
+                out_features=iohiddenlayer[2],
+                bias=do_train_bias,
+            ),
             nn.BatchNorm1d(num_features=iohiddenlayer[2], affine=do_train_batch),
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[3], bias=do_train_bias),
+            nn.Linear(
+                in_features=iohiddenlayer[2],
+                out_features=iohiddenlayer[3],
+                bias=do_train_bias,
+            ),
             nn.BatchNorm1d(num_features=iohiddenlayer[3], affine=do_train_batch),
         )
         # --- Decoder Path
         self.decoder = nn.Sequential(
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[3], out_features=iohiddenlayer[2], bias=do_train_bias),
+            nn.Linear(
+                in_features=iohiddenlayer[3],
+                out_features=iohiddenlayer[2],
+                bias=do_train_bias,
+            ),
             nn.BatchNorm1d(num_features=iohiddenlayer[2], affine=do_train_batch),
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[1], bias=do_train_bias),
+            nn.Linear(
+                in_features=iohiddenlayer[2],
+                out_features=iohiddenlayer[1],
+                bias=do_train_bias,
+            ),
             nn.BatchNorm1d(num_features=iohiddenlayer[1], affine=do_train_batch),
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0], bias=do_train_bias)
+            nn.Linear(
+                in_features=iohiddenlayer[1],
+                out_features=iohiddenlayer[0],
+                bias=do_train_bias,
+            ),
         )
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
@@ -45,6 +70,7 @@ class synthetic_dnn_ae_v1(nn.Module):
 
 class synthetic_dnn_ae_v2(nn.Module):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
+
     def __init__(self, input_size=32, output_size=3):
         super().__init__()
         self.model_shape = (1, input_size)
@@ -54,19 +80,35 @@ class synthetic_dnn_ae_v2(nn.Module):
 
         # --- Encoder Path
         self.encoder = nn.Sequential(
-            nn.Linear(in_features=iohiddenlayer[0], out_features=iohiddenlayer[1], bias=do_train_bias),
+            nn.Linear(
+                in_features=iohiddenlayer[0],
+                out_features=iohiddenlayer[1],
+                bias=do_train_bias,
+            ),
             nn.BatchNorm1d(num_features=iohiddenlayer[1], affine=do_train_batch),
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[2], bias=do_train_bias),
-            nn.BatchNorm1d(num_features=iohiddenlayer[2], affine=do_train_batch)
+            nn.Linear(
+                in_features=iohiddenlayer[1],
+                out_features=iohiddenlayer[2],
+                bias=do_train_bias,
+            ),
+            nn.BatchNorm1d(num_features=iohiddenlayer[2], affine=do_train_batch),
         )
         # --- Decoder Path
         self.decoder = nn.Sequential(
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[1], bias=do_train_bias),
+            nn.Linear(
+                in_features=iohiddenlayer[2],
+                out_features=iohiddenlayer[1],
+                bias=do_train_bias,
+            ),
             nn.BatchNorm1d(num_features=iohiddenlayer[1], affine=do_train_batch),
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0], bias=do_train_bias)
+            nn.Linear(
+                in_features=iohiddenlayer[1],
+                out_features=iohiddenlayer[0],
+                bias=do_train_bias,
+            ),
         )
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
@@ -76,6 +118,7 @@ class synthetic_dnn_ae_v2(nn.Module):
 
 class synthetic_dnn_ae_v1_quantized(nn.Module):
     """Class of an autoencoder with Dense-Layer for feature extraction"""
+
     def __init__(self, input_size=32, output_size=3):
         super().__init__()
         self.model_shape = (1, input_size)
@@ -87,26 +130,62 @@ class synthetic_dnn_ae_v1_quantized(nn.Module):
 
         # --- Encoder Path
         self.encoder = Sequential(
-            BatchNormedLinear(in_features=iohiddenlayer[0], out_features=iohiddenlayer[1], bias=do_train_bias,
-                              total_bits=bitwidth_total, frac_bits=bitwidth_frac, bn_affine=do_train_batch),
+            BatchNormedLinear(
+                in_features=iohiddenlayer[0],
+                out_features=iohiddenlayer[1],
+                bias=do_train_bias,
+                total_bits=bitwidth_total,
+                frac_bits=bitwidth_frac,
+                bn_affine=do_train_batch,
+            ),
             Tanh(total_bits=16, frac_bits=2, num_steps=32),
-            BatchNormedLinear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[2], bias=do_train_bias,
-                              total_bits=bitwidth_total, frac_bits=bitwidth_frac, bn_affine=do_train_batch),
+            BatchNormedLinear(
+                in_features=iohiddenlayer[1],
+                out_features=iohiddenlayer[2],
+                bias=do_train_bias,
+                total_bits=bitwidth_total,
+                frac_bits=bitwidth_frac,
+                bn_affine=do_train_batch,
+            ),
             Tanh(total_bits=16, frac_bits=2, num_steps=32),
-            BatchNormedLinear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[3], bias=do_train_bias,
-                              total_bits=bitwidth_total, frac_bits=bitwidth_frac, bn_affine=do_train_batch),
+            BatchNormedLinear(
+                in_features=iohiddenlayer[2],
+                out_features=iohiddenlayer[3],
+                bias=do_train_bias,
+                total_bits=bitwidth_total,
+                frac_bits=bitwidth_frac,
+                bn_affine=do_train_batch,
+            ),
         )
         # --- Decoder Path
         self.decoder = Sequential(
             Tanh(total_bits=bitwidth_total, frac_bits=bitwidth_frac, num_steps=32),
-            BatchNormedLinear(in_features=iohiddenlayer[3], out_features=iohiddenlayer[2], bias=do_train_bias,
-                              total_bits=bitwidth_total, frac_bits=bitwidth_frac, bn_affine=do_train_batch),
+            BatchNormedLinear(
+                in_features=iohiddenlayer[3],
+                out_features=iohiddenlayer[2],
+                bias=do_train_bias,
+                total_bits=bitwidth_total,
+                frac_bits=bitwidth_frac,
+                bn_affine=do_train_batch,
+            ),
             Tanh(total_bits=16, frac_bits=2, num_steps=32),
-            BatchNormedLinear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[1], bias=do_train_bias,
-                              total_bits=bitwidth_total, frac_bits=bitwidth_frac, bn_affine=do_train_batch),
+            BatchNormedLinear(
+                in_features=iohiddenlayer[2],
+                out_features=iohiddenlayer[1],
+                bias=do_train_bias,
+                total_bits=bitwidth_total,
+                frac_bits=bitwidth_frac,
+                bn_affine=do_train_batch,
+            ),
             Tanh(total_bits=16, frac_bits=2, num_steps=32),
-            BatchNormedLinear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0], bias=do_train_bias,
-                              total_bits=bitwidth_total, frac_bits=bitwidth_frac, bn_affine=do_train_batch),
+            BatchNormedLinear(
+                in_features=iohiddenlayer[1],
+                out_features=iohiddenlayer[0],
+                bias=do_train_bias,
+                total_bits=bitwidth_total,
+                frac_bits=bitwidth_frac,
+                bn_affine=do_train_batch,
+            ),
         )
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
@@ -128,24 +207,30 @@ class synthethic_dnn_ae_v2(nn.Module):
 
         # --- Encoder Path
         self.encoder = Sequential(
-            BatchNormedLinear(in_features=iohiddenlayer[0], out_features=iohiddenlayer[1],
-                              total_bits=bits_total, frac_bits=bits_frac,
-                              bias=do_train_bias),
+            BatchNormedLinear(
+                in_features=iohiddenlayer[0],
+                out_features=iohiddenlayer[1],
+                total_bits=bits_total,
+                frac_bits=bits_frac,
+                bias=do_train_bias,
+            ),
             Tanh(total_bits=bits_total, frac_bits=bits_frac),
-            BatchNormedLinear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[2],
-                              total_bits=bits_total, frac_bits=bits_frac,
-                              bias=do_train_bias)
+            BatchNormedLinear(
+                in_features=iohiddenlayer[1],
+                out_features=iohiddenlayer[2],
+                total_bits=bits_total,
+                frac_bits=bits_frac,
+                bias=do_train_bias,
+            ),
         )
         # --- Decoder Path
         self.decoder = nn.Sequential(
             nn.BatchNorm1d(num_features=iohiddenlayer[2]),
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[2],
-                      out_features=iohiddenlayer[1]),
+            nn.Linear(in_features=iohiddenlayer[2], out_features=iohiddenlayer[1]),
             nn.BatchNorm1d(num_features=iohiddenlayer[1]),
             nn.Tanh(),
-            nn.Linear(in_features=iohiddenlayer[1],
-                      out_features=iohiddenlayer[0])
+            nn.Linear(in_features=iohiddenlayer[1], out_features=iohiddenlayer[0]),
         )
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:

@@ -1,22 +1,23 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from sklearn.metrics import ConfusionMatrixDisplay, precision_recall_fscore_support
 
-from denspp.offline.plot_helper import (
-    save_figure,
-    cm_to_inch
-)
+from denspp.offline.plot_helper import cm_to_inch, save_figure
 
 
-def plot_confusion(true_labels: list | np.ndarray,
-                   pred_labels: list | np.ndarray,
-                   plotting: str="class",
-                   show_accuracy: bool=False,
-                   cl_dict=None,
-                   path2save: str="", name_addon: str="",
-                   timestamps_result: list=(),
-                   timestamps_f1: list=(), timestamps_accuracy: list=(),
-                   show_plots: bool=False) -> None:
+def plot_confusion(
+    true_labels: list | np.ndarray,
+    pred_labels: list | np.ndarray,
+    plotting: str = "class",
+    show_accuracy: bool = False,
+    cl_dict=None,
+    path2save: str = "",
+    name_addon: str = "",
+    timestamps_result: list = (),
+    timestamps_f1: list = (),
+    timestamps_accuracy: list = (),
+    show_plots: bool = False,
+) -> None:
     """This function is designed to generate and display confusion matrices for classification results and
     timestamp-based comparisons. The function takes various parameters, including true and predicted labels, as well as additional information such as timestamps and plotting preferences. The confusion matrix for classification is
     displayed using the ConfusionMatrixDisplay class from scikit-learn. It also calculates and prints precision, recall,
@@ -54,22 +55,31 @@ def plot_confusion(true_labels: list | np.ndarray,
             dict_available = False
 
     max_key_length = 0
-    precision, recall, fbeta, _ = precision_recall_fscore_support(true_labels, pred_labels, average='weighted')
+    precision, recall, fbeta, _ = precision_recall_fscore_support(
+        true_labels, pred_labels, average="weighted"
+    )
 
     if plotting == "timestamps" or plotting == "both":
         # --- Plotting the results for the timestamp comparison
-        plt.imshow(timestamps_result, cmap=plt.cm.Blues, interpolation='nearest')
+        plt.imshow(timestamps_result, cmap=plt.cm.Blues, interpolation="nearest")
         for i in range(timestamps_result.shape[0]):
             for j in range(timestamps_result.shape[1]):
-                plt.text(j, i, f'{timestamps_result[i, j]:.2f}', ha='center', va='center', color='white')
-        xtick_labels = ['true', 'false']
+                plt.text(
+                    j,
+                    i,
+                    f"{timestamps_result[i, j]:.2f}",
+                    ha="center",
+                    va="center",
+                    color="white",
+                )
+        xtick_labels = ["true", "false"]
         plt.xticks(np.arange(2), xtick_labels)
-        ytick_labels = ['positive', 'negative']
+        ytick_labels = ["positive", "negative"]
         plt.yticks(np.arange(2), ytick_labels)
         if show_accuracy:
-            plt.title(f'F1-Score = {timestamps_f1:.4f} - Accuracy = {timestamps_accuracy:.4f}')
+            plt.title(f"F1-Score = {timestamps_f1:.4f} - Accuracy = {timestamps_accuracy:.4f}")
         else:
-            plt.title(f'F1-Score = {timestamps_f1:.4f}')
+            plt.title(f"F1-Score = {timestamps_f1:.4f}")
     elif dict_available:
         for keys in cl_used:
             max_key_length = len(keys) if len(keys) > max_key_length else max_key_length
@@ -83,20 +93,30 @@ def plot_confusion(true_labels: list | np.ndarray,
                 use_cl_dict.append(cl_used[int(idx)])
 
         cmp = ConfusionMatrixDisplay.from_predictions(
-            y_true=true_labels, y_pred=pred_labels, normalize='pred', display_labels=use_cl_dict
+            y_true=true_labels,
+            y_pred=pred_labels,
+            normalize="pred",
+            display_labels=use_cl_dict,
         )
     else:
         do_xticks_vertical = False
         cmp = ConfusionMatrixDisplay.from_predictions(
-            y_true=true_labels, y_pred=pred_labels, normalize='pred',
+            y_true=true_labels,
+            y_pred=pred_labels,
+            normalize="pred",
         )
 
     # --- Plotting the results of the class confusion matrix
     ax = plt.subplots(figsize=(cm_to_inch(12), cm_to_inch(12.5)))[1]
-    cmp.plot(ax=ax, colorbar=False, values_format='.3f',
-             text_kw={'fontsize': 8}, cmap=plt.cm.Blues,
-             xticks_rotation=('vertical' if do_xticks_vertical else 'horizontal'))
-    cmp.ax_.set_title(f'Precision = {100*precision:.2f}%, Recall = {100*recall:.2f}%')
+    cmp.plot(
+        ax=ax,
+        colorbar=False,
+        values_format=".3f",
+        text_kw={"fontsize": 8},
+        cmap=plt.cm.Blues,
+        xticks_rotation=("vertical" if do_xticks_vertical else "horizontal"),
+    )
+    cmp.ax_.set_title(f"Precision = {100 * precision:.2f}%, Recall = {100 * recall:.2f}%")
     plt.tight_layout()
     # --- saving
     if path2save:

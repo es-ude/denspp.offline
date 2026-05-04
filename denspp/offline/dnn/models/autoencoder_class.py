@@ -1,8 +1,9 @@
-from torch import nn, Tensor, argmax
+from torch import Tensor, argmax, nn
 
 
 class synthetic_ae_cl_v1(nn.Module):
     """Classification model of autoencoder output"""
+
     def __init__(self, input_size=6, output_size=5):
         super().__init__()
         self.model_shape = (1, input_size)

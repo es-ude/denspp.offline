@@ -23,7 +23,7 @@ def check_string_equal_elements_any(text: str, elements: list[str]) -> bool:
     :return:            True if any elements are present in text
     """
     val = any(elem in text for elem in elements)
-    return  val
+    return val
 
 
 def check_keylist_elements_all(keylist: list[str], elements: list[str]) -> bool:
@@ -51,6 +51,7 @@ def check_elem_unique(elements: list) -> bool:
     """
     from collections import Counter
     from itertools import chain
+
     chck = elements if not type(elements[0]) == list else list(chain.from_iterable(elements))
     return all(cnt == 1 for cnt in Counter(chck).values())
 
@@ -65,7 +66,7 @@ def check_value_range(value: float | int, range: list[float | int]) -> bool:
     return range[0] <= value <= range[1]
 
 
-def is_close(value: float, target: float, tolerance: float=0.05) -> bool:
+def is_close(value: float, target: float, tolerance: float = 0.05) -> bool:
     """Function for checking if float value is in near of the target value
     :param value:       Float value to check
     :param target:      Target value
@@ -75,13 +76,14 @@ def is_close(value: float, target: float, tolerance: float=0.05) -> bool:
     return abs(value - target) <= abs(tolerance)
 
 
-def get_path_to_project(new_folder: str='', max_levels: int=5) -> str:
+def get_path_to_project(new_folder: str = "", max_levels: int = 5) -> str:
     """Function for getting the path to find the project folder structure in application.
     :param new_folder:  New folder path
     :param max_levels:  Max number of levels to get-out for finding pyproject.toml
     :return:            String of absolute path to start the project structure
     """
     from pathlib import Path
+
     cwd = Path(".").absolute()
     current = cwd
 
@@ -101,7 +103,8 @@ def get_path_to_project(new_folder: str='', max_levels: int=5) -> str:
 def get_path_to_project_templates() -> str:
     """Getting the path to the project templates
     :return:    String with path"""
-    from os.path import dirname, abspath
+    from os.path import abspath, dirname
+
     import denspp.offline.template as ref
 
     path_to_temp = dirname(ref.__file__)

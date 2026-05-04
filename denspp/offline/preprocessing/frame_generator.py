@@ -1,7 +1,9 @@
-import numpy as np
 from dataclasses import dataclass
 from logging import Logger, getLogger
+
+import numpy as np
 from fxpmath import Config, Fxp
+
 from .thresholding import SettingsThreshold, Thresholding
 
 
@@ -42,6 +44,7 @@ class SettingsFrame:
         align_sec:      Starting position for aligning the frame waveform [s]
         thr_gain:       Float with additional scaling value applied on the threshold value [hyperparameter]
     """
+
     mode_align: str
     mode_thr: str
     sampling_rate: float
@@ -68,8 +71,8 @@ class SettingsFrame:
 
 
 DefaultSettingsFrame = SettingsFrame(
-    mode_thr='const',
-    mode_align='max',
+    mode_thr="const",
+    mode_align="max",
     sampling_rate=20e3,
     window_sec=2e-3,
     offset_sec=0.1e-3,
@@ -85,12 +88,14 @@ class FrameGenerator:
         """
         self._logger: Logger = getLogger(__name__)
         self._settings = settings
-        self._threshold = Thresholding(settings=SettingsThreshold(
-            method=self._settings.mode_thr,
-            sampling_rate=self._settings.sampling_rate,
-            gain=self._settings.thr_gain,
-            window_sec=2*self._settings.window_sec,
-        ))
+        self._threshold = Thresholding(
+            settings=SettingsThreshold(
+                method=self._settings.mode_thr,
+                sampling_rate=self._settings.sampling_rate,
+                gain=self._settings.thr_gain,
+                window_sec=2 * self._settings.window_sec,
+            )
+        )
 
     def _frame_align_none(self, frame_in: np.ndarray) -> int:
         return self._settings.length_offset_int
@@ -119,7 +124,7 @@ class FrameGenerator:
 
     def get_methods_frame_aligning(self) -> list:
         """Function for getting a list with all methods for frame aligning"""
-        split_key = '_frame_align_'
+        split_key = "_frame_align_"
         return [method.split(split_key)[-1] for method in dir(self) if split_key in method]
 
     def get_aligning_position(self, frame_in: np.ndarray) -> int:
@@ -127,35 +132,29 @@ class FrameGenerator:
         :param frame_in:    Numpy array with detected spike frames
         :return:            Integer with starting position
         """
-        method = f'_frame_align_{self._settings.mode_align.lower()}'
+        method = f"_frame_align_{self._settings.mode_align.lower()}"
         if method in self.get_methods_frame_aligning():
-            raise ValueError(f"Frame Aligning Method '{self._settings.mode_align.lower()}' is not in {self.get_methods_frame_aligning()}. Please change!")
+            raise ValueError(
+                f"Frame Aligning Method '{self._settings.mode_align.lower()}' is not in {self.get_methods_frame_aligning()}. Please change!"
+            )
         return getattr(self, method)(frame_in)
 
     # --------- Frame Generation -------------
-    def get_threshold(self, xin: np.ndarray, do_abs: bool=False, **kwargs) -> np.ndarray:
+    def get_threshold(self, xin: np.ndarray, do_abs: bool = False, **kwargs) -> np.ndarray:
         """Function for returning the threshold array in dependency of the transient input
         :param xin:     Numpy array with the transient raw input
         :param do_abs:  Boolean flag to apply absolute input for thresholding
         :return:        Numpy array with threshold value
         """
-        return self._threshold.get_threshold(
-            xin=xin,
-            do_abs=do_abs,
-            **kwargs
-        )
+        return self._threshold.get_threshold(xin=xin, do_abs=do_abs, **kwargs)
 
-    def get_threshold_position(self, xin: np.ndarray, do_abs: bool=False, **kwargs) -> np.ndarray:
+    def get_threshold_position(self, xin: np.ndarray, do_abs: bool = False, **kwargs) -> np.ndarray:
         """Function for returning the positions of the crossing-points between input and threshold
         :param xin:     Numpy array with the transient raw input
         :param do_abs:  Boolean flag to apply absolute input for thresholding
         :return:        Numpy array with threshold value
         """
-        return self._threshold.get_threshold_position(
-            xin=xin,
-            do_abs=do_abs,
-            **kwargs
-        )
+        return self._threshold.get_threshold_position(xin=xin, do_abs=do_abs, **kwargs)
 
     def __frame_extraction(self, xraw: np.ndarray, xpos: np.ndarray, xoffset: int = 0) -> FrameWaveform:
         f0 = self._settings.length_offset_int
@@ -183,11 +182,19 @@ class FrameGenerator:
         return FrameWaveform(
             waveform=np.array(alig_frames),
             xpos=np.array(alig_xpos),
-            label=np.zeros(len(alig_xpos, ), dtype=np.dtype('uint8')) + 255,
-            sampling_rate=self._settings.sampling_rate
+            label=np.zeros(
+                len(
+                    alig_xpos,
+                ),
+                dtype=np.dtype("uint8"),
+            )
+            + 255,
+            sampling_rate=self._settings.sampling_rate,
         )
 
-    def frame_generation(self, xraw: np.ndarray, xsda: np.ndarray, do_abs: bool=False, **kwargs) -> FrameWaveform:
+    def frame_generation(
+        self, xraw: np.ndarray, xsda: np.ndarray, do_abs: bool = False, **kwargs
+    ) -> FrameWaveform:
         """Frame generation of SDA output and threshold
         :param xraw:    Numpy array with transient raw data
         :param xsda:    Numpy array with transient signal from spike detection algorithm
@@ -195,18 +202,13 @@ class FrameGenerator:
         :return:        Class FrameWaveform with waveforms, positions and labels
         """
         xpos = self._threshold.get_threshold_position(
-            xin=xsda,
-            pre_time=self._settings.offset_sec,
-            do_abs=do_abs,
-            **kwargs
+            xin=xsda, pre_time=self._settings.offset_sec, do_abs=do_abs, **kwargs
         )
-        return self.__frame_extraction(
-            xraw=xraw,
-            xpos=xpos,
-            xoffset=0
-        )
+        return self.__frame_extraction(xraw=xraw, xpos=xpos, xoffset=0)
 
-    def frame_generation_with_position(self, xraw: np.ndarray, xpos: np.ndarray, xoffset: int) -> FrameWaveform:
+    def frame_generation_with_position(
+        self, xraw: np.ndarray, xpos: np.ndarray, xoffset: int
+    ) -> FrameWaveform:
         """Frame generation from already detected positions (in datasets with groundtruth)
         :param xraw:    Numpy array with transient raw data
         :param xpos:    Numpy array with position where a spike frame is available
@@ -214,14 +216,12 @@ class FrameGenerator:
         :return:        Tuple with [0] original (large) spike frame, [1] algined spike frame and [2] positions
 
         """
-        return self.__frame_extraction(
-            xraw=xraw,
-            xpos=xpos,
-            xoffset=xoffset
-        )
+        return self.__frame_extraction(xraw=xraw, xpos=xpos, xoffset=xoffset)
 
     @staticmethod
-    def do_frame_quantization(frames: np.ndarray, bit_total: int, bit_frac: int, signed: bool) -> np.ndarray:
+    def do_frame_quantization(
+        frames: np.ndarray, bit_total: int, bit_frac: int, signed: bool
+    ) -> np.ndarray:
         """Quantize the frame for sending it to hardware
         :param frames:      Numpy array with the frame waveforms [shape=(num. of waveforms, samples for each waveform)]
         :param bit_total:   Integer of the total width
@@ -230,9 +230,10 @@ class FrameGenerator:
         :return:            Numpy array with the quantized frame waveform
         """
         fxp_config = Config()
-        return Fxp(val=frames,
-                   signed=signed,
-                   n_word=bit_total,
-                   n_frac=bit_frac,
-                   fxp_config=fxp_config
-                   ).get_val()
+        return Fxp(
+            val=frames,
+            signed=signed,
+            n_word=bit_total,
+            n_frac=bit_frac,
+            fxp_config=fxp_config,
+        ).get_val()

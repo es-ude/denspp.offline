@@ -14,14 +14,15 @@ class SettingsADC:
         osr:        Oversampling ratio of ADC [/]
         is_signed:  Output type of digital value {"signed": True | "unsigned": False}
     """
-    vdd:        float
-    vss:        float
-    dvref:      float
-    fs_ana:     float
-    fs_dig:     float
-    Nadc:       int
-    osr:        int
-    is_signed:  bool
+
+    vdd: float
+    vss: float
+    dvref: float
+    fs_ana: float
+    fs_dig: float
+    Nadc: int
+    osr: int
+    is_signed: bool
 
     @property
     def vcm(self) -> float:
@@ -45,7 +46,7 @@ class SettingsADC:
 
     @property
     def lsb(self) -> float:
-        return self.vref_range / (2 ** self.Nadc)
+        return self.vref_range / (2**self.Nadc)
 
 
 @dataclass
@@ -57,21 +58,21 @@ class SettingsNon:
         offset:     Corner frequency of the flicker (1/f) noise [Hz]
         gain_error: Additional error on the gain of the ADC SAR [V/V]
     """
+
     use_noise: bool
     wgndB: float
     offset: float
     gain_error: float
 
 
-RecommendedSettingsADC = SettingsADC(
-    vdd=0.6, vss=-0.6, dvref=0.1,
+DefaultSettingsADC = SettingsADC(
+    vdd=0.6,
+    vss=-0.6,
+    dvref=0.1,
     fs_ana=40e3,
-    Nadc=12, fs_dig=20e3, osr=1,
-    is_signed=False
+    Nadc=12,
+    fs_dig=20e3,
+    osr=1,
+    is_signed=False,
 )
-RecommendedSettingsNon = SettingsNon(
-    use_noise=True,
-    wgndB=-100,
-    offset=1e-6,
-    gain_error=0.0
-)
+DefaultSettingsNon = SettingsNon(use_noise=True, wgndB=-100, offset=1e-6, gain_error=0.0)

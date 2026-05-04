@@ -1,8 +1,11 @@
 import unittest
-import numpy as np
 from copy import deepcopy
+
+import numpy as np
+
 from denspp.offline.metric.data_numpy import calculate_error_mae
-from .dly_amp import SettingsDLY, DefaultSettingsDLY, DelayAmplifier
+
+from .dly_amp import DefaultSettingsDLY, DelayAmplifier, SettingsDLY
 
 
 class DelayAmplifierTest(unittest.TestCase):
@@ -14,9 +17,9 @@ class DelayAmplifierTest(unittest.TestCase):
         self.dut = DelayAmplifier(
             settings_dev=self.set0,
         )
-        time = np.linspace(start=0., stop=1., num=int(1. * self.set0.fs_ana), endpoint=True)
+        time = np.linspace(start=0.0, stop=1.0, num=int(1.0 * self.set0.fs_ana), endpoint=True)
         scale_amp = (self.set0.vdd - self.set0.vss) / 4
-        self.signal_in = scale_amp * np.sin(2*np.pi*time*5)
+        self.signal_in = scale_amp * np.sin(2 * np.pi * time * 5)
 
     def test_settings_vcm_bipolar(self):
         set0: SettingsDLY = deepcopy(self.set0)
@@ -32,39 +35,30 @@ class DelayAmplifierTest(unittest.TestCase):
 
     def test_simple_delay(self):
         chck = self.signal_in + self.set0.vcm
-        rslt = self.dut.do_simple_delay(
-            u_inp=self.signal_in
-        )
-        error = calculate_error_mae(rslt[self.set0.num_dly_taps:], chck[:-self.set0.num_dly_taps])
+        rslt = self.dut.do_simple_delay(u_inp=self.signal_in)
+        error = calculate_error_mae(rslt[self.set0.num_dly_taps :], chck[: -self.set0.num_dly_taps])
         self.assertLess(error, 1e-5)
 
     def test_recursive_delay(self):
         chck = self.signal_in + self.set0.vcm
-        rslt = self.dut.do_recursive_delay(
-            u_inp=self.signal_in
-        )
-        error = calculate_error_mae(rslt[self.set0.num_dly_taps:], chck[:-self.set0.num_dly_taps])
+        rslt = self.dut.do_recursive_delay(u_inp=self.signal_in)
+        error = calculate_error_mae(rslt[self.set0.num_dly_taps :], chck[: -self.set0.num_dly_taps])
         self.assertLess(error, 1e-5)
 
     def test_allpass_first_order_delay(self):
         chck = self.signal_in + self.set0.vcm
-        rslt = self.dut.do_allpass_first_order(
-            u_in=self.signal_in
-        )
+        rslt = self.dut.do_allpass_first_order(u_in=self.signal_in)
         steps = int(self.set0.num_dly_taps / np.pi)
         error = calculate_error_mae(rslt[steps:], chck[:-steps])
         self.assertLess(error, 1e-3)
 
     def test_allpass_second_order_delay(self):
         chck = self.signal_in + self.set0.vcm
-        rslt = self.dut.do_allpass_second_order(
-            u_in=self.signal_in,
-            bandwidth=100.
-        )
-        steps = int(self.set0.num_dly_taps/np.pi)
+        rslt = self.dut.do_allpass_second_order(u_in=self.signal_in, bandwidth=100.0)
+        steps = int(self.set0.num_dly_taps / np.pi)
         error = calculate_error_mae(rslt[steps:], chck[:-steps])
         self.assertLess(error, 1e-2)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

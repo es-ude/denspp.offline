@@ -1,8 +1,9 @@
-import numpy as np
 from copy import deepcopy
 from unittest import TestCase, main
-from denspp.offline.analog.amplifier.comparator import SettingsCOMP, Comparator
 
+import numpy as np
+
+from denspp.offline.analog.amplifier.comparator import Comparator, SettingsCOMP
 
 TestSettings = SettingsCOMP(
     vdd=+1.8,
@@ -12,14 +13,20 @@ TestSettings = SettingsCOMP(
     noise_dis=1e-12,
     hysteresis=0.25,
     out_analog=False,
-    out_invert=False
+    out_invert=False,
 )
 
 
 class Test_AnalogComparator(TestCase):
     method = Comparator(settings_dev=TestSettings)
-    data_tran_in = np.sin(2*np.pi * 1 * np.linspace(start=0, stop=2, num=21, endpoint=True))
-    data_dc_in = TestSettings.vcm + np.array([-1.0, -0.5, -0.25, 0.25, 0.5, 1.0, 0.5, 0.25, -0.25, -0.5, -1.0]) * TestSettings.vdd * TestSettings.hysteresis * 1.2
+    data_tran_in = np.sin(2 * np.pi * 1 * np.linspace(start=0, stop=2, num=21, endpoint=True))
+    data_dc_in = (
+        TestSettings.vcm
+        + np.array([-1.0, -0.5, -0.25, 0.25, 0.5, 1.0, 0.5, 0.25, -0.25, -0.5, -1.0])
+        * TestSettings.vdd
+        * TestSettings.hysteresis
+        * 1.2
+    )
 
     def test_settings_vcm_bipolar(self):
         set0: SettingsCOMP = deepcopy(TestSettings)
@@ -38,7 +45,31 @@ class Test_AnalogComparator(TestCase):
         set0.out_analog = False
 
         result = Comparator(settings_dev=set0).cmp_ideal(self.data_tran_in, set0.vcm)
-        ref = np.array([True, True, True, True, True, True, False, False, False, False, False, True, True, True, True, True, False, False, False, False, False])
+        ref = np.array(
+            [
+                True,
+                True,
+                True,
+                True,
+                True,
+                True,
+                False,
+                False,
+                False,
+                False,
+                False,
+                True,
+                True,
+                True,
+                True,
+                True,
+                False,
+                False,
+                False,
+                False,
+                False,
+            ]
+        )
         np.testing.assert_array_equal(result, ref)
 
     def test_comp_ideal_voltage(self):
@@ -46,7 +77,31 @@ class Test_AnalogComparator(TestCase):
         set0.out_analog = True
 
         result = Comparator(settings_dev=set0).cmp_ideal(self.data_tran_in, set0.vcm)
-        ref = np.array([0.0000000e+00,  1.8000000e+00,  1.8000000e+00,  1.8000000e+00,  1.8000000e+00,  1.2246468e-13, -1.8000000e+00, -1.8000000e+00, -1.8000000e+00, -1.8000000e+00, -2.4492936e-13,  1.8000000e+00,  1.8000000e+00,  1.8000000e+00,  1.8000000e+00,  3.6739404e-13, -1.8000000e+00, -1.8000000e+00, -1.8000000e+00, -1.8000000e+00, -4.8985872e-13])
+        ref = np.array(
+            [
+                0.0000000e00,
+                1.8000000e00,
+                1.8000000e00,
+                1.8000000e00,
+                1.8000000e00,
+                1.2246468e-13,
+                -1.8000000e00,
+                -1.8000000e00,
+                -1.8000000e00,
+                -1.8000000e00,
+                -2.4492936e-13,
+                1.8000000e00,
+                1.8000000e00,
+                1.8000000e00,
+                1.8000000e00,
+                3.6739404e-13,
+                -1.8000000e00,
+                -1.8000000e00,
+                -1.8000000e00,
+                -1.8000000e00,
+                -4.8985872e-13,
+            ]
+        )
         np.testing.assert_array_almost_equal(result, ref, decimal=2)
 
     def test_comp_ideal_offset_boolean(self):
@@ -142,7 +197,10 @@ class Test_AnalogComparator(TestCase):
         np.testing.assert_array_equal(result, ref)
 
     def test_extract_rising_edge_single(self):
-        stimulus = np.array([False, False, False, True, True, True, True, True, False, False], dtype=bool)
+        stimulus = np.array(
+            [False, False, False, True, True, True, True, True, False, False],
+            dtype=bool,
+        )
         points = self.method.extract_rising_edge(stimulus)
         self.assertEqual(points, [3])
 
@@ -152,7 +210,10 @@ class Test_AnalogComparator(TestCase):
         self.assertEqual(points, [2, 6])
 
     def test_extract_falling_edge_single(self):
-        stimulus = np.array([False, False, False, True, True, True, True, True, False, False], dtype=bool)
+        stimulus = np.array(
+            [False, False, False, True, True, True, True, True, False, False],
+            dtype=bool,
+        )
         points = self.method.extract_falling_edge(stimulus)
         self.assertEqual(points, [8])
 
@@ -162,5 +223,5 @@ class Test_AnalogComparator(TestCase):
         self.assertEqual(points, [4, 8])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

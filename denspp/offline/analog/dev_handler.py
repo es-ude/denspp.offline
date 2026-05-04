@@ -1,16 +1,21 @@
-import numpy as np
-from tqdm import tqdm
-from inspect import getfullargspec
 from dataclasses import dataclass
+from inspect import getfullargspec
 from logging import getLogger
+
+import numpy as np
 from matplotlib import pyplot as plt
 from scipy.constants import Boltzmann, elementary_charge
-from scipy.optimize import least_squares, curve_fit
+from scipy.optimize import curve_fit, least_squares
+from tqdm import tqdm
 
-from denspp.offline.plot_helper import scale_auto_value, save_figure
+from denspp.offline.analog.dev_noise import (
+    DefaultSettingsNoise,
+    ProcessNoise,
+    SettingsNoise,
+)
 from denspp.offline.analog.iv_polyfit import PolyfitIV
-from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, DefaultSettingsNoise
-from denspp.offline.metric.data_numpy import calculate_error_rae, calculate_error_mse
+from denspp.offline.metric.data_numpy import calculate_error_mse, calculate_error_rae
+from denspp.offline.plot_helper import save_figure, scale_auto_value
 
 
 @dataclass
@@ -24,12 +29,13 @@ class SettingsDevice:
         temp:       Temperature [K]
         use_poly:   Boolean for using polynom fit [True] of IV curve for transient data analysis instead of regression [False]
     """
-    type:       str
-    fs_ana:     float
-    noise_en:   bool
+
+    type: str
+    fs_ana: float
+    noise_en: bool
     params_use: dict
-    temp:       float
-    use_poly:   bool
+    temp: float
+    use_poly: bool
 
     @property
     def temperature_voltage(self) -> float:
@@ -53,16 +59,17 @@ class ElectricalLoadHandler(ProcessNoise):
     _bounds_curr: list
     _bounds_volt: list
 
-    def __init__(self, settings_dev: SettingsDevice, settings_noise: SettingsNoise=DefaultSettingsNoise) -> None:
+    def __init__(
+        self,
+        settings_dev: SettingsDevice,
+        settings_noise: SettingsNoise = DefaultSettingsNoise,
+    ) -> None:
         """Class for emulating an electrical device
         :param settings_dev:        Class for controlling the device simulation
         :param settings_noise:      Class for controlling the noise behaviour
         :return:                    None
         """
-        ProcessNoise.__init__(self,
-            settings=settings_noise,
-            fs_ana=settings_dev.fs_ana
-        )
+        ProcessNoise.__init__(self, settings=settings_noise, fs_ana=settings_dev.fs_ana)
 
         self._settings_device = settings_dev
         self._logger = getLogger(__name__)
@@ -70,7 +77,7 @@ class ElectricalLoadHandler(ProcessNoise):
         self._polynom_fit = PolyfitIV(
             sampling_rate=settings_dev.fs_ana,
             en_noise=settings_dev.noise_en,
-            settings_noise=settings_noise
+            settings_noise=settings_noise,
         )
 
         self._num_points = 1001
@@ -81,11 +88,11 @@ class ElectricalLoadHandler(ProcessNoise):
     def _calc_error(y_pred: float | np.ndarray, y_true: float | np.ndarray) -> float:
         return calculate_error_rae(y_pred, y_true)
 
-    def _check_right_param_format(self, new_list: list=()) -> bool:
+    def _check_right_param_format(self, new_list: list = ()) -> bool:
         """Function for checking right keys of registered module and settings are equal"""
         keys_set = sorted([key for key in self._settings_device.dev_value.keys()])
         keys_bnd = sorted(new_list)
-        keys_ref = sorted(self._type_device[self._settings_device.type]['param'])
+        keys_ref = sorted(self._type_device[self._settings_device.type]["param"])
         check = keys_set == keys_ref if len(new_list) == 0 else keys_bnd == keys_ref
         return check
 
@@ -99,11 +106,25 @@ class ElectricalLoadHandler(ProcessNoise):
         """
         param = getfullargspec(func_fit)[0][2:]
         self._logger.debug(f"Registering device: {short_label} ({description}) with params: {param}")
-        module = {short_label: {'desp': description, 'param': param, 'equa': func_equa, 'reg': func_reg, 'fit': func_fit}}
+        module = {
+            short_label: {
+                "desp": description,
+                "param": param,
+                "equa": func_equa,
+                "reg": func_reg,
+                "fit": func_fit,
+            }
+        }
         self._type_device.update(module)
 
-    def _extract_iv_curve_with_polyfit(self, current: np.ndarray, voltage: np.ndarray, show_plots: bool=False,
-                                       find_best_order: bool=False, order_range: list=(2, 18)) -> float:
+    def _extract_iv_curve_with_polyfit(
+        self,
+        current: np.ndarray,
+        voltage: np.ndarray,
+        show_plots: bool = False,
+        find_best_order: bool = False,
+        order_range: list = (2, 18),
+    ) -> float:
         """Extracting the polynom fit parameters and plotting it compared to regression task
         :param current:             Numpy array with current values
         :param voltage:             Numpy array with voltage values
@@ -117,7 +138,7 @@ class ElectricalLoadHandler(ProcessNoise):
             voltage=voltage,
             show_plots=show_plots,
             find_best_order=find_best_order,
-            order_range=order_range
+            order_range=order_range,
         )
 
     def _extract_iv_curve_with_regression(self, params_dev: dict) -> dict:
@@ -128,23 +149,40 @@ class ElectricalLoadHandler(ProcessNoise):
             Dictionary with two numpy arrays with current ['I'] and voltage ['V'] from device
         """
         if self._settings_device.type in self._type_device[self._settings_device.type]:
-            self._logger.debug(f"Apply regression function for getting device transfer function of {self._settings_device.type}")
+            self._logger.debug(
+                f"Apply regression function for getting device transfer function of {self._settings_device.type}"
+            )
             self._logger.debug("Generate I-V regression for given current boundries (Negative range)")
-            u_path = np.logspace(start=self._bounds_volt[0], stop=self._bounds_volt[1], num=self._num_points, endpoint=True)
+            u_path = np.logspace(
+                start=self._bounds_volt[0],
+                stop=self._bounds_volt[1],
+                num=self._num_points,
+                endpoint=True,
+            )
             i_path = self._do_regression(u_inp=u_path, u_inn=0.0, params=params_dev, disable_print=True)
         else:
             self._logger.debug("Using normal device equation for getting I-V-behaviour")
-            u_path = np.linspace(self._bounds_volt[0], self._bounds_volt[1], self._num_points, endpoint=True)
+            u_path = np.linspace(
+                self._bounds_volt[0],
+                self._bounds_volt[1],
+                self._num_points,
+                endpoint=True,
+            )
             i_path = self._get_current_from_equation(u_path, 0.0, params_dev)
 
         # --- Limiting with voltage boundaries
         self._logger.debug("Truncating the electrical signals to desired bounds")
         x_start = int(np.argwhere(u_path >= self._bounds_volt[0]).flatten()[0])
         x_stop = int(np.argwhere(u_path >= self._bounds_volt[1]).flatten()[0])
-        return {'I': i_path[x_start:x_stop], 'V': u_path[x_start:x_stop]}
+        return {"I": i_path[x_start:x_stop], "V": u_path[x_start:x_stop]}
 
-    def _do_regression(self, u_inp: float | np.ndarray, u_inn: float | np.ndarray,
-                       params: dict=(), disable_print: bool=False) -> np.ndarray:
+    def _do_regression(
+        self,
+        u_inp: float | np.ndarray,
+        u_inn: float | np.ndarray,
+        params: dict = (),
+        disable_print: bool = False,
+    ) -> np.ndarray:
         """Performing the behaviour of the device with regression
         :param u_inp:           Positive input voltage [V]
         :param u_inn:           Negative input voltage [V]
@@ -167,23 +205,31 @@ class ElectricalLoadHandler(ProcessNoise):
             iout = list()
             self._logger.debug(f"Start regression of device: {self._settings_device.type}")
             for idx, u_sample in enumerate(tqdm(du, desc="Regression Progress:", disable=disable_print)):
-                sign_pos = u_sample >= 0.
+                sign_pos = u_sample >= 0.0
                 y_start = y_initial if idx == 0 else abs(iout[-1])
                 result = least_squares(
-                    self._type_device[self._settings_device.type]['reg'],
+                    self._type_device[self._settings_device.type]["reg"],
                     y_start,
-                    jac='3-point',
+                    jac="3-point",
                     bounds=(bounds[0], bounds[1]),
-                    args=(abs(u_sample), params_used)
+                    args=(abs(u_sample), params_used),
                 )
                 iout.append(result.x[0] if sign_pos else -result.x[0])
             return np.array(iout, dtype=float)
         else:
             raise KeyError("Parameter keys are not identical")
 
-    def _test_fit_option(self, voltage_test: np.ndarray, params_used: dict | list,
-                         methods_compare: list, u_inn: float=0.0, plot_title: str='',
-                         do_test: bool=False, do_plot: bool=True, path2save: str='') -> float:
+    def _test_fit_option(
+        self,
+        voltage_test: np.ndarray,
+        params_used: dict | list,
+        methods_compare: list,
+        u_inn: float = 0.0,
+        plot_title: str = "",
+        do_test: bool = False,
+        do_plot: bool = True,
+        path2save: str = "",
+    ) -> float:
         """Function for testing and plotting the comparison
         :param params_used:             Dictionary with device parameters
         :param methods_compare:         List with string labels of used method
@@ -200,10 +246,15 @@ class ElectricalLoadHandler(ProcessNoise):
             if isinstance(params_used, dict):
                 i_poly = [self._get_current_from_equation(voltage_test, u_inn, params_used)]
             else:
-                i_poly = [self._polynom_fit.get_current(voltage_test, u_inn), u_inn + self._polynom_fitter.get_voltage(i_test)]
+                i_poly = [
+                    self._polynom_fit.get_current(voltage_test, u_inn),
+                    u_inn + self._polynom_fitter.get_voltage(i_test),
+                ]
 
             error = self._calc_error(i_poly[0], i_test)
-            plot_title_new = f"{plot_title}, 1e3* RAE = {error:.3f}" if plot_title else f"1e3* RAE = {error:.3f}"
+            plot_title_new = (
+                f"{plot_title}, 1e3* RAE = {error:.3f}" if plot_title else f"1e3* RAE = {error:.3f}"
+            )
             self._plot_transfer_function_comparison(
                 u_transfer=voltage_test,
                 i_dev0=i_poly,
@@ -211,15 +262,20 @@ class ElectricalLoadHandler(ProcessNoise):
                 method_types=methods_compare,
                 plot_title=plot_title_new,
                 path2save=path2save,
-                show_plot=do_plot
+                show_plot=do_plot,
             )
         else:
-            self._logger.debug(f"Make no IV comparison")
+            self._logger.debug("Make no IV comparison")
             error = -1.0
         return error
 
-    def _get_params_from_curve_fitting(self, bounds_params: dict, do_test: bool=False,
-                                       do_plot: bool=True, path2save: str='') -> tuple[dict, float]:
+    def _get_params_from_curve_fitting(
+        self,
+        bounds_params: dict,
+        do_test: bool = False,
+        do_plot: bool = True,
+        path2save: str = "",
+    ) -> tuple[dict, float]:
         """Function to extract the params of electrical device behaviour with curve fitting
         Args:
             bounds_params:          Dictionary with param bounds
@@ -232,26 +288,30 @@ class ElectricalLoadHandler(ProcessNoise):
         signals = self._extract_iv_curve_with_regression(params_dev=self._settings_device.dev_value)
         self._logger.debug(f"Start curve fitting of device: {self._settings_device.type}")
         params_ext = self.extract_params_curvefit(
-            voltage=signals['V'],
-            current=signals['I'],
-            param_bounds=bounds_params
+            voltage=signals["V"], current=signals["I"], param_bounds=bounds_params
         )
         error = self._test_fit_option(
-            voltage_test=signals['V'],
+            voltage_test=signals["V"],
             params_used=params_ext,
-            methods_compare=['Curve fitting (Remodeled)', 'Regression (Orig.)'],
+            methods_compare=["Curve fitting (Remodeled)", "Regression (Orig.)"],
             u_inn=0.0,
-            plot_title='Model parameter extraction',
+            plot_title="Model parameter extraction",
             do_test=do_test,
             do_plot=do_plot,
-            path2save=path2save
+            path2save=path2save,
         )
         return params_ext, error
 
     @staticmethod
-    def _plot_transfer_function_comparison(u_transfer: np.ndarray, i_dev0: list | np.ndarray, i_dev1: np.ndarray,
-                                           method_types: list, plot_title: str='',
-                                           path2save: str='', show_plot: bool=False) -> None:
+    def _plot_transfer_function_comparison(
+        u_transfer: np.ndarray,
+        i_dev0: list | np.ndarray,
+        i_dev1: np.ndarray,
+        method_types: list,
+        plot_title: str = "",
+        path2save: str = "",
+        show_plot: bool = False,
+    ) -> None:
         """Plotting the transfer function of electrical device for comparison
         Args:
             u_transfer:     Numpy array with voltage from polynom fit (input)
@@ -271,27 +331,69 @@ class ElectricalLoadHandler(ProcessNoise):
         axs = list()
         axs.append(plt.subplot(2, 1, 1))
         axs.append(plt.subplot(2, 1, 2, sharex=axs[0]))
-        axs[0].semilogy(u_transfer, scaley * np.abs(i_dev0[0]), 'r', marker='.', markersize=2, label=f"{method_types[0]} (Current)")
+        axs[0].semilogy(
+            u_transfer,
+            scaley * np.abs(i_dev0[0]),
+            "r",
+            marker=".",
+            markersize=2,
+            label=f"{method_types[0]} (Current)",
+        )
         axs[0].grid()
-        axs[0].set_ylabel(r'Current $\log_{10}(I_F)$ / µA')
+        axs[0].set_ylabel(r"Current $\log_{10}(I_F)$ / µA")
 
-        axs[1].plot(u_transfer, scaley * i_dev0[0], 'r', marker='.', markersize=2, label=f"{method_types[0]} (Current)")
+        axs[1].plot(
+            u_transfer,
+            scaley * i_dev0[0],
+            "r",
+            marker=".",
+            markersize=2,
+            label=f"{method_types[0]} (Current)",
+        )
         axs[1].grid()
-        axs[1].set_ylabel(fr'Current $I_F$ / {unity}A')
-        axs[1].set_xlabel(r'Voltage $\Delta U$ / V')
+        axs[1].set_ylabel(rf"Current $I_F$ / {unity}A")
+        axs[1].set_xlabel(r"Voltage $\Delta U$ / V")
 
         if len(i_dev0) > 1:
-            axs[0].semilogy(i_dev0[1], scaley * np.abs(i_dev1), 'g', marker='.', markersize=2, label=f"{method_types[0]} (Voltage)")
-            axs[1].plot(i_dev0[1], scaley * i_dev1, 'g', marker='.', markersize=2, label=f"{method_types[0]} (Voltage)")
+            axs[0].semilogy(
+                i_dev0[1],
+                scaley * np.abs(i_dev1),
+                "g",
+                marker=".",
+                markersize=2,
+                label=f"{method_types[0]} (Voltage)",
+            )
+            axs[1].plot(
+                i_dev0[1],
+                scaley * i_dev1,
+                "g",
+                marker=".",
+                markersize=2,
+                label=f"{method_types[0]} (Voltage)",
+            )
 
         if not np.array_equal(i_dev1, np.zeros_like(i_dev0[0])):
-            axs[0].semilogy(u_transfer, scaley * np.abs(i_dev1), 'k', marker='.', markersize=2, label=method_types[1])
-            axs[1].plot(u_transfer, scaley * i_dev1, 'k', marker='.', markersize=2, label=method_types[1])
+            axs[0].semilogy(
+                u_transfer,
+                scaley * np.abs(i_dev1),
+                "k",
+                marker=".",
+                markersize=2,
+                label=method_types[1],
+            )
+            axs[1].plot(
+                u_transfer,
+                scaley * i_dev1,
+                "k",
+                marker=".",
+                markersize=2,
+                label=method_types[1],
+            )
 
         axs[1].legend()
         axs[0].set_title(plot_title)
         if path2save:
-            save_figure(plt, path2save, 'device_iv_charac', ['svg'])
+            save_figure(plt, path2save, "device_iv_charac", ["svg"])
         if show_plot:
             plt.show(block=True)
 
@@ -301,7 +403,10 @@ class ElectricalLoadHandler(ProcessNoise):
         """
         overview = dict()
         for key in self._type_device.keys():
-            overview[key] = {'desp': self._type_device[key]['desp'], 'param': self._type_device[key]['param']}
+            overview[key] = {
+                "desp": self._type_device[key]["desp"],
+                "param": self._type_device[key]["param"],
+            }
         return overview
 
     def change_boundary_current(self, downer_limit: float, upper_limit: float) -> None:
@@ -337,21 +442,27 @@ class ElectricalLoadHandler(ProcessNoise):
         if self._check_right_param_format():
             arg_names_must = [key for key in self._settings_device.dev_value.keys()]
             arg_names_have = [key for key in param_bounds.keys()]
-            self._param_bounds = [[param_bounds[key][0] if key in arg_names_have else -np.inf for key in arg_names_must],
-                                  [param_bounds[key][1] if key in arg_names_have else np.inf for key in arg_names_must]]
+            self._param_bounds = [
+                [param_bounds[key][0] if key in arg_names_have else -np.inf for key in arg_names_must],
+                [param_bounds[key][1] if key in arg_names_have else np.inf for key in arg_names_must],
+            ]
             return self._param_bounds
         else:
-            raise KeyError(f"Wrong parameter names! Use: {self._type_device[self._settings_device]['param']}")
+            raise KeyError(
+                f"Wrong parameter names! Use: {self._type_device[self._settings_device]['param']}"
+            )
 
     def _build_param_initial_guess(self) -> list:
         guess_values = list()
         for val_min, val_max in zip(self._param_bounds[0], self._param_bounds[1]):
-            val_end = val_min + np.random.ranf(1) * (val_max-val_min)
+            val_end = val_min + np.random.ranf(1) * (val_max - val_min)
             val_inf = 0.0
             guess_values.append(val_inf if np.isinf(val_min) or np.isinf(val_max) else val_end[0])
         return guess_values
 
-    def extract_params_curvefit(self, voltage: np.ndarray, current: np.ndarray, param_bounds: dict) -> dict:
+    def extract_params_curvefit(
+        self, voltage: np.ndarray, current: np.ndarray, param_bounds: dict
+    ) -> dict:
         """Function to extract the model parameters from fitting the measurement to model (curve fit)
         :param voltage:         Numpy array with voltage signal from IV-measurement [V]
         :param current:         Numpy array with current signal from IV-measurement [A]
@@ -364,41 +475,55 @@ class ElectricalLoadHandler(ProcessNoise):
             arg_names = [key for key in self._settings_device.dev_value.keys()]
             self._logger.debug(f"Getting the model parameters: {arg_names}")
             params, coinv = curve_fit(
-                f=self._type_device[self._settings_device.type]['fit'],
+                f=self._type_device[self._settings_device.type]["fit"],
                 ydata=voltage,
                 xdata=current,
                 bounds=self._param_bounds,
                 p0=self._build_param_initial_guess(),
-                method='trf'
+                method="trf",
             )
             self._logger.debug(f"Coinv values of curve fitting: {coinv}")
             return dict(zip(arg_names, params))
         else:
             raise KeyError("Wrong Key List with Parameters")
 
-    def check_value_range_violation(self, signal: float | np.ndarray, mode_voltage: bool=True) -> bool:
+    def check_value_range_violation(self, signal: float | np.ndarray, mode_voltage: bool = True) -> bool:
         """Checking differential input stream has a violation against given range
         :param signal:          Numpy array with applied voltage difference [V]
         :param mode_voltage:    Boolean if input signal is voltage [True] or current [False]
         :return:                Boolean if warning violation is available
         """
-        range_list = self._bounds_volt if mode_voltage else [0, 10**self._bounds_curr[1]]
+        range_list = self._bounds_volt if mode_voltage else [0, 10 ** self._bounds_curr[1]]
         signal_used = signal if mode_voltage else np.abs(signal)
         violation_dwn = np.count_nonzero(signal_used < range_list[0], axis=0)
         violation_up = np.count_nonzero(signal_used > range_list[1], axis=0)
 
         if violation_up or violation_dwn:
-            addon = f'(Upper limit)' if not violation_dwn else '(Downer limit)'
+            addon = "(Upper limit)" if not violation_dwn else "(Downer limit)"
             self._logger.warning(f"Voltage Range Violation {addon}!")
         return bool(violation_up or violation_dwn)
 
-    def _get_current_from_equation(self, voltage_pos: float | np.ndarray, voltage_neg: float | np.ndarray, params: dict) -> np.ndarray:
-        return self._type_device[self._settings_device.type]['equa'](voltage_pos, voltage_neg, params)
+    def _get_current_from_equation(
+        self,
+        voltage_pos: float | np.ndarray,
+        voltage_neg: float | np.ndarray,
+        params: dict,
+    ) -> np.ndarray:
+        return self._type_device[self._settings_device.type]["equa"](voltage_pos, voltage_neg, params)
 
     def _get_voltage_from_regression(self, current: np.ndarray, params: dict) -> np.ndarray:
-        return -self._type_device[self._settings_device.type]['reg'](current, np.zeros_like(current), params)
+        return -self._type_device[self._settings_device.type]["reg"](
+            current, np.zeros_like(current), params
+        )
 
-    def _get_voltage_with_search(self, i_in: np.ndarray, u_inn: float | np.ndarray, start_value: float=0.0, start_step: float=1e-3, take_last_value: bool=True) -> np.ndarray:
+    def _get_voltage_with_search(
+        self,
+        i_in: np.ndarray,
+        u_inn: float | np.ndarray,
+        start_value: float = 0.0,
+        start_step: float = 1e-3,
+        take_last_value: bool = True,
+    ) -> np.ndarray:
         """Getting the voltage response from electrical device
         Args:
             i_in:               Applied current input [A]
@@ -418,7 +543,7 @@ class ElectricalLoadHandler(ProcessNoise):
             error_sign = []
 
             # First Step Test (Direction)
-            initial_value = start_value if idx == 0 and not take_last_value else u_response[idx-1]
+            initial_value = start_value if idx == 0 and not take_last_value else u_response[idx - 1]
             test_value = list()
             test_value.append(initial_value - start_step * (np.random.random(1)[0] + 0.5))
             test_value.append(initial_value - 0.5 * start_step * (np.random.random(1)[0] - 0.5))
@@ -436,7 +561,7 @@ class ElectricalLoadHandler(ProcessNoise):
             del error0, error0_sign
 
             # --- Iteration
-            u_top = start_value if idx == 0 and not take_last_value else u_response[idx-1]
+            u_top = start_value if idx == 0 and not take_last_value else u_response[idx - 1]
             step_size = start_step
             step_ite = 0
             do_calc = True
@@ -478,10 +603,7 @@ class ElectricalLoadHandler(ProcessNoise):
             else:
                 if np.isnan(self._polynom_fit._fit_params_v2i).any():
                     vi = self._extract_iv_curve_with_regression(self._settings_device.dev_value)
-                    error = self._extract_iv_curve_with_polyfit(
-                        current=vi['I'],
-                        voltage=vi['V']
-                    )
+                    error = self._extract_iv_curve_with_polyfit(current=vi["I"], voltage=vi["V"])
                     self._logger.debug(f"Extracted IV curve for polyfitting with error of {error}")
                 return self._polynom_fit.get_voltage(current) + u_inn
         else:
@@ -489,7 +611,9 @@ class ElectricalLoadHandler(ProcessNoise):
                 raise ValueError("Parameter 'type': Model not available - Please check!")
             else:
                 ovr = self.get_type_list()
-                raise ValueError(f"Parameter 'use_params': Wrong parameters selected - Please use {ovr[method[0]]['params']}!")
+                raise ValueError(
+                    f"Parameter 'use_params': Wrong parameters selected - Please use {ovr[method[0]]['params']}!"
+                )
 
     def get_current(self, u_top: float | np.ndarray, u_bot: float | np.ndarray) -> np.ndarray:
         """Getting the current response from electrical device
@@ -504,10 +628,7 @@ class ElectricalLoadHandler(ProcessNoise):
             else:
                 if np.isnan(self._polynom_fit._fit_params_v2i).any():
                     vi = self._extract_iv_curve_with_regression(self._settings_device.dev_value)
-                    error = self._extract_iv_curve_with_polyfit(
-                        current=vi['I'],
-                        voltage=vi['V']
-                    )
+                    error = self._extract_iv_curve_with_polyfit(current=vi["I"], voltage=vi["V"])
                     self._logger.debug(f"Extracted IV curve for polyfitting with error of {error}")
                 return self._polynom_fit.get_current(u_top, u_bot)
         else:
@@ -516,9 +637,12 @@ class ElectricalLoadHandler(ProcessNoise):
             else:
                 ovr = self.get_type_list()
                 raise ValueError(
-                    f"Parameter 'use_params': Wrong parameters selected - Please use {ovr[method[0]]['params']}!")
+                    f"Parameter 'use_params': Wrong parameters selected - Please use {ovr[method[0]]['params']}!"
+                )
 
-    def get_current_density(self, u_top: np.ndarray, u_bot: float | np.ndarray, area: float) -> np.ndarray:
+    def get_current_density(
+        self, u_top: np.ndarray, u_bot: float | np.ndarray, area: float
+    ) -> np.ndarray:
         """Getting the current response from electrical device
         Args:
             u_top:      Applied voltage on top electrode [V]
@@ -530,7 +654,9 @@ class ElectricalLoadHandler(ProcessNoise):
         return self.get_current(u_top, u_bot) / area
 
 
-def generate_test_signal(t_end: float, fs: float, upp: list, fsig: list, uoff: float=0.0) -> tuple[np.ndarray, np.ndarray]:
+def generate_test_signal(
+    t_end: float, fs: float, upp: list, fsig: list, uoff: float = 0.0
+) -> tuple[np.ndarray, np.ndarray]:
     """Generating a signal for testing
     Args:
         t_end:      End of simulation
@@ -541,16 +667,23 @@ def generate_test_signal(t_end: float, fs: float, upp: list, fsig: list, uoff: f
     Returns:
         List with two numpy arrays (time, voltage signal)
     """
-    t0 = np.linspace(start=0, stop=t_end, num=int(t_end * fs)+1, endpoint=True)
+    t0 = np.linspace(start=0, stop=t_end, num=int(t_end * fs) + 1, endpoint=True)
     uinp = np.zeros(t0.shape) + uoff
     for upp0, fsig0 in zip(upp, fsig):
         uinp += upp0 * np.sin(2 * np.pi * t0 * fsig0)
     return t0, uinp
 
 
-def plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray,
-                      mode_current_input: bool, do_ylog: bool=False, plot_gray: bool=False,
-                      path2save: str='', show_plot: bool=False) -> None:
+def plot_test_results(
+    time: np.ndarray,
+    u_in: np.ndarray,
+    i_in: np.ndarray,
+    mode_current_input: bool,
+    do_ylog: bool = False,
+    plot_gray: bool = False,
+    path2save: str = "",
+    show_plot: bool = False,
+) -> None:
     """Function for plotting transient signal and I-V curve of the used electrical device
     Args:
         time:       Numpy array with time information
@@ -570,10 +703,10 @@ def plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray,
 
     signalx = scale_i * i_in if mode_current_input else scale_u * u_in
     signaly = scale_u * u_in if mode_current_input else scale_i * i_in
-    label_axisx = f'Voltage U_x [{units_u}V]' if mode_current_input else f'Current I_x [{units_i}A]'
-    label_axisy = f'Current I_x [{units_i}A]' if mode_current_input else f'Voltage U_x [{units_u}V]'
-    label_legx = 'i_in' if mode_current_input else 'u_in'
-    label_legy = 'u_out' if mode_current_input else 'i_out'
+    label_axisx = f"Voltage U_x [{units_u}V]" if mode_current_input else f"Current I_x [{units_i}A]"
+    label_axisy = f"Current I_x [{units_i}A]" if mode_current_input else f"Voltage U_x [{units_u}V]"
+    label_legx = "i_in" if mode_current_input else "u_in"
+    label_legy = "u_out" if mode_current_input else "i_out"
 
     # --- Plotting: Transient signals
     plt.figure()
@@ -582,13 +715,19 @@ def plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray,
 
     axs[0].set_xlim(scale_t * time[0], scale_t * time[-1])
     twin1 = axs[0].twinx()
-    a = axs[0].plot(scale_t * time, signalx, 'k', label=label_legx)
+    a = axs[0].plot(scale_t * time, signalx, "k", label=label_legx)
     axs[0].set_ylabel(label_axisy)
-    axs[0].set_xlabel(f'Time t [{units_t}s]')
+    axs[0].set_xlabel(f"Time t [{units_t}s]")
     if plot_gray:
-        b = twin1.plot(scale_t * time, signaly, linestyle='dashed', color=[0.5, 0.5, 0.5], label=label_legy)
+        b = twin1.plot(
+            scale_t * time,
+            signaly,
+            linestyle="dashed",
+            color=[0.5, 0.5, 0.5],
+            label=label_legy,
+        )
     else:
-        b = twin1.plot(scale_t * time, signaly, 'r--', label=label_legy)
+        b = twin1.plot(scale_t * time, signaly, "r--", label=label_legy)
     twin1.set_ylabel(label_axisx)
     axs[0].grid()
 
@@ -600,21 +739,21 @@ def plot_test_results(time: np.ndarray, u_in: np.ndarray, i_in: np.ndarray,
     # --- Plotting: I-U curve
     if mode_current_input:
         if do_ylog:
-            axs[1].semilogy(signaly, signalx, 'k', marker='.', linestyle='None')
+            axs[1].semilogy(signaly, signalx, "k", marker=".", linestyle="None")
         else:
-            axs[1].plot(signaly, signalx, 'k', marker='.', linestyle='None')
+            axs[1].plot(signaly, signalx, "k", marker=".", linestyle="None")
         axs[1].set_xlabel(label_axisx)
         axs[1].set_ylabel(label_axisy)
     else:
         if do_ylog:
-            axs[1].semilogy(signalx, abs(signaly), 'k', marker='.', linestyle='None')
+            axs[1].semilogy(signalx, abs(signaly), "k", marker=".", linestyle="None")
         else:
-            axs[1].plot(signalx, signaly, 'k', marker='.', linestyle='None')
+            axs[1].plot(signalx, signaly, "k", marker=".", linestyle="None")
         axs[1].set_xlabel(label_axisy)
         axs[1].set_ylabel(label_axisx)
     axs[1].grid()
     plt.tight_layout()
     if path2save:
-        save_figure(plt, path2save, 'test_signal')
+        save_figure(plt, path2save, "test_signal")
     if show_plot:
         plt.show(block=True)

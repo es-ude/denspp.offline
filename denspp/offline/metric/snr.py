@@ -1,5 +1,5 @@
 import numpy as np
-from torch import Tensor, max, min, sum, log10, sub, div
+from torch import Tensor, div, log10, max, min, sub, sum
 
 
 def calculate_snr(data: np.ndarray, mean: np.ndarray) -> np.ndarray:
@@ -42,7 +42,9 @@ def calculate_dsnr_tensor(data: Tensor, pred: Tensor, mean: Tensor) -> Tensor:
     return sub(snr_out, snr_in)
 
 
-def calculate_snr_cluster(frames_in: np.ndarray, frames_cl: np.ndarray, frames_mean: np.ndarray) -> np.ndarray:
+def calculate_snr_cluster(
+    frames_in: np.ndarray, frames_cl: np.ndarray, frames_mean: np.ndarray
+) -> np.ndarray:
     """Calculating the cluster-specific Signal-to-Noise Ratio (SNR) for all frames
     :param frames_in:   Numpy array with spike frames
     :param frames_cl:   Numpy array with cluster label to each spike frame

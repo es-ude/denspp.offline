@@ -1,6 +1,7 @@
-import numpy as np
-from logging import getLogger
 from dataclasses import dataclass
+from logging import getLogger
+
+import numpy as np
 from scipy.constants import Boltzmann, elementary_charge
 
 
@@ -13,10 +14,11 @@ class SettingsNoise:
         Fc:         Corner frequency of the flicker (1/f) noise [Hz]
         slope:      Alpha coefficient of the flicker noise []
     """
-    temp:       float
-    wgn_dB:     float
-    Fc:         float
-    slope:      float
+
+    temp: float
+    wgn_dB: float
+    Fc: float
+    slope: float
 
     @property
     def temp_celsius(self) -> float:
@@ -31,12 +33,7 @@ class SettingsNoise:
         return Boltzmann * self.temp / elementary_charge
 
 
-DefaultSettingsNoise = SettingsNoise(
-    temp=300,
-    wgn_dB=-120,
-    Fc=10,
-    slope=0.6
-)
+DefaultSettingsNoise = SettingsNoise(temp=300, wgn_dB=-120, Fc=10, slope=0.6)
 
 
 class ProcessNoise:
@@ -64,7 +61,7 @@ class ProcessNoise:
         xsel = np.where(freq >= 0)
         fft_out = fft_out[xsel]
         freq = freq[xsel]
-        return {'freq': freq, 'Y': fft_out}
+        return {"freq": freq, "Y": fft_out}
 
     @staticmethod
     def __noise_awgn(size: int, fs: float, e_n: float) -> np.ndarray:
@@ -128,10 +125,10 @@ class ProcessNoise:
         fft_pink = self.__do_fft(e_pink)
 
         # --- Find corner frequency
-        x_corner = np.argwhere(fft_white['freq'] >= fc)[0]
+        x_corner = np.argwhere(fft_white["freq"] >= fc)[0]
         n_mean = 100
-        y_wgm = np.convolve(fft_white['Y'], np.ones(n_mean) / n_mean, mode='same')
-        y_pnk = np.convolve(fft_pink['Y'], np.ones(n_mean) / n_mean, mode='same')
+        y_wgm = np.convolve(fft_white["Y"], np.ones(n_mean) / n_mean, mode="same")
+        y_pnk = np.convolve(fft_pink["Y"], np.ones(n_mean) / n_mean, mode="same")
         scalef = y_wgm[x_corner] / y_pnk[x_corner]
 
         # --- Generate output noise
@@ -169,7 +166,7 @@ class ProcessNoise:
         noise_pp = np.max(noise_in) - np.min(noise_in)
         return noise_eff, noise_pp
 
-    def _do_print(self, noise_in: np.ndarray, mode_output: int=0) -> None:
+    def _do_print(self, noise_in: np.ndarray, mode_output: int = 0) -> None:
         """Printing output from noise analysis
         :param noise_in:        Numpy array with generated noise signal
         :param mode_output:     Output mode [0: power in mW, 1: voltage in µV, 2: current in nA]
@@ -191,13 +188,17 @@ class ProcessNoise:
                 unit_text = ""
                 unit_scale = 1e0
                 unit_type = ""
-        text_dev = f"" if len(self.__print_device) == 0 else f" ({self.__print_device})"
+        text_dev = "" if len(self.__print_device) == 0 else f" ({self.__print_device})"
 
         noise_eff, noise_pp = self._calculate_params(noise_in)
-        self._logger.debug(f"... effective input noise {unit_type}{text_dev}: {unit_scale * noise_eff:.4f} {unit_text}")
-        self._logger.debug(f"... effective peak-to-peak noise {unit_type}{text_dev}: {unit_scale * noise_pp:.4f} {unit_text}")
+        self._logger.debug(
+            f"... effective input noise {unit_type}{text_dev}: {unit_scale * noise_eff:.4f} {unit_text}"
+        )
+        self._logger.debug(
+            f"... effective peak-to-peak noise {unit_type}{text_dev}: {unit_scale * noise_pp:.4f} {unit_text}"
+        )
 
-    def gen_noise_real_pwr(self, size: int, e_n: float=0.0) -> np.ndarray:
+    def gen_noise_real_pwr(self, size: int, e_n: float = 0.0) -> np.ndarray:
         """Generating real transient noise power
         Args:
             size:       Number of iterations
@@ -206,10 +207,11 @@ class ProcessNoise:
             Numpy array with transient noise
         """
         u_noise = self.__noise_real(
-            tsize=size, fs=self.__noise_sampling_rate,
+            tsize=size,
+            fs=self.__noise_sampling_rate,
             e_n=self.__settings_noise.wgn_dB if e_n == 0.0 else e_n,
             fc=self.__settings_noise.Fc,
-            alpha=self.__settings_noise.slope
+            alpha=self.__settings_noise.slope,
         )
         self._do_print(u_noise, 0)
         return u_noise
@@ -223,10 +225,11 @@ class ProcessNoise:
             Numpy array with transient noise
         """
         u_noise = self.__noise_real(
-            tsize=size, fs=self.__noise_sampling_rate,
+            tsize=size,
+            fs=self.__noise_sampling_rate,
             e_n=self.__calc_spectral_noise_volt(self.__noise_sampling_rate, resistance),
             fc=self.__settings_noise.Fc,
-            alpha=self.__settings_noise.slope
+            alpha=self.__settings_noise.slope,
         )
         self._do_print(u_noise, 1)
         return u_noise
@@ -240,10 +243,11 @@ class ProcessNoise:
             Numpy array with transient noise
         """
         u_noise = self.__noise_real(
-            tsize=size, fs=self.__noise_sampling_rate,
+            tsize=size,
+            fs=self.__noise_sampling_rate,
             e_n=self.__calc_spectral_noise_curr(self.__noise_sampling_rate, resistance),
             fc=self.__settings_noise.Fc,
-            alpha=self.__settings_noise.slope
+            alpha=self.__settings_noise.slope,
         )
         self._do_print(u_noise, 2)
         return u_noise
@@ -257,13 +261,14 @@ class ProcessNoise:
             Numpy array with transient noise
         """
         u_noise = self.__noise_awgn(
-            size=size, fs=self.__noise_sampling_rate,
-            e_n=self.__calc_spectral_noise_device(dev_e)
+            size=size,
+            fs=self.__noise_sampling_rate,
+            e_n=self.__calc_spectral_noise_device(dev_e),
         )
         self._do_print(u_noise, 0)
         return u_noise
 
-    def gen_noise_awgn_pwr(self, size: int, e_n: float=0.0) -> np.ndarray:
+    def gen_noise_awgn_pwr(self, size: int, e_n: float = 0.0) -> np.ndarray:
         """Generating white transient noise power
         Args:
             size:       Number of iterations
@@ -272,7 +277,8 @@ class ProcessNoise:
             Numpy array with transient noise
         """
         u_noise = self.__noise_awgn(
-            size=size, fs=self.__noise_sampling_rate,
+            size=size,
+            fs=self.__noise_sampling_rate,
             e_n=self.__settings_noise.wgn_dB if e_n == 0.0 else e_n,
         )
         self._do_print(u_noise, 0)
@@ -287,8 +293,9 @@ class ProcessNoise:
             Numpy array with transient noise
         """
         u_noise = self.__noise_awgn(
-            size=size, fs=self.__noise_sampling_rate,
-            e_n=self.__calc_spectral_noise_volt(self.__noise_sampling_rate, resistance)
+            size=size,
+            fs=self.__noise_sampling_rate,
+            e_n=self.__calc_spectral_noise_volt(self.__noise_sampling_rate, resistance),
         )
         self._do_print(u_noise, 1)
         return u_noise
@@ -302,8 +309,9 @@ class ProcessNoise:
             Numpy array with transient noise
         """
         u_noise = self.__noise_awgn(
-            size=size, fs=self.__noise_sampling_rate,
-            e_n=self.__calc_spectral_noise_curr(self.__noise_sampling_rate, resistance)
+            size=size,
+            fs=self.__noise_sampling_rate,
+            e_n=self.__calc_spectral_noise_curr(self.__noise_sampling_rate, resistance),
         )
         self._do_print(u_noise, 2)
         return u_noise

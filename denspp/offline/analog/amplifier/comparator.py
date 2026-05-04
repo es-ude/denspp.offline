@@ -1,7 +1,12 @@
-import numpy as np
 from dataclasses import dataclass
 from logging import getLogger
-from denspp.offline.analog.common_func import CommonAnalogFunctions, CommonDigitalFunctions
+
+import numpy as np
+
+from denspp.offline.analog.common_func import (
+    CommonAnalogFunctions,
+    CommonDigitalFunctions,
+)
 
 
 @dataclass
@@ -17,8 +22,9 @@ class SettingsCOMP:
         out_analog: Is output analog [True] or digital [False]
         out_invert: Is output active low [True] or active high [False]
     """
-    vdd:    float
-    vss:    float
+
+    vdd: float
+    vss: float
     # Comparator characteristics
     gain: int
     offset: float
@@ -33,7 +39,8 @@ class SettingsCOMP:
 
 
 DefaultSettingsCOMP = SettingsCOMP(
-    vdd=0.6, vss=-0.6,
+    vdd=0.6,
+    vss=-0.6,
     gain=100,
     offset=-1e-3,
     noise_dis=0.1e-3,
@@ -73,18 +80,30 @@ class Comparator(CommonAnalogFunctions):
         self.define_voltage_range(volt_low=settings_dev.vss, volt_hgh=settings_dev.vdd)
         self._settings = settings_dev
 
-    def __generate_noise(self, input_size: int, scale: float=0.1, use_noise: bool=True) -> np.ndarray:
-        return np.random.normal(self._settings.offset, scale, input_size) if use_noise else self._settings.offset * np.ones(input_size)
+    def __generate_noise(self, input_size: int, scale: float = 0.1, use_noise: bool = True) -> np.ndarray:
+        return (
+            np.random.normal(self._settings.offset, scale, input_size)
+            if use_noise
+            else self._settings.offset * np.ones(input_size)
+        )
 
     def __apply_gain_comparator(self, uinp: np.ndarray | float, uinn: np.ndarray | float) -> np.ndarray:
         du = np.array(uinp - uinn)
         return self._settings.vcm + self._settings.gain * (du - self._settings.offset)
 
     def __generate_output(self, ucmp: np.ndarray) -> np.ndarray:
-        return np.array(ucmp >= self._settings.vcm + self._settings.offset) if not self._settings.out_analog else ucmp
+        return (
+            np.array(ucmp >= self._settings.vcm + self._settings.offset)
+            if not self._settings.out_analog
+            else ucmp
+        )
 
     def __apply_inverter(self, u_cmp: np.ndarray | float) -> np.ndarray:
-        return (np.invert(u_cmp) if not self._settings.out_analog else 2* self.vcm - u_cmp) if self._settings.out_invert else u_cmp
+        return (
+            (np.invert(u_cmp) if not self._settings.out_analog else 2 * self.vcm - u_cmp)
+            if self._settings.out_invert
+            else u_cmp
+        )
 
     def __apply_hysteresis(self, du: np.ndarray, mode: int) -> np.ndarray:
         """Processing differential input for generating hysteresis"""
@@ -133,7 +152,9 @@ class Comparator(CommonAnalogFunctions):
             Corresponding numpy array with boolean or voltage values (depends on out_analog)
         """
         u_cmp = self.__apply_gain_comparator(uinp, uinn)
-        self._unoise = self.__generate_noise(input_size=u_cmp.size, scale=self._settings.noise_dis, use_noise=False)
+        self._unoise = self.__generate_noise(
+            input_size=u_cmp.size, scale=self._settings.noise_dis, use_noise=False
+        )
         u_cmp = self.clamp_voltage(u_cmp + self._unoise)
         return self.__apply_inverter(self.__generate_output(u_cmp))
 
@@ -146,7 +167,9 @@ class Comparator(CommonAnalogFunctions):
             Corresponding numpy array with boolean or voltage values (depends on out_analog)
         """
         u_cmp = self.__apply_gain_comparator(uinp, uinn)
-        self._unoise = self.__generate_noise(input_size=u_cmp.size, scale=self._settings.noise_dis, use_noise=True)
+        self._unoise = self.__generate_noise(
+            input_size=u_cmp.size, scale=self._settings.noise_dis, use_noise=True
+        )
         u_out = self.clamp_voltage(u_cmp + self._unoise)
         return self.__apply_inverter(self.__generate_output(u_out))
 
@@ -159,7 +182,9 @@ class Comparator(CommonAnalogFunctions):
             Corresponding numpy array with boolean values
         """
         du = np.array(uinp - uinn)
-        self._unoise = self.__generate_noise(input_size=du.size, scale=self._settings.noise_dis, use_noise=True)
+        self._unoise = self.__generate_noise(
+            input_size=du.size, scale=self._settings.noise_dis, use_noise=True
+        )
         u_out = self.clamp_voltage(self.__apply_hysteresis(du, 2))
         return self.__apply_inverter(self.__generate_output(u_out))
 
@@ -172,7 +197,9 @@ class Comparator(CommonAnalogFunctions):
             Corresponding numpy array with boolean values
         """
         du = np.array(uinp - uinn)
-        self._unoise = self.__generate_noise(input_size=du.size, scale=self._settings.noise_dis, use_noise=True)
+        self._unoise = self.__generate_noise(
+            input_size=du.size, scale=self._settings.noise_dis, use_noise=True
+        )
         u_out = self.clamp_voltage(self.__apply_hysteresis(du, 1))
         return self.__apply_inverter(self.__generate_output(u_out))
 
@@ -185,6 +212,8 @@ class Comparator(CommonAnalogFunctions):
             Corresponding numpy array with boolean values
         """
         du = np.array(uinp - uinn)
-        self._unoise = self.__generate_noise(input_size=du.size, scale=self._settings.noise_dis, use_noise=True)
+        self._unoise = self.__generate_noise(
+            input_size=du.size, scale=self._settings.noise_dis, use_noise=True
+        )
         u_out = self.clamp_voltage(self.__apply_hysteresis(du, 3))
         return self.__apply_inverter(self.__generate_output(u_out))

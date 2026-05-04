@@ -1,9 +1,12 @@
 import numpy as np
-from scipy.signal import find_peaks, correlate
+from scipy.signal import correlate, find_peaks
+
 from denspp.offline.preprocessing.transformation import do_fft
 
 
-def calculate_total_harmonics_distortion(freq: np.ndarray, spectral: np.ndarray, N_harmonics: int=4) -> float:
+def calculate_total_harmonics_distortion(
+    freq: np.ndarray, spectral: np.ndarray, N_harmonics: int = 4
+) -> float:
     """Calculating the Total Harmonics Distortion (THD) of spectral input
     Args:
         freq:           Array with frequency values for spectral analysis
@@ -27,7 +30,9 @@ def calculate_total_harmonics_distortion(freq: np.ndarray, spectral: np.ndarray,
     return 20 * np.log10(np.sqrt(np.sum(np.power(peaks_y[1:], 2))) / peaks_y[0])
 
 
-def calculate_total_harmonics_distortion_from_transient(signal: np.ndarray, fs: float, N_harmonics: int=4) -> float:
+def calculate_total_harmonics_distortion_from_transient(
+    signal: np.ndarray, fs: float, N_harmonics: int = 4
+) -> float:
     """Calculating the Total Harmonics Distortion (THD) from transient input
     Args:
         signal:         Array with frequency values for spectral analysis
@@ -36,15 +41,8 @@ def calculate_total_harmonics_distortion_from_transient(signal: np.ndarray, fs: 
     Return:
           THD value (in dB)
     """
-    freq, spectral = do_fft(
-        y=signal,
-        fs=fs
-    )
-    return calculate_total_harmonics_distortion(
-        freq=freq,
-        spectral=spectral,
-        N_harmonics=N_harmonics
-    )
+    freq, spectral = do_fft(y=signal, fs=fs)
+    return calculate_total_harmonics_distortion(freq=freq, spectral=spectral, N_harmonics=N_harmonics)
 
 
 def calculate_cosine_similarity(y_pred: np.ndarray, y_true: np.ndarray) -> float:
@@ -55,5 +53,5 @@ def calculate_cosine_similarity(y_pred: np.ndarray, y_true: np.ndarray) -> float
     Returns:
         Float value with error
     """
-    out = correlate(y_pred / np.linalg.norm(y_pred), y_true / np.linalg.norm(y_true),'full', 'auto')
-    return float(out[y_true.size-1])
+    out = correlate(y_pred / np.linalg.norm(y_pred), y_true / np.linalg.norm(y_true), "full", "auto")
+    return float(out[y_true.size - 1])

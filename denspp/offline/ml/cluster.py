@@ -1,18 +1,19 @@
-import numpy as np
-import joblib
 from dataclasses import dataclass
 from os import environ
 from os.path import join
+
+import joblib
+import numpy as np
 from psutil import cpu_count
+from sklearn.cluster import DBSCAN, KMeans
 from sklearn.metrics import accuracy_score
-from sklearn.cluster import KMeans, DBSCAN
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.mixture import GaussianMixture
+from sklearn.neighbors import KNeighborsClassifier
 
 
 @dataclass
 class SettingsCluster:
-    """"Individual data class to configure clustering
+    """ "Individual data class to configure clustering
     Attributes:
         type:           String with used cluster/classification method [kMeans, GMM, DBSCAN, kNN]
         no_cluster:     Integer with number of clusters
@@ -20,24 +21,22 @@ class SettingsCluster:
         tolerance:      Float with tolerance between iterations
         random_state:   Definition of the state to start
     """
+
     type: str
     no_cluster: int
     max_iter: int = 1000
     tolerance: float = 1e-9
-    random_state = None # np.random.RandomState(seed=1234)
+    random_state = None  # np.random.RandomState(seed=1234)
 
 
-DefaultSettingsCluster = SettingsCluster(
-    type="kMeans",
-    no_cluster=3
-)
+DefaultSettingsCluster = SettingsCluster(type="kMeans", no_cluster=3)
 
 
 class Clustering:
     @staticmethod
     def __define_number_physical_cores() -> int:
         number_cores = cpu_count(logical=True)
-        environ['OMP_NUM_THREADS'] = str(number_cores)
+        environ["OMP_NUM_THREADS"] = str(number_cores)
         return number_cores
 
     def __init__(self, settings: SettingsCluster) -> None:
@@ -52,15 +51,15 @@ class Clustering:
         self._cluster = None
         self._cluster_init_done = False
 
-        self.__method_used = ''
+        self.__method_used = ""
         self.__method_avai_checked = False
         self.__method_bib = dict()
-        self.__method_bib.update({'kMeans': [self.__kmeans_init, self.__kmeans_predict]})
-        self.__method_bib.update({'GMM': [self.__gmm_init, self.__gmm_predict]})
-        self.__method_bib.update({'DBSCAN': [self.__dbscan_init, self.__dbscan_predict]})
-        self.__method_bib.update({'kNN': [self.__knn_init, self.__knn_predict]})
+        self.__method_bib.update({"kMeans": [self.__kmeans_init, self.__kmeans_predict]})
+        self.__method_bib.update({"GMM": [self.__gmm_init, self.__gmm_predict]})
+        self.__method_bib.update({"DBSCAN": [self.__dbscan_init, self.__dbscan_predict]})
+        self.__method_bib.update({"kNN": [self.__knn_init, self.__knn_predict]})
 
-    def methods_available(self, do_lower: bool=False) -> list:
+    def methods_available(self, do_lower: bool = False) -> list:
         """Getting the list already methods"""
         return [key.lower() if do_lower else key for key in self.__method_bib.keys()]
 
@@ -110,15 +109,15 @@ class Clustering:
         else:
             return self._cluster
 
-    def save_model_to_file(self, filename: str, path: str='') -> None:
+    def save_model_to_file(self, filename: str, path: str = "") -> None:
         """Saving model to an external *.joblib file"""
         model2save = self.get_cluster_model()
-        path2save = join(path, filename.split('.')[0]) + '.joblib'
+        path2save = join(path, filename.split(".")[0]) + ".joblib"
         joblib.dump(model2save, path2save, compress=4)
 
     def load_model_from_file(self, path2model: str) -> None:
         """Loading an already pre-trained model with *.joblib file"""
-        self._cluster = joblib.load(path2model.split('.')[0] + '.joblib')
+        self._cluster = joblib.load(path2model.split(".")[0] + ".joblib")
         self._cluster_init_done = True
 
     def create_dummy_data(self, num_samples=1000, noise_std=0.6):
@@ -127,12 +126,20 @@ class Clustering:
         from sklearn.preprocessing import StandardScaler
 
         X, labels_true = make_blobs(
-            n_samples=num_samples, centers=self._settings.no_cluster, cluster_std=noise_std, random_state=0
+            n_samples=num_samples,
+            centers=self._settings.no_cluster,
+            cluster_std=noise_std,
+            random_state=0,
         )
         return StandardScaler().fit_transform(X), labels_true
 
-    def sort_pred2label_data(self, pred_label: np.ndarray, true_label: np.ndarray, features: np.ndarray,
-                             take_num_samples: int=-1) -> np.ndarray:
+    def sort_pred2label_data(
+        self,
+        pred_label: np.ndarray,
+        true_label: np.ndarray,
+        features: np.ndarray,
+        take_num_samples: int = -1,
+    ) -> np.ndarray:
         """Sorting predicted labels with true labels for getting the right-/similiar ID representation
         Args:
             pred_label:         Array with predicted labels
@@ -146,7 +153,7 @@ class Clustering:
         label_out = np.zeros(pred_label.shape, dtype=int) - 1
 
         true_order = np.unique(true_label)
-        new_order = np.zeros((self._settings.no_cluster, ), dtype=int) - 1
+        new_order = np.zeros((self._settings.no_cluster,), dtype=int) - 1
         for idx, true_id in enumerate(true_order):
             true_pos_id = np.argwhere(true_label == true_id).flatten()
             if not take_num_samples == -1:
@@ -169,7 +176,7 @@ class Clustering:
                 new_class = ids[new_pos]
 
                 if new_class in new_order:
-                    while(new_class in new_order or cnt.size > 1):
+                    while new_class in new_order or cnt.size > 1:
                         cnt = np.delete(cnt, new_pos, 0)
                         ids = np.delete(ids, new_pos, 0)
                         new_pos = np.argmax(cnt)
@@ -200,8 +207,10 @@ class Clustering:
         elif pred_labels.size != true_labels.size:
             print("Accuracy can not be determined due to uncommon size")
         else:
-            print(f"init. of clustering methods done with accuracy of "
-                  f"{accuracy_score(true_labels, pred_labels) * 100:.2f}")
+            print(
+                f"init. of clustering methods done with accuracy of "
+                f"{accuracy_score(true_labels, pred_labels) * 100:.2f}"
+            )
 
     # ################################# CLUSTERING METHODS ###############################################
     def __gmm_init(self, features: np.ndarray, true_labels=None) -> np.ndarray:
@@ -209,11 +218,11 @@ class Clustering:
         self._cluster = GaussianMixture(
             n_init=1,
             n_components=self._settings.no_cluster,
-            covariance_type='full',
-            init_params='kmeans',
+            covariance_type="full",
+            init_params="kmeans",
             tol=self._settings.tolerance,
             max_iter=self._settings.max_iter,
-            random_state=self._settings.random_state
+            random_state=self._settings.random_state,
         ).fit(X=features, y=true_labels)
         return self._cluster.predict(features)
 
@@ -226,9 +235,9 @@ class Clustering:
 
     def __knn_init(self, features: np.ndarray, true_labels: np.ndarray) -> np.ndarray:
         """Initialization of kNN for clustering"""
-        self._cluster = KNeighborsClassifier(
-            n_neighbors=self._settings.no_cluster
-        ).fit(X=features, y=true_labels)
+        self._cluster = KNeighborsClassifier(n_neighbors=self._settings.no_cluster).fit(
+            X=features, y=true_labels
+        )
         return self._cluster.classes_
 
     def __knn_predict(self, features: np.ndarray) -> np.ndarray:
@@ -240,10 +249,7 @@ class Clustering:
 
     def __dbscan_init(self, features: np.ndarray, true_labels=None) -> np.ndarray:
         """Initialization of DBSCAN for clustering (Comment: true_label is ignored due to unsupervised learning)"""
-        self._cluster = DBSCAN(
-            eps=0.3,
-            min_samples=8
-        ).fit(X=features, y=true_labels)
+        self._cluster = DBSCAN(eps=0.3, min_samples=8).fit(X=features, y=true_labels)
         return self._cluster.labels_
 
     def __dbscan_predict(self, features: np.ndarray) -> np.ndarray:
@@ -257,11 +263,11 @@ class Clustering:
         """Initialization of kmeans for clustering (Comment: true_label is ignored due to unsupervised learning)"""
         self._cluster = KMeans(
             init="k-means++",
-            n_init='auto',
+            n_init="auto",
             max_iter=self._settings.max_iter,
             random_state=self._settings.random_state,
             tol=self._settings.tolerance,
-            n_clusters=self._settings.no_cluster
+            n_clusters=self._settings.no_cluster,
         ).fit(X=features, y=true_labels)
         return self._cluster.labels_
 

@@ -1,23 +1,28 @@
 import numpy as np
-from .adc_basic import BasicADC
-from .adc_settings import SettingsADC, RecommendedSettingsADC, SettingsNon, RecommendedSettingsNon
+
 from denspp.offline.analog.dev_noise import ProcessNoise
+
+from .adc_basic import BasicADC
+from .adc_settings import (
+    DefaultSettingsNon,
+    SettingsADC,
+)
 
 
 class NyquistADC(BasicADC):
     _settings: SettingsADC
     _handler_noise: ProcessNoise
 
-    def __init__(self, settings_dev: SettingsADC, settings_non=RecommendedSettingsNon) -> None:
+    def __init__(self, settings_dev: SettingsADC, settings_non=DefaultSettingsNon) -> None:
         """Class for applying a Nyquist Analogue-Digital-Converter (ADC) on the raw data
         :param settings_dev:    Configuration class for defining properties of ADC
         :param settings_non:    Configuration class for non-idealities / parasitics of ADC (next feature)
         """
         super().__init__(settings_dev)
         # --- Transfer function
-        self.__partition_digital = np.arange(0, 2 ** self._settings.Nadc, 1)
+        self.__partition_digital = np.arange(0, 2**self._settings.Nadc, 1)
         self.__partition_digital -= 2 ** (self._settings.Nadc - 1) if self._settings.is_signed else 0
-        self.__partition_voltage = np.arange(0, 2 ** self._settings.Nadc, 1) * self._settings.lsb
+        self.__partition_voltage = np.arange(0, 2**self._settings.Nadc, 1) * self._settings.lsb
         self.__partition_voltage += self._settings.vref[1] + settings_non.offset + self._settings.lsb / 2
 
     def __adc_conv_sample(self, uin: float) -> np.ndarray:

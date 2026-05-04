@@ -1,20 +1,23 @@
-import numpy as np
 from copy import deepcopy
 from unittest import TestCase, main
+
+import numpy as np
+
 from denspp.offline.data_call.call_handler import SettingsData
 from denspp.offline.template.call_data_dummy import DataLoaderTest
 
-
 test_settings = SettingsData(
-    pipeline='PipelineV0',
+    pipeline="PipelineV0",
     do_merge=False,
-    path='data',
-    data_set='test_1d',
-    data_case=0, data_point=0,
-    t_range_sec=[0], ch_sel=[],
+    path="data",
+    data_set="test_1d",
+    data_case=0,
+    data_point=0,
+    t_range_sec=[0],
+    ch_sel=[],
     fs_resample=100e3,
     do_mapping=True,
-    is_mapping_str=False
+    is_mapping_str=False,
 )
 
 
@@ -22,21 +25,21 @@ test_settings = SettingsData(
 class TestCallHandler(TestCase):
     def test_dataloader_1d_get_data(self):
         settings = deepcopy(test_settings)
-        settings.data_set = 'test_1d'
+        settings.data_set = "test_1d"
 
         dut = DataLoaderTest(settings=settings)
         dut.do_call()
         data = dut.get_data()
-        chck = data.data_type == 'Test_1d' and data.data_raw.shape == (1, 20000)
+        chck = data.data_type == "Test_1d" and data.data_raw.shape == (1, 20000)
         self.assertTrue(chck)
 
     def test_dataloader_1d_get_data_args(self):
         settings = deepcopy(test_settings)
-        settings.data_set = 'test_args'
+        settings.data_set = "test_args"
 
         dut = DataLoaderTest(settings=settings)
         stimulus = np.random.randn(250)
-        fs = 250.
+        fs = 250.0
         dut.do_call(fs, stimulus)
         data0 = dut.get_data()
         rslt = data0.data_raw.flatten()
@@ -45,7 +48,7 @@ class TestCallHandler(TestCase):
 
     def test_dataloader_1d_meta(self):
         settings = deepcopy(test_settings)
-        settings.data_set = 'test_1d'
+        settings.data_set = "test_1d"
 
         dut = DataLoaderTest(settings=settings)
         dut.do_call()
@@ -58,7 +61,7 @@ class TestCallHandler(TestCase):
 
     def test_dataloader_1d_upsampling(self):
         settings = deepcopy(test_settings)
-        settings.data_set = 'test_1d'
+        settings.data_set = "test_1d"
         settings.fs_resample = 20e3
 
         dut = DataLoaderTest(settings=settings)
@@ -70,7 +73,7 @@ class TestCallHandler(TestCase):
 
     def test_dataloader_1d_cutting(self):
         settings = deepcopy(test_settings)
-        settings.data_set = 'test_1d'
+        settings.data_set = "test_1d"
         settings.t_range_sec = [0.5, 0.8]
 
         dut = DataLoaderTest(settings=settings)
@@ -82,7 +85,7 @@ class TestCallHandler(TestCase):
 
     def test_dataloader_1d_cutting_resampling(self):
         settings = deepcopy(test_settings)
-        settings.data_set = 'test_1d'
+        settings.data_set = "test_1d"
         settings.fs_resample = 20e3
         settings.t_range_sec = [0.5, 0.8]
 
@@ -96,17 +99,17 @@ class TestCallHandler(TestCase):
 
     def test_dataloader_2d_get_data(self):
         settings = deepcopy(test_settings)
-        settings.data_set = 'test_2d'
+        settings.data_set = "test_2d"
 
         dut = DataLoaderTest(settings=settings)
         dut.do_call()
         data = dut.get_data()
-        chck = data.data_type == 'Test_2d' and data.data_raw.shape == (4, 20000)
+        chck = data.data_type == "Test_2d" and data.data_raw.shape == (4, 20000)
         self.assertTrue(chck)
 
     def test_dataloader_2d_meta(self):
         settings = deepcopy(test_settings)
-        settings.data_set = 'test_2d'
+        settings.data_set = "test_2d"
 
         dut = DataLoaderTest(settings=settings)
         dut.do_call()
@@ -119,7 +122,7 @@ class TestCallHandler(TestCase):
 
     def test_dataloader_2d_upsampling(self):
         settings = deepcopy(test_settings)
-        settings.data_set = 'test_2d'
+        settings.data_set = "test_2d"
         settings.fs_resample = 20e3
 
         dut = DataLoaderTest(settings=settings)
@@ -131,7 +134,7 @@ class TestCallHandler(TestCase):
 
     def test_dataloader_2d_cutting(self):
         settings = deepcopy(test_settings)
-        settings.data_set = 'test_2d'
+        settings.data_set = "test_2d"
         settings.t_range_sec = [0.5, 0.8]
 
         dut = DataLoaderTest(settings=settings)
@@ -143,7 +146,7 @@ class TestCallHandler(TestCase):
 
     def test_dataloader_2d_cutting_resampling(self):
         settings = deepcopy(test_settings)
-        settings.data_set = 'test_2d'
+        settings.data_set = "test_2d"
         settings.fs_resample = 20e3
         settings.t_range_sec = [0.5, 0.8]
 
@@ -156,5 +159,5 @@ class TestCallHandler(TestCase):
         self.assertTrue(chck)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

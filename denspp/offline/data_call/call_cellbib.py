@@ -1,6 +1,8 @@
-import numpy as np
 from dataclasses import dataclass
-from denspp.offline import check_key_elements, check_elem_unique
+
+import numpy as np
+
+from denspp.offline import check_elem_unique, check_key_elements
 
 
 @dataclass
@@ -12,6 +14,7 @@ class SettingsCellSelector:
          original_to_group:     Dictionary with new label subclass [key] and corresponding id as list [value]
          original_to_type:      Dictionary with new label subclass [key] and corresponding id as list [value]
     """
+
     original_id: dict
     original_to_reduced: dict
     original_to_group: dict
@@ -58,14 +61,14 @@ class CellSelector:
             cell_name = [key for key, values in self._used_id_library.items() if cluster_id == values]
         else:
             cell_name = [key for key, values in self._used_id_library.items() if cluster_id in values]
-        return cell_name[0] if len(cell_name) else ''
+        return cell_name[0] if len(cell_name) else ""
 
     def get_label_list(self) -> list:
         """Getting the label names of used dataset as list
         :return:    List of used cell type names as label
         """
         keylist = [key for key in self._used_id_library.keys()]
-        assert check_elem_unique(keylist), f"Keys of dataset labels are not unique - Please check!"
+        assert check_elem_unique(keylist), "Keys of dataset labels are not unique - Please check!"
         return keylist
 
     def transform_label_to_id_integer(self, old_id: int) -> int:
@@ -76,7 +79,9 @@ class CellSelector:
         if self._data_origin:
             cell_name = [values for values in self._used_id_library.values() if old_id == values]
         else:
-            cell_name = [idx for idx, values in enumerate(self._used_id_library.values()) if old_id in values]
+            cell_name = [
+                idx for idx, values in enumerate(self._used_id_library.values()) if old_id in values
+            ]
         return cell_name[0] if len(cell_name) else -1
 
     def transform_label_to_id_array(self, old_id: np.ndarray) -> np.ndarray:
@@ -89,7 +94,9 @@ class CellSelector:
             new_label[idx] = self.transform_label_to_id_integer(value)
         return new_label
 
-    def transform_data_into_new(self, old_id: np.ndarray, data: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    def transform_data_into_new(
+        self, old_id: np.ndarray, data: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Function for transforming the old ID and data to the new format
         :param old_id:  Numpy array with old IDs from original dataset
         :param data:    Numpy array with dataset for training with shape (num of samples, num of features)

@@ -2,10 +2,7 @@ import numpy as np
 
 
 def augmentation_downsampling(
-        data: np.ndarray,
-        label: np.ndarray,
-        n_downsampling: int,
-        drop_samples: bool=False
+    data: np.ndarray, label: np.ndarray, n_downsampling: int, drop_samples: bool = False
 ) -> tuple[np.ndarray, np.ndarray]:
     """Function for data augmentation using downsampling.
     :param data:            Numpy array with data from dataset with shape [num_samples, num_ch (optional), num_timepoints]
@@ -15,7 +12,7 @@ def augmentation_downsampling(
     :return:                Tuple with data and label for the new augmented dataset using downsampling.
     """
     if n_downsampling < 1:
-        raise ValueError('n_downsampling must be >= 1')
+        raise ValueError("n_downsampling must be >= 1")
     elif n_downsampling == 1:
         return data, label
     else:
@@ -29,7 +26,7 @@ def augmentation_downsampling(
                 data_lost = data[..., idx::n_downsampling]
                 if data_new.shape[-1] > data_lost.shape[-1]:
                     append_size = data_new.shape[-1] - data_lost.shape[-1]
-                    data_padd = np.zeros(data_new.shape[:-1] + (append_size, ))
+                    data_padd = np.zeros(data_new.shape[:-1] + (append_size,))
                     data_lost = np.concatenate([data_lost, data_padd], axis=-1)
 
                 data_new = np.concatenate([data_new, data_lost], axis=0)

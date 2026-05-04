@@ -1,8 +1,9 @@
-import numpy as np
-from torch import nn, Tensor, no_grad
 from copy import deepcopy
-from elasticai.creator.arithmetic import FxpParams, FxpArithmetic
+
+import numpy as np
+from elasticai.creator.arithmetic import FxpArithmetic, FxpParams
 from elasticai.creator.nn.fixed_point import MathOperations
+from torch import Tensor, nn, no_grad
 
 
 def quantize_model_fxp(model: nn.Sequential, total_bits: int, frac_bits: int) -> nn.Module:
@@ -12,7 +13,9 @@ def quantize_model_fxp(model: nn.Sequential, total_bits: int, frac_bits: int) ->
     :param frac_bits:   Fraction of bits to quantize
     :return:            Quantized model
     """
-    fxpmath = MathOperations(FxpArithmetic(FxpParams(total_bits=total_bits, frac_bits=frac_bits, signed=True)))
+    fxpmath = MathOperations(
+        FxpArithmetic(FxpParams(total_bits=total_bits, frac_bits=frac_bits, signed=True))
+    )
     model_quant = deepcopy(model)
     with no_grad():
         for name, param in model_quant.named_parameters():
@@ -27,6 +30,8 @@ def quantize_data_fxp(data: Tensor | np.ndarray, total_bits: int, frac_bits: int
     :param frac_bits:   Fraction of bits to quantize
     :return:            Quantized Tensor data
     """
-    fxpmath = MathOperations(FxpArithmetic(FxpParams(total_bits=total_bits, frac_bits=frac_bits, signed=True)))
+    fxpmath = MathOperations(
+        FxpArithmetic(FxpParams(total_bits=total_bits, frac_bits=frac_bits, signed=True))
+    )
     data_used = data if isinstance(data, Tensor) else Tensor(data)
     return fxpmath.quantize(data_used)
