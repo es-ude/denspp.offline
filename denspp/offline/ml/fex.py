@@ -7,7 +7,8 @@ from torch import from_numpy, load
 
 @dataclass
 class SettingsFeature:
-    """"Individual data class to configure feature extractor and cluster"""
+    """ "Individual data class to configure feature extractor and cluster"""
+
     pass
 
 
@@ -16,9 +17,9 @@ DefaultSettingsFeature = SettingsFeature()
 
 class FeatureExtraction:
     """Class with functions for feature extraction"""
-    def __init__(self, settings: SettingsFeature=DefaultSettingsFeature):
+
+    def __init__(self, settings: SettingsFeature = DefaultSettingsFeature):
         self.settings = settings
-        self._umap = None
 
     def pdac_min(self, frame_in: np.ndarray) -> np.ndarray:
         """Performing the Peak Detection with Area Computation (PDAC) method with minimum value on frames
