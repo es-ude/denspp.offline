@@ -1,20 +1,31 @@
-import numpy as np
+from logging import Logger, getLogger
+
 import matplotlib.pyplot as plt
-from logging import getLogger, Logger
-from denspp.offline.plot_helper import save_figure, scale_auto_value
-from denspp.offline.analog.dev_noise import SettingsNoise, DefaultSettingsNoise, ProcessNoise
+import numpy as np
+
+from denspp.offline.analog.dev_noise import (
+    DefaultSettingsNoise,
+    ProcessNoise,
+    SettingsNoise,
+)
 from denspp.offline.metric.data_numpy import calculate_error_rae
+from denspp.offline.plot_helper import save_figure, scale_auto_value
 
 
 class PolyfitIV(ProcessNoise):
     _logger: Logger
     _settings_noise: SettingsNoise
-    _fit_params_v2i: np.ndarray = np.nan    # Voltage input, Current Output
-    _fit_params_i2v: np.ndarray = np.nan    # Current input, Voltage Output
-    _fit_order: int=3
-    _dev_e: float=1e-9
+    _fit_params_v2i: np.ndarray = np.nan  # Voltage input, Current Output
+    _fit_params_i2v: np.ndarray = np.nan  # Current input, Voltage Output
+    _fit_order: int = 3
+    _dev_e: float = 1e-9
 
-    def __init__(self, sampling_rate: float, en_noise: bool, settings_noise: SettingsNoise=DefaultSettingsNoise):
+    def __init__(
+        self,
+        sampling_rate: float,
+        en_noise: bool,
+        settings_noise: SettingsNoise = DefaultSettingsNoise,
+    ):
         """Class for extracting the polynom fit parameters of measured IV curve from electrical device
         :param sampling_rate:       Sampling rate [Hz]
         :param en_noise:            Boolean for enabling noise on output signals
@@ -43,9 +54,15 @@ class PolyfitIV(ProcessNoise):
         self._fit_params_v2i = np.polyfit(x=voltage, y=current, deg=self._fit_order)
         self._fit_params_i2v = np.polyfit(x=current, y=voltage, deg=self._fit_order)
 
-    def _test_fit_option(self, voltage_test: np.ndarray, current_test: np.ndarray,
-                         methods_compare: list, plot_title: str='',
-                         do_plot: bool=True, path2save: str='') -> float:
+    def _test_fit_option(
+        self,
+        voltage_test: np.ndarray,
+        current_test: np.ndarray,
+        methods_compare: list,
+        plot_title: str = "",
+        do_plot: bool = True,
+        path2save: str = "",
+    ) -> float:
         """Function for testing and plotting the comparison
         :param voltage_test:            Numpy array with voltage signal
         :param current_test:            Numpy array with current signal
@@ -59,7 +76,9 @@ class PolyfitIV(ProcessNoise):
         i_poly = self.get_current(voltage_test, 0.0)
 
         error = self._calc_error(i_poly, current_test)
-        plot_title_new = f"{plot_title}, 1e3* RAE = {error:.3f}" if plot_title else f"1e3* RAE = {error:.3f}"
+        plot_title_new = (
+            f"{plot_title}, 1e3* RAE = {error:.3f}" if plot_title else f"1e3* RAE = {error:.3f}"
+        )
         if do_plot:
             self._plot_transfer_function_comparison(
                 u_transfer=voltage_test,
@@ -68,19 +87,19 @@ class PolyfitIV(ProcessNoise):
                 method_types=methods_compare,
                 plot_title=plot_title_new,
                 path2save=path2save,
-                show_plot=do_plot
+                show_plot=do_plot,
             )
         return error
 
     @staticmethod
     def _plot_transfer_function_comparison(
-            u_transfer: np.ndarray,
-            i_dev0: np.ndarray,
-            i_dev1: np.ndarray,
-            method_types: list,
-            plot_title: str = '',
-            path2save: str = '',
-            show_plot: bool = False
+        u_transfer: np.ndarray,
+        i_dev0: np.ndarray,
+        i_dev1: np.ndarray,
+        method_types: list,
+        plot_title: str = "",
+        path2save: str = "",
+        show_plot: bool = False,
     ) -> None:
         """Plotting the transfer function of electrical device for comparison
         :param u_transfer:      Numpy array with voltage from polynom fit (input)
@@ -98,32 +117,60 @@ class PolyfitIV(ProcessNoise):
         axs = list()
         axs.append(plt.subplot(2, 1, 1))
         axs.append(plt.subplot(2, 1, 2, sharex=axs[0]))
-        axs[0].semilogy(u_transfer, scaley * np.abs(i_dev0), 'r', marker='.', markersize=4, label=f"{method_types[0]}")
-        axs[0].semilogy(u_transfer, scaley * np.abs(i_dev1), 'k', marker='.', markersize=4, label=f"{method_types[1]}")
+        axs[0].semilogy(
+            u_transfer,
+            scaley * np.abs(i_dev0),
+            "r",
+            marker=".",
+            markersize=4,
+            label=f"{method_types[0]}",
+        )
+        axs[0].semilogy(
+            u_transfer,
+            scaley * np.abs(i_dev1),
+            "k",
+            marker=".",
+            markersize=4,
+            label=f"{method_types[1]}",
+        )
         axs[0].grid()
-        axs[0].set_ylabel(fr'Current $I_F$ / {unity}A')
+        axs[0].set_ylabel(rf"Current $I_F$ / {unity}A")
 
-        axs[1].plot(u_transfer, scaley * i_dev0, 'r', marker='.', markersize=4, label=f"{method_types[0]}")
-        axs[1].plot(u_transfer, scaley * i_dev1, 'k', marker='.', markersize=4, label=f"{method_types[1]}")
+        axs[1].plot(
+            u_transfer,
+            scaley * i_dev0,
+            "r",
+            marker=".",
+            markersize=4,
+            label=f"{method_types[0]}",
+        )
+        axs[1].plot(
+            u_transfer,
+            scaley * i_dev1,
+            "k",
+            marker=".",
+            markersize=4,
+            label=f"{method_types[1]}",
+        )
         axs[1].grid()
-        axs[1].set_ylabel(fr'Current $I_F$ / {unity}A')
-        axs[1].set_xlabel(r'Voltage $\Delta U$ / V')
+        axs[1].set_ylabel(rf"Current $I_F$ / {unity}A")
+        axs[1].set_xlabel(r"Voltage $\Delta U$ / V")
 
         axs[0].set_title(plot_title)
         axs[1].legend()
         plt.tight_layout()
         if path2save:
-            save_figure(plt, path2save, 'device_iv_charac')
+            save_figure(plt, path2save, "device_iv_charac")
         if show_plot:
             plt.show(block=True)
 
     def _get_params_for_polynomfit(
-            self,
-            current: np.ndarray,
-            voltage: np.ndarray,
-            do_test: bool=False,
-            do_plot: bool=False,
-            path2save: str=''
+        self,
+        current: np.ndarray,
+        voltage: np.ndarray,
+        do_test: bool = False,
+        do_plot: bool = False,
+        path2save: str = "",
     ) -> float:
         """Function to extract the params of electrical device behaviour with polynom fit function
         :param current:     Numpy array with current signal from measurement
@@ -133,31 +180,28 @@ class PolyfitIV(ProcessNoise):
         :param path2save:   String with path to save the figure
         :return:            Floating value with Relative Squared Error
         """
-        self._logger.debug(f"Start polynom fitting")
-        self._extract_params_for_polynomfit(
-            voltage=voltage,
-            current=current
-        )
+        self._logger.debug("Start polynom fitting")
+        self._extract_params_for_polynomfit(voltage=voltage, current=current)
         if do_test:
             error = self._test_fit_option(
                 voltage_test=voltage,
                 current_test=current,
-                methods_compare=['Measurement', 'Polynom fitting'],
+                methods_compare=["Measurement", "Polynom fitting"],
                 plot_title=f"n_p={self._fit_params_i2v.size}",
                 do_plot=do_plot,
-                path2save=path2save
+                path2save=path2save,
             )
         else:
             error = -1.0
         return error
 
     def _find_best_poly_order(
-            self,
-            current: np.ndarray,
-            voltage: np.ndarray,
-            order_start: int,
-            order_stop: int,
-            show_plots: bool=False
+        self,
+        current: np.ndarray,
+        voltage: np.ndarray,
+        order_start: int,
+        order_stop: int,
+        show_plots: bool = False,
     ) -> float:
         """Finding the best polynomial order for fitting
         :param current:         Numpy array with current values
@@ -179,7 +223,7 @@ class PolyfitIV(ProcessNoise):
                 voltage=voltage,
                 do_test=True,
                 do_plot=False,
-                path2save=''
+                path2save="",
             )
             error_search[idx] = error
             self._logger.info(f"#{idx:02d}: order = {order:02d} --> Error = {error}")
@@ -187,7 +231,9 @@ class PolyfitIV(ProcessNoise):
         # --- Finding best order
         diff_ratio = np.diff(error_search) / error_search[:-1]
         xmin = diff_ratio.argmin() + 1
-        self._logger.info(f"\nBest solution: Order = {np.array(order_search)[xmin]} with an error of {error_search[xmin]}!")
+        self._logger.info(
+            f"\nBest solution: Order = {np.array(order_search)[xmin]} with an error of {error_search[xmin]}!"
+        )
 
         # --- Extract params
         self._fit_order = int(np.array(order_search)[xmin])
@@ -196,11 +242,17 @@ class PolyfitIV(ProcessNoise):
             voltage=voltage,
             do_test=True,
             do_plot=show_plots,
-            path2save=''
+            path2save="",
         )
 
-    def extract_polyfit_params(self, current: np.ndarray, voltage: np.ndarray, show_plots: bool=False,
-                               find_best_order: bool=False, order_range: list=(2, 18)) -> float:
+    def extract_polyfit_params(
+        self,
+        current: np.ndarray,
+        voltage: np.ndarray,
+        show_plots: bool = False,
+        find_best_order: bool = False,
+        order_range: list = (2, 18),
+    ) -> float:
         """Extracting the polynom fit parameters and plotting it compared to regression task
         :param current:             Numpy array with current values
         :param voltage:             Numpy array with voltage values
@@ -215,7 +267,7 @@ class PolyfitIV(ProcessNoise):
                 voltage=voltage,
                 do_test=True,
                 do_plot=show_plots,
-                path2save=''
+                path2save="",
             )
         else:
             assert len(order_range) == 2, "Parameter: order_range must have a length of two"
@@ -247,8 +299,14 @@ class PolyfitIV(ProcessNoise):
         :param current:     Numpy array with applied current signal
         :return:            Numpy array with voltage response
         """
-        assert not np.isnan(self._fit_params_i2v).any(), "fit parameters not set - Please call 'get_params_for_polynomfit'"
-        v_noise = np.zeros_like(current) if not self._en_noise else self.gen_noise_awgn_dev(current.size, self._dev_e)
+        assert not np.isnan(self._fit_params_i2v).any(), (
+            "fit parameters not set - Please call 'get_params_for_polynomfit'"
+        )
+        v_noise = (
+            np.zeros_like(current)
+            if not self._en_noise
+            else self.gen_noise_awgn_dev(current.size, self._dev_e)
+        )
         return np.poly1d(self._fit_params_i2v)(current) + v_noise
 
     def get_current(self, voltage_top: np.ndarray | float, voltage_bot: np.ndarray | float) -> np.ndarray:
@@ -257,8 +315,17 @@ class PolyfitIV(ProcessNoise):
         :param voltage_bot:     Numpy array with applied current signal on bottom electrode
         :return:                Numpy array with current response
         """
-        assert not np.isnan(self._fit_params_v2i).any(), "fit parameters not set - Please call 'get_params_for_polynomfit'"
-        sizes = [1 if type(voltage_top) == float else voltage_top.size, 1 if type(voltage_bot) == float else voltage_bot.size]
+        assert not np.isnan(self._fit_params_v2i).any(), (
+            "fit parameters not set - Please call 'get_params_for_polynomfit'"
+        )
+        sizes = [
+            1 if type(voltage_top) == float else voltage_top.size,
+            1 if type(voltage_bot) == float else voltage_bot.size,
+        ]
 
-        i_noise = np.zeros_like(voltage_top if type(voltage_top) == np.ndarray else voltage_bot) if not self._en_noise else self.gen_noise_awgn_dev(max(sizes), self._dev_e)
+        i_noise = (
+            np.zeros_like(voltage_top if type(voltage_top) == np.ndarray else voltage_bot)
+            if not self._en_noise
+            else self.gen_noise_awgn_dev(max(sizes), self._dev_e)
+        )
         return np.poly1d(self._fit_params_v2i)(voltage_top - voltage_bot) + i_noise

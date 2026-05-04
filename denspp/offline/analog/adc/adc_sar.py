@@ -1,23 +1,31 @@
 import numpy as np
-from .adc_basic import BasicADC
-from .adc_settings import SettingsADC, SettingsNon, RecommendedSettingsNon
+
 from denspp.offline.analog.dev_noise import ProcessNoise
+
+from .adc_basic import BasicADC
+from .adc_settings import DefaultSettingsNon, SettingsADC, SettingsNon
 
 
 class SuccessiveApproximation(BasicADC):
     _settings: SettingsADC
     _handler_noise: ProcessNoise
 
-    def __init__(self, settings_dev: SettingsADC, settings_non: SettingsNon = RecommendedSettingsNon) -> None:
-        """"Class for applying a Successive Approximation (SAR) Analogue-Digital-Converter (ADC) on the raw data
-            :param settings_dev:    Configuration class for defining properties of ADC
-            :param settings_non:    Configuration class for non-idealities / parasitics of ADC (next feature)
+    def __init__(
+        self,
+        settings_dev: SettingsADC,
+        settings_non: SettingsNon = DefaultSettingsNon,
+    ) -> None:
+        """ "Class for applying a Successive Approximation (SAR) Analogue-Digital-Converter (ADC) on the raw data
+        :param settings_dev:    Configuration class for defining properties of ADC
+        :param settings_non:    Configuration class for non-idealities / parasitics of ADC (next feature)
         """
         super().__init__(settings_dev)
         self.__use_noise = settings_non.use_noise
         # --- Transfer function
         self.__partition_digital = 2 ** np.arange(0, self._settings.Nadc)
-        self.__partition_voltage = (self.__partition_digital / 2 ** self._settings.Nadc) * self._settings.vref_range
+        self.__partition_voltage = (
+            self.__partition_digital / 2**self._settings.Nadc
+        ) * self._settings.vref_range
         self.__type_offset = [2 ** (self._settings.Nadc - 1) if self._settings.is_signed else 0]
         # --- Internal signals for noise shaping
         self.alpha_int = [1.0, 0.5]
@@ -118,8 +126,7 @@ class SuccessiveApproximation(BasicADC):
         # Resampling of input
         uin_adc = self.clamp_voltage(uin)
         uin0 = self._do_resample(uin_adc)
-        unoise = self._gen_noise(uin0.size) if self.__use_noise else np.zeros(
-            shape=uin0.shape)
+        unoise = self._gen_noise(uin0.size) if self.__use_noise else np.zeros(shape=uin0.shape)
         # Running SAR code
         xout, uout, uerr = self._generate_sar_empty_data(uin0.shape)
         for idx, din in enumerate(uin0):

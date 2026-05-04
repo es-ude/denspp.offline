@@ -1,6 +1,7 @@
-import numpy as np
 from dataclasses import dataclass
-from logging import getLogger, Logger
+from logging import Logger, getLogger
+
+import numpy as np
 
 
 @dataclass
@@ -16,8 +17,9 @@ class SettingsThreshold:
         gain:           Applied gain on threshold output
         window_sec:     Window length in sec.
     """
+
     method: str
-    sampling_rate:  float
+    sampling_rate: float
     gain: float
     window_sec: float
 
@@ -28,10 +30,7 @@ class SettingsThreshold:
 
 
 DefaultSettingsThreshold = SettingsThreshold(
-    method="const",
-    sampling_rate=20e3,
-    gain=1.0,
-    window_sec=10e-3
+    method="const", sampling_rate=20e3, gain=1.0, window_sec=10e-3
 )
 
 
@@ -44,15 +43,15 @@ class Thresholding:
         self._logger: Logger = getLogger(__name__)
         self._settings: SettingsThreshold = settings
         self._methods = {
-            'const':    '_constant',
-            'abs_mean': '_absolute_median',
-            'mad':      '_median_absolute_derivation',
-            'mavg':     '_moving_average',
-            'mavg_abs': '_moving_absolute_average',
-            'rms_norm': '_root_mean_squared_normal',
-            'rms_black':'_root_mean_squared_blackrock',
-            'welford':  '_welford_online',
-            'wins':     '_winsorization',
+            "const": "_constant",
+            "abs_mean": "_absolute_median",
+            "mad": "_median_absolute_derivation",
+            "mavg": "_moving_average",
+            "mavg_abs": "_moving_absolute_average",
+            "rms_norm": "_root_mean_squared_normal",
+            "rms_black": "_root_mean_squared_blackrock",
+            "welford": "_welford_online",
+            "wins": "_winsorization",
         }
 
     def get_overview(self) -> list:
@@ -65,22 +64,28 @@ class Thresholding:
     def print_overview(self) -> None:
         self._logger.info(f"Available Thresholding methods: {self.get_overview()}")
 
-    def get_threshold(self, xin: np.ndarray, do_abs: bool=False, **kwargs) -> np.ndarray:
+    def get_threshold(self, xin: np.ndarray, do_abs: bool = False, **kwargs) -> np.ndarray:
         """Function for getting the thresholding value from input
         :param xin:     Numpy array with transient raw signal
         :param do_abs:  Apply absolute xin for thresholding or not
         :return:        Numpy array with thresholding value from applied method
         """
-        if self._settings.method.lower() == 'const' and not 'thr_val' in kwargs.keys():
-            raise TypeError("Constant threshold method needs the definition of 'thr_val' (threshold value) "
-                            "as float, like thr_val=0.5 in kwargs")
+        if self._settings.method.lower() == "const" and "thr_val" not in kwargs.keys():
+            raise TypeError(
+                "Constant threshold method needs the definition of 'thr_val' (threshold value) "
+                "as float, like thr_val=0.5 in kwargs"
+            )
 
         if self._settings.method.lower() not in self.get_overview():
-            raise ValueError(f"Thresholding method {self._settings.method} not available - Please change to {self.get_overview()}")
+            raise ValueError(
+                f"Thresholding method {self._settings.method} not available - Please change to {self.get_overview()}"
+            )
         xin0 = np.abs(xin) if do_abs else xin
         return getattr(self, self._methods[self._settings.method])(xin0, **kwargs)
 
-    def get_threshold_position(self, xin: np.ndarray, pre_time: float=0.0, do_abs: bool=False, **kwargs) -> np.ndarray:
+    def get_threshold_position(
+        self, xin: np.ndarray, pre_time: float = 0.0, do_abs: bool = False, **kwargs
+    ) -> np.ndarray:
         """Function for getting the crosspoints of thresholding value and transient input
         :param xin:         Numpy array with transient raw signal
         :param pre_time:    Floating value with pre-time in the window before event is detected [s]
@@ -120,19 +125,18 @@ class Thresholding:
         threshold = self._settings.gain * std_estimate
         return np.zeros_like(xin) + threshold
 
-
     def _moving_average(self, xin: np.ndarray) -> np.ndarray:
         M = self._settings.window_steps
-        conv = np.convolve(xin, np.ones(M)/M, mode='same')
+        conv = np.convolve(xin, np.ones(M) / M, mode="same")
         return self._settings.gain * conv
 
     def _moving_absolute_average(self, xin: np.ndarray) -> np.ndarray:
         M = self._settings.window_steps
-        conv = np.convolve(np.abs(xin), np.ones(M)/M, mode='same')
+        conv = np.convolve(np.abs(xin), np.ones(M) / M, mode="same")
         return self._settings.gain * conv
 
     def _root_mean_squared_normal(self, xin: np.ndarray) -> np.ndarray:
-        return np.zeros_like(xin) + self._settings.gain * np.sqrt(np.sum(xin ** 2) / xin.size)
+        return np.zeros_like(xin) + self._settings.gain * np.sqrt(np.sum(xin**2) / xin.size)
 
     def _root_mean_squared_blackrock(self, xin: np.ndarray) -> np.ndarray:
         return 4.5 * self._root_mean_squared_normal(xin)
@@ -147,7 +151,7 @@ class Thresholding:
             n += 1
             mean_old = mean
             mean += (x - mean) / n
-            sigma += ((x - mean)* (x - mean_old) - sigma) / n
+            sigma += ((x - mean) * (x - mean_old) - sigma) / n
             std_out[idx] = sigma
 
         std_out[0:1] = std_out[2]

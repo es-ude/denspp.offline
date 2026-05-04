@@ -1,12 +1,13 @@
-import numpy as np
+from logging import Logger, getLogger
 from multiprocessing import Process, Queue
 from os import cpu_count
+
+import numpy as np
 from tqdm import tqdm
-from logging import getLogger, Logger
 
 
 def _core_task(rawdata: np.ndarray, id: int, func, result) -> None:
-        result.put({id: func(rawdata)})
+    result.put({id: func(rawdata)})
 
 
 class MultiprocessingHandler:
@@ -25,20 +26,18 @@ class MultiprocessingHandler:
         self._max_num_workers = num_workers
 
     def __perform_single_threads(self, func, rawdata: np.ndarray | list, chnnl_id: list) -> None:
-        self._logger.info('... processing data via single threading')
+        self._logger.info("... processing data via single threading")
 
         self._results = dict()
         self.__threads_core = list()
         rslt = Queue()
-        for idx, (chnnl, data)  in enumerate(tqdm(zip(chnnl_id, rawdata), ncols=100, desc='Progress Threads: ')):
+        for idx, (chnnl, data) in enumerate(
+            tqdm(zip(chnnl_id, rawdata), ncols=100, desc="Progress Threads: ")
+        ):
             thread = Process(
                 target=_core_task,
-                kwargs=dict(
-                    rawdata=data,
-                    id=chnnl,
-                    func=func,
-                    result=rslt
-            ))
+                kwargs=dict(rawdata=data, id=chnnl, func=func, result=rslt),
+            )
             thread.start()
             thread.join()
             self._results.update(rslt.get())
@@ -46,23 +45,20 @@ class MultiprocessingHandler:
     def __perform_multi_threads(self, func, data: np.ndarray | list, chnnl_id: list) -> None:
         num_iterations = int(np.ceil(len(chnnl_id) / self._max_num_workers))
         num_effective = num_iterations if num_iterations < self._num_cores else self._num_cores
-        split_groups = [chnnl_id[i:i + num_effective] for i in range(0, len(chnnl_id), num_effective)]
+        split_groups = [chnnl_id[i : i + num_effective] for i in range(0, len(chnnl_id), num_effective)]
 
-        self._logger.info(f"... processing data with {self._max_num_workers} threading workers on {self._num_cores} cores")
+        self._logger.info(
+            f"... processing data with {self._max_num_workers} threading workers on {self._num_cores} cores"
+        )
         self._results = dict()
-        for group in tqdm(split_groups, desc='Progress Threads: '):
+        for group in tqdm(split_groups, desc="Progress Threads: "):
             self.__threads_core = list()
             # --- Starting all threads
             rslt = Queue()
             for idx, group_num in enumerate(group):
                 thread = Process(
                     target=_core_task,
-                    kwargs=dict(
-                        rawdata=data[idx],
-                        id=group_num,
-                        func=func,
-                        result=rslt
-                    )
+                    kwargs=dict(rawdata=data[idx], id=group_num, func=func, result=rslt),
                 )
                 self.__threads_core.append(thread)
                 self.__threads_core[idx].start()
@@ -74,7 +70,7 @@ class MultiprocessingHandler:
 
     def do_save_results(self, path2save: str) -> None:
         """Saving results in desired numpy format"""
-        np.save(f'{path2save}/results.npy', self._results)
+        np.save(f"{path2save}/results.npy", self._results)
 
     def get_results(self) -> dict:
         """Return the signals after processing"""

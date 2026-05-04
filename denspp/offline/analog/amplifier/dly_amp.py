@@ -1,8 +1,14 @@
 from dataclasses import dataclass
+
 import numpy as np
 from scipy.signal import lfilter
+
 from denspp.offline.analog.common_func import CommonAnalogFunctions
-from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, DefaultSettingsNoise
+from denspp.offline.analog.dev_noise import (
+    DefaultSettingsNoise,
+    ProcessNoise,
+    SettingsNoise,
+)
 
 
 @dataclass
@@ -17,10 +23,11 @@ class SettingsDLY:
         noise_en:   Enable noise on output [True/False]
         noise_edev: Input voltage noise spectral density [V/sqrt(Hz)]
     """
-    vdd:    float
-    vss:    float
+
+    vdd: float
+    vss: float
     fs_ana: float
-    t_dly:  float
+    t_dly: float
     offset: float
     noise_en: bool
     noise_edev: float
@@ -42,12 +49,13 @@ class SettingsDLY:
 
 
 DefaultSettingsDLY = SettingsDLY(
-    vdd=0.6, vss=-0.6,
+    vdd=0.6,
+    vss=-0.6,
     fs_ana=50e3,
     t_dly=0.5e-3,
     offset=0e-6,
     noise_en=False,
-    noise_edev=100e-9
+    noise_edev=100e-9,
 )
 
 
@@ -55,7 +63,11 @@ class DelayAmplifier(CommonAnalogFunctions):
     _handler_noise: ProcessNoise
     _settings: SettingsDLY
 
-    def __init__(self, settings_dev: SettingsDLY, settings_noise: SettingsNoise=DefaultSettingsNoise) -> None:
+    def __init__(
+        self,
+        settings_dev: SettingsDLY,
+        settings_noise: SettingsNoise = DefaultSettingsNoise,
+    ) -> None:
         """Class for emulating an analogue delay amplifier
         (More infos on: https://thewolfsound.com/allpass-filter/)
         :param settings_dev:        Dataclass for handling the delay amplifier
@@ -78,7 +90,7 @@ class DelayAmplifier(CommonAnalogFunctions):
             Corresponding numpy array with shifted input
         """
         uout = np.zeros_like(u_inp) + self._settings.vcm
-        uout[self._settings.num_dly_taps:] = u_inp[:-self._settings.num_dly_taps]
+        uout[self._settings.num_dly_taps :] = u_inp[: -self._settings.num_dly_taps]
         return self.clamp_voltage(uout)
 
     def do_recursive_delay(self, u_inp: np.ndarray) -> np.ndarray:
@@ -89,8 +101,8 @@ class DelayAmplifier(CommonAnalogFunctions):
             Corresponding numpy array with shifted input
         """
         uout = np.zeros(u_inp.shape)
-        uout[:self._settings.num_dly_taps+1] = u_inp[-self._settings.num_dly_taps-1:]
-        uout[self._settings.num_dly_taps:] = u_inp[:-self._settings.num_dly_taps]
+        uout[: self._settings.num_dly_taps + 1] = u_inp[-self._settings.num_dly_taps - 1 :]
+        uout[self._settings.num_dly_taps :] = u_inp[: -self._settings.num_dly_taps]
         return self.clamp_voltage(uout)
 
     def do_allpass_first_order(self, u_in: np.ndarray) -> np.ndarray:
@@ -119,6 +131,6 @@ class DelayAmplifier(CommonAnalogFunctions):
         iir_c0 = (val - 1) / (val + 1)
         iir_c1 = -np.cos(2 * np.pi * self._settings.f_break_norm)
 
-        b = [-iir_c0, iir_c1*(1-iir_c0), 1.0]
-        a = [1.0, iir_c1*(1-iir_c0), -iir_c0]
+        b = [-iir_c0, iir_c1 * (1 - iir_c0), 1.0]
+        a = [1.0, iir_c1 * (1 - iir_c0), -iir_c0]
         return self.clamp_voltage(lfilter(b, a, u_in))

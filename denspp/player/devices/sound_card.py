@@ -1,5 +1,6 @@
 import numpy as np
 import soundcard as sc
+
 from denspp.offline.plot_helper import get_plot_color
 
 
@@ -9,7 +10,7 @@ class TranslatorSoundCard:
     __mic = None
     __snd = None
 
-    def __init__(self, name: str="", samp_rate: float=44.1e3) -> None:
+    def __init__(self, name: str = "", samp_rate: float = 44.1e3) -> None:
         """Class for Getting and Pushing audio signals into a sound card
         :param name:        Name of the sound card
         :param samp_rate:   Floating with Sampling rate [Hz]
@@ -31,7 +32,7 @@ class TranslatorSoundCard:
     @property
     def get_voltage_resolution(self) -> float:
         """Returning the voltage resolution of the sound card"""
-        return (self.get_voltage_range[1] - self.get_voltage_range[0]) / 2 ** self.get_bitwidth
+        return (self.get_voltage_range[1] - self.get_voltage_range[0]) / 2**self.get_bitwidth
 
     @property
     def get_sampling_rate(self) -> float:
@@ -71,7 +72,7 @@ class TranslatorSoundCard:
         """
         self.__samp_rate = int(samp_rate)
 
-    def play_data(self, signal_in: np.ndarray, channels: list=[0]) -> None:
+    def play_data(self, signal_in: np.ndarray, channels: list = [0]) -> None:
         """Function for playing the signal into the speaker connectors of the sound card device
         :param signal_in:   Numpy array with signal input
         :param channels:    List of channels to play the data
@@ -83,7 +84,9 @@ class TranslatorSoundCard:
             signal_used = signal_in
 
         if not len(signal_used.shape) == 2:
-            raise ValueError("The shape of signal input array must have two values: (num_samples, channels)")
+            raise ValueError(
+                "The shape of signal input array must have two values: (num_samples, channels)"
+            )
         if not len(channels) == signal_used.shape[1]:
             raise ValueError("The shape of channels list must have the same length as signal_in.shape[1]")
 
@@ -103,19 +106,22 @@ class TranslatorSoundCard:
         if self.__mic is None:
             self.get_microphone()
         return self.__mic.record(
-            numframes=int(self.__samp_rate * duration_sec)+1,
+            numframes=int(self.__samp_rate * duration_sec) + 1,
             samplerate=self.__samp_rate,
             channels=[0],
-            blocksize=None
+            blocksize=None,
         ).flatten()
 
     def plot_data(self, data: np.ndarray) -> None:
-        """"Plotting the recorded data from device
+        """ "Plotting the recorded data from device
         :param data:    Numpy array with signal data
         :return:        None
         """
         import matplotlib.pyplot as plt
-        time = np.linspace(start=0, stop=data.shape[0], num=data.shape[0], endpoint=False) / self.__samp_rate
+
+        time = (
+            np.linspace(start=0, stop=data.shape[0], num=data.shape[0], endpoint=False) / self.__samp_rate
+        )
 
         plt.figure()
         plt.plot(time, data, color=get_plot_color(0), label=f"CH #{0}")

@@ -1,32 +1,26 @@
-import numpy as np
 from copy import deepcopy
 from dataclasses import dataclass
-from logging import getLogger, Logger
-from typing import Any
+from logging import Logger, getLogger
 from pathlib import Path
+from typing import Any
 
-from denspp.offline import (
-    get_path_to_project,
-    check_keylist_elements_all
-)
-from denspp.offline.dnn import (
-    DatasetFromFile,
-    SettingsDataset,
-    DefaultSettingsDataset
-)
+import numpy as np
+
+import denspp.offline.dnn.plots as dnn_plot
+from denspp.offline import check_keylist_elements_all, get_path_to_project
+from denspp.offline.data_format import JsonHandler
+from denspp.offline.dnn import DatasetFromFile, DefaultSettingsDataset, SettingsDataset
+from denspp.offline.dnn.model_library import DatasetLoaderLibrary
 from denspp.offline.dnn.training import (
-    TrainClassifier,
-    SettingsClassifier,
+    DataValidation,
     DefaultSettingsTrainingCE,
-    TrainAutoencoder,
-    SettingsAutoencoder,
     DefaultSettingsTrainingMSE,
-    DataValidation
+    SettingsAutoencoder,
+    SettingsClassifier,
+    TrainAutoencoder,
+    TrainClassifier,
 )
 from denspp.offline.logger import define_logger_runtime
-from denspp.offline.data_format import JsonHandler
-from denspp.offline.dnn.model_library import DatasetLoaderLibrary
-import denspp.offline.dnn.plots as dnn_plot
 
 
 @dataclass
@@ -39,6 +33,7 @@ class TrainingResults:
         path:           Path to training results
         metrics_custom: List with string names of custom labels used during training
     """
+
     metrics: dict
     data: DataValidation
     settings: dict
@@ -56,6 +51,7 @@ class SettingsTraining:
         ptq_total_bitwidth: Integer for total bitwidth in PTQ
         ptq_frac_bitwidth:  Integer for fractional bitwidth in PTQ
     """
+
     mode_train: int
     do_block: bool
     do_ptq: bool
@@ -79,7 +75,7 @@ class PyTorchPlot:
         """Class for handling all suitable plot options for the PyTorch Training Handler"""
         self._logger: Logger = getLogger(__name__)
 
-    def performance_autoencoder_mnist(self, data: TrainingResults, show_plot: bool=False) -> None:
+    def performance_autoencoder_mnist(self, data: TrainingResults, show_plot: bool = False) -> None:
         """Plotting the dataset content with initial and predicted values after autoencoder training
         :param data:        Dataclass TrainingResults with results from Training
         :param show_plot:   Boolean value to show the plot
@@ -91,7 +87,7 @@ class PyTorchPlot:
             label=data.data.valid_label,
             title="_input",
             path2save=str(data.path),
-            show_plot=False
+            show_plot=False,
         )
         self._logger.info("... plotting predicted autoencoder output using MNIST data")
         dnn_plot.plot_mnist_dataset(
@@ -99,10 +95,17 @@ class PyTorchPlot:
             label=data.data.valid_label,
             title="_predicted",
             path2save=str(data.path),
-            show_plot=show_plot
+            show_plot=show_plot,
         )
 
-    def loss(self, data: TrainingResults, loss_type: str, fold_num: int=0, epoch_zoom=None, show_plot:bool=False) -> None:
+    def loss(
+        self,
+        data: TrainingResults,
+        loss_type: str,
+        fold_num: int = 0,
+        epoch_zoom=None,
+        show_plot: bool = False,
+    ) -> None:
         """Plotting the loss values of each epoch during training
         :param data:        Dataclass TrainingResults with results from Training
         :param loss_type:   String with name of the used loss function
@@ -118,16 +121,22 @@ class PyTorchPlot:
             self._logger.info(f"... plotting metric: {loss_type}")
             used_fold = fold_overview[fold_num]
             dnn_plot.plot_loss(
-                loss_train=data.metrics[used_fold]['loss_train'],
-                loss_valid=data.metrics[used_fold]['loss_valid'],
+                loss_train=data.metrics[used_fold]["loss_train"],
+                loss_valid=data.metrics[used_fold]["loss_valid"],
                 loss_type=loss_type,
                 path2save=str(data.path),
                 epoch_zoom=epoch_zoom,
                 do_logy=False,
-                show_plot=show_plot
+                show_plot=show_plot,
             )
 
-    def custom_loss(self, data: TrainingResults, fold_num: int=0, epoch_zoom=None, show_plot:bool=False) -> None:
+    def custom_loss(
+        self,
+        data: TrainingResults,
+        fold_num: int = 0,
+        epoch_zoom=None,
+        show_plot: bool = False,
+    ) -> None:
         """Plotting the custom metrics of each epoch during training
         :param data:        Dataclass TrainingResults with results from Training
         :param fold_num:    Integer with fold number to analyse
@@ -145,7 +154,7 @@ class PyTorchPlot:
             if used_metric in available_metric:
                 last_ite = used_metric == available_metric[-1]
                 self._logger.info(f"... plotting  custom metric: {used_metric}")
-                if type(data.settings['model']) == SettingsClassifier or used_metric == 'ptq_loss':
+                if type(data.settings["model"]) == SettingsClassifier or used_metric == "ptq_loss":
                     dnn_plot.plot_custom_loss_classifier(
                         data=data.metrics[used_fold][used_metric],
                         loss_name=used_metric,
@@ -153,7 +162,7 @@ class PyTorchPlot:
                         do_logy=False,
                         epoch_zoom=epoch_zoom,
                         path2save=str(data.path),
-                        show_plot=show_plot and last_ite
+                        show_plot=show_plot and last_ite,
                     )
                 else:
                     dnn_plot.plot_custom_loss_autoencoder(
@@ -163,10 +172,10 @@ class PyTorchPlot:
                         do_logy=False,
                         epoch_zoom=epoch_zoom,
                         path2save=str(data.path),
-                        show_plot=show_plot and last_ite
+                        show_plot=show_plot and last_ite,
                     )
 
-    def statistics(self, data: TrainingResults, show_plot: bool=False) -> None:
+    def statistics(self, data: TrainingResults, show_plot: bool = False) -> None:
         """Plotting the statistics of the used dataset for training
         :param data:        Dataclass TrainingResults with results from Training
         :param show_plot:   Boolean value to show the plot
@@ -178,10 +187,16 @@ class PyTorchPlot:
             valid_cl=data.data.valid_label,
             path2save=str(data.path),
             cl_dict=data.data.label_names,
-            show_plot=show_plot
+            show_plot=show_plot,
         )
 
-    def performance_classifier(self, data: TrainingResults, fold_num: int=0, epoch_zoom=None, show_plot: bool=False) -> None:
+    def performance_classifier(
+        self,
+        data: TrainingResults,
+        fold_num: int = 0,
+        epoch_zoom=None,
+        show_plot: bool = False,
+    ) -> None:
         """Plotting the results after classifier training
         :param data:        Dataclass TrainingResults with results from Training
         :param fold_num:    Integer with fold number to analyse
@@ -196,13 +211,13 @@ class PyTorchPlot:
         self._logger.info("... plotting epoch-wise accuracy")
         used_fold = overview_fold[fold_num]
         dnn_plot.plot_loss(
-            loss_train=data.metrics[used_fold]['acc_train'],
-            loss_valid=data.metrics[used_fold]['acc_valid'],
-            loss_type='Accuracy',
+            loss_train=data.metrics[used_fold]["acc_train"],
+            loss_valid=data.metrics[used_fold]["acc_valid"],
+            loss_type="Accuracy",
             epoch_zoom=epoch_zoom,
             path2save=str(data.path),
             do_logy=False,
-            show_plot=False
+            show_plot=False,
         )
         self._logger.info("... plotting confusion matrix")
         dnn_plot.plot_confusion(
@@ -210,10 +225,12 @@ class PyTorchPlot:
             true_labels=data.data.valid_label,
             path2save=str(data.path),
             cl_dict=data.data.label_names,
-            show_plots=show_plot
+            show_plots=show_plot,
         )
 
-    def performance_autoencoder(self, data: TrainingResults, mean_value: np.ndarray, show_plot: bool=False) -> None:
+    def performance_autoencoder(
+        self, data: TrainingResults, mean_value: np.ndarray, show_plot: bool = False
+    ) -> None:
         """Plotting the results after autoencoder training
         :param data:        Dataclass TrainingResults with results from Training
         :param mean_value:  Numpy array with mean waveforms for each class
@@ -232,7 +249,7 @@ class PyTorchPlot:
             ymean=mean_value,
             yclus=data.data.valid_label,
             path=str(data.path),
-            show_plot=show_plot
+            show_plot=show_plot,
         )
 
 
@@ -247,8 +264,13 @@ class PyTorchTrainer:
     __default_model: str
     __use_case: str
 
-    def __init__(self, use_case: str, settings: SettingsTraining=DefaultSettingsTraining,
-                 default_model: str= '', path2config: str= 'config') -> None:
+    def __init__(
+        self,
+        use_case: str,
+        settings: SettingsTraining = DefaultSettingsTraining,
+        default_model: str = "",
+        path2config: str = "config",
+    ) -> None:
         """Class for handling and wrapping all PyTorch Training Routines incl. Report Generation and Plotting
         :param use_case:            String with name of use-case
         :param settings:            Dataclass for defining trainer properties
@@ -268,12 +290,10 @@ class PyTorchTrainer:
         self.__prepare_training()
         if settings == DefaultSettingsTraining:
             self._settings_ml = self._get_config_ml(
-                use_case=use_case,
-                default_training_mode=settings.mode_train
+                use_case=use_case, default_training_mode=settings.mode_train
             )
         else:
             self._settings_ml = settings
-
 
     @property
     def config_available(self) -> bool:
@@ -300,9 +320,7 @@ class PyTorchTrainer:
             case _:
                 raise NotImplementedError("Training routine not implemented")
         return method(
-            config_train=default,
-            config_data=DefaultSettingsDataset,
-            do_train=False
+            config_train=default, config_data=DefaultSettingsDataset, do_train=False
         ).get_epoch_metric_custom_methods
 
     @property
@@ -323,29 +341,29 @@ class PyTorchTrainer:
         """Returning the deep learning model for training loaded from ModelLibrary"""
         return self._settings_model.get_model(*args, **kwargs)
 
-    def _get_config_ml(self, use_case: str, default_training_mode: int=0) -> SettingsTraining:
+    def _get_config_ml(self, use_case: str, default_training_mode: int = 0) -> SettingsTraining:
         default_set = deepcopy(DefaultSettingsTraining)
         default_set.mode_train = default_training_mode
         return JsonHandler(
             template=default_set,
             path=str(self.path2config),
-            file_name=f'ConfigTraining_{use_case}'
+            file_name=f"ConfigTraining_{use_case}",
         ).get_class(SettingsTraining)
 
     def _get_config_dataset(self, default_dataset_name: str, use_case: str) -> SettingsDataset:
         default_set: SettingsTraining = deepcopy(DefaultSettingsDataset)
         default_set.data_type = default_dataset_name
-        self._settings_model =  JsonHandler(
+        self._settings_model = JsonHandler(
             template=default_set,
             path=str(self.path2config),
-            file_name=f'ConfigDataset_{use_case}'
+            file_name=f"ConfigDataset_{use_case}",
         ).get_class(SettingsDataset)
         return self._settings_model
 
     @staticmethod
     def _get_dataset_loader() -> Any:
         datalib = DatasetLoaderLibrary().get_registry()
-        matches = [item for item in datalib.get_library_overview() if 'DatasetLoader' == item]
+        matches = [item for item in datalib.get_library_overview() if "DatasetLoader" == item]
         if len(matches) == 0:
             raise AttributeError("No DatasetLoader available")
         return datalib.build_object(matches[0])
@@ -363,7 +381,7 @@ class PyTorchTrainer:
         self._settings_model = JsonHandler(
             template=default_set,
             path=str(self.path2config),
-            file_name=f'ConfigClassifier_{use_case}'
+            file_name=f"ConfigClassifier_{use_case}",
         ).get_class(SettingsClassifier)
         return self._settings_model
 
@@ -371,19 +389,15 @@ class PyTorchTrainer:
         """PyTorch Training Routing for Classifiers
         :return:            Training Handler
         """
-        self._get_config_classifier(
-            default_model_name=self.__default_model,
-            use_case=self.__use_case
-        )
+        self._get_config_classifier(default_model_name=self.__default_model, use_case=self.__use_case)
         # --- Processing Step #0: Get dataset and build model
         model_signature = self._settings_model.get_signature()
         if len(model_signature) and check_keylist_elements_all(
-                keylist=model_signature,
-                elements=['input_size', 'output_size']
+            keylist=model_signature, elements=["input_size", "output_size"]
         ):
             sets = dict(
                 input_size=int(np.prod(used_dataset.data.shape[1:])),
-                output_size=np.unique(used_dataset.label).size
+                output_size=np.unique(used_dataset.label).size,
             )
         else:
             sets = dict()
@@ -393,7 +407,7 @@ class PyTorchTrainer:
         train_handler = TrainClassifier(
             config_train=self._settings_model,
             config_data=self._settings_data,
-            do_train=True
+            do_train=True,
         )
         train_handler.load_model(model=used_model)
         train_handler.load_dataset(dataset=used_dataset)
@@ -406,7 +420,7 @@ class PyTorchTrainer:
         return JsonHandler(
             template=default_set,
             path=str(self.path2config),
-            file_name=f'ConfigAutoencoder_{use_case}'
+            file_name=f"ConfigAutoencoder_{use_case}",
         ).get_class(SettingsAutoencoder)
 
     def _prepare_training_autoencoder(self, used_dataset: DatasetFromFile) -> TrainAutoencoder:
@@ -414,19 +428,17 @@ class PyTorchTrainer:
         :return:            Training handler
         """
         self._settings_model = self._get_config_autoencoder(
-            default_model_name=self.__default_model,
-            use_case=self.__use_case
+            default_model_name=self.__default_model, use_case=self.__use_case
         )
         # --- Processing Step #0: Get dataset and build model
         model_signature = self._settings_model.get_signature()
         if len(model_signature) and check_keylist_elements_all(
-                keylist=model_signature,
-                elements=['input_size', 'output_size']
+            keylist=model_signature, elements=["input_size", "output_size"]
         ):
             if self._settings_model.feat_size:
                 sets = dict(
                     input_size=int(np.prod(used_dataset.data.shape[1:])),
-                    output_size=self._settings_model.feat_size
+                    output_size=self._settings_model.feat_size,
                 )
             else:
                 sets = dict(
@@ -441,82 +453,100 @@ class PyTorchTrainer:
         train_handler = TrainAutoencoder(
             config_train=self._settings_model,
             config_data=self._settings_data,
-            do_train=True
+            do_train=True,
         )
         train_handler.load_model(model=used_model)
         train_handler.load_dataset(dataset=used_dataset)
         return train_handler
 
-    def _save_training_results(self, addon: str, metrics: dict, data_result: DataValidation, custom_metrics: list, path2save: Path) -> TrainingResults:
+    def _save_training_results(
+        self,
+        addon: str,
+        metrics: dict,
+        data_result: DataValidation,
+        custom_metrics: list,
+        path2save: Path,
+    ) -> TrainingResults:
         results = TrainingResults(
-            settings={'train': self._settings_ml, 'model': self._settings_model, 'data': self._settings_data},
+            settings={
+                "train": self._settings_ml,
+                "model": self._settings_model,
+                "data": self._settings_data,
+            },
             metrics=metrics,
             data=data_result,
             path=path2save,
-            metrics_custom=custom_metrics
+            metrics_custom=custom_metrics,
         )
-        data2save = path2save / f'results_{addon}.npy'
+        data2save = path2save / f"results_{addon}.npy"
         self._logger.debug(f"... saving results: {data2save}")
         np.save(data2save, results, allow_pickle=True)
 
         return results
 
-    def _run_training_single(self, mode: int, used_dataset: DatasetFromFile, path2save=Path(".")) -> list[TrainingResults]:
+    def _run_training_single(
+        self, mode: int, used_dataset: DatasetFromFile, path2save=Path(".")
+    ) -> list[TrainingResults]:
         # --- Processing Step #1: Prepare Trainings handler with dataset and model
         match mode:
             case 0:
                 dut: TrainClassifier = self._prepare_training_classifier(used_dataset=used_dataset)
-                addon = 'cl'
+                addon = "cl"
             case 1:
                 dut: TrainAutoencoder = self._prepare_training_autoencoder(used_dataset=used_dataset)
-                addon = 'ae'
+                addon = "ae"
             case 2:
-                raise ValueError("It enables the Autoencoder-based Classifier, but you should select either 'cl' or 'ae'")
+                raise ValueError(
+                    "It enables the Autoencoder-based Classifier, but you should select either 'cl' or 'ae'"
+                )
             case _:
                 raise NotImplementedError("Training Routine is not implemented")
 
         # --- Processing Step #2: Do Training and Validation
         dut.define_ptq_level(
             total_bitwidth=self._settings_ml.ptq_total_bitwidth,
-            frac_bitwidth=self._settings_ml.ptq_frac_bitwidth
+            frac_bitwidth=self._settings_ml.ptq_frac_bitwidth,
         )
         metrics = dut.do_training(path2save=path2save)
         data_result = dut.do_post_training_validation(do_ptq=self._settings_ml.do_ptq)
 
         # --- Processing Step #3: Saving results
-        return [self._save_training_results(
-            addon=addon,
-            metrics=metrics,
-            data_result=data_result,
-            custom_metrics=dut.get_epoch_metric_custom_methods,
-            path2save=dut.get_saving_path()
-        )]
+        return [
+            self._save_training_results(
+                addon=addon,
+                metrics=metrics,
+                data_result=data_result,
+                custom_metrics=dut.get_epoch_metric_custom_methods,
+                path2save=dut.get_saving_path(),
+            )
+        ]
 
-    def _run_training_sequence(self, used_dataset: DatasetFromFile, path2save=Path(".")) -> list[TrainingResults]:
+    def _run_training_sequence(
+        self, used_dataset: DatasetFromFile, path2save=Path(".")
+    ) -> list[TrainingResults]:
         # --- Processing Step #1: Do Training and Validation of Autoencoder
-        self.__default_model = self.__default_model if 'ae' in self.__default_model else self.__default_model.replace('cl', 'ae')
-        results_ae = self._run_training_single(
-            mode=1,
-            used_dataset=used_dataset,
-            path2save=path2save
-        )[0]
+        self.__default_model = (
+            self.__default_model
+            if "ae" in self.__default_model
+            else self.__default_model.replace("cl", "ae")
+        )
+        results_ae = self._run_training_single(mode=1, used_dataset=used_dataset, path2save=path2save)[0]
 
         # --- Processing Step #3: Extract Feature Space and build new dataset for Classifier
         dut0: TrainAutoencoder = self._prepare_training_autoencoder(used_dataset=used_dataset)
         dut0.define_ptq_level(
             total_bitwidth=self._settings_ml.ptq_total_bitwidth,
-            frac_bitwidth=self._settings_ml.ptq_frac_bitwidth
+            frac_bitwidth=self._settings_ml.ptq_frac_bitwidth,
         )
-        feat_dataset = dut0.extract_feature_space(
-            path2model=results_ae.path,
-            rawdata=self.get_dataset()
-        )
+        feat_dataset = dut0.extract_feature_space(path2model=results_ae.path, rawdata=self.get_dataset())
         # --- Processing Step #3: Do Training and Validation of Classifier
-        self.__default_model = self.__default_model if 'cl' in self.__default_model else self.__default_model.replace('ae', 'cl')
+        self.__default_model = (
+            self.__default_model
+            if "cl" in self.__default_model
+            else self.__default_model.replace("ae", "cl")
+        )
         results_cl = self._run_training_single(
-            mode=0,
-            used_dataset=feat_dataset,
-            path2save=results_ae.path
+            mode=0, used_dataset=feat_dataset, path2save=results_ae.path
         )[0]
 
         # --- Processing Step #4: Returning Results
@@ -525,8 +555,7 @@ class PyTorchTrainer:
     def __prepare_training(self) -> None:
         self._dataloader = self._get_dataset_loader()
         self._settings_data = self._get_config_dataset(
-            default_dataset_name=self.__use_case,
-            use_case=self.__use_case
+            default_dataset_name=self.__use_case, use_case=self.__use_case
         )
 
     def do_training(self, path2save=Path(".")) -> list[TrainingResults]:
@@ -539,18 +568,15 @@ class PyTorchTrainer:
 
         used_dataset = self.get_dataset()
         if self._settings_ml.mode_train == 2:
-            return self._run_training_sequence(
-                used_dataset=used_dataset,
-                path2save=path2save
-            )
+            return self._run_training_sequence(used_dataset=used_dataset, path2save=path2save)
         else:
             return self._run_training_single(
                 mode=self._settings_ml.mode_train,
                 used_dataset=used_dataset,
-                path2save=path2save
+                path2save=path2save,
             )
 
-    def do_plot_dataset(self, path2save: Path=Path(".")) -> None:
+    def do_plot_dataset(self, path2save: Path = Path(".")) -> None:
         """Function for plotting the dataset content
         :param path2save:   Path to save the dataset plot
         :return:            None
@@ -561,16 +587,16 @@ class PyTorchTrainer:
                 dnn_plot.plot_mnist_dataset(
                     data=dataset.data,
                     label=dataset.label,
-                    title='',
+                    title="",
                     path2save=str(path2save.absolute()),
-                    show_plot=False
+                    show_plot=False,
                 )
             case "waveforms":
                 dnn_plot.plot_waveforms_dataset(
                     dataset=dataset,
                     num_samples_class=10,
                     path2save=str(path2save.absolute()),
-                    show_plot=False
+                    show_plot=False,
                 )
             case _:
                 dnn_plot.plot_frames_dataset(
@@ -579,10 +605,10 @@ class PyTorchTrainer:
                     do_norm=True,
                     add_subtitle=False,
                     path2save=str(path2save.absolute()),
-                    show_plot=False
+                    show_plot=False,
                 )
 
-    def do_plot_results(self, results: TrainingResults, epoch_zoom=None, do_plot: bool=True) -> None:
+    def do_plot_results(self, results: TrainingResults, epoch_zoom=None, do_plot: bool = True) -> None:
         """Function for plotting the results from training [metric, performance, data statistics]
         :param results:     Dataclass TrainingResults with internal metrics, data and path to run folder
         :param epoch_zoom:  Optional list with ranges for zooming loss data
@@ -591,36 +617,29 @@ class PyTorchTrainer:
         """
         self._plotter.loss(
             data=results,
-            loss_type=results.settings['model'].loss,
+            loss_type=results.settings["model"].loss,
             epoch_zoom=epoch_zoom,
-            show_plot=False
+            show_plot=False,
         )
-        self._plotter.custom_loss(
-            data=results,
-            epoch_zoom=epoch_zoom,
-            show_plot=False
-        )
-        self._plotter.statistics(
-            data=results,
-            show_plot=False
-        )
+        self._plotter.custom_loss(data=results, epoch_zoom=epoch_zoom, show_plot=False)
+        self._plotter.statistics(data=results, show_plot=False)
         match self._settings_ml.mode_train:
             case 0:
                 self._plotter.performance_classifier(
                     data=results,
-                    show_plot=results.settings['train'].do_block and do_plot
+                    show_plot=results.settings["train"].do_block and do_plot,
                 )
             case 1:
-                if results.settings['data'].data_type.lower() == 'mnist':
+                if results.settings["data"].data_type.lower() == "mnist":
                     self._plotter.performance_autoencoder_mnist(
                         data=results,
-                        show_plot=results.settings['train'].do_block and do_plot
+                        show_plot=results.settings["train"].do_block and do_plot,
                     )
                 else:
                     self._plotter.performance_autoencoder(
                         data=results,
                         mean_value=results.data.mean,
-                        show_plot=results.settings['train'].do_block and do_plot
+                        show_plot=results.settings["train"].do_block and do_plot,
                     )
             case _:
                 raise NotImplementedError
@@ -635,7 +654,9 @@ class PyTorchTrainer:
         data = np.load(path2file, allow_pickle=True).flatten()[0]
         return data
 
-    def read_file_and_plot(self, path2file: Path, epoch_zoom=None, do_plot:bool=True) -> TrainingResults:
+    def read_file_and_plot(
+        self, path2file: Path, epoch_zoom=None, do_plot: bool = True
+    ) -> TrainingResults:
         """Loading results file from training and plot the results
         :param path2file:   Path to file with results from PyTorch Training
         :param epoch_zoom:  Optional list or tuple with zoom on specific epoch range
@@ -643,9 +664,5 @@ class PyTorchTrainer:
         :return:            Dataclass with metrics and results from training and validation phase
         """
         data = self._load_results(path2file)
-        self.do_plot_results(
-            results=data,
-            epoch_zoom=epoch_zoom,
-            do_plot=do_plot
-        )
+        self.do_plot_results(results=data, epoch_zoom=epoch_zoom, do_plot=do_plot)
         return data

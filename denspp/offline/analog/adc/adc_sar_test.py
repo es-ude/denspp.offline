@@ -1,8 +1,9 @@
 from unittest import TestCase, main
+
 import numpy as np
+
 from denspp.offline.analog.adc.adc_sar import SuccessiveApproximation
 from denspp.offline.analog.adc.adc_settings import SettingsADC, SettingsNon
-
 
 settings_adc = SettingsADC(
     vdd=1.8,
@@ -12,26 +13,20 @@ settings_adc = SettingsADC(
     fs_dig=1e3,
     Nadc=12,
     osr=1,
-    is_signed=True
+    is_signed=True,
 )
-RecommendedSettingsNon = SettingsNon(
-    use_noise=False,
-    wgndB=-100,
-    offset=1e-6,
-    gain_error=0.0
-)
+RecommendedSettingsNon = SettingsNon(use_noise=False, wgndB=-100, offset=1e-6, gain_error=0.0)
 
 
 class TestSAR(TestCase):
     def setUp(self):
         self.method = SuccessiveApproximation(settings_adc)
         time = np.linspace(0, 1, int(settings_adc.fs_ana), endpoint=True, dtype=float)
-        self.input = settings_adc.vcm + 0.2 * np.sin(2* np.pi* time* 100)
-
+        self.input = settings_adc.vcm + 0.2 * np.sin(2 * np.pi * time * 100)
 
     def test_result_error(self):
         result = self.method.adc_sar(self.input)
-        check = 1.2 * 2 * settings_adc.dvref / 2** settings_adc.Nadc
+        check = 1.2 * 2 * settings_adc.dvref / 2**settings_adc.Nadc
         self.assertEqual(result[2].max() <= check and np.abs(result[2].min()) <= check, True)
 
     def test_sar_sampling_rate(self):
@@ -45,5 +40,5 @@ class TestSAR(TestCase):
         self.assertEqual(type(result[0]), np.ndarray)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

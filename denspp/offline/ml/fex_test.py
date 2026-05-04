@@ -1,7 +1,7 @@
 import unittest
-import numpy as np
 from copy import deepcopy
-from .fex import SettingsFeature, DefaultSettingsFeature, FeatureExtraction
+
+from .fex import DefaultSettingsFeature, FeatureExtraction, SettingsFeature
 
 
 class FeatExtractionTest(unittest.TestCase):
@@ -10,5 +10,5 @@ class FeatExtractionTest(unittest.TestCase):
         self.dut = FeatureExtraction(settings=self.set0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

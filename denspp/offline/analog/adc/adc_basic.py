@@ -1,24 +1,41 @@
-import numpy as np
 from fractions import Fraction
-from scipy.signal import square, resample_poly
+
+import numpy as np
+from scipy.signal import resample_poly, square
+
+from denspp.offline.analog.common_func import (
+    CommonAnalogFunctions,
+    CommonDigitalFunctions,
+)
+from denspp.offline.analog.dev_noise import (
+    DefaultSettingsNoise,
+    ProcessNoise,
+    SettingsNoise,
+)
 
 from .adc_settings import SettingsADC
-from denspp.offline.analog.common_func import CommonAnalogFunctions, CommonDigitalFunctions
-from denspp.offline.analog.dev_noise import SettingsNoise, DefaultSettingsNoise, ProcessNoise
 
 
 class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
     _settings: SettingsADC
     _handler_noise: ProcessNoise
 
-    def __init__(self, settings_dev: SettingsADC, settings_noise: SettingsNoise = DefaultSettingsNoise):
+    def __init__(
+        self,
+        settings_dev: SettingsADC,
+        settings_noise: SettingsNoise = DefaultSettingsNoise,
+    ):
         """Basic class for applying an Analogue-Digital-Converter (ADC) on the raw data
         :param settings_dev:    Configuration class for defining properties of ADC
         :param settings_noise:  Configuration class for defining noise properties of device
         """
         super().__init__()
         self.define_voltage_range(volt_low=settings_dev.vref[1], volt_hgh=settings_dev.vref[0])
-        self.define_limits(bit_signed=settings_dev.is_signed, total_bitwidth=settings_dev.Nadc, frac_bitwidth=0)
+        self.define_limits(
+            bit_signed=settings_dev.is_signed,
+            total_bitwidth=settings_dev.Nadc,
+            frac_bitwidth=0,
+        )
         self._handler_noise = ProcessNoise(settings_noise, settings_dev.fs_ana)
         self._settings = settings_dev
 
@@ -70,10 +87,7 @@ class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
 
     def _gen_noise(self, size: int) -> np.ndarray:
         """Generate the transient input noise of the amplifier"""
-        u_noise = self._handler_noise.gen_noise_awgn_pwr(
-            size = size,
-            e_n=-self.snr_ideal
-        )
+        u_noise = self._handler_noise.gen_noise_awgn_pwr(size=size, e_n=-self.snr_ideal)
         return u_noise
 
     def adc_ideal(self, uin: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:

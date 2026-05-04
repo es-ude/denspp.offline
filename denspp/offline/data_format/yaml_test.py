@@ -1,8 +1,9 @@
-from dataclasses import dataclass
 import unittest
-from os.path import join, exists
-from denspp.offline.data_format.yaml import YamlHandler
+from dataclasses import dataclass
+from os.path import exists, join
+
 from denspp.offline import get_path_to_project
+from denspp.offline.data_format.yaml import YamlHandler
 
 
 @dataclass
@@ -15,37 +16,36 @@ class SettingsTest:
 
 
 DefaultSettingsTest = SettingsTest(
-    path='test',
+    path="test",
     val=1,
     freq=10.0,
     data=[0, 1, 2],
-    meta={1: 'company', 2: 'street', 3: 'city'}
+    meta={1: "company", 2: "street", 3: "city"},
 )
 
 data_wr = {
-    'Name': 'John Doe',
-    'Position': 'DevOps Engineer',
-    'Location': 'England',
-    'Age': '26',
-    'Experience': {'GitHub': 'Software Engineer', 'Google': 'Technical Engineer', 'Linkedin': 'Data Analyst'},
-    'Languages': {'Markup': ['HTML'], 'Programming': ['Python', 'JavaScript', 'Golang']}
+    "Name": "John Doe",
+    "Position": "DevOps Engineer",
+    "Location": "England",
+    "Age": "26",
+    "Experience": {
+        "GitHub": "Software Engineer",
+        "Google": "Technical Engineer",
+        "Linkedin": "Data Analyst",
+    },
+    "Languages": {
+        "Markup": ["HTML"],
+        "Programming": ["Python", "JavaScript", "Golang"],
+    },
 }
 
 
 class TestYamlHandler(unittest.TestCase):
-    path = join(get_path_to_project('temp_test'), 'config')
-    file = 'Config_Test'
+    path = join(get_path_to_project("temp_test"), "config")
+    file = "Config_Test"
 
-    dummy0 = YamlHandler(
-        template=data_wr,
-        path=path,
-        file_name=file + '0'
-    )
-    dummy1 = YamlHandler(
-        template=DefaultSettingsTest,
-        path=path,
-        file_name=file + '1'
-    )
+    dummy0 = YamlHandler(template=data_wr, path=path, file_name=file + "0")
+    dummy1 = YamlHandler(template=DefaultSettingsTest, path=path, file_name=file + "1")
 
     def test_yaml_create_file(self):
         self.dummy0.write_dict_to_yaml(data_wr)
@@ -65,5 +65,5 @@ class TestYamlHandler(unittest.TestCase):
         self.assertTrue(type(class_rd) == type(DefaultSettingsTest))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

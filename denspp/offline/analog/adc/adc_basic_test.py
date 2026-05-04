@@ -1,8 +1,9 @@
 from unittest import TestCase, main
+
 import numpy as np
+
 from denspp.offline.analog.adc.adc_basic import BasicADC
 from denspp.offline.analog.adc.adc_settings import SettingsADC, SettingsNon
-
 
 settings_adc = SettingsADC(
     vdd=1.8,
@@ -12,19 +13,14 @@ settings_adc = SettingsADC(
     fs_dig=10e3,
     Nadc=12,
     osr=4,
-    is_signed=True
+    is_signed=True,
 )
-RecommendedSettingsNon = SettingsNon(
-    use_noise=False,
-    wgndB=-100,
-    offset=1e-6,
-    gain_error=0.0
-)
+RecommendedSettingsNon = SettingsNon(use_noise=False, wgndB=-100, offset=1e-6, gain_error=0.0)
 
 
 def inp_samp(time: np.ndarray) -> np.ndarray:
     freq = [4, 400]
-    z = 0* time
+    z = 0 * time
     for f in freq:
         z += np.sin(2 * np.pi * f * time)
     return z / len(freq)
@@ -32,7 +28,7 @@ def inp_samp(time: np.ndarray) -> np.ndarray:
 
 class TestBasic(TestCase):
     method = BasicADC(settings_adc)
-    time = np.linspace(0, 1, int(settings_adc.fs_ana)+1, endpoint=True, dtype=float)
+    time = np.linspace(0, 1, int(settings_adc.fs_ana) + 1, endpoint=True, dtype=float)
 
     input0 = settings_adc.vcm + np.array([-0.75, 0.5, -0.25, 0.01, +0.25, -0.5, +0.75])
     result0 = method.adc_ideal(input0)
@@ -51,5 +47,5 @@ class TestBasic(TestCase):
         self.assertEqual(result, np.ndarray)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

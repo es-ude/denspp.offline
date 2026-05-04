@@ -1,17 +1,18 @@
-from unittest import TestCase, main
 from copy import deepcopy
+from unittest import TestCase, main
+
 from torch.nn import MSELoss
 from torch.optim import Adam
 
 from denspp.offline import get_path_to_project
-from denspp.offline.dnn import (
-    SettingsDataset,
-    DefaultSettingsDataset,
-    DatasetFromFile
-)
-from .autoencoder_train import TrainAutoencoder, SettingsAutoencoder, DefaultSettingsTrainingMSE
-from .dataset_dummy import generate_dummy_dataset, dummy_mlp_ae_v0
+from denspp.offline.dnn import DatasetFromFile, DefaultSettingsDataset, SettingsDataset
 
+from .autoencoder_train import (
+    DefaultSettingsTrainingMSE,
+    SettingsAutoencoder,
+    TrainAutoencoder,
+)
+from .dataset_dummy import dummy_mlp_ae_v0, generate_dummy_dataset
 
 
 class TestPyTorchModelConfigAutoencoder(TestCase):
@@ -21,8 +22,8 @@ class TestPyTorchModelConfigAutoencoder(TestCase):
     def test_get_model_overview(self):
         rslt = self.sets.get_model_overview(print_overview=True)
         assert len(rslt) > 0
-        assert 'mnist_mlp_ae_v0' in rslt
-        assert 'waveforms_mlp_ae_v0' in rslt
+        assert "mnist_mlp_ae_v0" in rslt
+        assert "waveforms_mlp_ae_v0" in rslt
 
     def test_no_model_defined(self):
         try:
@@ -33,7 +34,7 @@ class TestPyTorchModelConfigAutoencoder(TestCase):
             self.assertTrue(False)
 
     def test_wrong_model_mnist(self):
-        self.sets.model_name = 'mnist_mlp_ae_v0'
+        self.sets.model_name = "mnist_mlp_ae_v0"
         try:
             self.sets.get_model()
         except AttributeError:
@@ -42,7 +43,7 @@ class TestPyTorchModelConfigAutoencoder(TestCase):
             self.assertTrue(True)
 
     def test_model_mnist(self):
-        self.sets.model_name = 'mnist_mlp_ae_v0'
+        self.sets.model_name = "mnist_mlp_ae_v0"
         try:
             self.sets.get_model()
         except AttributeError:
@@ -51,7 +52,7 @@ class TestPyTorchModelConfigAutoencoder(TestCase):
             self.assertTrue(True)
 
     def test_model_waveforms(self):
-        self.sets.model_name = 'waveforms_mlp_ae_v0'
+        self.sets.model_name = "waveforms_mlp_ae_v0"
         try:
             self.sets.get_model()
         except AttributeError:
@@ -64,12 +65,9 @@ class TestPyTorchModelConfigAutoencoder(TestCase):
         assert type(rslt) == MSELoss
 
     def test_load_optimizer(self):
-        self.sets.model_name = 'waveforms_mlp_ae_v0'
+        self.sets.model_name = "waveforms_mlp_ae_v0"
         model = self.sets.get_model()
-        rslt = self.sets.load_optimizer(
-            model=model,
-            learn_rate=0.2
-        )
+        rslt = self.sets.load_optimizer(model=model, learn_rate=0.2)
         assert type(rslt) == Adam
 
 
@@ -79,13 +77,11 @@ class TestAutoencoderTraining(TestCase):
         self.set_train.num_epochs = 10
         self.set_train.model_name = dummy_mlp_ae_v0.__name__
         self.set_dataset: SettingsDataset = deepcopy(DefaultSettingsDataset)
-        self.set_dataset.data_type = 'dummy'
+        self.set_dataset.data_type = "dummy"
         self.dataset: DatasetFromFile = generate_dummy_dataset(2048, 100)
 
         self.dut = TrainAutoencoder(
-            config_train=self.set_train,
-            config_data=self.set_dataset,
-            do_train=True
+            config_train=self.set_train, config_data=self.set_dataset, do_train=True
         )
 
     def test_saving_path(self):
@@ -93,10 +89,7 @@ class TestAutoencoderTraining(TestCase):
         self.assertEqual(str(rslt), get_path_to_project())
 
     def test_number_parameters(self):
-        self.dut.load_model(
-            model=dummy_mlp_ae_v0(input_size=self.dataset.data.shape[1]),
-            learn_rate=0.1
-        )
+        self.dut.load_model(model=dummy_mlp_ae_v0(input_size=self.dataset.data.shape[1]), learn_rate=0.1)
         rslt = self.dut.get_number_parameters_from_model
         self.assertEqual(rslt, 33976)
 
@@ -105,23 +98,20 @@ class TestAutoencoderTraining(TestCase):
 
     def test_custom_metric_methods(self):
         rslt = self.dut.get_epoch_metric_custom_methods
-        self.assertEqual(rslt, ['snr_in', 'snr_out', 'dsnr_all', 'ptq_loss'])
+        self.assertEqual(rslt, ["snr_in", "snr_out", "dsnr_all", "ptq_loss"])
 
     def test_training_phase(self):
         self.dut.load_dataset(
             dataset=self.dataset,
         )
-        self.dut.load_model(
-            model=dummy_mlp_ae_v0(input_size=self.dataset.data.shape[1]),
-            learn_rate=0.1
-        )
+        self.dut.load_model(model=dummy_mlp_ae_v0(input_size=self.dataset.data.shape[1]), learn_rate=0.1)
         metric = self.dut.do_training()
         self.assertEqual(len(metric), 1)
-        self.assertEqual(list(metric['fold_000'].keys()), ['loss_train', 'loss_valid'])
-        self.assertEqual(len(metric['fold_000']['loss_train']), 10)
-        self.assertEqual(len(metric['fold_000']['loss_valid']), 10)
+        self.assertEqual(list(metric["fold_000"].keys()), ["loss_train", "loss_valid"])
+        self.assertEqual(len(metric["fold_000"]["loss_train"]), 10)
+        self.assertEqual(len(metric["fold_000"]["loss_valid"]), 10)
 
-        overview = self.dut.get_best_model('ae')
+        overview = self.dut.get_best_model("ae")
         self.assertGreater(len(overview), 0)
 
     def test_post_validation_without_training(self):
@@ -136,10 +126,7 @@ class TestAutoencoderTraining(TestCase):
         self.dut.load_dataset(
             dataset=self.dataset,
         )
-        self.dut.load_model(
-            model=dummy_mlp_ae_v0(input_size=self.dataset.data.shape[1]),
-            learn_rate=0.1
-        )
+        self.dut.load_model(model=dummy_mlp_ae_v0(input_size=self.dataset.data.shape[1]), learn_rate=0.1)
         self.dut.do_training()
         rslt = self.dut.do_post_training_validation(do_ptq=False)
         self.assertEqual(rslt.label_names, self.dataset.dict)
@@ -148,10 +135,7 @@ class TestAutoencoderTraining(TestCase):
         self.dut.load_dataset(
             dataset=self.dataset,
         )
-        self.dut.load_model(
-            model=dummy_mlp_ae_v0(input_size=self.dataset.data.shape[1]),
-            learn_rate=0.1
-        )
+        self.dut.load_model(model=dummy_mlp_ae_v0(input_size=self.dataset.data.shape[1]), learn_rate=0.1)
         self.dut.do_training()
         rslt = self.dut.do_post_training_validation(do_ptq=True)
         self.assertEqual(rslt.label_names, self.dataset.dict)
@@ -162,19 +146,16 @@ class TestAutoencoderTraining(TestCase):
         )
         self.dut.load_model(
             model=dummy_mlp_ae_v0(input_size=self.dataset.data.shape[1], output_size=4),
-            learn_rate=0.1
+            learn_rate=0.1,
         )
         self.dut.do_training()
         path2save = self.dut.get_saving_path()
 
-        feat_space = self.dut.extract_feature_space(
-            path2model=path2save,
-            rawdata=self.dataset
-        )
+        feat_space = self.dut.extract_feature_space(path2model=path2save, rawdata=self.dataset)
         assert type(feat_space) == DatasetFromFile
         assert feat_space.data.shape == (self.dataset.data.shape[0], 4)
-        assert feat_space.label.shape == (self.dataset.data.shape[0], )
+        assert feat_space.label.shape == (self.dataset.data.shape[0],)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

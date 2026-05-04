@@ -1,21 +1,17 @@
-import numpy as np
 from copy import deepcopy
 from unittest import TestCase, main
-from denspp.offline.analog.dev_noise import SettingsNoise, ProcessNoise
 
+import numpy as np
 
-test_settings = SettingsNoise(
-    temp=300.0,
-    wgn_dB=-120,
-    Fc=10,
-    slope=0.6
-)
+from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise
+
+test_settings = SettingsNoise(temp=300.0, wgn_dB=-120, Fc=10, slope=0.6)
 
 
 # --- Info: Function have to start with test_*
 class TestSettingsNoise(TestCase):
     _sampling_rate: float = 20e3
-    _stimuli: np.ndarray = np.zeros(shape=(1001, ), dtype=float)
+    _stimuli: np.ndarray = np.zeros(shape=(1001,), dtype=float)
 
     def test_temp_celsius_conversion_type(self):
         set0 = deepcopy(test_settings)
@@ -51,9 +47,8 @@ class TestSettingsNoise(TestCase):
         set0.Fc = 10
 
         try:
-            noise = ProcessNoise(settings=set0, fs_ana=self._sampling_rate).gen_noise_awgn_dev(
-                size=self._stimuli.size,
-                dev_e=-100e-9
+            ProcessNoise(settings=set0, fs_ana=self._sampling_rate).gen_noise_awgn_dev(
+                size=self._stimuli.size, dev_e=-100e-9
             )
         except:
             self.assertTrue(True)
@@ -68,8 +63,7 @@ class TestSettingsNoise(TestCase):
         set0.Fc = 10
 
         noise = ProcessNoise(settings=set0, fs_ana=self._sampling_rate).gen_noise_awgn_dev(
-            size=self._stimuli.size,
-            dev_e=100e-9
+            size=self._stimuli.size, dev_e=100e-9
         )
         noise_params = np.max(np.abs((noise.min(), noise.max())))
         self.assertTrue(noise_params < 5e-5)
@@ -82,8 +76,7 @@ class TestSettingsNoise(TestCase):
         set0.Fc = 10
 
         noise = ProcessNoise(settings=set0, fs_ana=self._sampling_rate).gen_noise_awgn_dev(
-            size=self._stimuli.size,
-            dev_e=100e-9
+            size=self._stimuli.size, dev_e=100e-9
         )
         ref = np.abs(np.mean(noise))
         noise_params = np.max(np.abs((noise.min(), noise.max())))
@@ -91,5 +84,5 @@ class TestSettingsNoise(TestCase):
         self.assertTrue(ref < 0.1 * noise_params)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

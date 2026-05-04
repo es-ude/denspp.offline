@@ -1,8 +1,14 @@
-import numpy as np
 from dataclasses import dataclass
+
+import numpy as np
 from scipy.signal import butter, lfilter, square
+
 from denspp.offline.analog.common_func import CommonAnalogFunctions
-from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, DefaultSettingsNoise
+from denspp.offline.analog.dev_noise import (
+    DefaultSettingsNoise,
+    ProcessNoise,
+    SettingsNoise,
+)
 
 
 @dataclass
@@ -21,11 +27,12 @@ class SettingsAMP:
         noise_en:   Enable noise on output [True/False]
         noise_edev: Input voltage noise spectral density [V/sqrt(Hz)]
     """
-    vdd:    float
-    vss:    float
+
+    vdd: float
+    vss: float
     fs_ana: float
     # Amplifier characteristics
-    gain:   float
+    gain: float
     n_filt: int
     f_filt: list[float]
     f_type: str
@@ -42,14 +49,17 @@ class SettingsAMP:
 
 
 DefaultSettingsAMP = SettingsAMP(
-    vdd=0.6, vss=-0.6,
-    fs_ana=50e3, gain=40.,
-    n_filt=1, f_filt=[0.1, 8e3],
+    vdd=0.6,
+    vss=-0.6,
+    fs_ana=50e3,
+    gain=40.0,
+    n_filt=1,
+    f_filt=[0.1, 8e3],
     f_type="bandpass",
     offset=0e-6,
     f_chop=10e3,
     noise_en=False,
-    noise_edev=100e-9
+    noise_edev=100e-9,
 )
 
 
@@ -57,7 +67,11 @@ class PreAmp(CommonAnalogFunctions):
     _handler_noise: ProcessNoise
     _settings: SettingsAMP
 
-    def __init__(self, settings_dev: SettingsAMP, settings_noise: SettingsNoise=DefaultSettingsNoise) -> None:
+    def __init__(
+        self,
+        settings_dev: SettingsAMP,
+        settings_noise: SettingsNoise = DefaultSettingsNoise,
+    ) -> None:
         """Class for emulating an analogue pre-amplifier
         :param settings_dev:        Dataclass for handling the pre-amplifier
         :param settings_noise:      Dataclass for handling the noise simulation
@@ -73,8 +87,8 @@ class PreAmp(CommonAnalogFunctions):
             Wn=self._settings.f_filt if len(self._settings.f_filt) > 1 else self._settings.f_filt[0],
             btype=self._settings.f_type,
             analog=False,
-            output='ba',
-            fs=self._settings.fs_ana
+            output="ba",
+            fs=self._settings.fs_ana,
         )
         self.__coeffb = coeffs[0]
         self.__coeffa = coeffs[1]
@@ -82,7 +96,7 @@ class PreAmp(CommonAnalogFunctions):
     @property
     def get_filter_coeffs(self) -> dict:
         """Getting the filter coefficients"""
-        return {'b': self.__coeffb, 'a': self.__coeffa}
+        return {"b": self.__coeffb, "a": self.__coeffa}
 
     @property
     def vcm(self) -> float:
@@ -135,4 +149,4 @@ class PreAmp(CommonAnalogFunctions):
         u_filt = uchp_in * clk_chop
         u_out = lfilter(self.__coeffb, self.__coeffa, u_filt)
         u_out += self._settings.vcm
-        return {'out': self.clamp_voltage(u_out), 'chop': self.clamp_voltage(uchp_in)}
+        return {"out": self.clamp_voltage(u_out), "chop": self.clamp_voltage(uchp_in)}

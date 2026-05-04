@@ -1,15 +1,17 @@
-import numpy as np
-from logging import getLogger, Logger
 from dataclasses import dataclass
-from os.path import join, exists, dirname, basename
-from os import makedirs
-from glob import glob
-from pathlib import Path
 from fractions import Fraction
+from glob import glob
+from logging import Logger, getLogger
+from os import makedirs
+from os.path import basename, dirname, exists, join
+from pathlib import Path
+
+import numpy as np
 from scipy.signal import resample_poly
+
 from denspp.offline import get_path_to_project
-from denspp.offline.data_format.csv import CsvHandler
 from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
+from denspp.offline.data_format.csv import CsvHandler
 
 
 @dataclass
@@ -27,6 +29,7 @@ class SettingsData:
         do_mapping:     Decision if mapping (if available) is used
         is_mapping_str: Boolean if mapping input from csv file is a string (True) or integer (false)
     """
+
     pipeline: str
     do_merge: bool
     path: str
@@ -41,15 +44,17 @@ class SettingsData:
 
 
 DefaultSettingsData = SettingsData(
-    pipeline='PipelineV0',
+    pipeline="PipelineV0",
     do_merge=False,
-    path='data',
-    data_set='',
-    data_case=0, data_point=0,
-    t_range_sec=[], ch_sel=[],
+    path="data",
+    data_set="",
+    data_case=0,
+    data_point=0,
+    t_range_sec=[],
+    ch_sel=[],
     fs_resample=50e3,
     do_mapping=True,
-    is_mapping_str=False
+    is_mapping_str=False,
 )
 
 
@@ -68,18 +73,19 @@ class DataFromFile:
         evnt_xpos (list):       List with numpy arrays of event position on transient signal
         evnt_id (list):         List with numpy arrays of event ID for each electrode
     """
+
     # --- Meta Information
     data_name: str
     data_type: str
     fs_orig: float
-    fs_used: float=0.0
+    fs_used: float = 0.0
     time_end: float
     # --- Raw data and Electrode Mapping
     data_raw: np.ndarray
     electrode_id: list
     mapping_used: np.ndarray
     # --- GroundTruth for Event Signal Processing
-    label_exist: bool=False
+    label_exist: bool = False
     evnt_xpos: list
     evnt_id: list
 
@@ -89,22 +95,22 @@ class ControllerData:
     __download_handler: OwnCloudDownloader
     _raw_data: DataFromFile
     _settings: SettingsData
-    _path2folder_remote: str=''
-    _path2folder_local: str=''
-    _path2mapping: str=''
+    _path2folder_remote: str = ""
+    _path2folder_local: str = ""
+    _path2mapping: str = ""
 
     def __init__(self) -> None:
         """Class for loading and manipulating the used dataset"""
         self._methods_available = dir(ControllerData)
         self.__logger = getLogger(__name__)
-        self.__fill_factor = 1.
-        self.__default_data_path = join(get_path_to_project(), 'data')
+        self.__fill_factor = 1.0
+        self.__default_data_path = join(get_path_to_project(), "data")
         self.__config_data_selection = [self.__default_data_path, 0, 0]
         self.__download_handler = OwnCloudDownloader()
 
     @staticmethod
     def _extract_func(class_obj: object) -> list:
-        return  [method for method in dir(class_obj) if class_obj.__name__ in method]
+        return [method for method in dir(class_obj) if class_obj.__name__ in method]
 
     def do_cut(self) -> None:
         """Cutting all transient electrode signals in the given range"""
@@ -113,7 +119,9 @@ class ControllerData:
 
         # --- Getting the positition of used time range
         t_range = np.array(self._settings.t_range_sec)
-        assert len(self._settings.t_range_sec) in [0, 2], f"t_range should be empty or have a length of 2 (not {len(self._settings.t_range_sec)})"
+        assert len(self._settings.t_range_sec) in [0, 2], (
+            f"t_range should be empty or have a length of 2 (not {len(self._settings.t_range_sec)})"
+        )
         if t_range.size == 2:
             rawdata_in = self._raw_data.data_raw
 
@@ -141,11 +149,13 @@ class ControllerData:
                 self._raw_data.evnt_id = evnt_id_new
 
             # --- Return adapted data
-            self._raw_data.data_raw = rawdata_in[:, idx0:idx1] if len(rawdata_in.shape) == 2 else rawdata_in[idx0:idx1]
+            self._raw_data.data_raw = (
+                rawdata_in[:, idx0:idx1] if len(rawdata_in.shape) == 2 else rawdata_in[idx0:idx1]
+            )
             self._raw_data.time_end = float(self._raw_data.data_raw.shape[-1] / self._raw_data.fs_used)
             self.__fill_factor = self._raw_data.data_raw.shape[-1] / rawdata_in.shape[-1]
 
-    def do_resample(self, u_safe: float = 5e-6, num_points_mean: int=10) -> None:
+    def do_resample(self, u_safe: float = 5e-6, num_points_mean: int = 10) -> None:
         """Do resampling of all transient signals incl. label information
         :param u_safe:          Voltage range as safety window  for resampling
         :param num_points_mean: Integer number of points to average over
@@ -156,13 +166,17 @@ class ControllerData:
 
         if do_resampling:
             self._raw_data.fs_used = desired_fs
-            (p, q) = Fraction(self._raw_data.fs_used / self._raw_data.fs_orig).limit_denominator(10000).as_integer_ratio()
+            (p, q) = (
+                Fraction(self._raw_data.fs_used / self._raw_data.fs_orig)
+                .limit_denominator(10000)
+                .as_integer_ratio()
+            )
             scaling_value = p / q
 
             # --- Resampling the input
             data_out = list()
             for data_in in self._raw_data.data_raw:
-                u_chck = np.mean(data_in[0:num_points_mean+1])
+                u_chck = np.mean(data_in[0 : num_points_mean + 1])
                 du = u_chck if np.abs(u_chck) > u_safe else 0.0
                 data_out.append(du + resample_poly(data_in - du, p, q))
 
@@ -174,7 +188,9 @@ class ControllerData:
             else:
                 spike_out = list()
 
-            self.__logger.debug(f"Resampling done from {self._raw_data.fs_orig} to {self._raw_data.fs_used} ({100 * scaling_value:.2f} %)")
+            self.__logger.debug(
+                f"Resampling done from {self._raw_data.fs_orig} to {self._raw_data.fs_used} ({100 * scaling_value:.2f} %)"
+            )
             self._raw_data.data_raw = np.array(data_out, dtype=self._raw_data.data_raw.dtype)
             self._raw_data.evnt_xpos = spike_out
         else:
@@ -187,16 +203,22 @@ class ControllerData:
             fs_addon = f" (resampling to {int(1e-3 * self._raw_data.fs_used)} kHz)"
         else:
             fs_addon = ""
-        self.__logger.info(f"... original sampling rate of {int(1e-3 * self._raw_data.fs_orig)} kHz{fs_addon}")
-        self.__logger.info(f"... using {self.__fill_factor * 100:.2f}% of the data (time length of {self._raw_data.time_end / self.__fill_factor:.2f} s)")
+        self.__logger.info(
+            f"... original sampling rate of {int(1e-3 * self._raw_data.fs_orig)} kHz{fs_addon}"
+        )
+        self.__logger.info(
+            f"... using {self.__fill_factor * 100:.2f}% of the data (time length of {self._raw_data.time_end / self.__fill_factor:.2f} s)"
+        )
 
         if self._raw_data.label_exist:
             num_spikes = sum([val.size for val in self._raw_data.evnt_xpos])
             cluster_id = np.array([id for id in self._raw_data.evnt_id]).flatten()
             cluster_no = np.unique(cluster_id)
-            self.__logger.info(f"... includes labels (noSpikes: {num_spikes} - noCluster: {cluster_no.size})")
+            self.__logger.info(
+                f"... includes labels (noSpikes: {num_spikes} - noCluster: {cluster_no.size})"
+            )
         else:
-            self.__logger.info(f"... has no labels / groundtruth")
+            self.__logger.info("... has no labels / groundtruth")
 
     def get_data(self) -> DataFromFile:
         """Calling the raw data with optional ground truth
@@ -213,23 +235,39 @@ class ControllerData:
         """
         if path_ref:
             # --- If data is online available - Checking if is is also local available
-            path2chck = join(self.__config_data_selection[0], dirname(path_ref).lstrip("/"), basename(path_ref))
-            self._path2folder_local = '' if not exists(path2chck) else dirname(join(*[path_seg for path_seg in Path(path2chck).parts[:2]], ''))
-            return '' if not exists(path2chck) else path2chck
+            path2chck = join(
+                self.__config_data_selection[0],
+                dirname(path_ref).lstrip("/"),
+                basename(path_ref),
+            )
+            self._path2folder_local = (
+                ""
+                if not exists(path2chck)
+                else dirname(join(*[path_seg for path_seg in Path(path2chck).parts[:2]], ""))
+            )
+            return "" if not exists(path2chck) else path2chck
         else:
             # --- Routine for find local data if online is not available
-            folder2search = [folder for folder in glob(join(self.__config_data_selection[0], '*')) if folder_name in folder]
+            folder2search = [
+                folder
+                for folder in glob(join(self.__config_data_selection[0], "*"))
+                if folder_name in folder
+            ]
             if not len(folder2search):
-                raise FileNotFoundError(f"Folder with index {folder2search} not found (locally and remotely)!")
+                raise FileNotFoundError(
+                    f"Folder with index {folder2search} not found (locally and remotely)!"
+                )
             else:
                 self._path2folder_local = folder2search[0]
                 folder_content = glob(join(folder2search[0], data_type))
                 if len(folder_content) == 0:
                     # --- Go into next folder structure and look there
-                    folder_structure = glob(join(folder2search[0], '*'))
-                    folder2search = join(folder2search[0], self.__config_data_selection[1]) if type(
-                        self.__config_data_selection[1]) == str else join(
-                        folder_structure[self.__config_data_selection[1]])
+                    folder_structure = glob(join(folder2search[0], "*"))
+                    folder2search = (
+                        join(folder2search[0], self.__config_data_selection[1])
+                        if type(self.__config_data_selection[1]) == str
+                        else join(folder_structure[self.__config_data_selection[1]])
+                    )
                     folder_content = glob(join(folder2search[0], data_type))
                     folder_content.sort()
                 else:
@@ -237,11 +275,15 @@ class ControllerData:
                     pass
 
                 # --- Getting the
-                file_name = join(folder2search, self.__config_data_selection[2]) if type(self.__config_data_selection[2]) == str else join(folder_content[self.__config_data_selection[2]])
+                file_name = (
+                    join(folder2search, self.__config_data_selection[2])
+                    if type(self.__config_data_selection[2]) == str
+                    else join(folder_content[self.__config_data_selection[2]])
+                )
                 if file_name:
                     return file_name
                 else:
-                    raise FileNotFoundError(f"File is not available (locally and remotely)!")
+                    raise FileNotFoundError("File is not available (locally and remotely)!")
 
     def __get_path_available_remote(self, folder_name: str, data_type: str) -> str:
         """Function for getting the path to file from remote
@@ -262,10 +304,18 @@ class ControllerData:
                 self._path2folder_remote = path2folder[0]
                 folder_structure = self.__download_handler.get_overview_folder(False, path2folder[0])
                 if len(folder_structure):
-                    folder_search = join(path2folder[0], self.__config_data_selection[1]) if type(self.__config_data_selection[1]) == str else folder_structure[self.__config_data_selection[1]]
-                    folder_content = self.__download_handler.get_overview_data(False, folder_search, data_type)
+                    folder_search = (
+                        join(path2folder[0], self.__config_data_selection[1])
+                        if type(self.__config_data_selection[1]) == str
+                        else folder_structure[self.__config_data_selection[1]]
+                    )
+                    folder_content = self.__download_handler.get_overview_data(
+                        False, folder_search, data_type
+                    )
                 else:
-                    folder_content = self.__download_handler.get_overview_data(False, path2folder[0], data_type)
+                    folder_content = self.__download_handler.get_overview_data(
+                        False, path2folder[0], data_type
+                    )
                 folder_content.sort()
                 return folder_content[self.__config_data_selection[2]]
 
@@ -275,8 +325,12 @@ class ControllerData:
         :param data_type:       String with data type of the data
         :return:                String with path to file
         """
-        used_datapath = self.__default_data_path if self._settings.path == '' else self._settings.path
-        self.__config_data_selection = [used_datapath, self._settings.data_case, self._settings.data_point]
+        used_datapath = self.__default_data_path if self._settings.path == "" else self._settings.path
+        self.__config_data_selection = [
+            used_datapath,
+            self._settings.data_case,
+            self._settings.data_point,
+        ]
 
         path2remote = self.__get_path_available_remote(folder_name, data_type)
         path2local = self.__get_data_available_local(path2remote, folder_name, data_type)
@@ -286,12 +340,14 @@ class ControllerData:
             path2data = join(self._settings.path, dirname(path2remote[1:]))
             path2file = join(self._settings.path, path2remote[1:])
             makedirs(path2data, exist_ok=True)
-            self.__download_handler.download_file(use_dataset=False, file_name=path2remote, destination_download=path2file)
+            self.__download_handler.download_file(
+                use_dataset=False, file_name=path2remote, destination_download=path2file
+            )
             return path2file
         else:
             raise FileNotFoundError("--- File is not available. Please check! ---")
 
-    def build_mapping(self, path2csv: str= '', index_search: str= 'Mapping_*.csv') -> None:
+    def build_mapping(self, path2csv: str = "", index_search: str = "Mapping_*.csv") -> None:
         """Transforming the input data to electrode array specific design
         (considering electrode format and coordination)
         :parm path2csv:     Path to csv file with information about electrode mapping (Default: "")
@@ -301,12 +357,18 @@ class ControllerData:
             self._path2mapping = path2csv
         else:
             # --- Checking if mapping file is available
-            mapping_local = glob(join(self._path2folder_local, index_search)) if self._path2folder_local else []
-            mapping_remote = self.__download_handler.get_overview_data(
-                use_dataset=False,
-                search_folder=self._path2folder_remote,
-                format=index_search
-            ) if self._path2folder_remote else []
+            mapping_local = (
+                glob(join(self._path2folder_local, index_search)) if self._path2folder_local else []
+            )
+            mapping_remote = (
+                self.__download_handler.get_overview_data(
+                    use_dataset=False,
+                    search_folder=self._path2folder_remote,
+                    format=index_search,
+                )
+                if self._path2folder_remote
+                else []
+            )
 
             # --- Getting the file
             if len(mapping_local):
@@ -316,10 +378,10 @@ class ControllerData:
                 self.__download_handler.download_file(
                     use_dataset=False,
                     file_name=mapping_remote[0],
-                    destination_download=self._path2mapping
+                    destination_download=self._path2mapping,
                 )
             else:
-                self._path2mapping = ''
+                self._path2mapping = ""
 
         # --- Generating mapping information
         if self._settings.do_mapping and exists(self._path2mapping):
@@ -328,18 +390,21 @@ class ControllerData:
         else:
             self.__logger.info("No electrode mapping is available")
 
-
     def _generate_electrode_mapping_from_csv(self) -> np.ndarray:
         """Function for reading the CSV file for electrode mapping of used (non-electrodes = 0)"""
-        mapping_from_csv = CsvHandler(
-            path=dirname(self._path2mapping),
-            file_name=basename(self._path2mapping),
-            delimiter=';'
-        ).read_data_from_csv(
-            include_chapter_line=False,
-            start_line=0,
-            type_load=str if self._settings.is_mapping_str else int
-        ).tolist()
+        mapping_from_csv = (
+            CsvHandler(
+                path=dirname(self._path2mapping),
+                file_name=basename(self._path2mapping),
+                delimiter=";",
+            )
+            .read_data_from_csv(
+                include_chapter_line=False,
+                start_line=0,
+                type_load=str if self._settings.is_mapping_str else int,
+            )
+            .tolist()
+        )
 
         # --- Generating numpy array
         mapping_dimension = [len(mapping_from_csv), len(mapping_from_csv[0])]
@@ -348,15 +413,28 @@ class ControllerData:
             for col_idx, elec_id in enumerate(elec_row):
                 if row_idx < electrode_mapping.shape[0] and col_idx < electrode_mapping.shape[1]:
                     if type(elec_id) == str:
-                        val = [idx + 1 for idx, val in enumerate(self._raw_data.electrode_id) if val == elec_id]
+                        val = [
+                            idx + 1
+                            for idx, val in enumerate(self._raw_data.electrode_id)
+                            if val == elec_id
+                        ]
                         electrode_mapping[row_idx, col_idx] = val[0] if len(val) else 0
                     else:
                         electrode_mapping[row_idx, col_idx] = elec_id
         return electrode_mapping
 
-    def _load_rawdata_into_pipeline(self, elec_type: str, dataset_name: str, file_name: str, fs_orig: float,
-                                    elec_orn: list, rawdata: np.ndarray, scale_data: float,
-                                    evnt_pos: list=(), evnt_id: list=()) -> None:
+    def _load_rawdata_into_pipeline(
+        self,
+        elec_type: str,
+        dataset_name: str,
+        file_name: str,
+        fs_orig: float,
+        elec_orn: list,
+        rawdata: np.ndarray,
+        scale_data: float,
+        evnt_pos: list = (),
+        evnt_id: list = (),
+    ) -> None:
         """Function for preparing the loaded rawdata for using in pipeline process
         :param elec_type:   String with type description of the transient data
         :param file_name:   String with used file name
@@ -369,14 +447,22 @@ class ControllerData:
         :return:            None
         """
         if len(rawdata.shape) == 2:
-            assert rawdata.shape[0] == len(elec_orn), "Variable rawdata must have two dimensions (num_channels, num_samples)"
+            assert rawdata.shape[0] == len(elec_orn), (
+                "Variable rawdata must have two dimensions (num_channels, num_samples)"
+            )
         else:
-            assert len(elec_orn) == 1, "Variable rawdata has one dimension with (num_samples, ), also elec_orn should have a length of 1"
+            assert len(elec_orn) == 1, (
+                "Variable rawdata has one dimension with (num_samples, ), also elec_orn should have a length of 1"
+            )
         if len(evnt_pos):
             assert type(evnt_pos) == list, "Variable evnt_pos must have type list"
-            assert len(evnt_pos) == len(elec_orn), "Length of event_pos should have same length like num_electrodes"
+            assert len(evnt_pos) == len(elec_orn), (
+                "Length of event_pos should have same length like num_electrodes"
+            )
             assert type(evnt_id) == list, "Variable evnt_id must have type list"
-            assert len(evnt_id) == len(elec_orn), "Length of event_pos should have same length like num_electrodes"
+            assert len(evnt_id) == len(elec_orn), (
+                "Length of event_pos should have same length like num_electrodes"
+            )
 
         self._raw_data = DataFromFile()
         # --- Including meta data

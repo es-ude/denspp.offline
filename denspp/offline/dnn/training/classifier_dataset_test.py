@@ -1,6 +1,7 @@
 from unittest import TestCase, main
-from .dataset_dummy import generate_dummy_dataset
+
 from .classifier_dataset import DatasetClassifier
+from .dataset_dummy import generate_dummy_dataset
 
 
 class TestClassifierDataset(TestCase):
@@ -17,5 +18,5 @@ class TestClassifierDataset(TestCase):
         self.assertEqual(list(dataset[0].keys()), ["in", "out"])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

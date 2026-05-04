@@ -1,6 +1,7 @@
 import numpy as np
 from torch import is_tensor
 from torch.utils.data import Dataset
+
 from denspp.offline.dnn import DatasetFromFile
 
 
@@ -21,10 +22,7 @@ class DatasetClassifier(Dataset):
         if is_tensor(idx):
             idx = idx.tolist()
 
-        return {
-            'in': self.__data[idx,:],
-            'out': self.__label[idx]
-        }
+        return {"in": self.__data[idx, :], "out": self.__label[idx]}
 
     @property
     def get_dictionary(self) -> list:
@@ -34,7 +32,7 @@ class DatasetClassifier(Dataset):
     @property
     def get_topology_type(self) -> str:
         """Getting the information of used deep learning topology"""
-        return 'Classifier'
+        return "Classifier"
 
     @property
     def get_cluster_num(self) -> int:

@@ -1,4 +1,5 @@
 import numpy as np
+
 from denspp.offline.preprocessing import FrameWaveform
 
 
@@ -7,19 +8,19 @@ def calc_amplitude(frames_in: FrameWaveform) -> list:
     :param frames_in:   Class SpikeWaveform with spike waveforms, positions and label
     :return:            List with [pos, ymin, ymax] for each label
     """
-    fwvf = frames_in.waveform
-    fpos = frames_in.xpos
 
     out = list()
     cluster = np.unique(frames_in.label)
     for idx, id in enumerate(cluster):
         pos = np.argwhere(frames_in.label == id).flatten()
         fsel = frames_in.waveform[pos, :]
-        out.append({
-            'pos': pos / frames_in.sampling_rate,
-            'min': np.min(fsel, axis=0),
-            'max': np.max(fsel, axis=0)
-        })
+        out.append(
+            {
+                "pos": pos / frames_in.sampling_rate,
+                "min": np.min(fsel, axis=0),
+                "max": np.max(fsel, axis=0),
+            }
+        )
     return out
 
 

@@ -1,6 +1,7 @@
-import numpy as np
-from logging import getLogger, Logger
 from dataclasses import dataclass
+from logging import Logger, getLogger
+
+import numpy as np
 from scipy.signal import convolve2d
 
 
@@ -11,6 +12,7 @@ class SettingsReferencing:
         dim:            Integer with applied dimension
         kernel_size:    Kernel size for convolution (must be odd-numbered)
     """
+
     kernel_size: int
 
 
@@ -33,9 +35,9 @@ class CommonReferencing:
         """
         match len(signal.shape):
             case 1:
-                return np.ones(shape=(1, ), dtype=bool)
+                return np.ones(shape=(1,), dtype=bool)
             case 2:
-                return np.ones(shape=(signal.shape[0], ), dtype=bool)
+                return np.ones(shape=(signal.shape[0],), dtype=bool)
             case 3:
                 return np.ones(shape=(signal.shape[0], signal.shape[1]), dtype=bool)
             case _:
@@ -69,7 +71,6 @@ class CommonReferencing:
             mapping = np.array([mapp_used] * mea_signal.size)
         return np.mean(mea_signal * mapping, axis=0)
 
-
     def _calculate_reference_car_2d(self, mea_signal: np.ndarray, mapp_used: np.ndarray) -> np.ndarray:
         if not len(mea_signal.shape) == 3:
             raise NotImplementedError("The input numpy array has wrong size - Please check!")
@@ -89,13 +90,13 @@ class CommonReferencing:
         data_out = np.zeros(mea_signal.shape, dtype=float)
         for idx in range(0, mea_signal.shape[-1]):
             data_in = mea_signal[:, :, idx]
-            conv_out = convolve2d(data_in, kernel, mode='same')
+            conv_out = convolve2d(data_in, kernel, mode="same")
             data_out[:, :, idx] = conv_out
 
         # --- Correction of not available channels
         for row in range(0, mea_signal.shape[0]):
             for col in range(0, mea_signal.shape[1]):
                 if not mapp_used[row, col]:
-                    data_out[row, col, :] = np.zeros((mea_signal.shape[-1], ), dtype=float)
+                    data_out[row, col, :] = np.zeros((mea_signal.shape[-1],), dtype=float)
 
         return data_out

@@ -1,37 +1,34 @@
-import numpy as np
 from unittest import TestCase, main
+
+import numpy as np
 from scipy.signal import find_peaks
+
 from denspp.offline import is_close
 from denspp.offline.preprocessing.transformation import do_fft
-from denspp.offline.preprocessing import transformation_window_method
 
 
 # --- Info: Function have to start with test_*
 class TestTransformation(TestCase):
     time = np.linspace(start=0, stop=100e-3, num=2000, endpoint=False, dtype=float)
-    vsig = np.sin(2* np.pi * 100. * time) + 0.25 * np.sin(2* np.pi * 1000. * time)
-    fs = float(1/np.diff(time).min())
+    vsig = np.sin(2 * np.pi * 100.0 * time) + 0.25 * np.sin(2 * np.pi * 1000.0 * time)
+    fs = float(1 / np.diff(time).min())
 
     def test_fft_spec(self):
-        freq, spec = do_fft(
-            y=self.vsig,
-            fs=self.fs,
-            method_window='hamming'
-        )
-        chck = freq.size == self.time.size / 2 and is_close(freq[-1], self.fs/2, 50.)
+        freq, spec = do_fft(y=self.vsig, fs=self.fs, method_window="hamming")
+        chck = freq.size == self.time.size / 2 and is_close(freq[-1], self.fs / 2, 50.0)
         self.assertTrue(chck)
 
     def test_fft_value(self):
-        freq, spec = do_fft(
-            y=self.vsig,
-            fs=self.fs,
-            method_window='hamming'
-        )
+        freq, spec = do_fft(y=self.vsig, fs=self.fs, method_window="hamming")
         x = find_peaks(x=spec, wlen=2)
-        chck_amp = all([is_close(spec[pred_frq], true_amp, 0.1) for pred_frq, true_amp in zip(x[0], [1.0, 0.25])])
-        chck_frq = all([is_close(freq[pred_frq], true_frq, 0.1) for pred_frq, true_frq in zip(x[0], [100., 1000.])])
+        chck_amp = all(
+            [is_close(spec[pred_frq], true_amp, 0.1) for pred_frq, true_amp in zip(x[0], [1.0, 0.25])]
+        )
+        chck_frq = all(
+            [is_close(freq[pred_frq], true_frq, 0.1) for pred_frq, true_frq in zip(x[0], [100.0, 1000.0])]
+        )
         self.assertTrue(chck_amp and chck_frq)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -1,17 +1,19 @@
 import unittest
 from copy import deepcopy
-from .adc_flash import SettingsADC, RecommendedSettingsADC, NyquistADC
+
+from denspp.offline.analog.adc import DefaultSettingsADC
+from denspp.offline.analog.adc.adc_flash import NyquistADC, SettingsADC
 
 
 class TestFlashADC(unittest.TestCase):
     def setUp(self):
-        self.sets: SettingsADC = deepcopy(RecommendedSettingsADC)
+        self.sets: SettingsADC = deepcopy(DefaultSettingsADC)
 
     def test_init(self):
-        dut = NyquistADC(
+        NyquistADC(
             settings_dev=self.sets,
         )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

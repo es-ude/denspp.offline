@@ -1,22 +1,38 @@
-from os import remove, cpu_count
-from pathlib import Path
 import platform
-import subprocess
 import re
+import subprocess
 from copy import deepcopy
 from dataclasses import dataclass
+from datetime import datetime
+from logging import Logger, getLogger
+from os import cpu_count, remove
+from pathlib import Path
+from random import seed
+from shutil import rmtree
 from typing import Any
 
 import numpy as np
-from logging import getLogger, Logger
-from random import seed
-from shutil import rmtree
-from datetime import datetime
-from torch import (device, cuda, backends, randn, cat, Tensor, is_tensor, zeros, unique, argwhere, float32,
-                   Generator, manual_seed, use_deterministic_algorithms, nn, optim)
+from sklearn.model_selection import KFold
+from torch import (
+    Generator,
+    Tensor,
+    argwhere,
+    backends,
+    cat,
+    cuda,
+    device,
+    float32,
+    is_tensor,
+    manual_seed,
+    nn,
+    optim,
+    randn,
+    unique,
+    use_deterministic_algorithms,
+    zeros,
+)
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torchinfo import summary
-from sklearn.model_selection import KFold
 
 from denspp.offline import get_path_to_project
 from denspp.offline.data_format import JsonHandler
@@ -37,6 +53,7 @@ class DataValidation:
         output:         Numpy array with model output
         label_names:    List with string names of each label class
     """
+
     input: np.ndarray
     valid_label: np.ndarray
     train_label: np.ndarray
@@ -63,6 +80,7 @@ class SettingsPytorch:
         data_do_shuffle:    Boolean if data should be shuffled before training
         custom_metrics:     List with string of custom metrics to calculate during training
     """
+
     model_name: str
     patience: int
     optimizer: str
@@ -77,7 +95,7 @@ class SettingsPytorch:
     custom_metrics: list
 
     @staticmethod
-    def get_model_overview(print_overview: bool=False, index: str='') -> list:
+    def get_model_overview(print_overview: bool = False, index: str = "") -> list:
         """Function for getting an overview of existing models inside library"""
         models_bib = ModelLibrary().get_registry()
         return models_bib.get_library_overview(index, do_print=print_overview)
@@ -85,19 +103,19 @@ class SettingsPytorch:
     def get_loss_func(self) -> Any:
         """Getting the loss function"""
         match self.loss:
-            case 'L1':
+            case "L1":
                 loss_func = nn.L1Loss
-            case 'MSE':
+            case "MSE":
                 loss_func = nn.MSELoss()
-            case 'Cross Entropy':
+            case "Cross Entropy":
                 loss_func = nn.CrossEntropyLoss()
-            case 'Cosine Similarity':
+            case "Cosine Similarity":
                 loss_func = nn.CosineSimilarity()
             case _:
                 raise NotImplementedError("Loss function unknown! - Please implement or check!")
         return loss_func
 
-    def load_optimizer(self, model, learn_rate: float=0.1) -> Any:
+    def load_optimizer(self, model, learn_rate: float = 0.1) -> Any:
         """Loading the optimizer function
         :param model:       PyTorch Sequential of the model with pre-defined configuration
         :param learn_rate:  Learning rate of the optimizer
@@ -108,9 +126,9 @@ class SettingsPytorch:
         else:
             params = model.parameters()
         match self.optimizer:
-            case 'Adam':
+            case "Adam":
                 optim_func = optim.Adam(params)
-            case 'SGD':
+            case "SGD":
                 optim_func = optim.SGD(params, lr=learn_rate)
             case _:
                 raise NotImplementedError("Optimizer function unknown! - Please implement or check!")
@@ -127,7 +145,7 @@ class SettingsPytorch:
                 return deepcopy(models_bib.build(self.model_name, *args, **kwargs))
             else:
                 models_bib.get_library_overview(do_print=True)
-                raise AttributeError(f"Model is not available - Please check again!")
+                raise AttributeError("Model is not available - Please check again!")
 
     def get_signature(self) -> list:
         """Returning the signature or list with input names of model object"""
@@ -140,7 +158,7 @@ class SettingsPytorch:
                 return models_bib.get_signature(self.model_name)
             else:
                 models_bib.get_library_overview(do_print=True)
-                raise AttributeError(f"Model is not available - Please check again!")
+                raise AttributeError("Model is not available - Please check again!")
 
 
 class PyTorchHandler:
@@ -160,7 +178,12 @@ class PyTorchHandler:
     _path2temp: Path
     _path2config: Path
 
-    def __init__(self, config_train: SettingsPytorch, config_dataset: SettingsDataset, do_train: bool=True) -> None:
+    def __init__(
+        self,
+        config_train: SettingsPytorch,
+        config_dataset: SettingsDataset,
+        do_train: bool = True,
+    ) -> None:
         """Class for Handling Training of Deep Neural Networks in PyTorch
         Args:
             config_train:   Configuration settings for the PyTorch Training
@@ -183,7 +206,7 @@ class PyTorchHandler:
         # --- Saving options
         self._settings_train: SettingsPytorch = config_train
         self._settings_data: SettingsDataset = config_dataset
-        self._index_folder = 'train' if do_train else 'inference'
+        self._index_folder = "train" if do_train else "inference"
         self._model_addon = str()
         # --- Logging paths for saving
         self.__check_start_folder()
@@ -194,28 +217,30 @@ class PyTorchHandler:
 
     @staticmethod
     def _get_cpu_name_mac() -> str:
-        result = subprocess.run(['sysctl', '-n', 'machdep.cpu.brand_string'], capture_output=True, text=True)
+        result = subprocess.run(
+            ["sysctl", "-n", "machdep.cpu.brand_string"], capture_output=True, text=True
+        )
         return result.stdout.strip()
 
     @staticmethod
     def _get_cpu_name_linux():
-        result = subprocess.run(['cat', '/proc/cpuinfo'], capture_output=True, text=True)
-        for line in result.stdout.split('\n'):
+        result = subprocess.run(["cat", "/proc/cpuinfo"], capture_output=True, text=True)
+        for line in result.stdout.split("\n"):
             if "model name" in line:
                 return re.sub(".*model name.*:", "", line, 1).strip()
 
     def _get_cpu_name(self) -> str:
         match platform.system().lower():
-            case 'windows':
+            case "windows":
                 return self._get_cpu_name_windows()
-            case 'linux':
+            case "linux":
                 return self._get_cpu_name_linux()
-            case 'darwin':
+            case "darwin":
                 return self._get_cpu_name_mac()
             case _:
-                return ''
+                return ""
 
-    def __check_start_folder(self, new_folder: str='runs'):
+    def __check_start_folder(self, new_folder: str = "runs"):
         """Checking for starting folder to generate"""
         self._path2run = Path(get_path_to_project(new_folder))
         self._path2run.mkdir(parents=True, exist_ok=True)
@@ -228,7 +253,11 @@ class PyTorchHandler:
             self._used_hw_num = cuda.device_count()
             device0 = used_hw_gpu
             cuda.empty_cache()
-        elif backends.mps.is_available() and backends.mps.is_built() and platform.system().lower() == "darwin":
+        elif (
+            backends.mps.is_available()
+            and backends.mps.is_built()
+            and platform.system().lower() == "darwin"
+        ):
             # Using Apple M1 Chip
             self._used_hw_dev = device("mps")
             self._used_hw_num = cuda.device_count()
@@ -246,7 +275,7 @@ class PyTorchHandler:
         :param addon:       Addon name for model type ('ae' = Autoencoder or 'cl' = Classifier)
         :return:            None
         """
-        folder_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{self._index_folder}_{self._model.__class__.__name__}'
+        folder_name = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{self._index_folder}_{self._model.__class__.__name__}"
         if path2save == Path("."):
             self._path2save = self._path2run / folder_name
         elif path2save.absolute().name == "runs" or path2save.absolute().parent == "runs":
@@ -254,7 +283,7 @@ class PyTorchHandler:
         else:
             self._path2save = path2save
 
-        self._path2temp = self._path2save / f'temp'
+        self._path2temp = self._path2save / "temp"
         # --- Generate folders
         self._path2run.mkdir(parents=True, exist_ok=True)
         self._path2save.mkdir(parents=True, exist_ok=True)
@@ -267,12 +296,12 @@ class PyTorchHandler:
         JsonHandler(
             template=self._settings_data,
             path=str(self._path2save),
-            file_name='Config_Dataset'
+            file_name="Config_Dataset",
         )
         JsonHandler(
             template=self._settings_train,
             path=str(self._path2save),
-            file_name=f'Config_Training{addon}'
+            file_name=f"Config_Training{addon}",
         )
 
     def __deterministic_training_preparation(self) -> None:
@@ -286,22 +315,30 @@ class PyTorchHandler:
             backends.cudnn.deterministic = True
 
             use_deterministic_algorithms(True)
-            self._logger.info(f"=== DL Training with Deterministic @seed: {self._settings_train.deterministic_seed} ===")
+            self._logger.info(
+                f"=== DL Training with Deterministic @seed: {self._settings_train.deterministic_seed} ==="
+            )
         else:
             use_deterministic_algorithms(False)
-            self._logger.info(f"=== Normal DL Training ===")
+            self._logger.info("=== Normal DL Training ===")
 
     def __deterministic_get_dataloader_params(self) -> dict:
         """Getting the parameters for preparing the Training and Validation DataLoader for Deterministic Training"""
         if self._settings_train.deterministic_do:
             self._deterministic_generator = Generator()
             self._deterministic_generator.manual_seed(self._settings_train.deterministic_seed)
-            worker_init_fn = lambda worker_id: np.random.seed(self._settings_train.deterministic_seed)
-            return {'worker_init_fn': worker_init_fn, 'generator': self._deterministic_generator}
+
+            def worker_init_fn(worker_id):
+                return np.random.seed(self._settings_train.deterministic_seed)
+
+            return {
+                "worker_init_fn": worker_init_fn,
+                "generator": self._deterministic_generator,
+            }
         else:
             return {}
 
-    def _prepare_dataset_for_training(self, data_set, num_workers: int=0) -> None:
+    def _prepare_dataset_for_training(self, data_set, num_workers: int = 0) -> None:
         """Loading data for training and validation in DataLoader format into class
         Args:
             data_set:        Dataclass DatasetFromFil loaded from file
@@ -319,19 +356,29 @@ class PyTorchHandler:
         out_train = list()
         out_valid = list()
         if self._kfold_do:
-            kfold = KFold(n_splits=self._settings_train.num_kfold,
-                          shuffle=self._shuffle_do and not self._settings_train.deterministic_do)
+            kfold = KFold(
+                n_splits=self._settings_train.num_kfold,
+                shuffle=self._shuffle_do and not self._settings_train.deterministic_do,
+            )
             for idx_train, idx_valid in kfold.split(np.arange(len(data_set))):
                 subsamps_train = SubsetRandomSampler(idx_train)
                 subsamps_valid = SubsetRandomSampler(idx_valid)
-                out_train.append(DataLoader(data_set,
-                                            batch_size=self._settings_train.batch_size,
-                                            sampler=subsamps_train,
-                                            **params_deterministic))
-                out_valid.append(DataLoader(data_set,
-                                            batch_size=self._settings_train.batch_size,
-                                            sampler=subsamps_valid,
-                                            **params_deterministic))
+                out_train.append(
+                    DataLoader(
+                        data_set,
+                        batch_size=self._settings_train.batch_size,
+                        sampler=subsamps_train,
+                        **params_deterministic,
+                    )
+                )
+                out_valid.append(
+                    DataLoader(
+                        data_set,
+                        batch_size=self._settings_train.batch_size,
+                        sampler=subsamps_valid,
+                        **params_deterministic,
+                    )
+                )
         else:
             idx = np.arange(len(data_set))
             if self._shuffle_do and not self._settings_train.deterministic_do:
@@ -341,14 +388,22 @@ class PyTorchHandler:
             idx_valid = idx[split_pos:]
             subsamps_train = SubsetRandomSampler(idx_train)
             subsamps_valid = SubsetRandomSampler(idx_valid)
-            out_train.append(DataLoader(data_set,
-                                        batch_size=self._settings_train.batch_size,
-                                        sampler=subsamps_train,
-                                        **params_deterministic))
-            out_valid.append(DataLoader(data_set,
-                                        batch_size=self._settings_train.batch_size,
-                                        sampler=subsamps_valid,
-                                        **params_deterministic))
+            out_train.append(
+                DataLoader(
+                    data_set,
+                    batch_size=self._settings_train.batch_size,
+                    sampler=subsamps_train,
+                    **params_deterministic,
+                )
+            )
+            out_valid.append(
+                DataLoader(
+                    data_set,
+                    batch_size=self._settings_train.batch_size,
+                    sampler=subsamps_valid,
+                    **params_deterministic,
+                )
+            )
 
         # --- CUDA support for dataset
         if cuda.is_available():
@@ -371,9 +426,9 @@ class PyTorchHandler:
 
     def get_best_model(self, type_model: str) -> list:
         """Getting the path to the best trained model"""
-        return [file for file in self._path2save.glob(f'*{type_model}*.pt')]
+        return [file for file in self._path2save.glob(f"*{type_model}*.pt")]
 
-    def load_model(self, model, learn_rate: float=0.1) -> None:
+    def load_model(self, model, learn_rate: float = 0.1) -> None:
         """Loading optimizer, loss_fn into class
         Args:
             model:          PyTorch Neural Network for Training / Inference
@@ -397,35 +452,40 @@ class PyTorchHandler:
         except:
             self._logger.info("Model summary is not possible due to internal errors (no shape, ...)")
 
-
-    def _save_train_results(self, last_metric_train: float | np.ndarray,
-                            last_metric_valid: float | np.ndarray, loss_type: str='Loss') -> None:
+    def _save_train_results(
+        self,
+        last_metric_train: float | np.ndarray,
+        last_metric_valid: float | np.ndarray,
+        loss_type: str = "Loss",
+    ) -> None:
         """Writing some training metrics into txt-file"""
         if self._config_available:
-            with open(self._path2config, 'a') as txt_handler:
-                txt_handler.write(f'\n--- Metrics of last epoch in fold #{self._kfold_run} ---')
-                txt_handler.write(f'\nTraining {loss_type} = {last_metric_train}')
-                txt_handler.write(f'\nValidation {loss_type} = {last_metric_valid}\n')
+            with open(self._path2config, "a") as txt_handler:
+                txt_handler.write(f"\n--- Metrics of last epoch in fold #{self._kfold_run} ---")
+                txt_handler.write(f"\nTraining {loss_type} = {last_metric_train}")
+                txt_handler.write(f"\nValidation {loss_type} = {last_metric_valid}\n")
 
-    def _end_training_routine(self, timestamp_start: datetime, do_delete_temps: bool=True) -> None:
+    def _end_training_routine(self, timestamp_start: datetime, do_delete_temps: bool = True) -> None:
         """Doing the last step of training routine"""
         timestamp_end = datetime.now()
-        timestamp_string = timestamp_end.strftime('%H:%M:%S')
+        timestamp_string = timestamp_end.strftime("%H:%M:%S")
         diff_time = timestamp_end - timestamp_start
         diff_string = diff_time
-        self._logger.info(f'\nTraining ends on: {timestamp_string}')
-        self._logger.info(f'Training runs: {diff_string}')
+        self._logger.info(f"\nTraining ends on: {timestamp_string}")
+        self._logger.info(f"Training runs: {diff_string}")
 
         # Delete init model
-        for file in self._path2save.glob('*_reset.pt'):
+        for file in self._path2save.glob("*_reset.pt"):
             remove(file)
 
         # Delete log folders
         if do_delete_temps:
-            for folder in self._path2save.glob('temp*'):
+            for folder in self._path2save.glob("temp*"):
                 rmtree(folder, ignore_errors=True)
 
-    def __get_data_points(self, only_getting_labels: bool=False, use_train_dataloader: bool=False) -> dict:
+    def __get_data_points(
+        self, only_getting_labels: bool = False, use_train_dataloader: bool = False
+    ) -> dict:
         """Getting data from DataLoader for Plotting Results
         Args:
             only_getting_labels:    Option for taking only labels
@@ -461,25 +521,24 @@ class PyTorchHandler:
             mdict.update({keys[idx]: data.numpy()})
         return mdict
 
-    def _getting_data_for_plotting(self, valid_input: np.ndarray, valid_label: np.ndarray, addon: str='') -> DataValidation:
+    def _getting_data_for_plotting(
+        self, valid_input: np.ndarray, valid_label: np.ndarray, addon: str = ""
+    ) -> DataValidation:
         """Getting the raw data for plotting results
         :param valid_input: Numpy array with input data for training validation
         :param valid_label: Numpy array with labels for training validation
         :return:            Dictionary with
         """
-        self._logger.info(f"... preparing results for plot generation")
-        data_train = self.__get_data_points(
-            only_getting_labels=True,
-            use_train_dataloader=True
-        )
+        self._logger.info("... preparing results for plot generation")
+        data_train = self.__get_data_points(only_getting_labels=True, use_train_dataloader=True)
         return DataValidation(
             input=valid_input,
-            train_label=data_train['class'] if addon == 'ae' else data_train['out'],
+            train_label=data_train["class"] if addon == "ae" else data_train["out"],
             valid_label=valid_label,
-            feat=None,      # Autoencoder specific value
-            mean=None,      # Autoencoder specific value
-            output=data_train['out'],
-            label_names=self._cell_classes
+            feat=None,  # Autoencoder specific value
+            mean=None,  # Autoencoder specific value
+            output=data_train["out"],
+            label_names=self._cell_classes,
         )
 
     def _determine_epoch_metrics(self, do_metrics: str):
@@ -495,7 +554,9 @@ class PyTorchHandler:
                 break
         return func
 
-    def _separate_classes_from_label(self, pred: Tensor, true: Tensor, label: str, *args) -> tuple[Tensor, Tensor]:
+    def _separate_classes_from_label(
+        self, pred: Tensor, true: Tensor, label: str, *args
+    ) -> tuple[Tensor, Tensor]:
         """Separating the classes for further metric processing
         Args:
             pred:           Torch Tensor from prediction
@@ -505,7 +566,7 @@ class PyTorchHandler:
         Return:
             Calculated metric results in Tensor array and total samples of each class
         """
-        if args or not "cl" in label:
+        if args or "cl" not in label:
             metric_out = zeros((len(self._cell_classes),), dtype=float32)
         else:
             metric_out = [zeros((1,)) for _ in self._cell_classes]
@@ -560,6 +621,6 @@ class PyTorchHandler:
         if frac_bitwidth < 0 or frac_bitwidth > total_bitwidth:
             raise ValueError(f"Fraction of bitwidth must be between 0 and {total_bitwidth}")
         if total_bitwidth < 0:
-            raise ValueError(f"Total bitwidth must be greater than 0")
+            raise ValueError("Total bitwidth must be greater than 0")
 
         self._ptq_level = [total_bitwidth, frac_bitwidth]

@@ -1,8 +1,10 @@
-import numpy as np
-from pathlib import Path
-from logging import getLogger, Logger
 from dataclasses import dataclass
-from denspp.offline import get_path_to_project, check_elem_unique
+from logging import Logger, getLogger
+from pathlib import Path
+
+import numpy as np
+
+from denspp.offline import check_elem_unique, get_path_to_project
 from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
 
 
@@ -15,6 +17,7 @@ class DatasetFromFile:
         dict:   List with names for each class/label
         mean:   Numpy array with mean values, shape = [num. samples, dimension]
     """
+
     data: np.ndarray
     label: np.ndarray
     dict: list
@@ -36,6 +39,7 @@ class SettingsDataset:
         reduce_samples_per_cluster_num: Number of reduced samples per class
         exclude_cluster:        List with IDs for excluding cluster/label IDs
     """
+
     # --- Settings of Datasets
     data_path: str
     data_type: str
@@ -66,16 +70,16 @@ class SettingsDataset:
 
 
 DefaultSettingsDataset = SettingsDataset(
-    data_path='dataset',
-    data_type='',
+    data_path="dataset",
+    data_type="",
     use_cell_sort_mode=0,
     augmentation_do=False,
     augmentation_num=0,
     normalization_do=False,
-    normalization_method='minmax',
+    normalization_method="minmax",
     reduce_samples_per_cluster_do=False,
     reduce_samples_per_cluster_num=0,
-    exclude_cluster=[]
+    exclude_cluster=[],
 )
 
 
@@ -83,10 +87,10 @@ class ControllerDataset:
     _logger: Logger
     _settings: SettingsDataset
     _methods: list
-    _index_search: list=['_get_', '_prepare_']
+    _index_search: list = ["_get_", "_prepare_"]
     _path: Path
 
-    def __init__(self, settings: SettingsDataset, temp_folder: str='') -> None:
+    def __init__(self, settings: SettingsDataset, temp_folder: str = "") -> None:
         self._settings = settings
         self._logger = getLogger(__name__)
         self._methods = self._extract_func(self.__class__)
@@ -103,10 +107,14 @@ class ControllerDataset:
         return self._path.absolute()
 
     def _extract_func(self, class_obj: object) -> list:
-        return [method for method in dir(class_obj) if self._index_search[0] in method or self._index_search[1] in method]
+        return [
+            method
+            for method in dir(class_obj)
+            if self._index_search[0] in method or self._index_search[1] in method
+        ]
 
     def _extract_methods(self, search_index: str) -> list:
-        return [method.split('_')[-1].lower() for method in self._methods if search_index in method]
+        return [method.split("_")[-1].lower() for method in self._methods if search_index in method]
 
     def _extract_executive_method(self, search_index: str) -> int:
         used_data_source_idx = -1
@@ -131,7 +139,7 @@ class ControllerDataset:
         else:
             return getattr(self, self._methods[idx])()
 
-    def print_overview_datasets(self, do_print: bool=True) -> list:
+    def print_overview_datasets(self, do_print: bool = True) -> list:
         """Giving an overview of available datasets on the cloud storage
         :return:            Return a list with dataset names
         """
@@ -153,21 +161,27 @@ class ControllerDataset:
         :return:        None
         """
         check = np.unique(data.label, return_counts=True)
-        self._logger.info(f"... for training are {data.data.shape[0]} frames with each "
-                          f"({data.data.shape[1]}, {data.data.shape[2]}) points available")
-        self._logger.info(f"... used data points for training: "
-                          f"in total {check[0].size} classes with {np.sum(check[1])} samples")
+        self._logger.info(
+            f"... for training are {data.data.shape[0]} frames with each "
+            f"({data.data.shape[1]}, {data.data.shape[2]}) points available"
+        )
+        self._logger.info(
+            f"... used data points for training: "
+            f"in total {check[0].size} classes with {np.sum(check[1])} samples"
+        )
         for idx, id0 in enumerate(check[0]):
-            addon = f'' if len(data.dict) == 0 else f' ({data.dict[idx]})'
+            addon = "" if len(data.dict) == 0 else f" ({data.dict[idx]})"
             self._logger.info(f"\tclass {id0}{addon} --> {check[1][idx]} samples")
 
-    def load_dataset(self, do_print: bool=True) -> DatasetFromFile:
+    def load_dataset(self, do_print: bool = True) -> DatasetFromFile:
         """Loading the dataset from defined data file
         :return:    Dataclass DatasetFromFile with attributes ['data', 'label', 'dict', 'mean']
         """
-        if self._settings.data_type.lower() == '':
+        if self._settings.data_type.lower() == "":
             self.print_overview_datasets(do_print=do_print)
-            raise AttributeError("--- Dataset is not available. Please type-in the data set name into the yaml file ---")
+            raise AttributeError(
+                "--- Dataset is not available. Please type-in the data set name into the yaml file ---"
+            )
         else:
             self._settings.get_path2folder.mkdir(parents=True, exist_ok=True)
             self.__download_if_missing()
@@ -181,7 +195,7 @@ class ControllerDataset:
             oc_handler.download_file(
                 use_dataset=True,
                 file_name=dataset_name,
-                destination_download=str(self._settings.get_path2folder / dataset_name)
+                destination_download=str(self._settings.get_path2folder / dataset_name),
             )
             oc_handler.close()
 
@@ -194,6 +208,7 @@ class TransformLabels:
         true:    Numpy array with true labels
         pred:    Numpy array with predicted labels
     """
+
     true: np.ndarray
     pred: np.ndarray
 
@@ -217,7 +232,4 @@ def logic_combination(labels_in: TransformLabels, translate_list: list) -> Trans
             true_labels_new[pos] = idx
             pos = np.argwhere(labels_in.pred == id0).flatten()
             pred_labels_new[pos] = idx
-    return TransformLabels(
-        true=true_labels_new,
-        pred=pred_labels_new
-    )
+    return TransformLabels(true=true_labels_new, pred=pred_labels_new)

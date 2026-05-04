@@ -1,8 +1,8 @@
-from torch import nn, Tensor, argmax, cat, flatten
+from torch import Tensor, argmax, cat, flatten, nn
 
 
 class waveforms_mlp_cl_v0(nn.Module):
-    def __init__(self, input_size: int=280, output_size: int=4):
+    def __init__(self, input_size: int = 280, output_size: int = 4):
         super().__init__()
         self.model_shape = (1, input_size)
         # --- Settings of model
@@ -13,9 +13,19 @@ class waveforms_mlp_cl_v0(nn.Module):
         # --- Model Deployment
         self.model = nn.Sequential()
         for idx, layer_size in enumerate(config_network[1:], start=1):
-            self.model.add_module(f"linear_{idx:02d}", nn.Linear(in_features=config_network[idx-1], out_features=layer_size, bias=do_train_bias))
-            self.model.add_module(f"batch1d_{idx:02d}", nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch))
-            if not idx == len(config_network)-1:
+            self.model.add_module(
+                f"linear_{idx:02d}",
+                nn.Linear(
+                    in_features=config_network[idx - 1],
+                    out_features=layer_size,
+                    bias=do_train_bias,
+                ),
+            )
+            self.model.add_module(
+                f"batch1d_{idx:02d}",
+                nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch),
+            )
+            if not idx == len(config_network) - 1:
                 self.model.add_module(f"act_{idx:02d}", nn.ReLU())
             else:
                 # self.model.add_module(f"soft", nn.Softmax(dim=1))
@@ -28,7 +38,7 @@ class waveforms_mlp_cl_v0(nn.Module):
 
 
 class waveforms_mlp_ae_v0(nn.Module):
-    def __init__(self, input_size: int=280, output_size: int=4):
+    def __init__(self, input_size: int = 280, output_size: int = 4):
         super().__init__()
         self.model_shape = (1, input_size)
         # --- Settings of model
@@ -39,8 +49,18 @@ class waveforms_mlp_ae_v0(nn.Module):
         # --- Model Deployment: Encoder
         self.encoder = nn.Sequential()
         for idx, layer_size in enumerate(config_network[1:], start=1):
-            self.encoder.add_module(f"linear_{idx:02d}", nn.Linear(in_features=config_network[idx - 1], out_features=layer_size, bias=do_train_bias))
-            self.encoder.add_module(f"batch1d_{idx:02d}", nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch))
+            self.encoder.add_module(
+                f"linear_{idx:02d}",
+                nn.Linear(
+                    in_features=config_network[idx - 1],
+                    out_features=layer_size,
+                    bias=do_train_bias,
+                ),
+            )
+            self.encoder.add_module(
+                f"batch1d_{idx:02d}",
+                nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch),
+            )
             if not idx == len(config_network) - 1:
                 self.encoder.add_module(f"act_{idx:02d}", nn.ReLU())
 
@@ -49,9 +69,19 @@ class waveforms_mlp_ae_v0(nn.Module):
         for idx, layer_size in enumerate(reversed(config_network[:-1]), start=1):
             if idx == 1:
                 self.decoder.add_module(f"act_dec_{idx:02d}", nn.ReLU())
-            self.decoder.add_module(f"linear_{idx:02d}", nn.Linear(in_features=config_network[-idx], out_features=layer_size, bias=do_train_bias))
+            self.decoder.add_module(
+                f"linear_{idx:02d}",
+                nn.Linear(
+                    in_features=config_network[-idx],
+                    out_features=layer_size,
+                    bias=do_train_bias,
+                ),
+            )
             if not idx == len(config_network) - 1:
-                self.decoder.add_module(f"batch1d_{idx:02d}", nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch))
+                self.decoder.add_module(
+                    f"batch1d_{idx:02d}",
+                    nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch),
+                )
                 self.decoder.add_module(f"act_{idx:02d}", nn.ReLU())
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
@@ -61,16 +91,14 @@ class waveforms_mlp_ae_v0(nn.Module):
 
 
 class waveforms_lstm_cl_v0(nn.Module):
-    def __init__(self, input_size: int=40, output_size: int=4):
+    def __init__(self, input_size: int = 40, output_size: int = 4):
         super().__init__()
         hidden_size = input_size
 
-        self.lstm = nn.Sequential(
-            nn.LSTM(input_size=1, hidden_size=hidden_size, batch_first=True)
-        )
+        self.lstm = nn.Sequential(nn.LSTM(input_size=1, hidden_size=hidden_size, batch_first=True))
         self.classifier = nn.Sequential(
             nn.Dropout(0.2),
-            nn.Linear(in_features=hidden_size, out_features=output_size)
+            nn.Linear(in_features=hidden_size, out_features=output_size),
         )
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
@@ -89,14 +117,10 @@ class waveforms_lstm_cl_v0(nn.Module):
 
 
 class sinusoidal_lstm_cl_v0(nn.Module):
-    def __init__(self, input_size: int=32, output_size: int=2):
+    def __init__(self, input_size: int = 32, output_size: int = 2):
         super().__init__()
-        self.lstm = nn.Sequential(
-            nn.LSTM(input_size=1, hidden_size=input_size, batch_first=True)
-        )
-        self.fc = nn.Sequential(
-            nn.Linear(input_size, output_size)
-        )
+        self.lstm = nn.Sequential(nn.LSTM(input_size=1, hidden_size=input_size, batch_first=True))
+        self.fc = nn.Sequential(nn.Linear(input_size, output_size))
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         # x: Build shape of (batch, seq_len, input_size)

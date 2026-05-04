@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+
 @dataclass
 class MetricTimestamps:
     f1_score: float
@@ -8,10 +9,8 @@ class MetricTimestamps:
     FN: int
 
 
-def compare_timestamps(
-        true_labels: list, pred_labels: list, window: int=2
-) -> MetricTimestamps:
-    """ This function compares the timestamps of the predicted classes and the true classes and returns TP, FP, FN and
+def compare_timestamps(true_labels: list, pred_labels: list, window: int = 2) -> MetricTimestamps:
+    """This function compares the timestamps of the predicted classes and the true classes and returns TP, FP, FN and
     new arrays which only contain the classes that have matched timestamps in both arrays. The function should be used
     before plotting a confusion matrix of the classes when working with actual data from the pipeline.
     Args:
@@ -26,10 +25,10 @@ def compare_timestamps(
     true_positive_same = 0
     true_positive_diff = 0
 
-    for i in range(0, max(true_labels[-1], pred_labels[-1])+1):
+    for i in range(0, max(true_labels[-1], pred_labels[-1]) + 1):
         if i in true_labels:
             found = False
-            for j in range(i-int(window), i+int(window)+1):
+            for j in range(i - int(window), i + int(window) + 1):
                 if j in pred_labels:
                     pos_true = true_labels.index(i)
                     pos_pred = pred_labels.index(j)
@@ -49,9 +48,4 @@ def compare_timestamps(
     true_positive = true_positive_same + true_positive_diff
 
     f1_score = true_positive / (true_positive + false_positive + false_negative)
-    return MetricTimestamps(
-        f1_score=f1_score,
-        FN=false_negative,
-        FP=false_positive,
-        TP=true_positive
-    )
+    return MetricTimestamps(f1_score=f1_score, FN=false_negative, FP=false_positive, TP=true_positive)

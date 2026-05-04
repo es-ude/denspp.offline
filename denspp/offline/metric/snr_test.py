@@ -1,13 +1,16 @@
 import unittest
 from math import isclose
+
 import numpy as np
 import torch
+
 from denspp.offline.data_augmentation import generate_zero_frames
+
 from .snr import (
-    calculate_snr,
-    calculate_snr_tensor,
     calculate_dsnr_tensor,
-    calculate_snr_cluster
+    calculate_snr,
+    calculate_snr_cluster,
+    calculate_snr_tensor,
 )
 
 
@@ -22,11 +25,11 @@ def _build_noise_tensor(scale: float, shape: torch.Size) -> torch.Tensor:
 class TestMetricSNR(unittest.TestCase):
     def setUp(self):
         fs_ana = 1e3
-        t_end = 10*np.pi
-        time = np.linspace(start=0., stop=t_end, num=int(t_end * fs_ana), endpoint=True)
-        scale_amp = 1.
-        self.signal_numpy = scale_amp * np.sin(time * 10.)
-        self.signal_torch = scale_amp * torch.sin(torch.Tensor(time) * 10.).unsqueeze(0)
+        t_end = 10 * np.pi
+        time = np.linspace(start=0.0, stop=t_end, num=int(t_end * fs_ana), endpoint=True)
+        scale_amp = 1.0
+        self.signal_numpy = scale_amp * np.sin(time * 10.0)
+        self.signal_torch = scale_amp * torch.sin(torch.Tensor(time) * 10.0).unsqueeze(0)
         self.signal_torch = self.signal_torch.repeat(10, 1)
 
     def test_snr_numpy_plus_60db(self):
@@ -40,7 +43,7 @@ class TestMetricSNR(unittest.TestCase):
             )
             snr_out.append(rslt)
         rslt = np.mean(np.array(snr_out))
-        self.assertTrue(isclose(rslt, 60., abs_tol=0.5))
+        self.assertTrue(isclose(rslt, 60.0, abs_tol=0.5))
 
     def test_snr_numpy_minus_0db(self):
         snr_out = list()
@@ -53,7 +56,7 @@ class TestMetricSNR(unittest.TestCase):
             )
             snr_out.append(rslt)
         rslt = np.mean(np.array(snr_out))
-        self.assertTrue(isclose(rslt, 0., abs_tol=0.5))
+        self.assertTrue(isclose(rslt, 0.0, abs_tol=0.5))
 
     def test_snr_numpy_minus_20db(self):
         snr_out = list()
@@ -66,50 +69,37 @@ class TestMetricSNR(unittest.TestCase):
             )
             snr_out.append(rslt)
         rslt = np.mean(np.array(snr_out))
-        self.assertTrue(isclose(rslt, -20., abs_tol=0.5))
+        self.assertTrue(isclose(rslt, -20.0, abs_tol=0.5))
 
     def test_snr_tensor_plus_60db(self):
         noise = _build_noise_tensor(0.00001, self.signal_torch.shape)
         signal = noise + self.signal_torch
-        rslt = calculate_snr_tensor(
-            data=signal,
-            mean=self.signal_torch
-        )
+        rslt = calculate_snr_tensor(data=signal, mean=self.signal_torch)
         rslt = np.mean(np.array(rslt))
-        self.assertTrue(isclose(rslt, 60., abs_tol=0.5))
+        self.assertTrue(isclose(rslt, 60.0, abs_tol=0.5))
 
     def test_snr_tensor_minus_0db(self):
         noise = _build_noise_tensor(0.01, self.signal_torch.shape)
         signal = noise + self.signal_torch
-        rslt = calculate_snr_tensor(
-            data=signal,
-            mean=self.signal_torch
-        )
+        rslt = calculate_snr_tensor(data=signal, mean=self.signal_torch)
         rslt = np.mean(np.array(rslt))
-        self.assertTrue(isclose(rslt, 0., abs_tol=0.5))
+        self.assertTrue(isclose(rslt, 0.0, abs_tol=0.5))
 
     def test_snr_tensor_minus_20db(self):
         noise = _build_noise_tensor(0.1, self.signal_torch.shape)
         signal = noise + self.signal_torch
-        rslt = calculate_snr_tensor(
-            data=signal,
-            mean=self.signal_torch
-        )
+        rslt = calculate_snr_tensor(data=signal, mean=self.signal_torch)
         rslt = np.mean(np.array(rslt))
-        self.assertTrue(isclose(rslt, -20., abs_tol=0.5))
+        self.assertTrue(isclose(rslt, -20.0, abs_tol=0.5))
 
     def test_dsnr_tensor(self):
         noise0 = _build_noise_tensor(0.1, self.signal_torch.shape)
         noise1 = _build_noise_tensor(0.01, self.signal_torch.shape)
         signal0 = noise0 + self.signal_torch
         signal1 = noise1 + self.signal_torch
-        rslt = calculate_dsnr_tensor(
-            data=signal0,
-            pred=signal1,
-            mean=self.signal_torch
-        )
+        rslt = calculate_dsnr_tensor(data=signal0, pred=signal1, mean=self.signal_torch)
         rslt = np.mean(np.array(rslt))
-        self.assertTrue(isclose(rslt, +20., abs_tol=0.5))
+        self.assertTrue(isclose(rslt, +20.0, abs_tol=0.5))
 
     def test_snr_cluster(self):
         self.frames_zero = generate_zero_frames(
@@ -117,21 +107,26 @@ class TestMetricSNR(unittest.TestCase):
             num_frames=10,
             snr_range=[-20, -10],
             fs=20e3,
-            return_int=False
+            return_int=False,
         )
         dataset = {
-            'data': np.concatenate((self.frames_zero[0], self.frames_zero[0] + 4.5), axis=0),
-            'label': np.concatenate((self.frames_zero[1], self.frames_zero[1] + 1), axis=0),
-            'mean': np.concatenate((self.frames_zero[2].reshape(1, 32), self.frames_zero[2].reshape(1, 32) + 4.5),
-                                   axis=0)
+            "data": np.concatenate((self.frames_zero[0], self.frames_zero[0] + 4.5), axis=0),
+            "label": np.concatenate((self.frames_zero[1], self.frames_zero[1] + 1), axis=0),
+            "mean": np.concatenate(
+                (
+                    self.frames_zero[2].reshape(1, 32),
+                    self.frames_zero[2].reshape(1, 32) + 4.5,
+                ),
+                axis=0,
+            ),
         }
         rslt = calculate_snr_cluster(
-            frames_in=dataset['data'],
-            frames_cl=dataset['label'],
-            frames_mean=dataset['mean']
+            frames_in=dataset["data"],
+            frames_cl=dataset["label"],
+            frames_mean=dataset["mean"],
         )
-        self.assertEqual(rslt.shape, (np.unique(dataset['label']).size, 4))
+        self.assertEqual(rslt.shape, (np.unique(dataset["label"]).size, 4))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

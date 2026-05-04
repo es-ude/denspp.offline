@@ -1,7 +1,6 @@
-from math import sqrt
 import numpy as np
 from scipy.spatial.distance import cdist
-from sklearn.metrics import silhouette_score, calinski_harabasz_score
+from sklearn.metrics import calinski_harabasz_score, silhouette_score
 
 
 def calculate_euclidean_distance(point1: np.ndarray, point2: np.ndarray) -> float:
@@ -39,7 +38,7 @@ def calculate_dunn_index(data: np.ndarray, labels: np.ndarray) -> float:
     intra_dists = []
     for cluster in clusters:
         if len(cluster) > 1:
-            diameter = np.max(cdist(cluster, cluster, metric='euclidean'))
+            diameter = np.max(cdist(cluster, cluster, metric="euclidean"))
             intra_dists.append(diameter)
 
     if not intra_dists:
@@ -50,7 +49,7 @@ def calculate_dunn_index(data: np.ndarray, labels: np.ndarray) -> float:
     inter_dists = []
     for i in range(len(clusters)):
         for j in range(i + 1, len(clusters)):
-            min_dist = np.min(cdist(clusters[i], clusters[j], metric='euclidean'))
+            min_dist = np.min(cdist(clusters[i], clusters[j], metric="euclidean"))
             inter_dists.append(min_dist)
 
     # Calculate Dunn Index

@@ -1,8 +1,13 @@
 import numpy as np
-from .adc_basic import BasicADC
-from .adc_settings import SettingsADC, RecommendedSettingsADC, SettingsNon, RecommendedSettingsNon
+
 from denspp.offline.analog.dev_noise import ProcessNoise
-from denspp.offline.preprocessing.downsampling import SettingsDownSampling, DownSampling
+from denspp.offline.preprocessing.downsampling import DownSampling, SettingsDownSampling
+
+from .adc_basic import BasicADC
+from .adc_settings import (
+    DefaultSettingsNon,
+    SettingsADC,
+)
 
 
 class DeltaSigmaADC(BasicADC):
@@ -10,23 +15,29 @@ class DeltaSigmaADC(BasicADC):
     _handler_noise: ProcessNoise
     _down_sampler: DownSampling
 
-    def __init__(self, settings_dev: SettingsADC, settings_non=RecommendedSettingsNon, dac_order: int=2) -> None:
+    def __init__(
+        self,
+        settings_dev: SettingsADC,
+        settings_non=DefaultSettingsNon,
+        dac_order: int = 2,
+    ) -> None:
         """Class for using Continuous Time Delta Sigma ADC
         :param settings_dev:    Configuration class for defining properties of ADC
         :param settings_non:    Configuration class for non-idealities / parasitics of ADC (next feature)
         :param dac_order:       Number of bits of used DAC in feedback
         """
         super().__init__(settings_dev)
-        sets_down = SettingsDownSampling(
-            sampling_rate=settings_dev.fs_adc,
-            dsr=settings_dev.osr
-        )
+        sets_down = SettingsDownSampling(sampling_rate=settings_dev.fs_adc, dsr=settings_dev.osr)
         self._down_sampler = DownSampling(sets_down)
         # --- Internal variables
         self.use_noise = False
         self.__dac_order = dac_order
-        self.__partition_digital = np.arange(0, 2 ** self.__dac_order, 1) / 2 ** self.__dac_order
-        self.__partition_voltage = self._settings.vref[1] + self.__partition_digital * self._settings.vref_range + self._settings.lsb / 2
+        self.__partition_digital = np.arange(0, 2**self.__dac_order, 1) / 2**self.__dac_order
+        self.__partition_voltage = (
+            self._settings.vref[1]
+            + self.__partition_digital * self._settings.vref_range
+            + self._settings.lsb / 2
+        )
 
         # --- Variables for post-processing (noise-shaping)
         self.__stage_one_dly = self._settings.vcm
@@ -69,7 +80,7 @@ class DeltaSigmaADC(BasicADC):
         return xout, ufb
 
     def adc_deltasigma_order_one(self, uin: np.ndarray) -> np.ndarray:
-        """"Using the Delta Sigma Topology as an ADC (1-bit, first order)
+        """ "Using the Delta Sigma Topology as an ADC (1-bit, first order)
         Args:
             uin: Input voltage [V]
         Returns:
@@ -78,7 +89,7 @@ class DeltaSigmaADC(BasicADC):
         # Resampling the input to sampling frequency of ADC with oversampling
         uin_adc = self.clamp_voltage(uin)
         uin0 = self._do_resample(uin_adc)
-        uin0 += self._gen_noise(uin0.size) if self.use_noise == True else np.zeros(shape=uin0.shape)
+        uin0 += self._gen_noise(uin0.size) if self.use_noise else np.zeros(shape=uin0.shape)
 
         # Running the delta sigma modulator
         xout_hs, xbit = self._generate_dsigma_empty_data(uin0.shape)
@@ -104,7 +115,7 @@ class DeltaSigmaADC(BasicADC):
         return xout
 
     def adc_deltasigma_order_two(self, uin: np.ndarray) -> np.ndarray:
-        """"Using the Delta Sigma Topology as an ADC (1-bit, second order)
+        """ "Using the Delta Sigma Topology as an ADC (1-bit, second order)
         Args:
             uin: Input voltage [V]
         Returns:

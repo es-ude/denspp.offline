@@ -1,10 +1,23 @@
-import numpy as np
 import matplotlib.pyplot as plt
-from denspp.offline.plot_helper import cm_to_inch, save_figure, scale_auto_value, get_plot_color, get_textsize_paper, get_plot_color_inactive
+import numpy as np
+
+from denspp.offline.plot_helper import (
+    cm_to_inch,
+    get_plot_color,
+    get_plot_color_inactive,
+    get_textsize_paper,
+    save_figure,
+    scale_auto_value,
+)
 
 
-def plot_frames_feature(signals: dict, no_electrode: int, take_feat_dim: list=(0, 1),
-                        path: str='', show_plot: bool=False) -> None:
+def plot_frames_feature(
+    signals: dict,
+    no_electrode: int,
+    take_feat_dim: list = (0, 1),
+    path: str = "",
+    show_plot: bool = False,
+) -> None:
     """Plotting the detected spike frame activity of used transient data
     :param signals:         class containing the rawdata and processed data from class PipelineSignal
     :param no_electrode:    number of electrodes
@@ -16,7 +29,9 @@ def plot_frames_feature(signals: dict, no_electrode: int, take_feat_dim: list=(0
     assert len(take_feat_dim) == 2, "take_feat_dim must be 2 dimensional"
     frames_out = signals["frames"][0]
     cluster = signals["frames"][2]
-    assert frames_out.shape[0] == cluster.size, "Dimensions between number of frames and corresponding cluster ID are not equal"
+    assert frames_out.shape[0] == cluster.size, (
+        "Dimensions between number of frames and corresponding cluster ID are not equal"
+    )
     feat = signals["features"]
 
     frames_mean = np.zeros(shape=(len(np.unique(cluster)), frames_out.shape[1]))
@@ -31,20 +46,30 @@ def plot_frames_feature(signals: dict, no_electrode: int, take_feat_dim: list=(0
     ax3 = plt.subplot(133, sharex=ax1)
 
     ax1.set_title("Aligned Frames")
-    ax1.plot(np.transpose(frames_out), marker='.', markersize=4, drawstyle='steps-post')
+    ax1.plot(np.transpose(frames_out), marker=".", markersize=4, drawstyle="steps-post")
 
     ax2.set_title("Feature Space")
     for id in np.unique(cluster):
         idx = np.argwhere(cluster == id).flatten()
-        ax2.plot(feat[idx, take_feat_dim[0]], feat[idx, take_feat_dim[1]],
-                 color=get_plot_color(id), marker='.', linestyle='none')
-    ax2.set_ylabel('Feat. 1')
-    ax2.set_xlabel('Feat. 2')
+        ax2.plot(
+            feat[idx, take_feat_dim[0]],
+            feat[idx, take_feat_dim[1]],
+            color=get_plot_color(id),
+            marker=".",
+            linestyle="none",
+        )
+    ax2.set_ylabel("Feat. 1")
+    ax2.set_xlabel("Feat. 2")
 
     ax3.set_title("Mean Frames (Clustered)")
     for idx, frame in enumerate(frames_mean):
-        ax3.plot(np.transpose(frame), color=get_plot_color(idx),
-                 marker='.', markersize=4, drawstyle='steps-post')
+        ax3.plot(
+            np.transpose(frame),
+            color=get_plot_color(idx),
+            marker=".",
+            markersize=4,
+            drawstyle="steps-post",
+        )
 
     plt.tight_layout()
     # --- saving plots
@@ -54,7 +79,13 @@ def plot_frames_feature(signals: dict, no_electrode: int, take_feat_dim: list=(0
         plt.show(block=True)
 
 
-def plot_transient_input_spikes(signals: dict, no_electrode: int, path: str= '', time_cut: list=(), show_plot: bool=False) -> None:
+def plot_transient_input_spikes(
+    signals: dict,
+    no_electrode: int,
+    path: str = "",
+    time_cut: list = (),
+    show_plot: bool = False,
+) -> None:
     """Plotting results of end-to-end signal processor with plotting the signal input and clustered spike events
     :param signals:         class containing the rawdata and processed data from class PipelineSignal
     :param no_electrode:    number of electrodes
@@ -81,12 +112,12 @@ def plot_transient_input_spikes(signals: dict, no_electrode: int, path: str= '',
 
     # --- Plot 1: Transient signals
     plt.figure(figsize=(cm_to_inch(16), cm_to_inch(12)))
-    plt.rcParams.update({'font.size': get_textsize_paper()})
+    plt.rcParams.update({"font.size": get_textsize_paper()})
     plt.subplots_adjust(hspace=0)
     ax1 = plt.subplot(211)
     ax2 = plt.subplot(212, sharex=ax1)
 
-    ax1.plot(tD, xadc, color='k', drawstyle='steps-post')
+    ax1.plot(tD, xadc, color="k", drawstyle="steps-post")
     ax1.set_ylabel("ADC output")
     ax1.xaxis.set_visible(False)
     if not len(time_cut) == 0:
@@ -99,11 +130,15 @@ def plot_transient_input_spikes(signals: dict, no_electrode: int, path: str= '',
     for id in cluster:
         sel_x = np.where(ticks_id == id)[0]
         sel_ticks = ticks[sel_x]
-        ax2.eventplot(positions=tD[sel_ticks], orientation="horizontal",
-                      lineoffsets=0.45+id, linelengths=0.9,
-                      color=get_plot_color(id))
+        ax2.eventplot(
+            positions=tD[sel_ticks],
+            orientation="horizontal",
+            lineoffsets=0.45 + id,
+            linelengths=0.9,
+            color=get_plot_color(id),
+        )
 
-    ax2.set_ylim([cluster[0], 1+cluster[-1]])
+    ax2.set_ylim([cluster[0], 1 + cluster[-1]])
     ax2.set_ylabel("Spike Train")
     ax2.set_xlabel("Time t (s)")
 
@@ -115,8 +150,14 @@ def plot_transient_input_spikes(signals: dict, no_electrode: int, path: str= '',
         plt.show(block=True)
 
 
-def plot_transient_highlight_spikes(signals: dict, no_electrode: int,
-                                    path: str="", time_cut: list=(), show_noise: bool=False, show_plot: bool=False) -> None:
+def plot_transient_highlight_spikes(
+    signals: dict,
+    no_electrode: int,
+    path: str = "",
+    time_cut: list = (),
+    show_noise: bool = False,
+    show_plot: bool = False,
+) -> None:
     """Plotting the detected spike activity from transient data (highlighted, noise in gray)
     :param signals:         class containing the rawdata and processed data from class PipelineSignal
     :param no_electrode:    number of electrodes
@@ -137,11 +178,15 @@ def plot_transient_highlight_spikes(signals: dict, no_electrode: int,
     colo0 = list()
     tick_old = 0
     for idx, tick in enumerate(ticks):
-        sel = [int(tick)-12, int(tick)+30]
-        time0.append(time[tick_old:sel[0]])
-        time0.append(time[sel[0]:sel[1]])
-        tran0.append(xadc[tick_old:sel[0]] if show_noise else np.zeros(shape=(len(xadc[tick_old:sel[0]]), ), dtype=int))
-        tran0.append(xadc[sel[0]:sel[1]])
+        sel = [int(tick) - 12, int(tick) + 30]
+        time0.append(time[tick_old : sel[0]])
+        time0.append(time[sel[0] : sel[1]])
+        tran0.append(
+            xadc[tick_old : sel[0]]
+            if show_noise
+            else np.zeros(shape=(len(xadc[tick_old : sel[0]]),), dtype=int)
+        )
+        tran0.append(xadc[sel[0] : sel[1]])
         colo0.append(get_plot_color_inactive())
         colo0.append(get_plot_color(ticks_id[idx]))
         tick_old = sel[1]
@@ -151,42 +196,46 @@ def plot_transient_highlight_spikes(signals: dict, no_electrode: int,
     # plt.subplots_adjust(hspace=0)
     axs = list()
     for idx in range(0, 1):
-        axs.append(plt.subplot(1, 2, 1+2*idx))
-        axs.append(plt.subplot(1, 2, 2+2*idx, sharey=axs[2*idx]))
+        axs.append(plt.subplot(1, 2, 1 + 2 * idx))
+        axs.append(plt.subplot(1, 2, 2 + 2 * idx, sharey=axs[2 * idx]))
 
     # Subplot 1: Transient signal (colored)
     for idx, time1 in enumerate(time0):
-        axs[0].plot(time1, tran0[idx], linewidth=1, color=colo0[idx], drawstyle='steps-post')
+        axs[0].plot(time1, tran0[idx], linewidth=1, color=colo0[idx], drawstyle="steps-post")
 
     # --- Subplot 2: Histogram (from Subplot 1)
     no_bins = 1 + abs(max(xadc)) + abs(min(xadc))
     if not len(time_cut) == 0:
         sel0 = np.argwhere(time >= time_cut[0]).flatten()[0]
-        sel1 = np.argwhere(time >= time_cut[1]).flatten()[0] -1
+        sel1 = np.argwhere(time >= time_cut[1]).flatten()[0] - 1
         x_bins = xadc[sel0:sel1]
     else:
         x_bins = xadc
     x_nonzero = np.where(x_bins != 0)[0]
-    axs[1].hist(xadc[x_nonzero], color='k',
-                density=True, log=True,
-                bins=no_bins,
-                orientation="horizontal")
+    axs[1].hist(
+        xadc[x_nonzero],
+        color="k",
+        density=True,
+        log=True,
+        bins=no_bins,
+        orientation="horizontal",
+    )
 
     # --- Axis test
-    axs[0].set_xlabel('Time t [s]')
-    axs[0].set_ylabel('x_adc(t) [ ]')
+    axs[0].set_xlabel("Time t [s]")
+    axs[0].set_ylabel("x_adc(t) [ ]")
     axs[0].grid()
 
-    axs[1].set_xlabel('Density')
+    axs[1].set_xlabel("Density")
     axs[1].grid()
 
     # --- Zooming
     if not len(time_cut) == 0:
         axs[0].set_xlim(time_cut)
-        addon_zoom = '_zoom'
+        addon_zoom = "_zoom"
     else:
         axs[0].set_xlim([time[0], time[-1]])
-        addon_zoom = ''
+        addon_zoom = ""
 
     plt.tight_layout()
     # --- saving plots
@@ -196,8 +245,14 @@ def plot_transient_highlight_spikes(signals: dict, no_electrode: int,
         plt.show(block=True)
 
 
-def plot_mea_transient_total(mea_data: np.ndarray, mapping: np.ndarray, fs_used: float,
-                             path2save: str='', do_global_limit: bool=False, do_show: bool=False) -> None:
+def plot_mea_transient_total(
+    mea_data: np.ndarray,
+    mapping: np.ndarray,
+    fs_used: float,
+    path2save: str = "",
+    do_global_limit: bool = False,
+    do_show: bool = False,
+) -> None:
     """Plotting the transient signals of the transient numpy signal with electrode information
     Args:
         mea_data:           Transient numpy array with neural signal [row, colomn, transient]
@@ -209,7 +264,9 @@ def plot_mea_transient_total(mea_data: np.ndarray, mapping: np.ndarray, fs_used:
     Returns:
         None
     """
-    assert mea_data.shape[0:2] == mapping.shape, "Shape mismatch, please apply_mapping() using PipelineCMDs"
+    assert mea_data.shape[0:2] == mapping.shape, (
+        "Shape mismatch, please apply_mapping() using PipelineCMDs"
+    )
     num_rows = mapping.shape[0]
     num_cols = mapping.shape[1]
 
@@ -227,7 +284,7 @@ def plot_mea_transient_total(mea_data: np.ndarray, mapping: np.ndarray, fs_used:
                 mea_yrange[idx, 1] = scale_yaxis[0] * np.max(mea_data[i, j])
                 mea_yrange[idx, 2] = scale_yaxis[0] * (np.max(mea_data[i, j]) - np.min(mea_data[i, j]))
                 idx += 1
-    mea_yglobal = np.zeros((2, ), dtype=float)
+    mea_yglobal = np.zeros((2,), dtype=float)
     mea_yglobal[0] = np.min(mea_yrange[:, 0])
     mea_yglobal[1] = np.max(mea_yrange[:, 1])
 
@@ -240,12 +297,19 @@ def plot_mea_transient_total(mea_data: np.ndarray, mapping: np.ndarray, fs_used:
         for j in range(num_cols):
             ax = axes[i, j]
             if mapping[i, j] < 1:
-                ax.plot([0], 'k-', linewidth=0.1)
+                ax.plot([0], "k-", linewidth=0.1)
                 ax_empty.append(ax)
             else:
-                ax.plot(scale_xaxis[0] * time_array, scale_yaxis[0] * mea_data[i, j], 'k-', linewidth=1.0)
+                ax.plot(
+                    scale_xaxis[0] * time_array,
+                    scale_yaxis[0] * mea_data[i, j],
+                    "k-",
+                    linewidth=1.0,
+                )
                 ax.set_xlim([scale_xaxis[0] * time_array[0], scale_xaxis[0] * time_array[-1]])
-                yrange_used = mea_yglobal.tolist() if do_global_limit else [mea_yrange[idx, 0], mea_yrange[idx, 1]]
+                yrange_used = (
+                    mea_yglobal.tolist() if do_global_limit else [mea_yrange[idx, 0], mea_yrange[idx, 1]]
+                )
                 ax.set_ylim(yrange_used)
                 idx += 1
 
@@ -255,17 +319,44 @@ def plot_mea_transient_total(mea_data: np.ndarray, mapping: np.ndarray, fs_used:
             ax.set_xticklabels([])
             ax.set_xticks([])
             # Remove subplot border
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-            ax.spines['left'].set_visible(False)
-            ax.spines['bottom'].set_visible(False)
+            ax.spines["top"].set_visible(False)
+            ax.spines["right"].set_visible(False)
+            ax.spines["left"].set_visible(False)
+            ax.spines["bottom"].set_visible(False)
 
     if len(ax_empty):
-        ax_empty[0].arrow(x=-0.35, y=0.5, dx=1, dy=0, length_includes_head=True, head_width=0.08, head_length=0.00002)
-        ax_empty[0].text(x=0.15, y=0.55, s=f"{scale_xaxis[0] * time_array[-1]:.1f} {scale_xaxis[1]}s", ha='center')
-        ax_empty[0].arrow(x=-0.35, y=0, dx=0, dy=1, length_includes_head=True, head_width=0.08, head_length=0.00002)
-        ax_empty[0].text(x=-0.4, y=0.45, s=f"{scale_yaxis[0] * (mea_yglobal[1] - mea_yglobal[0]):.1f} {scale_yaxis[1]}V", ha='center', rotation=90)
+        ax_empty[0].arrow(
+            x=-0.35,
+            y=0.5,
+            dx=1,
+            dy=0,
+            length_includes_head=True,
+            head_width=0.08,
+            head_length=0.00002,
+        )
+        ax_empty[0].text(
+            x=0.15,
+            y=0.55,
+            s=f"{scale_xaxis[0] * time_array[-1]:.1f} {scale_xaxis[1]}s",
+            ha="center",
+        )
+        ax_empty[0].arrow(
+            x=-0.35,
+            y=0,
+            dx=0,
+            dy=1,
+            length_includes_head=True,
+            head_width=0.08,
+            head_length=0.00002,
+        )
+        ax_empty[0].text(
+            x=-0.4,
+            y=0.45,
+            s=f"{scale_yaxis[0] * (mea_yglobal[1] - mea_yglobal[0]):.1f} {scale_yaxis[1]}V",
+            ha="center",
+            rotation=90,
+        )
     if path2save:
-        save_figure(plt, path2save, 'mea_data' + ('_global' if do_global_limit else '_local'))
+        save_figure(plt, path2save, "mea_data" + ("_global" if do_global_limit else "_local"))
     if do_show:
         plt.show()

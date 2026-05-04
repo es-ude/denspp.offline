@@ -1,16 +1,21 @@
-import numpy as np
 from copy import deepcopy
 from unittest import TestCase, main
-from denspp.offline.analog.dev_handler import generate_test_signal, SettingsDevice, ElectricalLoadHandler
 
+import numpy as np
+
+from denspp.offline.analog.dev_handler import (
+    ElectricalLoadHandler,
+    SettingsDevice,
+    generate_test_signal,
+)
 
 TestSettings = SettingsDevice(
-    type='R',
+    type="R",
     fs_ana=50e3,
     noise_en=False,
-    params_use={'r': 100e3},
+    params_use={"r": 100e3},
     temp=300,
-    use_poly=False
+    use_poly=False,
 )
 
 
@@ -24,7 +29,7 @@ class TestDeviceSettings(TestCase):
         fs=TestSettings.fs_ana,
         upp=volt_peak,
         fsig=volt_fsig,
-        uoff=volt_offset
+        uoff=volt_offset,
     )
 
     def test_temperature_voltage(self):
@@ -36,7 +41,14 @@ class TestDeviceSettings(TestCase):
             set0.temp = value
             result.append(set0.temperature_voltage)
 
-        check = [0.008617333262145178, 0.017234666524290357, 0.021543333155362946, 0.025851999786435535, 0.030160666417508128, 0.034469333048580714]
+        check = [
+            0.008617333262145178,
+            0.017234666524290357,
+            0.021543333155362946,
+            0.025851999786435535,
+            0.030160666417508128,
+            0.034469333048580714,
+        ]
         np.testing.assert_array_equal(np.asarray(result), np.asarray(check))
 
     def test_generate_signal_length_check(self):
@@ -46,12 +58,12 @@ class TestDeviceSettings(TestCase):
 
     def test_generate_signal_time_length_value(self):
         result = self.test_time.size
-        check = 1+int(TestSettings.fs_ana * self.t_sim_duration)
+        check = 1 + int(TestSettings.fs_ana * self.t_sim_duration)
         np.testing.assert_equal(result, check)
 
     def test_generate_signal_time_length_delta(self):
         result = np.diff(self.test_time).mean()
-        check = np.asarray(1/TestSettings.fs_ana)
+        check = np.asarray(1 / TestSettings.fs_ana)
         np.testing.assert_almost_equal(result, check, decimal=-6)
 
     def test_generate_signal_time_max(self):
@@ -82,7 +94,7 @@ class TestDeviceSettings(TestCase):
     def test_device_get_voltage(self):
         set0 = deepcopy(TestSettings)
         try:
-            volt = ElectricalLoadHandler(settings_dev=set0).get_voltage(self.test_volt / 1e6, 0.0)
+            ElectricalLoadHandler(settings_dev=set0).get_voltage(self.test_volt / 1e6, 0.0)
         except:
             self.assertTrue(True)
         else:
@@ -91,7 +103,7 @@ class TestDeviceSettings(TestCase):
     def test_device_get_current(self):
         set0 = deepcopy(TestSettings)
         try:
-            curr = ElectricalLoadHandler(settings_dev=set0).get_current(self.test_volt, 0.0)
+            ElectricalLoadHandler(settings_dev=set0).get_current(self.test_volt, 0.0)
         except:
             self.assertTrue(True)
         else:
@@ -115,15 +127,16 @@ class TestDeviceSettings(TestCase):
         set0 = deepcopy(TestSettings)
         dut = ElectricalLoadHandler(settings_dev=set0)
         dut.change_boundary_current(-10, -1)
-        rslt = dut.check_value_range_violation(self.test_volt/1e3, False)
+        rslt = dut.check_value_range_violation(self.test_volt / 1e3, False)
         self.assertFalse(rslt)
 
     def test_chck_violation_current_failed(self):
         set0 = deepcopy(TestSettings)
         dut = ElectricalLoadHandler(settings_dev=set0)
         dut.change_boundary_current(-10, -3)
-        rslt = dut.check_value_range_violation(self.test_volt/1e3, False)
+        rslt = dut.check_value_range_violation(self.test_volt / 1e3, False)
         self.assertTrue(rslt)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

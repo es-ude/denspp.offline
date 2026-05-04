@@ -1,5 +1,7 @@
-import numpy as np
 from unittest import TestCase, main
+
+import numpy as np
+
 from .dataset_dummy import generate_dummy_dataset
 
 
@@ -21,5 +23,5 @@ class TestDummyDataset(TestCase):
         assert rslt.data.shape[0] == rslt.label.size
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -1,45 +1,55 @@
-import numpy as np
 from unittest import TestCase, main
-from denspp.offline.template.call_data_dummy import DataLoaderTest
-from denspp.offline.pipeline.pipeline_handler import select_process_pipeline, _start_processing_pipeline
+
+import numpy as np
+
 from denspp.offline.data_call.call_handler import SettingsData
+from denspp.offline.pipeline.pipeline_handler import (
+    _start_processing_pipeline,
+    select_process_pipeline,
+)
+from denspp.offline.template.call_data_dummy import DataLoaderTest
 from denspp.offline.template.pipeline_v0 import PipelineV0
 
-
 test_settings_1d = SettingsData(
-    pipeline='PipelineV0',
+    pipeline="PipelineV0",
     do_merge=False,
-    path='data',
-    data_set='test_1d',
-    data_case=0, data_point=0,
-    t_range_sec=[], ch_sel=[],
+    path="data",
+    data_set="test_1d",
+    data_case=0,
+    data_point=0,
+    t_range_sec=[],
+    ch_sel=[],
     fs_resample=20e3,
     do_mapping=True,
-    is_mapping_str=False
+    is_mapping_str=False,
 )
 
 test_settings_1d_merge = SettingsData(
-    pipeline='PipelineV0',
+    pipeline="PipelineV0",
     do_merge=True,
-    path='data',
-    data_set='test_1d',
-    data_case=0, data_point=0,
-    t_range_sec=[], ch_sel=[],
+    path="data",
+    data_set="test_1d",
+    data_case=0,
+    data_point=0,
+    t_range_sec=[],
+    ch_sel=[],
     fs_resample=20e3,
     do_mapping=True,
-    is_mapping_str=False
+    is_mapping_str=False,
 )
 
 test_settings_2d = SettingsData(
-    pipeline='PipelineV0',
+    pipeline="PipelineV0",
     do_merge=False,
-    path='data',
-    data_set='test_2d',
-    data_case=0, data_point=0,
-    t_range_sec=[], ch_sel=[],
+    path="data",
+    data_set="test_2d",
+    data_case=0,
+    data_point=0,
+    t_range_sec=[],
+    ch_sel=[],
     fs_resample=20e3,
     do_mapping=True,
-    is_mapping_str=False
+    is_mapping_str=False,
 )
 
 
@@ -60,14 +70,14 @@ class TestPipeProcess(TestCase):
         except:
             self.assertTrue(False)
         else:
-            np.testing.assert_equal(rslt['u_in'], data.data_raw[0])
+            np.testing.assert_equal(rslt["u_in"], data.data_raw[0])
 
     def test_pipeline_process_wrapper_1d(self):
         try:
             select_process_pipeline(
                 object_dataloader=DataLoaderTest,
                 object_pipeline=PipelineV0,
-                sets_load_data=test_settings_1d
+                sets_load_data=test_settings_1d,
             )
         except:
             self.assertTrue(False)
@@ -83,14 +93,14 @@ class TestPipeProcess(TestCase):
         except:
             self.assertTrue(False)
         else:
-            np.testing.assert_equal(rslt['u_in'], data.data_raw[0])
+            np.testing.assert_equal(rslt["u_in"], data.data_raw[0])
 
     def test_pipeline_process_data_wrapper_1d(self):
         try:
             select_process_pipeline(
                 object_dataloader=DataLoaderTest,
                 object_pipeline=PipelineV0,
-                sets_load_data=test_settings_1d
+                sets_load_data=test_settings_1d,
             )
         except:
             self.assertTrue(False)
@@ -109,7 +119,7 @@ class TestPipeProcess(TestCase):
         data = dut.get_data()
         try:
             rslt = PipelineV0(test_settings_2d.fs_resample).run(data.data_raw[0])
-            np.testing.assert_equal(rslt['u_in'], data.data_raw[0])
+            np.testing.assert_equal(rslt["u_in"], data.data_raw[0])
         except:
             self.assertTrue(False)
 
@@ -118,7 +128,7 @@ class TestPipeProcess(TestCase):
             select_process_pipeline(
                 object_dataloader=DataLoaderTest,
                 object_pipeline=PipelineV0,
-                sets_load_data=test_settings_2d
+                sets_load_data=test_settings_2d,
             )
         except:
             self.assertTrue(False)
@@ -134,14 +144,14 @@ class TestPipeProcess(TestCase):
         except:
             self.assertTrue(False)
         else:
-            np.testing.assert_equal(rslt['u_in'], data.data_raw[0])
+            np.testing.assert_equal(rslt["u_in"], data.data_raw[0])
 
     def test_pipeline_merge_data_wrapper_2d(self):
         try:
             select_process_pipeline(
                 object_dataloader=DataLoaderTest,
                 object_pipeline=PipelineV0,
-                sets_load_data=test_settings_2d
+                sets_load_data=test_settings_2d,
             )
         except:
             self.assertTrue(False)
@@ -150,14 +160,12 @@ class TestPipeProcess(TestCase):
 
     def test_entry_point(self):
         try:
-            rslt = _start_processing_pipeline(
-                sets_load_data=test_settings_2d
-            )
+            rslt = _start_processing_pipeline(sets_load_data=test_settings_2d)
         except:
             self.assertTrue(False)
         else:
             self.assertTrue(len(rslt) == 3)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

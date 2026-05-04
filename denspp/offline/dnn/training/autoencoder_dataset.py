@@ -1,6 +1,7 @@
 import numpy as np
 from torch import is_tensor
 from torch.utils.data import Dataset
+
 from denspp.offline.dnn import DatasetFromFile
 
 
@@ -15,7 +16,12 @@ class DatasetAutoencoder(Dataset):
                                     2: Denoising Autoencoder (add random noise),
                                     3: Denoising Autoencoder (add gaussian noise)]
         """
-        self.__mode = ["", "(mean) Denoising ", "(random noise) Denoising ", "(gaussian noise) Denoising "]
+        self.__mode = [
+            "",
+            "(mean) Denoising ",
+            "(random noise) Denoising ",
+            "(gaussian noise) Denoising ",
+        ]
         self.__noise_std = noise_std
         self.__mode_train = mode_train
 
@@ -39,21 +45,25 @@ class DatasetAutoencoder(Dataset):
             frame_out = self.__mean[cluster_id, :]
         elif self.__mode_train == 2:
             # Denoising Autoencoder Training with adding random noise on input
-            frame_in = self.__data[idx, :] + np.array(self.__noise_std * np.random.randn(*self.__size), dtype=np.float32)
+            frame_in = self.__data[idx, :] + np.array(
+                self.__noise_std * np.random.randn(*self.__size), dtype=np.float32
+            )
             frame_out = self.__data[idx, :]
         elif self.__mode_train == 3:
             # Denoising Autoencoder Training with adding gaussian noise on input
-            frame_in = self.__data[idx, :] + np.array(self.__noise_std * np.random.normal(size=self.__size), dtype=np.float32)
+            frame_in = self.__data[idx, :] + np.array(
+                self.__noise_std * np.random.normal(size=self.__size), dtype=np.float32
+            )
             frame_out = self.__data[idx, :]
         else:
             # Normal Autoencoder Training
             frame_in = self.__data[idx, :]
             frame_out = self.__data[idx, :]
         return {
-            'in': frame_in,
-            'out': frame_out,
-            'class': cluster_id,
-            'mean': self.__mean[cluster_id, :]
+            "in": frame_in,
+            "out": frame_out,
+            "class": cluster_id,
+            "mean": self.__mean[cluster_id, :],
         }
 
     @property

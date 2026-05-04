@@ -1,7 +1,8 @@
-import numpy as np
+from logging import Logger, getLogger
 from os import cpu_count
-from logging import getLogger, Logger
 from threading import Thread
+
+import numpy as np
 from tqdm import tqdm
 
 
@@ -35,13 +36,9 @@ class MultithreadHandler:
 
     def __perform_single_threads(self, func, rawdata: np.ndarray | list, chnnl_id: list) -> None:
         self.__threads_worker = list()
-        self._logger.info('... processing data via single threading')
-        for idx, (chnnl, data)  in enumerate(tqdm(zip(chnnl_id, rawdata), ncols=100, desc='Progress: ')):
-            thread = _ThreadProcess(
-                rawdata=data,
-                chnnl_name=chnnl,
-                func=func
-            )
+        self._logger.info("... processing data via single threading")
+        for idx, (chnnl, data) in enumerate(tqdm(zip(chnnl_id, rawdata), ncols=100, desc="Progress: ")):
+            thread = _ThreadProcess(rawdata=data, chnnl_name=chnnl, func=func)
             self.__threads_worker.append(thread)
             self.__threads_worker[idx].start()
             self.__threads_worker[idx].join()
@@ -50,18 +47,16 @@ class MultithreadHandler:
     def __perform_multi_threads(self, func, data: np.ndarray | list, chnnl_id: list) -> None:
         num_iterations = int(np.ceil(len(chnnl_id) / self._max_num_workers))
         num_effective = num_iterations if num_iterations < self._num_cores else self._num_cores
-        split_groups = [chnnl_id[i:i + num_effective] for i in range(0, len(chnnl_id), num_effective)]
+        split_groups = [chnnl_id[i : i + num_effective] for i in range(0, len(chnnl_id), num_effective)]
 
-        self._logger.info(f"... processing data with {self._max_num_workers} threading workers on {self._num_cores} cores")
-        for group in tqdm(split_groups, desc='Progress: '):
+        self._logger.info(
+            f"... processing data with {self._max_num_workers} threading workers on {self._num_cores} cores"
+        )
+        for group in tqdm(split_groups, desc="Progress: "):
             self.__threads_worker = list()
             # --- Starting all threads
             for idx, group_num in enumerate(group):
-                thread = _ThreadProcess(
-                    rawdata=data[idx],
-                    chnnl_name=group_num,
-                    func=func
-                )
+                thread = _ThreadProcess(rawdata=data[idx], chnnl_name=group_num, func=func)
                 self.__threads_worker.append(thread)
                 self.__threads_worker[idx].start()
 
@@ -72,7 +67,7 @@ class MultithreadHandler:
 
     def do_save_results(self, path2save: str) -> None:
         """Saving results in desired numpy format"""
-        np.save(f'{path2save}/results.npy', self._results)
+        np.save(f"{path2save}/results.npy", self._results)
 
     def get_results(self) -> dict:
         """Return the signals after processing"""

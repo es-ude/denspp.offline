@@ -135,7 +135,7 @@ class TestErrorNumpy(unittest.TestCase):
             y_true=np.linspace(2.0, 6.0, endpoint=True, num=10),
         )
         self.assertEqual(type(rslt), float)
-        self.assertEqual(rslt, 1.)
+        self.assertEqual(rslt, 1.0)
 
     def test_metric_rrmse_numpy(self):
         rslt = calculate_error_rrmse(
@@ -152,7 +152,6 @@ class TestErrorNumpy(unittest.TestCase):
         )
         self.assertEqual(type(rslt), float)
         self.assertEqual(rslt, 3.2603112780269354)
-
 
 
 if __name__ == "__main__":

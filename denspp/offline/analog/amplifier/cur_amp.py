@@ -1,7 +1,13 @@
 from dataclasses import dataclass
+
 import numpy as np
+
 from denspp.offline.analog.common_func import CommonAnalogFunctions
-from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise, DefaultSettingsNoise
+from denspp.offline.analog.dev_noise import (
+    DefaultSettingsNoise,
+    ProcessNoise,
+    SettingsNoise,
+)
 
 
 @dataclass
@@ -17,16 +23,17 @@ class SettingsCUR:
         noise_en:       Enable noise on output [True / False]
         para_en:        Enable parasitic [True / False]
     """
-    vdd:            float
-    vss:            float
-    fs_ana:         float
+
+    vdd: float
+    vss: float
+    fs_ana: float
     # Amplifier characteristics
     transimpedance: float
-    offset_v:       float
-    offset_i:       float
+    offset_v: float
+    offset_i: float
     # Settings for parasitic
-    noise_en:       bool
-    para_en:        bool
+    noise_en: bool
+    para_en: bool
 
     @property
     def vcm(self) -> float:
@@ -34,12 +41,14 @@ class SettingsCUR:
 
 
 DefaultSettingsCUR = SettingsCUR(
-    vdd=0.9, vss=-0.9,
+    vdd=0.9,
+    vss=-0.9,
     fs_ana=50e3,
     transimpedance=1e3,
-    offset_v=1e-6, offset_i=1e-12,
+    offset_v=1e-6,
+    offset_i=1e-12,
     noise_en=False,
-    para_en=False
+    para_en=False,
 )
 
 
@@ -47,7 +56,11 @@ class CurrentAmplifier(CommonAnalogFunctions):
     _handler_noise: ProcessNoise
     _settings: SettingsCUR
 
-    def __init__(self, settings_dev: SettingsCUR, settings_noise: SettingsNoise=DefaultSettingsNoise) -> None:
+    def __init__(
+        self,
+        settings_dev: SettingsCUR,
+        settings_noise: SettingsNoise = DefaultSettingsNoise,
+    ) -> None:
         """Class for emulating an analogue current amplifier
         :param settings_dev:        Dataclass for handling the current amplifier
         :param settings_noise:      Dataclass for handling the noise and parasitic simulation
@@ -61,8 +74,8 @@ class CurrentAmplifier(CommonAnalogFunctions):
     def vcm(self) -> float:
         return self._settings.vcm
 
-    def _add_parasitic(self, size: int, resistance: float=1.0) -> np.ndarray:
-        u_para = np.zeros((size, ))
+    def _add_parasitic(self, size: int, resistance: float = 1.0) -> np.ndarray:
+        u_para = np.zeros((size,))
         u_para += self._settings.transimpedance * self._settings.offset_i
         u_para += self._settings.offset_v
         u_para += self._settings.vcm
@@ -87,7 +100,9 @@ class CurrentAmplifier(CommonAnalogFunctions):
         u_out += self._add_parasitic(u_out.size)
         return self.clamp_voltage(u_out)
 
-    def instrumentation_amplifier(self, i_in: np.ndarray, u_off: np.ndarray | float, v_gain: float=1.0) -> np.ndarray:
+    def instrumentation_amplifier(
+        self, i_in: np.ndarray, u_off: np.ndarray | float, v_gain: float = 1.0
+    ) -> np.ndarray:
         """Using an instrumentation amplifier for current sensing
         Args:
             i_in:    Input current [A]
@@ -126,7 +141,7 @@ class CurrentAmplifier(CommonAnalogFunctions):
         """
         u_out = np.zeros_like(i_in)
         x_pos = np.argwhere(i_in >= u_ref)
-        u_out[x_pos, ] = i_in[x_pos,] * self._settings.transimpedance
+        u_out[x_pos,] = i_in[x_pos,] * self._settings.transimpedance
         u_out += self._add_parasitic(u_out.size, self._settings.transimpedance)
         return self.clamp_voltage(u_out)
 
