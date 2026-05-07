@@ -8,6 +8,37 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  check-code-lint:
+    name: Lint Source Code
+    runs-on: ubuntu-latest
+    if: true
+    steps:
+      - name: checkout repo shallowly
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+      - name: prepare devenv
+        uses: ./.github/actions/prepare-devenv
+      - name: run python linting
+        run: devenv --option torch.backend:string "cpu" tasks run check:code-lint --mode before
+
+  check-commit-lint:
+    name: Lint Commits
+    runs-on: ubuntu-latest
+    if: true
+    steps:
+      - name: "get PR commits + 1"
+        run: echo "PR_FETCH_DEPTH=$(( ${{ github.event.pull_request.commits }} + 1 ))" >> "${GITHUB_ENV}"
+      - name: "Checkout PR branch and all PR commits"
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: ${{ github.env.PR_FETCH_DEPTH }}
+      - name: prepare devenv
+        uses: ./.github/actions/prepare-devenv
+      - name: run commit linting
+        run: devenv --option torch.backend:string "cpu" tasks run check:commit-lint --mode before
+
   check-package-build:
     name: Check that package builds
     runs-on: ubuntu-latest
