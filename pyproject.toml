@@ -26,7 +26,7 @@ dynamic = ["version"]
 description = "Python Framework for End-To-End and Hardware-Aware Signal Processing"
 readme = "README.md"
 license =  {file = "LICENSE"}
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 keywords = ["machine learning", "signal processing", "end-to-end", "offline data analysis", "biosignal processing"]
 authors = [
   {name = "Andreas Erbsloeh", email = "andreas.erbsloeh@uni-due.de"},
@@ -37,7 +37,6 @@ dependencies = [
     "matplotlib>=3.9.2",
     "numpy>=1.26.4",
     "pyspice>=1.5",
-    "pytest>=9.0.2",        # It is inside due to missing declaration in creator
     "pyocclient>=0.6",
     "pyyaml>=6.0.1",
     "scikit-learn>=1.5.2",
@@ -52,7 +51,7 @@ default-groups = ["dev", "docs", "utils"]
 
 
 [tool.uv.sources]
-elasticai-creator = { git = "https://github.com/es-ude/elastic-ai.creator.git"}
+elasticai-creator = { git = "https://github.com/es-ude/elastic-ai.creator.git" }
 soundcard = { git = "https://github.com/bastibe/SoundCard.git" }
 
 
@@ -64,7 +63,8 @@ dev = [
     "ipykernel>=6.29.5",
     "pre-commit>=4.0.1",
     "tach>=0.23.0",
-    "coverage>=7.11.3"
+    "coverage>=7.11.3",
+    "pytest>=9.0.2",
 ]
 docs = [
     "myst-parser>=4.0.0",

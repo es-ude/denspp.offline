@@ -10,6 +10,10 @@ in {
 
   packages = [
     pkgs.git
+    pkgs.tombi
+    pkgs.cocogitto
+    pkgs.alejandra # nix formatter
+    pkgs.iverilog
   ];
 
   languages.c.enable = false;
@@ -66,6 +70,52 @@ in {
              coverage run -m unittest discover -s denspp -p "*_test.py"
              coverage report -m
         '';
+    };
+
+    "check:types" = {
+        exec = ''
+            ${uv_run} mypy -p elasticai.creator
+            ${uv_run} ty check --config-file ty_config_for_ci.toml
+        '';
+        before = ["check:code-lint"];
+    };
+
+    "check:python-lint" = {
+        exec = "${uv_run} ruff check";
+        before = ["check:code-lint"];
+    };
+
+    "check:commit-lint" = {
+        exec = ''
+            if [ -n "$CI" ]; then
+                ${pkgs.cocogitto}/bin/cog check ..$GITHUB_SOURCE_REF
+            else
+                ${pkgs.cocogitto}/bin/cog check main..
+            fi
+        '';
+    };
+
+    "check:nix-lint" = {
+        exec = "${pkgs.alejandra}/bin/alejandra --exclude ./.devenv --exclude ./.devenv.flake.nix -c .";
+        before = ["check:code-lint"];
+    };
+
+    "check:toml-formatting" = {
+        exec = "${pkgs.tombi}/bin/tombi format --check";
+    };
+
+    "check:formatting" = {
+        exec = "${uv_run} ruff format --check";
+        before = ["check:code-lint"];
+    };
+
+    "check:code-lint" = {
+        after = [
+            "check:nix-lint"
+            "check:python-lint"
+            "check:types"
+            "check:toml-formatting"
+        ];
     };
   };
 }

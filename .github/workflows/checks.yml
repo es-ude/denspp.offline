@@ -37,7 +37,7 @@ jobs:
       - name: prepare devenv
         uses: ./.github/actions/prepare-devenv
       - name: run commit linting
-        run: devenv --nix-option torch.backend:string cpu tasks run check:code-lint --mode before
+        run: devenv --nix-option torch.backend:string cpu tasks run check:commit-lint --mode before
 
   check-package-build:
     name: Check that package builds
