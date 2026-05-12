@@ -11,7 +11,6 @@ from .fex import DefaultSettingsFeature, FeatureExtraction, SettingsFeature
 
 class FeatExtractionTest(unittest.TestCase):
     def setUp(self):
-
         self.set0: SettingsFeature = deepcopy(DefaultSettingsFeature)
         self.set0.num_features = 3
         self.dut = FeatureExtraction(settings=self.set0)
@@ -49,6 +48,11 @@ class FeatExtractionTest(unittest.TestCase):
         """Tests dimensions of UMAP results"""
         out_umap = self.dut.umap(self.dummy_frames, do_fit_per_call=True)
         self.assertEqual(out_umap.shape, (20, 3))
+
+    def test_ica_shape(self):
+        """Tests dimensions of ICA results"""
+        out_ica = self.dut.ica(self.dummy_frames, do_fit_per_call=True)
+        self.assertEqual(out_ica.shape, (20, 3))
 
     def test_export_and_load_state(self):
         """Tests saving as .joblib and loading a model using a tempfile."""
@@ -112,7 +116,20 @@ class FeatExtractionTest(unittest.TestCase):
         self.assertTrue(self.dut.is_state_available)
         self.assertEqual(self.dut.fe_method, "umap")
 
-        # try running pca_full while umap is loaded
+        # try running ica while umap is loaded
+        with self.assertRaises(RuntimeError):
+            self.dut.ica(self.dummy_frames, do_fit_per_call=False)
+
+        # Erase state and verify
+        self.dut.erase_state()
+        self.assertFalse(self.dut.is_state_available)
+
+        # ica
+        self.dut.ica(self.dummy_frames, do_fit_per_call=False)
+        self.assertTrue(self.dut.is_state_available)
+        self.assertEqual(self.dut.fe_method, "ica")
+
+        # try running pca_full while ica is loaded
         with self.assertRaises(RuntimeError):
             self.dut.pca_full(self.dummy_frames, do_fit_per_call=False)
 
