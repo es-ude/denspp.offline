@@ -203,8 +203,8 @@ class Filtering(CommonDigitalFunctions):
             self.__extract_filter_coeffs_fir()
 
     def filter(self, xin: np.ndarray) -> np.ndarray:
-        """Apply configured filter structure on transient data
-        :param xin:     Numpy array with transient data
+        """Apply filter structure on transient input data
+        :param xin:     Numpy array with transient input data
         :return:        Numpy array with filtered data
         """
         if self._settings.type.lower() == "fir" and self._settings.b_type.lower() == "allpass":
@@ -215,6 +215,18 @@ class Filtering(CommonDigitalFunctions):
         else:
             xout = self._settings.gain * scft.filtfilt(b=self._coeff_b, a=self._coeff_a, x=xin)
         return xout
+
+    def filter_fxp(self, xin: np.ndarray, total_bitwidth: int, fraction_width: int, is_signed: bool) -> np.ndarray:
+        """Apply filter structure on transient input data
+        :param xin:                 Numpy array with transient data
+        :param total_bitwidth:      Integer with total bitwidth
+        :param fraction_width:      Integer with fraction width
+        :param is_signed:           Boolean with whether to sign the coefficients
+        :return:                    Numpy array with filtered and quantized data
+        """
+        self.define_limits(bit_signed=is_signed, total_bitwidth=total_bitwidth, frac_bitwidth=fraction_width)
+        xin_fxp = self._quantize_fxp(xin)
+        return self._clamp_digital(self.filter(xin_fxp))
 
     def __get_frequency_behaviour(self, num_points: int = 1001) -> tuple[np.ndarray, np.ndarray]:
         if self._settings.type == "iir":

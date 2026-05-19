@@ -36,7 +36,7 @@ class NyquistADC(BasicADC):
         x_out = np.zeros(shape=uin.shape)
         for idx, vol in enumerate(uin):
             x_out[idx] = self.__adc_conv_sample(vol)
-        return self.clamp_digital(x_out)
+        return self._clamp_digital(x_out)
 
     def adc_nyquist(self, uin: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """Using the Nyquist Topology as an ADC

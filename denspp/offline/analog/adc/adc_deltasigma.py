@@ -111,7 +111,7 @@ class DeltaSigmaADC(BasicADC):
         # --- Correction and output
         xout = xout4
         xout -= 2 ** (self._settings.Nadc - 1) if self._settings.is_signed else 0
-        xout = self.clamp_digital(xout)
+        xout = self._clamp_digital(xout)
         return xout
 
     def adc_deltasigma_order_two(self, uin: np.ndarray) -> np.ndarray:
@@ -148,5 +148,5 @@ class DeltaSigmaADC(BasicADC):
         # --- Correction and output
         xout = xout4
         xout -= 2 ** (self._settings.Nadc - 1) if self._settings.is_signed else 0
-        xout = self.clamp_digital(xout)
+        xout = self._clamp_digital(xout)
         return xout

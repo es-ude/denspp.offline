@@ -37,10 +37,10 @@ class CommonDigitalFunctions:
             self._bitwidth = [total_bitwidth, frac_bitwidth]
             self._bitsigned = bit_signed
 
-            self._digital_border = self.quantize_fxp(xin=np.array([-np.inf, np.inf]))
+            self._digital_border = self._quantize_fxp(xin=np.array([-np.inf, np.inf]))
             return self._digital_border
 
-    def clamp_digital(self, xin: np.ndarray) -> np.ndarray:
+    def _clamp_digital(self, xin: np.ndarray) -> np.ndarray:
         """Do digital clamping of input data values
         :param xin:     Input data stream
         :return:        Output data stream
@@ -49,7 +49,7 @@ class CommonDigitalFunctions:
         np.clip(xout, a_min=self._digital_border[0], a_max=self._digital_border[1], out=xout)
         return xout
 
-    def quantize_fxp(self, xin: float | np.ndarray) -> np.ndarray:
+    def _quantize_fxp(self, xin: float | np.ndarray) -> np.ndarray:
         """Do signed quantization of input with full precision
         :param xin:     Input data stream
         :return:        Quantized output data stream
@@ -69,7 +69,7 @@ class CommonDigitalFunctions:
         return val if not type(xin) == float else float(val)
 
     @staticmethod
-    def extract_rising_edge(trigger: np.ndarray) -> list:
+    def _extract_rising_edge(trigger: np.ndarray) -> list:
         """Extracting the rising edges of a boolean array (e.g. output signal of a comparator)
         :param trigger:     Numpy array with trigger signal (transient)
         :return:            List with index of rising edges
@@ -78,7 +78,7 @@ class CommonDigitalFunctions:
         return trgg_evnt.tolist()
 
     @staticmethod
-    def extract_falling_edge(trigger: np.ndarray) -> list:
+    def _extract_falling_edge(trigger: np.ndarray) -> list:
         """Extracting the falling edges of a boolean array (e.g. output signal of a comparator)
         :param trigger:     Numpy array with trigger signal (transient)
         :return:            List with index of rising edges

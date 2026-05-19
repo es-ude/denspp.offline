@@ -57,6 +57,21 @@ class TestDigitalFilters(TestCase):
         gain = np.array(peak1[pos]) / np.array(peak0)
         np.testing.assert_almost_equal(gain, [0.98, 0.93, 0.71, 0.44, 0.21], decimal=1)
 
+    def test_lowpass_iir_first_order_quantized(self):
+        signal = np.sum([np.sin(2 * np.pi * f0 * self.time) for f0 in self.freq], axis=0)
+        sets = deepcopy(test_settings)
+        sets.type = "iir"
+        sets.n_order = 1
+        sets.b_type = "lowpass"
+        sets.f_filt = [50.0]
+        result = Filtering(sets).filter_fxp(signal, total_bitwidth=10, fraction_width=6, is_signed=True)
+
+        freq0, peak0, pos = extract_peaks(signal, sets.fs)
+        freq1, peak1 = do_fft(result, sets.fs)
+        assert freq0.tolist() == freq1[pos].tolist()
+        gain = np.array(peak1[pos]) / np.array(peak0)
+        np.testing.assert_almost_equal(gain, [0.98, 0.93, 0.71, 0.44, 0.21], decimal=1)
+
     def test_lowpass_iir_second_order(self):
         signal = np.sum([np.sin(2 * np.pi * f0 * self.time) for f0 in self.freq], axis=0)
         sets = deepcopy(test_settings)

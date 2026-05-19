@@ -103,7 +103,7 @@ class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
         uin0 += self._gen_noise(uin0.size)
         # ADC conversion
         x_out = np.floor((uin0 - self._settings.vcm) / self._settings.lsb)
-        x_out = self.clamp_digital(x_out)
+        x_out = self._clamp_digital(x_out)
         u_out = self._settings.vref[1] + x_out * self._settings.lsb
         # Calculating quantization error
         u_err = uin0 - u_out

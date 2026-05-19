@@ -65,11 +65,11 @@ class Comparator(CommonAnalogFunctions):
 
     @staticmethod
     def extract_rising_edge(trigger: np.ndarray) -> list:
-        return CommonDigitalFunctions().extract_rising_edge(trigger)
+        return CommonDigitalFunctions()._extract_rising_edge(trigger)
 
     @staticmethod
     def extract_falling_edge(trigger: np.ndarray) -> list:
-        return CommonDigitalFunctions().extract_falling_edge(trigger)
+        return CommonDigitalFunctions()._extract_falling_edge(trigger)
 
     def __init__(self, settings_dev: SettingsCOMP) -> None:
         """Class for emulating an analogue comparator

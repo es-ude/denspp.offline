@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     func = CommonDigitalFunctions()
     func.define_limits(True, total_bits, frac_bits)
-    stimulus_qnt = func.quantize_fxp(stimulus_full)
+    stimulus_qnt = func._quantize_fxp(stimulus_full)
 
     stim_full = Tensor(stimulus_full)
     stim_qnt = Tensor(stimulus_qnt)
