@@ -14,7 +14,6 @@ denspp/__init__.py
 **/runs
 **/temp_*
 .python-version
-**/uv.lock
 .devenv.flake.nix
 **/*.csv
 

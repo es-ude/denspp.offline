@@ -31,7 +31,7 @@ jobs:
       contents: read
     steps:
       - name: checkout repo shallowly
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
       - name: prepare devenv
@@ -42,7 +42,7 @@ jobs:
           devenv tasks run docs:single-page
           nix run nixpkgs#monolith -- build/docs/index.html > build/docs/single_page.html
       - name: Upload docs preview
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         id: artifact-upload
         with:
           name: docs-preview
@@ -65,7 +65,7 @@ jobs:
     if: false
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
       - name: Preparing devenv

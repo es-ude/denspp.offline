@@ -3,7 +3,8 @@ name = "denspp.offline"
 dynamic = ["version"]
 description = "Python Framework for End-To-End and Hardware-Aware Signal Processing"
 readme = "README.md"
-license = { file = "LICENSE" }
+license="MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 keywords = [
   "biosignal processing",
@@ -63,7 +64,6 @@ build-backend = "hatchling.build"
 source = "vcs"
 
 [tool.hatch.build.targets.sdist]
-where = ["."]
 include = ["denspp"]
 exclude = [
   ".venv",
@@ -78,7 +78,6 @@ exclude = [
   "temp_test",
   "**/*_test.py"
 ]
-namespaces = false
 
 [tool.hatch.build.targets.wheel]
 packages = ["denspp"]
@@ -97,11 +96,29 @@ exclude = [
 ]
 only-packages = true
 
+
+[tool.pytest]
+addopts = ["--import-mode=importlib"]
+markers = [
+  "hardware: slow running system tests using the hardware deployment on real targets",
+  "simulation: possibly slow running integration tests including hw simulation, depends on ghdl being present",
+  "slow: a slow test that you would not run in tdd cycle",
+]
+minversion = "9.0"
+python_files = ["*_test.py"]
+pythonpath = ["."]
+testpaths = [
+    "denspp/offline/analog",
+    "elasticai"
+]
+
+
 [tool.ruff]
 include = [
-  "pyproject.toml",
-  "denspp/**/*.py",
-  "example/*.pyi",
+    "pyproject.toml",
+    "denspp/**/*.py",
+    "elasticai/**/*.py",
+    "example/*.py",
 ]
 
 # Exclude a variety of commonly ignored directories.

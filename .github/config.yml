@@ -1,6 +1,6 @@
 # Additional repository settings
 repository:
   # Ensure PRs are always up to date before merging
-  allow_merge_commit: true
+  allow_merge_commit: false
   allow_squash_merge: false
   allow_rebase_merge: true
