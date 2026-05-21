@@ -1,38 +1,28 @@
-### Project ###
-docs/apidocs
-denspp/__init__.py
-**/Config_*.yaml
-**/Config_*.json
-**/.venv
-**/venv
-**/.devenv
-**/build*
-**/src
-**/config
-**/data
-**/dataset
-**/runs
-**/temp_*
-.python-version
-**/uv.lock
-.devenv.flake.nix
-**/*.csv
-
-#macos
-**/.DS_Store
-
-#VsCode
-.vscode
-
 # Just for not uploading new features/files into main folder (just for local development)
 **/src_*
 **/main_*.py
 **/access_cloud.json
 
-### PyCharm+all template
-**/.idea
-**/.idea_modules
-*.DS_Store
+# project
+docs/apidocs
+**/Config_*.yaml
+**/Config_*.json
+build/
+data/
+dataset/
+runs/
+temp_*
+**/*.csv
+
+# IDE
+**/.DS_Store
+.vscode/
+.idea/
+.idea_modules
+
+## Python
+.venv/
+
 # Byte-compiled / optimized / DLL files
 **/__pycache__
 *.py[cod]
@@ -54,3 +44,14 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+
+# devenv
+.devenv*
+devenv.local.nix
+devenv.local.yaml
+
+# direnv
+.direnv
+
+# pre-commit
+.pre-commit-config.yaml
