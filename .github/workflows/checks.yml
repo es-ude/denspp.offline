@@ -1,4 +1,5 @@
-name: Checks
+name: PR Validation
+
 on:
   pull_request:
   workflow_call:
@@ -8,32 +9,78 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check-package-build:
-    name: Check that package builds
+  check_commit_messages:
+    name: check conventinal commit compliance
     runs-on: ubuntu-latest
-    if: true
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }} # pick the pr HEAD instead of the merge commit
+      - name: Prepare Devenv environment
+        uses: ./.github/actions/prepare-devenv
+      - name: Check compliance
+        run: devenv tasks run check:conventional-commit
+
+  check_code_style:
+    name: check source code formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }} # pick the pr HEAD instead of the merge commit
+      - name: Prepare Devenv environment
+        uses: ./.github/actions/prepare-devenv
+      - name: Check formatting
+        run: devenv tasks run check:code-lint
+
+  check_tests:
+    name: check tests
+    needs:
+      - check_commit_messages
+      - check_code_style
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }} # pick the pr HEAD instead of the merge commit
+      - name: Prepare Devenv environment
+        uses: ./.github/actions/prepare-devenv
+      - name: Run Tests
+        run: devenv tasks run check:tests
+      - name: Generate coverage report
+        run: devenv tasks run check:coverage-report
+      - name: Publish coverage report
+        uses: orgoro/coverage@v3.1
+        with:
+          coverageFile: coverage.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  check_package_build:
+    name: Check that package builds
+    needs: check_tests
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repo shallowly
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
-          fetch-depth: 1
+          ref: ${{ github.event.pull_request.head.sha }} # pick the pr HEAD instead of the merge commit
       - name: Preparing devenv
         uses: ./.github/actions/prepare-devenv
       - name: Build package
-        run: devenv shell devenv tasks run package:build
+        run: devenv tasks run package:build
 
-  check-docs-build:
-    name: check that docs build
+  build_docs_preview:
+    name: Check that documentation build
+    needs: check_package_build
     runs-on: ubuntu-latest
-    if: true
     permissions:
       pull-requests: write
       contents: read
     steps:
       - name: checkout repo shallowly
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
-          fetch-depth: 1
+          ref: ${{ github.event.pull_request.head.sha }} # pick the pr HEAD instead of the merge commit
       - name: prepare devenv
         uses: ./.github/actions/prepare-devenv
       - name: run docs build check
@@ -42,7 +89,7 @@ jobs:
           devenv tasks run docs:single-page
           nix run nixpkgs#monolith -- build/docs/index.html > build/docs/single_page.html
       - name: Upload docs preview
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         id: artifact-upload
         with:
           name: docs-preview
@@ -58,24 +105,3 @@ jobs:
             [Download Documentation Preview](${{ steps.artifact-upload.outputs.artifact-url }})
 
             You can also find it in the "Artifacts" section of this workflow run.
-
-  check-tests:
-    name: Run all tests
-    runs-on: ubuntu-latest
-    if: false
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 1
-      - name: Preparing devenv
-        uses: ./.github/actions/prepare-devenv
-      - name: Installing coverage
-        run: pip install coverage
-      - name: Run all unittests
-        run: devenv shell devenv tasks run check:tests
-      - name: Publish coverage report
-        uses: orgoro/coverage@v3.1
-        with:
-          coverageFile: coverage.xml
-          token: ${{ secrets.GITHUB_TOKEN }}
