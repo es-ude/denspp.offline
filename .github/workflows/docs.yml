@@ -30,8 +30,7 @@ jobs:
       - name: Prepare devenv
         uses: ./.github/actions/prepare-devenv
       - name: Build the docs
-        shell: devenv shell -- bash -e {0}
-        run: nix develop -c devenv tasks run "docs:build"
+        run: devenv --option torch.backend:string "cpu" tasks run "docs:build" --mode before
       - name: Upload Artifacts
         uses: actions/upload-pages-artifact@v5
         with:
