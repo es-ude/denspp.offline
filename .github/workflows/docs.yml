@@ -2,8 +2,7 @@ name: Publish Docs
 
 on:
   push:
-    branches:
-      - main
+    branches: ["main"]
   workflow_dispatch:
 
 concurrency:
@@ -24,24 +23,17 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Configure Pages
-        uses: actions/configure-pages@v5
-      - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v26
-      - uses: cachix/cachix-action@v14
-        with:
-          name: devenv
-      - name: Install devenv.sh
-        run: nix profile install nixpkgs#devenv
-      - name: build docs
-        shell: devenv shell -- bash -e {0}
+        uses: actions/configure-pages@v6
+      - name: Prepare Devenv environment
+        uses: ./.github/actions/prepare-devenv
+      - name: Build docs
         run: devenv tasks run "docs:build"
-
       - name: Upload Artifacts
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: build/docs/
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
