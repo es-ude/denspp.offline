@@ -5,7 +5,7 @@ from fxpmath import Config, Fxp
 
 
 class CommonAnalogFunctions:
-    _range: list = (-5.0, 5.0)
+    _range: list = [5.0, 5.0]
 
     def define_voltage_range(self, volt_hgh: float, volt_low: float) -> list:
         """Defining the voltage range values"""
@@ -21,7 +21,7 @@ class CommonAnalogFunctions:
 
 class CommonDigitalFunctions:
     _digital_border: np.ndarray
-    _bitwidth: list = (2, 0)
+    _bitwidth: list = [2, 0]
     _bitsigned: bool = False
 
     def define_limits(self, bit_signed: bool, total_bitwidth: int, frac_bitwidth: int) -> np.ndarray:
@@ -49,7 +49,7 @@ class CommonDigitalFunctions:
         np.clip(xout, a_min=self._digital_border[0], a_max=self._digital_border[1], out=xout)
         return xout
 
-    def _quantize_fxp(self, xin: float | np.ndarray) -> np.ndarray:
+    def _quantize_fxp(self, xin: np.ndarray) -> np.ndarray:
         """Do signed quantization of input with full precision
         :param xin:     Input data stream
         :return:        Quantized output data stream
@@ -57,7 +57,6 @@ class CommonDigitalFunctions:
         config_fxp = Config()
         config_fxp.rounding = "around"
         config_fxp.overflow = "saturate"
-        config_fxp.underflow = "saturate"
 
         val = Fxp(
             val=xin,
@@ -66,7 +65,7 @@ class CommonDigitalFunctions:
             n_frac=self._bitwidth[1],
             config=config_fxp,
         ).get_val()
-        return val if not type(xin) == float else float(val)
+        return val
 
     @staticmethod
     def _extract_rising_edge(trigger: np.ndarray) -> list:

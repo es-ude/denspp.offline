@@ -40,7 +40,7 @@ class ElectricalLoad(ElectricalLoadHandler):
         )
 
     def _equation_resistor(
-        self, u_inp: np.ndarray, u_inn: np.ndarray | float, params: dict
+        self, u_inp: np.ndarray, u_inn: float | np.ndarray, params: dict
     ) -> np.ndarray:
         """Performing the behaviour of an electrical resistor
         :param u_inp:       Positive input voltage [V]
@@ -73,7 +73,7 @@ class ElectricalLoad(ElectricalLoadHandler):
         return xd - v1
 
     def _equation_resistive_diode_single(
-        self, u_inp: np.ndarray, u_inn: np.ndarray | float, params: dict
+        self, u_inp: np.ndarray, u_inn: float | np.ndarray, params: dict
     ) -> np.ndarray:
         """Performing the behaviour of a series connection of resistor and a diode
         :param u_inp:       Positive input voltage [V]
@@ -88,7 +88,7 @@ class ElectricalLoad(ElectricalLoadHandler):
         return i_fit
 
     def _equation_resistive_diode_antiparallel(
-        self, u_inp: np.ndarray, u_inn: np.ndarray | float, params: dict
+        self, u_inp: np.ndarray, u_inn: float | np.ndarray, params: dict
     ) -> np.ndarray:
         """Performing the behaviour of a series connection of resistor and a diode
         :param u_inp:       Positive input voltage [V]
@@ -130,7 +130,7 @@ class ElectricalLoad(ElectricalLoadHandler):
         return xd - v1
 
     def _get_current_resistive_diode(
-        self, u_inp: np.ndarray, u_inn: np.ndarray | float, params: dict, mode: bool
+        self, u_inp: np.ndarray, u_inn: float | np.ndarray, params: dict, mode: bool
     ) -> np.ndarray:
         """Performing the behaviour of a series connection of resistor and a diode
         :param u_inp:   Positive input voltage [V]

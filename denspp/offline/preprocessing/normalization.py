@@ -48,7 +48,7 @@ class DataNormalization:
         else:
             raise NotImplementedError("Key scale_local is not available!")
 
-    def normalize(self, dataset: np.ndarray | torch.Tensor) -> np.ndarray:
+    def normalize(self, dataset: torch.Tensor | np.ndarray) -> np.ndarray | torch.Tensor:
         """Do normalisation of data
         Args:
             Numpy array with frames for normalizing
@@ -181,21 +181,19 @@ class DataNormalization:
         self.__params["scale_used"] = scale_mean / scale_std
         return dataset_norm
 
-    def _get_scaling_value_medianmad(
-        self, raw_dataset: np.ndarray | torch.Tensor
-    ) -> np.ndarray | torch.Tensor:
+    def _get_scaling_value_medianmad(self, raw_dataset: np.ndarray | torch.Tensor) -> None:
         if self._do_global:
             scale_median = (
                 np.zeros((raw_dataset.shape[0],)) + np.median(raw_dataset)
                 if isinstance(raw_dataset, np.ndarray)
-                else torch.zeros((raw_dataset.shape[0],)) + torch.median(raw_dataset).values
+                else torch.add(torch.zeros((raw_dataset.shape[0],)), torch.median(raw_dataset))
             )
             scale_mad = (
                 np.zeros((raw_dataset.shape[0],))
                 + np.median(np.abs(raw_dataset - np.median(raw_dataset)))
                 if isinstance(raw_dataset, np.ndarray)
                 else torch.zeros((raw_dataset.shape[0],))
-                + torch.median(torch.abs(raw_dataset - torch.median(raw_dataset).values)).values
+                + torch.median(torch.abs(torch.sub(raw_dataset, torch.median(raw_dataset))))
             )
         else:
             scale_median = (
@@ -239,20 +237,18 @@ class DataNormalization:
         self.__params["scale_used"] = scale_median / scale_mad
         return dataset_norm
 
-    def _get_scaling_value_meanmad(
-        self, raw_dataset: np.ndarray | torch.Tensor
-    ) -> np.ndarray | torch.Tensor:
+    def _get_scaling_value_meanmad(self, raw_dataset: np.ndarray | torch.Tensor) -> None:
         if self._do_global:
             scale_mean = (
                 np.zeros((raw_dataset.shape[0],)) + np.mean(raw_dataset)
                 if isinstance(raw_dataset, np.ndarray)
-                else torch.zeros((raw_dataset.shape[0],)) + torch.mean(raw_dataset).values
+                else torch.add(torch.zeros((raw_dataset.shape[0],)), torch.mean(raw_dataset))
             )
             scale_mad = (
                 np.zeros((raw_dataset.shape[0],)) + np.mean(np.abs(raw_dataset - np.mean(raw_dataset)))
                 if isinstance(raw_dataset, np.ndarray)
                 else torch.zeros((raw_dataset.shape[0],))
-                + torch.mean(torch.abs(raw_dataset - torch.mean(raw_dataset).values)).values
+                + torch.mean(torch.abs(torch.sub(raw_dataset, torch.mean(raw_dataset))))
             )
         else:
             scale_mean = (

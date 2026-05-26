@@ -84,7 +84,7 @@ def select_process_merge(
     object_pipeline,
     sets_load_data: SettingsData,
     frames_xoffset: int = 0,
-    list_merging_files: list = (),
+    list_merging_files: list = [],
     do_label_concatenation: bool = False,
 ) -> None:
     """Function for preparing and starting the merge process for generating datasets

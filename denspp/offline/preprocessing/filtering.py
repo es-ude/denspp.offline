@@ -33,7 +33,7 @@ class SettingsFilter:
 
     gain: int
     fs: float
-    n_order: int | float
+    n_order: int
     f_filt: list
     type: str
     f_type: str

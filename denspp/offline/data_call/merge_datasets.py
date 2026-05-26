@@ -103,7 +103,7 @@ class MergeDataset:
             del frame_new
         return frames_extracted
 
-    def get_frames_from_dataset(self, process_points: list = (), xpos_offset: int = 0) -> None:
+    def get_frames_from_dataset(self, process_points: list = [], xpos_offset: int = 0) -> None:
         """Tool for loading datasets in order to generate one new dataset (Step 1)
         :param process_points:      Taking the datapoints of the selected data set to process
         :param xpos_offset:         Integer as position offset for shifting label position of an event (only apply if label exists)

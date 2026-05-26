@@ -157,7 +157,7 @@ class ProcessNoise:
         return 3.01 + 10 * np.log10(val)
 
     @staticmethod
-    def _calculate_params(noise_in: np.ndarray) -> [float, float]:
+    def _calculate_params(noise_in: np.ndarray) -> tuple[float, float]:
         """Calculating the parameters of effective input and std
         :param noise_in:    Numpy array of the noise input
         :return:            List with effective noise value and peak-to-peak noise value
@@ -320,7 +320,6 @@ class ProcessNoise:
         """Generating white transient flicker noise voltage
         Args:
             size:       Number of iterations
-            alpha:      Slope of flicker component in spectral part
         Returns:
             Numpy array with transient flicker noise
         """

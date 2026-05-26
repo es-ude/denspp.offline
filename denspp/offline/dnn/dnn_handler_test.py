@@ -3,6 +3,8 @@ from pathlib import Path
 from shutil import rmtree
 from unittest import TestCase, main, skip
 
+import pytest
+
 from denspp.offline import check_keylist_elements_all, get_path_to_project
 from denspp.offline.dnn import DatasetFromFile
 from denspp.offline.dnn.dnn_handler import (
@@ -80,6 +82,7 @@ class TestPytorchTrainer(TestCase):
         ).get_custom_metric_calculation
         self.assertEqual(rslt, ["snr_in", "snr_out", "dsnr_all", "ptq_loss"])
 
+    @pytest.mark.slow
     def test_start_training_first_with_init(self):
         rmtree(self.dut.path2config)
         dut = PyTorchTrainer(
@@ -110,6 +113,7 @@ class TestPytorchTrainer(TestCase):
         overview = self.dut._settings_model.get_model_overview(print_overview=True)
         self.assertGreater(len(overview), 2)
 
+    @pytest.mark.slow
     def test_get_dataset_mnist(self):
         dut = PyTorchTrainer(
             use_case="MNIST",
@@ -142,6 +146,7 @@ class TestPytorchTrainer(TestCase):
         self.assertEqual(rslt.mean.shape, (12, 280))
         dut.do_plot_dataset(Path(get_path_to_project("temp_test")))
 
+    @pytest.mark.slow
     def test_train_classifier_mnist(self):
         sets = dict(
             use_case="MNIST",
@@ -165,6 +170,7 @@ class TestPytorchTrainer(TestCase):
             self.assertTrue(get_path_to_project() in str(rslt.path))
             dut.do_plot_results(rslt)
 
+    @pytest.mark.slow
     def test_train_classifier_waveforms(self):
         sets = dict(
             use_case="WAVEFORMS",
@@ -188,6 +194,7 @@ class TestPytorchTrainer(TestCase):
             self.assertTrue(get_path_to_project() in str(rslt.path))
             dut.do_plot_results(rslt)
 
+    @pytest.mark.slow
     def test_train_classifier_waveforms_lstm(self):
         sets = dict(
             use_case="WAVEFORMS",
@@ -211,6 +218,7 @@ class TestPytorchTrainer(TestCase):
             self.assertTrue(get_path_to_project() in str(rslt.path))
             dut.do_plot_results(rslt)
 
+    @pytest.mark.slow
     def test_train_classifier_sinusoidal_lstm(self):
         sets = dict(
             use_case="sinusoidal",
@@ -234,6 +242,7 @@ class TestPytorchTrainer(TestCase):
             self.assertTrue(get_path_to_project() in str(rslt.path))
             dut.do_plot_results(rslt)
 
+    @pytest.mark.slow
     def test_train_classifier_plotting(self):
         hndl = PyTorchTrainer(
             use_case="Waveforms",
@@ -261,6 +270,7 @@ class TestPytorchTrainer(TestCase):
         )
         self.assertEqual(type(rslt), TrainingResults)
 
+    @pytest.mark.slow
     def test_train_autoencoder_mnist(self):
         sets = dict(
             use_case="MNIST",
@@ -284,6 +294,7 @@ class TestPytorchTrainer(TestCase):
             self.assertTrue(get_path_to_project() in str(rslt.path))
             dut.do_plot_results(rslt)
 
+    @pytest.mark.slow
     def test_train_autoencoder_waveforms(self):
         sets = dict(
             use_case="WAVEFORMS",
@@ -307,6 +318,7 @@ class TestPytorchTrainer(TestCase):
             self.assertTrue(get_path_to_project() in str(rslt.path))
             dut.do_plot_results(rslt)
 
+    @pytest.mark.slow
     def test_train_autoencoder_plotting(self):
         hndl = PyTorchTrainer(use_case="Waveforms", settings=self.sets_ae, path2config="temp_test")
         path2file = Path(get_path_to_project("runs"))
@@ -317,6 +329,7 @@ class TestPytorchTrainer(TestCase):
         self.assertEqual(type(rslt), TrainingResults)
 
     @skip("Skipping this test")
+    @pytest.mark.slow
     def test_train_autoencoder_plotting_zoomed(self):
         hndl = PyTorchTrainer(use_case="Waveforms", settings=self.sets_ae, path2config="temp_test")
         path2file = Path(get_path_to_project("runs"))
@@ -326,6 +339,7 @@ class TestPytorchTrainer(TestCase):
         )
         self.assertEqual(type(rslt), TrainingResults)
 
+    @pytest.mark.slow
     def test_train_autoencoder_classifier(self):
         sets = deepcopy(self.sets_ae)
         sets.mode_train = 2

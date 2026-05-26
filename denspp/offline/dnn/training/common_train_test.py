@@ -9,7 +9,6 @@ from denspp.offline.dnn.models.waveforms import waveforms_mlp_cl_v0
 from .common_train import PyTorchHandler, SettingsPytorch
 
 
-# --- Info: Function have to start with test_*
 class TestCommonPyTorchTrain(TestCase):
     def setUp(self):
         set_data: SettingsDataset = deepcopy(DefaultSettingsDataset)
@@ -50,12 +49,8 @@ class TestCommonPyTorchTrain(TestCase):
         self.assertEqual(rslt, ["input_size", "output_size"])
 
     def test_model_number_parameters_non_defined(self):
-        try:
-            pass
-        except AttributeError:
-            self.assertTrue(True)
-        else:
-            self.assertTrue(False)
+        with self.assertRaises(AttributeError):
+            self.dut.get_number_parameters_from_model
 
     def test_model_number_parameters_cl(self):
         model = mnist_mlp_cl_v0()
@@ -70,12 +65,8 @@ class TestCommonPyTorchTrain(TestCase):
         self.assertEqual(rslt, 64574)
 
     def test_methods_custom_metrics(self):
-        try:
-            pass
-        except AttributeError:
-            self.assertTrue(True)
-        else:
-            self.assertTrue(False)
+        with self.assertRaises(AttributeError):
+            self.dut.get_epoch_metric_custom_methods
 
     def test_define_ptq_level(self):
         self.dut.define_ptq_level(8, 5)

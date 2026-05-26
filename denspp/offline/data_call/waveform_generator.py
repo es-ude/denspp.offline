@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from logging import Logger, getLogger
+from typing import Callable
 
 import numpy as np
 from fxpmath import Config, Fxp
@@ -46,7 +47,7 @@ class WaveformGenerator:
         self._sampling_rate: float = sampling_rate
         self._time_duration: float = 1.0
 
-        self.__func_dict = {"RECT_HALF": self.__generate_rectangular_half}
+        self.__func_dict: dict[str, Callable] = {"RECT_HALF": self.__generate_rectangular_half}
         self.__func_dict.update({"RECT_FULL": self.__generate_rectangular_full})
         self.__func_dict.update({"LIN_RISE": self.__generate_linear_rising})
         self.__func_dict.update({"LIN_FALL": self.__generate_linear_falling})
@@ -281,7 +282,6 @@ class WaveformGenerator:
         config_fxp = Config()
         config_fxp.rounding = "around"
         config_fxp.overflow = "saturate"
-        config_fxp.underflow = "saturate"
         wvf_quant = Fxp(
             val=wvf_used,
             signed=signed,

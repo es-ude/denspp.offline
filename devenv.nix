@@ -13,7 +13,6 @@ in
     pkgs.git
     pkgs.tombi
     pkgs.zlib # needed as dependency cocotb/ghdl under circumstances
-    pkgs.iverilog
     pkgs.cocogitto
   ];
 
@@ -77,21 +76,21 @@ in
         '';
       };
 
-      "check:fast-tests" = {
+      "check:all-tests" = {
         exec = ''
-          ${uv_run} --all-packages coverage run -m pytest -m "not (simulation or slow or hardware)"
+          ${uv_run} coverage run -m pytest"
         '';
         before = [ "check:tests" ];
       };
       "check:slow-tests" = {
         exec = ''
-          ${uv_run} --all-packages python -m pytest  -m '(simulation or slow) and not hardware'
+          ${uv_run} -m pytest  -m 'slow'
         '';
         before = [ "check:tests" ];
       };
-      "check:hardware-tests" = {
+      "check:fast-tests" = {
         exec = ''
-          ${uv_run} --all-packages python -m pytest  -m 'hardware and not (simulation or slow)'
+          ${uv_run} python -m pytest  -m 'not slow'
         '';
         before = [ "check:tests" ];
       };
@@ -103,9 +102,9 @@ in
       };
       "check:tests" = {
         after = [
-          "check:fast-tests"
+          "check:all-tests"
           "check:slow-tests"
-          "check:hardware-tests"
+          "check:fast-tests"
         ];
       };
 

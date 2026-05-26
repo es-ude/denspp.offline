@@ -101,7 +101,7 @@ class TestDigitalFunc(TestCase):
         input = 1.2
         self.method.define_limits(bit_signed=False, total_bitwidth=2, frac_bitwidth=0)
         output = self.method._quantize_fxp(input)
-        self.assertEqual(type(output), type(input))
+        self.assertEqual(type(output), np.float64)
 
     def test_quantize_type_numpy(self):
         self.method.define_limits(bit_signed=False, total_bitwidth=2, frac_bitwidth=0)

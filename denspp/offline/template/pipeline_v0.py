@@ -149,7 +149,7 @@ class PipelineV0(PipelineCMD):
         plot_transient_highlight_spikes(data, channel, path=self.path2save, show_plot=True)
 
     def run_preprocessor(
-        self, u_in: np.ndarray, frames_xpos: list = (), frames_xoff: float = 0.0
+        self, u_in: np.ndarray, frames_xpos: list = [], frames_xoff: float = 0.0
     ) -> dict:
         """Function with methods for emulating pre-processor of the use-case-specific signal processor
         :param u_in:        Input signal

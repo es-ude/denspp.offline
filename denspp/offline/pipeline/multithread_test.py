@@ -1,6 +1,7 @@
 import unittest
 
 import numpy as np
+import pytest
 
 from .multithread import MultithreadHandler
 
@@ -9,6 +10,7 @@ def dummy_func(data: np.ndarray) -> dict:
     return {"data": data, "feat": np.mean(data, axis=0)}
 
 
+@pytest.mark.slow
 class MultiThreadingTest(unittest.TestCase):
     num_channels = 16
     data = np.random.random((num_channels, 100)) - 0.5

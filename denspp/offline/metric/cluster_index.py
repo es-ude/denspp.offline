@@ -16,7 +16,7 @@ def calculate_euclidean_distance(point1: np.ndarray, point2: np.ndarray) -> floa
     Returns:
         float: Euclidean distance between point1 and point2
     """
-    return np.linalg.norm(point1 - point2)
+    return float(np.linalg.norm(point1 - point2))
 
 
 def calculate_dunn_index(data: np.ndarray, labels: np.ndarray) -> float:

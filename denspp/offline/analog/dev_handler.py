@@ -88,7 +88,7 @@ class ElectricalLoadHandler(ProcessNoise):
     def _calc_error(y_pred: float | np.ndarray, y_true: float | np.ndarray) -> float:
         return calculate_error_rae(y_pred, y_true)
 
-    def _check_right_param_format(self, new_list: list = ()) -> bool:
+    def _check_right_param_format(self, new_list: list = []) -> bool:
         """Function for checking right keys of registered module and settings are equal"""
         keys_set = sorted([key for key in self._settings_device.dev_value.keys()])
         keys_bnd = sorted(new_list)
@@ -123,7 +123,7 @@ class ElectricalLoadHandler(ProcessNoise):
         voltage: np.ndarray,
         show_plots: bool = False,
         find_best_order: bool = False,
-        order_range: list = (2, 18),
+        order_range: list = [2, 18],
     ) -> float:
         """Extracting the polynom fit parameters and plotting it compared to regression task
         :param current:             Numpy array with current values
@@ -180,7 +180,7 @@ class ElectricalLoadHandler(ProcessNoise):
         self,
         u_inp: float | np.ndarray,
         u_inn: float | np.ndarray,
-        params: dict = (),
+        params: dict = {},
         disable_print: bool = False,
     ) -> np.ndarray:
         """Performing the behaviour of the device with regression
