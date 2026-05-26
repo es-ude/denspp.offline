@@ -1,0 +1,9 @@
+# Default: alles auf LF
+* text=auto eol=lf
+
+# Shell & Nix sicherstellen
+*.sh text eol=lf
+*.nix text eol=lf
+
+# Scripts
+*.py text eol=lf
