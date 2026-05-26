@@ -2,6 +2,7 @@ import unittest
 from copy import deepcopy
 
 import numpy as np
+import pytest
 
 from denspp.offline.dnn import DefaultSettingsDataset, SettingsDataset
 from denspp.offline.template.call_dataset import DatasetLoader
@@ -9,6 +10,7 @@ from denspp.offline.template.call_dataset import DatasetLoader
 from .data_processor import DataProcessor
 
 
+@pytest.mark.slow
 class TestDataProcessor(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

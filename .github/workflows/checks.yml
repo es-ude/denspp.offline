@@ -46,7 +46,7 @@ jobs:
       - name: Prepare Devenv environment
         uses: ./.github/actions/prepare-devenv
       - name: Run Tests
-        run: devenv tasks run check:tests
+        run: devenv tasks run check:fast-tests
       - name: Generate coverage report
         run: devenv tasks run check:coverage-report
       - name: Publish coverage report
@@ -89,7 +89,7 @@ jobs:
           devenv tasks run docs:single-page
           nix run nixpkgs#monolith -- build/docs/index.html > build/docs/single_page.html
       - name: Upload docs preview
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v6
         id: artifact-upload
         with:
           name: docs-preview

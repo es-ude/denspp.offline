@@ -700,11 +700,11 @@ dependencies = [
     { name = "numpy" },
     { name = "pyocclient" },
     { name = "pyspice" },
-    { name = "pytest" },
     { name = "pyyaml" },
     { name = "scikit-learn" },
     { name = "scipy" },
     { name = "soundcard" },
+    { name = "sphinx-autobuild" },
     { name = "torchinfo" },
     { name = "tqdm" },
 ]
@@ -717,6 +717,7 @@ dev = [
     { name = "hatch-vcs" },
     { name = "ipykernel" },
     { name = "pre-commit" },
+    { name = "pytest" },
     { name = "tach" },
 ]
 docs = [
@@ -746,11 +747,11 @@ requires-dist = [
     { name = "numpy", specifier = ">=1.26.4" },
     { name = "pyocclient", specifier = ">=0.6" },
     { name = "pyspice", specifier = ">=1.5" },
-    { name = "pytest", specifier = ">=9.0.2" },
     { name = "pyyaml", specifier = ">=6.0.1" },
     { name = "scikit-learn", specifier = ">=1.5.2" },
     { name = "scipy", specifier = ">=1.14.1" },
     { name = "soundcard", git = "https://github.com/bastibe/SoundCard.git" },
+    { name = "sphinx-autobuild", specifier = ">=2025.8.25" },
     { name = "torchinfo", specifier = ">=1.8.0" },
     { name = "tqdm", specifier = ">=4.67.1" },
 ]
@@ -763,6 +764,7 @@ dev = [
     { name = "hatch-vcs", specifier = ">=0.4.0" },
     { name = "ipykernel", specifier = ">=6.29.5" },
     { name = "pre-commit", specifier = ">=4.0.1" },
+    { name = "pytest", specifier = ">=9.0.3" },
     { name = "tach", specifier = ">=0.23.0" },
 ]
 docs = [

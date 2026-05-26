@@ -9,16 +9,16 @@ from denspp.offline import check_elem_unique, check_key_elements
 class SettingsCellSelector:
     """Class for Merging different labels of a dataset to a new dataset
     Attributes:
-         original_id:           Dictionary with original label names [key] and given id [value]
+         original_id:           Dictionary with original label names [key] and given id as list [value]
          original_to_reduced:   Dictionary with new label class [key] and corresponding id as list [value]
          original_to_group:     Dictionary with new label subclass [key] and corresponding id as list [value]
          original_to_type:      Dictionary with new label subclass [key] and corresponding id as list [value]
     """
 
-    original_id: dict
-    original_to_reduced: dict
-    original_to_group: dict
-    original_to_type: dict
+    original_id: dict[str, list[int]]
+    original_to_reduced: dict[str, list[int]]
+    original_to_group: dict[str, list[int]]
+    original_to_type: dict[str, list[int]]
 
 
 class CellSelector:
@@ -43,13 +43,14 @@ class CellSelector:
         elif mode == 3:
             self._used_id_library = cell_merge.original_to_type
 
-    def get_id_from_key(self, name: str) -> int | list:
+    def get_id_from_key(self, name: str):
         """Getting the ID from a cell type / class name / key
         :param name:    Key name of the label from dataset
         :return:        Corresponding ID to key label
         """
         keylist = [key for key in self._used_id_library.keys()]
-        assert check_key_elements(name, keylist), f"Key not available: {keylist}"
+        if not check_key_elements(name, keylist):
+            raise AttributeError(f"Key not available: {keylist}")
         return self._used_id_library.get(name)
 
     def get_name_from_id(self, cluster_id: int | np.ndarray) -> str:

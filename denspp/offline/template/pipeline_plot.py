@@ -83,7 +83,7 @@ def plot_transient_input_spikes(
     signals: dict,
     no_electrode: int,
     path: str = "",
-    time_cut: list = (),
+    time_cut: list = [],
     show_plot: bool = False,
 ) -> None:
     """Plotting results of end-to-end signal processor with plotting the signal input and clustered spike events
@@ -154,7 +154,7 @@ def plot_transient_highlight_spikes(
     signals: dict,
     no_electrode: int,
     path: str = "",
-    time_cut: list = (),
+    time_cut: list = [],
     show_noise: bool = False,
     show_plot: bool = False,
 ) -> None:
@@ -275,7 +275,7 @@ def plot_mea_transient_total(
     scale_xaxis = scale_auto_value(time_array)
 
     # Extract maximum values for scaling
-    mea_yrange = np.zeros((np.sum(mapping > 0), 3), dtype=float)
+    mea_yrange = np.zeros((int((mapping > 0).sum()), 3), dtype=float)
     idx = 0
     for i in range(num_rows):
         for j in range(num_cols):

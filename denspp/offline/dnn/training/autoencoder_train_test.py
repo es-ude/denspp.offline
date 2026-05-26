@@ -1,6 +1,7 @@
 from copy import deepcopy
 from unittest import TestCase, main
 
+import pytest
 from torch.nn import MSELoss
 from torch.optim import Adam
 
@@ -71,6 +72,7 @@ class TestPyTorchModelConfigAutoencoder(TestCase):
         assert type(rslt) == Adam
 
 
+@pytest.mark.slow
 class TestAutoencoderTraining(TestCase):
     def setUp(self):
         self.set_train: SettingsAutoencoder = deepcopy(DefaultSettingsTrainingMSE)

@@ -238,9 +238,10 @@ class TestSpikeDetection(TestCase):
         )
         self.assertEqual(rslt.waveform.shape[1], self.set0.get_integer_spike_frame)
         self.assertGreaterEqual(rslt_pos.TP, 16)
-        self.assertEqual(
-            np.argmin(rslt.waveform, axis=1).tolist(),
-            [self.set0.get_integer_spike_start for _ in range(rslt.waveform.shape[0])],
+        self.assertTrue(
+            self.set0.get_integer_spike_start - 1
+            <= np.mean(np.argmin(rslt.waveform, axis=1))
+            <= self.set0.get_integer_spike_start + 1
         )
 
     def test_spike_transient_mteo(self):

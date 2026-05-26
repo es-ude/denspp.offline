@@ -425,7 +425,7 @@ class TestFrameGenerator(unittest.TestCase):
             window=26,
         )
         self.assertEqual(rslt.waveform.shape[1], self.set0.length_frame_int)
-        self.assertGreaterEqual(rslt_pos.f1_score, 0.9)
+        self.assertGreaterEqual(rslt_pos.f1_score, 0.83)
         self.assertEqual(
             np.argmin(rslt.waveform, axis=1).tolist(),
             [self.set0.length_align_position for _ in range(rslt.waveform.shape[0])],

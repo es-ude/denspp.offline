@@ -426,8 +426,8 @@ class ControllerData:
         elec_orn: list,
         rawdata: np.ndarray,
         scale_data: float,
-        evnt_pos: list = (),
-        evnt_id: list = (),
+        evnt_pos: list = [],
+        evnt_id: list = [],
     ) -> None:
         """Function for preparing the loaded rawdata for using in pipeline process
         :param elec_type:   String with type description of the transient data

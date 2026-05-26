@@ -31,7 +31,7 @@ def cm_to_inch(value: float) -> float:
     return value / 2.54
 
 
-def save_figure(fig, path: str, name: str, formats: list = ("pdf", "svg")) -> None:
+def save_figure(fig, path: str, name: str, formats: list = ["pdf", "svg"]) -> None:
     """Saving figure in given format
     Args:
         fig:        Matplot which will be saved
@@ -47,7 +47,7 @@ def save_figure(fig, path: str, name: str, formats: list = ("pdf", "svg")) -> No
         fig.savefig(f"{path2fig}.{form}", format=form)
 
 
-def extract_minmax_for_logarithmic_limits(data: np.ndarray) -> [float, float]:
+def extract_minmax_for_logarithmic_limits(data: np.ndarray) -> tuple[float, float]:
     """Function for extracting the min-max value of given data for defining the logarithmic limits
     :param data:    Numpy array with data
     :return:        Tuple with limitation values for applying logarithmic y-limits
@@ -64,7 +64,7 @@ def extract_minmax_for_logarithmic_limits(data: np.ndarray) -> [float, float]:
     )
 
 
-def scale_auto_value(data: np.ndarray | float) -> [float, str]:
+def scale_auto_value(data: float | np.ndarray) -> tuple[float, str]:
     """Getting the scaling value and corresponding string notation for unit scaling in plots
     Args:
         data:   Array or value for calculating the SI scaling value
@@ -160,7 +160,7 @@ def _autoscale(ax=None, axis: str = "y", margin: float = 0.1):
         ax = plt.gca()
     newlow, newhigh = np.inf, -np.inf
 
-    for artist in ax.collections + ax.lines:
+    for artist in [*ax.collections, *ax.lines]:
         x, y = _get_xy(artist)
         if axis == "y":
             setlim = ax.set_ylim
