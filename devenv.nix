@@ -12,6 +12,7 @@ in
   packages = [
     pkgs.git
     pkgs.tombi
+    pkgs.ruff
     pkgs.zlib # needed as dependency cocotb/ghdl under circumstances
     pkgs.cocogitto
   ];
@@ -120,7 +121,7 @@ in
 
       "check:toml-lint" = {
         exec = ''
-          ${pkgs.tombi}/bin/tombi format --check
+          ${uv_run} tombi --check .
         '';
         before = [ "check:code-lint" ];
       };
@@ -132,7 +133,7 @@ in
       };
       "check:python-types" = {
         exec = ''
-          ${uv_run} ty check denspp/
+          ${uv_run} ty check .
         '';
         before = [ "check:code-lint" ];
       };
