@@ -33,10 +33,10 @@ def init_project_folder(new_folder: str = "") -> None:
     OwnCloudDownloader()
     folder_structure = ["data", "dataset", "runs", "config", "src", "src_pipe"]
     copy_files = {
-        "main_pipeline.py": "",
         ".gitignore": "",
         "README.md": "",
         "run_tests.py": "",
+        "run_pipeline.py": "",
         "call_data.py": "src_pipe",
         "pipeline_plot.py": "src_pipe",
         "pipeline_v0.py": "src_pipe",
@@ -61,7 +61,7 @@ def init_dnn_folder(new_folder: str = "") -> None:
     folder_start = "src_dnn"
     folder_structure = ["models", "dataset"]
     copy_files = {
-        "main_training.py": "",
+        "run_training.py": "",
         "call_dataset.py": folder_start,
         "example_model.py": join(folder_start, "models"),
     }
