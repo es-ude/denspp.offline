@@ -7,9 +7,8 @@ if __name__ == "__main__":
         use_case='MNIST',
         settings=DefaultSettingsTraining,
         default_model=mnist.mnist_mlp_cl_v0.__name__,
-        path2config='config',
-        generate_configs=True
+        path2config='config'
     )
     trainer.do_plot_dataset()
     results = trainer.do_training()
-    trainer.do_plot_results(results)
+    trainer.do_plot_results(results[0])
