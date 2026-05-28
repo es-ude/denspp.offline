@@ -30,6 +30,7 @@ dependencies = [
   "sphinx-autobuild>=2025.8.25",
   "torchinfo>=1.8.0",
   "tqdm>=4.67.1",
+  "umap-learn>=0.5.12",
 ]
 dynamic = ["version"]
 

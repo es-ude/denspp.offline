@@ -17,13 +17,13 @@ class FeatExtractionTest(unittest.TestCase):
         self.set0.num_features = 3
         self.dut = FeatureExtraction(settings=self.set0)
 
-        # Create dummy data (20 Samples, 50 data points per frame)
+        # Create dummy data (20 Samples, 50 data points / frame)
         # 20 min as UMAP usually uses n_neighbors = 15
         np.random.seed(42)
         self.dummy_frames = np.random.rand(20, 50)
 
     def test_pdac_min_max(self):
-        """Tests PDAC functions using one simpe frame."""
+        """Tests PDAC functions using one simple frame."""
         simple_frame = np.array([[2, 4, 1, 3, 5]])
 
         # --- Test PDAC MIN ---
