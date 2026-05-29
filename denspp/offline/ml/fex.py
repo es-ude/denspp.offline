@@ -1,48 +1,115 @@
 from dataclasses import dataclass
 from typing import Literal
 
+import joblib
 import numpy as np
 from sklearn.decomposition import PCA, FastICA
 from umap import UMAP
 
 
-@dataclass
+@dataclass(frozen=True)
 class SettingsFeature:
-    """ Individual data class to configure feature extractor and cluster
+    """Configuration for feature extraction.
+
     Attributes:
-        num_features:   Number of features /  dimensions of feature space"""
+        num_features: Number of output features / embedding dimensions.
+    """
 
-    num_features: int
-
-
+    num_features: int = 3
 DefaultSettingsFeature = SettingsFeature(num_features=3)
 
-
 class FeatureExtraction:
-    """Class containing feature extraction methods for signal frames."""
+    """Feature extraction methods for signal frames."""
 
-    def __init__(self, settings: SettingsFeature = DefaultSettingsFeature):
-        self._settings = settings
-        self._feat_result = None
+    def __init__(self, settings: SettingsFeature | None = None):
+        self._settings = settings if settings is not None else SettingsFeature()
+        self._model: PCA | FastICA | UMAP | None = None
         self.fe_method = None
 
+    # ------------------------------------------------------------------
+    # create estimators
+    # ------------------------------------------------------------------
+    def _create_pca(self, svd_solver: str, random_state: int | None) -> PCA:
+        return PCA(
+            n_components=self._settings.num_features,
+            svd_solver=svd_solver,
+            random_state=random_state if svd_solver == "randomized" else None,
+        )
+
+    def _create_umap(
+        self, n_neighbors: int, random_state: int, min_dist: float
+    ) -> UMAP:
+        return UMAP(
+            n_components=self._settings.num_features,
+            n_neighbors=n_neighbors,
+            min_dist=min_dist,
+            random_state=random_state,
+        )
+
+    def _create_ica(self, random_state: int) -> FastICA:
+        return FastICA(
+            n_components=self._settings.num_features, random_state=random_state
+        )
+
+    # ------------------------------------------------------------------
+    # helpers
+    # ------------------------------------------------------------------
     @property
     def is_state_available(self) -> bool:
-        return self._feat_result is not None
+        return self._model is not None
+
+    def _ensure_method_matches(self, expected_method: str) -> None:
+        """Ensure that an already loaded/stored model matches the requested method."""
+        if self._model is not None and self.fe_method != expected_method:
+            raise RuntimeError(
+                f"State conflict: expected '{expected_method}' but found '{self.fe_method}'. "
+                "Please call erase_state() before using a different method."
+            )
+
+    def transform(self, frame_in: np.ndarray) -> np.ndarray:
+        """Transform input data using the currently stored fitted model.
+
+        Args:
+            frame_in: Input array of shape (n_samples, n_features).
+
+        Returns:
+            Transformed data.
+
+        Raises:
+            RuntimeError: If no fitted model is available.
+            TypeError: If the stored model does not provide a transform method.
+        """
+        if self._model is None:
+            raise RuntimeError(
+                "No fitted model available. Call a fit_* method first or load a fitted state."
+            )
+
+        if not hasattr(self._model, "transform"):
+            raise TypeError(
+                "The stored model does not provide a transform(...) method."
+            )
+
+        return self._model.transform(frame_in)
 
     def load_state(self, state_to_load, fe_method_name: str):
-        """Loads a pretrained model (e.g., PCA or UMAP) into the class.
+        """Load a fitted model into the class. If a different model has been fitted before, erase_state()
+        needs to be called first.
 
-        :param state_to_load: The pretrained model object.
-        :param method_name: The name of the method the state belongs to (e.g. 'umap', 'pca_full').
-        :raises TypeError: If the model lacks a transform method.
-        :raises ValueError: If the model is not properly fitted.
+        Args:
+            state_to_load: A fitted model object providing transform(...).
+            fe_method_name: Name of the feature extraction method the model belongs to.
+
+        Raises:
+            TypeError: If the model does not provide transform(...).
+            ValueError: If the model is not fitted.
         """
 
-        if not hasattr(state_to_load, "transform"):
+        if not isinstance(state_to_load, (PCA, UMAP, FastICA)):
             raise TypeError(
-                "state_to_load must provide a .transform(...) method (e.g., fitted PCA or fitted UMAP)."
+                "state_to_load must be a fitted PCA, UMAP, or FastICA model."
             )
+
+        self._ensure_method_matches(fe_method_name)
 
         if isinstance(state_to_load, PCA) and not hasattr(state_to_load, "components_"):
             raise ValueError("PCA state_to_load is not fitted (missing components_).")
@@ -50,38 +117,54 @@ class FeatureExtraction:
         if isinstance(state_to_load, UMAP) and not hasattr(state_to_load, "embedding_"):
             raise ValueError("UMAP state_to_load is not fitted (missing embedding_).")
 
-        if isinstance(state_to_load, FastICA) and not hasattr(state_to_load, "components_"):
-            raise ValueError("ICA state_to_load is not fitted (missing components_).")
+        if isinstance(state_to_load, FastICA) and not hasattr(
+            state_to_load, "components_"
+        ):
+            raise ValueError("FastICA state_to_load is not fitted (missing components_).")
 
-        self._feat_result = state_to_load
+        self._model = state_to_load
         self.fe_method = fe_method_name
 
     def export_state(self, path2save: str):
-        """Exports the trained model state to a .joblib file.
+        """Export the currently stored fitted model to a .joblib file.
 
-        :param path2save: Path and filename (without extension).
-        :raises RuntimeError: If no model is currently trained.
+        Args:
+            path2save: Output path. If it does not already end with '.joblib',
+                       the extension is added automatically.
+
+        Raises:
+            RuntimeError: If no fitted model is available.
         """
-        if self._feat_result is None:
+        if self._model is None:
             raise RuntimeError(
-                "No trained model available. Please run a trainable feature extraction method first e.g. umap or pca"
-                " (do_fit_per_call must be False)"
+                "No fitted model available. Call a fit_* method first or load a fitted state."
             )
 
-        import joblib
+        if not path2save.endswith(".joblib"):
+            path2save += ".joblib"
 
-        model = self._feat_result
-        joblib.dump(model, path2save + ".joblib")
+        joblib.dump(self._model, path2save)
 
     def erase_state(self):
-        """Clears the currently stored model state."""
-        self._feat_result = None
+        """Clear the currently stored model state."""
+        self._model = None
         self.fe_method = None
 
+    # ------------------------------------------------------------------
+    # PDAC
+    # ------------------------------------------------------------------
     def pdac_min(self, frame_in: np.ndarray) -> np.ndarray:
-        """Performing the Peak Detection with Area Computation (PDAC) method with minimum value on frames
-        :param frame_in:    Numpy array with input frames
-        :return:            Numpy array with features [sum_until_xmin, sum_after_xmin, ymax, ymin]
+        """Compute PDAC features using the minimum value of each frame. Needs to be calculated freshly every time.
+
+        Args:
+            frame_in: Input array of shape (n_frames, frame_length).
+
+        Returns:
+            Array with features [a0, a1, ymax, ymin], where:
+            - a0: sum(frame[:idx_valley] - ymin)
+            - a1: sum(frame[idx_valley:] - ymin)
+            - ymax: maximum frame value
+            - ymin: minimum frame value
         """
         pdac_out = []
         for frame in frame_in:
@@ -94,9 +177,17 @@ class FeatureExtraction:
         return np.array(pdac_out)
 
     def pdac_max(self, frame_in: np.ndarray) -> np.ndarray:
-        """Performing the Peak Detection with Area Computation (PDAC) method with maximum value on frames
-        :param frame_in:    Numpy array with input frames
-        :return:            Numpy array with features [sum_until_xmax, sum_after_xmax, ymax, ymin]
+        """Compute PDAC features using the maximum value of each frame.
+
+        Args:
+            frame_in: Input array of shape (n_frames, frame_length).
+
+        Returns:
+            Array with features [a0, a1, ymax, ymin], where:
+            - a0: sum(ymax - frame[:idx_peak])
+            - a1: sum(ymax - frame[idx_peak:])
+            - ymax: maximum frame value
+            - ymin: minimum frame value
         """
         pdac_out = []
         for frame in frame_in:
@@ -108,140 +199,98 @@ class FeatureExtraction:
             pdac_out.append([a0, a1, ymax, ymin])
         return np.array(pdac_out)
 
-    def pca_full(
-        self,
-        frame_in: np.ndarray,
-        do_fit_per_call: bool = True,
-    ) -> np.ndarray:
-        """Performs PCA with a full SVD solver.
-        :param frame_in: Numpy array with input frames.
-        :param do_fit_per_call: If True, refits model. If False, reuses existing state.
-        :return: PCA-transformed features.
-        """
-        if self._feat_result is not None and self.fe_method != "pca_full":
-            raise RuntimeError(
-                f"State conflict: Expected 'pca_full' but found '{self.fe_method}'. \n"
-                "Please call 'erase_state first before running a different method"
-            )
-
+    # ------------------------------------------------------------------
+    # PCA (full)
+    # ------------------------------------------------------------------
+    def fit_pca_full(self, frame_in: np.ndarray) -> None:
+        """Fit a PCA model using the full SVD solver and store it internally."""
+        self._ensure_method_matches("pca_full")
+        self._model = self._create_pca("full", None)
+        self._model.fit(frame_in)
         self.fe_method = "pca_full"
-        if do_fit_per_call:
-            pca = PCA(n_components=self._settings.num_features, svd_solver="full")
-            return pca.fit_transform(frame_in)
 
-        else:
-            if self._feat_result is None:
-                self._feat_result = PCA(n_components=self._settings.num_features, svd_solver="full")
-                return self._feat_result.fit_transform(frame_in)
-            return self._feat_result.transform(frame_in)
+    def fit_transform_pca_full(self, frame_in: np.ndarray) -> np.ndarray:
+        """Fit a PCA model using the full SVD solver, store it, and return transformed data."""
+        self._ensure_method_matches("pca_full")
+        self._model = self._create_pca("full", None)
+        self.fe_method = "pca_full"
+        return self._model.fit_transform(frame_in)
 
-    def pca_custom(
+    # ------------------------------------------------------------------
+    # PCA (custom)
+    # ------------------------------------------------------------------
+    def fit_pca_custom(
         self,
         frame_in: np.ndarray,
         svd_solver_mode: Literal["covariance_eigh", "arpack", "randomized", "full"],
-        do_fit_per_call: bool = True,
+        random_state: int | None = None,
+    ) -> None:
+        """Fit a PCA model with a selectable SVD solver and store it internally."""
+        method_name = f"pca_{svd_solver_mode}"
+        self._ensure_method_matches(method_name)
+
+        self._model = self._create_pca(svd_solver_mode, random_state)
+        self._model.fit(frame_in)
+        self.fe_method = method_name
+
+    def fit_transform_pca_custom(
+        self,
+        frame_in: np.ndarray,
+        svd_solver_mode: Literal["covariance_eigh", "arpack", "randomized", "full"],
         random_state: int | None = None,
     ) -> np.ndarray:
-        """Performs PCA with a custom selectable SVD solver.
+        """Fit a PCA model with a selectable SVD solver, store it, and return transformed data."""
+        method_name = f"pca_{svd_solver_mode}"
+        self._ensure_method_matches(method_name)
 
-        :param frame_in: Numpy array with input frames.
-        :param svd_solver_mode: Solver algorithm to use.
-        :param do_fit_per_call: If True, refits model. If False, reuses existing state.
-        :param random_state: Seed for randomized solver.
-        :return: PCA-transformed features.
-        """
+        self._model = self._create_pca(svd_solver_mode, random_state)
+        self.fe_method = method_name
+        return self._model.fit_transform(frame_in)
 
-        if self._feat_result is not None and self.fe_method != f"pca_{svd_solver_mode}":
-            raise RuntimeError(
-                f"State conflict: Expected 'pca_{svd_solver_mode}' but found '{self.fe_method}'. \n"
-                "Please call 'erase_state first before running a different method"
-            )
-
-        self.fe_method = f"pca_{svd_solver_mode}"
-
-        if do_fit_per_call:
-            pca = PCA(
-                n_components=self._settings.num_features,
-                svd_solver=svd_solver_mode,
-                random_state=random_state if svd_solver_mode == "randomized" else None,
-            )
-            return pca.fit_transform(frame_in)
-
-        else:
-            if self._feat_result is None:
-                self._feat_result = PCA(
-                    n_components=self._settings.num_features,
-                    svd_solver=svd_solver_mode,
-                    random_state=random_state if svd_solver_mode == "randomized" else None,
-                )
-                return self._feat_result.fit_transform(frame_in)
-            return self._feat_result.transform(frame_in)
-
-    def umap(
+    # ------------------------------------------------------------------
+    # UMAP
+    # ------------------------------------------------------------------
+    def fit_umap(
         self,
         frame_in: np.ndarray,
         n_neighbors: int = 15,
         random_state: int = 42,
         min_dist: float = 0.1,
-        do_fit_per_call: bool = True,
-    ) -> np.ndarray:
-        """Performing UMAP (Uniform Manifold Approximation and Projection) on spike frames
-        :param frame_in:         Numpy array with input frames
-        :param n_neighbors:            Size of local neighborhood for manifold approximation
-        :param random_state:     Integer for reproducible UMAP results
-        :param min_dist:               Minimum distance between embedded points
-        :param do_fit_per_call:    If True, refits model every call. If False, reuses existing state.
-        :return:                 Numpy array with N features
-        """
-        if self._feat_result is not None and self.fe_method != "umap":
-            raise RuntimeError(
-                f"State conflict: Expected 'umap' but found '{self.fe_method}'. \n"
-                "Please call 'erase_state first before running a different method"
-            )
+    ) -> None:
+        """Fit a UMAP model and store it internally."""
+        self._ensure_method_matches("umap")
+        self._model = self._create_umap(n_neighbors, random_state, min_dist)
+        self._model.fit(frame_in)
         self.fe_method = "umap"
-        if do_fit_per_call:
-            reducer = UMAP(
-                n_components=self._settings.num_features,
-                n_neighbors=n_neighbors,
-                min_dist=min_dist,
-                random_state=random_state,
-            )
-            return reducer.fit_transform(frame_in)
 
-        else:
-            if self._feat_result is None:
-                self._feat_result = UMAP(
-                    n_components=self._settings.num_features,
-                    n_neighbors=n_neighbors,
-                    min_dist=min_dist,
-                    random_state=random_state,
-                )
-                return self._feat_result.fit_transform(frame_in)
-            return self._feat_result.transform(frame_in)
-
-    def ica(
-        self, frame_in: np.ndarray, random_state: int = 42, do_fit_per_call: bool = True
+    def fit_transform_umap(
+        self,
+        frame_in: np.ndarray,
+        n_neighbors: int = 15,
+        random_state: int = 42,
+        min_dist: float = 0.1,
     ) -> np.ndarray:
-        """Performing Independent Component Analysis (ICA) on spike frames
-        :param frame_in:         Numpy array with input frames
-        :param random_state:     Integer for reproducible ICA results
-        :param do_fit_per_call:     If True, refits model every call. If False, reuses existing state.
-        :return:                 Numpy array with N features
-        """
-        if self._feat_result is not None and self.fe_method != "ica":
-            raise RuntimeError(
-                f"State conflict: Expected 'ica' but found '{self.fe_method}'. \n"
-                "Please call 'erase_state first before running a different method"
-            )
-        self.fe_method = "ica"
-        if do_fit_per_call:
-            model_ica = FastICA(n_components=self._settings.num_features, random_state=random_state)
-            return model_ica.fit_transform(frame_in)
+        """Fit a UMAP model, store it, and return transformed data."""
+        self._ensure_method_matches("umap")
+        self._model = self._create_umap(n_neighbors, random_state, min_dist)
+        self.fe_method = "umap"
+        return self._model.fit_transform(frame_in)
 
-        else:
-            if self._feat_result is None:  # 1st Iteration
-                self._feat_result = FastICA(
-                    n_components=self._settings.num_features, random_state=random_state
-                )
-                return self._feat_result.fit_transform(frame_in)
-            return self._feat_result.transform(frame_in)
+    # ------------------------------------------------------------------
+    # ICA
+    # ------------------------------------------------------------------
+    def fit_ica(self, frame_in: np.ndarray, random_state: int = 42) -> None:
+        """Fit a FastICA model and store it internally."""
+        self._ensure_method_matches("ica")
+        self._model = self._create_ica(random_state)
+        self._model.fit(frame_in)
+        self.fe_method = "ica"
+
+    def fit_transform_ica(
+        self, frame_in: np.ndarray, random_state: int = 42
+    ) -> np.ndarray:
+        """Fit a FastICA model, store it, and return transformed data."""
+        self._ensure_method_matches("ica")
+        self._model = self._create_ica(random_state)
+        self.fe_method = "ica"
+        return self._model.fit_transform(frame_in)

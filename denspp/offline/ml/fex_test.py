@@ -1,64 +1,80 @@
 import os
 import tempfile
 import unittest
-from copy import deepcopy
 
 import joblib
 import numpy as np
-import pytest
+from sklearn.decomposition import PCA
+from umap import UMAP
 
-from .fex import DefaultSettingsFeature, FeatureExtraction, SettingsFeature
+from .fex import FeatureExtraction, SettingsFeature
 
 
-@pytest.mark.skip(reason="Error in feature extraction")
 class FeatExtractionTest(unittest.TestCase):
     def setUp(self):
-        self.set0: SettingsFeature = deepcopy(DefaultSettingsFeature)
-        self.set0.num_features = 3
-        self.dut = FeatureExtraction(settings=self.set0)
+        self.settings = SettingsFeature(num_features=3)
+        self.dut = FeatureExtraction(settings=self.settings)
 
-        # Create dummy data (20 Samples, 50 data points / frame)
-        # 20 min as UMAP usually uses n_neighbors = 15
-        np.random.seed(42)
-        self.dummy_frames = np.random.rand(20, 50)
+        # Create dummy data: 20 samples, 50 features
+        # 20 samples because UMAP uses n_neighbors=15 by default
+        rng = np.random.default_rng(42)
+        self.dummy_frames = rng.random((20, 50))
 
     def test_pdac_min_max(self):
-        """Tests PDAC functions using one simple frame."""
+        """Test PDAC functions using one simple frame."""
         simple_frame = np.array([[2, 4, 1, 3, 5]])
 
-        # --- Test PDAC MIN ---
-
+        # PDAC MIN
         expected_min = np.array([[4, 6, 5, 1]])
         out_min = self.dut.pdac_min(simple_frame)
         np.testing.assert_array_equal(out_min, expected_min)
 
-        # --- Test PDAC MAX ---
-
+        # PDAC MAX
         expected_max = np.array([[10, 0, 5, 1]])
         out_max = self.dut.pdac_max(simple_frame)
         np.testing.assert_array_equal(out_max, expected_max)
 
-    def test_pca_shapes(self):
-        """Tests dimensions of PCA results"""
-        out_full = self.dut.pca_full(self.dummy_frames)
+    def test_pca_full_shape(self):
+        """Test output shape of fit_transform_pca_full."""
+        out_full = self.dut.fit_transform_pca_full(self.dummy_frames)
         self.assertEqual(out_full.shape, (20, 3))
+        self.assertTrue(self.dut.is_state_available)
+        self.assertEqual(self.dut.fe_method, "pca_full")
 
-        out_custom = self.dut.pca_custom(self.dummy_frames, svd_solver_mode="randomized", random_state=42)
+    def test_pca_custom_shape(self):
+        """Test output shape of fit_transform_pca_custom."""
+        out_custom = self.dut.fit_transform_pca_custom(
+            self.dummy_frames,
+            svd_solver_mode="randomized",
+            random_state=42,
+        )
         self.assertEqual(out_custom.shape, (20, 3))
+        self.assertTrue(self.dut.is_state_available)
+        self.assertEqual(self.dut.fe_method, "pca_randomized")
 
     def test_umap_shape(self):
-        """Tests dimensions of UMAP results"""
-        out_umap = self.dut.umap(self.dummy_frames, do_fit_per_call=True)
+        """Test output shape of fit_transform_umap."""
+        out_umap = self.dut.fit_transform_umap(self.dummy_frames)
         self.assertEqual(out_umap.shape, (20, 3))
+        self.assertTrue(self.dut.is_state_available)
+        self.assertEqual(self.dut.fe_method, "umap")
 
     def test_ica_shape(self):
-        """Tests dimensions of ICA results"""
-        out_ica = self.dut.ica(self.dummy_frames, do_fit_per_call=True)
+        """Test output shape of fit_transform_ica."""
+        out_ica = self.dut.fit_transform_ica(self.dummy_frames)
         self.assertEqual(out_ica.shape, (20, 3))
+        self.assertTrue(self.dut.is_state_available)
+        self.assertEqual(self.dut.fe_method, "ica")
+
+    def test_transform_without_model(self):
+        """Test that transform() raises if no fitted model is available."""
+        with self.assertRaisesRegex(RuntimeError, "No fitted model available"):
+            self.dut.transform(self.dummy_frames)
 
     def test_export_and_load_state(self):
-        """Tests saving as .joblib and loading a model using a tempfile."""
-        out_original = self.dut.pca_full(self.dummy_frames, do_fit_per_call=False)
+        """Test saving/loading a model via joblib and reusing it through transform()."""
+        # Fit and transform using PCA full
+        out_original = self.dut.fit_transform_pca_full(self.dummy_frames)
 
         with tempfile.TemporaryDirectory() as tmpdirname:
             save_path = os.path.join(tmpdirname, "test_model")
@@ -68,72 +84,98 @@ class FeatExtractionTest(unittest.TestCase):
 
             loaded_model = joblib.load(save_path + ".joblib")
 
-            new_dut = FeatureExtraction(settings=self.set0)
+            new_dut = FeatureExtraction(settings=self.settings)
             new_dut.load_state(loaded_model, fe_method_name="pca_full")
 
-            out_loaded = new_dut.pca_full(self.dummy_frames, do_fit_per_call=False)
+            out_loaded = new_dut.transform(self.dummy_frames)
 
             np.testing.assert_array_almost_equal(out_original, out_loaded)
 
     def test_export_state_without_model(self):
-        """Tests that exporting an untrained model raises a RuntimeError."""
+        """Test that exporting without a fitted model raises RuntimeError."""
         with tempfile.TemporaryDirectory() as tmpdirname:
             save_path = os.path.join(tmpdirname, "fail_model")
-            with self.assertRaisesRegex(RuntimeError, "No trained model available"):
+            with self.assertRaisesRegex(RuntimeError, "No fitted model available"):
                 self.dut.export_state(save_path)
 
-    def test_state_management_and_conflicts(self):
-        """Tests state saving, erasing states, and conflict logic for all methods."""
-        # initial state is empty
-        self.assertFalse(self.dut.is_state_available)
+    def test_load_state_rejects_wrong_type(self):
+        """Test that load_state() rejects unsupported model types."""
+        with self.assertRaisesRegex(TypeError, "state_to_load must be a fitted PCA, UMAP, or FastICA model"):
+            self.dut.load_state("not_a_model", fe_method_name="pca_full")
 
-        # pca_full
-        self.dut.pca_full(self.dummy_frames, do_fit_per_call=False)
+    def test_load_state_rejects_unfitted_pca(self):
+        """Test that load_state() rejects an unfitted PCA model."""
+        unfitted_pca = PCA(n_components=3, svd_solver="full")
+
+        with self.assertRaisesRegex(ValueError, "PCA state_to_load is not fitted"):
+            self.dut.load_state(unfitted_pca, fe_method_name="pca_full")
+
+    def test_erase_state(self):
+        """Test that erase_state() clears the stored model and method."""
+        self.dut.fit_pca_full(self.dummy_frames)
         self.assertTrue(self.dut.is_state_available)
         self.assertEqual(self.dut.fe_method, "pca_full")
 
-        # try running pca_custom while pca_full is loaded
-        with self.assertRaises(RuntimeError):
-            self.dut.pca_custom(self.dummy_frames, svd_solver_mode="arpack", do_fit_per_call=False)
+        self.dut.erase_state()
+        self.assertFalse(self.dut.is_state_available)
+        self.assertIsNone(self.dut.fe_method)
 
-        # Erase state and verify
+    def test_load_state_conflict_with_existing_model(self):
+        self.dut.fit_pca_full(self.dummy_frames)
+        loaded_umap = UMAP().fit(self.dummy_frames)
+        with self.assertRaises(RuntimeError):
+            self.dut.load_state(loaded_umap, fe_method_name="umap")
+
+    def test_state_management_and_conflicts(self):
+        """Test state saving, erasing, and conflict logic for all trainable methods."""
+        # Initial state
+        self.assertFalse(self.dut.is_state_available)
+        self.assertIsNone(self.dut.fe_method)
+
+        # PCA full
+        self.dut.fit_pca_full(self.dummy_frames)
+        self.assertTrue(self.dut.is_state_available)
+        self.assertEqual(self.dut.fe_method, "pca_full")
+
+        # load PCA custom while PCA full is active
+        with self.assertRaises(RuntimeError):
+            self.dut.fit_pca_custom(self.dummy_frames, svd_solver_mode="arpack")
+
         self.dut.erase_state()
         self.assertFalse(self.dut.is_state_available)
 
-        # pca_custom
-        self.dut.pca_custom(self.dummy_frames, svd_solver_mode="arpack", do_fit_per_call=False)
+        # PCA custom
+        self.dut.fit_pca_custom(self.dummy_frames, svd_solver_mode="arpack")
         self.assertTrue(self.dut.is_state_available)
         self.assertEqual(self.dut.fe_method, "pca_arpack")
 
-        # try running umap while pca_custom is loaded
+        # load UMAP while PCA custom is active
         with self.assertRaises(RuntimeError):
-            self.dut.umap(self.dummy_frames, do_fit_per_call=False)
+            self.dut.fit_umap(self.dummy_frames)
 
-        # Erase state and verify
         self.dut.erase_state()
         self.assertFalse(self.dut.is_state_available)
 
-        # umap
-        self.dut.umap(self.dummy_frames, do_fit_per_call=False)
+        # UMAP
+        self.dut.fit_umap(self.dummy_frames)
         self.assertTrue(self.dut.is_state_available)
         self.assertEqual(self.dut.fe_method, "umap")
 
-        # try running ica while umap is loaded
+        # loadICA while UMAP is active
         with self.assertRaises(RuntimeError):
-            self.dut.ica(self.dummy_frames, do_fit_per_call=False)
+            self.dut.fit_ica(self.dummy_frames)
 
-        # Erase state and verify
         self.dut.erase_state()
         self.assertFalse(self.dut.is_state_available)
 
-        # ica
-        self.dut.ica(self.dummy_frames, do_fit_per_call=False)
+        # ICA
+        self.dut.fit_ica(self.dummy_frames)
         self.assertTrue(self.dut.is_state_available)
         self.assertEqual(self.dut.fe_method, "ica")
 
-        # try running pca_full while ica is loaded
+        # load PCA full while ICA is active
         with self.assertRaises(RuntimeError):
-            self.dut.pca_full(self.dummy_frames, do_fit_per_call=False)
+            self.dut.fit_pca_full(self.dummy_frames)
 
 
 if __name__ == "__main__":
