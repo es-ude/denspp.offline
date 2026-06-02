@@ -43,7 +43,10 @@ dev = [
   "ipykernel>=6.29.5",
   "pre-commit>=4.0.1",
   "pytest>=9.0.3",
+  "ruff>=0.15.14",
   "tach>=0.23.0",
+  "tombi>=1.1.1",
+  "ty>=0.0.38",
 ]
 docs = [
   "myst-parser>=4.0.0",
