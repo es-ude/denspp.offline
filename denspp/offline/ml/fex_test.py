@@ -100,7 +100,9 @@ class FeatExtractionTest(unittest.TestCase):
 
     def test_load_state_rejects_wrong_type(self):
         """Test that load_state() rejects unsupported model types."""
-        with self.assertRaisesRegex(TypeError, "state_to_load must be a fitted PCA, UMAP, or FastICA model"):
+        with self.assertRaisesRegex(
+            TypeError, "state_to_load must be a fitted PCA, UMAP, or FastICA model"
+        ):
             self.dut.load_state("not_a_model", fe_method_name="pca_full")
 
     def test_load_state_rejects_unfitted_pca(self):

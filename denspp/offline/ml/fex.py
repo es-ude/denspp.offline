@@ -16,7 +16,10 @@ class SettingsFeature:
     """
 
     num_features: int = 3
+
+
 DefaultSettingsFeature = SettingsFeature(num_features=3)
+
 
 class FeatureExtraction:
     """Feature extraction methods for signal frames."""
@@ -36,9 +39,7 @@ class FeatureExtraction:
             random_state=random_state if svd_solver == "randomized" else None,
         )
 
-    def _create_umap(
-        self, n_neighbors: int, random_state: int, min_dist: float
-    ) -> UMAP:
+    def _create_umap(self, n_neighbors: int, random_state: int, min_dist: float) -> UMAP:
         return UMAP(
             n_components=self._settings.num_features,
             n_neighbors=n_neighbors,
@@ -47,9 +48,7 @@ class FeatureExtraction:
         )
 
     def _create_ica(self, random_state: int) -> FastICA:
-        return FastICA(
-            n_components=self._settings.num_features, random_state=random_state
-        )
+        return FastICA(n_components=self._settings.num_features, random_state=random_state)
 
     # ------------------------------------------------------------------
     # helpers
@@ -85,9 +84,7 @@ class FeatureExtraction:
             )
 
         if not hasattr(self._model, "transform"):
-            raise TypeError(
-                "The stored model does not provide a transform(...) method."
-            )
+            raise TypeError("The stored model does not provide a transform(...) method.")
 
         return self._model.transform(frame_in)
 
@@ -105,9 +102,7 @@ class FeatureExtraction:
         """
 
         if not isinstance(state_to_load, (PCA, UMAP, FastICA)):
-            raise TypeError(
-                "state_to_load must be a fitted PCA, UMAP, or FastICA model."
-            )
+            raise TypeError("state_to_load must be a fitted PCA, UMAP, or FastICA model.")
 
         self._ensure_method_matches(fe_method_name)
 
@@ -117,9 +112,7 @@ class FeatureExtraction:
         if isinstance(state_to_load, UMAP) and not hasattr(state_to_load, "embedding_"):
             raise ValueError("UMAP state_to_load is not fitted (missing embedding_).")
 
-        if isinstance(state_to_load, FastICA) and not hasattr(
-            state_to_load, "components_"
-        ):
+        if isinstance(state_to_load, FastICA) and not hasattr(state_to_load, "components_"):
             raise ValueError("FastICA state_to_load is not fitted (missing components_).")
 
         self._model = state_to_load
@@ -286,9 +279,7 @@ class FeatureExtraction:
         self._model.fit(frame_in)
         self.fe_method = "ica"
 
-    def fit_transform_ica(
-        self, frame_in: np.ndarray, random_state: int = 42
-    ) -> np.ndarray:
+    def fit_transform_ica(self, frame_in: np.ndarray, random_state: int = 42) -> np.ndarray:
         """Fit a FastICA model, store it, and return transformed data."""
         self._ensure_method_matches("ica")
         self._model = self._create_ica(random_state)
