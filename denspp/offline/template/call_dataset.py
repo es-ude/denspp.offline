@@ -22,7 +22,10 @@ class DatasetLoader(ControllerDataset):
     def __init__(self, settings: SettingsDataset, temp_folder: str = "") -> None:
         """Class for downloading (function name with '__get_xyz')
         and preparing (function name with '__prepare_xyz') custom-defined datasets to train deep learning models
-        :param settings:  Object of class SettingsDataset for handling dataset used in DeepLearning"""
+        :param settings:    Dataclass SettingsDataset for handling dataset used in DeepLearning
+        :param temp_folder: Path to temporary folder for storing downloaded files
+        :return:            None
+        """
         super().__init__(settings, temp_folder)
         self._logger = getLogger(__name__)
         self._processor = DataProcessor(settings)

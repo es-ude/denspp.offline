@@ -187,17 +187,17 @@ class ControllerDataset:
             self.__download_if_missing()
             return self.__process_data()
 
-    def _download_file(self, dataset_name: str) -> None:
-        # TODO: Error - Files will always be downloaded
-        # TODO: Definition of get_path2data is wrong
-        if not self._settings.get_path2folder.exists():
+    def _download_file(self, dataset_name: str) -> Path:
+        path2file = self._settings.get_path2folder / dataset_name
+        if not path2file.exists():
             oc_handler = OwnCloudDownloader(str(self._path))
             oc_handler.download_file(
                 use_dataset=True,
                 file_name=dataset_name,
-                destination_download=str(self._settings.get_path2folder / dataset_name),
+                destination_download=path2file.as_posix(),
             )
             oc_handler.close()
+        return path2file
 
 
 @dataclass(frozen=True)
