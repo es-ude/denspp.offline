@@ -90,7 +90,7 @@ class CellSelector:
         :param old_id:  Numpy array with old IDs from original dataset
         :return:        Numpy array with new IDs for new dataset (values with -1 are not defined and must be removed)
         """
-        new_label = np.zeros_like(old_id)
+        new_label = np.zeros_like(old_id, dtype=int)
         for idx, value in enumerate(old_id):
             new_label[idx] = self.transform_label_to_id_integer(value)
         return new_label

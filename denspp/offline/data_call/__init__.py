@@ -1,4 +1,7 @@
-from .call_cellbib import CellSelector
+from .call_cellbib import (
+    CellSelector,
+    SettingsCellSelector
+)
 from .call_handler import (
     ControllerData,
     DataFromFile,
@@ -15,6 +18,7 @@ from .waveform_generator import WaveformGenerator
 
 __all__ = [
     "CellSelector",
+    "SettingsCellSelector",
     "ControllerData",
     "DataFromFile",
     "MergeDataset",
