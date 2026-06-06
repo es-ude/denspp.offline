@@ -23,6 +23,7 @@ elasticai/creator_plugins/__init__.py
 # Just for not uploading new features/files into main folder (just for local development)
 **/src_*
 main_*.py
+run_*.py
 **/access_cloud.json
 
 
