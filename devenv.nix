@@ -11,9 +11,8 @@ in {
     pkgs.git
     pkgs.tombi
     pkgs.ruff
-    pkgs.zlib # needed as dependency cocotb/ghdl under circumstances
-    pkgs.cocogitto
-    pkgs.alejandra # nix formatter
+    pkgs.zlib       # needed as dependency cocotb/ghdl under circumstances
+    pkgs.alejandra  # nix formatter
   ];
   cachix.enable = false;
   languages = {
@@ -40,16 +39,20 @@ in {
     serve_docs.exec = "serve_docs";
   };
 
-  scripts = {
+  scripts = let
+    uv_run = "${pkgs-unstable.uv}/bin/uv run";
+    alej_run = "${pkgs.alejandra}/bin/alejandra";
+    tombi_run = "${pkgs.tombi}/bin/tombi";
+  in {
     serve_docs = {
-      exec = "${pkgs-unstable.uv}/bin/uv run sphinx-autobuild -j auto docs build/docs/";
+      exec = "${uv_run} sphinx-autobuild -j auto docs build/docs/";
     };
     fix_all = {
       exec = ''
-        uv run ruff format
-        uv run ruff check --fix
-        ${pkgs.alejandra}/bin/alejandra --exclude ./.devenv --exclude ./.devenv.flake.nix .
-        ${pkgs.tombi}/bin/tombi format
+        ${uv_run} ruff format
+        ${uv_run} ruff check --fix
+        ${alej_run} --exclude ./.devenv --exclude ./.devenv.flake.nix .
+        ${tombi_run} format
       '';
     };
   };
@@ -57,17 +60,16 @@ in {
   tasks = let
     uv_run = "${pkgs-unstable.uv}/bin/uv run";
     uv_build = "${pkgs-unstable.uv}/bin/uv build";
-    cog_check = "${pkgs.cocogitto}/bin/cog check";
   in {
     "package:build" = {
       exec = "${uv_build}";
     };
-
     "docs:single-page" = {
       exec = ''
         export LC_ALL=C  # necessary to run in github action
         ${uv_run} sphinx-build -b singlehtml docs build/docs
       '';
+      after = ["docs:clean"];
     };
     "docs:build" = {
       exec = ''
@@ -75,60 +77,60 @@ in {
         ${uv_run} sphinx-build -j auto -b html docs build/docs
         touch build/docs/.nojekyll  # prevent github from trying to build the docs
       '';
+      after = ["docs:clean"];
     };
     "docs:clean" = {
       exec = ''
         rm -rf build/docs/*
       '';
-    };
-    "check:all-tests" = {
-      exec = ''
-        ${uv_run} coverage run -m pytest
-      '';
-      before = ["check:tests"];
-    };
-    "check:slow-tests" = {
-      exec = ''
-        ${uv_run} -m pytest -m 'slow'
-      '';
-      before = ["check:tests"];
+      before = ["docs:build" "docs:single-page"];
     };
     "check:fast-tests" = {
       exec = ''
-        ${uv_run} python -m pytest -m 'not slow and not simulation'
+        ${uv_run} pytest -m 'not (slow or simulation)'
       '';
-      before = ["check:tests"];
+    };
+    "check:slow-tests" = {
+      exec = ''
+        ${uv_run} pytest -m 'slow or simulation'
+      '';
+    };
+    "check:all-tests" = {
+      exec = ''
+        ${uv_run} pytest
+      '';
+    };
+    "check:coverage-tests" = {
+        exec = ''
+            ${uv_run} coverage run -m pytest
+        '';
     };
     "check:coverage-report" = {
       exec = ''
         ${uv_run} coverage report -m
         ${uv_run} coverage xml
       '';
-    };
-    "check:tests" = {
-      after = [
-        "check:all-tests"
-        "check:slow-tests"
-        "check:fast-tests"
-      ];
+      after = ["check:coverage-tests"];
     };
     "check:toml-lint" = {
       exec = ''
         ${uv_run} tombi check .
       '';
-      before = ["check:code-lint"];
     };
     "check:python-lint" = {
       exec = ''
         ${uv_run} ruff check .
       '';
-      before = ["check:code-lint"];
     };
     "check:python-types" = {
       exec = ''
         ${uv_run} ty check .
       '';
-      before = ["check:code-lint"];
+    };
+    "check:dependencies" = {
+      exec = ''
+        ${uv_run} pip-audit
+      '';
     };
     "check:code-lint" = {
       after = [
@@ -136,11 +138,6 @@ in {
         "check:python-types"
         "check:toml-lint"
       ];
-    };
-    "check:dependencies" = {
-      exec = ''
-        ${uv_run} pip-audit
-      '';
     };
     "check:local" = {
       after = [
