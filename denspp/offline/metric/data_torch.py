@@ -1,3 +1,4 @@
+import torch
 from sklearn.metrics import precision_recall_fscore_support
 from torch import Tensor, eq, ne, sum, tensor
 
@@ -35,7 +36,10 @@ def calculate_precision(pred: Tensor, true: Tensor) -> Tensor:
         Tensor with metrics [precision]
     """
     assert pred.shape == true.shape, "Dimension / shape mismatch"
-    return tensor(precision_recall_fscore_support(true, pred, average="micro", warn_for=tuple())[0])
+    if pred.device.type == "mps":
+        return tensor(precision_recall_fscore_support(true.cpu(), pred.cpu(), average="micro", warn_for=tuple())[0])
+    else:
+        return tensor(precision_recall_fscore_support(true, pred, average="micro", warn_for=tuple())[0])
 
 
 def calculate_recall(pred: Tensor, true: Tensor) -> Tensor:
@@ -47,7 +51,10 @@ def calculate_recall(pred: Tensor, true: Tensor) -> Tensor:
         Tensor with metrics [precision]
     """
     assert pred.shape == true.shape, "Dimension / shape mismatch"
-    return tensor(precision_recall_fscore_support(true, pred, average="micro", warn_for=tuple())[1])
+    if pred.device.type == "mps":
+        return tensor(precision_recall_fscore_support(true.cpu(), pred.cpu(), average="micro", warn_for=tuple())[1])
+    else:
+        return tensor(precision_recall_fscore_support(true, pred, average="micro", warn_for=tuple())[1])
 
 
 def calculate_fbeta(pred: Tensor, true: Tensor, beta: float = 1.0) -> Tensor:
@@ -60,6 +67,7 @@ def calculate_fbeta(pred: Tensor, true: Tensor, beta: float = 1.0) -> Tensor:
         Tensor with metrics [precision]
     """
     assert pred.shape == true.shape, "Dimension / shape mismatch"
-    return tensor(
-        precision_recall_fscore_support(true, pred, beta=beta, average="micro", warn_for=tuple())[2]
-    )
+    if pred.device.type == "mps":
+        return tensor(precision_recall_fscore_support(true.cpu(), pred.cpu(), beta=beta, average="micro", warn_for=tuple())[2])
+    else:
+        return tensor(precision_recall_fscore_support(true, pred, beta=beta, average="micro", warn_for=tuple())[2])
