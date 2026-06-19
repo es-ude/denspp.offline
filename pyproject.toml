@@ -2,7 +2,7 @@
 name = "denspp.offline"
 description = "Python Framework for End-To-End and Hardware-Aware Signal Processing"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = "==3.13.13"
 license-files = ["LICENSE"]
 authors = [
   { name = "Andreas Erbsloeh", email = "andreas.erbsloeh@uni-due.de" },
@@ -38,7 +38,7 @@ dev = [
   "coverage>=7.11.3",
   "hatch>=1.14.0",
   "hatch-vcs>=0.4.0",
-  "ipykernel>=6.29.5",
+  "pip-audit>=2.10.1",
   "pre-commit>=4.0.1",
   "pytest>=9.0.3",
   "ruff>=0.15.14",
@@ -102,6 +102,16 @@ exclude = [
   "**/*_test.py"
 ]
 only-packages = true
+
+[tool.pytest]
+addopts = ["--import-mode=importlib"]
+markers = [
+  "slow: a slow test that you would not run in tdd cycle",
+]
+minversion = "9.0"
+python_files = ["*_test.py"]
+pythonpath = ["."]
+testpaths = ["denspp/offline/*"]
 
 [tool.ruff]
 include = [
@@ -172,22 +182,20 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 
 [tool.ty.src]
-include = [
-    "denspp/offline"
-]
+include = ["denspp/offline"]
 exclude = [
-    "denspp/offline/template",
-    "denspp/offline/pipeline",
-    "denspp/offline/dnn/**",
-    "denspp/offline/analog/**",
-    "denspp/offline/analog/dev_handler.py",
-    "denspp/offline/analog/iv_polyfit.py",
-    "denspp/offline/analog/pyspice_handler.py",
-    "denspp/offline/data_call/call_handler.py",
-    "denspp/offline/data_call/merge_datasets.py",
-    "denspp/offline/metric/data_numpy.py",
-    "denspp/offline/ml/cluster.py",
-    "denspp/**/*_test.py"
+  "denspp/offline/template",
+  "denspp/offline/pipeline",
+  "denspp/offline/dnn/**",
+  "denspp/offline/analog/**",
+  "denspp/offline/analog/dev_handler.py",
+  "denspp/offline/analog/iv_polyfit.py",
+  "denspp/offline/analog/pyspice_handler.py",
+  "denspp/offline/data_call/call_handler.py",
+  "denspp/offline/data_call/merge_datasets.py",
+  "denspp/offline/metric/data_numpy.py",
+  "denspp/offline/ml/cluster.py",
+  "denspp/**/*_test.py"
 ]
 
 [tool.uv]
@@ -196,15 +204,3 @@ default-groups = ["dev", "docs", "utils"]
 [tool.uv.sources]
 elasticai-creator = { git = "https://github.com/es-ude/elastic-ai.creator.git" }
 soundcard = { git = "https://github.com/bastibe/SoundCard.git" }
-
-[tool.pytest]
-addopts = ["--import-mode=importlib"]
-markers = [
-  "slow: a slow test that you would not run in tdd cycle",
-]
-minversion = "9.0"
-python_files = ["*_test.py"]
-pythonpath = ["."]
-testpaths = [
-  "denspp/offline/*"
-]

@@ -10,11 +10,11 @@ denspp/__init__.py
 **/dataset
 **/runs
 **/temp_*
-**/uv.lock
 elasticai/__init__.py
 elasticai/creator_plugins/__init__.py
 
 #macos
+.idea
 **/.DS_Store
 
 #VsCode
