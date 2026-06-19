@@ -11,8 +11,8 @@ in {
     pkgs.git
     pkgs.tombi
     pkgs.ruff
-    pkgs.zlib       # needed as dependency cocotb/ghdl under circumstances
-    pkgs.alejandra  # nix formatter
+    pkgs.zlib # needed as dependency cocotb/ghdl under circumstances
+    pkgs.alejandra # nix formatter
   ];
   cachix.enable = false;
   languages = {
@@ -90,9 +90,14 @@ in {
         ${uv_run} pytest -m 'not (slow or simulation)'
       '';
     };
+    "check:sim-tests" = {
+      exec = ''
+        ${uv_run} pytest -m 'simulation'
+      '';
+    };
     "check:slow-tests" = {
       exec = ''
-        ${uv_run} pytest -m 'slow or simulation'
+        ${uv_run} pytest -m 'slow'
       '';
     };
     "check:all-tests" = {
@@ -101,9 +106,9 @@ in {
       '';
     };
     "check:coverage-tests" = {
-        exec = ''
-            ${uv_run} coverage run -m pytest
-        '';
+      exec = ''
+        ${uv_run} coverage run -m pytest -m 'not simulation'
+      '';
     };
     "check:coverage-report" = {
       exec = ''

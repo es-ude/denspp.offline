@@ -68,6 +68,10 @@ utils = ["mypy>=1.13.0", "ruff>=0.11.0", "ty>=0.0.32"]
 requires = ["hatch-vcs", "hatchling", "wheel"]
 build-backend = "hatchling.build"
 
+[tool.coverage.run]
+source = ["denspp"]
+omit = ["**/*_test.py", "**/template/*.py", "**/plot_*.py", "**/player/*"]
+
 [tool.hatch.version]
 source = "vcs"
 
@@ -109,13 +113,16 @@ only-packages = true
 [tool.pytest]
 addopts = ["--import-mode=importlib"]
 markers = [
-  "simulatiuon: a test using third-party tools for simulation (needs packages or else)",
+  "simulatiuon: a test using PySpice for simulation (needs packages or else)",
   "slow: a slow test that you would not run in tdd cycle"
 ]
 minversion = "9.0"
 python_files = ["*_test.py"]
 pythonpath = ["."]
-testpaths = ["denspp/offline/*"]
+testpaths = [
+  "denspp/offline/*",
+  # "denspp/player/*",
+]
 
 [tool.ruff]
 include = [
@@ -200,15 +207,6 @@ exclude = [
   "denspp/offline/metric/data_numpy.py",
   "denspp/offline/ml/cluster.py",
   "denspp/**/*_test.py"
-]
-
-[tool.coverage.run]
-source = ["denspp"]
-omit = [
-    "**/*_test.py",
-    "**/template/*.py",
-    "**/plot_*.py",
-    "**/player/*"
 ]
 
 [tool.uv]
