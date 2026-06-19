@@ -1,25 +1,25 @@
-from .common_referencing import (
-    CommonReferencing,
-    DefaultSettingsReferencing,
-    SettingsReferencing,
-)
-from .downsampling import (
+from elasticai.preprocessor.downsampling import (
     DefaultSettingsDownSampling,
     DownSampling,
     SettingsDownSampling,
 )
-from .filtering import DefaultSettingsFilter, FilterCoeffs, Filtering, SettingsFilter
-from .frame_generator import (
+from elasticai.preprocessor.filter import DefaultSettingsFilter, FilterCoeffs, Filtering, SettingsFilter
+from elasticai.preprocessor.framing import (
     DefaultSettingsFrame,
     FrameGenerator,
     FrameWaveform,
     SettingsFrame,
 )
-from .normalization import DataNormalization
-from .sda import DefaultSettingsSDA, SettingsSDA, SpikeDetection
-from .thresholding import DefaultSettingsThreshold, SettingsThreshold, Thresholding
-from .transformation import do_fft, do_fft_inverse, do_fft_withimag
-from .window import (
+from elasticai.preprocessor.normalization import DataNormalization
+from elasticai.preprocessor.referencing import (
+    CommonReferencing,
+    DefaultSettingsReferencing,
+    SettingsReferencing,
+)
+from elasticai.preprocessor.sda import DefaultSettingsSDA, SettingsSDA, SpikeDetection
+from elasticai.preprocessor.thresholding import DefaultSettingsThreshold, SettingsThreshold, Thresholding
+from elasticai.preprocessor.transformation import do_fft, do_fft_inverse, do_fft_withimag
+from elasticai.preprocessor.windower import (
     DefaultSettingsWindow,
     SettingsWindow,
     WindowSequencer,

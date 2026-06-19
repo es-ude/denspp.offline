@@ -1,7 +1,7 @@
 import numpy as np
 
 from denspp.offline.analog.dev_noise import ProcessNoise
-from denspp.offline.preprocessing.downsampling import DownSampling, SettingsDownSampling
+from denspp.offline.preprocessing import DownSampling, SettingsDownSampling
 
 from .adc_basic import BasicADC
 from .adc_settings import (

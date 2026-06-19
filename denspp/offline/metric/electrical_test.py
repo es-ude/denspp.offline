@@ -7,7 +7,7 @@ from denspp.offline.metric.electrical import (
     calculate_total_harmonics_distortion,
     calculate_total_harmonics_distortion_from_transient,
 )
-from denspp.offline.preprocessing.transformation import do_fft
+from denspp.offline.preprocessing import do_fft
 
 
 class TestElectricalMetric(unittest.TestCase):
@@ -40,7 +40,7 @@ class TestElectricalMetric(unittest.TestCase):
         )
 
         rslt = calculate_total_harmonics_distortion(freq=freq, spectral=spec, N_harmonics=2)
-        self.assertEqual(rslt, -19.118108722018935)
+        self.assertEqual(rslt, -19.11810872201894)
 
     def test_calculate_cosine_match(self):
         t = np.linspace(0, 1, 1000, endpoint=True)
@@ -56,7 +56,7 @@ class TestElectricalMetric(unittest.TestCase):
             y_pred=np.sin(2 * np.pi * 50 * t),
             y_true=np.sin(2 * np.pi * 100 * t),
         )
-        self.assertEqual(rslt, -4.70001641772466e-17)
+        self.assertEqual(rslt, -4.3151246464923076e-17)
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 name = "denspp.offline"
 description = "Python Framework for End-To-End and Hardware-Aware Signal Processing"
 readme = "README.md"
-requires-python = "==3.13.13"
+requires-python = ">=3.13, <3.14"
 license-files = ["LICENSE"]
 authors = [
   { name = "Andreas Erbsloeh", email = "andreas.erbsloeh@uni-due.de" },
@@ -16,6 +16,7 @@ keywords = [
 ]
 dependencies = [
   "elasticai-creator",
+  "elasticai-preprocessor",
   "fxpmath>=0.4.9",
   "h5py>=3.16.0",
   "matplotlib>=3.9.2",
@@ -107,7 +108,8 @@ only-packages = true
 [tool.pytest]
 addopts = ["--import-mode=importlib"]
 markers = [
-  "slow: a slow test that you would not run in tdd cycle",
+  "simulatiuon: a test using third-party tools for simulation (needs packages or else)",
+  "slow: a slow test that you would not run in tdd cycle"
 ]
 minversion = "9.0"
 python_files = ["*_test.py"]
@@ -203,5 +205,6 @@ exclude = [
 default-groups = ["dev", "docs", "utils"]
 
 [tool.uv.sources]
-elasticai-creator = { git = "https://github.com/es-ude/elastic-ai.creator.git" }
-soundcard = { git = "https://github.com/bastibe/SoundCard.git" }
+elasticai-creator = { git = "https://github.com/es-ude/elastic-ai.creator.git", branch = "main" }
+elasticai-preprocessor = { git = "https://github.com/es-ude/elastic-ai.preprocessor.git", branch = "main" }
+soundcard = { git = "https://github.com/bastibe/SoundCard.git", branch = "master" }
