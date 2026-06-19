@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.signal import correlate, find_peaks
 
-from denspp.offline.preprocessing.transformation import do_fft
+from denspp.offline.preprocessing import do_fft
 
 
 def calculate_total_harmonics_distortion(

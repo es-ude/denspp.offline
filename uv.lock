@@ -1,6 +1,6 @@
 version = 1
 revision = 3
-requires-python = "==3.13.13"
+requires-python = "==3.13.*"
 
 [[package]]
 name = "accessible-pygments"
@@ -468,6 +468,7 @@ name = "denspp-offline"
 source = { editable = "." }
 dependencies = [
     { name = "elasticai-creator" },
+    { name = "elasticai-preprocessor" },
     { name = "fxpmath" },
     { name = "h5py" },
     { name = "matplotlib" },
@@ -519,7 +520,8 @@ utils = [
 
 [package.metadata]
 requires-dist = [
-    { name = "elasticai-creator", git = "https://github.com/es-ude/elastic-ai.creator.git" },
+    { name = "elasticai-creator", git = "https://github.com/es-ude/elastic-ai.creator.git?branch=main" },
+    { name = "elasticai-preprocessor", git = "https://github.com/es-ude/elastic-ai.preprocessor.git?branch=main" },
     { name = "fxpmath", specifier = ">=0.4.9" },
     { name = "h5py", specifier = ">=3.16.0" },
     { name = "matplotlib", specifier = ">=3.9.2" },
@@ -530,7 +532,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0.1" },
     { name = "scikit-learn", specifier = ">=1.5.2" },
     { name = "scipy", specifier = ">=1.14.1" },
-    { name = "soundcard", git = "https://github.com/bastibe/SoundCard.git" },
+    { name = "soundcard", git = "https://github.com/bastibe/SoundCard.git?branch=master" },
     { name = "torchinfo", specifier = ">=1.8.0" },
     { name = "tqdm", specifier = ">=4.67.1" },
     { name = "umap-learn", specifier = ">=0.5.12" },
@@ -590,13 +592,22 @@ wheels = [
 [[package]]
 name = "elasticai-creator"
 version = "0.68.0"
-source = { git = "https://github.com/es-ude/elastic-ai.creator.git#fd3693ed87661b094a325aedd4473e7175611ba0" }
+source = { git = "https://github.com/es-ude/elastic-ai.creator.git?branch=main#cf06d54586e50edcce9752e0a340f7fa85a5529c" }
 dependencies = [
     { name = "cocotb" },
     { name = "numpy" },
     { name = "pytest" },
     { name = "tomlkit" },
     { name = "torch" },
+]
+
+[[package]]
+name = "elasticai-preprocessor"
+version = "0.1.0"
+source = { git = "https://github.com/es-ude/elastic-ai.preprocessor.git?branch=main#aa1561e497c9e9c073a69f1534638bbbc3bd388e" }
+dependencies = [
+    { name = "numpy" },
+    { name = "scipy" },
 ]
 
 [[package]]
@@ -2005,7 +2016,7 @@ wheels = [
 [[package]]
 name = "soundcard"
 version = "0.4.6"
-source = { git = "https://github.com/bastibe/SoundCard.git#8e68c65b37259ef4194bf473ec21198c9910310a" }
+source = { git = "https://github.com/bastibe/SoundCard.git?branch=master#a5cc715683df9f69759adc35bf585f9f2cd07b0a" }
 dependencies = [
     { name = "cffi" },
     { name = "numpy" },
