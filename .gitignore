@@ -9,6 +9,7 @@ denspp/__init__.py
 **/data
 **/dataset
 **/runs
+**/run_*.py
 **/temp_*
 elasticai/__init__.py
 elasticai/creator_plugins/__init__.py

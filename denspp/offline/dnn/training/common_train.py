@@ -576,7 +576,8 @@ class PyTorchHandler:
             xpos = argwhere(true == id0).flatten()
             length_out[idx] = len(xpos)
             if args:
-                metric_out[idx] += args[0](pred[xpos], true[xpos])
+                val = args[0](pred[xpos], true[xpos]).item()
+                metric_out[idx] += val
             else:
                 metric_out[idx] = pred[xpos]
         return metric_out, length_out

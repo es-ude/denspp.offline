@@ -20,6 +20,7 @@ dependencies = [
   "fxpmath>=0.4.9",
   "h5py>=3.16.0",
   "matplotlib>=3.9.2",
+  "matplotlib>=3.9.2",
   "numpy>=1.26.4",
   "psutil>=7.2.2",
   "pyocclient>=0.6",
@@ -199,6 +200,15 @@ exclude = [
   "denspp/offline/metric/data_numpy.py",
   "denspp/offline/ml/cluster.py",
   "denspp/**/*_test.py"
+]
+
+[tool.coverage.run]
+source = ["denspp"]
+omit = [
+    "**/*_test.py",
+    "**/template/*.py",
+    "**/plot_*.py",
+    "**/player/*"
 ]
 
 [tool.uv]

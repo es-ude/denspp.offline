@@ -1,4 +1,3 @@
-from .multicore import MultiprocessingHandler
 from .multithread import MultithreadHandler
 from .pipeline_cmds import DataloaderLibrary, PipelineCMD, PipelineLibrary
 from .pipeline_handler import (
@@ -8,7 +7,6 @@ from .pipeline_handler import (
 )
 
 __all__ = [
-    "MultiprocessingHandler",
     "MultithreadHandler",
     "PipelineCMD",
     "PipelineLibrary",
