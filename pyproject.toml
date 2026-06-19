@@ -20,6 +20,7 @@ dependencies = [
   "h5py>=3.16.0",
   "matplotlib>=3.9.2",
   "numpy>=1.26.4",
+  "psutil>=7.2.2",
   "pyocclient>=0.6",
   "pyspice>=1.5",
   "pyyaml>=6.0.1",
