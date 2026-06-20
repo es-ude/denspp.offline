@@ -11,6 +11,7 @@ in {
     pkgs.git
     pkgs.tombi
     pkgs.ruff
+    pkgs.iverilog
     pkgs.zlib # needed as dependency cocotb/ghdl under circumstances
     pkgs.alejandra # nix formatter
   ];
@@ -64,7 +65,7 @@ in {
     "package:build" = {
       exec = "${uv_build}";
     };
-    "docs:single-page" = {
+    "docs:check" = {
       exec = ''
         export LC_ALL=C  # necessary to run in github action
         ${uv_run} sphinx-build -b singlehtml docs build/docs
@@ -83,31 +84,42 @@ in {
       exec = ''
         rm -rf build/docs/*
       '';
-      before = ["docs:build" "docs:single-page"];
+      before = ["docs:build"];
     };
-    "check:fast-tests" = {
+    "test:init" = {
       exec = ''
-        ${uv_run} pytest -m 'not (slow or simulation)'
+        rm -rf .testmondata*
+        ${uv_run} pytest --testmon -m 'not (simulation or slow)'
       '';
     };
-    "check:sim-tests" = {
+    "test:changes" = {
       exec = ''
-        ${uv_run} pytest -m 'simulation'
+        ${uv_run} pytest --testmon -m 'not (simulation or slow)'
       '';
     };
-    "check:slow-tests" = {
+    "test:fast" = {
       exec = ''
-        ${uv_run} pytest -m 'slow'
+        ${uv_run} pytest -m 'not (simulation or slow)' --reruns 3
       '';
     };
-    "check:all-tests" = {
+    "test:slow" = {
       exec = ''
-        ${uv_run} pytest
+        ${uv_run} pytest -m 'slow' --reruns 3
       '';
     };
-    "check:coverage-tests" = {
+    "test:simulation" = {
       exec = ''
-        ${uv_run} coverage run -m pytest -m 'not simulation'
+        ${uv_run} pytest -m 'simulation' --reruns 1
+      '';
+    };
+    "test:all" = {
+      exec = ''
+        ${uv_run} pytest --reruns 3
+      '';
+    };
+    "test:coverage" = {
+      exec = ''
+        ${uv_run} coverage run -m pytest -m 'not simulation' --reruns 3
       '';
     };
     "check:coverage-report" = {
@@ -115,7 +127,7 @@ in {
         ${uv_run} coverage report -m
         ${uv_run} coverage xml
       '';
-      after = ["check:coverage-tests"];
+      after = ["test:coverage"];
     };
     "check:toml-lint" = {
       exec = ''
@@ -137,17 +149,12 @@ in {
         ${uv_run} pip-audit
       '';
     };
-    "check:code-lint" = {
+    "check:local" = {
       after = [
+        "test:slow"
         "check:python-lint"
         "check:python-types"
         "check:toml-lint"
-      ];
-    };
-    "check:local" = {
-      after = [
-        "check:fast-tests"
-        "check:code-lint"
       ];
     };
   };
