@@ -25,16 +25,21 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
       - name: Configure Pages
         uses: actions/configure-pages@v6
-      - name: Prepare Devenv environment
-        uses: ./.github/actions/prepare-devenv
+
+      - name: Setup Devenv environment
+        uses: ./.github/actions/setup-devenv
+
       - name: Build docs
-        run: devenv tasks run "docs:build"
+        run: devenv tasks run docs:build
+
       - name: Upload Artifacts
         uses: actions/upload-pages-artifact@v5
         with:
           path: build/docs/
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5

@@ -1,0 +1,67 @@
+name: Test with Coverage
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  testing-uv:
+    if: true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up uv
+        uses: ./.github/actions/setup-uv
+
+      - name: Run tests with coverage
+        run: |
+          uv run coverage run -m pytest -m 'not (simulation or slow or plot or init)' --reruns 5
+          uv run coverage report -m
+          uv run coverage xml
+
+      - name: Post coverage to PR (simple)
+        uses: py-cov-action/python-coverage-comment-action@v3
+        with:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Post coverage to PR (detailed)
+        uses: orgoro/coverage@v3.1
+        with:
+          coverageFile: coverage.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+
+#  testing-devenv:
+#    if: false
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v4
+#        with:
+#          fetch-depth: 0
+#
+#      - name: Setup devenv
+#        uses: ./.github/actions/setup-devenv
+#
+#      - name: Run tests with coverage
+#        run: check:coverage-report
+#
+#      - name: Post coverage to PR
+#        uses: py-cov-action/python-coverage-comment-action@v3
+#        with:
+#          GITHUB_TOKEN: ${{ github.token }}
+#
+#      - name: Post coverage to PR (detailed)
+#        uses: orgoro/coverage@v3.1
+#        with:
+#          coverageFile: coverage.xml
+#          token: ${{ secrets.GITHUB_TOKEN }}
