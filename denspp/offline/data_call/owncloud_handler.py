@@ -1,8 +1,7 @@
 import fnmatch
 from dataclasses import dataclass
 from logging import Logger, getLogger
-from os import makedirs
-from os.path import dirname, join
+from pathlib import Path
 
 import owncloud
 
@@ -25,7 +24,7 @@ class ConfigCloud:
 
 
 DefaultConfigCloud = ConfigCloud(
-    remote_link="https://owncloud.com", remote_transient="/", remote_dataset="/"
+    remote_link="https://owncloud.com", remote_transient="/", remote_dataset="/dataset"
 )
 
 
@@ -57,8 +56,8 @@ class OwnCloudDownloader:
         :param depth:           depth of search
         """
         path_start = self._settings.remote_transient if not use_dataset else self._settings.remote_dataset
-        path_select = join(path_start, search_folder) if search_folder else path_start
-        dict_list = self._hndl.list(path=path_select, depth=depth)
+        path_select = Path(path_start) / search_folder if search_folder else Path(path_start)
+        dict_list = self._hndl.list(path=path_select.as_posix(), depth=depth)
         return dict_list
 
     def get_overview_folder(self, use_dataset: bool, search_folder: str = "") -> list:
@@ -96,10 +95,11 @@ class OwnCloudDownloader:
         self._hndl = owncloud.Client.from_public_link(self._settings.remote_link)
         self._logger.info("... downloading file from remote")
         path_selected = (
-            self._settings.remote_transient if not use_dataset else self._settings.remote_dataset
+            Path(self._settings.remote_transient if not use_dataset else self._settings.remote_dataset)
+            / file_name
         )
-        makedirs(dirname(destination_download), exist_ok=True)
-        self._hndl.get_file(remote_path=join(path_selected, file_name), local_file=destination_download)
+        Path(destination_download).parent.mkdir(parents=True, exist_ok=True)
+        self._hndl.get_file(remote_path=path_selected.as_posix(), local_file=destination_download)
         self._logger.info("... download done")
 
     def close(self) -> None:

@@ -25,7 +25,6 @@ class MultiThreadingTest(unittest.TestCase):
             len(rslt) == len(self.chnl) and [key for key in rslt[first_key].keys()] == ["data", "feat"]
         )
 
-    @unittest.skip
     def test_dual_core(self):
         dut = MultithreadHandler(num_workers=2)
         dut.do_processing(func=dummy_func, data=self.data, chnnl_id=self.chnl)
@@ -35,7 +34,6 @@ class MultiThreadingTest(unittest.TestCase):
             len(rslt) == len(self.chnl) and [key for key in rslt[first_key].keys()] == ["data", "feat"]
         )
 
-    @unittest.skip
     def test_quad_core(self):
         dut = MultithreadHandler(num_workers=4)
         dut.do_processing(func=dummy_func, data=self.data, chnnl_id=self.chnl)

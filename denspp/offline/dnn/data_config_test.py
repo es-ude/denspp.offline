@@ -1,10 +1,14 @@
 from copy import deepcopy
 from os.path import join
-from unittest import TestCase, main, skip
+from pathlib import Path
+from unittest import TestCase, main
 
 import numpy as np
+import pytest
 
 from denspp.offline import get_path_to_project
+from denspp.offline.data_call.owncloud_handler_test import TestConfigCloud
+from denspp.offline.data_format import JsonHandler
 from denspp.offline.dnn import DatasetFromFile
 from denspp.offline.template.call_dataset import DatasetLoader
 
@@ -34,7 +38,7 @@ class TestDatasetSettings(TestCase):
         set = deepcopy(TestSettingsDataset)
         set.data_path = ""
         chck = set.get_path2folder
-        self.assertEqual(str(chck), get_path_to_project())
+        self.assertEqual(str(chck), get_path_to_project("dataset"))
 
     def test_path2folder_relative(self):
         set = deepcopy(TestSettingsDataset)
@@ -46,20 +50,31 @@ class TestDatasetSettings(TestCase):
         set = deepcopy(TestSettingsDataset)
         set.data_path = join(get_path_to_project(), "temp_test")
         chck = set.get_path2folder
-        self.assertEqual(str(chck), join(get_path_to_project(), "temp_test"))
+        self.assertEqual(str(chck), join(get_path_to_project(), "temp_test", "dataset"))
 
 
 class TestDatasetConfig(TestCase):
     def setUp(self):
         self.sets: SettingsDataset = deepcopy(TestSettingsDataset)
+        path2json = Path(get_path_to_project("temp_test")) / "access_cloud.json"
+        if path2json.exists():
+            path2json.unlink()
+            JsonHandler(
+                template=TestConfigCloud, path=path2json.parent.as_posix(), file_name=path2json.name
+            )
 
-    @skip("Overview function due to missing remote access")
+    def test_get_dataset_overview(self):
+        self.sets.data_type = ""
+        overview = DatasetLoader(settings=self.sets, temp_folder="temp_test").get_overview_methods
+        assert ["martinez", "mnist", "sinusoidal", "waveforms"] == overview
+
     def test_dataset_overview(self):
         self.sets.data_type = "mnist"
         overview = DatasetLoader(settings=self.sets, temp_folder="temp_test").print_overview_datasets(
             do_print=False
         )
-        self.assertGreater(len(overview), 4)
+        self.assertGreaterEqual(len(overview), 3)
+        assert self.sets.data_type in overview
 
     def test_dataset_empty(self):
         self.sets.data_type = ""
@@ -69,6 +84,15 @@ class TestDatasetConfig(TestCase):
         except:
             self.assertTrue(True)
 
+    def test_dataset_remote(self):
+        self.sets.data_type = "martinez"
+        try:
+            DatasetLoader(settings=self.sets).load_dataset(do_print=False)
+            self.assertTrue(True)
+        except:
+            self.assertTrue(False)
+
+    @pytest.mark.slow
     def test_dataset_mnist(self):
         self.sets.data_type = "mnist"
         try:

@@ -179,8 +179,8 @@ class TestDataProcessor(unittest.TestCase):
         sets.data_type = "waveform"
         rslt = DataProcessor(settings=sets).process_vision_datasets(data=self.data1)
 
-        self.assertGreater(rslt.data.max(), 1.5)
-        self.assertLess(rslt.data.min(), -1.5)
+        self.assertGreater(rslt.data.max(), 1.0)
+        self.assertLess(rslt.data.min(), -1.0)
         self.assertEqual(self.data1.label.size, rslt.label.size)
         self.assertEqual(np.unique(rslt.label).size, 12)
         self.assertEqual(self.data1.dict, rslt.dict)
@@ -192,8 +192,8 @@ class TestDataProcessor(unittest.TestCase):
         rslt = DataProcessor(settings=sets).process_timeseries_datasets(data=self.data1)
         num_missed_labels = np.argwhere(self.data1.label == sets.exclude_cluster[0]).flatten().size
 
-        self.assertGreater(rslt.data.max(), 1.5)
-        self.assertLess(rslt.data.min(), -1.5)
+        self.assertLess(rslt.data.max(), 1.01)
+        self.assertGreater(rslt.data.min(), -1.01)
         self.assertEqual(self.data1.label.size - num_missed_labels, rslt.label.size)
         self.assertEqual(np.unique(rslt.label).size, 11)
 

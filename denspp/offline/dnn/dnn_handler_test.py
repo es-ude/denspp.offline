@@ -1,7 +1,7 @@
 from copy import deepcopy
 from pathlib import Path
 from shutil import rmtree
-from unittest import TestCase, main, skip
+from unittest import TestCase, main
 
 import pytest
 
@@ -256,7 +256,6 @@ class TestPytorchTrainer(TestCase):
         )
         self.assertEqual(type(rslt), TrainingResults)
 
-    @skip("Skipping this test")
     def test_train_classifier_plotting_zoomed(self):
         hndl = PyTorchTrainer(
             use_case="Waveforms",
@@ -328,7 +327,6 @@ class TestPytorchTrainer(TestCase):
         )
         self.assertEqual(type(rslt), TrainingResults)
 
-    @skip("Skipping this test")
     @pytest.mark.slow
     def test_train_autoencoder_plotting_zoomed(self):
         hndl = PyTorchTrainer(use_case="Waveforms", settings=self.sets_ae, path2config="temp_test")

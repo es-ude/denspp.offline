@@ -61,6 +61,9 @@ class SettingsDataset:
             path = self.get_path2folder_project / self.data_path
         else:
             path = Path(self.data_path)
+
+        if path.parts[-1] != "dataset":
+            path = path / "dataset"
         return path.absolute()
 
     @property
@@ -99,7 +102,7 @@ class ControllerDataset:
     @property
     def get_overview_methods(self) -> list:
         """Returning a list with string of all available dataset methods"""
-        return self._methods
+        return [val.split("_get_")[-1] for val in self._methods if "_get_" in val]
 
     @property
     def get_path2folder(self) -> Path:
@@ -188,7 +191,7 @@ class ControllerDataset:
             return self.__process_data()
 
     def _download_file(self, dataset_name: str) -> Path:
-        path2file = self._settings.get_path2folder / dataset_name
+        path2file = (self._settings.get_path2folder / dataset_name).resolve()
         if not path2file.exists():
             oc_handler = OwnCloudDownloader(str(self._path))
             oc_handler.download_file(
