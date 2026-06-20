@@ -1,3 +1,5 @@
+from elasticai.preprocessor.waveform_generator import WaveformGenerator, WaveformSignal
+
 from .call_cellbib import CellSelector, SettingsCellSelector
 from .call_handler import (
     ControllerData,
@@ -12,7 +14,6 @@ from .waveform_dataset import (
     SettingsWaveformDataset,
     build_waveform_dataset,
 )
-from .waveform_generator import WaveformGenerator
 
 __all__ = [
     "CellSelector",
@@ -23,10 +24,10 @@ __all__ = [
     "LabelCollector",
     "MergeDataset",
     "WaveformGenerator",
+    "WaveformSignal",
     "SettingsData",
     "DefaultSettingsWaveformDataset",
     "DefaultSettingsData",
     "SettingsWaveformDataset",
     "build_waveform_dataset",
-    "WaveformGenerator",
 ]

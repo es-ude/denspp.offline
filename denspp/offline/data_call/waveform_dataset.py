@@ -2,10 +2,9 @@ from copy import deepcopy
 from dataclasses import dataclass
 
 import numpy as np
+from elasticai.preprocessor.waveform_generator import WaveformGenerator, WaveformSignal
 
-from denspp.offline.analog.dev_noise import DefaultSettingsNoise, SettingsNoise
-
-from .waveform_generator import WaveformGenerator, WaveformSignal
+from denspp.offline.analog import DefaultSettingsNoise, ProcessNoise, SettingsNoise
 
 
 @dataclass(frozen=True)
@@ -76,6 +75,21 @@ DefaultSettingsWaveformDataset = SettingsWaveformDataset(
 )
 
 
+def generate_noise(shape: tuple, noise_dut: ProcessNoise) -> np.ndarray:
+    """Generating a transient signal with noise
+    :param shape:       Numpy shape of the transient signal
+    :param noise_dut:
+    :return:            Numpy array with noise signal
+    """
+    if len(shape) == 2:
+        noise = np.zeros(shape)
+        for dim0 in range(shape[0]):
+            noise[dim0, :] = noise_dut.gen_noise_real_pwr(shape[1])
+    else:
+        noise = noise_dut.gen_noise_real_pwr(shape[0])
+    return noise
+
+
 def build_waveform_dataset(
     settings_data: SettingsWaveformDataset,
     settings_noise: SettingsNoise = DefaultSettingsNoise,
@@ -88,11 +102,8 @@ def build_waveform_dataset(
     assert len(settings_data.wfg_type) == len(settings_data.wfg_freq), "List have not the same length"
     settings0 = deepcopy(settings_noise)
     settings0.wgn_dB = settings_data.noise_pwr_db
-    wfg_generator = WaveformGenerator(
-        sampling_rate=settings_data.sampling_rate,
-        add_noise=False,
-        settings_noise=settings0,
-    )
+    wfg_generator = WaveformGenerator(sampling_rate=settings_data.sampling_rate)
+    noise_dut = ProcessNoise(settings=settings_noise, fs_ana=settings_data.sampling_rate)
 
     # --- Generation of signal
     num_class_samples = settings_data.num_samples
@@ -125,9 +136,8 @@ def build_waveform_dataset(
             waveforms_classes[idx * num_class_samples + num_ite] = idx
             waveforms_rms[idx * num_class_samples + num_ite] = waveform.rms
 
-    # --- Getting dictionary of signal type
     noise = (
-        wfg_generator.generate_noise(waveforms_signals.shape)
+        generate_noise(shape=waveforms_signals.shape, noise_dut=noise_dut)
         if settings_data.noise_add
         else np.zeros_like(waveforms_signals)
     )

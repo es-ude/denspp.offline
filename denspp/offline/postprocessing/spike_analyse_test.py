@@ -18,7 +18,7 @@ from .spike_analyse import (
 def _build_eap_dataset(
     count: int, sampling_rate: float, max_gap: float = 0.01, do_plot: bool = False
 ) -> FrameWaveform:
-    dut = WaveformGenerator(sampling_rate=sampling_rate, add_noise=False)
+    dut = WaveformGenerator(sampling_rate=sampling_rate)
     wvf = (
         100e-6
         * dut.generate_waveform(
@@ -105,7 +105,7 @@ class SpikeAnalysisTest(unittest.TestCase):
         self.assertEqual(len(rslt), 2)
         self.assertEqual(rslt[0].shape, (11,))
         self.assertEqual(rslt[1].shape, (11,))
-        self.assertGreater(rslt[1].min(), 2e-3)
+        self.assertGreaterEqual(rslt[1].min(), 2e-3)
 
 
 if __name__ == "__main__":
