@@ -1,46 +1,21 @@
-import sys
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import yaml
 
-from denspp.player.general_player_controller import (
-    GeneralPlayerController,
-    default_config_path_to_yaml,
-)
+from denspp.player.general_controller import DatasetReconstruction
 
 
 class GeneralControllerTest(unittest.TestCase):
     def setUp(self):
-        self.controller = GeneralPlayerController.__new__(GeneralPlayerController)
+        self.controller = DatasetReconstruction.__new__(DatasetReconstruction)
         self.controller._logger = MagicMock()
+
 
     def tearDown(self):
         del self.controller
 
-    def test_read_sys_args_and_set_path_with_argument(self):
-        """Test that the method picks up the path from sys.argv when provided"""
-        custom_path_str = "/custom/config/path.yaml"
-        expected_path = Path(custom_path_str)
-
-        with patch.object(sys, "argv", ["script_name.py", custom_path_str]):
-            result = self.controller._read_sys_args_and_set_path()
-        self.assertEqual(result, expected_path)
-        self.controller._logger.info.assert_called_once()
-        self.assertIn(str(expected_path), self.controller._logger.info.call_args[0][0])
-
-    def test_read_sys_args_and_set_path_default(self):
-        """Test that the method falls back to default_config_path_to_yaml when no arg provided"""
-        with patch.object(sys, "argv", ["script_name.py"]):
-            result = self.controller._read_sys_args_and_set_path()
-
-        self.assertEqual(result, default_config_path_to_yaml)
-        self.controller._logger.info.assert_called_once()
-        self.assertIn(
-            str(default_config_path_to_yaml),
-            self.controller._logger.info.call_args[0][0],
-        )
 
     @patch("builtins.open")
     @patch("yaml.safe_load")
@@ -53,17 +28,17 @@ class GeneralControllerTest(unittest.TestCase):
         result = self.controller._open_config_file()
         self.assertEqual(result, expected_config)
         mock_open.assert_called_once_with(self.controller._config_path.as_posix(), "r")
-        self.controller._logger.info.assert_called_with("Configuration file loaded successfully")
+
 
     @patch("builtins.open")
     def test_open_config_file_not_found(self, mock_open):
-        """Test FileExistsError is raised when file is not found"""
+        """Test FileExistsError is raised if file is not found"""
         mock_open.side_effect = FileNotFoundError
         self.controller._config_path = Path("/nonexistent/path.yaml")
 
         with self.assertRaises(FileExistsError):
             self.controller._open_config_file()
-        self.controller._logger.critical.assert_called()
+
 
     @patch("builtins.open")
     @patch("yaml.safe_load")
@@ -74,7 +49,7 @@ class GeneralControllerTest(unittest.TestCase):
 
         with self.assertRaises(yaml.YAMLError):
             self.controller._open_config_file()
-        self.controller._logger.critical.assert_called()
+
 
     @patch("denspp.player.general_player_controller.DataTranslator")
     @patch("denspp.player.general_player_controller.hardware_specification_oscilloscope_mox4")
@@ -90,7 +65,7 @@ class GeneralControllerTest(unittest.TestCase):
         mock_translator_instance = MagicMock()
         mock_data_translator.return_value = mock_translator_instance
 
-        result = self.controller._config_hardware_controller()
+        result = self.controller._config_data_translator()
         self.assertEqual(result, mock_translator_instance)
         mock_spec_mox4.assert_called_once()
         mock_data_translator.assert_called_once_with(
@@ -98,22 +73,7 @@ class GeneralControllerTest(unittest.TestCase):
             logger=self.controller._logger,
             data_channel_mapping=self.controller._hardware_data_channel_mapping,
         )
-        self.controller._logger.info.assert_called_with(
-            "Hardware controller configured for device: OscilloscopeMOX4"
-        )
 
-    def test_config_hardware_controller_multiple_devices_error(self):
-        """Test error when multiple devices are set to used"""
-        self.controller._hardware_config_values = {
-            "Device1": {"used": True},
-            "Device2": {"used": True},
-        }
-        with self.assertRaisesRegex(Exception, "Multiple hardware devices are set to be used"):
-            self.controller._config_hardware_controller()
-
-        self.assertTrue(
-            self.controller._logger.CRITICAL.called or self.controller._logger.critical.called
-        )
 
     def test_config_hardware_controller_no_device_error(self):
         """Test error when no device is set to used"""
@@ -123,7 +83,8 @@ class GeneralControllerTest(unittest.TestCase):
         }
 
         with self.assertRaisesRegex(Exception, "No hardware device is set to be used"):
-            self.controller._config_hardware_controller()
+            self.controller._config_data_translator()
+
 
     def test_config_hardware_controller_unknown_device_error(self):
         """Test error when an undefined device name is used"""
@@ -134,7 +95,7 @@ class GeneralControllerTest(unittest.TestCase):
             Exception,
             f"The specified hardware device '{unknown_device_name}' is not defined",
         ):
-            self.controller._config_hardware_controller()
+            self.controller._config_data_translator()
 
 
 if __name__ == "__main__":

@@ -10,31 +10,28 @@ from .output_devices import HardwareSpecifications
 @dataclass
 class BoardDataset:
     """Dataset structure for actual data to be output to hardware
-
     Attributes:
         data (np.ndarray): Data to be output to hardware
         samplingrate (float): Sampling rate of the data
         groundtruth (list): Ground truth events associated with the data
         translation_value_voltage (float): Translation value from data points to voltage output
     """
-
-    data: np.ndarray  # Saved the data to output to the hardware
-    samplingrate: float  # Saved the sampling rate associated with the main data
-    groundtruth: list  # Saved the trigger data associated with the main data
-    translation_value_voltage: float  # Translation value from the data points to voltage output
+    data: np.ndarray
+    samplingrate: float
+    groundtruth: list
+    translation_value_voltage: float
 
 
 class DataTranslator:
-    _logger: Logger  # Logger from the main application
-    _device_name: str  # Name of the hardware device
-    _dac_bit: int  # Bits that the DAC can handle
-    _dac_number_of_channels: int  # Total number of channels the DAC channels
-    _dac_use_signed: bool  # Whether the DAC uses signed values (e.g. +/- 5V or 0-10V)
-    _dac_max_sampling_rate: int  # Maximum sampling rate of the DAC
-    _output_open: bool  # Whether the output is open or 50 Ohm (needed for Oscilloscope)
-
-    _link_data2channel_num: list  # Mapping from data channels to hardware channels, e.g., [2,0,1] means data channel datachannel 2 goes to hardware channel 0, data channel 0 to hardware channel 1
-    _data: BoardDataset  # Data to be output to the hardware
+    _logger: Logger
+    _device_name: str
+    _dac_bit: int
+    _dac_number_of_channels: int
+    _dac_use_signed: bool
+    _dac_max_sampling_rate: float
+    _output_open: bool
+    _link_data2channel_num: list
+    _data: BoardDataset
 
     def __init__(
         self,
@@ -120,7 +117,7 @@ class DataTranslator:
     def translation_for_device(self) -> None:
         if self._device_name == "OscilloscopeMOX4":
             self._translate_data_for_oscilloscope()
-            self._create_csv_for_MXO4()
+            self._create_csv_for_mxo4()
         elif self._device_name == "DensPPPlayer":
             self._translate_data_for_oscilloscope(0.0001)
             self._create_csv_for_denspp_player()
@@ -131,6 +128,9 @@ class DataTranslator:
             self._translate_data_for_oscilloscope(0.0001)
             self._translate_data_float2int()
             self._create_csv_for_sd_card_denspp_player()
+        elif self._device_name == "SoundCard":
+            #TODO: Implement SoundCard translation
+            self._create_dataset_for_soundcard()
         else:
             raise ValueError(f"data_translation: {self._device_name} not implemnented yet")
 
@@ -204,7 +204,7 @@ class DataTranslator:
             f"Minimal Value: {np.min(quantized_signal)}, maximal Value: {np.max(quantized_signal)}"
         )
 
-    def _create_csv_for_MXO4(self) -> None:
+    def _create_csv_for_mxo4(self) -> None:
         """Output data in Oscilloscope MOX4 format"""
         with open("output_mox4.csv", mode="w", newline="") as file:
             writer = csv.writer(file)
@@ -254,3 +254,6 @@ class DataTranslator:
                     for channel in self._link_data2channel_num
                 ]
                 writer.writerow(row)
+
+    def _create_dataset_for_soundcard(self) -> None:
+        raise NotImplementedError
