@@ -161,7 +161,7 @@ class PipelineV0(PipelineCMD):
         u_pre = self.__amp.pre_amp_chopper(u_in, np.array(self.__amp.vcm))["out"]
         x_adc = self.__adc.adc_ideal(u_pre)[0]
         # ---- Digital Pre-processing ----
-        x_spk = self.__dsp.filter(x_adc)
+        x_spk = self.__dsp.filt(x_adc)
         # ---- Spike detection incl. thresholding ----
         if len(frames_xpos):
             frames = self.__sda.get_spike_waveforms_from_positions(
@@ -188,7 +188,7 @@ class PipelineV0(PipelineCMD):
         if frames.num_samples == 0:
             features = np.zeros((1,))
         else:
-            features = self.__fe.pca(frames.waveform, num_features=3)
+            features = self.__fe.fit_transform_pca_full(frames.waveform)
             frames.label = self.__cl.init(features)
 
         data["features"] = features

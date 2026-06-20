@@ -118,23 +118,28 @@ def plot_custom_loss_classifier(
     axs[0].set_yscale("log" if do_logy else "linear")
     # --- Plot zooming component
     if isinstance(epoch_zoom, list) and len(epoch_zoom) > 0:
-        x0 = int(epoch_zoom[0])
+        x0 = int(epoch_zoom[0] - 1)
         x1 = int(epoch_zoom[1]) if len(epoch_zoom) == 2 else int(metric0.shape[0] - 1)
         pos = np.arange(x0, x1)
-        min_value = np.min(metric0[pos, :])
-        max_value = np.max(metric0[pos, :])
 
-        axins0 = axs[0].inset_axes(
-            [0.45, 0.02, 0.5, 0.43],
-            xticklabels=[],
-            xlim=(x0 - 0.5, x1 + 0.5),
-            ylim=(0.99 * min_value, 1.01 * max_value),
-        )
-        axins0.plot(epochs_ite, metric0, color="k", marker=".", markersize=6)
-        axins0.grid()
-        axs[0].tick_params(direction="in")
-        axs[0].indicate_inset_zoom(axins0, edgecolor="black")
-        addon = "_zoomed"
+        try:
+            valid_data = metric0[pos][np.isfinite(metric0[pos])]
+            min_value = np.min(valid_data)
+            max_value = np.max(valid_data)
+
+            axins0 = axs[0].inset_axes(
+                [0.45, 0.02, 0.5, 0.43],
+                xticklabels=[],
+                xlim=(x0 - 0.5, x1 + 0.5),
+                ylim=(0.99 * min_value, 1.01 * max_value),
+            )
+            axins0.plot(epochs_ite, metric0, color="k", marker=".", markersize=6)
+            axins0.grid()
+            axs[0].tick_params(direction="in")
+            axs[0].indicate_inset_zoom(axins0, edgecolor="black")
+            addon = "_zoomed"
+        except ValueError:
+            addon = ""
     else:
         addon = ""
 
@@ -225,20 +230,25 @@ def plot_custom_loss_autoencoder(
             x0 = int(epoch_zoom[0])
             x1 = int(epoch_zoom[1]) if len(epoch_zoom) == 2 else int(metric0.shape[0] - 1)
             pos = np.arange(x0, x1)
-            min_value = np.min(metric0[pos, :])
-            max_value = np.max(metric0[pos, :])
 
-            axins0 = axs[0].inset_axes(
-                [0.45, 0.02, 0.5, 0.43],
-                xticklabels=[],
-                xlim=(x0 - 0.5, x1 + 0.5),
-                ylim=(0.99 * min_value, 1.01 * max_value),
-            )
-            axins0.plot(epochs_ite, metric0, color="k", marker=".", markersize=6)
-            axins0.grid()
-            axs[0].tick_params(direction="in")
-            axs[0].indicate_inset_zoom(axins0, edgecolor="black")
-            addon = "_zoomed"
+            try:
+                valid_data = metric0[pos][np.isfinite(metric0[pos])]
+                min_value = np.min(valid_data)
+                max_value = np.max(valid_data)
+
+                axins0 = axs[0].inset_axes(
+                    [0.45, 0.02, 0.5, 0.43],
+                    xticklabels=[],
+                    xlim=(x0 - 0.5, x1 + 0.5),
+                    ylim=(0.99 * min_value, 1.01 * max_value),
+                )
+                axins0.plot(epochs_ite, metric0, color="k", marker=".", markersize=6)
+                axins0.grid()
+                axs[0].tick_params(direction="in")
+                axs[0].indicate_inset_zoom(axins0, edgecolor="black")
+                addon = "_zoomed"
+            except ValueError:
+                addon = ""
         else:
             addon = ""
 

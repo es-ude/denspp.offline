@@ -102,3 +102,21 @@ class DatasetLoader(ControllerDataset):
             mean=np.zeros(shape=(len(data.dict), *data.data.shape[1:])),
         )
         return self._processor.process_timeseries_datasets(data=dataset)
+
+    def __preprocess_spike_numpy(self, dataset_name: str) -> DatasetFromFile:
+        path2file = self._settings.get_path2folder / dataset_name
+        # --- Loading rawdata ['data'=frames, 'label'= label id, 'peak'=amplitude values, 'dict'=label names]
+        rawdata = np.load(path2file.as_posix(), allow_pickle=True).flatten()[0]
+        dataset = DatasetFromFile(
+            data=rawdata["data"],
+            label=rawdata["label"],
+            dict=rawdata["dict"],
+            mean=np.zeros(shape=(len(rawdata["dict"]), *rawdata["data"].shape[1:])),
+        )
+        return self._processor.process_timeseries_datasets(data=dataset)
+
+    def __get_martinez(self) -> None:
+        self._download_file("2023-05-15_Dataset_Sim_Martinez2009_Sorted.npy")
+
+    def __prepare_martinez(self) -> DatasetFromFile:
+        return self.__preprocess_spike_numpy("2023-05-15_Dataset_Sim_Martinez2009_Sorted.npy")
