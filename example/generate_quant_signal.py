@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from fxpmath import Fxp
 from denspp.offline import get_path_to_project
 from denspp.offline.plot_helper import save_figure
-from denspp.offline.data_call.waveform_generator import WaveformGenerator, WaveformSignal
+from denspp.offline.data_call import WaveformGenerator, WaveformSignal
 
 
 def plot_waveform_types(dataset: WaveformSignal, show_plot: bool=True) -> None:
@@ -34,8 +34,7 @@ def plot_waveform_types(dataset: WaveformSignal, show_plot: bool=True) -> None:
 if __name__ == "__main__":
     f_smp = 20
     data0 = WaveformGenerator(
-        sampling_rate=f_smp,
-        add_noise=False
+        sampling_rate=f_smp
     ).generate_waveform(
         time_points=[3/f_smp],
         time_duration=[2.],
