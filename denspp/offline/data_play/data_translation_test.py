@@ -14,7 +14,7 @@ class TestDataTranslation(unittest.TestCase):
             data=np.array([[-2, -1, 0, 1, 2]]),
             samplingrate=1000,
             groundtruth=[],
-            translation_value_voltage=None,
+            translation_value_voltage=1.0,
         )
 
     def test_translate_data_for_oscilloscope_use_maxrange(self):
