@@ -19,11 +19,11 @@ class SignalValidationResult:
     spectral_coherence: list[float] = None
 
 
-class SignalCompartor:
+class SignalComparator:
     _signal_original_with_cut: np.ndarray  # original signal, cuted to the processed signal length
     _signal_processed: np.ndarray  # processed signal
-    _fs_original: int  # original sampling frequency
-    _fs_processed: int  # processed sampling frequency
+    _fs_original: float  # original sampling frequency
+    _fs_processed: float  # processed sampling frequency
     _scaling_factor: float  # scaling factor
     _equal_number_of_signals: bool  # whether the original and processed signals have equal length
     _results: SignalValidationResult  # results of the signal validation
@@ -32,8 +32,8 @@ class SignalCompartor:
         self,
         original_data_with_cut: np.ndarray,
         signal_processed: np.ndarray,
-        fs_original: int,
-        fs_processed: int,
+        fs_original: float,
+        fs_processed: float,
         scaling_factor: float,
     ) -> None:
         self._signal_original_with_cut = original_data_with_cut
