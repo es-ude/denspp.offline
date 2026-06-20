@@ -84,6 +84,7 @@ class TestDatasetConfig(TestCase):
         except:
             self.assertTrue(True)
 
+    @pytest.mark.init
     def test_dataset_remote(self):
         self.sets.data_type = "martinez"
         try:

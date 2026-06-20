@@ -1,0 +1,29 @@
+name: "Setup devenv"
+description: "Install Nix and set up devenv"
+
+inputs:
+  cachix-name:
+    description: "Cachix cache name"
+    required: false
+  cachix-token:
+    description: "Cachix auth token"
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - uses: cachix/install-nix-action@v26
+    - uses: cachix/cachix-action@v15
+      with:
+        name: devenv
+    - run: nix profile install nixpkgs/nixos-unstable#devenv
+      shell: bash
+    - run: devenv test
+      shell: bash
+
+    - name: Set up devenv (if available)
+      if: inputs.cachix-name != ''
+      uses: cachix/cachix-action@v14
+      with:
+        name: ${{ inputs.cachix-name }}
+        authToken: ${{ inputs.cachix-token }}

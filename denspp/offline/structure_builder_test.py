@@ -2,9 +2,12 @@ import unittest
 from os import getcwd
 from os.path import exists, join
 
+import pytest
+
 from denspp.offline.structure_builder import init_dnn_folder, init_project_folder
 
 
+@pytest.mark.init
 class TestStructureBuilder(unittest.TestCase):
     folder_general = ["config", "data", "dataset", "runs", "src", "src_pipe"]
     folder_dnn = ["models", "dataset"]

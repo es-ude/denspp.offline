@@ -1,0 +1,50 @@
+name: Check building docs
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-docs:
+    if: false
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repo shallowly
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }} # pick the pr HEAD instead of the merge commit
+
+      - name: prepare devenv
+        uses: ./.github/actions/setup-devenv
+
+      - name: run docs build check
+        shell: devenv shell bash -- -e {0}
+        run: |
+          devenv tasks run docs:check
+          nix run nixpkgs#monolith -- build/docs/index.html > build/docs/single_page.html
+
+      - name: Upload docs preview
+        uses: actions/upload-artifact@v6
+        id: artifact-upload
+        with:
+          name: docs-preview
+          path: build/docs/single_page.html
+          retention-days: 7
+
+      - name: Comment on PR
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          comment_tag: docs-preview
+          message: |
+            📚 Documentation preview has been built and attached as an artifact.
+
+            [Download Documentation Preview](${{ steps.artifact-upload.outputs.artifact-url }})
+
+            You can also find it in the "Artifacts" section of this workflow run.

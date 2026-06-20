@@ -117,8 +117,10 @@ only-packages = true
 [tool.pytest]
 addopts = ["--import-mode=importlib"]
 markers = [
+  "init: Funcs to init the project (not working in CI)",
+  "plot: a test with generating a plot (ignored in CI)",
   "simulation: a test using PySpice for simulation (needs packages or else)",
-  "slow: a slow test that you would not run in tdd cycle"
+  "slow: a slow test that you would not run in tdd cycle",
 ]
 minversion = "9.0"
 python_files = ["*_test.py"]

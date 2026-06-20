@@ -89,17 +89,22 @@ in {
     "test:init" = {
       exec = ''
         rm -rf .testmondata*
-        ${uv_run} pytest --testmon -m 'not (simulation or slow)'
+        ${uv_run} pytest --testmon -m 'not (simulation or slow or plot)'
       '';
     };
     "test:changes" = {
       exec = ''
-        ${uv_run} pytest --testmon -m 'not (simulation or slow)'
+        ${uv_run} pytest --testmon -m 'not (simulation or slow or plot)'
       '';
     };
     "test:fast" = {
       exec = ''
-        ${uv_run} pytest -m 'not (simulation or slow)' --reruns 3
+        ${uv_run} pytest -m 'not (simulation or slow or plot)' --reruns 3
+      '';
+    };
+    "test:plots" = {
+      exec = ''
+        ${uv_run} pytest -m 'plot' --reruns 3
       '';
     };
     "test:slow" = {
@@ -119,7 +124,7 @@ in {
     };
     "test:coverage" = {
       exec = ''
-        ${uv_run} coverage run -m pytest -m 'not simulation' --reruns 3
+        ${uv_run} coverage run -m pytest -m 'not (simulation or plot)' --reruns 3
       '';
     };
     "check:coverage-report" = {
@@ -151,6 +156,7 @@ in {
     };
     "check:local" = {
       after = [
+        "test:fast"
         "test:slow"
         "check:python-lint"
         "check:python-types"

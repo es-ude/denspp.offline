@@ -1,0 +1,13 @@
+name: "Setup CI"
+description: "Set up Python and uv for CI"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v2

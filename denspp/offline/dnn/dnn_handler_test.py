@@ -242,7 +242,7 @@ class TestPytorchTrainer(TestCase):
             self.assertTrue(get_path_to_project() in str(rslt.path))
             dut.do_plot_results(rslt)
 
-    @pytest.mark.slow
+    @pytest.mark.plot
     def test_train_classifier_plotting(self):
         hndl = PyTorchTrainer(
             use_case="Waveforms",
@@ -256,6 +256,7 @@ class TestPytorchTrainer(TestCase):
         )
         self.assertEqual(type(rslt), TrainingResults)
 
+    @pytest.mark.plot
     def test_train_classifier_plotting_zoomed(self):
         hndl = PyTorchTrainer(
             use_case="Waveforms",
@@ -317,7 +318,7 @@ class TestPytorchTrainer(TestCase):
             self.assertTrue(get_path_to_project() in str(rslt.path))
             dut.do_plot_results(rslt)
 
-    @pytest.mark.slow
+    @pytest.mark.plot
     def test_train_autoencoder_plotting(self):
         hndl = PyTorchTrainer(use_case="Waveforms", settings=self.sets_ae, path2config="temp_test")
         path2file = Path(get_path_to_project("runs"))
@@ -327,7 +328,7 @@ class TestPytorchTrainer(TestCase):
         )
         self.assertEqual(type(rslt), TrainingResults)
 
-    @pytest.mark.slow
+    @pytest.mark.plot
     def test_train_autoencoder_plotting_zoomed(self):
         hndl = PyTorchTrainer(use_case="Waveforms", settings=self.sets_ae, path2config="temp_test")
         path2file = Path(get_path_to_project("runs"))
