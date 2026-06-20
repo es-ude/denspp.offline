@@ -20,7 +20,6 @@ dependencies = [
   "fxpmath>=0.4.9",
   "h5py>=3.16.0",
   "matplotlib>=3.9.2",
-  "matplotlib>=3.9.2",
   "numpy>=1.26.4",
   "psutil>=7.2.2",
   "pyocclient>=0.6",
@@ -43,7 +42,6 @@ dev = [
   "hatch-vcs>=0.4.0",
   "pip-audit>=2.10.1",
   "pre-commit>=4.0.1",
-  "pytest>=9.0.3",
   "ruff>=0.15.14",
   "tach>=0.23.0",
   "tombi>=1.1.1",
@@ -62,6 +60,11 @@ docs = [
   "sphinxcontrib-mermaid>=1.0.0",
   "sphinxext-opengraph>=0.9.1",
 ]
+test = [
+  "pytest>=9.0.3",
+  "pytest-rerunfailures>=16.3",
+  "pytest-testmon>=2.2.0",
+]
 utils = ["mypy>=1.13.0", "ruff>=0.11.0", "ty>=0.0.32"]
 
 [build-system]
@@ -70,6 +73,7 @@ build-backend = "hatchling.build"
 
 [tool.coverage.run]
 source = ["denspp"]
+relative_files = true
 omit = ["**/*_test.py", "**/template/*.py", "**/plot_*.py", "**/player/*"]
 
 [tool.hatch.version]
@@ -113,7 +117,7 @@ only-packages = true
 [tool.pytest]
 addopts = ["--import-mode=importlib"]
 markers = [
-  "simulatiuon: a test using PySpice for simulation (needs packages or else)",
+  "simulation: a test using PySpice for simulation (needs packages or else)",
   "slow: a slow test that you would not run in tdd cycle"
 ]
 minversion = "9.0"
@@ -210,7 +214,7 @@ exclude = [
 ]
 
 [tool.uv]
-default-groups = ["dev", "docs", "utils"]
+default-groups = ["dev", "docs", "utils", "test"]
 
 [tool.uv.sources]
 elasticai-creator = { git = "https://github.com/es-ude/elastic-ai.creator.git", branch = "main" }
