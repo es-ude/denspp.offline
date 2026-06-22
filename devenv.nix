@@ -26,29 +26,29 @@ in {
     python = {
       enable = true;
       version = "3.13";
-      venv.enable = true;
       uv = {
         enable = true;
         package = pkgs-unstable.uv;
-        sync.enable = true;
-        sync.allGroups = true;
       };
     };
   };
 
-  processes = {
-    serve_docs.exec = "serve_docs";
-  };
-
   scripts = let
-    uv_run = "${pkgs-unstable.uv}/bin/uv run";
+    uv_run = "${pkgs-unstable.uv}/bin/uv run --active";
     alej_run = "${pkgs.alejandra}/bin/alejandra";
     tombi_run = "${pkgs.tombi}/bin/tombi";
   in {
-    serve_docs = {
-      exec = "${uv_run} sphinx-autobuild -j auto docs build/docs/";
+    run_tests_all = {
+        exec = ''
+            devenv tasks run test:changes
+        '';
     };
-    fix_all = {
+    run_tests_local = {
+        exec = ''
+            devenv tasks run check:local
+        '';
+    };
+    fix_linting = {
       exec = ''
         ${uv_run} ruff format
         ${uv_run} ruff check --fix
@@ -59,11 +59,18 @@ in {
   };
 
   tasks = let
-    uv_run = "${pkgs-unstable.uv}/bin/uv run";
+    uv_run = "${pkgs-unstable.uv}/bin/uv run --active";
     uv_build = "${pkgs-unstable.uv}/bin/uv build";
   in {
+    "project:sync" = {
+        exec = ''
+            ${uv_run} sync
+        '';
+    };
     "package:build" = {
-      exec = "${uv_build}";
+      exec = ''
+        ${uv_build}
+      '';
     };
     "docs:check" = {
       exec = ''
@@ -89,12 +96,12 @@ in {
     "test:init" = {
       exec = ''
         rm -rf .testmondata*
-        ${uv_run} pytest --testmon -m 'not (simulation or slow or plot)'
+        ${uv_run} pytest --testmon -m 'not (simulation or slow or plot)' --reruns 3
       '';
     };
     "test:changes" = {
       exec = ''
-        ${uv_run} pytest --testmon -m 'not (simulation or slow or plot)'
+        ${uv_run} pytest --testmon -m 'not (simulation or slow or plot)' --reruns 3
       '';
     };
     "test:fast" = {
