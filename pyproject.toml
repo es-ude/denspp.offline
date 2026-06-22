@@ -76,6 +76,15 @@ source = ["denspp"]
 relative_files = true
 omit = ["**/*_test.py", "**/template/*.py", "**/plot_*.py", "**/player/*"]
 
+[tool.coverage.report]
+exclude_lines = [
+  "def plot_",
+  "raise",
+  "case _:",
+  "pragma",
+  "continue",
+]
+
 [tool.hatch.version]
 source = "vcs"
 

@@ -25,14 +25,9 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          uv run coverage run -m pytest -m 'not (simulation or slow or plot or init)' --reruns 5
+          uv run coverage run -m pytest -m 'not (simulation or slow or plot or init)' --reruns 3
           uv run coverage report -m
           uv run coverage xml
-
-      - name: Post coverage to PR (simple)
-        uses: py-cov-action/python-coverage-comment-action@v3
-        with:
-          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Post coverage to PR (detailed)
         uses: orgoro/coverage@v3.1
@@ -54,11 +49,6 @@ jobs:
 #
 #      - name: Run tests with coverage
 #        run: check:coverage-report
-#
-#      - name: Post coverage to PR
-#        uses: py-cov-action/python-coverage-comment-action@v3
-#        with:
-#          GITHUB_TOKEN: ${{ github.token }}
 #
 #      - name: Post coverage to PR (detailed)
 #        uses: orgoro/coverage@v3.1

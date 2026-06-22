@@ -16,7 +16,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup devenv
+      - name: Setup uv
         uses: ./.github/actions/setup-uv
 
       - name: Build package
