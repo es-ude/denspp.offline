@@ -65,7 +65,6 @@ test = [
   "pytest-rerunfailures>=16.3",
   "pytest-testmon>=2.2.0",
 ]
-utils = ["mypy>=1.13.0", "ruff>=0.11.0", "ty>=0.0.32"]
 
 [build-system]
 requires = ["hatch-vcs", "hatchling", "wheel"]
@@ -225,7 +224,7 @@ exclude = [
 ]
 
 [tool.uv]
-default-groups = ["dev", "docs", "utils", "test"]
+default-groups = ["dev", "docs", "test"]
 
 [tool.uv.sources]
 elasticai-creator = { git = "https://github.com/es-ude/elastic-ai.creator.git", branch = "main" }

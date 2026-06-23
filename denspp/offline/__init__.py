@@ -95,9 +95,7 @@ def get_path_to_project(new_folder: str = "", max_levels: int = 5) -> str:
             return str(current / new_folder)
         current = current.parent
 
-    if is_project_root(current):
-        return str(current / new_folder)
-    return str(cwd)
+    return (current / new_folder).resolve().as_posix()
 
 
 def get_path_to_project_templates() -> str:

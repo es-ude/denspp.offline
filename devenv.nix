@@ -39,14 +39,14 @@ in {
     tombi_run = "${pkgs.tombi}/bin/tombi";
   in {
     run_tests_all = {
-        exec = ''
-            devenv tasks run test:changes
-        '';
+      exec = ''
+        devenv tasks run test:changes
+      '';
     };
     run_tests_local = {
-        exec = ''
-            devenv tasks run check:local
-        '';
+      exec = ''
+        devenv tasks run check:local
+      '';
     };
     fix_linting = {
       exec = ''
@@ -63,9 +63,9 @@ in {
     uv_build = "${pkgs-unstable.uv}/bin/uv build";
   in {
     "project:sync" = {
-        exec = ''
-            ${uv_run} sync
-        '';
+      exec = ''
+        ${uv_run} sync
+      '';
     };
     "package:build" = {
       exec = ''
