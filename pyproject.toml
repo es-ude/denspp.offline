@@ -236,4 +236,4 @@ default-groups = ["dev", "docs", "test"]
 elasticai-creator = { git = "https://github.com/es-ude/elastic-ai.creator.git", branch = "main" }
 elasticai-preprocessor = { git = "https://github.com/es-ude/elastic-ai.preprocessor.git", branch = "main" }
 soundcard = { git = "https://github.com/bastibe/SoundCard.git", branch = "master" }
-umap-learn = { git = "https://github.com/lmcinnes/umap.git" }
+umap-learn = { git = "https://github.com/lmcinnes/umap.git", branch = "master" }
