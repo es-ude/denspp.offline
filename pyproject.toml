@@ -30,7 +30,7 @@ dependencies = [
   "soundcard",
   "torchinfo>=1.8.0",
   "tqdm>=4.67.1",
-  "umap-learn>=0.5.12",
+  "umap-learn",
 ]
 dynamic = ["version"]
 
@@ -73,7 +73,7 @@ build-backend = "hatchling.build"
 [tool.coverage.run]
 source = ["denspp"]
 relative_files = true
-omit = ["**/*_test.py", "**/template/*.py", "**/plot_*.py", "**/player/*"]
+omit = ["**/*_test.py", "**/template/*.py", "**/plot_*.py", "**/player/*", "**/pyspice_*.py"]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -230,3 +230,4 @@ default-groups = ["dev", "docs", "test"]
 elasticai-creator = { git = "https://github.com/es-ude/elastic-ai.creator.git", branch = "main" }
 elasticai-preprocessor = { git = "https://github.com/es-ude/elastic-ai.preprocessor.git", branch = "main" }
 soundcard = { git = "https://github.com/bastibe/SoundCard.git", branch = "master" }
+umap-learn = { git = "https://github.com/lmcinnes/umap.git" }
