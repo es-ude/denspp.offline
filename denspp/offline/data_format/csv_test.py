@@ -13,7 +13,7 @@ class TestCSV(TestCase):
     data0 = np.array([[1, 2, 3, 1], [4, 5, 6, 7], [7, 8, 9, 0]])
     data1 = np.array([[1e4, 2.0, 3, 4], [4, 5, 6, 4.58677], [7, 8, 9, 187486.34]])
 
-    path = join(get_path_to_project("temp_test"))
+    path = get_path_to_project("temp_test")
     file = "test"
     hndl0 = CsvHandler(path=path, file_name=file)
     hndl1 = CsvHandler(path=path, file_name=f"{file}.csv")

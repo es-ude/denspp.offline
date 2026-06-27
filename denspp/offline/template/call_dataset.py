@@ -1,4 +1,5 @@
 from logging import Logger, getLogger
+from pathlib import Path
 
 import numpy as np
 
@@ -89,7 +90,7 @@ class DatasetLoader(ControllerDataset):
     def __get_waveforms(self) -> SettingsWaveformDataset:
         return JsonHandler(
             template=DefaultSettingsWaveformDataset,
-            path="config",
+            path=Path("./config"),
             file_name="Config_WaveformDataset",
         ).get_class(SettingsWaveformDataset)
 

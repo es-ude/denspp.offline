@@ -35,7 +35,7 @@ class OwnCloudDownloader:
 
     def __init__(
         self,
-        path2config: str = get_path_to_project(),
+        path2config: Path = get_path_to_project(),
         use_config: ConfigCloud = DefaultConfigCloud,
     ) -> None:
         """Class for handling cloud storage access for getting transient data and datasets using Nextcloud services

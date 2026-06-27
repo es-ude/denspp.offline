@@ -29,16 +29,11 @@ TestSettingsDataset = SettingsDataset(
 
 
 class TestDatasetSettings(TestCase):
-    def test_main_folder(self):
-        set = deepcopy(TestSettingsDataset)
-        chck = set.get_path2folder_project
-        self.assertEqual(str(chck), get_path_to_project())
-
     def test_path2folder_default(self):
         set = deepcopy(TestSettingsDataset)
         set.data_path = ""
         chck = set.get_path2folder
-        self.assertEqual(str(chck), get_path_to_project("dataset"))
+        self.assertEqual(chck, get_path_to_project("dataset"))
 
     def test_path2folder_relative(self):
         set = deepcopy(TestSettingsDataset)
@@ -59,9 +54,7 @@ class TestDatasetConfig(TestCase):
         path2json = Path(get_path_to_project("temp_test")) / "access_cloud.json"
         if path2json.exists():
             path2json.unlink()
-            JsonHandler(
-                template=TestConfigCloud, path=path2json.parent.as_posix(), file_name=path2json.name
-            )
+            JsonHandler(template=TestConfigCloud, path=path2json.parent, file_name=path2json.name)
 
     def test_get_dataset_overview(self):
         self.sets.data_type = ""

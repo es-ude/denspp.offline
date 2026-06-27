@@ -124,7 +124,7 @@ class PyTorchPlot:
                 loss_train=data.metrics[used_fold]["loss_train"],
                 loss_valid=data.metrics[used_fold]["loss_valid"],
                 loss_type=loss_type,
-                path2save=str(data.path),
+                path2save=data.path.as_posix(),
                 epoch_zoom=epoch_zoom,
                 do_logy=False,
                 show_plot=show_plot,
@@ -161,7 +161,7 @@ class PyTorchPlot:
                         fold_num=fold_num,
                         do_logy=False,
                         epoch_zoom=epoch_zoom,
-                        path2save=str(data.path),
+                        path2save=data.path.as_posix(),
                         show_plot=show_plot and last_ite,
                     )
                 else:
@@ -171,7 +171,7 @@ class PyTorchPlot:
                         do_boxplot=False,
                         do_logy=False,
                         epoch_zoom=epoch_zoom,
-                        path2save=str(data.path),
+                        path2save=data.path.as_posix(),
                         show_plot=show_plot and last_ite,
                     )
 
@@ -185,7 +185,7 @@ class PyTorchPlot:
         dnn_plot.plot_statistic(
             train_cl=data.data.train_label,
             valid_cl=data.data.valid_label,
-            path2save=str(data.path),
+            path2save=data.path.as_posix(),
             cl_dict=data.data.label_names,
             show_plot=show_plot,
         )
@@ -215,7 +215,7 @@ class PyTorchPlot:
             loss_valid=data.metrics[used_fold]["acc_valid"],
             loss_type="Accuracy",
             epoch_zoom=epoch_zoom,
-            path2save=str(data.path),
+            path2save=data.path.as_posix(),
             do_logy=False,
             show_plot=False,
         )
@@ -223,7 +223,7 @@ class PyTorchPlot:
         dnn_plot.plot_confusion(
             pred_labels=data.data.output,
             true_labels=data.data.valid_label,
-            path2save=str(data.path),
+            path2save=data.path.as_posix(),
             cl_dict=data.data.label_names,
             show_plots=show_plot,
         )
@@ -248,7 +248,7 @@ class PyTorchPlot:
             ypred=data.data.output,
             ymean=mean_value,
             yclus=data.data.valid_label,
-            path=str(data.path),
+            path=data.path.as_posix(),
             show_plot=show_plot,
         )
 
@@ -269,7 +269,7 @@ class PyTorchTrainer:
         use_case: str,
         settings: SettingsTraining = DefaultSettingsTraining,
         default_model: str = "",
-        path2config: str = "config",
+        path2config: Path = Path("./config"),
     ) -> None:
         """Class for handling and wrapping all PyTorch Training Routines incl. Report Generation and Plotting
         :param use_case:            String with name of use-case
@@ -281,7 +281,7 @@ class PyTorchTrainer:
         define_logger_runtime(save_file=False)
         self._logger: Logger = getLogger(__name__)
         self._plotter = PyTorchPlot()
-        self._path2config = Path(get_path_to_project(path2config))
+        self._path2config = (get_path_to_project() / path2config).resolve()
         self._path2config.mkdir(parents=True, exist_ok=True)
         self._do_init = self.config_available
         self.__default_model = default_model
@@ -346,19 +346,19 @@ class PyTorchTrainer:
         default_set.mode_train = default_training_mode
         return JsonHandler(
             template=default_set,
-            path=str(self.path2config),
+            path=self.path2config,
             file_name=f"ConfigTraining_{use_case}",
         ).get_class(SettingsTraining)
 
     def _get_config_dataset(self, default_dataset_name: str, use_case: str) -> SettingsDataset:
         default_set: SettingsTraining = deepcopy(DefaultSettingsDataset)
         default_set.data_type = default_dataset_name
-        self._settings_model = JsonHandler(
+        self._settings_data = JsonHandler(
             template=default_set,
-            path=str(self.path2config),
+            path=self.path2config,
             file_name=f"ConfigDataset_{use_case}",
         ).get_class(SettingsDataset)
-        return self._settings_model
+        return self._settings_data
 
     @staticmethod
     def _get_dataset_loader() -> Any:
@@ -378,9 +378,9 @@ class PyTorchTrainer:
         default_set: SettingsClassifier = deepcopy(DefaultSettingsTrainingCE)
         default_set.model_name = default_model_name
         default_set.custom_metrics = self.get_type_metric_calculation(0)
-        self._settings_model = JsonHandler(
+        self._settings_model: SettingsClassifier = JsonHandler(
             template=default_set,
-            path=str(self.path2config),
+            path=self.path2config,
             file_name=f"ConfigClassifier_{use_case}",
         ).get_class(SettingsClassifier)
         return self._settings_model
@@ -417,11 +417,12 @@ class PyTorchTrainer:
         default_set: SettingsAutoencoder = deepcopy(DefaultSettingsTrainingMSE)
         default_set.model_name = default_model_name
         default_set.custom_metrics = self.get_type_metric_calculation(1)
-        return JsonHandler(
+        self._settings_model: SettingsAutoencoder = JsonHandler(
             template=default_set,
-            path=str(self.path2config),
+            path=self.path2config,
             file_name=f"ConfigAutoencoder_{use_case}",
         ).get_class(SettingsAutoencoder)
+        return self._settings_model
 
     def _prepare_training_autoencoder(self, used_dataset: DatasetFromFile) -> TrainAutoencoder:
         """PyTorch Training Routing for Autoencoders

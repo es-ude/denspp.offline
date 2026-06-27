@@ -88,7 +88,7 @@ class TestClassifierTraining(TestCase):
 
     def test_saving_path(self):
         rslt = self.dut.get_saving_path()
-        self.assertEqual(str(rslt), get_path_to_project())
+        self.assertEqual(rslt.as_posix(), get_path_to_project().as_posix())
 
     def test_number_parameters(self):
         self.dut.load_model(model=dummy_mlp_cl_v0(input_size=self.dataset.data.shape[1]), learn_rate=0.1)

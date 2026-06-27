@@ -6,6 +6,10 @@
   ...
 }: let
   pkgs-unstable = import inputs.nixpkgs-unstable {system = pkgs.stdenv.system;};
+  uv_bin = "${pkgs-unstable.uv}/bin/uv";
+  uv_run = "${uv_bin} run --active";
+  alej_run = "${pkgs.alejandra}/bin/alejandra";
+  tombi_run = "${pkgs.tombi}/bin/tombi";
 in {
   packages = [
     pkgs.git
@@ -33,11 +37,7 @@ in {
     };
   };
 
-  scripts = let
-    uv_run = "${pkgs-unstable.uv}/bin/uv run --active";
-    alej_run = "${pkgs.alejandra}/bin/alejandra";
-    tombi_run = "${pkgs.tombi}/bin/tombi";
-  in {
+  scripts = {
     run_tests_all = {
       exec = ''
         devenv tasks run test:changes
@@ -58,10 +58,7 @@ in {
     };
   };
 
-  tasks = let
-    uv_run = "${pkgs-unstable.uv}/bin/uv run --active";
-    uv_build = "${pkgs-unstable.uv}/bin/uv build";
-  in {
+  tasks = {
     "project:sync" = {
       exec = ''
         ${uv_run} sync
@@ -69,7 +66,7 @@ in {
     };
     "package:build" = {
       exec = ''
-        ${uv_build}
+        ${uv_bin} build
       '';
     };
     "docs:check" = {
@@ -138,6 +135,7 @@ in {
       exec = ''
         ${uv_run} coverage report -m
         ${uv_run} coverage xml
+        ${uv_run} coverage html
       '';
       after = ["test:coverage"];
     };

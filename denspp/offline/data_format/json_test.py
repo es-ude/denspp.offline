@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from os.path import exists, join
 from unittest import TestCase, main
 
 from denspp.offline import get_path_to_project
@@ -42,11 +41,11 @@ DefaultSettingsTest = SettingsTest(
 
 # --- Info: Function have to start with test_*
 class TestJSON(TestCase):
-    path = join(get_path_to_project("temp_test"), "config")
+    path = get_path_to_project("temp_test") / "config"
 
     def test_build_file_exists(self):
         JsonHandler(template=data_wr, path=self.path, file_name="test0.json")
-        chck = exists(join(self.path, "test0.json"))
+        chck = (self.path / "test0.json").exists()
         self.assertTrue(chck)
 
     def test_build_file_chck_content(self):

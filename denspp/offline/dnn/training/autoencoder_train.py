@@ -309,11 +309,11 @@ class TrainAutoencoder(PyTorchHandler):
         self._init_train(path2save=path2save, addon="_ae")
         if self._kfold_do:
             self._logger.info(
-                f"Starting Kfold cross validation training in {self._settings_train.num_kfold} steps"
+                f"Starting kFold cross validation training in {self._settings_train.num_kfold} steps"
             )
 
         metric_out = dict()
-        path2model = str()
+        path2model = Path(".")
         path2model_init = self._path2save / "model_ae_reset.pt"
         save(self._model.state_dict(), path2model_init)
         timestamp_start = datetime.now()

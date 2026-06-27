@@ -1,6 +1,5 @@
 import unittest
 from dataclasses import dataclass
-from os.path import exists, join
 
 from denspp.offline import get_path_to_project
 from denspp.offline.data_format.yaml import YamlHandler
@@ -41,7 +40,7 @@ data_wr = {
 
 
 class TestYamlHandler(unittest.TestCase):
-    path = join(get_path_to_project("temp_test"), "config")
+    path = get_path_to_project("temp_test") / "config"
     file = "Config_Test"
 
     dummy0 = YamlHandler(template=data_wr, path=path, file_name=file + "0")
@@ -49,8 +48,8 @@ class TestYamlHandler(unittest.TestCase):
 
     def test_yaml_create_file(self):
         self.dummy0.write_dict_to_yaml(data_wr)
-        path2chck = join(self.path, f"{self.file}0.yaml")
-        self.assertTrue(exists(path2chck))
+        path2chck = self.path / f"{self.file}0.yaml"
+        self.assertTrue(path2chck.exists())
 
     def test_yaml_read_class(self):
         class_out = self.dummy1.get_class(SettingsTest)

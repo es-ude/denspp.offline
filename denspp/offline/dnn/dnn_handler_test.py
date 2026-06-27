@@ -31,7 +31,7 @@ class TestPytorchTrainer(TestCase):
     def tearDownClass(cls):
         rmtree(get_path_to_project("temp_test"), ignore_errors=True)
         # rmtree(get_path_to_project("runs"), ignore_errors=True)
-        Path(get_path_to_project("runs")).mkdir(parents=True, exist_ok=True)
+        get_path_to_project("runs").mkdir(parents=True, exist_ok=True)
 
     def setUp(self):
         self.sets_ae = SettingsTraining(
@@ -50,13 +50,13 @@ class TestPytorchTrainer(TestCase):
         )
         self.dut = PyTorchTrainer(
             use_case="MNIST",
-            path2config="temp_test",
+            path2config=Path("temp_test"),
             default_model=mnist_mlp_cl_v0.__name__,
         )
 
     def test_path2config(self):
         rslt = self.dut.path2config
-        self.assertEqual(str(rslt), get_path_to_project("temp_test"))
+        self.assertEqual(rslt, get_path_to_project("temp_test"))
 
     def test_check_config_available(self):
         self.assertTrue((self.dut.path2config / "ConfigTraining_MNIST.json").exists())
@@ -68,7 +68,7 @@ class TestPytorchTrainer(TestCase):
         rslt = PyTorchTrainer(
             use_case="MNIST",
             settings=self.sets_cl,
-            path2config="temp_test/method_cl",
+            path2config=Path("temp_test/method_cl"),
             default_model=mnist_mlp_cl_v0.__name__,
         ).get_custom_metric_calculation
         self.assertEqual(rslt, ["accuracy", "precision", "recall", "fbeta", "ptq_acc"])
@@ -77,7 +77,7 @@ class TestPytorchTrainer(TestCase):
         rslt = PyTorchTrainer(
             use_case="MNIST",
             settings=self.sets_ae,
-            path2config="temp_test/method_ae",
+            path2config=Path("temp_test/method_ae"),
             default_model=mnist_mlp_ae_v0.__name__,
         ).get_custom_metric_calculation
         self.assertEqual(rslt, ["snr_in", "snr_out", "dsnr_all", "ptq_loss"])
@@ -87,7 +87,7 @@ class TestPytorchTrainer(TestCase):
         rmtree(self.dut.path2config)
         dut = PyTorchTrainer(
             use_case="MNIST",
-            path2config="temp_test",
+            path2config=Path("temp_test"),
             default_model=mnist_mlp_cl_v0.__name__,
         )
         try:
@@ -118,7 +118,7 @@ class TestPytorchTrainer(TestCase):
         dut = PyTorchTrainer(
             use_case="MNIST",
             settings=self.sets_cl,
-            path2config="temp_test",
+            path2config=Path("temp_test"),
             default_model=mnist_mlp_cl_v0.__name__,
         )
         rslt = dut.get_dataset()
@@ -128,13 +128,13 @@ class TestPytorchTrainer(TestCase):
         self.assertEqual(rslt.dict[0], "zero")
         self.assertEqual(rslt.label.shape, (70000,))
         self.assertEqual(rslt.mean.shape, (10, 28, 28))
-        dut.do_plot_dataset(Path(get_path_to_project("temp_test")))
+        dut.do_plot_dataset(get_path_to_project("temp_test"))
 
     def test_get_dataset_waveforms(self):
         dut = PyTorchTrainer(
             use_case="Waveforms",
             settings=self.sets_cl,
-            path2config="temp_test",
+            path2config=Path("temp_test"),
             default_model=waveforms_mlp_cl_v0.__name__,
         )
         rslt = dut.get_dataset()
@@ -144,14 +144,14 @@ class TestPytorchTrainer(TestCase):
         self.assertEqual(rslt.dict[0], "RECT_HALF")
         self.assertEqual(rslt.label.shape, (12000,))
         self.assertEqual(rslt.mean.shape, (12, 280))
-        dut.do_plot_dataset(Path(get_path_to_project("temp_test")))
+        dut.do_plot_dataset(get_path_to_project("temp_test"))
 
     @pytest.mark.slow
     def test_train_classifier_mnist(self):
         sets = dict(
             use_case="MNIST",
             settings=self.sets_cl,
-            path2config="temp_test/mnist_cl",
+            path2config=Path("temp_test/mnist_cl"),
             default_model=mnist_mlp_cl_v0.__name__,
         )
         PyTorchTrainer(**sets)
@@ -167,7 +167,7 @@ class TestPytorchTrainer(TestCase):
                 )
             )
             self.assertTrue(type(rslt.data), DataValidation)
-            self.assertTrue(get_path_to_project() in str(rslt.path))
+            self.assertTrue(get_path_to_project().as_posix() in rslt.path.as_posix())
             dut.do_plot_results(rslt)
 
     @pytest.mark.slow
@@ -175,7 +175,7 @@ class TestPytorchTrainer(TestCase):
         sets = dict(
             use_case="WAVEFORMS",
             settings=self.sets_cl,
-            path2config="temp_test/wave_cl",
+            path2config=Path("temp_test/wave_cl"),
             default_model=waveforms_mlp_cl_v0.__name__,
         )
         PyTorchTrainer(**sets)
@@ -191,7 +191,7 @@ class TestPytorchTrainer(TestCase):
                 )
             )
             self.assertTrue(type(rslt.data), DataValidation)
-            self.assertTrue(get_path_to_project() in str(rslt.path))
+            self.assertTrue(get_path_to_project().as_posix() in rslt.path.as_posix())
             dut.do_plot_results(rslt)
 
     @pytest.mark.slow
@@ -199,7 +199,7 @@ class TestPytorchTrainer(TestCase):
         sets = dict(
             use_case="WAVEFORMS",
             settings=self.sets_cl,
-            path2config="temp_test/wave_cl",
+            path2config=Path("temp_test/wave_cl"),
             default_model=waveforms_lstm_cl_v0.__name__,
         )
         PyTorchTrainer(**sets)
@@ -215,7 +215,7 @@ class TestPytorchTrainer(TestCase):
                 )
             )
             self.assertTrue(type(rslt.data), DataValidation)
-            self.assertTrue(get_path_to_project() in str(rslt.path))
+            self.assertTrue(get_path_to_project().as_posix() in rslt.path.as_posix())
             dut.do_plot_results(rslt)
 
     @pytest.mark.slow
@@ -223,7 +223,7 @@ class TestPytorchTrainer(TestCase):
         sets = dict(
             use_case="sinusoidal",
             settings=self.sets_cl,
-            path2config="temp_test",
+            path2config=Path("temp_test"),
             default_model=sinusoidal_lstm_cl_v0.__name__,
         )
         PyTorchTrainer(**sets)
@@ -239,7 +239,7 @@ class TestPytorchTrainer(TestCase):
                 )
             )
             self.assertTrue(type(rslt.data), DataValidation)
-            self.assertTrue(get_path_to_project() in str(rslt.path))
+            self.assertTrue(get_path_to_project().as_posix() in rslt.path.as_posix())
             dut.do_plot_results(rslt)
 
     @pytest.mark.plot
@@ -247,7 +247,7 @@ class TestPytorchTrainer(TestCase):
         hndl = PyTorchTrainer(
             use_case="Waveforms",
             settings=self.sets_cl,
-            path2config="temp_test",
+            path2config=Path("temp_test"),
         )
         path2file = Path(get_path_to_project("runs"))
         path2runs = list(path2file.glob("*_cl_*"))[-1]
@@ -261,7 +261,7 @@ class TestPytorchTrainer(TestCase):
         hndl = PyTorchTrainer(
             use_case="Waveforms",
             settings=self.sets_cl,
-            path2config="temp_test",
+            path2config=Path("temp_test"),
         )
         path2file = Path(get_path_to_project("runs"))
         path2runs = list(path2file.glob("*_cl_*"))[-1]
@@ -275,7 +275,7 @@ class TestPytorchTrainer(TestCase):
         sets = dict(
             use_case="MNIST",
             settings=self.sets_ae,
-            path2config="temp_test/mnist_ae",
+            path2config=Path("temp_test/mnist_ae"),
             default_model=mnist_mlp_ae_v0.__name__,
         )
         PyTorchTrainer(**sets)
@@ -291,7 +291,7 @@ class TestPytorchTrainer(TestCase):
                 )
             )
             self.assertTrue(type(rslt.data), DataValidation)
-            self.assertTrue(get_path_to_project() in str(rslt.path))
+            self.assertTrue(get_path_to_project().as_posix() in rslt.path.as_posix())
             dut.do_plot_results(rslt)
 
     @pytest.mark.slow
@@ -299,7 +299,7 @@ class TestPytorchTrainer(TestCase):
         sets = dict(
             use_case="WAVEFORMS",
             settings=self.sets_ae,
-            path2config="temp_test/wave_ae",
+            path2config=Path("temp_test/wave_ae"),
             default_model=waveforms_mlp_ae_v0.__name__,
         )
         PyTorchTrainer(**sets)
@@ -315,7 +315,7 @@ class TestPytorchTrainer(TestCase):
                 )
             )
             self.assertTrue(type(rslt.data), DataValidation)
-            self.assertTrue(get_path_to_project() in str(rslt.path))
+            self.assertTrue(get_path_to_project().as_posix() in rslt.path.as_posix())
             dut.do_plot_results(rslt)
 
     @pytest.mark.plot
@@ -346,10 +346,10 @@ class TestPytorchTrainer(TestCase):
             use_case="Waveforms",
             default_model="waveforms_mlp_ae_v0",
             settings=sets,
-            path2config="temp_test",
+            path2config=Path("temp_test"),
         )
         rslt = dut.do_training(
-            path2save=Path(get_path_to_project("temp_test")) / "runs",
+            path2save=get_path_to_project("temp_test") / "runs",
         )
         assert type(rslt) == list
         assert len(rslt) == 2

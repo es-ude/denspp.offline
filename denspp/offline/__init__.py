@@ -1,3 +1,6 @@
+from pathlib import Path
+
+
 def check_key_elements(key: str, elements: list[str]) -> bool:
     """Function for checking if all elements are in key (logical AND)
     :param key:         Key to check
@@ -76,34 +79,26 @@ def is_close(value: float, target: float, tolerance: float = 0.05) -> bool:
     return abs(value - target) <= abs(tolerance)
 
 
-def get_path_to_project(new_folder: str = "", max_levels: int = 5) -> str:
+def get_path_to_project(new_folder: str = "") -> Path:
     """Function for getting the path to find the project folder structure in application.
-    :param new_folder:  New folder path
-    :param max_levels:  Max number of levels to get-out for finding pyproject.toml
-    :return:            String of absolute path to start the project structure
+    :return:            Absolute path to start the project structure
     """
-    from pathlib import Path
+    max_levels: int = 5
 
     cwd = Path(".").absolute()
     current = cwd
 
-    def is_project_root(p):
-        return (p / "pyproject.toml").exists()
-
     for _ in range(max_levels):
-        if is_project_root(current):
-            return str(current / new_folder)
+        if (current / "pyproject.toml").exists():
+            break
         current = current.parent
+    return (current / new_folder).resolve()
 
-    return (current / new_folder).resolve().as_posix()
 
-
-def get_path_to_project_templates() -> str:
+def get_path_to_project_templates() -> Path:
     """Getting the path to the project templates
     :return:    String with path"""
-    from os.path import abspath, dirname
-
     import denspp.offline.template as ref
 
-    path_to_temp = dirname(ref.__file__)
-    return abspath(path_to_temp)
+    path_to_temp = Path(ref.__file__).parent
+    return path_to_temp.resolve().absolute()

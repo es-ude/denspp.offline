@@ -295,12 +295,12 @@ class PyTorchHandler:
         # --- Copy settings to YAML file
         JsonHandler(
             template=self._settings_data,
-            path=str(self._path2save),
+            path=self._path2save,
             file_name="Config_Dataset",
         )
         JsonHandler(
             template=self._settings_train,
-            path=str(self._path2save),
+            path=self._path2save,
             file_name=f"Config_Training{addon}",
         )
 

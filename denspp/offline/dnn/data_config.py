@@ -58,18 +58,13 @@ class SettingsDataset:
     def get_path2folder(self) -> Path:
         """Getting the path name to the file"""
         if not Path(self.data_path).is_absolute():
-            path = self.get_path2folder_project / self.data_path
+            path = get_path_to_project() / self.data_path
         else:
             path = Path(self.data_path)
 
         if path.parts[-1] != "dataset":
             path = path / "dataset"
-        return path.absolute()
-
-    @property
-    def get_path2folder_project(self) -> Path:
-        """Getting the default path of the Python Project"""
-        return Path(get_path_to_project())
+        return path.resolve().absolute()
 
 
 DefaultSettingsDataset = SettingsDataset(
@@ -97,7 +92,7 @@ class ControllerDataset:
         self._settings = settings
         self._logger = getLogger(__name__)
         self._methods = self._extract_func(self.__class__)
-        self._path = self._settings.get_path2folder_project / temp_folder
+        self._path = get_path_to_project() / temp_folder
 
     @property
     def get_overview_methods(self) -> list:
@@ -146,7 +141,7 @@ class ControllerDataset:
         """Giving an overview of available datasets on the cloud storage
         :return:            Return a list with dataset names
         """
-        oc_handler = OwnCloudDownloader(path2config=str(self._path))
+        oc_handler = OwnCloudDownloader(path2config=self._path)
         list_datasets = self._extract_methods(self._index_search[1])
         list_datasets.extend(oc_handler.get_overview_data(use_dataset=True))
         if do_print:
@@ -193,7 +188,7 @@ class ControllerDataset:
     def _download_file(self, dataset_name: str) -> Path:
         path2file = (self._settings.get_path2folder / dataset_name).resolve()
         if not path2file.exists():
-            oc_handler = OwnCloudDownloader(str(self._path))
+            oc_handler = OwnCloudDownloader(self._path)
             oc_handler.download_file(
                 use_dataset=True,
                 file_name=dataset_name,

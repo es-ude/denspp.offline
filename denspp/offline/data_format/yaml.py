@@ -1,6 +1,5 @@
 from logging import Logger, getLogger
-from os import makedirs
-from os.path import exists, isabs, join
+from pathlib import Path
 from typing import Any
 
 import yaml
@@ -11,14 +10,14 @@ from denspp.offline import get_path_to_project
 class YamlHandler:
     __logger: Logger
     _ending_chck: list = [".yaml", ".yml"]
-    _path2folder: str
+    _path2folder: Path
     _file_name: str
     _template: Any
 
     def __init__(
         self,
         template: Any | dict,
-        path: str = "config",
+        path: Path = Path("./config"),
         file_name: str = "Config_Train",
     ):
         """Creating a class for handling YAML files
@@ -27,18 +26,18 @@ class YamlHandler:
         :param file_name:          String with name of the YAML file [Default: 'Config_Train']
         """
         self.__logger = getLogger(__name__)
-        self._path2folder = join(get_path_to_project(), path) if not isabs(path) else path
+        self._path2folder = get_path_to_project() / path if not path.is_absolute() else path
         self._file_name = self.__remove_ending_from_filename(file_name)
         self._template = template
 
-        makedirs(self._path2folder, exist_ok=True)
-        if not exists(self.__path2chck):
+        self._path2folder.mkdir(parents=True, exist_ok=True)
+        if not self.__path2chck.exists():
             self.write_to_yaml()
 
     @property
-    def __path2chck(self) -> str:
+    def __path2chck(self) -> Path:
         """Getting the path to the desired CSV file"""
-        return join(self._path2folder, f"{self._file_name}{self._ending_chck[0]}")
+        return self._path2folder / f"{self._file_name}{self._ending_chck[0]}"
 
     def __remove_ending_from_filename(self, file_name: str) -> str:
         """Function for removing data type ending
@@ -108,7 +107,7 @@ class YamlHandler:
         :param print_output:    Printing the data in YAML format
         :return:                None
         """
-        makedirs(self._path2folder, exist_ok=True)
+        self._path2folder.mkdir(parents=True, exist_ok=True)
         with open(self.__path2chck, "w") as f:
             yaml.dump(config_data, f, sort_keys=False)
 
@@ -119,7 +118,7 @@ class YamlHandler:
         """Getting the dictionary with configuration sets from YAML file
         :return:    Dict. with configuration
         """
-        if not exists(self.__path2chck):
+        if not self.__path2chck.exists():
             raise FileNotFoundError("YAML does not exists - Please create one!")
         else:
             # --- Reading YAML file

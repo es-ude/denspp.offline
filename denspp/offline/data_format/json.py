@@ -1,32 +1,34 @@
 import json
 from logging import Logger, getLogger
-from os import makedirs
-from os.path import exists, isabs, join
+from pathlib import Path
 from typing import Any
 
 from denspp.offline import get_path_to_project
 
 
 class JsonHandler:
-    _path2folder: str
+    _path2folder: Path
     _file_name: str
     _ending_chck: list = [".json"]
     _logger: Logger
     _template: Any
 
-    def __init__(self, template: Any | dict, path: str = "config", file_name: str = "Params") -> None:
+    def __init__(
+        self, template: Any | dict, path: Path = Path("./config"), file_name: str = "Params"
+    ) -> None:
         """Creating a class for handling JSON files
         :param template:        Dummy dataclass with entries or dictionary (is only generated if JSON not exist)
         :param path:            String with path to the folder which has the JSON file [Default: '']
         :param file_name:       String with name of the JSON  file [Default: 'Config_Train']
         """
         self._logger = getLogger(__name__)
-        self._path2folder = join(get_path_to_project(), path) if not isabs(path) else path
+        path0 = path if not type(str) else Path(path)
+        self._path2folder = (get_path_to_project() / path) if not path0.is_absolute() else path
         self._file_name = self.__remove_ending_from_filename(file_name)
         self._template = template
 
-        makedirs(self._path2folder, exist_ok=True)
-        if not exists(self.__path2chck):
+        self._path2folder.mkdir(parents=True, exist_ok=True)
+        if not self.__path2chck.exists():
             self.write_to_json()
 
     @staticmethod
@@ -39,9 +41,9 @@ class JsonHandler:
         }
 
     @property
-    def __path2chck(self) -> str:
+    def __path2chck(self) -> Path:
         """Getting the path to the desired CSV file"""
-        return join(self._path2folder, f"{self._file_name}{self._ending_chck[0]}")
+        return self._path2folder / f"{self._file_name}{self._ending_chck[0]}"
 
     def __remove_ending_from_filename(self, file_name: str) -> str:
         """Function for removing data type ending
@@ -98,7 +100,7 @@ class JsonHandler:
         :param config_data:     Dict. with configuration
         :return:                None
         """
-        makedirs(self._path2folder, exist_ok=True)
+        self._path2folder.mkdir(parents=True, exist_ok=True)
         with open(self.__path2chck, "w") as f:
             json.dump(config_data, f, sort_keys=False, indent=0)
 
@@ -106,7 +108,7 @@ class JsonHandler:
         """Getting the dictionary with configuration sets from JSON file
         :return:    Dict. with configuration
         """
-        if not exists(self.__path2chck):
+        if not self.__path2chck.exists():
             raise FileNotFoundError("JSON does not exists - Please create one!")
         else:
             # --- Reading YAML file

@@ -31,7 +31,7 @@ class TestCommonPyTorchTrain(TestCase):
 
     def test_saving_path(self):
         rslt = self.dut.get_saving_path()
-        self.assertEqual(str(rslt), get_path_to_project())
+        self.assertEqual(rslt, get_path_to_project())
 
     def test_get_model(self):
         self.dut._settings_train.model_name = mnist_mlp_cl_v0.__name__

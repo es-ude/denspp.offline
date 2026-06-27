@@ -45,9 +45,9 @@ class CommonDigitalFunctions:
         :param xin:     Input data stream
         :return:        Output data stream
         """
-        xout = deepcopy(xin)
+        xout = deepcopy(xin).astype(float)
         np.clip(xout, a_min=self._digital_border[0], a_max=self._digital_border[1], out=xout)
-        return xout
+        return xout.astype(np.int32)
 
     def _quantize_fxp(self, xin: np.ndarray) -> np.ndarray:
         """Do signed quantization of input with full precision
