@@ -102,11 +102,11 @@ class DeltaSigmaADC(BasicADC):
             xout_hs[idx] = self.__stream_converter(xbit[idx])
 
         # --- Downsampling
-        xout0 = self._down_sampler.do_decimation_polyphase_order_two(xout_hs)
-        xout1 = self._down_sampler.do_decimation_polyphase_order_two(xout0)
-        xout2 = self._down_sampler.do_decimation_polyphase_order_two(xout1)
-        xout3 = self._down_sampler.do_decimation_polyphase_order_two(xout2)
-        xout4 = self._down_sampler.do_decimation_polyphase_order_two(xout3)
+        xout0 = self._down_sampler._do_decimation_polyphase_order_two(xout_hs)
+        xout1 = self._down_sampler._do_decimation_polyphase_order_two(xout0)
+        xout2 = self._down_sampler._do_decimation_polyphase_order_two(xout1)
+        xout3 = self._down_sampler._do_decimation_polyphase_order_two(xout2)
+        xout4 = self._down_sampler._do_decimation_polyphase_order_two(xout3)
 
         # --- Correction and output
         xout = xout4
@@ -139,11 +139,11 @@ class DeltaSigmaADC(BasicADC):
             xout_hs[idx] = self.__stream_converter(xbit[idx])
 
         # --- Downsampling
-        xout0 = self._down_sampler.do_decimation_polyphase_order_two(xout_hs)
-        xout1 = self._down_sampler.do_decimation_polyphase_order_two(xout0)
-        xout2 = self._down_sampler.do_decimation_polyphase_order_two(xout1)
-        xout3 = self._down_sampler.do_decimation_polyphase_order_two(xout2)
-        xout4 = self._down_sampler.do_decimation_polyphase_order_two(xout3)
+        xout0 = self._down_sampler._do_decimation_polyphase_order_two(xout_hs)
+        xout1 = self._down_sampler._do_decimation_polyphase_order_two(xout0)
+        xout2 = self._down_sampler._do_decimation_polyphase_order_two(xout1)
+        xout3 = self._down_sampler._do_decimation_polyphase_order_two(xout2)
+        xout4 = self._down_sampler._do_decimation_polyphase_order_two(xout3)
 
         # --- Correction and output
         xout = xout4

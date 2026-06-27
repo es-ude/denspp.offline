@@ -73,7 +73,13 @@ build-backend = "hatchling.build"
 [tool.coverage.run]
 source = ["denspp"]
 relative_files = true
-omit = ["**/*_test.py", "**/template/*.py", "**/plot_*.py", "**/player/*", "**/pyspice_*.py"]
+omit = [
+  "**/*_test.py",
+  "**/template/*.py",
+  "**/plot_*.py",
+  "**/player/*",
+  "**/pyspice_*.py"
+]
 
 [tool.coverage.report]
 exclude_lines = [

@@ -16,6 +16,7 @@ settings_adc = SettingsADC(
     is_signed=True,
 )
 RecommendedSettingsNon = SettingsNon(use_noise=False, wgndB=-100, offset=1e-6, gain_error=0.0)
+NoisySettingsNon = SettingsNon(use_noise=True, wgndB=-100, offset=1e-6, gain_error=0.0)
 
 
 class TestSAR(TestCase):
@@ -38,6 +39,61 @@ class TestSAR(TestCase):
     def test_result_type_digital(self):
         result = self.method.adc_sar(self.input)
         self.assertEqual(type(result[0]), np.ndarray)
+
+    def test_adc_sar_with_noise(self):
+        method = SuccessiveApproximation(settings_adc, settings_non=NoisySettingsNon)
+        result = method.adc_sar(self.input)
+        self.assertEqual(type(result[0]), np.ndarray)
+        self.assertEqual(result[0].size, result[1].size)
+        self.assertEqual(result[0].size, result[2].size)
+
+    def test_adc_sar_ns_delay_returns_three_arrays(self):
+        result = self.method.adc_sar_ns_delay(self.input)
+        self.assertEqual(len(result), 3)
+        for arr in result:
+            self.assertIsInstance(arr, np.ndarray)
+
+    def test_adc_sar_ns_delay_output_size(self):
+        result = self.method.adc_sar_ns_delay(self.input)
+        samp_ratio = settings_adc.fs_ana / settings_adc.fs_dig
+        self.assertEqual(self.input.size / result[0].size, samp_ratio)
+
+    def test_adc_sar_ns_delay_with_noise(self):
+        method = SuccessiveApproximation(settings_adc, settings_non=NoisySettingsNon)
+        result = method.adc_sar_ns_delay(self.input)
+        self.assertIsInstance(result[0], np.ndarray)
+
+    def test_adc_sar_ns_order_one_returns_three_arrays(self):
+        result = self.method.adc_sar_ns_order_one(self.input)
+        self.assertEqual(len(result), 3)
+        for arr in result:
+            self.assertIsInstance(arr, np.ndarray)
+
+    def test_adc_sar_ns_order_one_output_size(self):
+        result = self.method.adc_sar_ns_order_one(self.input)
+        samp_ratio = settings_adc.fs_ana / settings_adc.fs_dig
+        self.assertEqual(self.input.size / result[0].size, samp_ratio)
+
+    def test_adc_sar_ns_order_one_with_noise(self):
+        method = SuccessiveApproximation(settings_adc, settings_non=NoisySettingsNon)
+        result = method.adc_sar_ns_order_one(self.input)
+        self.assertIsInstance(result[0], np.ndarray)
+
+    def test_adc_sar_ns_order_two_returns_three_arrays(self):
+        result = self.method.adc_sar_ns_order_two(self.input)
+        self.assertEqual(len(result), 3)
+        for arr in result:
+            self.assertIsInstance(arr, np.ndarray)
+
+    def test_adc_sar_ns_order_two_output_size(self):
+        result = self.method.adc_sar_ns_order_two(self.input)
+        samp_ratio = settings_adc.fs_ana / settings_adc.fs_dig
+        self.assertEqual(self.input.size / result[0].size, samp_ratio)
+
+    def test_adc_sar_ns_order_two_with_noise(self):
+        method = SuccessiveApproximation(settings_adc, settings_non=NoisySettingsNon)
+        result = method.adc_sar_ns_order_two(self.input)
+        self.assertIsInstance(result[0], np.ndarray)
 
 
 if __name__ == "__main__":

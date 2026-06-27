@@ -27,12 +27,16 @@ class CurrentAmplifierTest(unittest.TestCase):
         set0.vdd = 0.9
         set0.vss = -0.9
         self.assertEqual(set0.vcm, 0.0)
+        vcm = CurrentAmplifier(settings_dev=set0).vcm
+        self.assertEqual(vcm, 0.0)
 
     def test_settings_vcm_unipolar(self):
         set0: SettingsCUR = deepcopy(self.set0)
         set0.vdd = 0.9
         set0.vss = 0.0
         self.assertEqual(set0.vcm, 0.45)
+        vcm = CurrentAmplifier(settings_dev=set0).vcm
+        self.assertEqual(vcm, 0.45)
 
     def test_instrumentation_amplifier(self):
         chck = self.current_in * self.set0.transimpedance + self.set0.vcm

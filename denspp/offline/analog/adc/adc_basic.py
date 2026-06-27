@@ -69,8 +69,7 @@ class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
         """Performing sample-and-hold (S&H) stage for buffering input value"""
         t = np.arange(0, uin.size, 1) / self._settings.fs_ana
         clk_fsh = square(2 * np.pi * t * f_snh, duty=0.5)
-        do_snh = np.where(np.diff(clk_fsh) >= 0.5)
-        do_snh += 1
+        do_snh = 1 + np.argwhere(np.diff(clk_fsh) >= 0.5).flatten()
 
         u_out = np.zeros(shape=uin.shape)
         for idx, do_snh in enumerate(do_snh):
@@ -80,10 +79,9 @@ class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
     def _do_resample(self, uin: np.ndarray) -> np.ndarray:
         """Do resampling of input values"""
         if uin.size == 1:
-            u_out = uin
+            return uin
         else:
-            u_out = uin[0] + resample_poly(uin - uin[0], self.__p_ratio, self.__q_ratio)
-        return u_out
+            return np.add(uin[0], resample_poly(uin - uin[0], self.__p_ratio, self.__q_ratio))
 
     def _gen_noise(self, size: int) -> np.ndarray:
         """Generate the transient input noise of the amplifier"""
@@ -103,7 +101,7 @@ class BasicADC(CommonAnalogFunctions, CommonDigitalFunctions):
         uin0 += self._gen_noise(uin0.size)
         # ADC conversion
         x_out = np.floor((uin0 - self._settings.vcm) / self._settings.lsb)
-        x_out = self._clamp_digital(x_out)
+        x_out = self._clamp_digital(x_out).astype(np.int32)
         u_out = self._settings.vref[1] + x_out * self._settings.lsb
         # Calculating quantization error
         u_err = uin0 - u_out

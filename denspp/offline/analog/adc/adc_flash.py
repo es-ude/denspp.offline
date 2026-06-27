@@ -27,8 +27,9 @@ class NyquistADC(BasicADC):
 
     def __adc_conv_sample(self, uin: float) -> np.ndarray:
         """Converting the value (nyquist ideal, sample converting)"""
-        x0 = np.where(uin <= self.__partition_voltage)
-        xout = self.__partition_digital[x0[0][0]]
+        x0 = np.argwhere(uin <= self.__partition_voltage).flatten()
+        idx = x0[0] if x0.size > 0 else self.__partition_voltage.size - 1
+        xout = self.__partition_digital[idx]
         return xout
 
     def __adc_conv_stream(self, uin: np.ndarray) -> np.ndarray:
@@ -45,11 +46,10 @@ class NyquistADC(BasicADC):
         Returns:
             Tuple with two numpy arrays [x_out = Output digital value, quant_er = Quantization error]
         """
-        # Do resampling and conversion
         uin_adc = self.clamp_voltage(uin)
         uin0 = self._do_resample(uin_adc)
         x_out = self.__adc_conv_stream(uin0)
         # Add noise and calc quantization error
         quant_err = uin0 - x_out * self._settings.lsb
-        x_out += self._gen_noise(uin0.size).astype(np.integer)
+        x_out += self._gen_noise(uin0.size).astype(np.int32)
         return x_out, quant_err

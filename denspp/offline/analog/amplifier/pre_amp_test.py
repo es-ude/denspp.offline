@@ -27,12 +27,16 @@ class TestAmplifier(TestCase):
         set0.vdd = +0.6
         set0.vss = -0.6
         self.assertEqual(set0.vcm, 0.0)
+        vcm = PreAmp(settings_dev=set0).vcm
+        self.assertEqual(vcm, 0.0)
 
     def test_settings_amp_vcm_uniolar(self):
         set0 = deepcopy(settings)
         set0.vdd = 0.6
         set0.vss = 0.0
         self.assertEqual(set0.vcm, 0.3)
+        vcm = PreAmp(settings_dev=set0).vcm
+        self.assertEqual(vcm, 0.3)
 
     def test_amplifier_coeffs(self):
         set0 = deepcopy(settings)

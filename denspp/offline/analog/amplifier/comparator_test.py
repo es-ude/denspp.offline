@@ -28,17 +28,26 @@ class Test_AnalogComparator(TestCase):
         * 1.2
     )
 
+    def test_noise(self):
+        rslt = Comparator(settings_dev=TestSettings).get_noise_signal
+        chck = np.array([0.0])
+        self.assertEqual(rslt, chck)
+
     def test_settings_vcm_bipolar(self):
         set0: SettingsCOMP = deepcopy(TestSettings)
         set0.vdd = 0.9
         set0.vss = -0.9
         self.assertEqual(set0.vcm, 0.0)
+        vcm = Comparator(settings_dev=set0).vcm
+        self.assertEqual(vcm, 0.0)
 
     def test_settings_vcm_unipolar(self):
         set0: SettingsCOMP = deepcopy(TestSettings)
         set0.vdd = 0.9
         set0.vss = 0.0
         self.assertEqual(set0.vcm, 0.45)
+        vcm = Comparator(settings_dev=set0).vcm
+        self.assertEqual(vcm, 0.45)
 
     def test_comp_ideal_boolean(self):
         set0 = deepcopy(TestSettings)

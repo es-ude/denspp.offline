@@ -52,7 +52,7 @@ DefaultSettingsCOMP = SettingsCOMP(
 
 class Comparator(CommonAnalogFunctions):
     _settings: SettingsCOMP
-    _unoise: np.ndarray
+    _unoise: np.ndarray = np.array([0.0])
     _int_state: bool
 
     @property

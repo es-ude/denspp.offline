@@ -27,6 +27,8 @@ def test_settings_vcm(vss: float, vdd: float, vcm: float, vrange: float) -> None
     set0.vdd = vdd
     assert set0.vcm == vcm
     assert set0.u_supply_range == vrange
+    vcm0 = IntegratorAmplifier(settings_dev=set0).vcm
+    assert vcm0 == vcm
 
 
 class IntegratorAmplifierTest(TestCase):
