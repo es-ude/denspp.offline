@@ -2,7 +2,7 @@
 name = "denspp.offline"
 description = "Python Framework for End-To-End and Hardware-Aware Signal Processing"
 readme = "README.md"
-requires-python = ">=3.13, <3.14"
+requires-python = ">=3.12, <3.14"
 license-files = ["LICENSE"]
 authors = [
   { name = "Andreas Erbsloeh", email = "andreas.erbsloeh@uni-due.de" },
