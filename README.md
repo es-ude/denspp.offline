@@ -50,10 +50,9 @@ The Python folder contains the following folder structure using ``init_project_f
     ├── src                 # Contains new function which can be added to the DeNSPP.offline repo (with tests)
     ├── src_dnn             # Contains functions for training deep neural networks which are not in package 
     ├── src_pipe            # Contains functions for data analysis which are not in package
-    ├── access_cloud.yaml   # Yaml file with information for cloud access 
-    ├── main_pipeline.py    # For normal pipeline processing 
-    ├── main_data_merge.py  # For merging of given datasets
-    ├── main_dnn_train.py   # For training ML models, like Autoencoder and Classifier
+    ├── access_cloud.json   # Json file with information for cloud access 
+    ├── run_pipeline.py     # For normal pipeline processing 
+    ├── run_training.py     # For training ML models, like Autoencoder and Classifier
     └── ...
 ```
 The marked folders with "only local" will only be saved on your computer. It not be sync with git.
