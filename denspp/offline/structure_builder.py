@@ -1,6 +1,5 @@
 import logging
-from os import makedirs
-from os.path import exists, join
+from pathlib import Path
 from shutil import copy
 
 from denspp.offline import get_path_to_project, get_path_to_project_templates
@@ -9,7 +8,7 @@ from denspp.offline.data_call.owncloud_handler import OwnCloudDownloader
 logger = logging.getLogger(__name__)
 
 
-def copy_template_files(copy_files: dict, path2start: str) -> None:
+def copy_template_files(copy_files: dict, path2start: Path) -> None:
     """Function for copying template files to new folder.
     :param copy_files:          Dictionary of file paths to copy
     :param path2start:          Path to start folder
@@ -17,10 +16,10 @@ def copy_template_files(copy_files: dict, path2start: str) -> None:
     """
     path2temp = get_path_to_project_templates()
     for file_name, folder_name in copy_files.items():
-        src = join(path2temp, file_name)
-        dst = join(path2start, folder_name)
-        makedirs(dst, exist_ok=True)
-        if not exists(join(dst, file_name)):
+        src = path2temp / file_name
+        dst = path2start / folder_name
+        dst.mkdir(exist_ok=True, parents=True)
+        if not (dst / file_name).exists():
             copy(src=src, dst=dst)
             logger.debug(f"Copy file from: {src} - to: {dst}")
 
@@ -42,14 +41,14 @@ def init_project_folder(new_folder: str = "") -> None:
         "pipeline_v0.py": "src_pipe",
     }
     path2start = get_path_to_project(new_folder)
-    makedirs(path2start, exist_ok=True)
+    path2start.mkdir(parents=True, exist_ok=True)
 
     for folder_name in folder_structure:
-        makedirs(join(path2start, folder_name), exist_ok=True)
-        if not exists(join(path2start, folder_name)):
+        (path2start / folder_name).mkdir(parents=True, exist_ok=True)
+        if not (path2start / folder_name).exists():
             logger.debug(f"Creating template folder: {folder_name}")
 
-    copy_template_files(copy_files, path2start)
+    copy_template_files(copy_files=copy_files, path2start=path2start)
     init_dnn_folder(new_folder=new_folder)
 
 
@@ -63,14 +62,17 @@ def init_dnn_folder(new_folder: str = "") -> None:
     copy_files = {
         "run_training.py": "",
         "call_dataset.py": folder_start,
-        "example_model.py": join(folder_start, "models"),
+        "example_model.py": f"{folder_start}/models",
     }
 
     # --- Generation process
     path2start = get_path_to_project(new_folder)
     for folder_name in folder_structure:
-        makedirs(join(path2start, folder_start, folder_name), exist_ok=True)
-        if not exists(path2start):
+        (path2start / folder_start / folder_name).mkdir(parents=True, exist_ok=True)
+        if not path2start.exists():
             logger.debug(f"Creating template folder: {folder_name}")
 
-    copy_template_files(copy_files, path2start)
+    copy_template_files(
+        copy_files=copy_files,
+        path2start=path2start
+    )

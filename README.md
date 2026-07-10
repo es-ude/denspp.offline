@@ -1,4 +1,5 @@
-# End-To-End Deep (Neural) Signal Pre-Processing for Offline Transient Data Analysis (DeNSPP.offline)
+# End-To-End Deep (Neural) Signal Pre-Processing for Offline Transient Data Analysis
+Akronym: DeNSPP.offline
 
 This Python framework is developed for analysing transient data to evaluate an user-specific implementation of an 
 end-to-end signal processor in any application. The journey of this framework starts in the research project Sp:AI:ke, 
@@ -7,17 +8,13 @@ with offline data (already recorded and available).
 
 In general, this framework aims to accelerate the deployment of signal processor pipelines in next-gen hardware development. 
 For building the digital hardware accelerators (in C for microcontrollers and in Verilog/VHDL for FPGAs/ASICs), there is the access
-to the [elasticAI.creator](https://github.com/es-ude/elastic-ai.creator).
+to the [elasticAI.creator](https://github.com/es-ude/elastic-ai.creator) and the [elasticAI.preprocesor](https://github.com/es-ude/elasticai.preprocessor).
 
 # Table of Content
-1. [Installation guide](#installation-guide)
-3. [Project File structure](#project-file-structure)
-4. [Data File Structure](#data-file-structure)
-5. [Advanced installation guide](#advanced-installation-guide)
-    - [PySpice](#pyspice)
-    - [Package Manager](#uv-package-manager)
-6. [Informations about third-party APIs](#more-information-about-other-apis)
-7. [Citation](#citation--documentation)
+1. [Installation Guide](#installation-guide)
+2. [Project File Structure](#project-file-structure)
+3. [Data File Structure](#data-file-structure)
+4. [Citation](#citation--documentation)
 
 ## Installation guide
 
@@ -57,7 +54,6 @@ The Python folder contains the following folder structure using ``init_project_f
     ├── main_pipeline.py    # For normal pipeline processing 
     ├── main_data_merge.py  # For merging of given datasets
     ├── main_dnn_train.py   # For training ML models, like Autoencoder and Classifier
-    ├── run_tests.py        # Function for running tests of folder content in 'src'
     └── ...
 ```
 The marked folders with "only local" will only be saved on your computer. It not be sync with git.
@@ -100,67 +96,7 @@ If you want to load a file, please change the entries in the `Config_PipelineDat
 - `data_case`: Index for which experimental folder from `data_set` should be used (only number) (opt.)
 - `data_point`: Index for which file should be used
 
-Important, each new data structure needs a data handler for loading these data into the pipeline. Therefore please add a new function in `src_neuro/call-spike.py` or create a similar file. 
-
-## Advanced installation guide 
-
-### `uv` package manager
-We recommended to install all python packages for using this API with a virtual environment (venv). Therefore, we also recommend to `uv` package manager. `uv` is not a standard package installed on your OS. For this, you have to install it in your Terminal (Powershell on Windows) with the following line.
-````
-powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
-````
-Afterwards you can create the venv and installing all packages using this line.
-````
-uv sync (--refresh --upgrade)
-````
-In the last step, you activate the Python Environment of your ``venv``. 
-
-### PySPICE
-
-`PySPICE` (Python Interface for using `NGSpice`) is a easy-to-use circuit simulation using SPICE commands in Python.
-This framework provides several workarounds for using PySpice in order to allow easy-to-use circuit simulation for single-pole
-and two-pole circuits.
-
-#### Setup on Windows
-
-For using PySPICE on Windows, please type in the two following commands in the Terminal (Command Prompt) after the
-package is installed. We recommend to use a venv due to missing script `pyspice-post-installation` if PySPICE is
-installed for all users.
-
-Installation of the missing *.dll library in Windows:
-
-````
-pyspice-post-installation --install-ngspice-dll
-````
-
-Checking if the installation is right:
-
-````
-pyspice-post-installation --check-install
-````
-It may happens, that running a simulation occurs to an error in the CFFI package. They it will find the decl.bitwidth is not available. Just edit the file and replace bitwidth with bitsize and it works! 
-
-#### Setup on Linux
-
-> [!TIP]
-> Based on [Official Documentation](https://pyspice.fabrice-salvaire.fr/releases/v1.5/installation.html#on-linux)
-
-To use PySpice on Linux, the ngspice package is required.
-The current used PySpice implementation only supports ngspice up to version 34.
-Most package managers only provide the latest version of ngspice which is far greater!
-
-> [!NOTE] 
-> **Installation on Fedora**
-> ```bash
-> # Enable community repo for ngspice
-> dnf copr enable fabricesalvaire/ngspice
-> 
-> # install latest sufficient version
-> dnf install libngspice-32
-> ```
-
-## More information about 3rd party tools
-- `PySpice` [Official Documentation](https://pyspice.fabrice-salvaire.fr/releases/v1.5/)
+Important, each new data structure needs a data handler for loading these data into the pipeline. Therefore please add a new function in `src_neuro/call-spike.py` or create a similar file.
 
 ## Citation / Documentation
 If you want to understand what is the idea behind DeNSPP, please have a look on the corresponding [paper](https://doi.org/10.1515/cdbme-2023-1118).
