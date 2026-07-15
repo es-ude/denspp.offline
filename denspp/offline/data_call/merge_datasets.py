@@ -222,7 +222,7 @@ class MergeDataset:
                         # unlabeled dataset ----------------------------------------------------------------------------
                         pipeline = self._pipeline(data.fs_used, False)
                         for rawdata in tqdm(data.data_raw, ncols=100, desc="Progress (unlabeled): "):
-                            result = pipeline.run_preprocessor(data=rawdata, xpos=None, offset=0)
+                            result = pipeline.run_preprocessor(data=rawdata)
                             if "frames" not in result:
                                 raise KeyError("Pipeline result missing 'frames'")
                             frame = result["frames"]
@@ -304,7 +304,7 @@ class MergeDataset:
                         if self._do_label_concatenation:
                             label_key = int(label)
                         else:
-                            label_key = f"{data_elec_counter}_{int(label)}"
+                            label_key = f"{path.stem}_{int(label)}"
 
                         new_label = label_collector.add(label_key)
 
