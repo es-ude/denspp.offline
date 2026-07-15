@@ -72,7 +72,4 @@ def init_dnn_folder(new_folder: str = "") -> None:
         if not path2start.exists():
             logger.debug(f"Creating template folder: {folder_name}")
 
-    copy_template_files(
-        copy_files=copy_files,
-        path2start=path2start
-    )
+    copy_template_files(copy_files=copy_files, path2start=path2start)

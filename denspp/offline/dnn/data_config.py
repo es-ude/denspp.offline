@@ -92,7 +92,7 @@ class ControllerDataset:
         self._settings = settings
         self._logger = getLogger(__name__)
         self._methods = self._extract_func(self.__class__)
-        self._path = get_path_to_project() / temp_folder
+        self._path = (get_path_to_project() / temp_folder).resolve().absolute()
 
     @property
     def get_overview_methods(self) -> list:
@@ -137,25 +137,19 @@ class ControllerDataset:
         else:
             return getattr(self, self._methods[idx])()
 
-    def print_overview_datasets(self, do_print: bool = True) -> list:
+    def print_overview_datasets(self) -> list:
         """Giving an overview of available datasets on the cloud storage
         :return:            Return a list with dataset names
         """
         oc_handler = OwnCloudDownloader(path2config=self._path)
         list_datasets = self._extract_methods(self._index_search[1])
         list_datasets.extend(oc_handler.get_overview_data(use_dataset=True))
-        if do_print:
-            self._logger.info("\nAvailable datasets in repository and from remote:")
-            self._logger.info("==================================================")
-            for idx, file in enumerate(list_datasets):
-                self._logger.info(f"\t{idx}: \t{file}")
-
         oc_handler.close()
         return list_datasets
 
     def print_dataset_properties(self, data: DatasetFromFile) -> None:
         """Printing the properties of the loaded dataset
-        :param data:    Dataclas DatasetFromFile loaded externally
+        :param data:    Dataclass DatasetFromFile loaded externally
         :return:        None
         """
         check = np.unique(data.label, return_counts=True)
