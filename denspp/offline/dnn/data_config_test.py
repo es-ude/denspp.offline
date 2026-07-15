@@ -52,9 +52,7 @@ class TestDatasetConfig(TestCase):
     def setUp(self):
         self.sets: SettingsDataset = deepcopy(TestSettingsDataset)
         path2json = Path(get_path_to_project("temp_test")) / "access_cloud.json"
-        if path2json.exists():
-            path2json.unlink()
-            JsonHandler(template=TestConfigCloud, path=path2json.parent, file_name=path2json.name)
+        JsonHandler(template=TestConfigCloud, path=path2json.parent, file_name=path2json.name)
 
     def test_get_dataset_overview(self):
         self.sets.data_type = ""
@@ -63,9 +61,7 @@ class TestDatasetConfig(TestCase):
 
     def test_dataset_overview(self):
         self.sets.data_type = "mnist"
-        overview = DatasetLoader(settings=self.sets, temp_folder="temp_test").print_overview_datasets(
-            do_print=False
-        )
+        overview = DatasetLoader(settings=self.sets, temp_folder="temp_test").print_overview_datasets()
         self.assertGreaterEqual(len(overview), 3)
         assert self.sets.data_type in overview
 
@@ -73,18 +69,19 @@ class TestDatasetConfig(TestCase):
         self.sets.data_type = ""
         try:
             DatasetLoader(settings=self.sets).load_dataset(do_print=False)
-            self.assertTrue(False)
         except:
             self.assertTrue(True)
+        else:
+            self.assertTrue(False)
 
-    @pytest.mark.init
     def test_dataset_remote(self):
         self.sets.data_type = "martinez"
         try:
-            DatasetLoader(settings=self.sets).load_dataset(do_print=False)
-            self.assertTrue(True)
+            DatasetLoader(settings=self.sets, temp_folder="temp_test").load_dataset(do_print=False)
         except:
             self.assertTrue(False)
+        else:
+            self.assertTrue(True)
 
     @pytest.mark.slow
     def test_dataset_mnist(self):

@@ -18,7 +18,6 @@ class DatasetLoader(ControllerDataset):
     _logger: Logger
     _settings: SettingsDataset
     _processor: DataProcessor
-    _path: str
 
     def __init__(self, settings: SettingsDataset, temp_folder: str = "") -> None:
         """Class for downloading (function name with '__get_xyz')
@@ -75,8 +74,8 @@ class DatasetLoader(ControllerDataset):
             else:
                 x = np.cos(window)
                 label = 1
-            x += noise_amp * np.random.randn(seq_len)  # kleines Rauschen
-            data.append(x)  # shape: (seq_len, 1)
+            x += noise_amp * np.random.randn(seq_len)
+            data.append(x)
             labels.append(label)
 
         dataset = DatasetFromFile(
