@@ -1,29 +1,33 @@
-import shutil
 import unittest
 from glob import glob
 from os.path import join
 from pathlib import Path
-from unittest.mock import Mock
+from tempfile import TemporaryDirectory
+from unittest.mock import Mock, patch
 
 import h5py
 import numpy as np
 
-from denspp.offline import get_path_to_project
 from denspp.offline.data_call.merge_datasets import MergeDataset
 from denspp.offline.preprocessing import FrameWaveform
 
 
 class MergeDatasetTest(unittest.TestCase):
     def setUp(self):
-        self.temp_dir = Path(get_path_to_project("temp_merge"))
-        if self.temp_dir.exists():
-            shutil.rmtree(self.temp_dir)
+        self._test_project_dir = TemporaryDirectory()
+        self.project_dir = Path(self._test_project_dir.name)
+
+        self.temp_dir = self.project_dir / "temp_merge"
         self.temp_dir.mkdir(exist_ok=True)
 
-        self.dataset_dir = Path(get_path_to_project("dataset"))
-        if self.dataset_dir.exists():
-            shutil.rmtree(self.dataset_dir)
+        self.dataset_dir = self.project_dir / "dataset"
         self.dataset_dir.mkdir(exist_ok=True)
+
+        self.get_path_patcher = patch(
+            "denspp.offline.data_call.merge_datasets.get_path_to_project",
+            side_effect=self._get_test_path_to_project,
+        )
+        self.get_path_patcher.start()
 
         self.pipeline_mock = Mock()
         self.pipeline_mock.run_preprocessor = Mock()
@@ -32,8 +36,12 @@ class MergeDatasetTest(unittest.TestCase):
         self.pipeline_mock.run_preprocessor.__name__ = "run_preprocessor"
         self.pipeline_mock.run_classifier.__name__ = "run_classifier"
         self.pipeline_mock.settings.__name__ = "settings"
+
         self.dataloader_mock = Mock()
         self.settings_mock = Mock()
+
+    def _get_test_path_to_project(self, folder_name):
+        return str(self.project_dir / folder_name)
 
     def _create_dummy_frame(self, waveform, xpos, label, sampling_rate=1000):
         return FrameWaveform(
@@ -181,10 +189,8 @@ class MergeDatasetTest(unittest.TestCase):
             self.assertEqual(set(h5f.keys()), expected_keys)
 
     def tearDown(self):
-        if self.temp_dir.exists():
-            shutil.rmtree(self.temp_dir)
-        if self.dataset_dir.exists():
-            shutil.rmtree(self.dataset_dir)
+        self.get_path_patcher.stop()
+        self._test_project_dir.cleanup()
 
 
 if __name__ == "__main__":
