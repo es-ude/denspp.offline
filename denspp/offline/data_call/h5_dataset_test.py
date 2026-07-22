@@ -126,8 +126,7 @@ def test_h5_data_collection_list(path: Path, n_chunks: int):
 
     with h5py.File(path2file, "w") as h5f:
         dut = CollectorH5(h5f, name="data", chunks=n_chunks)
-        dut.define_datatype(list)
-
+        dut.define_datatype(np.int32)
         for val in data_in:
             dut.add(val)
         h5f.close()
@@ -135,8 +134,7 @@ def test_h5_data_collection_list(path: Path, n_chunks: int):
     with h5py.File(path2file, "r") as h5f:
         keys = h5f.keys()
         assert list(keys) == ["data"]
-
-        data: np.ndarray = np.array(h5f["data"][()], dtype=int)
+        data: np.ndarray = np.array(h5f["data"][()])
         assert data.tolist() == data_in
         h5f.close()
 

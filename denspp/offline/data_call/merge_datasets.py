@@ -1,9 +1,10 @@
-from copy import deepcopy
+from copy import copy
 from datetime import datetime
 from logging import Logger, getLogger
 from os import makedirs
 from pathlib import Path
 from shutil import rmtree
+from typing import Any
 
 import h5py
 import numpy as np
@@ -50,8 +51,8 @@ dataset/
 class MergeDataset:
     def __init__(
         self,
-        pipeline,
-        dataloader,
+        pipeline: Any,
+        dataloader: Any,
         settings_data: SettingsData,
         concatenate_id: bool = False,
     ) -> None:
@@ -178,7 +179,7 @@ class MergeDataset:
         create_time = datetime.now().strftime("%Y-%m-%d")
 
         while True:
-            sets0 = deepcopy(self._settings)
+            sets0 = copy.copy(self._settings)
             try:
                 sets0.data_point = (
                     current_index if not len(process_points) else process_points[current_index]
@@ -195,7 +196,6 @@ class MergeDataset:
 
                 data: DataFromFile = datahandler.get_data()
 
-                # create temp file
                 temp_filename = f"{create_time}_Dataset-{data.data_name}.h5"
                 temp_path = Path(self._path2save) / temp_filename
 
@@ -237,11 +237,11 @@ class MergeDataset:
                 self._logger.info(f"Saved temporary file: {temp_path.name} with {frame_counter} frames")
 
             except (StopIteration, FileNotFoundError) as e:
-                self._logger.info(f"Missing data: {e}")
+                self._logger.info(f"Data loading stopped: {e}")
                 break
 
             except Exception:
-                self._logger.exception("Failed loading data for %s", sets0.data_point)
+                self._logger.exception(f"Failed loading data for {sets0.data_point}")
                 raise
 
             finally:
@@ -279,7 +279,6 @@ class MergeDataset:
             position_collector.define_datatype(np.int32)
 
             for path in folder_content:
-                # write one frame at a time
                 for data_elec in self._iter_frames_from_temp(str(path)):
                     if sampling_rate is None:
                         sampling_rate = float(data_elec["sampling_rate"])

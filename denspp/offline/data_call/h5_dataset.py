@@ -1,14 +1,15 @@
 from typing import Any
 
 import h5py
+import numpy as np
 
 
 class LabelCollector:
-    _labels: dict
+    _labels: dict[str, int]
 
     def __init__(self) -> None:
         """Class for collecting labels of a dataset and build a dictionary with names"""
-        self._labels = dict()
+        self._labels = {}
 
     @property
     def _is_empty(self) -> bool:
@@ -28,7 +29,7 @@ class LabelCollector:
             self._labels.update({val_input: len(keys)})
         return self._labels[val_input]
 
-    def get_all(self) -> dict[str, Any]:
+    def get_all(self) -> dict[str, int]:
         """Returns the dictionary with all labels"""
         if self._is_empty:
             raise ValueError("No labels in the dictionary")
@@ -40,7 +41,7 @@ class LabelCollector:
             raise ValueError("No labels in the dictionary")
         return list(self._labels.keys())
 
-    def get_values(self) -> list[Any]:
+    def get_values(self) -> list[int]:
         """Returns the values of the dictionary"""
         if self._is_empty:
             raise ValueError("No labels in the dictionary")
@@ -48,11 +49,11 @@ class LabelCollector:
 
 
 class CollectorH5:
-    _data: h5py.Dataset
+    _data: h5py.Dataset | None
     _file: h5py.File
     _name: str
     _chunks: int
-    _datatype: None
+    _datatype: Any | None
 
     def __init__(self, h5_linker: h5py.File, name: str, chunks: int = 8) -> None:
         """Registering a collector buffer to write into h5 file
@@ -61,13 +62,18 @@ class CollectorH5:
         :param chunks:      chunk size
         :return:            None
         """
+        self._data = None
         self._file = h5_linker
         self._name = name
         self._chunks = chunks
+        self._datatype = None
+
 
     @property
     def get_number_samples(self) -> int:
         """Returns the number of samples in the buffer"""
+        if self._data is None:
+            return 0
         return self._data.shape[0]
 
     def define_datatype(self, datatype: Any) -> None:
@@ -76,8 +82,6 @@ class CollectorH5:
         """
         if datatype == str:
             self._datatype = h5py.string_dtype(encoding="utf-8")
-        elif datatype == list:
-            self._datatype = None
         else:
             self._datatype = datatype
 
@@ -85,8 +89,11 @@ class CollectorH5:
         """Adds a new sample to the buffer
         :param data:        new sample
         """
-        if not hasattr(self, "_data"):
-            if isinstance(data, (int, str, float)):
+        if self._datatype is None:
+            raise ValueError("Datatype must be defined before adding data. Please call `define_datatype()` first.")
+
+        if self._data is None:
+            if isinstance(data, (int, str, float)) or np.isscalar(data):
                 shape = (0,)
                 chunkshape = (self._chunks,)
                 maxshape = (None,)
