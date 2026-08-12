@@ -13,7 +13,7 @@ from denspp.offline.data_call.call_cellbib import CellSelector
 from denspp.offline.dnn import DatasetFromFile, SettingsDataset
 from denspp.offline.dnn.model_library import CellLibrary
 from denspp.offline.metric import calculate_snr_cluster
-from denspp.offline.preprocessing import DataNormalization
+from denspp.offline.preprocessing import DataNormalization, SettingsNormalization
 
 
 class DataProcessor:
@@ -152,11 +152,8 @@ class DataProcessor:
             self._logger.info("... do data augmentation with reducing the samples per cluster")
         # --- PART: Data Normalization
         if self._settings.normalization_do:
-            frames_in = DataNormalization(
-                method=self._settings.normalization_method,
-                do_global_scaling=True,
-                peak_mode=0,
-            ).normalize(data_used.data)
+            sets_norm = SettingsNormalization(method=self._settings.normalization_method, peak_mode=0)
+            frames_in = DataNormalization(settings=sets_norm).normalize(data_used.data)
             data_used = DatasetFromFile(
                 data=frames_in,
                 label=data_used.label,

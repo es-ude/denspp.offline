@@ -1,4 +1,4 @@
-from elasticai.preprocessor.waveform_generator import WaveformGenerator, WaveformSignal
+from elasticai.preprocessor.waveform import WaveformGenerator, WaveformSignal
 
 from .call_cellbib import CellSelector, SettingsCellSelector
 from .call_handler import (

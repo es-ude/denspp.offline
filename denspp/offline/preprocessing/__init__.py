@@ -10,7 +10,11 @@ from elasticai.preprocessor.framing import (
     FrameWaveform,
     SettingsFrame,
 )
-from elasticai.preprocessor.normalization import DataNormalization
+from elasticai.preprocessor.normalization import (
+    DataNormalization,
+    DefaultSettingsNormalization,
+    SettingsNormalization,
+)
 from elasticai.preprocessor.referencing import (
     CommonReferencing,
     DefaultSettingsReferencing,
@@ -42,6 +46,8 @@ __all__ = [
     "FrameWaveform",
     "SettingsFrame",
     "DataNormalization",
+    "SettingsNormalization",
+    "DefaultSettingsNormalization",
     "DefaultSettingsSDA",
     "SettingsSDA",
     "SpikeDetection",

@@ -204,8 +204,8 @@ class TestDataProcessor(unittest.TestCase):
         sets.normalization_method = "minmax"
         rslt = DataProcessor(settings=sets).process_timeseries_datasets(data=self.data1)
 
-        self.assertEqual(rslt.data.max(), 1.0)
-        self.assertEqual(rslt.data.min(), -1.0)
+        self.assertLessEqual(np.abs(rslt.data.max() - 1.0), 1e-6)
+        self.assertLessEqual(np.abs(rslt.data.min() + 1.0), 1e-6)
         self.assertEqual(self.data1.label.size, rslt.label.size)
         self.assertEqual(np.unique(rslt.label).size, 12)
 
@@ -218,8 +218,8 @@ class TestDataProcessor(unittest.TestCase):
         sets.reduce_samples_per_cluster_num = 10
         rslt = DataProcessor(settings=sets).process_timeseries_datasets(data=self.data1)
 
-        self.assertEqual(rslt.data.max(), 1.0)
-        self.assertEqual(rslt.data.min(), -1.0)
+        self.assertLessEqual(np.abs(rslt.data.max() - 1.0), 1e-6)
+        self.assertLessEqual(np.abs(rslt.data.min() + 1.0), 1e-6)
         self.assertEqual(
             rslt.label.size,
             np.unique(rslt.label).size * sets.reduce_samples_per_cluster_num,
@@ -235,8 +235,8 @@ class TestDataProcessor(unittest.TestCase):
         sets.augmentation_num = 100
         rslt = DataProcessor(settings=sets).process_timeseries_datasets(data=self.data1)
 
-        self.assertEqual(rslt.data.max(), 1.0)
-        self.assertEqual(rslt.data.min(), -1.0)
+        self.assertLessEqual(np.abs(rslt.data.max() - 1.0), 1e-6)
+        self.assertLessEqual(np.abs(rslt.data.min() + 1.0), 1e-6)
         self.assertEqual(rslt.label.size, 13200)
         self.assertEqual(np.unique(rslt.label).size, 12)
 
@@ -249,8 +249,8 @@ class TestDataProcessor(unittest.TestCase):
             data=self.data1, add_noise_cluster=True
         )
 
-        self.assertEqual(rslt.data.max(), 1.0)
-        self.assertEqual(rslt.data.min(), -1.0)
+        self.assertLessEqual(np.abs(rslt.data.max() - 1.0), 1e-6)
+        self.assertLessEqual(np.abs(rslt.data.min() + 1.0), 1e-6)
         self.assertEqual(self.data1.label.size + 1000, rslt.label.size)
         self.assertEqual(np.unique(rslt.label).size, 13)
 

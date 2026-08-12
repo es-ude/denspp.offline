@@ -2,7 +2,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 
 import numpy as np
-from elasticai.preprocessor.waveform_generator import WaveformGenerator, WaveformSignal
+from elasticai.preprocessor.waveform import WaveformGenerator, WaveformSignal
 
 from denspp.offline.analog import DefaultSettingsNoise, ProcessNoise, SettingsNoise
 
