@@ -1,0 +1,44 @@
+input: [1, 28, 28]
+output: 10
+
+sequence:
+  - block: "1"
+    op_candidates: "conv-act-pool"
+    type_repeat:
+      type: "repeat_params"
+      depth: [1, 2, 3, 4]
+  - block: "2"
+    op_candidates: "linear"
+    type_repeat:
+      type: "repeat_op"
+      depth: [1, 2]
+    linear:
+      width: [16, 32, 64, 128]
+      activation: ["relu", "identity"]
+  - block: "3"
+    op_candidates: "linear"
+
+default_op_params:
+  conv2d:
+    out_channels: [16, 32, 64, 128]
+    kernel_size: 4
+    stride: [3, 4, 5]
+    padding: "same"
+  batch_norm:
+  activation:
+    op: "relu"
+  maxpool:
+    kernel_size: [2, 3, 4]
+    stride: [1, 2]
+
+composites:
+  conv-act-pool:
+    sequence:
+      - block: "conv_act_pool_1"
+        op_candidates: "conv2d"
+      #- block: "conv_act_pool_2"
+      #  op_candidates: "batch_norm"
+      - block: "conv_act_pool_3"
+        op_candidates: "activation"
+      - block: "conv_act_pool_4"
+        op_candidates: "maxpool"

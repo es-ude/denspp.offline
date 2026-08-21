@@ -1,9 +1,11 @@
 import unittest
 from os import getcwd
 from os.path import exists, join
+from shutil import rmtree
 
 import pytest
 
+from denspp.offline import get_path_to_project
 from denspp.offline.structure_builder import init_dnn_folder, init_project_folder
 
 
@@ -13,6 +15,11 @@ class TestStructureBuilder(unittest.TestCase):
     folder_dnn = ["models", "dataset"]
     folder2search = "denspp.offline"
     folder_name_test = "temp_test"
+
+    def setUp(self):
+        path2check = get_path_to_project() / self.folder_name_test
+        if path2check.exists():
+            rmtree(path2check, ignore_errors=True)
 
     def test_check_folder_general(self):
         init_project_folder(self.folder_name_test)

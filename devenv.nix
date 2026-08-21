@@ -48,6 +48,11 @@ in {
         devenv tasks run check:local
       '';
     };
+    check_linting = {
+      exec = ''
+        devenv tasks run check:lint
+      '';
+    };
     fix_linting = {
       exec = ''
         ${uv_run} ruff format
@@ -154,13 +159,18 @@ in {
         ${uv_run} pip-audit
       '';
     };
+    "check:lint" = {
+      after = [
+        "check:python-lint"
+        "check:python-types"
+        "check:toml-lint"
+      ];
+    };
     "check:local" = {
       after = [
         "test:fast"
         "test:slow"
-        "check:python-lint"
-        "check:python-types"
-        "check:toml-lint"
+        "check:lint"
       ];
     };
   };
