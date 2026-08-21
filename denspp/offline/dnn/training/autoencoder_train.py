@@ -138,7 +138,7 @@ class TrainAutoencoder(PyTorchHandler):
             mode_train=self._settings_train.trainings_mode,
         )
         self._mean_data = dataset0.get_mean_waveforms
-        self._prepare_dataset_for_training(data_set=dataset0, num_workers=0)
+        self._prepare_dataset_for_training(data_set=dataset0)
 
     def __do_training_epoch(self) -> float:
         """Do training during epoch of training

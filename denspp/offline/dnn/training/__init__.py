@@ -11,6 +11,7 @@ from .classifier_train import (
     SettingsClassifier,
     TrainClassifier,
 )
+from .common_train import TrainingsDevice
 from .ptq_help import quantize_data_fxp, quantize_model_fxp
 
 __all__ = [
@@ -25,4 +26,5 @@ __all__ = [
     "TrainClassifier",
     "quantize_model_fxp",
     "quantize_data_fxp",
+    "TrainingsDevice",
 ]

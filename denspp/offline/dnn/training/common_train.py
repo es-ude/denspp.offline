@@ -1,11 +1,9 @@
-import platform
-import re
-import subprocess
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime
+from enum import IntEnum
 from logging import Logger, getLogger
-from os import cpu_count, remove
+from os import environ, remove
 from pathlib import Path
 from random import seed
 from shutil import rmtree
@@ -24,6 +22,7 @@ from torch import (
     float32,
     is_tensor,
     manual_seed,
+    mps,
     nn,
     optim,
     randn,
@@ -39,6 +38,13 @@ from denspp.offline.data_format import JsonHandler
 from denspp.offline.dnn import SettingsDataset
 from denspp.offline.dnn.model_library import ModelLibrary
 from denspp.offline.structure_builder import init_dnn_folder
+
+
+class TrainingsDevice(IntEnum):
+    auto = 0
+    cpu = 1
+    cuda = 2
+    mps = 3
 
 
 @dataclass
@@ -161,10 +167,26 @@ class SettingsPytorch:
                 raise AttributeError("Model is not available - Please check again!")
 
 
+DefaultSettingsPytorch = SettingsPytorch(
+    model_name="",
+    patience=20,
+    optimizer="Adam",
+    loss="Cross Entropy",
+    num_kfold=1,
+    num_epochs=10,
+    batch_size=256,
+    data_do_shuffle=True,
+    data_split_ratio=0.2,
+    deterministic_do=False,
+    deterministic_seed=42,
+    custom_metrics=[],
+)
+
+
 class PyTorchHandler:
     _deterministic_generator: Generator
+    _device_num: int | TrainingsDevice
     _used_hw_dev: device
-    _used_hw_num: int
     _train_loader: list
     _valid_loader: list
     _selected_samples: dict
@@ -177,12 +199,14 @@ class PyTorchHandler:
     _path2log: Path
     _path2temp: Path
     _path2config: Path
+    _model: nn.Module | nn.Sequential
 
     def __init__(
         self,
         config_train: SettingsPytorch,
         config_dataset: SettingsDataset,
         do_train: bool = True,
+        device_num: int = TrainingsDevice.auto,
     ) -> None:
         """Class for Handling Training of Deep Neural Networks in PyTorch
         Args:
@@ -207,67 +231,49 @@ class PyTorchHandler:
         self._settings_train: SettingsPytorch = config_train
         self._settings_data: SettingsDataset = config_dataset
         self._index_folder = "train" if do_train else "inference"
+        self._device_num = device_num
         self._model_addon = str()
         # --- Logging paths for saving
         self.__check_start_folder()
 
-    @staticmethod
-    def _get_cpu_name_windows() -> str:
-        return platform.processor()
-
-    @staticmethod
-    def _get_cpu_name_mac() -> str:
-        result = subprocess.run(
-            ["sysctl", "-n", "machdep.cpu.brand_string"], capture_output=True, text=True
-        )
-        return result.stdout.strip()
-
-    @staticmethod
-    def _get_cpu_name_linux():
-        result = subprocess.run(["cat", "/proc/cpuinfo"], capture_output=True, text=True)
-        for line in result.stdout.split("\n"):
-            if "model name" in line:
-                return re.sub(".*model name.*:", "", line, 1).strip()
-
-    def _get_cpu_name(self) -> str:
-        match platform.system().lower():
-            case "windows":
-                return self._get_cpu_name_windows()
-            case "linux":
-                return self._get_cpu_name_linux()
-            case "darwin":
-                return self._get_cpu_name_mac()
+    @property
+    def _get_device_name(self) -> str:
+        match self._device_num:
+            case TrainingsDevice.auto:
+                return "auto"
+            case TrainingsDevice.cpu:
+                return "cpu"
+            case TrainingsDevice.cuda:
+                if not cuda.is_available():
+                    raise ValueError("No CUDA device is available")
+                return "cuda"
+            case TrainingsDevice.mps:
+                if not mps.is_available():
+                    raise ValueError("No MPS device is available")
+                return "mps"
             case _:
-                return ""
+                raise ValueError("Selected device is unknown")
+
+    @property
+    def get_device(self) -> str:
+        """Returning the device name / type for training the neural network"""
+        dev = self._get_device_name
+        if dev == "auto":
+            if cuda.is_available():
+                cuda.empty_cache()
+                dev = "cuda"
+            elif mps.is_available():
+                environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
+                mps.empty_cache()
+                dev = "mps"
+            else:
+                dev = "cpu"
+        return dev
 
     def __check_start_folder(self, new_folder: str = "runs"):
         """Checking for starting folder to generate"""
         self._path2run = Path(get_path_to_project(new_folder))
         self._path2run.mkdir(parents=True, exist_ok=True)
-
-    def __setup_device(self) -> None:
-        if cuda.is_available():
-            # Using GPU
-            used_hw_gpu = cuda.get_device_name()
-            self._used_hw_dev = device("cuda")
-            self._used_hw_num = cuda.device_count()
-            device0 = used_hw_gpu
-            cuda.empty_cache()
-        elif (
-            backends.mps.is_available()
-            and backends.mps.is_built()
-            and platform.system().lower() == "darwin"
-        ):
-            # Using Apple M1 Chip
-            self._used_hw_dev = device("mps")
-            self._used_hw_num = cuda.device_count()
-            device0 = self._get_cpu_name()
-        else:
-            # Using normal CPU
-            self._used_hw_dev = device("cpu")
-            self._used_hw_num = cpu_count()
-            device0 = self._get_cpu_name()
-        self._logger.debug(f"\nUsing PyTorch with {device0} on {platform.system()}")
 
     def _init_train(self, path2save: Path, addon: str) -> None:
         """Do initialization of training routine
@@ -275,6 +281,9 @@ class PyTorchHandler:
         :param addon:       Addon name for model type ('ae' = Autoencoder or 'cl' = Classifier)
         :return:            None
         """
+        self._used_hw_dev = device(self.get_device)
+        self._logger.info(f"Used selected device: {self.get_device}")
+
         folder_name = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{self._index_folder}_{self._model.__class__.__name__}"
         if path2save == Path("."):
             self._path2save = self._path2run / folder_name
@@ -324,8 +333,8 @@ class PyTorchHandler:
 
     def __deterministic_get_dataloader_params(self) -> dict:
         """Getting the parameters for preparing the Training and Validation DataLoader for Deterministic Training"""
+        self._deterministic_generator = Generator()
         if self._settings_train.deterministic_do:
-            self._deterministic_generator = Generator()
             self._deterministic_generator.manual_seed(self._settings_train.deterministic_seed)
 
             def worker_init_fn(worker_id):
@@ -338,15 +347,13 @@ class PyTorchHandler:
         else:
             return {}
 
-    def _prepare_dataset_for_training(self, data_set, num_workers: int = 0) -> None:
+    def _prepare_dataset_for_training(self, data_set) -> None:
         """Loading data for training and validation in DataLoader format into class
         Args:
             data_set:        Dataclass DatasetFromFil loaded from file
-            num_workers:    Number of workers for calculation [Default: 0 --> single core]
         Return:
             None
         """
-        self.__setup_device()
         self._kfold_do = True if self._settings_train.num_kfold > 1 else False
         self._model_addon = data_set.get_topology_type
         self._cell_classes = data_set.get_dictionary
@@ -361,8 +368,8 @@ class PyTorchHandler:
                 shuffle=self._shuffle_do and not self._settings_train.deterministic_do,
             )
             for idx_train, idx_valid in kfold.split(np.arange(len(data_set))):
-                subsamps_train = SubsetRandomSampler(idx_train)
-                subsamps_valid = SubsetRandomSampler(idx_valid)
+                subsamps_train = SubsetRandomSampler(idx_train, generator=self._deterministic_generator)
+                subsamps_valid = SubsetRandomSampler(idx_valid, generator=self._deterministic_generator)
                 out_train.append(
                     DataLoader(
                         data_set,
@@ -386,8 +393,8 @@ class PyTorchHandler:
             split_pos = int(len(data_set) * (1 - self._settings_train.data_split_ratio))
             idx_train = idx[0:split_pos]
             idx_valid = idx[split_pos:]
-            subsamps_train = SubsetRandomSampler(idx_train)
-            subsamps_valid = SubsetRandomSampler(idx_valid)
+            subsamps_train = SubsetRandomSampler(idx_train, generator=self._deterministic_generator)
+            subsamps_valid = SubsetRandomSampler(idx_valid, generator=self._deterministic_generator)
             out_train.append(
                 DataLoader(
                     data_set,
@@ -405,17 +412,6 @@ class PyTorchHandler:
                 )
             )
 
-        # --- CUDA support for dataset
-        if cuda.is_available():
-            for idx, dataset in enumerate(out_train):
-                out_train[idx].pin_memory = True
-                out_train[idx].pin_memory_device = self._used_hw_dev.type
-                out_train[idx].num_workers = num_workers
-
-                out_valid[idx].pin_memory = True
-                out_valid[idx].pin_memory_device = self._used_hw_dev.type
-                out_valid[idx].num_workers = num_workers
-
         # --- Output: Data
         self._train_loader = out_train
         self._valid_loader = out_valid
@@ -428,8 +424,12 @@ class PyTorchHandler:
         """Getting the path to the best trained model"""
         return [file for file in self._path2save.glob(f"*{type_model}*.pt")]
 
-    def load_model(self, model, learn_rate: float = 0.1) -> None:
-        """Loading optimizer, loss_fn into class
+    def _load_optimizer_loss_func(self, learn_rate: float = 0.1) -> None:
+        self._optimizer = self._settings_train.load_optimizer(self._model, learn_rate=learn_rate)
+        self._loss_fn = self._settings_train.get_loss_func()
+
+    def load_model(self, model: nn.Sequential | nn.Module, learn_rate: float = 0.1) -> None:
+        """Loading optimizer into class
         Args:
             model:          PyTorch Neural Network for Training / Inference
             learn_rate:     Learning rate used for SGD optimizer
@@ -437,8 +437,7 @@ class PyTorchHandler:
             None
         """
         self._model = model
-        self._optimizer = self._settings_train.load_optimizer(model, learn_rate=learn_rate)
-        self._loss_fn = self._settings_train.get_loss_func()
+        self._load_optimizer_loss_func(learn_rate=learn_rate)
 
         # --- Init. hardware for deterministic training
         if self._settings_train.deterministic_do:

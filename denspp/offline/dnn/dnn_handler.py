@@ -287,7 +287,10 @@ class PyTorchTrainer:
         self.__default_model = default_model
         self.__use_case = use_case
 
-        self.__prepare_training()
+        self._dataloader = self._get_dataset_loader()
+        self._settings_data = self._get_config_dataset(
+            default_dataset_name=self.__use_case, use_case=self.__use_case
+        )
         if settings == DefaultSettingsTraining:
             self._settings_ml = self._get_config_ml(
                 use_case=use_case, default_training_mode=settings.mode_train
@@ -552,12 +555,6 @@ class PyTorchTrainer:
 
         # --- Processing Step #4: Returning Results
         return [results_ae, results_cl]
-
-    def __prepare_training(self) -> None:
-        self._dataloader = self._get_dataset_loader()
-        self._settings_data = self._get_config_dataset(
-            default_dataset_name=self.__use_case, use_case=self.__use_case
-        )
 
     def do_training(self, path2save=Path(".")) -> list[TrainingResults]:
         """Running PyTorch Training for specified configuration
