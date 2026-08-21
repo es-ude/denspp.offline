@@ -165,12 +165,12 @@ class ControllerDataset:
             addon = "" if len(data.dict) == 0 else f" ({data.dict[idx]})"
             self._logger.info(f"\tclass {id0}{addon} --> {check[1][idx]} samples")
 
-    def load_dataset(self, do_print: bool = True) -> DatasetFromFile:
+    def load_dataset(self) -> DatasetFromFile:
         """Loading the dataset from defined data file
         :return:    Dataclass DatasetFromFile with attributes ['data', 'label', 'dict', 'mean']
         """
         if self._settings.data_type.lower() == "":
-            self.print_overview_datasets(do_print=do_print)
+            self.print_overview_datasets()
             raise AttributeError(
                 "--- Dataset is not available. Please type-in the data set name into the yaml file ---"
             )

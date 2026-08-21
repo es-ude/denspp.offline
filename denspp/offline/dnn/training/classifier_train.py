@@ -123,9 +123,9 @@ class TrainClassifier(PyTorchHandler):
 
         self._model.train(True)
         for tdata in self._train_loader[self._run_kfold]:
-            self._optimizer.zero_grad()
-            tdata_out = tdata["out"].to(self._used_hw_dev)
-            pred_cl, dec_cl = self._model(tdata["in"].to(self._used_hw_dev))
+            self._optimizer.zero_grad(set_to_none=True)
+            tdata_out = tdata["out"].to(self._used_hw_dev, non_blocking=True)
+            pred_cl, dec_cl = self._model(tdata["in"].to(self._used_hw_dev, non_blocking=True))
 
             loss = self._loss_fn(pred_cl, tdata_out)
             loss.backward()
@@ -156,8 +156,8 @@ class TrainClassifier(PyTorchHandler):
         with inference_mode():
             for vdata in self._valid_loader[self._run_kfold]:
                 # --- Validation phase of model
-                pred_cl, dec_cl = self._model(vdata["in"].to(self._used_hw_dev))
-                true_cl = vdata["out"].to(self._used_hw_dev)
+                pred_cl, dec_cl = self._model(vdata["in"].to(self._used_hw_dev, non_blocking=True))
+                true_cl = vdata["out"].to(self._used_hw_dev, non_blocking=True)
 
                 valid_loss += self._loss_fn(pred_cl, true_cl).item()
                 total_batches += 1

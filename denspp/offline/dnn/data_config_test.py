@@ -77,7 +77,7 @@ class TestDatasetConfig(TestCase):
     def test_dataset_remote(self):
         self.sets.data_type = "martinez"
         try:
-            DatasetLoader(settings=self.sets, temp_folder="temp_test").load_dataset(do_print=False)
+            DatasetLoader(settings=self.sets, temp_folder="temp_test").load_dataset()
         except:
             self.assertTrue(False)
         else:

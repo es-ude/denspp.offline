@@ -150,11 +150,11 @@ class TrainAutoencoder(PyTorchHandler):
 
         self._model.train(True)
         for tdata in self._train_loader[self._run_kfold]:
-            data_x = tdata["in"].to(self._used_hw_dev)
-            data_y = tdata["out"].to(self._used_hw_dev)
+            data_x = tdata["in"].to(self._used_hw_dev, non_blocking=True)
+            data_y = tdata["out"].to(self._used_hw_dev, non_blocking=True)
             data_p = self._model(data_x)[1]
 
-            self._optimizer.zero_grad()
+            self._optimizer.zero_grad(set_to_none=True)
             if len(data_y) > 2:
                 loss = self._loss_fn(flatten(data_p, 1), flatten(data_y, 1))
             else:
@@ -179,10 +179,10 @@ class TrainAutoencoder(PyTorchHandler):
         self._model.eval()
         with inference_mode():
             for vdata in self._valid_loader[self._run_kfold]:
-                data_x = vdata["in"].to(self._used_hw_dev)
-                data_y = vdata["out"].to(self._used_hw_dev)
-                data_m = vdata["mean"].to(self._used_hw_dev)
-                data_id = vdata["class"].to(self._used_hw_dev)
+                data_x = vdata["in"].to(self._used_hw_dev, non_blocking=True)
+                data_y = vdata["out"].to(self._used_hw_dev, non_blocking=True)
+                data_m = vdata["mean"].to(self._used_hw_dev, non_blocking=True)
+                data_id = vdata["class"].to(self._used_hw_dev, non_blocking=True)
                 data_p = self._model(data_x)[1]
 
                 self._total_batches_valid += 1
