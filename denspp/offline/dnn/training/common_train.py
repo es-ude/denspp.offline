@@ -82,6 +82,7 @@ class SettingsPytorch:
         num_kfold:          Integer value with applying k-fold cross validation
         num_epochs:         Integer value with number of epochs
         batch_size:         Integer value with batch size
+        learning_rate:      Float value with learning rate
         data_split_ratio:   Float value for splitting the input dataset between training and validation
         data_do_shuffle:    Boolean if data should be shuffled before training
         custom_metrics:     List with string of custom metrics to calculate during training
@@ -96,6 +97,7 @@ class SettingsPytorch:
     num_kfold: int
     num_epochs: int
     batch_size: int
+    learning_rate: float
     data_split_ratio: float
     data_do_shuffle: bool
     custom_metrics: list
@@ -121,23 +123,23 @@ class SettingsPytorch:
                 raise NotImplementedError("Loss function unknown! - Please implement or check!")
         return loss_func
 
-    def load_optimizer(self, model, learn_rate: float = 0.1) -> Any:
+    def load_optimizer(self, model) -> Any:
         """Loading the optimizer function
         :param model:       PyTorch Sequential of the model with pre-defined configuration
-        :param learn_rate:  Learning rate of the optimizer
         :return:            PyTorch Optimizer
         """
         if len(list(model.parameters())) == 0:
             params = model.model.parameters()
         else:
             params = model.parameters()
+
         match self.optimizer:
             case "Adam":
-                optim_func = optim.Adam(params)
+                optim_func = optim.Adam(params, lr=self.learning_rate)
             case "SGD":
-                optim_func = optim.SGD(params, lr=learn_rate)
+                optim_func = optim.SGD(params, lr=self.learning_rate)
             case _:
-                raise NotImplementedError("Optimizer function unknown! - Please implement or check!")
+                raise NotImplementedError("Optimizer function unknown! - Please check!")
         return optim_func
 
     def get_model(self, *args, **kwargs):
@@ -175,6 +177,7 @@ DefaultSettingsPytorch = SettingsPytorch(
     num_kfold=1,
     num_epochs=10,
     batch_size=256,
+    learning_rate=1e-3,
     data_do_shuffle=True,
     data_split_ratio=0.2,
     deterministic_do=False,
@@ -219,7 +222,6 @@ class PyTorchHandler:
         init_dnn_folder()
         self._logger = getLogger(__name__)
         # --- Preparing Neural Network
-        self._model = None
         self._loss_fn = None
         self._optimizer = None
         # --- Preparing options
@@ -270,8 +272,7 @@ class PyTorchHandler:
                 dev = "cpu"
         return dev
 
-    def __check_start_folder(self, new_folder: str = "runs"):
-        """Checking for starting folder to generate"""
+    def __check_start_folder(self, new_folder: str = "runs") -> None:
         self._path2run = Path(get_path_to_project(new_folder))
         self._path2run.mkdir(parents=True, exist_ok=True)
 
@@ -424,20 +425,19 @@ class PyTorchHandler:
         """Getting the path to the best trained model"""
         return [file for file in self._path2save.glob(f"*{type_model}*.pt")]
 
-    def _load_optimizer_loss_func(self, learn_rate: float = 0.1) -> None:
-        self._optimizer = self._settings_train.load_optimizer(self._model, learn_rate=learn_rate)
+    def _load_optimizer_loss_func(self) -> None:
+        self._optimizer = self._settings_train.load_optimizer(self._model)
         self._loss_fn = self._settings_train.get_loss_func()
 
-    def load_model(self, model: nn.Sequential | nn.Module, learn_rate: float = 0.1) -> None:
+    def load_model(self, model: nn.Sequential | nn.Module) -> None:
         """Loading optimizer into class
         Args:
             model:          PyTorch Neural Network for Training / Inference
-            learn_rate:     Learning rate used for SGD optimizer
         Returns:
             None
         """
         self._model = model
-        self._load_optimizer_loss_func(learn_rate=learn_rate)
+        self._load_optimizer_loss_func()
 
         # --- Init. hardware for deterministic training
         if self._settings_train.deterministic_do:

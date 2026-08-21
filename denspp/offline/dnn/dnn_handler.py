@@ -256,9 +256,9 @@ class PyTorchPlot:
 class PyTorchTrainer:
     _logger: Logger
     _plotter: PyTorchPlot
-    _settings_ml: SettingsTraining
-    _settings_data: SettingsDataset
-    _settings_model: SettingsClassifier | SettingsAutoencoder
+    _settings_ml: SettingsTraining = None
+    _settings_data: SettingsDataset = None
+    _settings_model: SettingsClassifier | SettingsAutoencoder = None
     _path2config: Path
     _dataloader: Any
     __default_model: str
@@ -337,7 +337,7 @@ class PyTorchTrainer:
     def get_model_overview(self) -> list[str]:
         """Returning an overview of model training methods during PyTorch Training"""
         if not self._settings_model:
-            raise ValueError("Available ")
+            raise ValueError("Missing settings class for the model training")
         return self._settings_model.get_model_overview()
 
     def get_model(self, *args, **kwargs):

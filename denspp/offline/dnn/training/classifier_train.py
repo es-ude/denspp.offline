@@ -23,7 +23,12 @@ from torch import (
 from denspp.offline import check_keylist_elements_any
 from denspp.offline.dnn.data_config import DatasetFromFile, SettingsDataset
 from denspp.offline.dnn.training.classifier_dataset import DatasetClassifier
-from denspp.offline.dnn.training.common_train import DataValidation, PyTorchHandler, SettingsPytorch
+from denspp.offline.dnn.training.common_train import (
+    DataValidation,
+    PyTorchHandler,
+    SettingsPytorch,
+    TrainingsDevice,
+)
 from denspp.offline.dnn.training.ptq_help import quantize_model_fxp
 from denspp.offline.metric.data_torch import (
     calculate_fbeta,
@@ -46,6 +51,7 @@ class SettingsClassifier(SettingsPytorch):
         num_kfold:          Integer value with applying k-fold cross validation
         num_epochs:         Integer value with number of epochs
         batch_size:         Integer value with batch size
+        learning_rate:      Floating value with learning rate
         data_split_ratio:   Float value for splitting the input dataset between training and validation
         data_do_shuffle:    Boolean if data should be shuffled before training
         custom_metrics:     List with string of custom metrics to calculate during training
@@ -62,6 +68,7 @@ DefaultSettingsTrainingCE = SettingsClassifier(
     num_kfold=1,
     num_epochs=10,
     batch_size=256,
+    learning_rate=1e-3,
     data_do_shuffle=True,
     data_split_ratio=0.2,
     deterministic_do=False,
@@ -81,14 +88,16 @@ class TrainClassifier(PyTorchHandler):
         config_train: SettingsClassifier,
         config_data: SettingsDataset,
         do_train: bool = True,
+        device_num: int = TrainingsDevice.auto,
     ) -> None:
         """Class for Handling Training of Classifiers
         :param config_data:     Settings for handling and loading the dataset (just for saving)
         :param config_train:    Settings for handling the PyTorch Trainings Routine of a Classifier
         :param do_train:        Do training of model otherwise only inference
+        :param device_num:      Integer value with number of devices to use (class TrainingsDevice)
         :return:                None
         """
-        PyTorchHandler.__init__(self, config_train, config_data, do_train)
+        PyTorchHandler.__init__(self, config_train, config_data, do_train, device_num)
         self._logger = getLogger(__name__)
         self.__metric_buffer = dict()
         self.__metric_result = dict()
