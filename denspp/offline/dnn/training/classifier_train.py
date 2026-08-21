@@ -19,6 +19,7 @@ from torch import (
     tensor,
     zeros,
 )
+from tqdm import tqdm
 
 from denspp.offline import check_keylist_elements_any
 from denspp.offline.dnn.data_config import DatasetFromFile, SettingsDataset
@@ -381,42 +382,54 @@ class TrainClassifier(PyTorchHandler):
             if self._kfold_do:
                 self._logger.info(f"Starting with Fold #{fold}")
 
-            for epoch in range(0, self._settings_train.num_epochs):
-                if self._settings_train.deterministic_do:
-                    self._deterministic_generator.manual_seed(
-                        self._settings_train.deterministic_seed + epoch
+            with tqdm(
+                range(0, self._settings_train.num_epochs), desc="Training Results", unit=" epochs"
+            ) as pbar:
+                for epoch in pbar:
+                    if self._settings_train.deterministic_do:
+                        self._deterministic_generator.manual_seed(
+                            self._settings_train.deterministic_seed + epoch
+                        )
+
+                    train_loss, train_acc = self.__do_training_epoch()
+                    valid_loss, valid_acc = self.__do_valid_epoch(metrics)
+                    self._logger.debug(
+                        f"Epoch {epoch + 1}/{self._settings_train.num_epochs} "
+                        f"({(epoch + 1) / self._settings_train.num_epochs * 100:.2f} %): "
+                        f"train_loss = {train_loss:.5f}, delta_loss = {train_loss - valid_loss:.5f}, "
+                        f"train_acc = {100 * train_acc:.4f} %, delta_acc = {100 * (train_acc - valid_acc):.4f} %"
+                    )
+                    pbar.set_postfix(
+                        done=f"{(epoch + 1) / self._settings_train.num_epochs * 100:.2f} %",
+                        loss_train=f"{train_loss:.5f}",
+                        loss_delta=f"{train_loss - valid_loss:.5f}",
+                        acc_train=f"{100 * train_acc:.4f} %",
+                        acc_delta=f"{100 * (train_acc - valid_acc):.4f} %",
                     )
 
-                train_loss, train_acc = self.__do_training_epoch()
-                valid_loss, valid_acc = self.__do_valid_epoch(metrics)
-                self._logger.info(
-                    f"... results of epoch {epoch + 1}/{self._settings_train.num_epochs} "
-                    f"[{(epoch + 1) / self._settings_train.num_epochs * 100:.2f} %]: "
-                    f"train_loss = {train_loss:.5f}, delta_loss = {train_loss - valid_loss:.5f}, "
-                    f"train_acc = {100 * train_acc:.4f} %, delta_acc = {100 * (train_acc - valid_acc):.4f} %"
-                )
+                    # Saving metrics after each epoch
+                    epoch_train_acc.append(train_acc)
+                    epoch_train_loss.append(train_loss)
+                    epoch_valid_acc.append(valid_acc)
+                    epoch_valid_loss.append(valid_loss)
+                    self.__process_epoch_metrics_calculation(False, metrics)
 
-                # Saving metrics after each epoch
-                epoch_train_acc.append(train_acc)
-                epoch_train_loss.append(train_loss)
-                epoch_valid_acc.append(valid_acc)
-                epoch_valid_loss.append(valid_loss)
-                self.__process_epoch_metrics_calculation(False, metrics)
+                    # Tracking the best performance and saving the model
+                    if valid_loss < best_loss[1]:
+                        best_loss = [train_loss, valid_loss]
+                        best_acc = [train_acc, valid_acc]
+                        path2model = self._path2temp / f"model_cl_fold{fold:03d}_epoch{epoch:04d}.pt"
+                        save(self._model, path2model)
+                        patience_counter = self._settings_train.patience
+                    else:
+                        patience_counter -= 1
 
-                # Tracking the best performance and saving the model
-                if valid_loss < best_loss[1]:
-                    best_loss = [train_loss, valid_loss]
-                    best_acc = [train_acc, valid_acc]
-                    path2model = self._path2temp / f"model_cl_fold{fold:03d}_epoch{epoch:04d}.pt"
-                    save(self._model, path2model)
-                    patience_counter = self._settings_train.patience
-                else:
-                    patience_counter -= 1
-
-                # Early Stopping
-                if patience_counter <= 0:
-                    self._logger.info(f"... training stopped due to no change after {epoch + 1} epochs!")
-                    break
+                    # Early Stopping
+                    if patience_counter <= 0:
+                        self._logger.info(
+                            f"... training stopped due to no change after {epoch + 1} epochs!"
+                        )
+                        break
 
             copy(path2model, self._path2save)
             self._save_train_results(best_loss[0], best_loss[1], "Loss")
