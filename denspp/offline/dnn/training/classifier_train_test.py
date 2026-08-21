@@ -68,7 +68,7 @@ class TestPyTorchModelConfigClassifier(TestCase):
     def test_load_optimizer(self):
         self.sets.model_name = "waveforms_mlp_cl_v0"
         model = self.sets.get_model()
-        rslt = self.sets.load_optimizer(model=model, learn_rate=0.2)
+        rslt = self.sets.load_optimizer(model=model)
         assert type(rslt) == Adam
 
 
@@ -91,7 +91,7 @@ class TestClassifierTraining(TestCase):
         self.assertEqual(rslt.as_posix(), get_path_to_project().as_posix())
 
     def test_number_parameters(self):
-        self.dut.load_model(model=dummy_mlp_cl_v0(input_size=self.dataset.data.shape[1]), learn_rate=0.1)
+        self.dut.load_model(model=dummy_mlp_cl_v0(input_size=self.dataset.data.shape[1]))
         rslt = self.dut.get_number_parameters_from_model
         self.assertEqual(rslt, 4206)
 
@@ -106,7 +106,7 @@ class TestClassifierTraining(TestCase):
         self.dut.load_dataset(
             dataset=self.dataset,
         )
-        self.dut.load_model(model=dummy_mlp_cl_v0(input_size=self.dataset.data.shape[1]), learn_rate=0.1)
+        self.dut.load_model(model=dummy_mlp_cl_v0(input_size=self.dataset.data.shape[1]))
         metric = self.dut.do_training()
         self.assertEqual(len(metric), 1)
         self.assertEqual(
@@ -131,7 +131,7 @@ class TestClassifierTraining(TestCase):
 
     def test_post_validation_without_ptq(self):
         self.dut.load_dataset(dataset=self.dataset)
-        self.dut.load_model(model=dummy_mlp_cl_v0(input_size=self.dataset.data.shape[1]), learn_rate=0.1)
+        self.dut.load_model(model=dummy_mlp_cl_v0(input_size=self.dataset.data.shape[1]))
         self.dut.do_training()
         rslt = self.dut.do_post_training_validation(do_ptq=False)
         self.assertEqual(rslt.label_names, self.dataset.dict)
@@ -140,7 +140,7 @@ class TestClassifierTraining(TestCase):
         self.dut.load_dataset(
             dataset=self.dataset,
         )
-        self.dut.load_model(model=dummy_mlp_cl_v0(input_size=self.dataset.data.shape[1]), learn_rate=0.1)
+        self.dut.load_model(model=dummy_mlp_cl_v0(input_size=self.dataset.data.shape[1]))
         self.dut.do_training()
         rslt = self.dut.do_post_training_validation(do_ptq=True)
         self.assertEqual(rslt.label_names, self.dataset.dict)
@@ -149,10 +149,7 @@ class TestClassifierTraining(TestCase):
         self.dut.load_dataset(
             dataset=self.dataset,
         )
-        self.dut.load_model(
-            model=dummy_lstm_cl_v0(input_size=self.dataset.data.shape[1]),
-            learn_rate=0.1,
-        )
+        self.dut.load_model(model=dummy_lstm_cl_v0(input_size=self.dataset.data.shape[1]))
         metric = self.dut.do_training()
         self.assertEqual(len(metric), 1)
         self.assertEqual(
@@ -177,10 +174,7 @@ class TestClassifierTraining(TestCase):
 
     def test_post_validation_without_ptq_lstm(self):
         self.dut.load_dataset(dataset=self.dataset)
-        self.dut.load_model(
-            model=dummy_lstm_cl_v0(input_size=self.dataset.data.shape[1]),
-            learn_rate=0.1,
-        )
+        self.dut.load_model(model=dummy_lstm_cl_v0(input_size=self.dataset.data.shape[1]))
         self.dut.do_training()
         rslt = self.dut.do_post_training_validation(do_ptq=False)
         self.assertEqual(rslt.label_names, self.dataset.dict)
@@ -189,10 +183,7 @@ class TestClassifierTraining(TestCase):
         self.dut.load_dataset(
             dataset=self.dataset,
         )
-        self.dut.load_model(
-            model=dummy_lstm_cl_v0(input_size=self.dataset.data.shape[1]),
-            learn_rate=0.1,
-        )
+        self.dut.load_model(model=dummy_lstm_cl_v0(input_size=self.dataset.data.shape[1]))
         self.dut.do_training()
         rslt = self.dut.do_post_training_validation(do_ptq=True)
         self.assertEqual(rslt.label_names, self.dataset.dict)

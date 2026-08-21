@@ -44,13 +44,13 @@ class TestCommonPyTorchTrain(TestCase):
 
     def test_model_number_parameters_cl(self):
         model = mnist_mlp_cl_v0()
-        self.dut.load_model(model=model, learn_rate=0.2)
+        self.dut.load_model(model=model)
         rslt = self.dut.get_number_parameters_from_model
         self.assertEqual(rslt, 31910)
 
     def test_model_number_parameters_ae(self):
         model = mnist_mlp_ae_v0()
-        self.dut.load_model(model=model, learn_rate=0.2)
+        self.dut.load_model(model=model)
         rslt = self.dut.get_number_parameters_from_model
         self.assertEqual(rslt, 64574)
 
