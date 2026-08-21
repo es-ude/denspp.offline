@@ -1,0 +1,28 @@
+input: [1, 28, 28]
+output: 10
+
+sequence:
+  - block: "1"
+    op_candidates: "classifier"
+    type_repeat:
+      type: "repeat_params"
+      depth: [1, 2]
+  - block: "2"
+    op_candidates: "linear"
+
+default_op_params:
+  linear:
+    width: [64, 96, 128, 160, 192]
+  batch_norm:
+  activation:
+    op: ["relu", "prelu"]
+
+composites:
+  classifier:
+    sequence:
+      - block: "classifier_1"
+        op_candidates: "linear"
+      - block: "classifier_2"
+        op_candidates: "batch_norm"
+      - block: "classifier_3"
+        op_candidates: "activation"

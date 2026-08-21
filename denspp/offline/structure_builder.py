@@ -61,6 +61,7 @@ def init_dnn_folder(new_folder: str = "") -> None:
     folder_structure = ["models", "dataset"]
     copy_files = {
         "run_training.py": "",
+        "run_explorer.py": "",
         "call_dataset.py": folder_start,
         "example_model.py": f"{folder_start}/models",
     }

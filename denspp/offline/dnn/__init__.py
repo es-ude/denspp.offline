@@ -10,6 +10,14 @@ from .dnn_handler import (
     PyTorchTrainer,
     SettingsTraining,
 )
+from .explorer import (
+    DefaultSettingsExplorer,
+    DefaultSettingsSearchSpace,
+    ExploreClassifier,
+    SettingsExplorer,
+    SettingsSearchSpace,
+    TrainingsDevice,
+)
 from .model_library import CellLibrary, ModelLibrary
 
 __all__ = [
@@ -23,4 +31,10 @@ __all__ = [
     "SettingsTraining",
     "CellLibrary",
     "ModelLibrary",
+    "SettingsExplorer",
+    "DefaultSettingsExplorer",
+    "ExploreClassifier",
+    "TrainingsDevice",
+    "SettingsSearchSpace",
+    "DefaultSettingsSearchSpace",
 ]
