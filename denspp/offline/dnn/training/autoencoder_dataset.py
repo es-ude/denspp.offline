@@ -6,7 +6,7 @@ from denspp.offline.dnn import DatasetFromFile
 
 
 class DatasetAutoencoder(Dataset):
-    def __init__(self, dataset: DatasetFromFile, noise_std=0.1, mode_train=0):
+    def __init__(self, dataset: DatasetFromFile, noise_std: float = 0.1, mode_train: int = 0) -> None:
         """Dataset Preparator for training Autoencoder
         :param dataset:             Dataclass DatasetFromFile with data from extern:
         :param noise_std:           Adding noise standard deviation on input data
@@ -16,6 +16,7 @@ class DatasetAutoencoder(Dataset):
                                     2: Denoising Autoencoder (add random noise),
                                     3: Denoising Autoencoder (add gaussian noise)]
         """
+        super().__init__()
         self.__mode = [
             "",
             "(mean) Denoising ",
@@ -31,10 +32,10 @@ class DatasetAutoencoder(Dataset):
         self.__mean = np.array(dataset.mean, dtype=np.float32)
         self.__labeled_dictionary = dataset.dict if isinstance(dataset.dict, list) else []
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.__label.shape[0]
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> dict:
         if is_tensor(idx):
             idx = idx.tolist()
 

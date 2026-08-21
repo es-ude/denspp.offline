@@ -1,6 +1,6 @@
 # First steps
 
-Welcome to the denspp.offline Framework. This Python framework can be used for anaylsing transient data from any application / use-case.
+Welcome to the *denspp.offline* Framework. This Python framework can be used for anaylsing transient data from any application / use-case.
 
 ## Usable Techniques
 - Analysis of transient data for evaluating a real-time suitable signal processing pipeline
