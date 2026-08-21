@@ -23,6 +23,7 @@ from torch import (
 from denspp.offline import check_keylist_elements_any
 from denspp.offline.dnn.data_config import DatasetFromFile, SettingsDataset
 from denspp.offline.dnn.training.classifier_dataset import DatasetClassifier
+from denspp.offline.dnn.training.common_train import DataValidation, PyTorchHandler, SettingsPytorch
 from denspp.offline.dnn.training.ptq_help import quantize_model_fxp
 from denspp.offline.metric.data_torch import (
     calculate_fbeta,
@@ -30,8 +31,6 @@ from denspp.offline.metric.data_torch import (
     calculate_precision,
     calculate_recall,
 )
-
-from .common_train import DataValidation, PyTorchHandler, SettingsPytorch
 
 
 @dataclass
@@ -109,7 +108,7 @@ class TrainClassifier(PyTorchHandler):
         dataset0 = DatasetClassifier(
             dataset=dataset,
         )
-        self._prepare_dataset_for_training(data_set=dataset0, num_workers=0)
+        self._prepare_dataset_for_training(data_set=dataset0)
 
     def __do_training_epoch(self) -> tuple[float, float]:
         """Do training during epoch of training
