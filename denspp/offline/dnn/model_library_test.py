@@ -8,9 +8,9 @@ from .model_library import CellLibrary, DatasetLoaderLibrary, ModelLibrary
 
 class TestModelLibrary(TestCase):
     def test_model_overview(self):
-        from denspp.offline.logger import define_logger_runtime_debug
+        from denspp.offline.logger import define_logger_testing
 
-        define_logger_runtime_debug(save_file=False)
+        define_logger_testing(save_file=False)
 
         rslt = ModelLibrary().get_registry().get_library_overview()
         matches = [item for item in rslt if "DatasetLoader" not in item]
@@ -36,9 +36,9 @@ class TestModelLibrary(TestCase):
 
 class TestDatasetlibrary(TestCase):
     def test_datasetloader_overview(self):
-        from denspp.offline.logger import define_logger_runtime_debug
+        from denspp.offline.logger import define_logger_testing
 
-        define_logger_runtime_debug(save_file=False)
+        define_logger_testing(save_file=False)
 
         rslt = DatasetLoaderLibrary().get_registry().get_library_overview()
         matches = [item for item in rslt if "DatasetLoader" in item]
@@ -48,9 +48,9 @@ class TestDatasetlibrary(TestCase):
 
 class TestCellLibrary(TestCase):
     def test_cellibrary_overview(self):
-        from denspp.offline.logger import define_logger_runtime_debug
+        from denspp.offline.logger import define_logger_testing
 
-        define_logger_runtime_debug(save_file=False)
+        define_logger_testing(save_file=False)
 
         rslt = CellLibrary().get_registry().get_library_overview()
         matches = [item for item in rslt if "DatasetLoader" not in item]
