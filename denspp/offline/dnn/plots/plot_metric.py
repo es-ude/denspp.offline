@@ -278,7 +278,6 @@ def plot_statistic(
     """
     do_plots_avai = isinstance(valid_cl, np.ndarray | list)
     dict_available = isinstance(cl_dict, np.ndarray | list | dict)
-    use_cl_dict = list()
     if dict_available:
         if isinstance(cl_dict, np.ndarray):
             cl_dict0 = cl_dict.tolist()
@@ -298,17 +297,14 @@ def plot_statistic(
     # Histogram of Training data
     check = np.unique(train_cl, return_counts=True)
     axs[0].bar(check[0], check[1], color="k", width=0.8)
+    use_cl_dict = list()
     if dict_available:
         if not len(cl_dict) == 0:
-            if isinstance(cl_dict, dict):
-                for key in cl_dict.keys():
-                    use_cl_dict.append(key)
-            else:
-                for idx in np.unique(train_cl):
-                    use_cl_dict.append(cl_dict[int(idx)])
+            for idx in check[0]:
+                use_cl_dict.append(cl_dict[idx])
             axs[0].set_xticks(
-                check[0],
-                (use_cl_dict if check[0].size != 1 else [use_cl_dict[0]]),
+                ticks=check[0],
+                labels=use_cl_dict,
                 rotation=xtick_text,
             )
     else:
@@ -319,14 +315,17 @@ def plot_statistic(
     axs[0].set_title("Training")
 
     # Histogram of Validation data
+    use_cl_dict = list()
     if do_plots_avai:
         check = np.unique(valid_cl, return_counts=True)
         axs[1].bar(check[0], check[1], color="k", width=0.8)
         if dict_available:
+            for idx in check[0]:
+                use_cl_dict.append(cl_dict[idx])
             if not len(cl_dict) == 0:
                 axs[1].set_xticks(
-                    check[0],
-                    (use_cl_dict if check[0].size != 1 else [use_cl_dict[0]]),
+                    ticks=check[0],
+                    labels=use_cl_dict,
                     rotation=xtick_text,
                 )
         else:
