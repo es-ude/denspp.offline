@@ -40,6 +40,7 @@ def plot_confusion(
         If path2save is provided, the plots are saved to the specified path.
     """
     dict_available = False
+    cl_used = None
     if plotting == "class" or plotting == "both":
         """Plotting the Confusion Matrix"""
         if isinstance(cl_dict, np.ndarray):
@@ -54,11 +55,11 @@ def plot_confusion(
         else:
             dict_available = False
 
-    max_key_length = 0
     precision, recall, fbeta, _ = precision_recall_fscore_support(
         true_labels, pred_labels, average="weighted"
     )
 
+    do_xticks_vertical = False
     if plotting == "timestamps" or plotting == "both":
         # --- Plotting the results for the timestamp comparison
         plt.imshow(timestamps_result, cmap=plt.cm.Blues, interpolation="nearest")
@@ -81,16 +82,10 @@ def plot_confusion(
         else:
             plt.title(f"F1-Score = {timestamps_f1:.4f}")
     elif dict_available:
-        for keys in cl_used:
-            max_key_length = len(keys) if len(keys) > max_key_length else max_key_length
-        do_xticks_vertical = bool(max_key_length > 5) and np.unique(true_labels).size > 3
         use_cl_dict = list()
-        if isinstance(cl_dict, dict):
-            for key in cl_dict.keys():
-                use_cl_dict.append(key)
-        else:
-            for idx in np.unique(true_labels):
-                use_cl_dict.append(cl_used[int(idx)])
+        for idx in np.unique(true_labels):
+            use_cl_dict.append(cl_used[idx])
+        do_xticks_vertical = np.unique(true_labels).size > 5 and len(use_cl_dict) > 5
 
         cmp = ConfusionMatrixDisplay.from_predictions(
             y_true=true_labels,
@@ -99,7 +94,6 @@ def plot_confusion(
             display_labels=use_cl_dict,
         )
     else:
-        do_xticks_vertical = False
         cmp = ConfusionMatrixDisplay.from_predictions(
             y_true=true_labels,
             y_pred=pred_labels,
@@ -111,12 +105,13 @@ def plot_confusion(
     cmp.plot(
         ax=ax,
         colorbar=False,
-        values_format=".3f",
-        text_kw={"fontsize": 8},
+        values_format=".2f",
+        text_kw={"fontsize": 6},
         cmap=plt.cm.Blues,
-        xticks_rotation=("vertical" if do_xticks_vertical else "horizontal"),
+        xticks_rotation=(75 if do_xticks_vertical else "horizontal"),
     )
-    cmp.ax_.set_title(f"Precision = {100 * precision:.2f}%, Recall = {100 * recall:.2f}%")
+    ax.tick_params(axis="both", labelsize=10)
+    cmp.ax_.set_title(f"Precision = {precision:.3f}, Recall = {recall:.3f}", fontsize=12)
     plt.tight_layout()
     # --- saving
     if path2save:

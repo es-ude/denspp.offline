@@ -356,6 +356,7 @@ class PyTorchHandler:
             None
         """
         self._kfold_do = True if self._settings_train.num_kfold > 1 else False
+        do_shuffle_data = self._shuffle_do or self._settings_train.deterministic_do
         self._model_addon = data_set.get_topology_type
         self._cell_classes = data_set.get_dictionary
         params_deterministic = self.__deterministic_get_dataloader_params()
@@ -366,7 +367,7 @@ class PyTorchHandler:
         if self._kfold_do:
             kfold = KFold(
                 n_splits=self._settings_train.num_kfold,
-                shuffle=self._shuffle_do and not self._settings_train.deterministic_do,
+                shuffle=do_shuffle_data,
             )
             for idx_train, idx_valid in kfold.split(np.arange(len(data_set))):
                 subsamps_train = SubsetRandomSampler(idx_train, generator=self._deterministic_generator)
@@ -389,7 +390,7 @@ class PyTorchHandler:
                 )
         else:
             idx = np.arange(len(data_set))
-            if self._shuffle_do and not self._settings_train.deterministic_do:
+            if do_shuffle_data:
                 np.random.shuffle(idx)
             split_pos = int(len(data_set) * (1 - self._settings_train.data_split_ratio))
             idx_train = idx[0:split_pos]
