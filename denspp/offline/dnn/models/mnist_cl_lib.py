@@ -19,7 +19,7 @@ class mnist_test_cl_v1(nn.Module):
         super().__init__()
         self.model_shape = (1, 28, 28)
 
-        self.model = nn.Sequential(nn.Linear(784, 10), nn.ReLU())
+        self.model = nn.Sequential(nn.Linear(784, 10))
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x = flatten(x, start_dim=1)
@@ -45,7 +45,7 @@ class mnist_test_cl_v3(nn.Module):
         super().__init__()
         self.model_shape = (1, 28, 28)
 
-        self.model = nn.Sequential(nn.Linear(784, 10), nn.BatchNorm1d(10), nn.ReLU())
+        self.model = nn.Sequential(nn.Linear(784, 10), nn.BatchNorm1d(10))
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x = flatten(x, start_dim=1)
@@ -58,27 +58,7 @@ class mnist_test_cl_v4(nn.Module):
         super().__init__()
         self.model_shape = (1, 28, 28)
 
-        self.model = nn.Sequential(nn.Linear(784, 10), nn.BatchNorm1d(10), nn.Softmax(dim=1))
-
-    def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
-        x = flatten(x, start_dim=1)
-        prob = self.model(x)
-        return prob, argmax(prob, 1)
-
-
-class mnist_test_cl_v5(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.model_shape = (1, 28, 28)
-
-        self.model = nn.Sequential(
-            nn.Linear(784, 250),
-            nn.BatchNorm1d(250),
-            nn.ReLU(),
-            nn.Linear(250, 10),
-            nn.BatchNorm1d(10),
-            nn.Softmax(dim=1),
-        )
+        self.model = nn.Sequential(nn.Linear(784, 10), nn.BatchNorm1d(40), nn.ReLU(), nn.Linear(40, 10))
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
         x = flatten(x, start_dim=1)
@@ -102,8 +82,6 @@ class mnist_test_cl_v6(nn.Module):
             nn.BatchNorm1d(90),
             nn.ReLU(),
             nn.Linear(90, 10),
-            nn.BatchNorm1d(10),
-            nn.Softmax(dim=1),
         )
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
@@ -139,9 +117,7 @@ class mnist_test_cl_v7(nn.Module):
             nn.Linear(64, 24),
             nn.BatchNorm1d(24),
             nn.ReLU(),
-            nn.Linear(24, 10),
-            nn.BatchNorm1d(10),
-            nn.Softmax(dim=1),
+            nn.Linear(24, 10)
         )
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:

@@ -22,8 +22,6 @@ class synthetic_ae_cl_v1(nn.Module):
             nn.ReLU(),
             nn.Dropout(lin_drop[1]),
             nn.Linear(lin_size[2], lin_size[3]),
-            nn.BatchNorm1d(lin_size[3], affine=do_train_bias),
-            # nn.Softmax(dim=1)
         )
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:

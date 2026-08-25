@@ -34,10 +34,10 @@ class synthetic_dnn_ae_v1(nn.Module):
                 out_features=iohiddenlayer[3],
                 bias=do_train_bias,
             ),
-            nn.BatchNorm1d(num_features=iohiddenlayer[3], affine=do_train_batch),
         )
         # --- Decoder Path
         self.decoder = nn.Sequential(
+            nn.BatchNorm1d(num_features=iohiddenlayer[3], affine=do_train_batch),
             nn.Tanh(),
             nn.Linear(
                 in_features=iohiddenlayer[3],
@@ -92,10 +92,10 @@ class synthetic_dnn_ae_v2(nn.Module):
                 out_features=iohiddenlayer[2],
                 bias=do_train_bias,
             ),
-            nn.BatchNorm1d(num_features=iohiddenlayer[2], affine=do_train_batch),
         )
         # --- Decoder Path
         self.decoder = nn.Sequential(
+            nn.BatchNorm1d(num_features=iohiddenlayer[2], affine=do_train_batch),
             nn.Tanh(),
             nn.Linear(
                 in_features=iohiddenlayer[2],

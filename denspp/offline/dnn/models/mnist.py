@@ -23,11 +23,11 @@ class mnist_mlp_cl_v0(nn.Module):
                     bias=do_train_bias,
                 ),
             )
-            self.model.add_module(
-                f"batch1d_{idx:02d}",
-                nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch),
-            )
             if not idx == len(config_network) - 1:
+                self.model.add_module(
+                    f"batch1d_{idx:02d}",
+                    nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch),
+                )
                 self.model.add_module(f"act_{idx:02d}", nn.ReLU())
             else:
                 pass
@@ -60,17 +60,21 @@ class mnist_mlp_ae_v0(nn.Module):
                     bias=do_train_bias,
                 ),
             )
-            self.encoder.add_module(
-                f"batch1d_{idx:02d}",
-                nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch),
-            )
             if not idx == len(config_network) - 1:
+                self.encoder.add_module(
+                    f"batch1d_{idx:02d}",
+                    nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch),
+                )
                 self.encoder.add_module(f"act_{idx:02d}", nn.ReLU())
 
         # --- Model Deployment: Decoder
         self.decoder = nn.Sequential()
         for idx, layer_size in enumerate(reversed(config_network[:-1]), start=1):
             if idx == 1:
+                self.encoder.add_module(
+                    f"batch1d_{idx:02d}",
+                    nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch),
+                )
                 self.decoder.add_module(f"act_dec_{idx:02d}", nn.ReLU())
             self.decoder.add_module(
                 f"linear_{idx:02d}",

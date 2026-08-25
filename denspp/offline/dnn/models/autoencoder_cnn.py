@@ -39,11 +39,11 @@ class synthetic_cnn_ae_v1(nn.Module):
                 stride=kernel_stride[2],
                 padding=kernel_padding[2],
             ),
-            nn.BatchNorm1d(kernel_layer[3], affine=do_bias_train),
         )
         self.flatten = nn.Flatten(start_dim=1)
 
         self.decoder = nn.Sequential(
+            nn.BatchNorm1d(kernel_layer[3], affine=do_bias_train),
             nn.Tanh(),
             nn.ConvTranspose1d(
                 kernel_layer[3],
@@ -123,13 +123,13 @@ class synthetic_cnn_ae_v2(nn.Module):
                 stride=kernel_stride[2],
                 padding=kernel_padding[2],
             ),
-            nn.BatchNorm1d(kernel_layer[3], affine=do_bias_train),
         )
         self.pool = nn.MaxPool1d(pool_size[0], stride=pool_stride[0], return_indices=True)
         self.flatten = nn.Flatten(start_dim=1)
         self.un_pool = nn.MaxUnpool1d(pool_size[1], stride=pool_stride[1])
         # Decoder setup
         self.decoder = nn.Sequential(
+            nn.BatchNorm1d(kernel_layer[3], affine=do_bias_train),
             nn.Tanh(),
             nn.ConvTranspose1d(
                 kernel_layer[3],

@@ -21,14 +21,13 @@ class waveforms_mlp_cl_v0(nn.Module):
                     bias=do_train_bias,
                 ),
             )
-            self.model.add_module(
-                f"batch1d_{idx:02d}",
-                nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch),
-            )
             if not idx == len(config_network) - 1:
+                self.model.add_module(
+                    f"batch1d_{idx:02d}",
+                    nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch),
+                )
                 self.model.add_module(f"act_{idx:02d}", nn.ReLU())
             else:
-                # self.model.add_module(f"soft", nn.Softmax(dim=1))
                 pass
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
@@ -57,11 +56,11 @@ class waveforms_mlp_ae_v0(nn.Module):
                     bias=do_train_bias,
                 ),
             )
-            self.encoder.add_module(
-                f"batch1d_{idx:02d}",
-                nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch),
-            )
             if not idx == len(config_network) - 1:
+                self.encoder.add_module(
+                    f"batch1d_{idx:02d}",
+                    nn.BatchNorm1d(num_features=layer_size, affine=do_train_batch),
+                )
                 self.encoder.add_module(f"act_{idx:02d}", nn.ReLU())
 
         # --- Model Deployment: Decoder
