@@ -106,7 +106,6 @@ class Comparator(CommonAnalogFunctions):
         )
 
     def __apply_hysteresis(self, du: np.ndarray, mode: int) -> np.ndarray:
-        """Processing differential input for generating hysteresis"""
         thr = self.__type_hysteresis(mode)
 
         u_out = np.zeros(du.shape)
@@ -121,13 +120,12 @@ class Comparator(CommonAnalogFunctions):
         return u_out
 
     def __type_hysteresis(self, mode: int) -> list:
-        """Definition of type"""
         thr_zero = self._settings.offset
         thr_pos = thr_zero + self._settings.hysteresis * (self._settings.vdd - self._settings.vcm)
         thr_neg = thr_zero + self._settings.hysteresis * (self._settings.vss - self._settings.vcm)
 
-        self.__logger.debug(f"Pos. hysterese window voltage at: {thr_pos} V")
-        self.__logger.debug(f"Neg. hysterese window voltage at: {thr_neg} V")
+        self.__logger.debug(f"Pos. hysteresis window voltage at: {thr_pos} V")
+        self.__logger.debug(f"Neg. hysteresis window voltage at: {thr_neg} V")
         match mode:
             case 1:
                 # --- Single Side, negative VSS

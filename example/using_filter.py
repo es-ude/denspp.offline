@@ -39,9 +39,9 @@ if __name__ == "__main__":
         f_type='butter',
         b_type='lowpass'
     )
-    dut = Filtering(setting=sets_filt)
+    dut = Filtering(settings=sets_filt)
 
-    coeff_qnt = dut.get_coeffs_quantized(bit_size=bitwidth_total, bit_frac=bitwidth_frac)[0]
+    coeff_qnt = dut.get_coeffs_quantized(bit_size=bitwidth_total)[0]
 
     plot_filter_fir_coeffs(
         coeffs=coeff_qnt,
