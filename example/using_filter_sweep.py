@@ -53,7 +53,7 @@ if __name__ == "__main__":
     fsweep = np.linspace(start=1, stop=sets_filt.fs/2, num=101, endpoint=False)
     for val in fsweep:
         sets_filt.f_filt = [val]
-        coeffs.append(Filtering(setting=sets_filt).get_coeffs())
+        coeffs.append(Filtering(settings=sets_filt).get_coeffs())
 
     plot_filter_coeffs(
         coeffs=coeffs,
