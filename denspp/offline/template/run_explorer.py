@@ -1,14 +1,12 @@
 from copy import deepcopy
 from torch import nn
 
-from denspp.offline import get_path_to_project
 from denspp.offline.logger import define_logger_runtime
-from denspp.offline.dnn import SettingsExplorer, DefaultSettingsExplorer, ExploreClassifier, DefaultSettingsSearchSpace
+from denspp.offline.dnn import SettingsExplorer, DefaultSettingsExplorer, ExploreClassifier
 
 
 if __name__ == "__main__":
     shuffle_data = True
-    path2yaml = get_path_to_project() / "denspp/offline/dnn/explorer/mnist_search_space_easy.yaml"
 
     define_logger_runtime()
     sets: SettingsExplorer = deepcopy(DefaultSettingsExplorer)
