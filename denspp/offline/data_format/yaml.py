@@ -101,18 +101,14 @@ class YamlHandler:
         self.write_dict_to_yaml(data2yaml)
         self.__logger.info(f"Create new yaml file in folder: {self._path2folder}")
 
-    def write_dict_to_yaml(self, config_data: dict, print_output: bool = False) -> None:
+    def write_dict_to_yaml(self, config_data: dict) -> None:
         """Writing list with configuration sets to YAML file
         :param config_data:     Dict. with configuration
-        :param print_output:    Printing the data in YAML format
         :return:                None
         """
         self._path2folder.mkdir(parents=True, exist_ok=True)
         with open(self.__path2chck, "w") as f:
             yaml.dump(config_data, f, sort_keys=False)
-
-        if print_output:
-            print(yaml.dump(config_data, sort_keys=False))
 
     def get_dict(self) -> dict:
         """Getting the dictionary with configuration sets from YAML file

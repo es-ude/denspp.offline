@@ -122,7 +122,6 @@ def plot_mnist_dataset(
     """
     plt.figure()
     axs = [plt.subplot(3, 3, idx + 1) for idx in range(9)]
-    print(label, type(label), type(label[0]))
     for idx, ax in enumerate(axs):
         pos_num = int(np.argwhere(label == idx).flatten()[0])
         ax.imshow(data[pos_num], cmap=plt.get_cmap("gray"))
