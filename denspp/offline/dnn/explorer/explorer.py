@@ -36,8 +36,6 @@ from .settings import (
     SettingsSearchSpace,
 )
 
-# TODO: Add code into explorer (hw_nas, estimator, trainer)
-
 
 class ExplorerModel(nn.Module):
     def __init__(self, model: nn.Module, shape: tuple):

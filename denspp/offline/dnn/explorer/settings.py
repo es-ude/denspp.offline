@@ -37,7 +37,7 @@ DefaultSettingsSearchSpace = SettingsSearchSpace(
         {
             "block": "1",
             "op_candidates": "classifier",
-            "type_repeat": {"type": "repeat_params", "depth": [1, 2]},
+            "type_repeat": {"type": "repeat_op", "depth": [1, 2]},
         },
         {"block": "2", "op_candidates": "linear"},
     ],
