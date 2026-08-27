@@ -117,7 +117,7 @@ class mnist_test_cl_v7(nn.Module):
             nn.Linear(64, 24),
             nn.BatchNorm1d(24),
             nn.ReLU(),
-            nn.Linear(24, 10)
+            nn.Linear(24, 10),
         )
 
     def forward(self, x: Tensor) -> tuple[Tensor, Tensor]:
