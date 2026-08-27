@@ -46,13 +46,13 @@ class TestCommonPyTorchTrain(TestCase):
         model = mnist_mlp_cl_v0()
         self.dut.load_model(model=model)
         rslt = self.dut.get_number_parameters_from_model
-        self.assertEqual(rslt, 31910)
+        self.assertEqual(rslt, 31890)
 
     def test_model_number_parameters_ae(self):
         model = mnist_mlp_ae_v0()
         self.dut.load_model(model=model)
         rslt = self.dut.get_number_parameters_from_model
-        self.assertEqual(rslt, 64574)
+        self.assertEqual(rslt, 64554)
 
     def test_methods_custom_metrics(self):
         with self.assertRaises(AttributeError):

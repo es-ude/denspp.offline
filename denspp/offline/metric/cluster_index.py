@@ -1,6 +1,8 @@
 import numpy as np
 from scipy.spatial.distance import cdist
+from sklearn.manifold import trustworthiness
 from sklearn.metrics import calinski_harabasz_score, silhouette_score
+from sklearn.neighbors import NearestNeighbors
 
 
 def calculate_euclidean_distance(point1: np.ndarray, point2: np.ndarray) -> float:
@@ -88,3 +90,63 @@ def calculate_harabasz(data: np.ndarray, labels: np.ndarray) -> float:
         float: Floating with metric value
     """
     return calinski_harabasz_score(data, labels)
+
+
+# ------  Metrics for evaluating structural preservation in the embedding space ----------------------------------------
+
+
+def calculate_silhouette_preservation_error(
+    frames_original_space: np.ndarray, frames_embedding_space: np.ndarray, labels: np.ndarray
+) -> float:
+    """Calculate the absolute difference between original and embedding silhouette scores.
+
+    Args:
+        frames_original_space (np.ndarray): Samples in the original feature space.
+        frames_embedding_space (np.ndarray): Samples in the embedding space.
+        labels (np.ndarray): Label of each sample.
+
+    Returns:
+        float: Absolute difference between the silhouette scores.
+    """
+    silhouette_embedding_space = calculate_silhouette(frames_embedding_space, labels)
+    silhouette_original_space = calculate_silhouette(frames_original_space, labels)
+
+    return abs(silhouette_embedding_space - silhouette_original_space)
+
+
+def calculate_trustworthiness(
+    frames_original_space: np.ndarray, frames_embedding_space: np.ndarray, n_neighbors: int
+) -> float:
+    """Calculate the trustworthiness of an embedding space.
+
+    Args:
+        frames_original_space (np.ndarray): Samples in the original feature space.
+        frames_embedding_space (np.ndarray): Samples in the embedding space.
+        n_neighbors (int): Number of neighbors considered for each sample.
+
+    Returns:
+        float: Trustworthiness score of the embedding space.
+    """
+    score = trustworthiness(frames_original_space, frames_embedding_space, n_neighbors=n_neighbors)
+
+    return score
+
+
+def calculate_neighborhood_purity(frames: np.ndarray, labels: np.ndarray, n_neighbors: int = 10) -> float:
+    """Calculate the mean neighborhood purity for a given dataset.
+
+    Args:
+        frames (np.ndarray): Samples used to determine nearest neighbors.
+        labels (np.ndarray): Label of each sample.
+        n_neighbors (int): Number of neighbors considered for each sample.
+
+    Returns:
+        float: Mean proportion of same-label nearest neighbors.
+    """
+    model = NearestNeighbors(n_neighbors=n_neighbors + 1)
+    neighbor_indices = model.fit(frames).kneighbors(return_distance=False)
+
+    neighbor_indices = neighbor_indices[:, 1:]
+    neighbor_labels = labels[neighbor_indices]
+
+    return np.mean(neighbor_labels == labels[:, np.newaxis])
