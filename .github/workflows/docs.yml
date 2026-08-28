@@ -35,7 +35,11 @@ jobs:
       - name: Build documentation
         run: |
           export LC_ALL=C
-          uv run sphinx-build -j auto -b html docs build/docs
+          uv run sphinx-build -j 1 -b html docs build/docs
+
+      - name: Show sphinx error log on failure
+        if: failure()
+        run: cat /tmp/sphinx-err-*.log || true
 
       - name: Upload Artifacts
         uses: actions/upload-pages-artifact@v5
