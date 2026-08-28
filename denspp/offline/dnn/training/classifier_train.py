@@ -483,20 +483,20 @@ class TrainClassifier(PyTorchHandler):
         for vdata in self._valid_loader[-1]:
             _, clus_pred = model_test(vdata["in"].to(self._used_hw_dev))
             if first_cycle:
-                clus_pred_list = clus_pred.detach().cpu()
+                clus_pred_list = clus_pred
                 clus_orig_list = vdata["out"]
                 data_orig_list = vdata["in"]
             else:
-                clus_pred_list = cat((clus_pred_list, clus_pred.detach().cpu()), dim=0)
+                clus_pred_list = cat((clus_pred_list, clus_pred), dim=0)
                 clus_orig_list = cat((clus_orig_list, vdata["out"]), dim=0)
                 data_orig_list = cat((data_orig_list, vdata["in"]), dim=0)
             first_cycle = False
 
         # --- Preparing output
         data_out = self._getting_data_for_plotting(
-            valid_input=data_orig_list.numpy(),
-            valid_label=clus_orig_list.numpy(),
+            valid_input=self.to_numpy(data_orig_list),
+            valid_label=self.to_numpy(clus_orig_list),
             addon="cl",
         )
-        data_out.output = clus_pred_list.numpy()
+        data_out.output = self.to_numpy(clus_pred_list)
         return data_out

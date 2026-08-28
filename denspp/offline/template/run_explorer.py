@@ -5,6 +5,7 @@ from denspp.offline.logger import define_logger_runtime
 from denspp.offline.dnn import SettingsExplorer, DefaultSettingsExplorer, ExploreClassifier
 
 
+# Further information for search space definition: https://github.com/es-ude/elastic-ai.explorer/blob/main/elasticai/explorer/hw_nas/search_space/README.md
 if __name__ == "__main__":
     shuffle_data = True
 
