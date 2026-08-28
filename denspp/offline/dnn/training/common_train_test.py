@@ -1,6 +1,7 @@
 from copy import deepcopy
-from unittest import TestCase, main
+from unittest import TestCase
 
+import numpy as np
 import pytest
 import torch
 
@@ -120,5 +121,57 @@ def test_settings_device_type(device: int, check: str) -> None:
         assert dut.get_device == check
 
 
-if __name__ == "__main__":
-    main()
+@pytest.mark.parametrize(
+    "device, check",
+    [
+        (TrainingsDevice.cpu, "cpu"),
+        (TrainingsDevice.cuda, "cuda"),
+        (TrainingsDevice.mps, "mps"),
+    ],
+)
+def test_convert_torch_to_numpy(device: int, check: str) -> None:
+    set_data: SettingsDataset = deepcopy(DefaultSettingsDataset)
+    set_train: SettingsPytorch = deepcopy(DefaultSettingsPytorch)
+    dut = PyTorchHandler(
+        config_train=set_train, config_dataset=set_data, do_train=False, device_num=device
+    )
+
+    if device == TrainingsDevice.cuda:
+        if not torch.cuda.is_available():
+            pytest.skip("No CUDA device is available")
+    elif device == TrainingsDevice.mps:
+        if not torch.mps.is_available():
+            pytest.skip("No MPS device is available")
+
+    data = torch.rand(1, 28, 28).to(dut.get_device)
+    rslt = dut.to_numpy(data)
+
+    assert isinstance(rslt, np.ndarray)
+
+
+@pytest.mark.parametrize(
+    "device, check",
+    [
+        (TrainingsDevice.cpu, "cpu"),
+        (TrainingsDevice.cuda, "cuda"),
+        (TrainingsDevice.mps, "mps"),
+    ],
+)
+def test_convert_numpy_to_numpy(device: int, check: str) -> None:
+    set_data: SettingsDataset = deepcopy(DefaultSettingsDataset)
+    set_train: SettingsPytorch = deepcopy(DefaultSettingsPytorch)
+    dut = PyTorchHandler(
+        config_train=set_train, config_dataset=set_data, do_train=False, device_num=device
+    )
+
+    if device == TrainingsDevice.cuda:
+        if not torch.cuda.is_available():
+            pytest.skip("No CUDA device is available")
+    elif device == TrainingsDevice.mps:
+        if not torch.mps.is_available():
+            pytest.skip("No MPS device is available")
+
+    data = np.random.rand(1, 28, 28)
+    rslt = dut.to_numpy(data)
+
+    assert isinstance(rslt, np.ndarray)

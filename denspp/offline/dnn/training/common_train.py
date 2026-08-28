@@ -272,6 +272,14 @@ class PyTorchHandler:
                 dev = "cpu"
         return dev
 
+    @staticmethod
+    def to_numpy(x: Tensor | np.ndarray) -> np.ndarray:
+        if isinstance(x, np.ndarray):
+            return x
+        if isinstance(x, Tensor):
+            return x.detach().cpu().numpy()
+        raise TypeError(f"Unsupported type: {type(x)}")
+
     def __check_start_folder(self, new_folder: str = "runs") -> None:
         self._path2run = Path(get_path_to_project(new_folder))
         self._path2run.mkdir(parents=True, exist_ok=True)
@@ -582,8 +590,7 @@ class PyTorchHandler:
                 metric_out[idx] = pred[xpos]
         return metric_out, length_out
 
-    @staticmethod
-    def _converting_tensor_to_numpy(metric_used: dict) -> dict:
+    def _converting_tensor_to_numpy(self, metric_used: dict) -> dict:
         """Converting tensor array to numpy for later processing
         :param metric_used: Dictionary of used metric
         :return:            Dictionary with calculated metrics
@@ -595,10 +602,10 @@ class PyTorchHandler:
                     if isinstance(data2, list):
                         for idx3, data3 in enumerate(data2):
                             if is_tensor(data3):
-                                metric_save[key0][key1][idx2][idx3] = data3.cpu().detach().numpy()
+                                metric_save[key0][key1][idx2][idx3] = self.to_numpy(data3)
                     else:
                         if is_tensor(data2):
-                            metric_save[key0][key1][idx2] = data2.cpu().detach().numpy()
+                            metric_save[key0][key1][idx2] = self.to_numpy(data2)
         return metric_save
 
     @property
