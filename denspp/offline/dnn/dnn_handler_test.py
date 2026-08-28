@@ -11,6 +11,7 @@ from denspp.offline.dnn.dnn_handler import (
     DataValidation,
     PyTorchTrainer,
     SettingsTraining,
+    TargetsNeuralNetwork,
     TrainingResults,
 )
 from denspp.offline.dnn.models.mnist import mnist_mlp_ae_v0, mnist_mlp_cl_v0
@@ -35,14 +36,14 @@ class TestPytorchTrainer(TestCase):
 
     def setUp(self):
         self.sets_ae = SettingsTraining(
-            mode_train=1,
+            mode_train=TargetsNeuralNetwork.Autoencoder,
             do_block=False,
             do_ptq=False,
             ptq_total_bitwidth=8,
             ptq_frac_bitwidth=6,
         )
         self.sets_cl = SettingsTraining(
-            mode_train=0,
+            mode_train=TargetsNeuralNetwork.Classifer,
             do_block=False,
             do_ptq=False,
             ptq_total_bitwidth=8,
@@ -341,7 +342,7 @@ class TestPytorchTrainer(TestCase):
     @pytest.mark.slow
     def test_train_autoencoder_classifier(self):
         sets = deepcopy(self.sets_ae)
-        sets.mode_train = 2
+        sets.mode_train = TargetsNeuralNetwork.AutoencoderClassifier
         dut = PyTorchTrainer(
             use_case="Waveforms",
             default_model="waveforms_mlp_ae_v0",

@@ -1,5 +1,6 @@
 from copy import deepcopy
 from dataclasses import dataclass
+from enum import Enum
 from logging import Logger, getLogger
 from pathlib import Path
 from typing import Any
@@ -21,6 +22,13 @@ from denspp.offline.dnn.training import (
     TrainClassifier,
 )
 from denspp.offline.logger import define_logger_runtime
+
+
+class TargetsNeuralNetwork(Enum):
+    Classifer = "cl"
+    Autoencoder = "ae"
+    AutoencoderClassifier = "ae+cl"
+    LSTM = "lstm"
 
 
 @dataclass
@@ -45,14 +53,14 @@ class TrainingResults:
 class SettingsTraining:
     """Configuration class for handling the training phase of deep neural networks
     Attributes:
-        mode_train:         Integer of selected training routine regarding the training handler [0: Classifier (CL), 1: Autoencoder (AE), 2: Autoencoder-based Classifier (AE+CL), 3: Long-Short Term-Memory (LSTM)]
+        mode_train:         Selected training routine regarding the training handler (class TargetsNeuralNetwork)
         do_block:           Boolean value to block the generated plots after training
         do_ptq:             Apply Post Training Quantization Scheme during Training
         ptq_total_bitwidth: Integer for total bitwidth in PTQ
         ptq_frac_bitwidth:  Integer for fractional bitwidth in PTQ
     """
 
-    mode_train: int
+    mode_train: str | TargetsNeuralNetwork
     do_block: bool
     do_ptq: bool
     ptq_total_bitwidth: int
@@ -60,7 +68,7 @@ class SettingsTraining:
 
 
 DefaultSettingsTraining = SettingsTraining(
-    mode_train=0,
+    mode_train=TargetsNeuralNetwork.Classifer,
     do_block=False,
     do_ptq=False,
     ptq_total_bitwidth=8,
@@ -291,12 +299,16 @@ class PyTorchTrainer:
         self._settings_data = self._get_config_dataset(
             default_dataset_name=self.__use_case, use_case=self.__use_case
         )
+        if isinstance(settings.mode_train, str):
+            mode_train = TargetsNeuralNetwork(settings.mode_train)
+        else:
+            mode_train = settings.mode_train
         if settings == DefaultSettingsTraining:
-            self._settings_ml = self._get_config_ml(
-                use_case=use_case, default_training_mode=settings.mode_train
-            )
+            self._settings_ml = self._get_config_ml(use_case=use_case, default_training_mode=mode_train)
         else:
             self._settings_ml = settings
+        if isinstance(self._settings_ml.mode_train, str):
+            self._settings_ml.mode_train = TargetsNeuralNetwork(self._settings_ml.mode_train)
 
     @property
     def config_available(self) -> bool:
@@ -308,16 +320,16 @@ class PyTorchTrainer:
         """Returning the absolute path to config folder"""
         return self._path2config.absolute()
 
-    def get_type_metric_calculation(self, use_case: int) -> list[str]:
+    def get_type_metric_calculation(self, use_case: TargetsNeuralNetwork) -> list[str]:
         """Returning an overview of custom metric calculation methods during PyTorch Training
         :param use_case:    Number with use case of the model type (0=Classifier, 1=Autoencoder, 2=Autoencoder-based Classifier)
         :return:            List of custom metric calculation methods
         """
         match use_case:
-            case 0:
+            case TargetsNeuralNetwork.Classifer:
                 method = TrainClassifier
                 default = DefaultSettingsTrainingCE
-            case 1:
+            case TargetsNeuralNetwork.Autoencoder:
                 method = TrainAutoencoder
                 default = DefaultSettingsTrainingMSE
             case _:
@@ -344,9 +356,11 @@ class PyTorchTrainer:
         """Returning the deep learning model for training loaded from ModelLibrary"""
         return self._settings_model.get_model(*args, **kwargs)
 
-    def _get_config_ml(self, use_case: str, default_training_mode: int = 0) -> SettingsTraining:
+    def _get_config_ml(
+        self, use_case: str, default_training_mode: TargetsNeuralNetwork
+    ) -> SettingsTraining:
         default_set = deepcopy(DefaultSettingsTraining)
-        default_set.mode_train = default_training_mode
+        default_set.mode_train = default_training_mode.value
         return JsonHandler(
             template=default_set,
             path=self.path2config,
@@ -380,7 +394,7 @@ class PyTorchTrainer:
     def _get_config_classifier(self, default_model_name: str, use_case: str) -> SettingsClassifier:
         default_set: SettingsClassifier = deepcopy(DefaultSettingsTrainingCE)
         default_set.model_name = default_model_name
-        default_set.custom_metrics = self.get_type_metric_calculation(0)
+        default_set.custom_metrics = self.get_type_metric_calculation(TargetsNeuralNetwork.Classifer)
         self._settings_model: SettingsClassifier = JsonHandler(
             template=default_set,
             path=self.path2config,
@@ -419,7 +433,7 @@ class PyTorchTrainer:
     def _get_config_autoencoder(self, default_model_name: str, use_case: str) -> SettingsAutoencoder:
         default_set: SettingsAutoencoder = deepcopy(DefaultSettingsTrainingMSE)
         default_set.model_name = default_model_name
-        default_set.custom_metrics = self.get_type_metric_calculation(1)
+        default_set.custom_metrics = self.get_type_metric_calculation(TargetsNeuralNetwork.Autoencoder)
         self._settings_model: SettingsAutoencoder = JsonHandler(
             template=default_set,
             path=self.path2config,
@@ -489,17 +503,17 @@ class PyTorchTrainer:
         return results
 
     def _run_training_single(
-        self, mode: int, used_dataset: DatasetFromFile, path2save=Path(".")
+        self, mode: TargetsNeuralNetwork, used_dataset: DatasetFromFile, path2save=Path(".")
     ) -> list[TrainingResults]:
         # --- Processing Step #1: Prepare Trainings handler with dataset and model
         match mode:
-            case 0:
+            case TargetsNeuralNetwork.Classifer:
                 dut: TrainClassifier = self._prepare_training_classifier(used_dataset=used_dataset)
                 addon = "cl"
-            case 1:
+            case TargetsNeuralNetwork.Autoencoder:
                 dut: TrainAutoencoder = self._prepare_training_autoencoder(used_dataset=used_dataset)
                 addon = "ae"
-            case 2:
+            case TargetsNeuralNetwork.AutoencoderClassifier:
                 raise ValueError(
                     "It enables the Autoencoder-based Classifier, but you should select either 'cl' or 'ae'"
                 )
@@ -534,7 +548,9 @@ class PyTorchTrainer:
             if "ae" in self.__default_model
             else self.__default_model.replace("cl", "ae")
         )
-        results_ae = self._run_training_single(mode=1, used_dataset=used_dataset, path2save=path2save)[0]
+        results_ae = self._run_training_single(
+            mode=TargetsNeuralNetwork.Autoencoder, used_dataset=used_dataset, path2save=path2save
+        )[0]
 
         # --- Processing Step #3: Extract Feature Space and build new dataset for Classifier
         dut0: TrainAutoencoder = self._prepare_training_autoencoder(used_dataset=used_dataset)
@@ -550,7 +566,7 @@ class PyTorchTrainer:
             else self.__default_model.replace("ae", "cl")
         )
         results_cl = self._run_training_single(
-            mode=0, used_dataset=feat_dataset, path2save=results_ae.path
+            mode=TargetsNeuralNetwork.Classifer, used_dataset=feat_dataset, path2save=results_ae.path
         )[0]
 
         # --- Processing Step #4: Returning Results
@@ -565,7 +581,7 @@ class PyTorchTrainer:
             raise AttributeError("Configs are generated - Please adapt and restart!")
 
         used_dataset = self.get_dataset()
-        if self._settings_ml.mode_train == 2:
+        if self._settings_ml.mode_train == TargetsNeuralNetwork.AutoencoderClassifier:
             return self._run_training_sequence(used_dataset=used_dataset, path2save=path2save)
         else:
             return self._run_training_single(
@@ -622,12 +638,12 @@ class PyTorchTrainer:
         self._plotter.custom_loss(data=results, epoch_zoom=epoch_zoom, show_plot=False)
         self._plotter.statistics(data=results, show_plot=False)
         match self._settings_ml.mode_train:
-            case 0:
+            case TargetsNeuralNetwork.Classifer:
                 self._plotter.performance_classifier(
                     data=results,
                     show_plot=results.settings["train"].do_block and do_plot,
                 )
-            case 1:
+            case TargetsNeuralNetwork.Autoencoder:
                 if results.settings["data"].data_type.lower() == "mnist":
                     self._plotter.performance_autoencoder_mnist(
                         data=results,

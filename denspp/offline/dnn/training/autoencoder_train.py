@@ -439,24 +439,24 @@ class TrainAutoencoder(PyTorchHandler):
         for vdata in self._valid_loader[-1]:
             feat, pred = model_test(vdata["in"].to(self._used_hw_dev))
             if first_cycle:
-                feat_model = feat.detach().cpu()
-                pred_model = pred.detach().cpu()
+                feat_model = feat
+                pred_model = pred
                 clus_orig_list = vdata["class"]
                 data_orig_list = vdata["in"]
             else:
-                feat_model = cat((feat_model, feat.detach().cpu()), dim=0)
-                pred_model = cat((pred_model, pred.detach().cpu()), dim=0)
+                feat_model = cat((feat_model, feat), dim=0)
+                pred_model = cat((pred_model, pred), dim=0)
                 clus_orig_list = cat((clus_orig_list, vdata["class"]), dim=0)
                 data_orig_list = cat((data_orig_list, vdata["in"]), dim=0)
             first_cycle = False
 
         # --- Preparing output
         data_out = self._getting_data_for_plotting(
-            valid_input=data_orig_list.numpy(),
-            valid_label=clus_orig_list.numpy(),
+            valid_input=self.to_numpy(data_orig_list),
+            valid_label=self.to_numpy(clus_orig_list),
             addon="ae",
         )
-        data_out.output = pred_model.numpy()
-        data_out.feat = feat_model.numpy()
+        data_out.output = self.to_numpy(pred_model)
+        data_out.feat = self.to_numpy(feat_model)
         data_out.mean = self._mean_data
         return data_out
