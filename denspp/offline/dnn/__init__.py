@@ -5,11 +5,7 @@ from .data_config import (
     TransformLabels,
     logic_combination,
 )
-from .dnn_handler import (
-    DefaultSettingsTraining,
-    PyTorchTrainer,
-    SettingsTraining,
-)
+from .dnn_handler import DefaultSettingsTraining, PyTorchTrainer, SettingsTraining, TargetsNeuralNetwork
 from .explorer import (
     DefaultSettingsExplorer,
     DefaultSettingsSearchSpace,
@@ -37,4 +33,5 @@ __all__ = [
     "TrainingsDevice",
     "SettingsSearchSpace",
     "DefaultSettingsSearchSpace",
+    "TargetsNeuralNetwork",
 ]
