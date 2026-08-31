@@ -4,12 +4,6 @@ from elasticai.preprocessor.downsampling import (
     SettingsDownSampling,
 )
 from elasticai.preprocessor.filter import DefaultSettingsFilter, FilterCoeffs, Filtering, SettingsFilter
-from elasticai.preprocessor.framing import (
-    DefaultSettingsFrame,
-    FrameGenerator,
-    FrameWaveform,
-    SettingsFrame,
-)
 from elasticai.preprocessor.normalization import (
     DataNormalization,
     DefaultSettingsNormalization,
@@ -20,7 +14,7 @@ from elasticai.preprocessor.referencing import (
     DefaultSettingsReferencing,
     SettingsReferencing,
 )
-from elasticai.preprocessor.sda import DefaultSettingsSDA, SettingsSDA, SpikeDetection
+from elasticai.preprocessor.sda import DefaultSettingsSDA, FrameWaveform, SettingsSDA, SpikeDetection
 from elasticai.preprocessor.thresholding import DefaultSettingsThreshold, SettingsThreshold, Thresholding
 from elasticai.preprocessor.transformation import do_fft, do_fft_inverse, do_fft_withimag
 from elasticai.preprocessor.windower import (

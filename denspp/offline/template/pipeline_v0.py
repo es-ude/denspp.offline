@@ -93,7 +93,7 @@ class SettingsPipe:
             t_frame_length=1.6e-3,
             t_frame_start=0.4e-3,
             dt_offset=0.1e-3,
-            thr_gain=1.25,
+            f_filt=[200., 2000.]
         )
         # --- Options for MachineLearning Part
         self.SettingsFE = SettingsFeature()
@@ -164,13 +164,13 @@ class PipelineV0(PipelineCMD):
         x_spk = self.__dsp.filt(x_adc)
         # ---- Spike detection incl. thresholding ----
         if len(frames_xpos):
-            frames = self.__sda.get_spike_waveforms_from_positions(
+            frames = self.__sda.get_frames_from_positions(
                 xraw=x_spk,
                 xpos=np.array(frames_xpos),
                 xoffset=int(frames_xoff * self.fs_dig),
             )
         else:
-            frames = self.__sda.get_spike_waveforms(xraw=x_spk, do_abs=False)
+            frames = self.__sda.get_frames(xraw=x_spk)
         return {
             "fs_ana": self.fs_ana,
             "fs_dig": self.fs_dig,

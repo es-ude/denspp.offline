@@ -697,9 +697,9 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "elasticai-creator", git = "https://github.com/es-ude/elastic-ai.creator.git" },
+    { name = "elasticai-creator", git = "https://github.com/es-ude/elastic-ai.creator.git?branch=main" },
     { name = "elasticai-explorer", git = "https://github.com/es-ude/elastic-ai.explorer.git?branch=fix-build-setup" },
-    { name = "elasticai-preprocessor", git = "https://github.com/es-ude/elasticai.preprocessor.git" },
+    { name = "elasticai-preprocessor", git = "https://github.com/es-ude/elasticai.preprocessor.git?branch=main" },
     { name = "fxpmath", specifier = ">=0.4.9" },
     { name = "h5py", specifier = ">=3.16.0" },
     { name = "matplotlib", specifier = ">=3.9.2" },
@@ -801,7 +801,7 @@ dependencies = [
 [[package]]
 name = "elasticai-explorer"
 version = "0.1.0"
-source = { git = "https://github.com/es-ude/elastic-ai.explorer.git?branch=fix-build-setup#790c58bf0511caee2df0a8094b531e0b6662a13b" }
+source = { git = "https://github.com/es-ude/elastic-ai.explorer.git?branch=fix-build-setup#d05c8d1c52a8d66125db7b666320f45ecbaa9ee2" }
 dependencies = [
     { name = "elasticai-preprocessor" },
     { name = "fabric" },
@@ -822,8 +822,8 @@ dependencies = [
 
 [[package]]
 name = "elasticai-preprocessor"
-version = "0.1.2.dev58+gba2f5ba50"
-source = { git = "https://github.com/es-ude/elasticai.preprocessor.git#ba2f5ba50f7f802a9ecc862d6201dd611000c29b" }
+version = "0.1.4.dev15+g6b991ec76"
+source = { git = "https://github.com/es-ude/elasticai.preprocessor.git?branch=main#6b991ec760e06b3568231e7fd5a145d9ead5ad06" }
 dependencies = [
     { name = "elasticai-creator" },
     { name = "numpy" },
