@@ -119,20 +119,16 @@ def test_run_search_without_search_space(sets: SettingsExplorer, path2temp: Path
 
     dut = ExploreClassifier(settings=sets, path2config=path2temp)
     data = dut.prepare_data(do_shuffle=True)
-    try:
+    with pytest.raises(RuntimeError):
         dut.run_search(
             dataset=data,
             loss_fn=torch.nn.CrossEntropyLoss(),
         )
-    except RuntimeError:
-        assert True
-    else:
-        assert False
 
 
 @pytest.mark.slow
 def test_run_search_with_search_space(sets: SettingsExplorer, path2temp: Path) -> None:
-    sets.search_strategy = 0
+    sets.search_strategy = "random"
     sets.num_trials_search = 3
     sets.num_epochs_trial = 5
 
@@ -151,7 +147,7 @@ def test_run_search_with_search_space(sets: SettingsExplorer, path2temp: Path) -
 
 @pytest.mark.slow
 def test_run_full(sets: SettingsExplorer, path2temp: Path) -> None:
-    sets.search_strategy = 0
+    sets.search_strategy = "random"
     sets.num_trials_search = 2
     sets.num_epochs_trial = 5
     sets.num_epochs_best = 10

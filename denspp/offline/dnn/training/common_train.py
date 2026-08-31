@@ -1,7 +1,7 @@
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime
-from enum import IntEnum
+from enum import Enum
 from logging import Logger, getLogger
 from os import environ, remove
 from pathlib import Path
@@ -40,11 +40,11 @@ from denspp.offline.dnn.model_library import ModelLibrary
 from denspp.offline.structure_builder import init_dnn_folder
 
 
-class TrainingsDevice(IntEnum):
-    auto = 0
-    cpu = 1
-    cuda = 2
-    mps = 3
+class TrainingsDevice(Enum):
+    auto = "auto"
+    cpu = "cpu"
+    cuda = "cuda"
+    mps = "mps"
 
 
 @dataclass
@@ -188,7 +188,7 @@ DefaultSettingsPytorch = SettingsPytorch(
 
 class PyTorchHandler:
     _deterministic_generator: Generator
-    _device_num: int | TrainingsDevice
+    _device_num: TrainingsDevice
     _used_hw_dev: device
     _train_loader: list
     _valid_loader: list
@@ -209,7 +209,7 @@ class PyTorchHandler:
         config_train: SettingsPytorch,
         config_dataset: SettingsDataset,
         do_train: bool = True,
-        device_num: int = TrainingsDevice.auto,
+        device_num: str | TrainingsDevice = TrainingsDevice.auto,
     ) -> None:
         """Class for Handling Training of Deep Neural Networks in PyTorch
         Args:
@@ -233,28 +233,31 @@ class PyTorchHandler:
         self._settings_train: SettingsPytorch = config_train
         self._settings_data: SettingsDataset = config_dataset
         self._index_folder = "train" if do_train else "inference"
-        self._device_num = device_num
+        self._device_num = device_num.value if isinstance(device_num, TrainingsDevice) else device_num
         self._model_addon = str()
         # --- Logging paths for saving
         self.__check_start_folder()
 
     @property
     def _get_device_name(self) -> str:
-        match self._device_num:
-            case TrainingsDevice.auto:
+        method = (
+            TrainingsDevice(self._device_num) if isinstance(self._device_num, str) else self._device_num
+        )
+        match method.value:
+            case TrainingsDevice.auto.value:
                 return "auto"
-            case TrainingsDevice.cpu:
+            case TrainingsDevice.cpu.value:
                 return "cpu"
-            case TrainingsDevice.cuda:
+            case TrainingsDevice.cuda.value:
                 if not cuda.is_available():
                     raise ValueError("No CUDA device is available")
                 return "cuda"
-            case TrainingsDevice.mps:
+            case TrainingsDevice.mps.value:
                 if not mps.is_available():
                     raise ValueError("No MPS device is available")
                 return "mps"
             case _:
-                raise ValueError("Selected device is unknown")
+                raise ValueError(f"Selected device {method} (type: {type(method)}) is unknown")
 
     @property
     def get_device(self) -> str:

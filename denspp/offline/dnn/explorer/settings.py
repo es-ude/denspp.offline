@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from enum import IntEnum
+from enum import Enum
 from typing import Any
 
 from elasticai.explorer.hw_nas.hw_nas import SearchStrategy
@@ -7,9 +7,9 @@ from elasticai.explorer.hw_nas.hw_nas import SearchStrategy
 from denspp.offline.dnn.training.common_train import TrainingsDevice
 
 
-class ExploreStrategySearch(IntEnum):
-    random = 0
-    evolution = 1
+class ExploreStrategySearch(Enum):
+    random = "random"
+    evolution = "evolution"
 
 
 @dataclass
@@ -84,13 +84,18 @@ class SettingsExplorer:
     learning_rate: float
     seed: int
     num_best_models: int
-    device: TrainingsDevice | int
-    search_strategy: ExploreStrategySearch | int
+    device: str | TrainingsDevice
+    search_strategy: ExploreStrategySearch | str
 
     @property
     def get_search_strategy(self) -> SearchStrategy:
         """Returning the right SearchStrategy definition for the elasticAI.explorer"""
-        match self.search_strategy:
+        method = (
+            ExploreStrategySearch(self.search_strategy)
+            if isinstance(self.search_strategy, str)
+            else self.search_strategy
+        )
+        match method:
             case ExploreStrategySearch.random:
                 return SearchStrategy.RANDOM_SEARCH
             case ExploreStrategySearch.evolution:
@@ -109,6 +114,6 @@ DefaultSettingsExplorer = SettingsExplorer(
     learning_rate=0.1,
     seed=42,
     num_best_models=1,
-    device=TrainingsDevice.auto,
-    search_strategy=ExploreStrategySearch.random,
+    device=TrainingsDevice.auto.value,
+    search_strategy=ExploreStrategySearch.random.value,
 )

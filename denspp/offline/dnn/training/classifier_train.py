@@ -89,13 +89,13 @@ class TrainClassifier(PyTorchHandler):
         config_train: SettingsClassifier,
         config_data: SettingsDataset,
         do_train: bool = True,
-        device_num: int = TrainingsDevice.auto,
+        device_num: str | TrainingsDevice = TrainingsDevice.auto,
     ) -> None:
         """Class for Handling Training of Classifiers
         :param config_data:     Settings for handling and loading the dataset (just for saving)
         :param config_train:    Settings for handling the PyTorch Trainings Routine of a Classifier
         :param do_train:        Do training of model otherwise only inference
-        :param device_num:      Integer value with number of devices to use (class TrainingsDevice)
+        :param device_num:      String with training device name (using class TrainingsDevice)
         :return:                None
         """
         PyTorchHandler.__init__(self, config_train, config_data, do_train, device_num)
