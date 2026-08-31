@@ -1,7 +1,8 @@
 from copy import deepcopy
 
 import numpy as np
-from fxpmath import Config, Fxp
+from elasticai.creator.arithmetic import FxpArithmetic, FxpParams
+from elasticai.creator.nn.fixed_point import MathOperations
 
 
 class CommonAnalogFunctions:
@@ -54,18 +55,16 @@ class CommonDigitalFunctions:
         :param xin:     Input data stream
         :return:        Quantized output data stream
         """
-        config_fxp = Config()
-        config_fxp.rounding = "around"
-        config_fxp.overflow = "saturate"
+        from torch import Tensor
 
-        val = Fxp(
-            val=xin,
-            signed=self._bitsigned,
-            n_word=self._bitwidth[0],
-            n_frac=self._bitwidth[1],
-            config=config_fxp,
-        ).get_val()
-        return val
+        fxpmath = MathOperations(
+            config=FxpArithmetic(
+                FxpParams(
+                    total_bits=self._bitwidth[0], frac_bits=self._bitwidth[1], signed=self._bitsigned
+                )
+            )
+        )
+        return fxpmath.quantize(Tensor(xin)).detach().cpu().numpy()
 
     @staticmethod
     def _extract_rising_edge(trigger: np.ndarray) -> list:
