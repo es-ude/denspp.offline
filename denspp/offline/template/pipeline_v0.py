@@ -93,7 +93,7 @@ class SettingsPipe:
             t_frame_length=1.6e-3,
             t_frame_start=0.4e-3,
             dt_offset=0.1e-3,
-            f_filt=[200., 2000.]
+            f_filt=[200.0, 2000.0],
         )
         # --- Options for MachineLearning Part
         self.SettingsFE = SettingsFeature()
