@@ -231,8 +231,8 @@ exclude = [
 default-groups = ["dev", "docs", "test"]
 
 [tool.uv.sources]
-elasticai-creator = { git = "https://github.com/es-ude/elastic-ai.creator.git" }
+elasticai-creator = { git = "https://github.com/es-ude/elastic-ai.creator.git", branch = "main" }
 elasticai-explorer = { git = "https://github.com/es-ude/elastic-ai.explorer.git", branch = "fix-build-setup" }
-elasticai-preprocessor = { git = "https://github.com/es-ude/elasticai.preprocessor.git" }
+elasticai-preprocessor = { git = "https://github.com/es-ude/elasticai.preprocessor.git", branch = "main" }
 soundcard = { git = "https://github.com/bastibe/SoundCard.git" }
 umap-learn = { git = "https://github.com/lmcinnes/umap.git" }
