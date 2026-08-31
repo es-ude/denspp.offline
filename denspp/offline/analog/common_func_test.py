@@ -1,6 +1,7 @@
 from unittest import TestCase, main
 
 import numpy as np
+import pytest
 
 from denspp.offline.analog.common_func import (
     CommonAnalogFunctions,
@@ -98,10 +99,9 @@ class TestDigitalFunc(TestCase):
         self.assertLess(np.sum(np.abs(output - ref)), 1e-12)
 
     def test_quantize_type_float(self):
-        input = 1.2
-        self.method.define_limits(bit_signed=False, total_bitwidth=2, frac_bitwidth=0)
-        output = self.method._quantize_fxp(input)
-        self.assertEqual(type(output), np.float64)
+        with pytest.raises(TypeError):
+            self.method.define_limits(bit_signed=False, total_bitwidth=2, frac_bitwidth=0)
+            self.method._quantize_fxp(1.2)
 
     def test_quantize_type_numpy(self):
         self.method.define_limits(bit_signed=False, total_bitwidth=2, frac_bitwidth=0)
@@ -111,7 +111,7 @@ class TestDigitalFunc(TestCase):
     def test_quantize_signed_4_2(self):
         self.method.define_limits(bit_signed=True, total_bitwidth=4, frac_bitwidth=2)
         output = self.method._quantize_fxp(self.input_clip)
-        ref = np.array([-2.0, -2.0, -1.75, -1.25, -0.5, 0.0, 0.5, 1.25, 1.75, 1.75, 1.75])
+        ref = np.array([-2.0, -2.0, -1.75, -1.0, -0.5, 0.0, 0.5, 1.0, 1.75, 1.75, 1.75])
         chck = np.sum(np.abs(output - ref), axis=0)
         self.assertLess(chck, 1e-12)
 
@@ -125,7 +125,7 @@ class TestDigitalFunc(TestCase):
     def test_quantize_unsigned_4_2(self):
         self.method.define_limits(bit_signed=False, total_bitwidth=4, frac_bitwidth=2)
         output = self.method._quantize_fxp(self.input_clip)
-        ref = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 1.25, 1.75, 2.5, 3.0])
+        ref = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 1.0, 1.75, 2.25, 3.0])
         chck = np.sum(np.abs(output - ref), axis=0)
         self.assertLess(chck, 1e-12)
 

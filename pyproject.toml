@@ -18,7 +18,6 @@ dependencies = [
   "elasticai-creator",
   "elasticai-explorer",
   "elasticai-preprocessor",
-  "fxpmath>=0.4.9",
   "h5py>=3.16.0",
   "matplotlib>=3.9.2",
   "numpy>=1.26.4",
