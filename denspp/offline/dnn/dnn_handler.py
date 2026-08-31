@@ -289,7 +289,10 @@ class PyTorchTrainer:
         define_logger_runtime(save_file=False)
         self._logger: Logger = getLogger(__name__)
         self._plotter = PyTorchPlot()
-        self._path2config = (get_path_to_project() / path2config).resolve()
+        if path2config.is_absolute():
+            self._path2config = path2config.absolute()
+        else:
+            self._path2config = (get_path_to_project() / path2config).resolve()
         self._path2config.mkdir(parents=True, exist_ok=True)
         self._do_init = self.config_available
         self.__default_model = default_model
@@ -590,11 +593,15 @@ class PyTorchTrainer:
                 path2save=path2save,
             )
 
-    def do_plot_dataset(self, path2save: Path = Path(".")) -> None:
+    def do_plot_dataset(self, path2save: Path = Path("runs")) -> None:
         """Function for plotting the dataset content
         :param path2save:   Path to save the dataset plot
         :return:            None
         """
+        if path2save.is_absolute():
+            path2runs = path2save.absolute()
+        else:
+            path2runs = (get_path_to_project() / path2save).resolve()
         dataset = self.get_dataset()
         match self._settings_data.data_type.lower():
             case "mnist":
@@ -602,14 +609,14 @@ class PyTorchTrainer:
                     data=dataset.data,
                     label=dataset.label,
                     title="",
-                    path2save=str(path2save.absolute()),
+                    path2save=path2runs.as_posix(),
                     show_plot=False,
                 )
             case "waveforms":
                 dnn_plot.plot_waveforms_dataset(
                     dataset=dataset,
                     num_samples_class=10,
-                    path2save=str(path2save.absolute()),
+                    path2save=path2runs.as_posix(),
                     show_plot=False,
                 )
             case _:
@@ -618,7 +625,7 @@ class PyTorchTrainer:
                     take_samples=100,
                     do_norm=True,
                     add_subtitle=False,
-                    path2save=str(path2save.absolute()),
+                    path2save=path2runs.as_posix(),
                     show_plot=False,
                 )
 
