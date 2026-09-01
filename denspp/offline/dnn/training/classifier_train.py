@@ -318,26 +318,31 @@ class TrainClassifier(PyTorchHandler):
             )
 
     def __determine_ptq_acc(self, pred: Tensor, true: Tensor, **kwargs) -> None:
-        model_ptq = quantize_model_fxp(
-            model=self._model,
-            total_bits=self._ptq_level[0],
-            frac_bits=self._ptq_level[1],
-        )
-        model_ptq.eval()
-        pred_cl, dec_cl = model_ptq(kwargs["frame"])
-        num_true = calculate_number_true_predictions(dec_cl, true)
-        a = tensor([num_true])
-        b = tensor([kwargs["frame"].shape[0]])
-        if self.__metric_buffer[kwargs["metric"]][0].size == 1:
-            self.__metric_buffer[kwargs["metric"]][0] = a
-            self.__metric_buffer[kwargs["metric"]][1] = b
-        else:
-            self.__metric_buffer[kwargs["metric"]][0] = concatenate(
-                (self.__metric_buffer[kwargs["metric"]][0], a), dim=0
+        key = kwargs["metric"]
+        if key == "ptq_acc":
+            model_ptq = quantize_model_fxp(
+                model=self._model,
+                total_bits=self._ptq_level[0],
+                frac_bits=self._ptq_level[1],
             )
-            self.__metric_buffer[kwargs["metric"]][1] = concatenate(
-                (self.__metric_buffer[kwargs["metric"]][1], b), dim=0
-            )
+            model_ptq.eval()
+            pred_cl, dec_cl = model_ptq(kwargs["frame"])
+            num_true = calculate_number_true_predictions(dec_cl, true)
+            a = tensor([num_true])
+            b = tensor([kwargs["frame"].shape[0]])
+
+            if self.__metric_buffer[key][0].size == 1:
+                self.__metric_buffer[key][0] = a
+                self.__metric_buffer[key][1] = b
+            else:
+                self.__metric_buffer[key][0] = concatenate((self.__metric_buffer[key][0], a), dim=0)
+                self.__metric_buffer[key][1] = concatenate((self.__metric_buffer[key][1], b), dim=0)
+
+    def __determine_fit_factor(self, metric_train: float, metric_valid: float) -> None:
+        key0 = "fit_factor"
+        if key0 not in self.__metric_result.keys():
+            self.__metric_result.update({key0: []})
+        self.__metric_result[key0].append(metric_train - metric_valid)
 
     def do_training(self, path2save=Path(".")) -> dict:
         """Start model training incl. validation and custom-own metric calculation
@@ -413,6 +418,7 @@ class TrainClassifier(PyTorchHandler):
                     epoch_valid_acc.append(valid_acc)
                     epoch_valid_loss.append(valid_loss)
                     self.__process_epoch_metrics_calculation(False, metrics)
+                    self.__determine_fit_factor(train_loss, valid_loss)
 
                     # Tracking the best performance and saving the model
                     if valid_loss < best_loss[1]:

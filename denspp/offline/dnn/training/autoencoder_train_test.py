@@ -100,7 +100,7 @@ class TestAutoencoderTraining(TestCase):
 
     def test_custom_metric_methods(self):
         rslt = self.dut.get_epoch_metric_custom_methods
-        self.assertEqual(rslt, ["snr_in", "snr_out", "dsnr_all", "ptq_loss"])
+        self.assertEqual(rslt, ["snr_in", "snr_out", "dsnr_all", "ptq_loss", "fit_factor"])
 
     def test_training_phase(self):
         self.dut.load_dataset(
@@ -109,9 +109,10 @@ class TestAutoencoderTraining(TestCase):
         self.dut.load_model(model=dummy_mlp_ae_v0(input_size=self.dataset.data.shape[1]))
         metric = self.dut.do_training()
         self.assertEqual(len(metric), 1)
-        self.assertEqual(list(metric["fold_000"].keys()), ["loss_train", "loss_valid"])
+        self.assertEqual(list(metric["fold_000"].keys()), ["loss_train", "loss_valid", "fit_factor"])
         self.assertEqual(len(metric["fold_000"]["loss_train"]), 10)
         self.assertEqual(len(metric["fold_000"]["loss_valid"]), 10)
+        self.assertEqual(len(metric["fold_000"]["fit_factor"]), 10)
 
         overview = self.dut.get_best_model("ae")
         self.assertGreater(len(overview), 0)

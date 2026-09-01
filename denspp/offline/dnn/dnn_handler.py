@@ -162,7 +162,10 @@ class PyTorchPlot:
             if used_metric in available_metric:
                 last_ite = used_metric == available_metric[-1]
                 self._logger.info(f"... plotting  custom metric: {used_metric}")
-                if type(data.settings["model"]) == SettingsClassifier or used_metric == "ptq_loss":
+                if type(data.settings["model"]) == SettingsClassifier or used_metric in [
+                    "ptq_loss",
+                    "fit_factor",
+                ]:
                     dnn_plot.plot_custom_loss_classifier(
                         data=data.metrics[used_fold][used_metric],
                         loss_name=used_metric,

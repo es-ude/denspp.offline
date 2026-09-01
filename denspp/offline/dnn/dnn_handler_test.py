@@ -72,7 +72,7 @@ class TestPytorchTrainer(TestCase):
             path2config=Path("temp_test/method_cl"),
             default_model=mnist_mlp_cl_v0.__name__,
         ).get_custom_metric_calculation
-        self.assertEqual(rslt, ["accuracy", "precision", "recall", "fbeta", "ptq_acc"])
+        self.assertEqual(rslt, ["accuracy", "precision", "recall", "fbeta", "ptq_acc", "fit_factor"])
 
     def test_get_custom_metrics_autoencoder(self):
         rslt = PyTorchTrainer(
@@ -81,7 +81,7 @@ class TestPytorchTrainer(TestCase):
             path2config=Path("temp_test/method_ae"),
             default_model=mnist_mlp_ae_v0.__name__,
         ).get_custom_metric_calculation
-        self.assertEqual(rslt, ["snr_in", "snr_out", "dsnr_all", "ptq_loss"])
+        self.assertEqual(rslt, ["snr_in", "snr_out", "dsnr_all", "ptq_loss", "fit_factor"])
 
     @pytest.mark.slow
     def test_start_training_first_with_init(self):
@@ -321,7 +321,7 @@ class TestPytorchTrainer(TestCase):
 
     @pytest.mark.plot
     def test_train_autoencoder_plotting(self):
-        hndl = PyTorchTrainer(use_case="Waveforms", settings=self.sets_ae, path2config="temp_test")
+        hndl = PyTorchTrainer(use_case="Waveforms", settings=self.sets_ae, path2config=Path("temp_test"))
         path2file = Path(get_path_to_project("runs"))
         path2runs = list(path2file.glob("*_ae_*"))[-1]
         rslt = hndl.read_file_and_plot(
@@ -331,7 +331,7 @@ class TestPytorchTrainer(TestCase):
 
     @pytest.mark.plot
     def test_train_autoencoder_plotting_zoomed(self):
-        hndl = PyTorchTrainer(use_case="Waveforms", settings=self.sets_ae, path2config="temp_test")
+        hndl = PyTorchTrainer(use_case="Waveforms", settings=self.sets_ae, path2config=Path("temp_test"))
         path2file = Path(get_path_to_project("runs"))
         path2runs = list(path2file.glob("*_ae_*"))[-1]
         rslt = hndl.read_file_and_plot(

@@ -616,7 +616,9 @@ class PyTorchHandler:
         """Getting an overview of available methods for custom-written metric calculation in each epoch during training
         :return:    List with metrics name to call
         """
-        return [key for key in self._metric_methods.keys()]
+        keys: list = [key for key in self._metric_methods.keys()]
+        keys.append("fit_factor")
+        return keys
 
     @property
     def get_number_parameters_from_model(self) -> int:

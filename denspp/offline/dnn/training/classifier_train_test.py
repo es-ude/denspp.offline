@@ -100,7 +100,7 @@ class TestClassifierTraining(TestCase):
 
     def test_custom_metric_methods(self):
         rslt = self.dut.get_epoch_metric_custom_methods
-        self.assertEqual(rslt, ["accuracy", "precision", "recall", "fbeta", "ptq_acc"])
+        self.assertEqual(rslt, ["accuracy", "precision", "recall", "fbeta", "ptq_acc", "fit_factor"])
 
     def test_training_phase(self):
         self.dut.load_dataset(
@@ -111,7 +111,7 @@ class TestClassifierTraining(TestCase):
         self.assertEqual(len(metric), 1)
         self.assertEqual(
             list(metric["fold_000"].keys()),
-            ["acc_train", "acc_valid", "loss_train", "loss_valid"],
+            ["acc_train", "acc_valid", "loss_train", "loss_valid", "fit_factor"],
         )
         self.assertEqual(len(metric["fold_000"]["loss_train"]), 10)
         self.assertEqual(len(metric["fold_000"]["loss_valid"]), 10)
@@ -154,12 +154,13 @@ class TestClassifierTraining(TestCase):
         self.assertEqual(len(metric), 1)
         self.assertEqual(
             list(metric["fold_000"].keys()),
-            ["acc_train", "acc_valid", "loss_train", "loss_valid"],
+            ["acc_train", "acc_valid", "loss_train", "loss_valid", "fit_factor"],
         )
         self.assertEqual(len(metric["fold_000"]["loss_train"]), 10)
         self.assertEqual(len(metric["fold_000"]["loss_valid"]), 10)
         self.assertEqual(len(metric["fold_000"]["acc_train"]), 10)
         self.assertEqual(len(metric["fold_000"]["acc_train"]), 10)
+        self.assertEqual(len(metric["fold_000"]["fit_factor"]), 10)
 
         overview = self.dut.get_best_model("cl")
         self.assertGreater(len(overview), 0)

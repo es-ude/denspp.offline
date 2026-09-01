@@ -226,6 +226,8 @@ class TrainAutoencoder(PyTorchHandler):
         # --- Processing results
         else:
             for key0 in self.__metric_buffer.keys():
+                if key0 == "fit_factor":
+                    continue
                 self.__metric_result[key0].append(self.__metric_buffer[key0])
                 self.__metric_buffer.update({key0: list()})
 
@@ -304,6 +306,12 @@ class TrainAutoencoder(PyTorchHandler):
         else:
             self.__metric_buffer[kwargs["metric"]].append(loss)
 
+    def __determine_fit_factor(self, metric_train: float, metric_valid: float) -> None:
+        key0 = "fit_factor"
+        if key0 not in self.__metric_result.keys():
+            self.__metric_result.update({key0: []})
+        self.__metric_result[key0].append(metric_train - metric_valid)
+
     def do_training(self, path2save=Path(".")) -> dict:
         """Start model training incl. validation and custom-own metric calculation
         Args:
@@ -357,6 +365,7 @@ class TrainAutoencoder(PyTorchHandler):
                     epoch_loss_train.append(loss_train)
                     epoch_loss_valid.append(loss_valid)
                     self.__process_epoch_metrics_calculation(False, metrics)
+                    self.__determine_fit_factor(loss_train, loss_valid)
 
                     self._logger.debug(
                         f"... results of epoch {epoch + 1}/{self._settings_train.num_epochs} "
