@@ -850,8 +850,8 @@ dependencies = [
 
 [[package]]
 name = "elasticai-preprocessor"
-version = "0.1.4.dev22+gf13f1ebd7"
-source = { git = "https://github.com/es-ude/elasticai.preprocessor.git?branch=main#f13f1ebd7c7047620d2f5c6f49a07200c87cacce" }
+version = "0.1.4.dev23+g0409e59a6"
+source = { git = "https://github.com/es-ude/elasticai.preprocessor.git?branch=main#0409e59a6a0d99b6e5ed22b68123a756ae71e0ca" }
 dependencies = [
     { name = "elasticai-creator" },
     { name = "numpy" },
