@@ -12,7 +12,7 @@ from denspp.offline.structure_builder import init_dnn_folder, init_project_folde
 @pytest.mark.init
 class TestStructureBuilder(unittest.TestCase):
     folder_general = ["config", "data", "dataset", "runs", "src", "src_pipe"]
-    folder_dnn = ["models", "dataset"]
+    folder_dnn = ["cell_bib", "models"]
     folder2search = "denspp.offline"
     folder_name_test = "temp_test"
 

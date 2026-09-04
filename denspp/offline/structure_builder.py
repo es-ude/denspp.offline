@@ -58,7 +58,7 @@ def init_dnn_folder(new_folder: str = "") -> None:
     :return:                None
     """
     folder_start = "src_dnn"
-    folder_structure = ["models", "dataset"]
+    folder_structure = ["cell_bib", "models"]
     copy_files = {
         "run_training.py": "",
         "run_explorer.py": "",

@@ -182,10 +182,11 @@ class ExploreClassifier:
         ).get_class(SettingsDataset)
         return self._get_dataset_loader()(self._sets_data).load_dataset()
 
-    def prepare_data(self, do_shuffle: bool = True) -> DatasetSpecification:
+    def prepare_data(self, do_shuffle: bool = True, add_dimension: bool = False) -> DatasetSpecification:
         """Function for preparing the dataset for training using the elasticAI.explorer
-        :param do_shuffle:  Boolean for shuffling the dataset samples
-        :return:            Tuned dataset for training
+        :param do_shuffle:      Boolean for shuffling the dataset samples
+        :param add_dimension:   Boolean to add a dimension to the dataset in order to train Conv1d from transient data
+        :return:                Tuned dataset for training
         """
         dataset = self._load_data()
         indices = self._select_indices(
@@ -195,6 +196,8 @@ class ExploreClassifier:
             shuffle=do_shuffle,
         )
         data_new = dataset.data[indices].astype(np.float32)
+        if add_dimension:
+            data_new = np.expand_dims(data_new, axis=1)
         label_new = dataset.label[indices].astype(np.int64)
 
         data = DatasetClassifierExplorer(data=data_new, labels=label_new)
@@ -274,10 +277,13 @@ class ExploreClassifier:
         ).write_to_yaml()
         return path2temp
 
-    def run_full_training(self, path2run: Path, shuffle_data: bool = True) -> None:
+    def run_full_training(
+        self, path2run: Path, shuffle_data: bool = True, add_dimension: bool = True
+    ) -> None:
         """Executing the full training of the best model after search space execution
         :param path2run:        Path to the folder containing the search space results
         :param shuffle_data:    Boolean for shuffling the dataset samples
+        :param add_dimension:   Boolean to add a dimension to the dataset in order to train Conv1d from transient data
         :return:                None
         """
         path2save = (path2run / "full").resolve()
@@ -299,6 +305,14 @@ class ExploreClassifier:
             device_num=self._sets_exp.device,
         )
         dataset = self._load_data()
+        if add_dimension:
+            dataset = DatasetFromFile(
+                data=np.expand_dims(dataset.data, axis=1),
+                label=dataset.label,
+                dict=dataset.dict,
+                mean=dataset.mean,
+            )
+
         trainer.load_dataset(dataset=dataset)
         data_shape = (1,) + dataset.data.shape[1:]
 
