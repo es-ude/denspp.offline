@@ -34,7 +34,7 @@ def _start_processing_pipeline(sets_load_data: SettingsData = DefaultSettingsDat
     data_handler = datalib.build_object("DataLoader")
 
     pipelib = PipelineLibrary().get_registry()
-    search_name = sets_load_data.pipeline + ("_Merge" if sets_load_data.do_merge else "")
+    search_name = settings_data.pipeline + ("_Merge" if settings_data.do_merge else "")
     matches1 = [item for item in pipelib.get_library_overview() if item == search_name]
     assert len(matches1), "No Pipeline found"
     logger.debug("Found Pipeline")
