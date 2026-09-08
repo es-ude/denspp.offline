@@ -4,6 +4,8 @@ import numpy as np
 
 from denspp.offline.metric.electrical import (
     calculate_cosine_similarity,
+    calculate_enob_from_transient,
+    calculate_sinad_from_transient,
     calculate_total_harmonics_distortion,
     calculate_total_harmonics_distortion_from_transient,
 )
@@ -57,6 +59,26 @@ class TestElectricalMetric(unittest.TestCase):
             y_true=np.sin(2 * np.pi * 100 * t),
         )
         self.assertAlmostEqual(rslt, -4.3151246464923076e-17, delta=1e-12)
+
+    def test_calculate_sinad_from_transient(self):
+        t = np.linspace(0, 1, 1000, endpoint=True)
+        signal = 3.3 * np.sin(2 * np.pi * 100 * t)
+        noise = np.random.normal(0, 0.01, size=t.shape)
+        distortion = 0.02 * np.sin(2 * np.pi * 3 * 200 * t)
+        rslt = calculate_sinad_from_transient(
+            signal=signal + noise + distortion, fs=1 / t[1], num_harmonics=1
+        )
+        self.assertAlmostEqual(rslt, 39.2, delta=8e-2)
+
+    def test_calculate_enob_from_transient(self):
+        t = np.linspace(0, 1, 1000, endpoint=True)
+        signal = 3.3 * np.sin(2 * np.pi * 100 * t)
+        noise = np.random.normal(0, 0.01, size=t.shape)
+        distortion = 0.02 * np.sin(2 * np.pi * 3 * 200 * t)
+        rslt = calculate_enob_from_transient(
+            signal=signal + noise + distortion, fs=1 / t[1], num_harmonics=1
+        )
+        self.assertAlmostEqual(rslt, 6.219554008131976, delta=5e-2)
 
 
 if __name__ == "__main__":
