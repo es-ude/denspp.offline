@@ -3,6 +3,11 @@ from elasticai.preprocessor.downsampling import (
     DownSampling,
     SettingsDownSampling,
 )
+from elasticai.preprocessor.eventdetection import (
+    TargetsEventDetection,
+    TargetsEventPreprocessors,
+    TargetsFrameAlignment,
+)
 from elasticai.preprocessor.filter import DefaultSettingsFilter, FilterCoeffs, Filtering, SettingsFilter
 from elasticai.preprocessor.normalization import (
     DataNormalization,
@@ -15,8 +20,14 @@ from elasticai.preprocessor.referencing import (
     SettingsReferencing,
 )
 from elasticai.preprocessor.sda import DefaultSettingsSDA, FrameWaveform, SettingsSDA, SpikeDetection
-from elasticai.preprocessor.thresholding import DefaultSettingsThreshold, SettingsThreshold, Thresholding
+from elasticai.preprocessor.thresholding import (
+    DefaultSettingsThreshold,
+    SettingsThreshold,
+    TargetsThreshold,
+    Thresholding,
+)
 from elasticai.preprocessor.transformation import do_fft, do_fft_inverse, do_fft_withimag
+from elasticai.preprocessor.waveform import WaveformGenerator, WaveformSignal
 from elasticai.preprocessor.windower import (
     DefaultSettingsWindow,
     SettingsWindow,
@@ -35,10 +46,9 @@ __all__ = [
     "FilterCoeffs",
     "DefaultSettingsFilter",
     "SettingsFilter",
-    "DefaultSettingsFrame",
-    "FrameGenerator",
+    "WaveformSignal",
+    "WaveformGenerator",
     "FrameWaveform",
-    "SettingsFrame",
     "DataNormalization",
     "SettingsNormalization",
     "DefaultSettingsNormalization",
@@ -55,4 +65,8 @@ __all__ = [
     "SettingsWindow",
     "WindowSequencer",
     "transformation_window_method",
+    "TargetsEventPreprocessors",
+    "TargetsEventDetection",
+    "TargetsThreshold",
+    "TargetsFrameAlignment",
 ]
