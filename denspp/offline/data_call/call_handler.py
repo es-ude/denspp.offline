@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from fractions import Fraction
 from glob import glob
 from logging import Logger, getLogger
-from os import makedirs
 from os.path import basename, dirname, exists, join
 from pathlib import Path
 
@@ -323,7 +322,11 @@ class ControllerData:
         :param data_type:       String with data type of the data
         :return:                String with path to file
         """
-        used_datapath = self.__default_data_path if self._settings.path == "" else self._settings.path
+        path2file = Path(self._settings.path)
+        if path2file.is_absolute():
+            used_datapath = path2file
+        else:
+            used_datapath = get_path_to_project() / "data"
         self.__config_data_selection = [
             used_datapath,
             self._settings.data_case,
@@ -335,13 +338,12 @@ class ControllerData:
         if path2local:
             return path2local
         elif path2remote and not path2local:
-            path2data = join(self._settings.path, dirname(path2remote[1:]))
-            path2file = join(self._settings.path, path2remote[1:])
-            makedirs(path2data, exist_ok=True)
+            path2file = used_datapath / path2remote[1:]
+            path2file.parent.mkdir(parents=True, exist_ok=True)
             self.__download_handler.download_file(
-                use_dataset=False, file_name=path2remote, destination_download=path2file
+                use_dataset=False, file_name=path2remote, destination_download=path2file.as_posix()
             )
-            return path2file
+            return path2file.as_posix()
         else:
             raise FileNotFoundError("--- File is not available. Please check! ---")
 
