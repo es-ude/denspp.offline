@@ -230,6 +230,15 @@ wheels = [
 ]
 
 [[package]]
+name = "bottle"
+version = "0.13.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/7a/71/cca6167c06d00c81375fd668719df245864076d284f7cb46a694cbeb5454/bottle-0.13.4.tar.gz", hash = "sha256:787e78327e12b227938de02248333d788cfe45987edca735f8f88e03472c3f47", size = 98717, upload-time = "2025-06-15T10:08:59.439Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/83/f6/b55ec74cfe68c6584163faa311503c20b0da4c09883a41e8e00d6726c954/bottle-0.13.4-py2.py3-none-any.whl", hash = "sha256:045684fbd2764eac9cdeb824861d1551d113e8b683d8d26e296898d3dd99a12e", size = 103807, upload-time = "2025-06-15T10:08:57.691Z" },
+]
+
+[[package]]
 name = "build"
 version = "1.6.0"
 source = { registry = "https://pypi.org/simple" }
@@ -727,7 +736,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "elasticai-creator", git = "https://github.com/es-ude/elastic-ai.creator.git?branch=main" },
-    { name = "elasticai-explorer", git = "https://github.com/es-ude/elastic-ai.explorer.git?branch=fix-build-setup" },
+    { name = "elasticai-explorer", git = "https://github.com/es-ude/elastic-ai.explorer.git?branch=add-grid-search" },
     { name = "elasticai-preprocessor", git = "https://github.com/es-ude/elasticai.preprocessor.git?branch=main" },
     { name = "h5py", specifier = ">=3.16.0" },
     { name = "matplotlib", specifier = ">=3.9.2" },
@@ -828,8 +837,8 @@ dependencies = [
 
 [[package]]
 name = "elasticai-explorer"
-version = "0.1.0"
-source = { git = "https://github.com/es-ude/elastic-ai.explorer.git?branch=fix-build-setup#d05c8d1c52a8d66125db7b666320f45ecbaa9ee2" }
+version = "0.2.dev6+g80f5d552c"
+source = { git = "https://github.com/es-ude/elastic-ai.explorer.git?branch=add-grid-search#80f5d552cb2b904106d522096c6aae4e5cf1fbba" }
 dependencies = [
     { name = "elasticai-preprocessor" },
     { name = "fabric" },
@@ -837,6 +846,7 @@ dependencies = [
     { name = "iesude-data" },
     { name = "matplotlib" },
     { name = "optuna" },
+    { name = "optuna-dashboard" },
     { name = "pandas" },
     { name = "plotly" },
     { name = "pyserial" },
@@ -1981,6 +1991,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/f4/aa/05f5e3f662cc96a4c478fc3446b8ed6359825a2b504ecb614a9ac84e4a4d/optuna-4.9.0.tar.gz", hash = "sha256:b322e5cbdf1655fb84c37646c4a7a1f391de1b47806bbe222e015825d0a82b87", size = 485834, upload-time = "2026-06-01T06:23:30.424Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ab/f3/e5fcd5d9b15771ed6dc10e3a7eeddc672e418f4f4c4653d216cc1d857e2d/optuna-4.9.0-py3-none-any.whl", hash = "sha256:f52f3be6148654850c92a5860d398fd88ec6b2c84ab68d9c3d07dcff02e7afee", size = 425553, upload-time = "2026-06-01T06:23:28.804Z" },
+]
+
+[[package]]
+name = "optuna-dashboard"
+version = "0.21.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "bottle" },
+    { name = "optuna" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f4/4b/da8f6575c0e305777dc737e3587a494aa948705c02d95bd99cd4455ee7fc/optuna_dashboard-0.21.0.tar.gz", hash = "sha256:d7446461602a32b40bff12b7c936bb50f074b54b6099bbe855d5b6ea26f33a4c", size = 3901519, upload-time = "2026-09-10T04:45:39.368Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/20/a3/8c9ed4db82bfa9d68806d746e428a57da5ee00fdd4489b896823bb870fc1/optuna_dashboard-0.21.0-py3-none-any.whl", hash = "sha256:1915952f2083387a187633893d812b4d81b3ab8d913eeb29b3acc5869e642e1e", size = 3918047, upload-time = "2026-09-10T04:45:37.591Z" },
 ]
 
 [[package]]

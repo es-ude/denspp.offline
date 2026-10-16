@@ -28,3 +28,5 @@ if __name__ == "__main__":
         shuffle_data=shuffle_data,
         add_dimension=do_train_conv1d,
     )
+    exp.plot_search_space(path2db=path2run)
+    exp.open_dashboard(path2run)

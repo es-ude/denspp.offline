@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 from copy import deepcopy
 from dataclasses import asdict
 from datetime import datetime
@@ -7,10 +8,17 @@ from logging import Logger, getLogger
 from pathlib import Path
 from typing import Any
 
+import matplotlib.pyplot as plt
 import numpy as np
+import optuna
 from elasticai.explorer.hw_nas import hw_nas, reconstruct_model_from_json
 from elasticai.explorer.hw_nas.estimators import ParamEstimator, TrainMetricsEstimator
-from elasticai.explorer.hw_nas.hw_nas import HWNASParameters
+from elasticai.explorer.hw_nas.hw_nas import (
+    HWNASParameters,
+    SearchOptimization,
+    SearchStrategy,
+    count_configurations,
+)
 from elasticai.explorer.hw_nas.optimization_criteria import OptimizationCriteria
 from elasticai.explorer.training.data import DatasetSpecification
 from elasticai.explorer.training.trainer import SupervisedTrainer, accuracy_fn
@@ -28,6 +36,7 @@ from denspp.offline.dnn import (
 )
 from denspp.offline.dnn.model_library import DatasetLoaderLibrary
 from denspp.offline.dnn.training import DefaultSettingsTrainingCE, SettingsClassifier, TrainClassifier
+from denspp.offline.dnn.training.common_train import TrainingsDevice
 
 from .settings import (
     DefaultSettingsExplorer,
@@ -88,6 +97,12 @@ class ExploreClassifier:
             path=path2config,
             file_name=f"ConfigExplorer_{settings.experiment_name.capitalize()}",
         ).get_class(SettingsExplorer)
+        if isinstance(self._sets_exp.search_strategy, str):
+            self._sets_exp.search_strategy = SearchStrategy(settings.search_strategy)
+        if isinstance(self._sets_exp.optimization, str):
+            self._sets_exp.optimization = SearchOptimization(self._sets_exp.optimization)
+        if isinstance(self._sets_exp.device, str):
+            self._sets_exp.device = TrainingsDevice(self._sets_exp.device)
 
         self._device = TrainClassifier(
             config_train=DefaultSettingsTrainingCE,
@@ -163,6 +178,11 @@ class ExploreClassifier:
             template=search_space, path=self._path2config, file_name="search_space.yaml"
         ).write_to_yaml()
 
+    @property
+    def get_number_configurations(self) -> int:
+        """Returning the number of possible configurations from the search space"""
+        return count_configurations(asdict(self._search_space))[0]
+
     @staticmethod
     def _get_dataset_loader() -> Any:
         datalib = DatasetLoaderLibrary().get_registry()
@@ -210,7 +230,12 @@ class ExploreClassifier:
         :return:                Path to the folder containing results
         """
         path2temp = self._init_folders()
+        if self._sets_exp.search_strategy == SearchStrategy.GRID_SEARCH:
+            self._sets_exp.num_trials_search = self.get_number_configurations
         self._logger.info("Using computing device: %s", self._device)
+        self._logger.info(
+            f"Start search process ({self._sets_exp.search_strategy.value}, {self._sets_exp.optimization.value}) with {self._sets_exp.num_trials_search} trials"
+        )
 
         # --- Prepare Search Space Engine
         trainer = SupervisedTrainer(
@@ -246,9 +271,11 @@ class ExploreClassifier:
         if not hasattr(self, "_search_space"):
             raise RuntimeError("Explorer did not find a valid search space.")
         top_models, model_configs, model_metrics = hw_nas.search(
+            path2study=path2temp,
             search_space_cfg=asdict(self._search_space),
-            search_strategy=self._sets_exp.get_search_strategy,
+            search_strategy=self._sets_exp.search_strategy,
             optimization_criteria=criteria,
+            seed=self._sets_exp.seed,
             hw_nas_parameters=HWNASParameters(
                 max_search_trials=self._sets_exp.num_trials_search,
                 top_n_models=self._sets_exp.num_best_models,
@@ -276,6 +303,15 @@ class ExploreClassifier:
             template=self._search_space, path=path2temp, file_name="search_space.yaml"
         ).write_to_yaml()
         return path2temp
+
+    def open_dashboard(self, path2db: Path) -> None:
+        if (path2db / "results.db").exists():
+            self._logger.info(
+                "\n\n=================================\nOpening optuna dashboard ...\n=================================\n"
+            )
+            os.system(f"optuna-dashboard sqlite:////{path2db.resolve()}/results.db")
+        else:
+            self._logger.error("No study results are available")
 
     def run_full_training(
         self, path2run: Path, shuffle_data: bool = True, add_dimension: bool = True
@@ -341,3 +377,79 @@ class ExploreClassifier:
             path2save=path2save,
         )
         plotter.do_plot_results(results=results, do_plot=True)
+
+    def plot_search_space(
+        self,
+        path2db: Path,
+        x: str = "parameter_count_estimate",
+        y: str = "accuracy",
+        log_x: bool = False,
+    ):
+        """Plotting the search space results from actual run
+        :param path2db:        Path to the folder containing the search space results
+        :param x:              Parameter count estimate
+        :param y:              Accuracy estimate
+        :param log_x:          Plotting the x-axis logarithmically
+        """
+        storage = f"sqlite:////{path2db.resolve()}/results.db"
+        study_name = path2db.name
+        study = optuna.load_study(study_name=study_name, storage=storage)
+
+        def value_of(trial, name):
+            if name == "score":
+                return float(trial.value)
+            if name in trial.user_attrs:
+                return float(trial.user_attrs[name])
+            return float(trial.params[name])
+
+        rows = []
+        for t in study.get_trials(deepcopy=False, states=(optuna.trial.TrialState.COMPLETE,)):
+            try:
+                rows.append({x: value_of(t, x), y: value_of(t, y)})
+            except (KeyError, TypeError, ValueError):
+                continue
+        if not rows:
+            raise ValueError
+
+        front, best_y = set(), float("-inf")
+        for px, py in sorted({(r[x], r[y]) for r in rows}, key=lambda p: (p[0], -p[1])):
+            if py > best_y:
+                front.add((px, py))
+                best_y = py
+        for r in rows:
+            r["is_pareto"] = (r[x], r[y]) in front
+
+        pareto = sorted((r for r in rows if r["is_pareto"]), key=lambda r: r[x])
+        others = [r for r in rows if not r["is_pareto"]]
+
+        fig, ax = plt.subplots(figsize=(8, 5), dpi=150)
+        ax.scatter(
+            [r[x] for r in others],
+            [r[y] for r in others],
+            s=18,
+            alpha=0.55,
+            color="steelblue",
+            label=f"Trials ({len(rows)})",
+        )
+        ax.step(
+            [r[x] for r in pareto], [r[y] for r in pareto], where="post", color="crimson", linewidth=1.5
+        )
+        ax.scatter(
+            [r[x] for r in pareto],
+            [r[y] for r in pareto],
+            s=55,
+            marker="D",
+            color="crimson",
+            edgecolors="black",
+            linewidths=0.6,
+            zorder=3,
+            label=f"Pareto-Front ({len(pareto)})",
+        )
+        if log_x:
+            ax.set_xscale("log")
+        ax.set(xlabel=x, ylabel=y)
+        ax.grid()
+        ax.legend()
+        fig.tight_layout()
+        fig.savefig(path2db / "search_space.svg")
+        plt.close(fig)
