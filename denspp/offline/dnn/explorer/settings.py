@@ -1,15 +1,9 @@
 from dataclasses import dataclass
-from enum import Enum
 from typing import Any
 
-from elasticai.explorer.hw_nas.hw_nas import SearchStrategy
+from elasticai.explorer.hw_nas.hw_nas import SearchOptimization, SearchStrategy
 
 from denspp.offline.dnn.training.common_train import TrainingsDevice
-
-
-class ExploreStrategySearch(Enum):
-    random = "random"
-    evolution = "evolution"
 
 
 @dataclass
@@ -72,7 +66,8 @@ class SettingsExplorer:
         seed:               Seed for random number generator
         num_best_models:    Number of best models to return
         device:             Training device
-        search_strategy:    String with indicating the Optuna Optimizer
+        search_strategy:    String with indicating the Optuna Search Strategy ("grid", "random", ...)
+        optimization:       String with optimization direction ("maximize", "minimize")
     """
 
     experiment_name: str
@@ -84,24 +79,9 @@ class SettingsExplorer:
     learning_rate: float
     seed: int
     num_best_models: int
-    device: str | TrainingsDevice
-    search_strategy: ExploreStrategySearch | str
-
-    @property
-    def get_search_strategy(self) -> SearchStrategy:
-        """Returning the right SearchStrategy definition for the elasticAI.explorer"""
-        method = (
-            ExploreStrategySearch(self.search_strategy)
-            if isinstance(self.search_strategy, str)
-            else self.search_strategy
-        )
-        match method:
-            case ExploreStrategySearch.random:
-                return SearchStrategy.RANDOM_SEARCH
-            case ExploreStrategySearch.evolution:
-                return SearchStrategy.EVOLUTIONARY_SEARCH
-            case _:
-                raise ValueError("Selected strategy is unknown")
+    device: TrainingsDevice | str
+    search_strategy: SearchStrategy | str
+    optimization: SearchOptimization | str
 
 
 DefaultSettingsExplorer = SettingsExplorer(
@@ -115,5 +95,6 @@ DefaultSettingsExplorer = SettingsExplorer(
     seed=42,
     num_best_models=1,
     device=TrainingsDevice.auto.value,
-    search_strategy=ExploreStrategySearch.random.value,
+    search_strategy=SearchStrategy.GRID_SEARCH.value,
+    optimization=SearchOptimization.MAXIMIZE.value,
 )

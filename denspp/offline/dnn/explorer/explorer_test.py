@@ -119,7 +119,7 @@ def test_run_search_without_search_space(sets: SettingsExplorer, path2temp: Path
 
     dut = ExploreClassifier(settings=sets, path2config=path2temp)
     data = dut.prepare_data(do_shuffle=True)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(AttributeError):
         dut.run_search(
             dataset=data,
             loss_fn=torch.nn.CrossEntropyLoss(),
@@ -156,6 +156,7 @@ def test_run_full(sets: SettingsExplorer, path2temp: Path) -> None:
     data = dut.prepare_data(do_shuffle=True)
 
     dut.load_search_space()
+    assert dut.get_number_configurations == 110
     dut._search_space.input = data.dataset[0][0].size(0)
     dut._search_space.output = 12
 

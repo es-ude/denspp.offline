@@ -7,13 +7,7 @@ license-files = ["LICENSE"]
 authors = [
   { name = "Andreas Erbsloeh", email = "andreas.erbsloeh@uni-due.de" },
 ]
-keywords = [
-  "end-to-end",
-  "machine learning",
-  "offline data analysis",
-  "sensor data pipeline",
-  "signal processing"
-]
+keywords = ["end-to-end", "machine learning", "offline data analysis", "sensor data pipeline", "signal processing"]
 dependencies = [
   "elasticai-creator",
   "elasticai-explorer",
@@ -72,13 +66,7 @@ build-backend = "hatchling.build"
 [tool.coverage.run]
 source = ["denspp"]
 relative_files = true
-omit = [
-  "**/*_test.py",
-  "**/template/*.py",
-  "**/plot_*.py",
-  "**/player/*",
-  "**/pyspice_*.py"
-]
+omit = ["**/*_test.py", "**/template/*.py", "**/plot_*.py", "**/player/*", "**/pyspice_*.py"]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -95,36 +83,12 @@ source = "vcs"
 [tool.hatch.build.targets.sdist]
 where = ["."]
 include = ["denspp"]
-exclude = [
-  ".venv",
-  "build",
-  "config",
-  "data",
-  "dataset",
-  "docs",
-  "example",
-  "runs",
-  "test",
-  "temp_test",
-  "**/*_test.py"
-]
+exclude = [".venv", "build", "config", "data", "dataset", "docs", "example", "runs", "test", "temp_test", "**/*_test.py"]
 namespaces = false
 
 [tool.hatch.build.targets.wheel]
 packages = ["denspp"]
-exclude = [
-  ".venv",
-  "build",
-  "config",
-  "data",
-  "dataset",
-  "docs",
-  "example",
-  "runs",
-  "test",
-  "temp_test",
-  "**/*_test.py"
-]
+exclude = [".venv", "build", "config", "data", "dataset", "docs", "example", "runs", "test", "temp_test", "**/*_test.py"]
 only-packages = true
 
 [tool.pytest]
@@ -212,26 +176,14 @@ line-ending = "auto"
 
 [tool.ty.src]
 include = ["denspp/offline"]
-exclude = [
-  "denspp/offline/template",
-  "denspp/offline/pipeline",
-  "denspp/offline/dnn/**",
-  "denspp/offline/analog/**",
-  "denspp/offline/analog/dev_handler.py",
-  "denspp/offline/analog/iv_polyfit.py",
-  "denspp/offline/data_call/call_handler.py",
-  "denspp/offline/data_call/merge_datasets.py",
-  "denspp/offline/metric/data_numpy.py",
-  "denspp/offline/ml/cluster.py",
-  "denspp/**/*_test.py"
-]
+exclude = ["denspp/offline/template", "denspp/offline/pipeline", "denspp/offline/dnn/**", "denspp/offline/analog/**", "denspp/offline/analog/dev_handler.py", "denspp/offline/analog/iv_polyfit.py", "denspp/offline/data_call/call_handler.py", "denspp/offline/data_call/merge_datasets.py", "denspp/offline/metric/data_numpy.py", "denspp/offline/ml/cluster.py", "denspp/**/*_test.py"]
 
 [tool.uv]
 default-groups = ["dev", "docs", "test"]
 
 [tool.uv.sources]
 elasticai-creator = { git = "https://github.com/es-ude/elastic-ai.creator.git", branch = "main" }
-elasticai-explorer = { git = "https://github.com/es-ude/elastic-ai.explorer.git", branch = "fix-build-setup" }
+elasticai-explorer = { git = "https://github.com/es-ude/elastic-ai.explorer.git", branch = "add-grid-search" }
 elasticai-preprocessor = { git = "https://github.com/es-ude/elasticai.preprocessor.git", branch = "main" }
 soundcard = { git = "https://github.com/bastibe/SoundCard.git" }
 umap-learn = { git = "https://github.com/lmcinnes/umap.git" }
