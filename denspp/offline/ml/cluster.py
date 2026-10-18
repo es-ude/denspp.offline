@@ -5,15 +5,16 @@ from os.path import join
 import joblib
 import numpy as np
 from psutil import cpu_count
-from sklearn.cluster import DBSCAN, KMeans
+from sklearn.cluster import DBSCAN, KMeans, HDBSCAN
 from sklearn.metrics import accuracy_score
 from sklearn.mixture import GaussianMixture
 from sklearn.neighbors import KNeighborsClassifier
 
 
+
 @dataclass
 class SettingsCluster:
-    """ "Individual data class to configure clustering
+    """ Individual data class to configure clustering
     Attributes:
         type:           String with used cluster/classification method [kMeans, GMM, DBSCAN, kNN]
         no_cluster:     Integer with number of clusters
@@ -27,6 +28,8 @@ class SettingsCluster:
     max_iter: int = 1000
     tolerance: float = 1e-9
     random_state = None  # np.random.RandomState(seed=1234)
+    min_cluster_size: int = 15   # for HDBSCAN
+    min_samples: int = 5         # for HDBSCAN
 
 
 DefaultSettingsCluster = SettingsCluster(type="kMeans", no_cluster=3)
@@ -57,6 +60,7 @@ class Clustering:
         self.__method_bib.update({"kMeans": [self.__kmeans_init, self.__kmeans_predict]})
         self.__method_bib.update({"GMM": [self.__gmm_init, self.__gmm_predict]})
         self.__method_bib.update({"DBSCAN": [self.__dbscan_init, self.__dbscan_predict]})
+        self.__method_bib.update({"HDBSCAN": [self.__hdbscan_init, self.__hdbscan_predict]})
         self.__method_bib.update({"kNN": [self.__knn_init, self.__knn_predict]})
 
     def methods_available(self, do_lower: bool = False) -> list:
@@ -256,6 +260,28 @@ class Clustering:
         """Output with predicted classes of given feature array (DBSCAN)"""
         if not isinstance(self._cluster, DBSCAN):
             raise TypeError("Please init DBSCAN for prediction!")
+        else:
+            return self._cluster.fit_predict(features)
+
+    def __hdbscan_init(self, features: np.ndarray, true_labels=None) -> np.ndarray:
+        """Initialization of HDBSCAN for clustering
+        (true_label is ignored due to unsupervised learning)
+
+        HDBSCAN does not require a predefined number of clusters; it discovers
+        clusters of varying density and labels low-density points as noise (-1).
+        """
+        self._cluster = HDBSCAN(
+            min_cluster_size=15,  # smallest grouping to consider a cluster
+            min_samples=5,  # conservativeness of the density estimate
+            metric="euclidean",
+            cluster_selection_method="eom",
+        ).fit(X=features)
+        return self._cluster.labels_
+
+    def __hdbscan_predict(self, features: np.ndarray) -> np.ndarray:
+        """Output with predicted classes of given feature array (HDBSCAN)"""
+        if not isinstance(self._cluster, HDBSCAN):
+            raise TypeError("Please init HDBSCAN for prediction!")
         else:
             return self._cluster.fit_predict(features)
 
