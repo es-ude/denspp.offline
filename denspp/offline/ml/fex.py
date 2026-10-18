@@ -5,6 +5,7 @@ import joblib
 import numpy as np
 from sklearn.decomposition import PCA, FastICA
 from umap import UMAP
+from sklearn.manifold import TSNE
 
 
 @dataclass(frozen=True)
@@ -26,7 +27,7 @@ class FeatureExtraction:
 
     def __init__(self, settings: SettingsFeature | None = None):
         self._settings = settings if settings is not None else SettingsFeature()
-        self._model: PCA | FastICA | UMAP | None = None
+        self._model: PCA | FastICA | UMAP | TSNE | None = None
         self.fe_method = None
 
     # ------------------------------------------------------------------
@@ -49,6 +50,37 @@ class FeatureExtraction:
 
     def _create_ica(self, random_state: int) -> FastICA:
         return FastICA(n_components=self._settings.num_features, random_state=random_state)
+
+    def _create_tsne(
+            self,
+            perplexity: float,
+            learning_rate: float | Literal["auto"],
+            init: str,
+            random_state: int,
+            method: Literal["barnes_hut", "exact", "auto"] = "auto",
+    ) -> TSNE:
+        n_components = self._settings.num_features
+
+        # bsrnes_hut for performance with fall back for higher-dimensional embeddings
+        if method == "auto":
+            resolved_method = "barnes_hut" if n_components < 4 else "exact"
+        else:
+            resolved_method = method
+
+        if resolved_method == "barnes_hut" and n_components >= 4:
+            raise ValueError(
+                f"t-SNE method 'barnes_hut' does not support n_components={n_components} "
+                "(must be < 4). Use method='exact' or method='auto' instead."
+            )
+
+        return TSNE(
+            n_components=n_components,
+            perplexity=perplexity,
+            learning_rate=learning_rate,
+            init=init,
+            random_state=random_state,
+            method=resolved_method,
+        )
 
     # ------------------------------------------------------------------
     # helpers
@@ -101,7 +133,7 @@ class FeatureExtraction:
             ValueError: If the model is not fitted.
         """
 
-        if not isinstance(state_to_load, (PCA, UMAP, FastICA)):
+        if not isinstance(state_to_load, (PCA, UMAP, FastICA, TSNE)):
             raise TypeError("state_to_load must be a fitted PCA, UMAP, or FastICA model.")
 
         self._ensure_method_matches(fe_method_name)
@@ -114,6 +146,9 @@ class FeatureExtraction:
 
         if isinstance(state_to_load, FastICA) and not hasattr(state_to_load, "components_"):
             raise ValueError("FastICA state_to_load is not fitted (missing components_).")
+
+        if isinstance(state_to_load, TSNE) and not hasattr(state_to_load, "embedding_"):
+            raise ValueError("TSNE state_to_load is not fitted (missing embedding_).")
 
         self._model = state_to_load
         self.fe_method = fe_method_name
@@ -284,4 +319,41 @@ class FeatureExtraction:
         self._ensure_method_matches("ica")
         self._model = self._create_ica(random_state)
         self.fe_method = "ica"
+        return self._model.fit_transform(frame_in)
+
+    # ------------------------------------------------------------------
+    # t-SNE
+    # ------------------------------------------------------------------
+    def fit_tsne(
+            self,
+            frame_in: np.ndarray,
+            perplexity: float = 30.0,
+            learning_rate: float | Literal["auto"] = "auto",
+            init: str = "pca",
+            random_state: int = 42,
+            method: Literal["barnes_hut", "exact", "auto"] = "auto",
+    ) -> None:
+        """Fit a t-SNE model and store it internally."""
+        self._ensure_method_matches("tsne")
+        self._model = self._create_tsne(
+            perplexity, learning_rate, init, random_state, method
+        )
+        self._model.fit(frame_in)
+        self.fe_method = "tsne"
+
+    def fit_transform_tsne(
+            self,
+            frame_in: np.ndarray,
+            perplexity: float = 30.0,
+            learning_rate: float | Literal["auto"] = "auto",
+            init: str = "pca",
+            random_state: int = 42,
+            method: Literal["barnes_hut", "exact", "auto"] = "auto",
+    ) -> np.ndarray:
+        """Fit a t-SNE model, store it, and return the embedding."""
+        self._ensure_method_matches("tsne")
+        self._model = self._create_tsne(
+            perplexity, learning_rate, init, random_state, method
+        )
+        self.fe_method = "tsne"
         return self._model.fit_transform(frame_in)
