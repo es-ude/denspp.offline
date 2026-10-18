@@ -68,6 +68,22 @@ class MyTestCase(unittest.TestCase):
         )
         self.assertEqual(data[1].size, pred.size)
 
+    def test_hdbscan(self):
+        set0: SettingsCluster = deepcopy(self.set0)
+        set0.type = "hdbscan"
+        dut = Clustering(set0)
+        data = dut.create_dummy_data(num_samples=100, noise_std=0.1)
+
+        dut.init(
+            features=data[0],
+            true_label=data[1],
+        )
+        pred = dut.predict(
+            features=data[0],
+        )
+        self.assertEqual(data[1].size, pred.size)
+
+
 
 if __name__ == "__main__":
     unittest.main()
