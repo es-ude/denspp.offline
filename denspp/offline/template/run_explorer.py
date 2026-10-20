@@ -1,11 +1,14 @@
 from copy import deepcopy
 from torch import nn
 
+# from optuna.samplers import RandomSampler
+from elasticai.explorer.hw_nas.hw_nas import ExhaustiveGridSampler
 from denspp.offline.logger import define_logger_runtime
 from denspp.offline.dnn import SettingsExplorer, DefaultSettingsExplorer, ExploreClassifier
 
 
 # Further information for search space definition: https://github.com/es-ude/elastic-ai.explorer/blob/main/elasticai/explorer/hw_nas/search_space/README.md
+# Using other samplers "from optuna.samplers import ..."
 if __name__ == "__main__":
     shuffle_data = True
     do_train_conv1d = True
@@ -21,6 +24,7 @@ if __name__ == "__main__":
     exp.load_search_space()
     path2run = exp.run_search(
         dataset=data_spec,
+        sampler=ExhaustiveGridSampler(),
         loss_fn=nn.CrossEntropyLoss(),
     )
     exp.run_full_training(

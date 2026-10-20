@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 import torch
+from optuna.samplers import RandomSampler
 
 from denspp.offline import get_path_to_project
 
@@ -113,22 +114,21 @@ def test_prepare_data_reducing(sets: SettingsExplorer, path2temp: Path) -> None:
 @pytest.mark.slow
 def test_run_search_without_search_space(sets: SettingsExplorer, path2temp: Path) -> None:
     sets.num_data_samples = 1024
-    sets.search_strategy = 0
     sets.num_trials_search = 2
     sets.num_epochs_trial = 5
 
     dut = ExploreClassifier(settings=sets, path2config=path2temp)
     data = dut.prepare_data(do_shuffle=True)
-    with pytest.raises(AttributeError):
+    with pytest.raises(RuntimeError):
         dut.run_search(
             dataset=data,
+            sampler=RandomSampler(),
             loss_fn=torch.nn.CrossEntropyLoss(),
         )
 
 
 @pytest.mark.slow
 def test_run_search_with_search_space(sets: SettingsExplorer, path2temp: Path) -> None:
-    sets.search_strategy = "random"
     sets.num_trials_search = 3
     sets.num_epochs_trial = 5
 
@@ -141,13 +141,13 @@ def test_run_search_with_search_space(sets: SettingsExplorer, path2temp: Path) -
 
     dut.run_search(
         dataset=data,
+        sampler=RandomSampler(),
         loss_fn=torch.nn.CrossEntropyLoss(),
     )
 
 
 @pytest.mark.slow
 def test_run_full(sets: SettingsExplorer, path2temp: Path) -> None:
-    sets.search_strategy = "random"
     sets.num_trials_search = 2
     sets.num_epochs_trial = 5
     sets.num_epochs_best = 10
@@ -162,6 +162,7 @@ def test_run_full(sets: SettingsExplorer, path2temp: Path) -> None:
 
     path2temp = dut.run_search(
         dataset=data,
+        sampler=RandomSampler(),
         loss_fn=torch.nn.CrossEntropyLoss(),
     )
     dut.run_full_training(path2run=path2temp, shuffle_data=True)

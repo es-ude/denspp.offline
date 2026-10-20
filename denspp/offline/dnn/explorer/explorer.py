@@ -14,9 +14,9 @@ import optuna
 from elasticai.explorer.hw_nas import hw_nas, reconstruct_model_from_json
 from elasticai.explorer.hw_nas.estimators import ParamEstimator, TrainMetricsEstimator
 from elasticai.explorer.hw_nas.hw_nas import (
+    ExhaustiveGridSampler,
     HWNASParameters,
     SearchOptimization,
-    SearchStrategy,
     count_configurations,
 )
 from elasticai.explorer.hw_nas.optimization_criteria import OptimizationCriteria
@@ -92,13 +92,11 @@ class ExploreClassifier:
         self._logger = getLogger(self.__class__.__name__)
         self._path2config = path2config
 
-        self._sets_exp = JsonHandler(
+        self._sets_exp: SettingsExplorer = JsonHandler(
             template=settings,
             path=path2config,
             file_name=f"ConfigExplorer_{settings.experiment_name.capitalize()}",
         ).get_class(SettingsExplorer)
-        if isinstance(self._sets_exp.search_strategy, str):
-            self._sets_exp.search_strategy = SearchStrategy(settings.search_strategy)
         if isinstance(self._sets_exp.optimization, str):
             self._sets_exp.optimization = SearchOptimization(self._sets_exp.optimization)
         if isinstance(self._sets_exp.device, str):
@@ -223,18 +221,24 @@ class ExploreClassifier:
         data = DatasetClassifierExplorer(data=data_new, labels=label_new)
         return DatasetSpecification(dataset=data, shuffle=do_shuffle, split_seed=self._sets_exp.seed)
 
-    def run_search(self, dataset: DatasetSpecification, loss_fn=nn.CrossEntropyLoss()) -> Path:
+    def run_search(
+        self,
+        dataset: DatasetSpecification,
+        sampler: optuna.samplers.BaseSampler = ExhaustiveGridSampler(),
+        loss_fn=nn.CrossEntropyLoss(),
+    ) -> Path:
         """Executing the search space for finding the best performing model
         :param dataset:         Dataset used for the search
+        :param sampler:         Inject the Optuna Sampler for the search space
         :param loss_fn:         Loss function to use for training
         :return:                Path to the folder containing results
         """
         path2temp = self._init_folders()
-        if self._sets_exp.search_strategy == SearchStrategy.GRID_SEARCH:
+        if "grid" in type(sampler).__name__:
             self._sets_exp.num_trials_search = self.get_number_configurations
         self._logger.info("Using computing device: %s", self._device)
         self._logger.info(
-            f"Start search process ({self._sets_exp.search_strategy.value}, {self._sets_exp.optimization.value}) with {self._sets_exp.num_trials_search} trials"
+            f"Start search process ({self._sets_exp.optimization.value}) with {self._sets_exp.num_trials_search} trials"
         )
 
         # --- Prepare Search Space Engine
@@ -272,10 +276,9 @@ class ExploreClassifier:
             raise RuntimeError("Explorer did not find a valid search space.")
         top_models, model_configs, model_metrics = hw_nas.search(
             path2study=path2temp,
+            sampler=sampler,
             search_space_cfg=asdict(self._search_space),
-            search_strategy=self._sets_exp.search_strategy,
             optimization_criteria=criteria,
-            seed=self._sets_exp.seed,
             hw_nas_parameters=HWNASParameters(
                 max_search_trials=self._sets_exp.num_trials_search,
                 top_n_models=self._sets_exp.num_best_models,

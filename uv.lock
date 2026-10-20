@@ -837,8 +837,8 @@ dependencies = [
 
 [[package]]
 name = "elasticai-explorer"
-version = "0.2.dev6+g80f5d552c"
-source = { git = "https://github.com/es-ude/elastic-ai.explorer.git?branch=add-grid-search#80f5d552cb2b904106d522096c6aae4e5cf1fbba" }
+version = "0.2.dev7+gdbb9819e2"
+source = { git = "https://github.com/es-ude/elastic-ai.explorer.git?branch=add-grid-search#dbb9819e20d6f22390c7706b88c17855ac501bd7" }
 dependencies = [
     { name = "elasticai-preprocessor" },
     { name = "fabric" },

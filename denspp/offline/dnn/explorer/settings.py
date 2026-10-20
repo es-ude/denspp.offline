@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any
 
-from elasticai.explorer.hw_nas.hw_nas import SearchOptimization, SearchStrategy
+from elasticai.explorer.hw_nas.hw_nas import SearchOptimization
 
 from denspp.offline.dnn.training.common_train import TrainingsDevice
 
@@ -66,7 +66,6 @@ class SettingsExplorer:
         seed:               Seed for random number generator
         num_best_models:    Number of best models to return
         device:             Training device
-        search_strategy:    String with indicating the Optuna Search Strategy ("grid", "random", ...)
         optimization:       String with optimization direction ("maximize", "minimize")
     """
 
@@ -80,7 +79,6 @@ class SettingsExplorer:
     seed: int
     num_best_models: int
     device: TrainingsDevice | str
-    search_strategy: SearchStrategy | str
     optimization: SearchOptimization | str
 
 
@@ -95,6 +93,5 @@ DefaultSettingsExplorer = SettingsExplorer(
     seed=42,
     num_best_models=1,
     device=TrainingsDevice.auto.value,
-    search_strategy=SearchStrategy.GRID_SEARCH.value,
     optimization=SearchOptimization.MAXIMIZE.value,
 )
