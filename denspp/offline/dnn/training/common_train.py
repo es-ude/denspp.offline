@@ -58,6 +58,7 @@ class DataValidation:
         mean:           Numpy array with mean input signals for each class
         output:         Numpy array with model output
         label_names:    List with string names of each label class
+        score:          Numpy array with output score values
     """
 
     input: np.ndarray
@@ -67,6 +68,7 @@ class DataValidation:
     mean: np.ndarray
     output: np.ndarray
     label_names: list[str]
+    score: np.ndarray | None = None
 
 
 @dataclass

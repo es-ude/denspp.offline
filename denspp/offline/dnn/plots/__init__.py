@@ -1,5 +1,5 @@
 from .plot_autoencoder import plot_3d_featspace, results_autoencoder_training
-from .plot_classifier import plot_confusion
+from .plot_classifier import plot_confusion, plot_scores_by_label
 from .plot_dataset import (
     plot_frames_dataset,
     plot_mnist_dataset,
@@ -20,6 +20,7 @@ from .plot_sweep import (
 
 __all__ = [
     "plot_3d_featspace",
+    "plot_scores_by_label",
     "results_autoencoder_training",
     "plot_confusion",
     "plot_frames_dataset",

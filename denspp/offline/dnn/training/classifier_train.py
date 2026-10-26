@@ -5,6 +5,7 @@ from pathlib import Path
 from shutil import copy
 
 import numpy as np
+import torch.nn
 from torch import (
     Tensor,
     add,
@@ -483,16 +484,20 @@ class TrainClassifier(PyTorchHandler):
         clus_pred_list = randn(32, 1)
         clus_orig_list = randn(32, 1)
         data_orig_list = randn(32, 1)
+        score_pred_list = randn(32, 1)
 
         first_cycle = True
         model_test.eval()
         for vdata in self._valid_loader[-1]:
-            _, clus_pred = model_test(vdata["in"].to(self._used_hw_dev))
+            score, clus_pred = model_test(vdata["in"].to(self._used_hw_dev))
+            score0 = torch.nn.Softmax()(score)
             if first_cycle:
+                score_pred_list = score0
                 clus_pred_list = clus_pred
                 clus_orig_list = vdata["out"]
                 data_orig_list = vdata["in"]
             else:
+                score_pred_list = cat((score_pred_list, score0), dim=0)
                 clus_pred_list = cat((clus_pred_list, clus_pred), dim=0)
                 clus_orig_list = cat((clus_orig_list, vdata["out"]), dim=0)
                 data_orig_list = cat((data_orig_list, vdata["in"]), dim=0)
@@ -505,4 +510,5 @@ class TrainClassifier(PyTorchHandler):
             addon="cl",
         )
         data_out.output = self.to_numpy(clus_pred_list)
+        data_out.score = self.to_numpy(score_pred_list)
         return data_out

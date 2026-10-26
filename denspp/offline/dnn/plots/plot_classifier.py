@@ -118,3 +118,64 @@ def plot_confusion(
         save_figure(plt, path2save, f"confusion_matrix{name_addon}")
     if show_plots:
         plt.show(block=True)
+
+
+def plot_scores_by_label(
+    scores: np.ndarray,
+    labels: np.ndarray,
+    threshold: float = 0.5,
+    bins=30,
+    class_names=None,
+    path2save: str = "",
+    show_plots: bool = True,
+) -> None:
+    """Plotting the Softmax score of the model output
+    :param scores:      Numpy array with values of the last model layer
+    :param labels:      Numpy array with predicted labels of the classifier
+    :param threshold:   Float with threshold
+    :param bins:        Integer with number of bins for the plot
+    :param class_names: Dictionary with the class names (id: name)
+    :param path2save:   String with path to save the plot to given path
+    :param show_plots:  Boolean for showing the plots
+    :return:            None
+    """
+    classes = np.unique(labels)
+    if labels.ndim > 1:
+        labels = labels.argmax(axis=1)
+    if scores.ndim > 1:
+        scores = scores[np.arange(len(labels)), labels]
+
+    def name(c):
+        if class_names is None:
+            return f"Label {c}"
+        if isinstance(class_names, dict):
+            return str(class_names.get(c, f"Label {c}"))
+        return str(class_names[list(classes).index(c)])
+
+    colors = plt.cm.tab10(np.arange(len(classes)))
+    bin_edges = np.linspace(scores.min(), scores.max(), bins + 1)
+
+    fig, (ax_hist, ax_box) = plt.subplots(1, 2, figsize=(12, 5))
+
+    for c, color in zip(classes, colors):
+        s = scores[labels == c]
+        ax_hist.hist(s, bins=bin_edges, alpha=0.6, color=color, label=name(c), log=True)
+    if threshold is not None:
+        ax_hist.axvline(threshold, color="black", linestyle="--", label=f"Threshold {threshold}")
+
+    ax_hist.set_xlabel("Softmax Score")
+    ax_hist.set_ylabel("Density")
+    ax_hist.legend()
+
+    data = [scores[labels == c] for c in classes]
+    ax_box.boxplot(data, tick_labels=[name(c) for c in classes])
+    if threshold is not None:
+        ax_box.axhline(threshold, color="black", linestyle="--")
+    ax_box.set_ylabel("Softmax score")
+    ax_hist.set_xlabel("Label")
+
+    plt.tight_layout()
+    if path2save:
+        save_figure(plt, path2save, "score")
+    if show_plots:
+        plt.show(block=True)

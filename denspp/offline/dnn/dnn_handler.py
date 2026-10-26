@@ -236,6 +236,17 @@ class PyTorchPlot:
             true_labels=data.data.valid_label,
             path2save=data.path.as_posix(),
             cl_dict=data.data.label_names,
+            show_plots=False,
+        )
+        self._logger.info("... plotting score matrix")
+        class_names = {c: c for c in np.unique(data.data.valid_label)}
+        dnn_plot.plot_scores_by_label(
+            scores=data.data.score,
+            labels=data.data.valid_label,
+            threshold=0.5,
+            bins=1001,
+            class_names=class_names,
+            path2save=data.path.as_posix(),
             show_plots=show_plot,
         )
 
