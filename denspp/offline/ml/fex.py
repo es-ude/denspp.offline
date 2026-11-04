@@ -40,7 +40,7 @@ class FeatureExtraction:
             random_state=random_state if svd_solver == "randomized" else None,
         )
 
-    def _create_umap(self, n_neighbors: int, random_state: int, min_dist: float, n_jobs: int) -> UMAP:
+    def _create_umap(self, n_neighbors: int, random_state: int, min_dist: float, n_jobs: int = 1) -> UMAP:
         return UMAP(
             n_components=self._settings.num_features,
             n_neighbors=n_neighbors,
@@ -119,7 +119,7 @@ class FeatureExtraction:
         if not hasattr(self._model, "transform"):
             raise TypeError("The stored model does not provide a transform(...) method.")
 
-        return self._model.transform(frame_in)
+        return self._model.transform(frame_in)  # ty: ignore[call-non-callable]
 
     def load_state(self, state_to_load, fe_method_name: str):
         """Load a fitted model into the class. If a different model has been fitted before, erase_state()

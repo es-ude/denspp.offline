@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12, <3.14"
 resolution-markers = [
     "python_full_version >= '3.13' and sys_platform == 'win32'",
@@ -693,6 +693,7 @@ wheels = [
 [[package]]
 name = "denspp-offline"
 source = { editable = "." }
+default-groups = ["dev", "docs", "test"]
 dependencies = [
     { name = "elasticai-creator" },
     { name = "elasticai-explorer" },
@@ -873,8 +874,8 @@ dependencies = [
 
 [[package]]
 name = "elasticai-preprocessor"
-version = "0.2.2.dev1+g0ddabc309"
-source = { git = "https://github.com/es-ude/elasticai.preprocessor.git?branch=main#0ddabc3096b6c4e94473990ff61a22de3f27e45d" }
+version = "0.2.2.dev2+g3c6337ca5"
+source = { git = "https://github.com/es-ude/elasticai.preprocessor.git?branch=main#3c6337ca5a717a974fe237bad6bfb1bb2c413a82" }
 dependencies = [
     { name = "elasticai-creator" },
     { name = "numpy" },

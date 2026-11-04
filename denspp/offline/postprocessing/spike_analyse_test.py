@@ -44,13 +44,13 @@ def _build_eap_dataset(
     label[count:] = label[count:] + 1
 
     out = DataWaveform(
-        waveform=wvf_noise,
+        data=wvf_noise,
         xpos=np.array(pos, dtype=int),
         label=label,
         sampling_rate=sampling_rate,
     )
     if do_plot:
-        plt.plot(np.transpose(out.waveform))
+        plt.plot(np.transpose(out.data))
         plt.xlim([0, out.length - 1])
         plt.grid()
         plt.show()
@@ -66,7 +66,7 @@ class SpikeAnalysisTest(unittest.TestCase):
 
     def test_build_dataset(self):
         self.assertEqual(self.dataset.xpos.size, 24)
-        self.assertEqual(self.dataset.waveform.shape, (24, 32))
+        self.assertEqual(self.dataset.data.shape, (24, 32))
 
     def test_calc_amplitude(self):
         rslt = calc_amplitude(frames_in=self.dataset)

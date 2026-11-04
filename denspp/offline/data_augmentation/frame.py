@@ -26,7 +26,7 @@ def augmentation_mean_waveform(
     id_cluster, num_cluster = np.unique(frames_cl, return_counts=True)
     for idx0, (id, num) in enumerate(zip(id_cluster, num_cluster)):
         snr_range = [snr_in[idx0, 0], snr_in[idx0, 2]]
-        num_frames = num_min_frames - num
+        num_frames = int(num_min_frames - num)
         new_frame = _frame_noise(
             num_frames=num_frames,
             frame_in=frames_mean[idx0, :],
@@ -60,13 +60,9 @@ def augmentation_changing_position(
         sel_frames = frames_in[xpos_frames, :]
 
         no_frames = num_min_frames + max_y - val
-        new_frame = np.zeros(shape=(no_frames, frames_in.shape[1]), dtype=frames_in.dtype)
         new_cluster = np.zeros(shape=(no_frames,), dtype=frames_cl.dtype) + id_cluster[idx]
-        sel_position = np.random.randint(low=0, high=sel_frames.shape[0], size=(no_frames, max_x))
-        # --- Generating frames
-        for idx0, pos0 in enumerate(sel_position):
-            for idx1, pos1 in enumerate(pos0):
-                new_frame[idx0, idx1] = sel_frames[pos1, idx1]
+        sel_position = np.random.randint(0, sel_frames.shape[0], size=(no_frames, max_x))
+        new_frame = sel_frames[sel_position, np.arange(max_x)]
 
         out_frames = new_frame if idx == 0 else np.append(out_frames, new_frame, axis=0)
         out_cluster = new_cluster if idx == 0 else np.append(out_cluster, new_cluster, axis=0)
