@@ -14,6 +14,7 @@ from denspp.offline.ml import (
 from denspp.offline.pipeline import PipelineCMD
 from denspp.offline.postprocessing import calc_spike_ticks
 from denspp.offline.preprocessing import (
+    DataTransient,
     DataWaveform,
     Filtering,
     FilterSettings,
@@ -75,11 +76,10 @@ class SettingsPipe:
         )
         # --- Digital filtering for ADC output and CIC
         self.SettingsDSP_SPK = FilterSettings(
-            gain=1,
-            fs=fs_dig,
+            sampling_rate=fs_dig,
             n_order=2,
             f_filt=[200, 8e3],
-            type="iir",
+            method="iir",
             f_type="butter",
             b_type="bandpass",
         )
@@ -89,7 +89,7 @@ class SettingsPipe:
             dx_sda=[2],
             mode_align="min",
             mode_thr="rms_black",
-            mode_sda="neo",
+            method="neo",
             t_frame_length=1.6e-3,
             t_frame_start=0.4e-3,
             dt_offset=0.1e-3,
@@ -161,7 +161,7 @@ class PipelineV0(PipelineCMD):
         u_pre = self.__amp.pre_amp_chopper(u_in, np.array(self.__amp.vcm))["out"]
         x_adc = self.__adc.adc_ideal(u_pre)[0]
         # ---- Digital Pre-processing ----
-        x_spk = self.__dsp.filt(x_adc)
+        x_spk = self.__dsp.forward(x_adc)
         # ---- Spike detection incl. thresholding ----
         if len(frames_xpos):
             frames = self.__sda.get_frames_from_positions(
@@ -170,7 +170,9 @@ class PipelineV0(PipelineCMD):
                 xoffset=int(frames_xoff * self.fs_dig),
             )
         else:
-            frames = self.__sda.get_frames(xraw=x_spk)
+            frames = self.__sda(
+                DataTransient(data=x_spk, sampling_rate=self.__sda._settings.sampling_rate)
+            )
         return {
             "fs_ana": self.fs_ana,
             "fs_dig": self.fs_dig,
@@ -188,7 +190,7 @@ class PipelineV0(PipelineCMD):
         if frames.num_samples == 0:
             features = np.zeros((1,))
         else:
-            features = self.__fe.fit_transform_pca_full(frames.waveform)
+            features = self.__fe.fit_transform_pca_full(frames.data)
             frames.label = self.__cl.init(features)
 
         data["features"] = features
@@ -201,7 +203,7 @@ class PipelineV0(PipelineCMD):
         :return:        Dictionary with pre-processing, classification and post-processed results
         """
         frames: DataWaveform = data["frames"]
-        if frames.waveform.size == 0:
+        if frames.data.size == 0:
             spike_ticks = np.zeros((1,))
         else:
             spike_ticks = calc_spike_ticks(frames)

@@ -1,4 +1,4 @@
-from elasticai.preprocessor import DataWaveform
+from elasticai.preprocessor import DataTransient, DataWaveform
 from elasticai.preprocessor.downsampling import (
     DefaultDownSamplingSettings,
     DownSampling,
@@ -70,4 +70,5 @@ __all__ = [
     "EventDetectionTargets",
     "ThresholdTargets",
     "FrameAlignmentTargets",
+    "DataTransient",
 ]

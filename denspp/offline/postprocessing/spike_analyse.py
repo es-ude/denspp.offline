@@ -12,7 +12,7 @@ def calc_amplitude(frames_in: DataWaveform) -> list:
     cluster = np.unique(frames_in.label)
     for idx, id in enumerate(cluster):
         pos = np.argwhere(frames_in.label == id).flatten()
-        fsel = frames_in.waveform[pos, :]
+        fsel = frames_in.data[pos, :]
         out.append(
             {
                 "pos": pos / frames_in.sampling_rate,

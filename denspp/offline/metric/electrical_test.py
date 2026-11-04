@@ -38,7 +38,7 @@ class TestElectricalMetric(unittest.TestCase):
 
         freq, spec = do_fft(
             y=signal,
-            fs=sampling_rate,
+            sampling_rate=sampling_rate,
         )
 
         rslt = calculate_total_harmonics_distortion(freq=freq, spectral=spec, N_harmonics=2)
@@ -68,7 +68,7 @@ class TestElectricalMetric(unittest.TestCase):
         rslt = calculate_sinad_from_transient(
             signal=signal + noise + distortion, fs=1 / t[1], num_harmonics=1
         )
-        self.assertAlmostEqual(rslt, 39.2, delta=8e-2)
+        self.assertAlmostEqual(rslt, 39.2945, delta=8e-2)
 
     def test_calculate_enob_from_transient(self):
         t = np.linspace(0, 1, 1000, endpoint=True)

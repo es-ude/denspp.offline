@@ -64,7 +64,7 @@ class CommonDigitalFunctions:
                 )
             )
         )
-        return fxpmath.quantize(Tensor(xin)).detach().cpu().numpy()
+        return fxpmath.round(Tensor(xin)).detach().cpu().numpy()
 
     @staticmethod
     def _extract_rising_edge(trigger: np.ndarray) -> list:

@@ -9,7 +9,7 @@ import h5py
 import numpy as np
 
 from denspp.offline.data_call.merge_datasets import MergeDataset
-from denspp.offline.preprocessing import FrameWaveform
+from denspp.offline.preprocessing import DataWaveform
 
 
 class MergeDatasetTest(unittest.TestCase):
@@ -43,9 +43,9 @@ class MergeDatasetTest(unittest.TestCase):
     def _get_test_path_to_project(self, folder_name):
         return str(self.project_dir / folder_name)
 
-    def _create_dummy_frame(self, waveform, xpos, label, sampling_rate=1000):
-        return FrameWaveform(
-            waveform=np.array(waveform, dtype=np.float32),
+    def _create_dummy_frame(self, waveform, xpos, label, sampling_rate=1000) -> DataWaveform:
+        return DataWaveform(
+            data=np.array(waveform, dtype=np.float32),
             xpos=np.array([xpos], dtype=np.int32),
             label=np.array([label], dtype=np.int32),
             sampling_rate=sampling_rate,

@@ -153,7 +153,7 @@ class DataProcessor:
         # --- PART: Data Normalization
         if self._settings.normalization_do:
             sets_norm = DataNormalizationSettings(method=self._settings.normalization_method, peak_mode=0)
-            frames_in = DataNormalization(settings=sets_norm).normalize(data_used.data)
+            frames_in = DataNormalization(settings=sets_norm).forward(data_used.data)
             data_used = DatasetFromFile(
                 data=frames_in,
                 label=data_used.label,

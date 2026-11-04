@@ -27,7 +27,9 @@ class DeltaSigmaADC(BasicADC):
         :param dac_order:       Number of bits of used DAC in feedback
         """
         super().__init__(settings_dev)
-        sets_down = DownSamplingSettings(sampling_rate=settings_dev.fs_adc, dsr=settings_dev.osr)
+        sets_down = DownSamplingSettings(
+            sampling_rate=settings_dev.fs_adc, dsr=settings_dev.osr, num_stages=1, method="cic"
+        )
         self._down_sampler = DownSampling(sets_down)
         # --- Internal variables
         self.use_noise = False

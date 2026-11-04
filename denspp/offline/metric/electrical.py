@@ -41,7 +41,7 @@ def calculate_total_harmonics_distortion_from_transient(
     Return:
           THD value (in dB)
     """
-    freq, spectral = do_fft(y=signal, fs=fs)
+    freq, spectral = do_fft(y=signal, sampling_rate=fs)
     return calculate_total_harmonics_distortion(freq=freq, spectral=spectral, N_harmonics=N_harmonics)
 
 
@@ -91,7 +91,7 @@ def calculate_sinad_from_transient(signal: np.ndarray, fs: float, num_harmonics:
     """
     spectrum = do_fft(
         y=signal,
-        fs=fs,
+        sampling_rate=fs,
         method_window="hamming",
     )[1]
     return calculate_sinad_from_spectrum(spectrum=spectrum, num_harmonics=num_harmonics)
@@ -116,7 +116,7 @@ def calculate_enob_from_transient(signal: np.ndarray, fs: float, num_harmonics: 
     """
     spectrum = do_fft(
         y=signal,
-        fs=fs,
+        sampling_rate=fs,
         method_window="hamming",
     )[1]
     return calculate_enob_from_spectrum(spectrum=spectrum, num_harmonics=num_harmonics)
