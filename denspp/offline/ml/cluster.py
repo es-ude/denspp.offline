@@ -5,16 +5,15 @@ from os.path import join
 import joblib
 import numpy as np
 from psutil import cpu_count
-from sklearn.cluster import DBSCAN, KMeans, HDBSCAN
+from sklearn.cluster import DBSCAN, HDBSCAN, KMeans
 from sklearn.metrics import accuracy_score
 from sklearn.mixture import GaussianMixture
 from sklearn.neighbors import KNeighborsClassifier
 
 
-
 @dataclass
 class SettingsCluster:
-    """ Individual data class to configure clustering
+    """Individual data class to configure clustering
     Attributes:
         type:           String with used cluster/classification method [kMeans, GMM, DBSCAN, kNN]
         no_cluster:     Integer with number of clusters
@@ -28,8 +27,8 @@ class SettingsCluster:
     max_iter: int = 1000
     tolerance: float = 1e-9
     random_state = None  # np.random.RandomState(seed=1234)
-    min_cluster_size: int = 15   # for HDBSCAN
-    min_samples: int = 5         # for HDBSCAN
+    min_cluster_size: int = 15  # for HDBSCAN
+    min_samples: int = 5  # for HDBSCAN
 
 
 DefaultSettingsCluster = SettingsCluster(type="kMeans", no_cluster=3)

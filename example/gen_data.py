@@ -1,5 +1,5 @@
 from denspp.player import (
-    GeneralPlayerController,
+    GeneralController,
     DensppGenerationPlayerConfig
 )
 from pathlib import Path
@@ -19,4 +19,4 @@ if __name__ == "__main__":
         translation_value_voltage=0.03,
         channel_mapping=[0, False, 0, False]
     )
-    controller = GeneralPlayerController(class_config=config_signal_generation)
+    controller = GeneralController(class_config=config_signal_generation)

@@ -4,7 +4,7 @@ import matplotlib.ticker as mticker
 from pathlib import Path
 from denspp.offline import get_path_to_project
 from denspp.offline.plot_helper import save_figure, get_plot_color, get_textsize_paper
-from denspp.offline.preprocessing import SettingsFilter, Filtering, FilterCoeffs
+from denspp.offline.preprocessing import FilterSettings, Filtering, FilterCoeffs
 
 
 def plot_filter_fir_coeffs(coeffs: FilterCoeffs, path2save: Path=Path("."), block_plot:bool=False) -> None:
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     path = get_path_to_project("runs")
     bitwidth_total = 6
     bitwidth_frac = 5
-    sets_filt = SettingsFilter(
+    sets_filt = FilterSettings(
         gain=1,
         fs=2e3,
         n_order=11,
