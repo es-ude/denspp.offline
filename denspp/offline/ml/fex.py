@@ -4,8 +4,8 @@ from typing import Literal
 import joblib
 import numpy as np
 from sklearn.decomposition import PCA, FastICA
-from umap import UMAP
 from sklearn.manifold import TSNE
+from umap import UMAP
 
 
 @dataclass(frozen=True)
@@ -40,24 +40,25 @@ class FeatureExtraction:
             random_state=random_state if svd_solver == "randomized" else None,
         )
 
-    def _create_umap(self, n_neighbors: int, random_state: int, min_dist: float) -> UMAP:
+    def _create_umap(self, n_neighbors: int, random_state: int, min_dist: float, n_jobs: int) -> UMAP:
         return UMAP(
             n_components=self._settings.num_features,
             n_neighbors=n_neighbors,
             min_dist=min_dist,
             random_state=random_state,
+            n_jobs=n_jobs,
         )
 
     def _create_ica(self, random_state: int) -> FastICA:
         return FastICA(n_components=self._settings.num_features, random_state=random_state)
 
     def _create_tsne(
-            self,
-            perplexity: float,
-            learning_rate: float | Literal["auto"],
-            init: str,
-            random_state: int,
-            method: Literal["barnes_hut", "exact", "auto"] = "auto",
+        self,
+        perplexity: float,
+        learning_rate: float | Literal["auto"],
+        init: str,
+        random_state: int,
+        method: Literal["barnes_hut", "exact", "auto"] = "auto",
     ) -> TSNE:
         n_components = self._settings.num_features
 
@@ -297,10 +298,11 @@ class FeatureExtraction:
         n_neighbors: int = 15,
         random_state: int = 42,
         min_dist: float = 0.1,
+        n_jobs: int = -1,
     ) -> np.ndarray:
         """Fit a UMAP model, store it, and return transformed data."""
         self._ensure_method_matches("umap")
-        self._model = self._create_umap(n_neighbors, random_state, min_dist)
+        self._model = self._create_umap(n_neighbors, random_state, min_dist, n_jobs)
         self.fe_method = "umap"
         return self._model.fit_transform(frame_in)
 
@@ -325,35 +327,31 @@ class FeatureExtraction:
     # t-SNE
     # ------------------------------------------------------------------
     def fit_tsne(
-            self,
-            frame_in: np.ndarray,
-            perplexity: float = 30.0,
-            learning_rate: float | Literal["auto"] = "auto",
-            init: str = "pca",
-            random_state: int = 42,
-            method: Literal["barnes_hut", "exact", "auto"] = "auto",
+        self,
+        frame_in: np.ndarray,
+        perplexity: float = 30.0,
+        learning_rate: float | Literal["auto"] = "auto",
+        init: str = "pca",
+        random_state: int = 42,
+        method: Literal["barnes_hut", "exact", "auto"] = "auto",
     ) -> None:
         """Fit a t-SNE model and store it internally."""
         self._ensure_method_matches("tsne")
-        self._model = self._create_tsne(
-            perplexity, learning_rate, init, random_state, method
-        )
+        self._model = self._create_tsne(perplexity, learning_rate, init, random_state, method)
         self._model.fit(frame_in)
         self.fe_method = "tsne"
 
     def fit_transform_tsne(
-            self,
-            frame_in: np.ndarray,
-            perplexity: float = 30.0,
-            learning_rate: float | Literal["auto"] = "auto",
-            init: str = "pca",
-            random_state: int = 42,
-            method: Literal["barnes_hut", "exact", "auto"] = "auto",
+        self,
+        frame_in: np.ndarray,
+        perplexity: float = 30.0,
+        learning_rate: float | Literal["auto"] = "auto",
+        init: str = "pca",
+        random_state: int = 42,
+        method: Literal["barnes_hut", "exact", "auto"] = "auto",
     ) -> np.ndarray:
         """Fit a t-SNE model, store it, and return the embedding."""
         self._ensure_method_matches("tsne")
-        self._model = self._create_tsne(
-            perplexity, learning_rate, init, random_state, method
-        )
+        self._model = self._create_tsne(perplexity, learning_rate, init, random_state, method)
         self.fe_method = "tsne"
         return self._model.fit_transform(frame_in)

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from logging import getLogger
+from pathlib import Path
 
 from denspp.offline.data_call import DefaultSettingsData, MergeDataset, SettingsData
 from denspp.offline.data_format import JsonHandler
@@ -43,7 +44,7 @@ def _start_processing_pipeline(sets_load_data: SettingsData = DefaultSettingsDat
     return settings_data, data_handler, pipe
 
 
-def select_process_pipeline(object_dataloader, object_pipeline, sets_load_data: SettingsData) -> None:
+def select_process_pipeline(object_dataloader, object_pipeline, sets_load_data: SettingsData) -> Path:
     """Function for handling the processing pipeline
     :param object_dataloader:   object dataloader
     :param object_pipeline:     object pipeline
@@ -77,6 +78,7 @@ def select_process_pipeline(object_dataloader, object_pipeline, sets_load_data: 
     logger.info("Step #3: Saving results and plotting")
     logger.info("==================================================================")
     thr_station.do_save_results(path2save=dut.path2save)
+    return Path(dut.path2save)
 
 
 def select_process_merge(
@@ -86,7 +88,7 @@ def select_process_merge(
     frames_xoffset: int = 0,
     list_merging_files: list = [],
     do_label_concatenation: bool = False,
-) -> None:
+) -> Path:
     """Function for preparing and starting the merge process for generating datasets
     :param object_dataloader:       DataLoader object
     :param object_pipeline:         Pipeline object
@@ -108,11 +110,12 @@ def select_process_merge(
         concatenate_id=do_label_concatenation,
     )
     merge_handler.get_frames_from_dataset(process_points=list_merging_files, xpos_offset=frames_xoffset)
-    merge_handler.merge_data_from_all_iteration()
+    result_path = merge_handler.merge_data_from_all_iteration()
 
     # --- Merging the frames to new cluster device
     logger.info("=========================================================")
     logger.info("Final Step with merging cluster have to be done separately using SortDataset")
+    return Path(result_path)
 
 
 @dataclass
@@ -136,7 +139,7 @@ DefaultSettingsMerging = SettingsMerging(
 )
 
 
-def run_transient_data_processing() -> None:
+def run_transient_data_processing() -> Path:
     """Function for running the offline data analysis of transient use-specific data
     :return:    None
     """
@@ -148,7 +151,7 @@ def run_transient_data_processing() -> None:
             template=DefaultSettingsMerging, path="config", file_name="Config_Merging"
         ).get_class(SettingsMerging)
 
-        select_process_merge(
+        result_path = select_process_merge(
             object_dataloader=data_handler,
             object_pipeline=pipe,
             sets_load_data=settings_data,
@@ -157,8 +160,10 @@ def run_transient_data_processing() -> None:
             frames_xoffset=sets_merge.xoffset,
         )
     else:
-        select_process_pipeline(
+        result_path = select_process_pipeline(
             object_dataloader=data_handler,
             object_pipeline=pipe,
             sets_load_data=settings_data,
         )
+
+    return result_path

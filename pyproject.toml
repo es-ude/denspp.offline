@@ -20,10 +20,11 @@ dependencies = [
   "pyyaml>=6.0.1",
   "scikit-learn>=1.5.2",
   "scipy>=1.14.1",
+  "seaborn>=0.13.2",
   "soundcard",
   "torchinfo>=1.8.0",
   "tqdm>=4.67.1",
-  "umap-learn",
+  "umap-learn==0.5.6",
 ]
 dynamic = ["version"]
 
@@ -184,6 +185,6 @@ default-groups = ["dev", "docs", "test"]
 [tool.uv.sources]
 elasticai-creator = { git = "https://github.com/es-ude/elastic-ai.creator.git", branch = "main" }
 elasticai-explorer = { git = "https://github.com/es-ude/elastic-ai.explorer.git", branch = "add-grid-search" }
-elasticai-preprocessor = { git = "https://github.com/es-ude/elasticai.preprocessor.git", branch = "main" }
 soundcard = { git = "https://github.com/bastibe/SoundCard.git" }
-umap-learn = { git = "https://github.com/lmcinnes/umap.git" }
+elasticai-preprocessor = { git = "https://github.com/es-ude/elasticai.preprocessor.git" }
+# umap-learn = { git = "https://github.com/lmcinnes/umap.git" }

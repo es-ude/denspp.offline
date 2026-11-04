@@ -1,7 +1,7 @@
 import numpy as np
 
 from denspp.offline.analog.dev_noise import ProcessNoise
-from denspp.offline.preprocessing import DownSampling, SettingsDownSampling
+from denspp.offline.preprocessing import DownSampling, DownSamplingSettings
 
 from .adc_basic import BasicADC
 from .adc_settings import (
@@ -27,7 +27,7 @@ class DeltaSigmaADC(BasicADC):
         :param dac_order:       Number of bits of used DAC in feedback
         """
         super().__init__(settings_dev)
-        sets_down = SettingsDownSampling(sampling_rate=settings_dev.fs_adc, dsr=settings_dev.osr)
+        sets_down = DownSamplingSettings(sampling_rate=settings_dev.fs_adc, dsr=settings_dev.osr)
         self._down_sampler = DownSampling(sets_down)
         # --- Internal variables
         self.use_noise = False

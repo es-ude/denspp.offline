@@ -1,72 +1,73 @@
+from elasticai.preprocessor import DataWaveform
 from elasticai.preprocessor.downsampling import (
-    DefaultSettingsDownSampling,
+    DefaultDownSamplingSettings,
     DownSampling,
-    SettingsDownSampling,
+    DownSamplingSettings,
 )
 from elasticai.preprocessor.eventdetection import (
-    TargetsEventDetection,
-    TargetsEventPreprocessors,
-    TargetsFrameAlignment,
+    EventDetectionTargets,
+    EventPreprocessorsTargets,
+    FrameAlignmentTargets,
 )
-from elasticai.preprocessor.filter import DefaultSettingsFilter, FilterCoeffs, Filtering, SettingsFilter
+from elasticai.preprocessor.filter import FilterCoeffs, Filtering, FilterSettings, FilterSettingsDefault
 from elasticai.preprocessor.normalization import (
     DataNormalization,
-    DefaultSettingsNormalization,
-    SettingsNormalization,
+    DataNormalizationSettings,
+    DataNormalizationSettingsDefault,
 )
 from elasticai.preprocessor.referencing import (
-    CommonReferencing,
-    DefaultSettingsReferencing,
-    SettingsReferencing,
+    Referencing,
+    ReferencingSettings,
+    ReferencingSettingsDefault,
 )
-from elasticai.preprocessor.sda import DefaultSettingsSDA, FrameWaveform, SettingsSDA, SpikeDetection
+from elasticai.preprocessor.sda import DefaultSDASettings, SDASettings, SpikeDetection
 from elasticai.preprocessor.thresholding import (
-    DefaultSettingsThreshold,
-    SettingsThreshold,
-    TargetsThreshold,
+    DefaultThresholdSettings,
     Thresholding,
+    ThresholdSettings,
+    ThresholdTargets,
 )
 from elasticai.preprocessor.transformation import do_fft, do_fft_inverse, do_fft_withimag
+from elasticai.preprocessor.transformation.window_scaler import transformation_window_method
 from elasticai.preprocessor.waveform import WaveformGenerator, WaveformSignal
 from elasticai.preprocessor.windower import (
-    DefaultSettingsWindow,
-    SettingsWindow,
+    DefaultWindowSettings,
     WindowSequencer,
-    transformation_window_method,
+    WindowSettings,
 )
 
 __all__ = [
-    "CommonReferencing",
-    "DefaultSettingsReferencing",
-    "SettingsReferencing",
+    "Referencing",
+    "ReferencingSettingsDefault",
+    "ReferencingSettings",
     "DownSampling",
-    "DefaultSettingsDownSampling",
-    "SettingsDownSampling",
+    "DefaultDownSamplingSettings",
+    "DownSamplingSettings",
     "Filtering",
     "FilterCoeffs",
-    "DefaultSettingsFilter",
-    "SettingsFilter",
+    "FilterSettingsDefault",
+    "FilterSettings",
     "WaveformSignal",
     "WaveformGenerator",
-    "FrameWaveform",
+    "DataWaveform",
     "DataNormalization",
-    "SettingsNormalization",
-    "DefaultSettingsNormalization",
-    "DefaultSettingsSDA",
-    "SettingsSDA",
+    "DataNormalizationSettings",
+    "DataNormalizationSettingsDefault",
+    "DefaultSDASettings",
+    "SDASettings",
     "SpikeDetection",
-    "DefaultSettingsThreshold",
-    "SettingsThreshold",
+    "DefaultThresholdSettings",
+    "ThresholdSettings",
     "Thresholding",
     "do_fft",
     "do_fft_inverse",
     "do_fft_withimag",
-    "DefaultSettingsWindow",
-    "SettingsWindow",
+    "DefaultWindowSettings",
+    "WindowSettings",
     "WindowSequencer",
     "transformation_window_method",
-    "TargetsEventPreprocessors",
-    "TargetsEventDetection",
-    "TargetsThreshold",
-    "TargetsFrameAlignment",
+    "EventPreprocessorsTargets",
+    "EventDetectionTargets",
+    "ThresholdTargets",
+    "FrameAlignmentTargets",
 ]

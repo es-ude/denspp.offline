@@ -75,7 +75,6 @@ class ExploreClassifier:
     _sets_data: SettingsDataset
     _search_space: SettingsSearchSpace
     _logger: Logger
-    _logger: Logger
     _device: str
     _path2config: Path
 

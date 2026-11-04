@@ -2,9 +2,9 @@ import unittest
 
 import matplotlib.pyplot as plt
 import numpy as np
+from elasticai.preprocessor import DataWaveform
 
 from denspp.offline.data_call import WaveformGenerator
-from denspp.offline.preprocessing import FrameWaveform
 
 from .spike_analyse import (
     calc_amplitude,
@@ -17,7 +17,7 @@ from .spike_analyse import (
 
 def _build_eap_dataset(
     count: int, sampling_rate: float, max_gap: float = 0.01, do_plot: bool = False
-) -> FrameWaveform:
+) -> DataWaveform:
     dut = WaveformGenerator(sampling_rate=sampling_rate)
     wvf = (
         100e-6
@@ -43,7 +43,7 @@ def _build_eap_dataset(
     label = np.zeros((2 * count,), dtype=int)
     label[count:] = label[count:] + 1
 
-    out = FrameWaveform(
+    out = DataWaveform(
         waveform=wvf_noise,
         xpos=np.array(pos, dtype=int),
         label=label,

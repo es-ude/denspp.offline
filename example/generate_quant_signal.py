@@ -1,16 +1,14 @@
 import matplotlib.pyplot as plt
-from fxpmath import Fxp
+import numpy as np
 from denspp.offline import get_path_to_project
 from denspp.offline.plot_helper import save_figure
 from denspp.offline.data_call import WaveformGenerator, WaveformSignal
 
 
 def plot_waveform_types(dataset: WaveformSignal, show_plot: bool=True) -> None:
-    bitwidth = 4
-    bitfrac = 3
 
     sig_used = dataset.signal / (dataset.signal.max() - dataset.signal.min())
-    sig_quant = Fxp(sig_used, signed=True, n_word=bitwidth, n_frac=bitfrac).get_val()
+    sig_quant = np.clip(np.round(sig_used * 8), -8, 7) / 8
 
     for idx in range(4):
         fig = plt.figure(figsize=(4, 3))

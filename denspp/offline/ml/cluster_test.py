@@ -84,6 +84,5 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(data[1].size, pred.size)
 
 
-
 if __name__ == "__main__":
     unittest.main()

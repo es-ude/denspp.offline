@@ -14,10 +14,10 @@ from denspp.offline.ml import (
 from denspp.offline.pipeline import PipelineCMD
 from denspp.offline.postprocessing import calc_spike_ticks
 from denspp.offline.preprocessing import (
+    DataWaveform,
     Filtering,
-    FrameWaveform,
-    SettingsFilter,
-    SettingsSDA,
+    FilterSettings,
+    SDASettings,
     SpikeDetection,
 )
 
@@ -74,7 +74,7 @@ class SettingsPipe:
             Nadc=bit_adc,
         )
         # --- Digital filtering for ADC output and CIC
-        self.SettingsDSP_SPK = SettingsFilter(
+        self.SettingsDSP_SPK = FilterSettings(
             gain=1,
             fs=fs_dig,
             n_order=2,
@@ -84,7 +84,7 @@ class SettingsPipe:
             b_type="bandpass",
         )
         # --- Options for Spike Detection and Frame Aligning
-        self.SettingsSDA = SettingsSDA(
+        self.SDASettings = SDASettings(
             sampling_rate=fs_dig,
             dx_sda=[2],
             mode_align="min",
@@ -125,7 +125,7 @@ class PipelineV0(PipelineCMD):
         self.__amp = PreAmp(settings.SettingsAMP)
         self.__adc = ADC0(settings.SettingsADC)
         self.__dsp = Filtering(settings.SettingsDSP_SPK)
-        self.__sda = SpikeDetection(settings.SettingsSDA)
+        self.__sda = SpikeDetection(settings.SDASettings)
         self.__fe = FeatureExtraction(settings.SettingsFE)
         self.__cl = Clustering(settings.SettingsCL)
 
@@ -184,7 +184,7 @@ class PipelineV0(PipelineCMD):
         :param data:    Dictionary with pre-processed data / results
         :return:        Dictionary with pre-processing and classification results
         """
-        frames: FrameWaveform = data["frames"]
+        frames: DataWaveform = data["frames"]
         if frames.num_samples == 0:
             features = np.zeros((1,))
         else:
@@ -200,7 +200,7 @@ class PipelineV0(PipelineCMD):
         :param data:    Dictionary with pre-processed data / results
         :return:        Dictionary with pre-processing, classification and post-processed results
         """
-        frames: FrameWaveform = data["frames"]
+        frames: DataWaveform = data["frames"]
         if frames.waveform.size == 0:
             spike_ticks = np.zeros((1,))
         else:
