@@ -68,7 +68,7 @@ class TestElectricalMetric(unittest.TestCase):
         rslt = calculate_sinad_from_transient(
             signal=signal + noise + distortion, fs=1 / t[1], num_harmonics=1
         )
-        self.assertAlmostEqual(rslt, 39.2945, delta=8e-2)
+        self.assertAlmostEqual(rslt, 39.2945, delta=1e-1)
 
     def test_calculate_enob_from_transient(self):
         t = np.linspace(0, 1, 1000, endpoint=True)

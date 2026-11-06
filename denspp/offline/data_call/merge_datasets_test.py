@@ -62,7 +62,7 @@ class MergeDatasetTest(unittest.TestCase):
         sampling_rate = frames_list[0].sampling_rate if frames_list else 1000
 
         for frame in frames_list:
-            frame_waveforms = np.asarray(frame.waveform, dtype=np.float32)
+            frame_waveforms = np.asarray(frame.data, dtype=np.float32)
             if frame_waveforms.ndim == 1:
                 frame_waveforms = frame_waveforms[np.newaxis, :]
 
