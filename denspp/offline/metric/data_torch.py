@@ -1,6 +1,6 @@
 import torch
-from torch import Tensor, eq, ne, sum
 import torchmetrics.functional as FM
+from torch import Tensor, eq, ne, sum
 
 
 def calculate_number_true_predictions(pred: Tensor, true: Tensor) -> Tensor:
@@ -64,9 +64,7 @@ def calculate_precision(true: Tensor, pred: Tensor, num_classes: int | None = No
     if pred.numel() == 0:
         return torch.tensor(0.0, device=pred.device)
     n_cls = _infer_num_classes(pred, true, num_classes)
-    return FM.precision(
-        pred.long(), true.long(), task="multiclass", num_classes=n_cls, average="micro"
-    )
+    return FM.precision(pred.long(), true.long(), task="multiclass", num_classes=n_cls, average="micro")
 
 
 def calculate_recall(pred: Tensor, true: Tensor, num_classes: int | None = None) -> Tensor:
@@ -84,9 +82,7 @@ def calculate_recall(pred: Tensor, true: Tensor, num_classes: int | None = None)
     if pred.numel() == 0:
         return torch.tensor(0.0, device=pred.device)
     n_cls = _infer_num_classes(pred, true, num_classes)
-    return FM.recall(
-        pred.long(), true.long(), task="multiclass", num_classes=n_cls, average="micro"
-    )
+    return FM.recall(pred.long(), true.long(), task="multiclass", num_classes=n_cls, average="micro")
 
 
 def calculate_fbeta(
