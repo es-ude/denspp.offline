@@ -18,16 +18,16 @@ dependencies = [
   "psutil>=7.2.2",
   "pyocclient>=0.6",
   "pyyaml>=6.0.1",
-  "scikit-learn>=1.5.2",
+  "scikit-learn>=1.9.0",
   "scipy>=1.14.1",
   "seaborn>=0.13.2",
   "soundcard",
   "torch",
+  "torchinfo>=1.8.0",
   "torchmetrics>=1.0.0",
   "torchvision",
-  "torchinfo>=1.8.0",
   "tqdm>=4.67.1",
-  "umap-learn==0.5.6",
+  "umap-learn>=0.5.11",
 ]
 
 dynamic = ["version"]
