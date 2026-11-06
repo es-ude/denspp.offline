@@ -84,6 +84,8 @@ def plot_loss(
     if show_plot:
         plt.show(block=True)
 
+    plt.close()
+
 
 def plot_custom_loss_classifier(
     data: list,
@@ -151,6 +153,8 @@ def plot_custom_loss_classifier(
         save_figure(plt, path2save, f"report_metric_{loss_name}_fold{fold_num:03d}" + addon)
     if show_plot:
         plt.show(block=True)
+
+    plt.close()
 
 
 def plot_custom_loss_autoencoder(
@@ -260,6 +264,8 @@ def plot_custom_loss_autoencoder(
         if show_plot:
             plt.show(block=True)
 
+        plt.close()
+
 
 def plot_statistic(
     train_cl: np.ndarray,
@@ -344,3 +350,5 @@ def plot_statistic(
         save_figure(plt, path2save, "report_statistic_data")
     if show_plot:
         plt.show(block=True)
+
+    plt.close()
