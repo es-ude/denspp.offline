@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 from torch import Tensor
 from torch import nn as nn_torch
 from elasticai.creator.nn import fixed_point as nn_creator
-from denspp.offline import get_path_to_project
-from denspp.offline.plot_helper import save_figure
-from denspp.offline.analog.common_func import CommonDigitalFunctions
+from elasticai.offline import get_path_to_project
+from elasticai.offline.plot_helper import save_figure
+from elasticai.offline.analog.common_func import CommonDigitalFunctions
 
 
 if __name__ == "__main__":

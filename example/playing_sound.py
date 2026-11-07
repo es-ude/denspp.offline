@@ -1,5 +1,5 @@
 import numpy as np
-from denspp.player.devices.sound_card import TranslatorSoundCard
+from elasticai.player.devices.sound_card import TranslatorSoundCard
 
 
 if __name__ == "__main__":

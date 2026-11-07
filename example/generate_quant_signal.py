@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from denspp.offline import get_path_to_project
-from denspp.offline.plot_helper import save_figure
-from denspp.offline.data_call import WaveformGenerator, WaveformSignal
+from elasticai.offline import get_path_to_project
+from elasticai.offline.plot_helper import save_figure
+from elasticai.offline.data_call import WaveformGenerator, WaveformSignal
 
 
 def plot_waveform_types(dataset: WaveformSignal, show_plot: bool=True) -> None:

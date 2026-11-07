@@ -1,0 +1,57 @@
+import unittest
+from os import getcwd
+from os.path import exists, join
+from shutil import rmtree
+
+import pytest
+
+from elasticai.offline import get_path_to_project
+from elasticai.offline.structure_builder import init_dnn_folder, init_project_folder
+
+
+@pytest.mark.init
+class TestStructureBuilder(unittest.TestCase):
+    folder_general = ["config", "data", "dataset", "runs", "src", "src_pipe"]
+    folder_dnn = ["cell_bib", "models"]
+    folder2search = "elasticai.offline"
+    folder_name_test = "temp_test"
+
+    def setUp(self):
+        path2check = get_path_to_project() / self.folder_name_test
+        if path2check.exists():
+            rmtree(path2check, ignore_errors=True)
+
+    def test_check_folder_general(self):
+        init_project_folder(self.folder_name_test)
+        path2start = join(
+            getcwd().split(self.folder2search)[0],
+            self.folder2search,
+            self.folder_name_test,
+        )
+
+        num_pass = 0
+        for folder in self.folder_general:
+            path2test = join(path2start, folder)
+            num_pass += 1 if exists(path2test) else 0
+
+        self.assertEqual(num_pass, len(self.folder_general))
+
+    def test_check_folder_dnn(self):
+        init_dnn_folder(self.folder_name_test)
+        path2start = join(
+            getcwd().split(self.folder2search)[0],
+            self.folder2search,
+            self.folder_name_test,
+            "src_dnn",
+        )
+
+        num_pass = 0
+        for folder in self.folder_dnn:
+            path2test = join(path2start, folder)
+            num_pass += 1 if exists(path2test) else 0
+
+        self.assertEqual(num_pass == len(self.folder_dnn), True, "Folders not there")
+
+
+if __name__ == "__main__":
+    unittest.main()

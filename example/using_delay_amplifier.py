@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from denspp.offline.analog.amplifier.dly_amp import DelayAmplifier, DefaultSettingsDLY
+from elasticai.offline.analog.amplifier.dly_amp import DelayAmplifier, DefaultSettingsDLY
 
 
 if __name__ == "__main__":

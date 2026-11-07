@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from denspp.offline.analog.amplifier.cur_amp import CurrentAmplifier, DefaultSettingsCUR
+from elasticai.offline.analog.amplifier.cur_amp import CurrentAmplifier, DefaultSettingsCUR
 
 
 if __name__ == "__main__":
