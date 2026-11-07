@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from denspp.offline.analog.dev_noise import ProcessNoise, SettingsNoise
-from denspp.offline.preprocessing import do_fft
+from elasticai.offline.analog.dev_noise import ProcessNoise, SettingsNoise
+from elasticai.offline.preprocessing import do_fft
 
 
 if __name__ == "__main__":

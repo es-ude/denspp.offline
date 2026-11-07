@@ -1,10 +1,10 @@
-# End-To-End Deep (Neural) Signal Pre-Processing for Offline Transient Data Analysis
-Akronym: DeNSPP.offline
+# Exploration of End-To-End Deep Signal Processing Pipelines for Time Series Analysis
+## Acronym: elasticAI.offline (former: denspp.offline)
 
-This Python framework is developed for analysing transient data to evaluate an user-specific implementation of an 
-end-to-end signal processor in any application. The journey of this framework starts in the research project Sp:AI:ke, 
-funded by MERCUR foundation (Germany) with searching a neural signal processing pipeline for extracellular recordings 
-with offline data (already recorded and available). 
+This Python framework is developed for analyzing transient data to evaluate an user-specific implementation of an 
+end-to-end signal processor for any application in offline manner (already recorded, available data/data sets). 
+The journey of developing this framework starts in the research project Sp:AI:ke, 
+funded by MERCUR foundation (Germany) with searching a signal processing pipeline for extracellular neural recordings. 
 
 In general, this framework aims to accelerate the deployment of signal processor pipelines in next-gen hardware development. 
 For building the digital hardware accelerators (in C for microcontrollers and in Verilog/VHDL for FPGAs/ASICs), there is the access
@@ -27,18 +27,18 @@ It is recommended that each new feature will be edited in a new branch. If the i
 
 If you create a new repo and you want to use the functionalities of this Python tool. Then please initialise the project.toml using `uv` and write the following code into the terminal.
 ```
-uv add "git+https://github.com/es-ude/denspp.offline.git"
+uv add "git+https://github.com/es-ude/elasticai.offline.git"
 ```
 After initialisation, then run the following code to create the project folder structure in the Python Console.
 ```
-from denspp.offline.structure_builder import init_project_folder
+from elasticai.offline.structure_builder import init_project_folder
 init_project_folder()
 ```
 Important! Please start every script from your repo folder!
 
 ## Project File structure
 
-This Git project contains the main folder `denspp` which includes the functions to setup a signal processing pipeline incl. plotting examples and training Deep Neural Networks (DNN).
+This Git project contains the main folder `elasticai` which includes the functions to setup a signal processing pipeline incl. plotting examples and training Deep Neural Networks (DNN).
 
 The Python folder contains the following folder structure using ``init_project_folder()`` in your use-case repo:
 ```bash
@@ -98,4 +98,5 @@ If you want to load a file, please change the entries in the `Config_PipelineDat
 Important, each new data structure needs a data handler for loading these data into the pipeline. Therefore please add a new function in `src_neuro/call-spike.py` or create a similar file.
 
 ## Citation / Documentation
-If you want to understand what is the idea behind DeNSPP, please have a look on the corresponding [paper](https://doi.org/10.1515/cdbme-2023-1118).
+If you want to understand what is the idea behind this framework, please have a look on the corresponding [paper](https://doi.org/10.1515/cdbme-2023-1118).
+If you want to see / use other tools for exploring / deploying deep neural network on embedded hardware, please have a look on the elasticAI ecosystem ([GitHub](https://www.github.com/es-ude)).

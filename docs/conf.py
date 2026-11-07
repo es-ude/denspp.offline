@@ -11,12 +11,12 @@ from pathlib import Path
 from tomllib import load as _load_toml
 
 
-project = "denspp.offline"
+project = "elasticai.offline"
 copyright = "2025, ies-ude (Intelligent Embedded System - University of Duisburg-Essen)"
 author = "es-ude"
-release = _version("denspp.offline")
-version = ".".join(_version("denspp.offline").split(".")[0:2])
-html_title = "denspp.offline"
+release = _version("elasticai.offline")
+version = ".".join(_version("elasticai.offline").split(".")[0:2])
+html_title = "elasticai.offline"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -55,7 +55,7 @@ html_theme_options = {
             # Label for this link
             "name": "GitHub",
             # URL where the link will redirect
-            "url": "https://github.com/es-ude/denspp.offline/",  # required
+            "url": "https://github.com/es-ude/elasticai.offline/",  # required
             # Icon class (if "type": "fontawesome"), or path to local image (if "type": "local")
             "icon": "fa-brands fa-square-github",
             # The type of image to be used (see below for details)
@@ -91,8 +91,8 @@ running_in_autobuild = os.getenv("SPHINX_AUTOBUILD", "NO") == "YES"
 
 autodoc2_packages = [
     {
-        "path": "../denspp/offline",
-        "module": "denspp.offline",
+        "path": "../elasticai/offline",
+        "module": "elasticai.offline",
     },
 ]
 

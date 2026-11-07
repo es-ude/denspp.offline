@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from denspp.offline.analog.amplifier.int_ana import IntegratorAmplifier, SettingsINT, DefaultSettingsINT
+from elasticai.offline.analog.amplifier.int_ana import IntegratorAmplifier, SettingsINT, DefaultSettingsINT
 
 
 if __name__ == "__main__":

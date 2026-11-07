@@ -11,11 +11,11 @@ import numpy as np
 from matplotlib import pyplot as plt
 from elasticai.preprocessor.waveform import WaveformGenerator
 
-from denspp.offline import get_path_to_project
-from denspp.offline.preprocessing import do_fft
-from denspp.offline.metric import calculate_snr, calculate_cosine_similarity, calculate_error_mae, calculate_error_mbe
-from denspp.offline.metric.electrical import calculate_total_harmonics_distortion_from_transient, calculate_enob_from_transient, calculate_sinad_from_transient
-from denspp.offline.plot_helper import save_figure
+from elasticai.offline import get_path_to_project
+from elasticai.offline.preprocessing import do_fft
+from elasticai.offline.metric import calculate_snr, calculate_cosine_similarity, calculate_error_mae, calculate_error_mbe
+from elasticai.offline.metric.electrical import calculate_total_harmonics_distortion_from_transient, calculate_enob_from_transient, calculate_sinad_from_transient
+from elasticai.offline.plot_helper import save_figure
 
 
 class TargetCreateDesign(Enum):

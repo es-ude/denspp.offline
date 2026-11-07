@@ -1,7 +1,7 @@
 ### Project ###
 .python-version
 docs/apidocs
-denspp/__init__.py
+elasticai/__init__.py
 **/Config_*.yaml
 **/Config_*.json
 **/.devenv
@@ -11,7 +11,6 @@ denspp/__init__.py
 **/runs
 **/run_*.py
 **/temp_*
-elasticai/__init__.py
 elasticai/creator_plugins/__init__.py
 
 #macos

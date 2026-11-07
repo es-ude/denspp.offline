@@ -1,4 +1,4 @@
-from denspp.player import (
+from elasticai.player import (
     GeneralController,
     DensppGenerationPlayerConfig
 )

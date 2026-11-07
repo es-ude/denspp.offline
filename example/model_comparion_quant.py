@@ -1,10 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from denspp.offline.plot_helper import get_textsize_paper
-from denspp.offline.dnn import PyTorchTrainer, SettingsTraining
-from denspp.offline.dnn.dnn_handler import TrainingResults
-from denspp.offline.dnn.models.comparison_quant import (
+from elasticai.offline.plot_helper import get_textsize_paper
+from elasticai.offline.dnn import PyTorchTrainer, SettingsTraining
+from elasticai.offline.dnn.dnn_handler import TrainingResults
+from elasticai.offline.dnn.models.comparison_quant import (
     CompareDNN_ClassifierTorch_v1,
     CompareDNN_ClassifierTorch_woBN_v1,
     CompareDNN_ClassifierCreator_v1,

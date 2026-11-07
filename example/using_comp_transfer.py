@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from denspp.offline.analog.amplifier.comparator import Comparator, SettingsCOMP
+from elasticai.offline.analog.amplifier.comparator import Comparator, SettingsCOMP
 
 
 ExampleSettingsComparator = SettingsCOMP(
